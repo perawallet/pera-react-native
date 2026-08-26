@@ -39,13 +39,17 @@ vi.mock('../useKMSServices', () => ({
     }),
 }))
 
+// Hoisted: `@perawallet/wallet-core-shared` is imported before this module's
+// const declarations would otherwise run.
+const { mockLoggerError } = vi.hoisted(() => ({ mockLoggerError: vi.fn() }))
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
+    const actual = await vi.importActual<{ logger: object }>(
         '@perawallet/wallet-core-shared',
     )
     return {
         ...actual,
         generateOrderedUniqueId: () => 'mock-uuid-v7',
+        logger: { ...actual.logger, error: mockLoggerError },
     }
 })
 
@@ -226,6 +230,72 @@ describe('useAlgo25', () => {
             ).rejects.toThrow('boom')
 
             expect(mockKeyStoreRemove).toHaveBeenCalledWith('my-key')
+        })
+
+        test('reports which step failed when the signing-child import throws', async () => {
+            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockEncodeAddress.mockReturnValue('ADDR')
+            mockKeyStoreImport
+                .mockResolvedValueOnce('my-key')
+                .mockRejectedValueOnce(new Error('keystore rejected'))
+
+            const { result } = renderHook(() => useAlgo25())
+            await expect(
+                act(async () => {
+                    await result.current.createAlgo25Key({
+                        id: 'my-key',
+                        mnemonic: 'words',
+                    })
+                }),
+            ).rejects.toThrow('keystore rejected')
+
+            expect(mockLoggerError).toHaveBeenCalledWith(
+                'createAlgo25Key failed',
+                expect.objectContaining({ stage: 'signChild' }),
+            )
+        })
+
+        test('reports the seedImport stage when the seed import throws', async () => {
+            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockEncodeAddress.mockReturnValue('ADDR')
+            mockKeyStoreImport.mockRejectedValueOnce(
+                new Error('keystore rejected'),
+            )
+
+            const { result } = renderHook(() => useAlgo25())
+            await expect(
+                act(async () => {
+                    await result.current.createAlgo25Key({
+                        id: 'my-key',
+                        mnemonic: 'words',
+                    })
+                }),
+            ).rejects.toThrow('keystore rejected')
+
+            expect(mockLoggerError).toHaveBeenCalledWith(
+                'createAlgo25Key failed',
+                expect.objectContaining({ stage: 'seedImport' }),
+            )
+        })
+
+        test('reports the seed stage when the mnemonic is unusable', async () => {
+            mockSeedFromMnemonic.mockImplementation(() => {
+                throw new Error('not a mnemonic')
+            })
+
+            const { result } = renderHook(() => useAlgo25())
+            await expect(
+                act(async () => {
+                    await result.current.createAlgo25Key({
+                        mnemonic: 'not a mnemonic',
+                    })
+                }),
+            ).rejects.toThrow()
+
+            expect(mockLoggerError).toHaveBeenCalledWith(
+                'createAlgo25Key failed',
+                expect.objectContaining({ stage: 'seed' }),
+            )
         })
     })
 })

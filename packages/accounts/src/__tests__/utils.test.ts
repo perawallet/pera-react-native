@@ -519,10 +519,64 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
     })
 
     test('canSignArc60 also accepts hardware (on-device path)', () => {
-        expect(canSignArc60(localKey)).toBe(true)
-        expect(canSignArc60(hardware)).toBe(true)
-        expect(canSignArc60(watch)).toBe(false)
-        expect(canSignArc60(multisig)).toBe(false)
+        expect(canSignArc60(localKey, [localKey])).toBe(true)
+        expect(canSignArc60(hardware, [hardware])).toBe(true)
+        expect(canSignArc60(watch, [watch])).toBe(false)
+        expect(canSignArc60(multisig, [multisig])).toBe(false)
+    })
+
+    describe('canSignArc60 - rekeyed signers (PERA-4977)', () => {
+        const rekeyedTo = (auth: { address: string }) =>
+            ({ ...watch, rekeyAddress: auth.address }) as any
+
+        test('accepts a keyless rekeyed account whose auth holds local keys', () => {
+            const rekeyed = rekeyedTo(localKey)
+            expect(canSignArc60(rekeyed, [rekeyed, localKey])).toBe(true)
+        })
+
+        test('accepts a keyless rekeyed account whose auth is a hardware wallet', () => {
+            const rekeyed = rekeyedTo(hardware)
+            expect(canSignArc60(rekeyed, [rekeyed, hardware])).toBe(true)
+        })
+
+        test('rejects when the auth account is not in the wallet', () => {
+            const rekeyed = rekeyedTo({ address: 'ABSENT' })
+            expect(canSignArc60(rekeyed, [rekeyed])).toBe(false)
+        })
+
+        test('rejects when the auth account is itself watch-only', () => {
+            const rekeyed = rekeyedTo(watch)
+            expect(canSignArc60(rekeyed, [rekeyed, watch])).toBe(false)
+        })
+
+        // ARC-60 carries a single signature, so a threshold account can never
+        // be represented — createMultisigStrategy refuses it downstream.
+        test('rejects when the auth account is a multisig', () => {
+            const rekeyed = rekeyedTo(multisig)
+            expect(canSignArc60(rekeyed, [rekeyed, multisig])).toBe(false)
+        })
+
+        // ARC-60 verifies Ed25519 only, so a Falcon signature from a quantum
+        // auth would be a guaranteed dApp-side failure — the same reason
+        // canSignViaParticipants excludes quantum from multisig slots.
+        test('rejects when the auth account is quantum', () => {
+            const quantumAuth = {
+                type: 'quantum',
+                address: 'Q',
+                keyPairId: 'pkq',
+            } as any
+            const rekeyed = rekeyedTo(quantumAuth)
+            expect(canSignArc60(rekeyed, [rekeyed, quantumAuth])).toBe(false)
+        })
+
+        // The hop is a fallback, not an override. A dApp that resolved the
+        // auth address itself names THAT account as the signer, so hopping
+        // again off its own chained rekey would sign with a key the
+        // authenticated account's auth-addr never designated.
+        test('does not hop when the rekeyed signer holds its own key', () => {
+            const chained = { ...localKey, rekeyAddress: watch.address } as any
+            expect(canSignArc60(chained, [chained, watch])).toBe(true)
+        })
     })
 
     test('canSignProgram excludes hardware, which has no program-signing path', () => {
@@ -539,7 +593,9 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
     // never be represented regardless of what keys it holds.
     test('canSignProgram stays false for hardware and multisig even with a keyPairId', () => {
         expect(canSignProgram({ ...hardware, keyPairId: 'pk1' })).toBe(false)
-        expect(canSignArc60({ ...hardware, keyPairId: 'pk1' })).toBe(true)
+        expect(
+            canSignArc60({ ...hardware, keyPairId: 'pk1' }, [hardware]),
+        ).toBe(true)
         expect(canSignProgram({ ...multisig, keyPairId: 'pk1' })).toBe(false)
     })
 
@@ -872,7 +928,7 @@ describe('services/accounts/utils - quantum accounts', () => {
 
     test('canSignArbitraryData and canSignArc60 are true for quantum', () => {
         expect(canSignArbitraryData(quantum())).toBe(true)
-        expect(canSignArc60(quantum())).toBe(true)
+        expect(canSignArc60(quantum(), [quantum()])).toBe(true)
     })
 
     test('canSignWith resolves a quantum account as its own signer', () => {

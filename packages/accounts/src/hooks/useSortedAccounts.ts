@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import type { AccountBalances, AccountSortMode, WalletAccount } from '../models'
+import type {
+    AccountAlgoValues,
+    AccountSortMode,
+    WalletAccount,
+} from '../models'
 import { getAccountDisplayName } from '../utils'
 import { useAccountsStore } from '../store'
 
@@ -26,7 +30,7 @@ type UseSortedAccountsResult = {
 
 export const useSortedAccounts = (
     accounts: WalletAccount[],
-    accountBalances: AccountBalances,
+    accountBalances: AccountAlgoValues,
 ): UseSortedAccountsResult => {
     const sortMode = useAccountsStore(state => state.sortMode)
     const manualAccountOrder = useAccountsStore(

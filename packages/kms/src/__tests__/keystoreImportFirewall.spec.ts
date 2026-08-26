@@ -16,12 +16,13 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import fg from 'fast-glob'
 
-// Matches only the bare meta-package specifier. Two separate parts do that
-// work: the trailing quote is what keeps `keystore-core` out (it hits `-`
-// where a quote must be), while `react-native-keystore` never gets that far —
-// the LEADING literal `@algorandfoundation/keystore` already fails at `r` vs
-// `k`. Dropping the trailing quote would readmit `keystore-core` alone.
-const META_IMPORT = /from\s+['"]@algorandfoundation\/keystore['"]/
+// Matches the meta-package specifier, bare or with a subpath. The optional
+// `(\/[^'"]*)?` is what admits subpaths; the terminator after it is what keeps
+// `keystore-core` out (it hits `-` where a `/` or a quote must be), while
+// `react-native-keystore` never gets that far — the LEADING literal
+// `@algorandfoundation/keystore` already fails at `r` vs `k`. Dropping the
+// terminator would readmit `keystore-core` alone.
+const META_IMPORT = /from\s+['"]@algorandfoundation\/keystore(\/[^'"]*)?['"]/
 
 const collectScannedFiles = (): Promise<string[]> =>
     fg(
@@ -37,16 +38,20 @@ const collectScannedFiles = (): Promise<string[]> =>
         },
     )
 
-// `@algorandfoundation/keystore` is pinned at 1.0.0-canary.17 (see
-// pnpm-workspace.yaml): a pre-split, self-contained implementation with its own
-// flat function API and its own key types — a second, frozen keystore universe
-// beside keystore-core. keystore-chrome is built on it and is exempt; anywhere
-// else it would mean two incompatible type universes for the same key data.
-// Bumping past the pin is worse, not better: in canary.23 (the nearest copy on
-// disk) it is a thin meta re-export that hard-depends on keystore-node, which
-// in turn reaches native `@napi-rs/keyring` — an optionalDependency loaded
-// lazily via `createRequire` in `dist/storage/keyring.js:34`, not a static
-// import — and on keystore-web.
+// `@algorandfoundation/keystore` is no longer pinned in pnpm-workspace.yaml
+// and no package.json in the workspace depends on it — the catalog entry was
+// dropped once nothing consumed it (it resolved to nothing in the lockfile,
+// so Dependabot was bumping a spec no test could validate). keystore-chrome
+// vendors its
+// own copy of the flat canary.17 function API and key types locally under
+// `src/keystore/` instead of importing the package, so it is exempt below;
+// anywhere else the bare meta package would mean two incompatible type
+// universes for the same key data. Importing it fresh would be worse, not
+// better: canary.23 (the nearest copy on disk) is a thin meta re-export that
+// hard-depends on keystore-node, which in turn reaches native
+// `@napi-rs/keyring` — an optionalDependency loaded lazily via
+// `createRequire` in `dist/storage/keyring.js:34`, not a static import — and
+// on keystore-web.
 //
 // `@algorandfoundation/react-native-keystore` is NOT banned. Since canary.18 it
 // re-exports keystore-core wholesale (`dist/index.js:6` in the installed
@@ -60,8 +65,12 @@ const collectScannedFiles = (): Promise<string[]> =>
 // Accepted blind spots, none of them checked here: dynamic `await import()`,
 // `require()`, and side-effect `import '…'` forms are all missed because the
 // pattern anchors on `from`; so is anything outside a `*/src/**` root.
-// Subpath imports are missed too, but the meta package's `exports` map declares
-// only `"."`, so none can resolve for any consumer.
+// Subpath imports ARE covered: canary.23 ships `/types` and `/errors` in its
+// `exports` map (see extensions/keystore-chrome/src/__tests__/
+// no-upstream-keystore-import.test.ts, whose sibling guard makes the same
+// point), so a subpath-only escape hatch would otherwise resolve for any
+// consumer. Widening the pattern was preferred over documenting the hole —
+// the tree has no subpath importer today, so the guard costs nothing to hold.
 describe('keystore meta-package firewall', () => {
     it('is not imported outside the chrome extension port', async () => {
         const files = await collectScannedFiles()

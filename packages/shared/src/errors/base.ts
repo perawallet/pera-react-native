@@ -39,6 +39,16 @@ export enum ErrorCategory {
     TRANSACTIONS = 'transactions',
 }
 
+export type ErrorMessageKeys = {
+    titleKey: string
+    bodyKey: string
+}
+
+export const messageKeysFor = (base: string): ErrorMessageKeys => ({
+    titleKey: `${base}.title`,
+    bodyKey: `${base}.body`,
+})
+
 /**
  * Metadata attached to every error
  */
@@ -52,6 +62,11 @@ export interface ErrorMetadata {
      * layer — packages must never import i18n.
      */
     messageKey?: string
+    /**
+     * Overrides the category title. Only for errors specific enough to name the
+     * situation ("Asset frozen"); leaving it unset is the norm.
+     */
+    titleKey?: string
     /** Interpolation values for `messageKey`; also attached to logs. */
     params?: Record<string, unknown>
     recoverable: boolean

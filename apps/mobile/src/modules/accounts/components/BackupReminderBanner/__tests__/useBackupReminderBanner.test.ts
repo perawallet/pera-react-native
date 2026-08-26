@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         mockRequiresBackup(account),
 }))
 
-const mockBalancesQuery = vi.fn()
+const mockSummaryQuery = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -37,8 +37,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...original,
-        useAccountBalancesQuery: (...args: unknown[]) =>
-            mockBalancesQuery(...args),
+        useAccountSummaryQuery: (...args: unknown[]) =>
+            mockSummaryQuery(...args),
     }
 })
 
@@ -57,30 +57,29 @@ const accountHD: WalletAccount = {
     },
 }
 
-const balancesWith = (addr: string, algoBalance: Decimal) => ({
-    accountBalances: new Map([
-        [
-            addr,
-            {
-                assetBalances: [{ assetId: '0', amount: algoBalance }],
-                algoValue: algoBalance,
-            },
-        ],
-    ]),
+// The banner only needs the ALGO amount, served by the one-row SQL summary —
+// not the full holdings walk (PERA-4953).
+const summaryWith = (algoAmount: Decimal) => ({
+    algoAmount,
+    portfolioUsdValue: new Decimal(0),
+    portfolioAlgoValue: algoAmount,
+    holdingsCount: 1,
+    isComplete: true,
+    isPending: false,
+    isError: false,
+    isPaused: false,
 })
 
 describe('useBackupReminderBanner', () => {
     beforeEach(() => {
         mockLaunch.mockReset()
         mockRequiresBackup.mockReset()
-        mockBalancesQuery.mockReset()
+        mockSummaryQuery.mockReset()
     })
 
     test('isVisible false when account does not require backup', () => {
         mockRequiresBackup.mockReturnValue(false)
-        mockBalancesQuery.mockReturnValue(
-            balancesWith(accountHD.address, new Decimal(1_000_000)),
-        )
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(1)))
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         expect(result.current.isVisible).toBe(false)
@@ -88,9 +87,7 @@ describe('useBackupReminderBanner', () => {
 
     test('isVisible false when account balance is 0', () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockBalancesQuery.mockReturnValue(
-            balancesWith(accountHD.address, new Decimal(0)),
-        )
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         expect(result.current.isVisible).toBe(false)
@@ -98,9 +95,7 @@ describe('useBackupReminderBanner', () => {
 
     test('isVisible true when account requires backup and has balance > 0', () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockBalancesQuery.mockReturnValue(
-            balancesWith(accountHD.address, new Decimal(1)),
-        )
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0.000001)))
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         expect(result.current.isVisible).toBe(true)
@@ -108,9 +103,7 @@ describe('useBackupReminderBanner', () => {
 
     test('onPress calls launcher with the account', () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockBalancesQuery.mockReturnValue(
-            balancesWith(accountHD.address, new Decimal(5_000_000)),
-        )
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(5)))
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         act(() => result.current.onPress())

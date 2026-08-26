@@ -18,8 +18,17 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { seedFromMnemonic } from 'algosdk'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
-import { FALCON_CHILD_KEY_TYPE, quantumSignKeyId } from '../models'
+import {
+    deriveQuantumAddress,
+    derivePQKeygenSeed,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    FALCON_CHILD_KEY_TYPE,
+    PQ_DERIVATION_CANONICAL,
+    PQ_DERIVATION_LEGACY,
+    type PQDerivation,
+    quantumSignKeyId,
+} from '../models'
 import { useKMSService } from './useKMSServices'
 import { buildSeedMetadata } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
@@ -40,10 +49,22 @@ export const useQuantum = () => {
     const createQuantumKey = async (params?: {
         id?: string
         mnemonic?: string
+        derivation?: PQDerivation
+        /** Attach a second child to an existing seed record instead of importing a new one. */
+        reuseSeedId?: string
     }): Promise<QuantumKeyResult> => {
-        const seedKeyId = params?.id ?? generateOrderedUniqueId()
+        if (params?.id && params?.reuseSeedId) {
+            throw new KeyManagementError(
+                '`id` and `reuseSeedId` are mutually exclusive',
+            )
+        }
+
+        const derivation = params?.derivation ?? PQ_DERIVATION_CANONICAL
+        const seedKeyId =
+            params?.reuseSeedId ?? params?.id ?? generateOrderedUniqueId()
 
         let seed: Optional<Uint8Array>
+        let keygenSeed: Optional<Uint8Array>
         let committedSeed = false
 
         try {
@@ -56,38 +77,58 @@ export const useQuantum = () => {
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Quantum })
 
-            // 1. Persist the 32-byte quantum seed.
-            //
-            // Pass the seed buffer directly (no defensive copy) so the
-            // `finally`'s `zeroBytes(seed)` wipes the same Uint8Array
-            const seedData: Omit<Seed, 'id'> & { id: string } = {
-                id: seedKeyId,
-                type: 'seed',
-                algorithm: 'raw',
-                extractable: true,
-                keyUsages: ['deriveKey', 'deriveBits'],
-                privateKey: seed,
-                metadata,
+            // 1. Persist the 32-byte quantum seed — unless we're attaching a
+            // second child to a seed record this call didn't create. Two
+            // children can share one seed record; importing it twice would
+            // persist the same entropy at rest twice, which is worse than
+            // the derivation bug this exists to fix.
+            if (!params?.reuseSeedId) {
+                // Pass the seed buffer directly (no defensive copy) so the
+                // `finally`'s `zeroBytes(seed)` wipes the same Uint8Array
+                const seedData: Omit<Seed, 'id'> & { id: string } = {
+                    id: seedKeyId,
+                    type: 'seed',
+                    algorithm: 'raw',
+                    extractable: true,
+                    keyUsages: ['deriveKey', 'deriveBits'],
+                    privateKey: seed,
+                    metadata,
+                }
+                await keyStore.import(seedData, 'raw')
+                committedSeed = true
             }
-            await keyStore.import(seedData, 'raw')
-            committedSeed = true
 
             // 2. Mint the signing child — the keystore derives the Falcon
-            // keypair from `seed` and seals the private half itself.
+            // keypair from `keygenSeed` and seals the private half itself.
             //
+            // The keystore feeds `params.seed` straight to Falcon keygen, so
+            // the canonical hop has to happen here: go-algorand's algokey
+            // derives SHA512_256("PQK" || scheme || entropy) first, and Falcon
+            // seeded with the bare entropy yields a different account than the
+            // same mnemonic produces in every other Algorand tool. Legacy IS
+            // the raw entropy — it must reach Falcon unmodified, or it mints
+            // an address no existing legacy account was ever created at.
+            keygenSeed =
+                derivation === PQ_DERIVATION_LEGACY
+                    ? seed
+                    : derivePQKeygenSeed(seed)
+
             // `id` and `parentKeyId` ride the untyped `params` bag: the engine
             // resolves the entry id as `params.id ?? randomUUID()`, and strips
             // seed/entropy/passphrase/salt before mirroring `params` into the
             // entry's plaintext metadata — so the seed does not leak there.
+            // `pqDerivation` is not stripped, so it lands in the child's
+            // metadata: the repair path fails closed on an unmarked child.
             const signKeyId = await keyStore.generate({
                 type: FALCON_CHILD_KEY_TYPE,
                 algorithm: 'Falcon-1024',
                 extractable: false,
                 keyUsages: ['sign', 'verify'],
                 params: {
-                    seed,
+                    seed: keygenSeed,
                     parentKeyId: seedKeyId,
-                    id: quantumSignKeyId(seedKeyId),
+                    id: quantumSignKeyId(seedKeyId, derivation),
+                    pqDerivation: derivation,
                 },
             })
 
@@ -125,6 +166,7 @@ export const useQuantum = () => {
             throw e
         } finally {
             zeroBytes(seed)
+            zeroBytes(keygenSeed)
         }
     }
 

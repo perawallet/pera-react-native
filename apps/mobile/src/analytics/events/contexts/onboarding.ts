@@ -20,6 +20,7 @@ export enum OnboardingEvent {
     RecoverAlgo25 = 'onb_createacc_recover_25', // Chose recover with a 25-word (Algo25) passphrase
     RecoverOneKey = 'onb_createacc_recover_24', // Chose recover with a 24-word (OneKey) passphrase
     CreateAccountWatch = 'onb_createacc_watch', // Chose to add a watch account
+    CreateAccountQuantum = 'createacc_quantumAccount_press', // Chose to create a quantum account
     WatchAccountComplete = 'onb_welcome_watch_complete', // Completed adding a watch account
     BeginPassphrase = 'onb_createacc_pass_begin', // Began the passphrase backup flow
     UnderstandPassphrase = 'onb_createacc_pass_understand', // Acknowledged writing down the passphrase

@@ -153,9 +153,7 @@ export const AccountOptionsContent = ({
     const rekeyOptions = options.filter(
         o =>
             o.id === 'undo-rekey' ||
-            o.id === 'rekey-to-ledger' ||
-            o.id === 'rekey-to-standard' ||
-            o.id === 'rekey-to-shared' ||
+            o.id === 'rekey-account' ||
             o.id === 'export-share-account' ||
             o.id === 'scan-rekeyed',
     )

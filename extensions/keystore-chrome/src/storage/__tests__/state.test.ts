@@ -11,7 +11,7 @@
  */
 
 import { Store } from '@tanstack/store'
-import type { KeyData, KeyStoreState } from '@algorandfoundation/keystore'
+import type { KeyData, KeyStoreState } from '../../keystore'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import { createVault, lockVault } from '../../vault/vault'

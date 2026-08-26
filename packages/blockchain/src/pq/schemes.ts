@@ -40,10 +40,13 @@ import { FALCON_1024_SCHEME } from 'algosdk'
  *    no scheme — so the scheme is not even retrievable there. Supporting a
  *    second scheme means making the multiplier scheme-keyed and threading the
  *    scheme (not a boolean) into fee calculation.
- * 2. **Key ids.** `quantumSignKeyId(seedId)` (`packages/kms/src/models/keys.ts`)
- *    yields exactly one child id per seed (`${seedId}-quantum`), so one seed
- *    cannot host two schemes without an id collision. Per-seed multi-scheme
- *    support means keying that id by scheme too.
+ * 2. **Key ids.** `quantumSignKeyId(seedId, derivation)`
+ *    (`packages/kms/src/models/keys.ts`) is now keyed by *derivation*
+ *    (`legacy` → `${seedId}-quantum`, `pqk1` → `${seedId}-quantum-pqk1`; see
+ *    PERA-4972) so one seed can host a legacy and a canonical child side by
+ *    side — but it is still agnostic about *scheme*: a second signature
+ *    scheme has nowhere to go without colliding with whichever derivation's
+ *    id it lands on. Per-seed multi-scheme support remains unsolved.
  */
 export const PQ_SCHEMES = {
     falcon1024: FALCON_1024_SCHEME,

@@ -18,4 +18,7 @@ export {
     buildRestoreHandlers,
     type RestoreFixtureItem,
     type BuildRestoreHandlersParams,
+    buildSyncHandlers,
+    type BuildSyncHandlersParams,
+    type SyncHandlerHandle,
 } from './cloud/api/msw-handlers'

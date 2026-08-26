@@ -235,6 +235,12 @@
             "total_supply": "Offre totale",
             "no_freeze": "Sans gel",
             "no_clawback": "Sans clawback",
+            "freeze": "Gel",
+            "clawback": "Clawback",
+            "freeze_info_body": "Une adresse de gel est un compte qui peut empêcher temporairement certains comptes de transférer l’actif, jusqu’à la levée du gel. C’est utile pour les vérifications de conformité, les restrictions de trading ou en cas d’incident de sécurité.",
+            "clawback_info_body": "Une adresse de clawback est un compte qui peut révoquer l’actif auprès de n’importe quel détenteur et le rediriger vers une autre adresse. C’est utile pour respecter les exigences réglementaires, appliquer des restrictions de trading ou récupérer des actifs sur un compte compromis.",
+            "freeze_address": "Adresse de gel",
+            "clawback_address": "Adresse de clawback",
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
@@ -278,6 +284,15 @@
             "suspicious_title": "ASA suspect",
             "suspicious_description": "Cet ASA a été signalé comme suspect par le programme de vérification des ASA de Pera.",
             "learn_more": "En savoir plus sur la vérification des ASA"
+        }
+    },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "À propos de votre compte Quantum",
+            "body": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nCependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds, afin que votre phrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
+            "bodyWithDependents": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nUn autre compte a un rekey vers celui-ci, ne vous en éloignez donc pas pour le moment — il en est actuellement l’unique signataire. Cependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds une fois le rekey de l’autre compte effectué, afin que votre phrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
+            "markerLabel": "À propos de ce compte Quantum",
+            "dismiss": "Compris"
         }
     },
     "account_details": {
@@ -349,9 +364,11 @@
         "view_passphrase_quantum": "Voir la passphrase du compte Quantum",
         "undo_rekey": "Annuler le rekey",
         "rekeyed_to": "Rekey vers",
-        "rekey_to_ledger": "Rekey vers un compte Ledger",
-        "rekey_to_standard": "Rekey vers un compte standard",
-        "rekey_to_shared": "Rekey vers un compte partagé",
+        "rekey_account": "Rekey du compte",
+        "rekey_option_ledger_title": "Vers un compte Ledger",
+        "rekey_option_ledger_description": "Les transactions seront autorisées sur votre appareil Ledger.",
+        "rekey_option_standard_title": "Vers un compte standard",
+        "rekey_option_standard_description": "Les transactions seront autorisées par un autre compte de votre wallet.",
         "export_share_account": "Exporter/partager le compte",
         "scan_rekeyed": "Rechercher les comptes rekeyés",
         "rename_account": "Renommer le compte",
@@ -392,12 +409,12 @@
         "type_multisig": "Compte partagé",
         "type_quantum": "Compte quantique",
         "type_rekeyed": "Compte rekeyé",
-        "type_rekeyed_transition": "Rekeyé ({{from}} vers {{to}})",
-        "rekey_part_standard": "Standard",
-        "rekey_part_ledger": "Ledger",
-        "rekey_part_watch": "Suivi",
-        "rekey_part_shared": "Compte partagé",
-        "rekey_part_quantum": "Quantique",
+        "type_rekeyed_signer": "Rekeyé (Signé par {{to}})",
+        "rekey_signer_standard": "un compte standard",
+        "rekey_signer_ledger": "un compte Ledger",
+        "rekey_signer_watch": "un compte de suivi",
+        "rekey_signer_shared": "un compte partagé",
+        "rekey_signer_quantum": "un compte quantique",
         "type_no_auth": "Sans auth",
         "type_unknown": "Compte inconnu"
     },
@@ -411,10 +428,11 @@
         "no_auth_title": "Sans autorisation",
         "no_auth_description": "Votre compte a fait l’objet d’un rekey vers un compte Algorand qui ne figure pas dans votre wallet. Vous ne pouvez pas envoyer d’actifs ni signer de transactions.",
         "rekeyed_standard_title": "Compte rekeyé",
-        "rekeyed_standard_description": "Votre compte a fait l’objet d’un rekey vers un autre compte Algorand standard. Les transactions de ce compte seront autorisées par l’autre compte.",
+        "rekeyed_standard_description": "Votre compte a fait l’objet d’un rekey vers un compte Algorand standard présent dans votre wallet. Les transactions de ce compte seront autorisées par ce compte.",
         "rekeyed_shared_description": "Votre compte a fait l’objet d’un rekey vers un compte partagé. Les transactions de ce compte seront autorisées par le compte partagé.",
         "rekeyed_ledger_description": "Votre compte a fait l’objet d’un rekey vers un compte situé sur un appareil Ledger. Les transactions de ce compte doivent être autorisées sur l’appareil Ledger.",
         "rekeyed_ledger_to_ledger_description": "Votre compte Ledger a fait l’objet d’un rekey vers un compte situé sur un autre appareil Ledger. Les transactions de ce compte seront autorisées par l’autre appareil Ledger.",
+        "rekeyed_quantum_description": "Votre compte a fait l’objet d’un rekey vers un compte quantique présent dans votre wallet. Les transactions de ce compte seront autorisées par ce compte, avec une cryptographie post-quantique.",
         "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Wallet qui vous permet de dériver de nouveaux comptes, tous à partir de la même clé.",
         "multisig_title": "Compte partagé",
@@ -515,6 +533,9 @@
         "error_failed": "Pera n’a pas pu ouvrir ce lien. Vérifiez-le et réessayez."
     },
     "chart": {
+        "one_day": {
+            "label": "1J"
+        },
         "one_week": {
             "label": "1S"
         },
@@ -665,7 +686,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuffisant",
-                "body": "Ce compte ne dispose pas d’assez d’ALGO pour couvrir la transaction et conserver son solde minimum. Ajoutez au moins {{missing}} microALGO, puis réessayez."
+                "body": "Ce compte ne dispose pas d’assez d’ALGO pour couvrir la transaction et conserver son solde minimum. Ajoutez plus d’ALGO, puis réessayez."
             },
             "below_min_balance": {
                 "title": "Solde minimum non atteint",
@@ -677,7 +698,7 @@
             },
             "asset_frozen": {
                 "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             },
             "duplicate_txn": {
                 "title": "Déjà soumise",
@@ -705,7 +726,7 @@
             },
             "group_fee_too_small": {
                 "title": "Frais de réseau trop bas",
-                "body": "Ce groupe de transactions a payé {{paid}} microALGO de frais, alors que le réseau en exige {{required}} microALGO. Veuillez réessayer."
+                "body": "Les frais de ce groupe de transactions sont inférieurs à ceux exigés par le réseau. Veuillez réessayer."
             },
             "unknown_node_error": {
                 "title": "Échec de la transaction",
@@ -1543,7 +1564,9 @@
         "searching_accounts": {
             "title": "Recherche de vos comptes",
             "no_new_addresses_title": "Aucune nouvelle adresse trouvée",
-            "no_new_addresses_body": "Nous n’avons trouvé aucune adresse supplémentaire associée à ce wallet."
+            "no_new_addresses_body": "Nous n’avons trouvé aucune adresse supplémentaire associée à ce wallet.",
+            "rekey_scan_failed_title": "Impossible de vérifier les comptes rekeyés",
+            "rekey_scan_failed_body": "Votre compte a été importé. Nous n’avons pas pu vérifier si d’autres comptes sont rekeyés vers celui-ci — vous pouvez relancer l’analyse depuis les Paramètres."
         },
         "create_account": {
             "processing": "Configuration de votre wallet...",
@@ -2079,6 +2102,15 @@
             "enable_prompt_title": "Activer la connexion biométrique",
             "unlock_prompt_title": "Déverrouiller Pera Wallet",
             "cancel_label": "Annuler"
+        },
+        "biometrics_disabled": {
+            "title": "Le déverrouillage biométrique est désactivé",
+            "body_enrollment-changed": "Les réglages biométriques de votre appareil ont changé, Pera a donc désactivé le déverrouillage biométrique. Réactivez-le pour continuer à déverrouiller par biométrie.",
+            "body_weak-biometric": "Pera exige une empreinte ou une autre biométrie forte pour déverrouiller votre portefeuille : le déverrouillage biométrique a donc été désactivé. Ajoutez-en une dans les réglages de votre appareil, puis réactivez-le.",
+            "confirm": "Réactiver",
+            "cancel": "Pas maintenant",
+            "unavailable_title": "Biométrie indisponible",
+            "unavailable_body": "Activez Face ID ou Touch ID pour Pera dans les réglages de votre appareil, puis réactivez le déverrouillage biométrique."
         }
     },
     "send_funds": {
@@ -2563,6 +2595,7 @@
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
             "key_registration": "Enregistrement de clé",
+            "heartbeat": "Heartbeat",
             "default": "Transaction",
             "more_impacts": "Afficher {{count}} de plus"
         },
@@ -2653,6 +2686,13 @@
             "status": "Statut d’enregistrement",
             "online": "En ligne",
             "offline": "Hors ligne"
+        },
+        "heartbeat": {
+            "description": "Un heartbeat prouve qu’un compte est toujours en ligne et participe au consensus Algorand. Aucun fonds n’est déplacé.",
+            "account": "Compte vérifié en ligne",
+            "submitted_by": "Soumis par",
+            "key_dilution": "Dilution de clé",
+            "vote_id": "ID de vote"
         },
         "app_call": {
             "app_id": "ID de l’application",

@@ -25,6 +25,9 @@ export type { AssetFreezeDisplayProps } from './AssetFreezeDisplay'
 export { KeyRegistrationDisplay } from './KeyRegistrationDisplay'
 export type { KeyRegistrationDisplayProps } from './KeyRegistrationDisplay'
 
+export { HeartbeatDisplay } from './HeartbeatDisplay'
+export type { HeartbeatDisplayProps } from './HeartbeatDisplay'
+
 export { AppCallTransactionDisplay } from './AppCallTransactionDisplay'
 export type { AppCallTransactionDisplayProps } from './AppCallTransactionDisplay'
 

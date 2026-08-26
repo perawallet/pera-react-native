@@ -31,6 +31,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
+    // Feeds the biometrics-disabled candidate. Null keeps it off the queue, so
+    // the ordering cases below stay about the prompts they name.
+    useBiometrics: vi.fn(() => ({
+        disabledReason: null,
+        acknowledgeBiometricsDisabled: vi.fn(),
+        enableBiometrics: vi.fn(),
+    })),
 }))
 
 const { mockIsLockOverlayVisible } = vi.hoisted(() => ({
@@ -57,6 +64,24 @@ const { mockUseBannerPrompt } = vi.hoisted(() => ({
 
 vi.mock('@modules/prompts/hooks/useBannerPrompt', () => ({
     useBannerPrompt: () => mockUseBannerPrompt(),
+}))
+
+// Which wallet-level condition makes this due is useLegacyQuantumPrompt's job
+// and has its own spec; this file is about the order the queue puts prompts
+// in.
+const { mockUseLegacyQuantumPrompt } = vi.hoisted(() => ({
+    mockUseLegacyQuantumPrompt: vi.fn(() => ({
+        isDue: false,
+        shouldUseDependentAwareCopy: false,
+    })),
+}))
+
+vi.mock('@modules/prompts/hooks/useLegacyQuantumPrompt', () => ({
+    useLegacyQuantumPrompt: () => mockUseLegacyQuantumPrompt(),
+}))
+
+vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
+    LegacyQuantumPrompt: () => null,
 }))
 
 vi.mock('@modules/prompts/components/BannerPrompt', () => ({
@@ -97,6 +122,10 @@ describe('usePromptContainer', () => {
         // Default: terms already accepted, so the T&C prompt is out of the way.
         mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
         mockUseBannerPrompt.mockReturnValue({ isDue: false, isForced: false })
+        mockUseLegacyQuantumPrompt.mockReturnValue({
+            isDue: false,
+            shouldUseDependentAwareCopy: false,
+        })
         mockIsLockOverlayVisible.mockReturnValue(false)
     })
 
@@ -207,6 +236,57 @@ describe('usePromptContainer', () => {
             expect(result.current.nextPrompt?.id).toBe(
                 UserPreferences._securityPinSetupPrompt,
             )
+        })
+
+        it('ranks the legacy quantum notice above a select banner but below the PIN nudge', async () => {
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: false,
+            })
+            mockUseLegacyQuantumPrompt.mockReturnValue({
+                isDue: true,
+                shouldUseDependentAwareCopy: false,
+            })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            // The PIN nudge is also due, so it wins first.
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+
+            await act(async () => {
+                result.current.hidePrompt(
+                    UserPreferences._securityPinSetupPrompt,
+                )
+            })
+
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._legacyQuantumNoticePrompt,
+            )
+        })
+
+        it('does not show the legacy quantum notice once its preference is set', async () => {
+            mockUseLegacyQuantumPrompt.mockReturnValue({
+                isDue: true,
+                shouldUseDependentAwareCopy: false,
+            })
+            // Blanket true: every preference (including this prompt's own) is
+            // already answered, so nothing in the queue is due.
+            mockGetPreference.mockReturnValue(true)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
         })
 
         it('treats a forced banner as a gate and a select banner as a nudge', async () => {

@@ -237,11 +237,16 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         // arrive, undoing the reset.
         if (!hasRowsForRequest) return
 
-        appliedViewRequestKeyRef.current = viewRequestKey
         // Next frame, not this commit: FlashList settles its own offset on the
         // layout pass that follows a data change, and a scroll issued before
         // that pass loses to it (PERA-4406).
         const frame = requestAnimationFrame(() => {
+            // Recorded here, not before scheduling: every placeholder gap
+            // re-runs this effect, and the cleanup cancels the pending frame.
+            // Marking the request applied up front turned that cancellation
+            // into a reset that silently never happened, leaving the gallery
+            // wherever the previous request had scrolled it (PERA-4932).
+            appliedViewRequestKeyRef.current = viewRequestKey
             flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
         })
         return () => cancelAnimationFrame(frame)

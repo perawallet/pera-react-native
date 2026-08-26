@@ -25,16 +25,16 @@ import {
 } from '@modules/accounts/utils/rekeyLabels'
 
 export type AccountTypeLabel = {
-    /** Full single-line label, e.g. "Rekeyed (Standard to Ledger)". */
+    /** Full single-line label, e.g. "Rekeyed (Signed by a Ledger account)". */
     label: string
     /**
      * Main type text, e.g. "Rekeyed". Equal to `label` for every type except
-     * a rekeyed signable account, where the transition qualifier is split off.
+     * a rekeyed signable account, where the signer qualifier is split off.
      */
     main: string
     /**
-     * Rekey transition qualifier, e.g. "(Standard to Ledger)". Non-null only
-     * for rekeyed signable accounts.
+     * Signer qualifier, e.g. "(Signed by a Ledger account)". Non-null only for
+     * rekeyed signable accounts.
      */
     qualifier: string | null
 }
@@ -47,8 +47,8 @@ const plain = (label: string): AccountTypeLabel => ({
 
 /**
  * Resolves the human-readable account type label (e.g. "Ledger Account",
- * "Rekeyed (Standard to Ledger)"). Shared by the account info card and the
- * account list so both stay in sync.
+ * "Rekeyed (Signed by a Ledger account)"). Shared by the account info card and
+ * the account list so both stay in sync.
  */
 export const useAccountTypeLabel = (
     account: WalletAccount | null | undefined,
@@ -67,12 +67,8 @@ export const useAccountTypeLabel = (
             if (!rekeyTransition) {
                 return plain(t('account_info.type_rekeyed'))
             }
-            const { labelKey, fromKey, toKey } =
-                getRekeyLabelI18n(rekeyTransition)
-            const label = t(labelKey, {
-                from: t(fromKey),
-                to: t(toKey),
-            })
+            const { labelKey, signerKey } = getRekeyLabelI18n(rekeyTransition)
+            const label = t(labelKey, { to: t(signerKey) })
             return { label, ...splitAccountTypeLabel(label) }
         }
 

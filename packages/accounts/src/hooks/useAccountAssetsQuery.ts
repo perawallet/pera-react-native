@@ -19,6 +19,7 @@ import {
     type AccountHoldingsLiteRow,
 } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
+import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 import { getAccountHoldingsPageQueryKey } from './querykeys'
 
 export type UseAccountAssetsQueryParams = {
@@ -67,6 +68,7 @@ export const useAccountAssetsQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
+        gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Same reason as the collectibles read (PERA-4921): sort mode, filters
         // and search are part of the key, so changing one starts a cold query
         // that would empty the list mid-interaction. Hold the previous rows,

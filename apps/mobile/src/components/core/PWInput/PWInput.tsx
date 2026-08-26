@@ -60,6 +60,7 @@ export type PWInputProps = {
     autoCapitalize?: RNEInputProps['autoCapitalize']
     autoComplete?: RNEInputProps['autoComplete']
     autoCorrect?: boolean
+    spellCheck?: boolean
     autoFocus?: boolean
     selectTextOnFocus?: boolean
     onFocus?: RNEInputProps['onFocus']

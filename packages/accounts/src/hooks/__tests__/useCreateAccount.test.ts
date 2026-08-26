@@ -449,8 +449,9 @@ describe('useCreateAccount', () => {
             })
 
             expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
-            // keyPairId is the scheme-agnostic quantum signing child id.
-            expect(account.keyPairId).toBe('SEED42-quantum')
+            // keyPairId is the scheme-agnostic, canonically-derived quantum
+            // signing child id — creation always mints the canonical child.
+            expect(account.keyPairId).toBe('SEED42-quantum-pqk1')
             expect(account.address).toBe('ADDR42')
             expect(account.type).toBe('quantum')
             expect(useAccountsStore.getState().accounts).toHaveLength(1)

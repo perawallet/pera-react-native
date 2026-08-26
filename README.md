@@ -162,6 +162,13 @@ key ld` and the indexer stays pinned at round 0
 > indexer: pull-to-refresh does NOT re-fetch when a row already exists, so
 > **relaunch the app** after funding.
 
+### Conformance suite
+
+`pnpm test:conformance` runs the app's builders/keystore/signing/error-handling
+code against this LocalNet instead of a mock — see
+[`docs/LOCALNET_CONFORMANCE.md`](docs/LOCALNET_CONFORMANCE.md) for what it
+proves, prerequisites, and known gaps.
+
 ## Workspace layout
 
 ```

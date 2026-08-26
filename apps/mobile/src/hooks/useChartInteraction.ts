@@ -12,14 +12,32 @@
 
 import { useState, useCallback } from 'react'
 import {
+    HISTORY_PERIODS,
     type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+const isHistoryPeriod = (value: unknown): value is HistoryPeriod =>
+    HISTORY_PERIODS.includes(value as HistoryPeriod)
 
 export function useChartInteraction<TDataPoint = unknown>(
     initialPeriod: HistoryPeriod = 'one-week',
 ) {
-    const [period, setPeriod] = useState<HistoryPeriod>(initialPeriod)
+    const { getPreference, setPreference } = usePreferences()
+    const storedPeriod = getPreference(UserPreferences.chartPeriod)
+    const [period, setPeriodState] = useState<HistoryPeriod>(
+        isHistoryPeriod(storedPeriod) ? storedPeriod : initialPeriod,
+    )
+
+    const setPeriod = useCallback(
+        (value: HistoryPeriod) => {
+            setPeriodState(value)
+            setPreference(UserPreferences.chartPeriod, value)
+        },
+        [setPreference],
+    )
     const [selectedPoint, setSelectedPoint] =
         useState<Nullable<TDataPoint>>(null)
 

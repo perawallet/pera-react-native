@@ -284,9 +284,10 @@ const validateArc60Request = (
     }
     const account = accounts.find(a => a.address === signer)
     // canSignArc60 covers both ARC-60 signing paths: local-key (Algo25/HD)
-    // via KMS and hardware (Ledger) on-device. Watch and multisig accounts
-    // can do neither, so they're rejected here.
-    if (!account || !canSignArc60(account)) {
+    // via KMS and hardware (Ledger) on-device, and resolves a rekeyed signer
+    // to its auth account. Watch and multisig accounts can do neither, so
+    // they're rejected here.
+    if (!account || !canSignArc60(account, accounts)) {
         throw new WalletConnectInvalidSessionError(
             'Signer cannot sign ARC-60 payloads',
         )

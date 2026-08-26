@@ -147,8 +147,12 @@ export const useTransactionConfirmationScreen =
             )
             const recipientBalanceAfter =
                 recipientAccountInfo.amount + amountInMicroAlgos
+            // The ledger allows leaving a receiver at exactly 0 (a zero-amount
+            // note payment to an empty account); only a positive balance below
+            // the MBR fails on-chain.
             return {
                 isRecipientBelowMbr:
+                    recipientBalanceAfter > 0n &&
                     recipientBalanceAfter < recipientAccountInfo.minBalance,
                 recipientMbrDisplay: mbrDisplay,
             }

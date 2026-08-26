@@ -159,6 +159,9 @@ const findViolations = (files: string[]): string[] =>
 describe('PQ library import firewall', () => {
     const root = findMonorepoRoot(__dirname)
 
+    // Reads every source file under packages/ and apps/ synchronously; under
+    // a full-parallel turbo run the default 5s deadline flakes on disk
+    // contention, so the scan carries its own timeout.
     it('confines @joe-p/react-native-falcon and falcon-1024 imports to the one remaining swap seam', () => {
         const files = SCAN_ROOT_DIRS.flatMap(dir =>
             listSourceFilesRecursively(root, join(root, dir)),
@@ -167,7 +170,7 @@ describe('PQ library import firewall', () => {
         // A rename/removal of packages or apps can't silently drop coverage.
         expect(files.length).toBeGreaterThan(0)
         expect(findViolations(files)).toEqual([])
-    })
+    }, 30_000)
 
     it('no longer forbids algosdk, which now ships the PQ surface itself', () => {
         expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'algosdk'")).toBe(false)
@@ -317,7 +320,7 @@ describe('PQ library import firewall', () => {
             listSourceFilesRecursively(root, join(root, dir)),
         )
         expect(scanned).not.toContain(viteConfig)
-    })
+    }, 30_000)
 
     it('regression: a real @joe-p/react-native-falcon import in a non-config, non-seam source file IS still flagged (exemption cannot widen)', () => {
         // The build-config exemption is scoped to the `*.config.ts` filename

@@ -11,6 +11,7 @@
  */
 
 import { memo } from 'react'
+import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
@@ -29,6 +30,17 @@ const padArrangment = [
 export const NumberPad = memo(
     ({ onPress, allowDecimal = true }: NumberPadProps) => {
         const styles = useStyles()
+        const { theme } = useTheme()
+
+        // Horizontal only: rows touch vertically, so vertical slop would let
+        // a key claim presses landing inside its neighbor above (siblings are
+        // hit-tested in reverse order) and steal taps meant for controls
+        // below the pad. The inter-key gaps are horizontal dead space.
+        const keyHitSlop = {
+            left: theme.spacing.xl,
+            right: theme.spacing.xl,
+        }
+
         return (
             <PWView style={styles.container}>
                 {padArrangment.map((row, idx) => (
@@ -58,6 +70,8 @@ export const NumberPad = memo(
                                     onPress={() => onPress(key)}
                                     style={styles.key}
                                     testID={keyTestID}
+                                    allowRapidPress
+                                    hitSlop={keyHitSlop}
                                 >
                                     {!!key && (
                                         <PWText

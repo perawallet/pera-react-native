@@ -37,6 +37,15 @@ export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
 // and `useKMS` do, rather than hand-rolling their own derivation.
 export { getPQProvider, type PQSignatureProvider } from './crypto/pq'
 export {
+    resolvePQSigningInfo,
+    resolveSeedKeyFrom,
+    type PQSigningInfo,
+} from './crypto/pq/resolvePQSigningInfo'
+export {
+    quantumAddressCandidates,
+    type QuantumAddressCandidate,
+} from './crypto/quantumAddressCandidates'
+export {
     SeedScheme,
     ALGO25_SEED_LENGTH,
     QUANTUM_SEED_LENGTH,
@@ -51,6 +60,7 @@ export {
     entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
+    algo25SeedToAddress,
     isSeedKey,
     seedSchemeOf,
 } from './utils'

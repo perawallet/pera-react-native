@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => {
         generateOrderedUniqueId: vi.fn(),
         encodeToBase64: vi.fn(),
         useSigningAccounts: vi.fn(),
+        useAllAccounts: vi.fn(),
         canSignArc60: vi.fn(),
         useWalletConnectStore,
         logger: { debug: vi.fn(), error: vi.fn() },
@@ -65,6 +66,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
+    useAllAccounts: mocks.useAllAccounts,
     canSignArc60: mocks.canSignArc60,
 }))
 
@@ -177,6 +179,7 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.generateOrderedUniqueId.mockReset()
         mocks.encodeToBase64.mockReset()
         mocks.useSigningAccounts.mockReset()
+        mocks.useAllAccounts.mockReset()
         mocks.canSignArc60.mockReset()
         mocks.resolveWcSign.mockReset()
         mocks.useWalletConnectStore.mockReset()
@@ -221,6 +224,7 @@ describe('useSignRequestApprovalScreen', () => {
         // grant/name ('ADDR'), so existing sign-transactions/sign-message
         // cases exercise the post-hydration path unchanged.
         mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
+        mocks.useAllAccounts.mockReturnValue([{ address: 'ADDR' }])
         mocks.canSignArc60.mockReturnValue(true)
 
         closeSpy = vi.fn()

@@ -55,6 +55,29 @@ export type BiometricsAuthenticateResult =
     | { success: true }
     | { success: false; reason: BiometricsAuthenticateFailureReason }
 
+/**
+ * Whether the biometric set enrolled right now is the one the user opted in
+ * with. Neither {@link BiometricsService.checkBiometricsAvailable} nor
+ * {@link BiometricsService.getSecurityLevel} can answer this: remove-then-add
+ * of a fingerprint never passes through an observable bad state, so both keep
+ * reporting an enrolled strong biometric across the change.
+ *
+ * - `valid`       — unchanged since the binding was recorded.
+ * - `changed`     — a biometric was added, or all of them removed. The only
+ *                   affirmative report here, and the only one that may destroy
+ *                   an opt-in.
+ * - `absent`      — nothing recorded: opted in before bindings existed, or
+ *                   arrived through the legacy-app migration.
+ * - `unavailable` — no reading could be taken (no native module, nothing
+ *                   enrolled to read, a lockout hiding the enrollment, a native
+ *                   failure). Not a revocation.
+ */
+export type BiometricEnrollmentBinding =
+    | 'valid'
+    | 'changed'
+    | 'absent'
+    | 'unavailable'
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
@@ -68,4 +91,16 @@ export interface BiometricsService {
     authenticate(
         prompt?: BiometricsAuthenticatePrompt,
     ): Promise<BiometricsAuthenticateResult>
+    /**
+     * Records the currently enrolled biometric set as the bound one. Call after
+     * the opt-in prompt succeeds, and never on its own — a binding without the
+     * secret it guards is meaningless.
+     */
+    createEnrollmentBinding(): Promise<void>
+    /**
+     * Never prompts: it runs on every mount of the biometrics hook, so it has
+     * to be silent.
+     */
+    checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding>
+    clearEnrollmentBinding(): Promise<void>
 }

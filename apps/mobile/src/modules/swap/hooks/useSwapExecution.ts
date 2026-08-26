@@ -20,6 +20,7 @@ import {
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    isAssetFrozen,
     isMultisigAccount,
     useSelectedAccount,
     useSignerFor,
@@ -39,6 +40,7 @@ import {
     type PrepareTransactionsResult,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import {
     encodeToBase64,
     logger,
@@ -105,10 +107,10 @@ export type SwapExecutionOutcome =
           kind: 'error'
           phase: SwapExecutionErrorPhase
           message: string
-          // Only set for submission-phase failures: the classification-aware
-          // title resolveErrorCopy computed (e.g. the honest unknown-outcome
-          // headline). Absent for prepare/signing, which are genuine failures
-          // and keep the caller's default title.
+          // The classification-aware title resolveErrorCopy computed, for
+          // failures specific enough to name themselves (the honest
+          // unknown-outcome headline, a frozen holding). Absent for the
+          // generic prepare/signing failures, which keep the caller's default.
           title?: string
       }
 
@@ -168,6 +170,41 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
+            }
+
+            const [isInFrozen, isOutFrozen] = account
+                ? await Promise.all([
+                      isAssetFrozen({
+                          accountAddress: account.address,
+                          assetId: quote.assetIn.assetId,
+                          network,
+                      }),
+                      isAssetFrozen({
+                          accountAddress: account.address,
+                          assetId: quote.assetOut.assetId,
+                          network,
+                      }),
+                  ])
+                : [false, false]
+
+            if (isInFrozen || isOutFrozen) {
+                const frozenAssetId = isInFrozen
+                    ? quote.assetIn.assetId
+                    : quote.assetOut.assetId
+                const copy = resolveErrorCopy(
+                    new AssetFrozenError(frozenAssetId),
+                    t,
+                    undefined,
+                    getMessage,
+                )
+                setError({ phase: 'prepare', message: copy.body })
+                setStatus('error')
+                return {
+                    kind: 'error',
+                    phase: 'prepare',
+                    message: copy.body,
+                    title: copy.title,
+                }
             }
 
             // A quote that outlived its TTL (e.g. the confirm sat behind an

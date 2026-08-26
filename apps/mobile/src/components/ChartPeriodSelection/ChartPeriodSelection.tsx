@@ -12,7 +12,10 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
+import {
+    HISTORY_PERIODS,
+    type HistoryPeriod,
+} from '@perawallet/wallet-core-shared'
 import { useChartPeriodSelection } from './useChartPeriodSelection'
 
 export type ChartPeriodSelectionProps = {
@@ -20,11 +23,19 @@ export type ChartPeriodSelectionProps = {
     onChange: (val: HistoryPeriod) => void
 }
 
-const PERIODS: { value: HistoryPeriod; label: string }[] = [
-    { value: 'one-week', label: 'chart.one_week.label' },
-    { value: 'one-month', label: 'chart.one_month.label' },
-    { value: 'one-year', label: 'chart.one_year.label' },
-]
+// Record keeps this exhaustive — adding a HistoryPeriod without a label
+// fails to compile.
+const PERIOD_LABELS: Record<HistoryPeriod, string> = {
+    'one-day': 'chart.one_day.label',
+    'one-week': 'chart.one_week.label',
+    'one-month': 'chart.one_month.label',
+    'one-year': 'chart.one_year.label',
+}
+
+const PERIODS = HISTORY_PERIODS.map(value => ({
+    value,
+    label: PERIOD_LABELS[value],
+}))
 
 export const ChartPeriodSelection = ({
     value,

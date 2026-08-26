@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export * from './derivation'
 export * from './quantumAdapter'
 export * from './schemes'

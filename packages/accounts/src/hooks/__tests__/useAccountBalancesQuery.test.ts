@@ -155,6 +155,29 @@ describe('useAccountBalances', () => {
         expect(result.current.isPending).toBe(false)
     })
 
+    it('keeps the result referentially stable across renders with a fresh but equal accounts array', async () => {
+        // Call sites like AccountWithBalance pass `[account]` as a fresh
+        // literal every render. If array identity feeds the memo, every render
+        // of every row re-walks all holdings — a Decimal per field per asset
+        // (PERA-4953).
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
+
+        const { result, rerender } = renderHook(
+            ({ accounts }: { accounts: WalletAccount[] }) =>
+                useAccountBalancesQuery(accounts),
+            {
+                wrapper: createWrapper(),
+                initialProps: { accounts: [account] },
+            },
+        )
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const firstBalances = result.current.accountBalances
+        rerender({ accounts: [{ ...account }] })
+
+        expect(result.current.accountBalances).toBe(firstBalances)
+    })
+
     it('reads balances from DB and aggregates correctly', async () => {
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 

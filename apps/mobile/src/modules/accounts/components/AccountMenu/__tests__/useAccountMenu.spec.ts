@@ -36,7 +36,7 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [ACCT_A, ACCT_B],
-    useAccountBalancesQuery: () => ({ accountBalances: new Map() }),
+    useAccountValueTotalsQuery: () => ({ accountValueTotals: new Map() }),
     useSortedAccounts: (accounts: unknown[]) => ({
         sortedAccounts: accounts,
         sortMode: 'manual',

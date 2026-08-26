@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { resolvePrecision } from '../precision'
 
 // Literal digit counts (not symbol-relative) so these assertions actually pin
@@ -31,6 +32,43 @@ describe('resolvePrecision', () => {
             precision: 2,
             minPrecision: 2,
         })
+    })
+
+    it('compact → keeps 2 dp for a value that survives the rounding', () => {
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('1234.5678')),
+        ).toEqual({ precision: 2, minPrecision: 2 })
+    })
+
+    it('compact → extends to the first significant digit when 2 dp would read as zero', () => {
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('0.004')),
+        ).toEqual({ precision: 3, minPrecision: 2 })
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('0.0001')),
+        ).toEqual({ precision: 4, minPrecision: 2 })
+    })
+
+    it('compact → extends on sign-independent magnitude', () => {
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('-0.004')),
+        ).toEqual({ precision: 3, minPrecision: 2 })
+    })
+
+    it('compact → leaves a true zero at 2 dp', () => {
+        expect(resolvePrecision('compact', undefined, new Decimal(0))).toEqual({
+            precision: 2,
+            minPrecision: 2,
+        })
+    })
+
+    it('compact → does not extend for values that round to a visible 0.01', () => {
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('0.005')),
+        ).toEqual({ precision: 2, minPrecision: 2 })
+        expect(
+            resolvePrecision('compact', undefined, new Decimal('0.009')),
+        ).toEqual({ precision: 2, minPrecision: 2 })
     })
 
     it('preferredFull → up to 6 dp, trimming trailing zeros down to 2', () => {

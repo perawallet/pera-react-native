@@ -22,10 +22,10 @@ import type {
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, unknown>) => {
-            if (key === 'account_info.type_rekeyed_transition')
-                return `Rekeyed (${params?.from} to ${params?.to})`
-            if (key === 'account_info.rekey_part_standard') return 'Standard'
-            if (key === 'account_info.rekey_part_ledger') return 'Ledger'
+            if (key === 'account_info.type_rekeyed_signer')
+                return `Rekeyed (Signed by ${params?.to})`
+            if (key === 'account_info.rekey_signer_ledger')
+                return 'a Ledger account'
             if (params?.count != null) return `${key} (${params.count})`
             return key
         },
@@ -125,17 +125,17 @@ describe('useAccountTypeLabel', () => {
         })
     })
 
-    it('splits the transition qualifier for a rekeyed signable account', () => {
+    it('splits the signer qualifier for a rekeyed signable account', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
-            from: 'algo25',
+            from: 'watch',
             to: 'hardware',
         })
         const { result } = renderHook(() => useAccountTypeLabel(rekeyedAccount))
         expect(result.current).toEqual({
-            label: 'Rekeyed (Standard to Ledger)',
+            label: 'Rekeyed (Signed by a Ledger account)',
             main: 'Rekeyed',
-            qualifier: '(Standard to Ledger)',
+            qualifier: '(Signed by a Ledger account)',
         })
     })
 

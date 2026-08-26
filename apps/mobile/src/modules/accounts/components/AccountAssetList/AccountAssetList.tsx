@@ -27,6 +27,7 @@ import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
+import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
 import { useAccountAssetList } from './useAccountAssetList'
 
 export type AccountAssetListProps = {
@@ -88,6 +89,7 @@ export const AccountAssetList = ({
                 account={account}
                 isLoading={isLoading}
             />
+            <LegacyQuantumNotice account={account} />
             {headerState.isOpen && (
                 <>
                     {header}

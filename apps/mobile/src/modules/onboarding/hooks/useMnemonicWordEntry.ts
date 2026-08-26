@@ -17,7 +17,7 @@ import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 
 import { useClipboard } from '@hooks/useClipboard'
 
-import { splitMnemonic } from '../utils'
+import { normalizeMnemonicWord, splitMnemonic } from '../utils'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWInputRef } from '@components/core'
@@ -44,6 +44,10 @@ export type UseMnemonicWordEntryResult = {
     handleSelectSuggestion: (word: string) => void
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
     handleSubmitEditing: (index: number) => void
+    /** Slots holding a non-empty word that is not in the wordlist. Empty
+     * slots are absent — they are incomplete, not wrong. */
+    invalidWordIndices: Set<number>
+    areAllWordsValid: boolean
 }
 
 /**
@@ -74,9 +78,22 @@ export const useMnemonicWordEntry = ({
         ).slice(0, MAX_SUGGESTIONS)
     }, [words, focused])
 
+    const invalidWordIndices = useMemo(() => {
+        const invalid = new Set<number>()
+        words.forEach((word, index) => {
+            if (word.length > 0 && !WORDLIST_SET.has(word)) invalid.add(index)
+        })
+        return invalid
+    }, [words])
+
+    const areAllWordsValid = useMemo(
+        () => words.every(w => WORDLIST_SET.has(w)),
+        [words],
+    )
+
     const updateWord = useCallback(
         (value: string, index: number) => {
-            const split = splitMnemonic(value)
+            const split = splitMnemonic(value).map(normalizeMnemonicWord)
 
             if (split.length > 1) {
                 if (split.length === wordCount) {
@@ -222,5 +239,7 @@ export const useMnemonicWordEntry = ({
         handleSelectSuggestion,
         refCallbacks,
         handleSubmitEditing,
+        invalidWordIndices,
+        areAllWordsValid,
     }
 }

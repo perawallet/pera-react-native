@@ -41,6 +41,7 @@ import {
 import { type Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     canSignArc60,
+    useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -116,6 +117,11 @@ export const useSignRequestApprovalScreen =
         const enqueue = useEnqueueArc0001SignRequest()
         const { addSignRequest, currentRequest } = useSigningRequest()
         const accounts = useSigningAccounts()
+        // canSignArc60 resolves a keyless rekeyed signer through its auth
+        // account, so it needs the UNFILTERED list: useSigningAccounts drops
+        // any account that can't sign for itself, which can hide the very
+        // auth account holding the key.
+        const allAccounts = useAllAccounts()
         const connections = useWalletConnectStore(
             state => state.walletConnectConnections,
         )
@@ -279,7 +285,7 @@ export const useSignRequestApprovalScreen =
                     if (
                         !session.accounts.includes(stdSigData.signer) ||
                         !signerAccount ||
-                        !canSignArc60(signerAccount)
+                        !canSignArc60(signerAccount, allAccounts)
                     ) {
                         setError(t('dapp.sign.unauthorized_signer'))
                         void rejectApproval(requestId)
@@ -395,7 +401,7 @@ export const useSignRequestApprovalScreen =
                 if (
                     !approval.approvedAddresses.includes(stdSigData.signer) ||
                     !signerAccount ||
-                    !canSignArc60(signerAccount)
+                    !canSignArc60(signerAccount, allAccounts)
                 ) {
                     setError(t('dapp.sign.unauthorized_signer'))
                     void rejectApproval(requestId)
@@ -441,6 +447,7 @@ export const useSignRequestApprovalScreen =
             enqueue,
             addSignRequest,
             accounts,
+            allAccounts,
             connections,
             isWcStoreHydrated,
             t,

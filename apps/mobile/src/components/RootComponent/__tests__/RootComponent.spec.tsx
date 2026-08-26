@@ -93,6 +93,13 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(() => ({
         checkPinEnabled: vi.fn().mockResolvedValue(false),
     })),
+    // Read by the biometrics-disabled prompt candidate; nothing disabled
+    // biometrics in these scenarios, so it never becomes due.
+    useBiometrics: vi.fn(() => ({
+        disabledReason: null,
+        acknowledgeBiometricsDisabled: vi.fn(),
+        enableBiometrics: vi.fn(),
+    })),
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [{ address: 'ACCOUNT_1' }]),
@@ -123,6 +130,20 @@ vi.mock('@modules/prompts/hooks/useBannerPrompt', () => ({
 vi.mock('@modules/prompts/components/BannerPrompt', () => ({
     BANNER_PROMPT_ID: 'banner_prompt',
     BannerPrompt: () => <div data-testid='banner-prompt'>banner-prompt</div>,
+}))
+
+// Same reason as the banner surface above: part of the container's import
+// graph now, stubbed so this file stays about the mount point.
+vi.mock('@modules/prompts/hooks/useLegacyQuantumPrompt', () => ({
+    useLegacyQuantumPrompt: () => ({
+        isDue: false,
+        shouldUseDependentAwareCopy: false,
+    }),
+}))
+vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
+    LegacyQuantumPrompt: () => (
+        <div data-testid='legacy-quantum-prompt'>legacy-quantum-prompt</div>
+    ),
 }))
 
 // AutoLockGuard's own JSX (the display-hiding wrapper + LockOverlayProvider)

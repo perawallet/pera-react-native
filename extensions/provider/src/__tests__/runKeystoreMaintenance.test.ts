@@ -71,6 +71,8 @@ import { runKeystoreMaintenance } from '../singleton'
 
 const NO_REPAIR = { repaired: 0, failed: 0 }
 
+const deps = { deriveKeygenSeed: (entropy: Uint8Array) => entropy }
+
 describe('runKeystoreMaintenance', () => {
     beforeEach(() => {
         calls.length = 0
@@ -89,7 +91,7 @@ describe('runKeystoreMaintenance', () => {
     })
 
     test('reconciles once after ready, then runs the quantum repair', async () => {
-        const result = await runKeystoreMaintenance()
+        const result = await runKeystoreMaintenance(deps)
 
         expect(calls).toEqual(['reconcile', 'repair'])
         expect(result).toEqual({ repair: NO_REPAIR })
@@ -103,7 +105,7 @@ describe('runKeystoreMaintenance', () => {
             return { repaired: 1, failed: 0 }
         })
 
-        const result = await runKeystoreMaintenance()
+        const result = await runKeystoreMaintenance(deps)
 
         expect(calls).toEqual(['reconcile', 'repair', 'reconcile'])
         expect(result.repair.repaired).toBe(1)
@@ -117,7 +119,7 @@ describe('runKeystoreMaintenance', () => {
             return { repaired: 0, failed: 1 }
         })
 
-        const result = await runKeystoreMaintenance()
+        const result = await runKeystoreMaintenance(deps)
 
         expect(calls).toEqual(['reconcile', 'repair', 'reconcile'])
         expect(result.repair.failed).toBe(1)
@@ -132,7 +134,7 @@ describe('runKeystoreMaintenance', () => {
             throw new Error('master key unreadable')
         })
 
-        await expect(runKeystoreMaintenance()).rejects.toThrow(
+        await expect(runKeystoreMaintenance(deps)).rejects.toThrow(
             'master key unreadable',
         )
         expect(calls).toEqual(['reconcile', 'repair'])

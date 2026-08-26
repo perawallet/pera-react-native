@@ -29,25 +29,20 @@ type Matcher = (message: string) => ParsedAlgodMessage | null
 const ADDRESS = '[A-Z2-7]{58}'
 const TXID = '[A-Z0-9]{52}'
 
-// "overspend (account ADDR, data {... MicroAlgos:{Raw:N} ... }, tried to spend {M})"
+// "overspend (account ADDR, data {...}, tried to spend ...)" — matched on
+// shape only; go-algorand's balance/spend rendering has changed format
+// before and isn't parsed back into params. See docs/LOCALNET_CONFORMANCE.md.
 const OVERSPEND_RE = new RegExp(
-    `overspend \\(account (${ADDRESS}),.*?MicroAlgos:\\{Raw:(\\d+)\\}.*?tried to spend \\{(\\d+)\\}`,
+    `overspend \\(account (${ADDRESS}),.*?tried to spend`,
     's',
 )
 
 const matchOverspend: Matcher = message => {
     const m = OVERSPEND_RE.exec(message)
     if (!m) return null
-    const balance = BigInt(m[2])
-    const spent = BigInt(m[3])
     return {
         code: AlgodErrorCode.OVERSPEND,
-        params: {
-            address: m[1],
-            balance,
-            spent,
-            missing: spent > balance ? spent - balance : 0n,
-        },
+        params: { address: m[1] },
     }
 }
 
@@ -132,7 +127,10 @@ const matchNotAuthorized: Matcher = message => {
 }
 
 // "txn dead: round N outside of A-B" — B is lastValid, N is current round
-const EXPIRED_TXN_RE = /txn dead:\s*round (\d+) outside of (\d+)-(\d+)/
+// go-algorand renders the round range with either one or two dashes
+// depending on version (confirmed against LocalNet: algod 5.0.0-stable
+// uses "outside of 1670--1675"); accept both rather than assuming either.
+const EXPIRED_TXN_RE = /txn dead:\s*round (\d+) outside of (\d+)-{1,2}(\d+)/
 
 const matchExpiredTxn: Matcher = message => {
     const m = EXPIRED_TXN_RE.exec(message)
@@ -191,17 +189,24 @@ const matchLogicEval: Matcher = message => {
     }
 }
 
-// "txgroup had N in fees, which is less than the minimum … M[)]"
+// Two renderings, both matched on shape rather than on their figures:
+//
+//   legacy      "txgroup had 1999 in fees, which is less than the minimum 2000"
+//   5.0.0-stable "txgroup with 5.999mA fees is less than 6mA (usage=6.000000 * base=1mA)"
+//
+// The newer one scales both figures into a human unit whose suffix varies with
+// magnitude, so neither `paid` nor `required` can be recovered as a microAlgo
+// count without reimplementing go-algorand's formatter — the same trap that
+// made the old `OVERSPEND_RE` figures wrong. Neither is captured, for the same
+// reason: an absent figure beats one that is wrong.
+// `[^\n]*` rather than `.*`: a multi-error response would otherwise let a
+// greedy match bridge two unrelated lines. Both renderings are single-line.
 const GROUP_FEE_RE =
-    /had (\d+) in fees, which is less than the minimum.*?(\d+)\)?\s*$/s
+    /txgroup (?:had [^\n]* in fees, which is less than the minimum|with [^\n]* fees is less than)/
 
 const matchGroupFeeTooSmall: Matcher = message => {
-    const m = GROUP_FEE_RE.exec(message)
-    if (!m) return null
-    return {
-        code: AlgodErrorCode.GROUP_FEE_TOO_SMALL,
-        params: { paid: BigInt(m[1]), required: BigInt(m[2]) },
-    }
+    if (!GROUP_FEE_RE.test(message)) return null
+    return { code: AlgodErrorCode.GROUP_FEE_TOO_SMALL, params: {} }
 }
 
 // Order matters only in the sense that each matcher is independent and

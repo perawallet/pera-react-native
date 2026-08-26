@@ -10,4 +10,5 @@
  limitations under the License
  */
 
+export { normalizeMnemonicWord } from './normalizeMnemonicWord'
 export { splitMnemonic } from './splitMnemonic'

@@ -235,6 +235,12 @@
             "total_supply": "Toplam arz",
             "no_freeze": "Dondurma yok",
             "no_clawback": "Clawback yok",
+            "freeze": "Dondurma",
+            "clawback": "Clawback",
+            "freeze_info_body": "Freeze adresi, belirli hesapların varlığı transfer etmesini dondurma kaldırılana kadar geçici olarak engelleyebilen bir hesaptır. Bu, uyumluluk kontrolleri, işlem kısıtlamaları veya güvenlik olaylarına müdahale için kullanışlıdır.",
+            "clawback_info_body": "Clawback adresi, varlığı herhangi bir sahibinden geri alıp başka bir adrese aktarabilen bir hesaptır. Bu; yasal gerekliliklerin karşılanması, işlem kısıtlamalarının uygulanması veya ele geçirilmiş bir hesaptaki varlıkların kurtarılması için kullanışlıdır.",
+            "freeze_address": "Dondurma adresi",
+            "clawback_address": "Clawback adresi",
             "description": "Açıklama",
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
@@ -278,6 +284,15 @@
             "suspicious_title": "Şüpheli ASA",
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
+        }
+    },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "Quantum hesabın hakkında",
+            "body": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nAncak uyumluluk sorunlarını önlemek için, kurtarma ifadenin her yerde çalışması amacıyla yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "bodyWithDependents": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nBaşka bir hesap bu hesaba rekey yapılmış durumda, bu yüzden şimdilik bu hesabı kullanmayı bırakma — şu anda o hesabın tek imzalayıcısı bu hesap. Ancak uyumluluk sorunlarını önlemek için, diğer hesabın rekey işlemi tamamlandıktan sonra yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz, böylece kurtarma ifaden her yerde çalışır.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "markerLabel": "Bu Quantum hesabı hakkında",
+            "dismiss": "Anladım"
         }
     },
     "account_details": {
@@ -349,9 +364,11 @@
         "view_passphrase_quantum": "Quantum hesabı passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
-        "rekey_to_ledger": "Ledger hesabına rekey yap",
-        "rekey_to_standard": "Standart hesaba rekey yap",
-        "rekey_to_shared": "Paylaşılan hesaba rekey yap",
+        "rekey_account": "Hesaba rekey yap",
+        "rekey_option_ledger_title": "Bir Ledger hesabına",
+        "rekey_option_ledger_description": "İşlemler Ledger cihazında yetkilendirilecek.",
+        "rekey_option_standard_title": "Bir standart hesaba",
+        "rekey_option_standard_description": "İşlemler cüzdanındaki başka bir hesap tarafından yetkilendirilecek.",
         "export_share_account": "Hesabı dışa aktar/paylaş",
         "scan_rekeyed": "Rekey yapılmış hesapları tara",
         "rename_account": "Hesabı yeniden adlandır",
@@ -392,12 +409,12 @@
         "type_multisig": "Paylaşılan hesap",
         "type_quantum": "Quantum hesabı",
         "type_rekeyed": "Rekey yapılmış hesap",
-        "type_rekeyed_transition": "Rekey yapıldı ({{from}} → {{to}})",
-        "rekey_part_standard": "Standart",
-        "rekey_part_ledger": "Ledger",
-        "rekey_part_watch": "İzleme",
-        "rekey_part_shared": "Paylaşılan hesap",
-        "rekey_part_quantum": "Quantum",
+        "type_rekeyed_signer": "Rekey yapıldı ({{to}} imzalıyor)",
+        "rekey_signer_standard": "Standart hesap",
+        "rekey_signer_ledger": "Ledger hesabı",
+        "rekey_signer_watch": "İzleme hesabı",
+        "rekey_signer_shared": "Paylaşılan hesap",
+        "rekey_signer_quantum": "Quantum hesabı",
         "type_no_auth": "Yetki yok",
         "type_unknown": "Bilinmeyen hesap"
     },
@@ -411,10 +428,11 @@
         "no_auth_title": "Yetki yok",
         "no_auth_description": "Hesabın, cüzdanında bulunmayan bir Algorand hesabına rekey yapılmış durumda. Varlık gönderemez veya işlem imzalayamazsın.",
         "rekeyed_standard_title": "Rekey yapılmış hesap",
-        "rekeyed_standard_description": "Hesabın, başka bir standart Algorand hesabına rekey yapılmış durumda. Bu hesaba ait işlemler diğer hesap tarafından yetkilendirilecek.",
+        "rekeyed_standard_description": "Hesabın, cüzdanındaki bir standart Algorand hesabına rekey yapılmış durumda. Bu hesaba ait işlemler o hesap tarafından yetkilendirilecek.",
         "rekeyed_shared_description": "Hesabın, paylaşılan bir hesaba rekey yapılmış durumda. Bu hesaba ait işlemler paylaşılan hesap tarafından yetkilendirilecek.",
         "rekeyed_ledger_description": "Hesabın, bir Ledger hardware wallet üzerindeki hesaba rekey yapılmış durumda. Bu hesaba ait işlemlerin Ledger cihazında yetkilendirilmesi gerekir.",
         "rekeyed_ledger_to_ledger_description": "Ledger hesabın, başka bir Ledger hardware wallet üzerindeki hesaba rekey yapılmış durumda. Bu hesaba ait işlemler diğer Ledger cihazı tarafından yetkilendirilecek.",
+        "rekeyed_quantum_description": "Hesabın, cüzdanındaki bir Quantum hesabına rekey yapılmış durumda. Bu hesaba ait işlemler kuantum sonrası kriptografi kullanılarak o hesap tarafından yetkilendirilecek.",
         "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Hepsi aynı anahtarı kullanan yeni hesaplar türetmeni sağlayan cüzdan.",
         "multisig_title": "Paylaşılan hesap",
@@ -515,6 +533,9 @@
         "error_failed": "Pera bu bağlantıyı açamadı. Kontrol et ve tekrar dene."
     },
     "chart": {
+        "one_day": {
+            "label": "1G"
+        },
         "one_week": {
             "label": "1H"
         },
@@ -665,7 +686,7 @@
         "algod": {
             "overspend": {
                 "title": "Yetersiz ALGO",
-                "body": "Bu hesapta işlemi karşılamak ve minimum bakiyesini korumak için yeterli ALGO yok. En az {{missing}} microALGO ekle ve tekrar dene."
+                "body": "Bu hesapta işlemi karşılamak ve minimum bakiyesini korumak için yeterli ALGO yok. Daha fazla ALGO ekle ve tekrar dene."
             },
             "below_min_balance": {
                 "title": "Minimum bakiyenin altında",
@@ -677,7 +698,7 @@
             },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
-                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Varlığı çözdürmek için varlığı oluşturanla iletişime geç."
+                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
             },
             "duplicate_txn": {
                 "title": "Zaten gönderildi",
@@ -705,7 +726,7 @@
             },
             "group_fee_too_small": {
                 "title": "Ağ ücreti çok düşük",
-                "body": "Bu işlem grubu ücret olarak {{paid}} microALGO ödedi ancak ağ {{required}} microALGO gerektiriyor. Tekrar dene."
+                "body": "Bu işlem grubunun ücretleri ağın gerektirdiğinin altında. Tekrar dene."
             },
             "unknown_node_error": {
                 "title": "İşlem başarısız oldu",
@@ -1543,7 +1564,9 @@
         "searching_accounts": {
             "title": "Hesapların aranıyor",
             "no_new_addresses_title": "Yeni adres bulunamadı",
-            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık."
+            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık.",
+            "rekey_scan_failed_title": "Rekey yapılmış hesaplar kontrol edilemedi",
+            "rekey_scan_failed_body": "Hesabın içe aktarıldı. Başka hesapların bu hesaba rekey yapılıp yapılmadığını kontrol edemedik — Ayarlar'dan yeniden tarayabilirsin."
         },
         "create_account": {
             "processing": "Cüzdanın hazırlanıyor...",
@@ -2079,6 +2102,15 @@
             "enable_prompt_title": "Biyometrik girişi etkinleştir",
             "unlock_prompt_title": "Pera Wallet’ın kilidini aç",
             "cancel_label": "İptal"
+        },
+        "biometrics_disabled": {
+            "title": "Biyometrik kilit açma kapalı",
+            "body_enrollment-changed": "Cihazınızın biyometrik ayarları değiştiği için Pera biyometrik kilit açmayı kapattı. Biyometriyle kilit açmaya devam etmek için yeniden açın.",
+            "body_weak-biometric": "Pera, cüzdanınızın kilidini açmak için parmak izi veya başka bir güçlü biyometri gerektirir; bu nedenle biyometrik kilit açma kapatıldı. Cihaz ayarlarınızdan bir tane ekleyin, ardından yeniden açın.",
+            "confirm": "Yeniden aç",
+            "cancel": "Şimdi değil",
+            "unavailable_title": "Biyometri kullanılamıyor",
+            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin."
         }
     },
     "send_funds": {
@@ -2563,6 +2595,7 @@
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
             "key_registration": "Anahtar kaydı",
+            "heartbeat": "Heartbeat",
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster"
         },
@@ -2653,6 +2686,13 @@
             "status": "Kayıt durumu",
             "online": "Çevrimiçi",
             "offline": "Çevrimdışı"
+        },
+        "heartbeat": {
+            "description": "Heartbeat, bir hesabın hâlâ çevrimiçi olduğunu ve Algorand konsensüsüne katıldığını kanıtlar. Hiçbir fon transfer edilmez.",
+            "account": "Çevrimiçi olduğu kanıtlanan hesap",
+            "submitted_by": "Gönderen",
+            "key_dilution": "Key dilution",
+            "vote_id": "Vote ID"
         },
         "app_call": {
             "app_id": "Uygulama ID",

@@ -44,6 +44,7 @@ const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseSignerFor = vi.fn()
 const mockIsMultisigAccount = vi.fn()
+const mockIsAssetFrozen = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
@@ -192,13 +193,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // the guard against a fixed `quantumAccount` fixture below.
     isQuantumAccount: (account: unknown) =>
         (account as { type?: string } | undefined)?.type === 'quantum',
+    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-1',
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     concatBytes: (...arrays: Uint8Array[]) => {
         const totalLength = arrays.reduce((sum, a) => sum + a.length, 0)
         const result = new Uint8Array(totalLength)
@@ -218,25 +223,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         warn: vi.fn(),
         error: vi.fn(),
     },
-    // Thrown by the prepare mutation's `assertOnline()` guard when offline
-    // (OFF-004). Kept minimal — this file only needs an identifiable error type.
-    NoConnectionError: class NoConnectionError extends Error {
-        constructor() {
-            super('No network connection found')
-            this.name = 'NoConnectionError'
-        }
-    },
-    // Widened for `resolveErrorCopy`, pulled in transitively via the
-    // submission-phase catch (see useSwapExecution.ts).
-    AppError: class AppError extends Error {
-        constructor(
-            message: string,
-            readonly metadata: Record<string, unknown> = {},
-        ) {
-            super(message)
-        }
-    },
-    ErrorCategory: { UNKNOWN: 'UNKNOWN', TRANSACTIONS: 'TRANSACTIONS' },
     getNetworkErrorMessageKeys: () => ({
         titleKey: 'errors.network.no_connection.title',
         bodyKey: 'errors.network.no_connection.body',
@@ -324,6 +310,13 @@ const autoError = (err: Error) => {
     })
 }
 
+// Answers per asset, like the real `isAssetFrozen`. A test asserting a frozen
+// side therefore fails if the hook never asked about that side.
+const freezeHoldings = (...frozenIds: string[]) =>
+    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
+        Promise.resolve(frozenIds.includes(assetId)),
+    )
+
 describe('useSwapExecution', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -369,6 +362,10 @@ describe('useSwapExecution', () => {
         // Default: resolved signer mirrors the selected account (the "not
         // rekeyed" case). Rekey tests override this independently.
         mockUseSignerFor.mockImplementation(() => mockUseSelectedAccount())
+
+        // Default: nothing held is frozen. The gate reads holdings on
+        // every execute.
+        freezeHoldings()
     })
 
     it('starts with idle status', () => {
@@ -550,12 +547,78 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('idle')
     })
 
+    // makeQuote trades assetIn '0' for assetOut '999'.
+    it('refuses a frozen input asset before prepare, with the shared AssetFrozenError copy', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        freezeHoldings('0')
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-frozen'))
+        })
+
+        // Same keys the send path resolves, so the toast is titled "Asset
+        // frozen" rather than the generic swap headline.
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'errors.algod.asset_frozen.body',
+            title: 'errors.algod.asset_frozen.title',
+        })
+        expect(result.current.status).toBe('error')
+        expect(result.current.error).toEqual({
+            phase: 'prepare',
+            message: 'errors.algod.asset_frozen.body',
+        })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+    })
+
+    it('refuses a frozen OUTPUT asset — a frozen holding cannot receive either', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        freezeHoldings('999')
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-frozen-out'),
+            )
+        })
+
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'errors.algod.asset_frozen.title',
+        })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+    })
+
+    it('reads holdings at execute time rather than from a balances subscription', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+
+        const { result } = renderHook(() => useSwapExecution())
+        await act(async () => {
+            await result.current.execute(makeQuote('quote-reads-db'))
+        })
+
+        // Both sides of the quote get asked about.
+        const asked = mockIsAssetFrozen.mock.calls.map(
+            ([args]) => (args as { assetId: string }).assetId,
+        )
+        expect(asked).toEqual(['0', '999'])
+        expect(mockIsAssetFrozen).toHaveBeenCalledWith({
+            accountAddress: 'SENDER_ADDR',
+            assetId: '0',
+            network: expect.anything(),
+        })
+    })
+
     it('refuses to broadcast while an open swap attempt exists', async () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: 'SWAP1' }),
         )
         mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([{}])
-
         const { result } = renderHook(() => useSwapExecution())
 
         let outcome: Optional<SwapExecutionOutcome>
@@ -612,7 +675,6 @@ describe('useSwapExecution', () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: '' }),
         )
-
         const { result } = renderHook(() => useSwapExecution())
 
         let outcome: Optional<SwapExecutionOutcome>

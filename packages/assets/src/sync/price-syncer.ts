@@ -46,7 +46,49 @@ const PRICE_CACHE_TTL_MS = 30_000
 // priceless id refetch every minute (PERA JS-thread saturation incident).
 const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 
-export async function fetchAndPersistPrices(
+// Sharing one in-flight pass per network keeps a switch-triggered pileup of
+// whole-wallet passes (the sync tick, refreshAccounts) from running the
+// (whole-wallet-sized) stale gate several times over (PERA-4953). Size alone
+// doesn't prove a list is whole-wallet — the per-account enrichment callers
+// can clear this on a single 300-asset account — so a pass is only joined
+// when the in-flight one covers every arriving id. Otherwise a fresh import
+// would await a pass that never saw its ids (and the reverse would let a
+// per-account pass stamp the wallet-wide lastPriceSyncAt gate). Small lists
+// are targeted enrichments and stay independent.
+const WHOLE_WALLET_PASS_MIN_IDS = 256
+type InFlightPricePass = { ids: Set<string>; pass: Promise<void> }
+const inFlightWholeWalletPasses = new Map<Network, InFlightPricePass>()
+
+export function fetchAndPersistPrices(
+    assetIds: string[],
+    network: Network,
+): Promise<void> {
+    if (assetIds.length < WHOLE_WALLET_PASS_MIN_IDS) {
+        return runPricePass(assetIds, network)
+    }
+
+    const inFlight = inFlightWholeWalletPasses.get(network)
+    if (inFlight && assetIds.every(id => inFlight.ids.has(id))) {
+        return inFlight.pass
+    }
+
+    const pass = runPricePass(assetIds, network).finally(() => {
+        if (inFlightWholeWalletPasses.get(network)?.pass === pass) {
+            inFlightWholeWalletPasses.delete(network)
+        }
+    })
+    // First large pass in wins the shareable slot; a concurrent non-covered
+    // pass runs unregistered rather than evicting it.
+    if (!inFlight) {
+        inFlightWholeWalletPasses.set(network, {
+            ids: new Set(assetIds),
+            pass,
+        })
+    }
+    return pass
+}
+
+async function runPricePass(
     assetIds: string[],
     network: Network,
 ): Promise<void> {

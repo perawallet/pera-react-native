@@ -16,6 +16,7 @@ import {
     type AgeGateService,
     type AppIntegrityAttestation,
     type AppIntegrityService,
+    type BiometricEnrollmentBinding,
     type BiometricSecurityLevel,
     type BiometricType,
     type BiometricsAuthenticateResult,
@@ -50,6 +51,11 @@ export class ChromeBiometricsService implements BiometricsService {
     async authenticate(): Promise<BiometricsAuthenticateResult> {
         return { success: false, reason: 'unavailable' }
     }
+    async createEnrollmentBinding(): Promise<void> {}
+    async checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding> {
+        return 'unavailable'
+    }
+    async clearEnrollmentBinding(): Promise<void> {}
 }
 
 export class ChromeAgeGateService implements AgeGateService {

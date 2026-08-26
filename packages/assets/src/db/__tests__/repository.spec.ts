@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { sql } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import type { PeraAsset } from '../../models'
+import type { PeraAsset, PeraAssetType } from '../../models'
 import {
     upsertAssets,
     getAssetsByIds,
@@ -45,8 +46,18 @@ describe('asset repository', () => {
     })
 
     afterEach(() => {
+        vi.useRealTimers()
         teardown()
     })
+
+    const readTimestamps = async (
+        assetId: string,
+    ): Promise<{ firstSeenAt: number | null; updatedAt: number }> => {
+        const rows = (await db.all(
+            sql`select first_seen_at, updated_at from assets_pera where asset_id = ${assetId}`,
+        )) as Array<[number | null, number]>
+        return { firstSeenAt: rows[0]![0], updatedAt: rows[0]![1] }
+    }
 
     const makeAsset = (overrides: Partial<PeraAsset> = {}): PeraAsset => ({
         assetId: '31566704',
@@ -116,6 +127,22 @@ describe('asset repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+
+        it('keeps first_seen_at at the first sighting across refetches', async () => {
+            // The unclassified-recheck window is measured from this column, so
+            // a refetch bumping it would keep an asset "newly seen" forever.
+            vi.useFakeTimers()
+            vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+            await upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
+            const first = await readTimestamps('31566704')
+
+            vi.setSystemTime(new Date('2026-01-02T00:00:00Z'))
+            await upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
+            const second = await readTimestamps('31566704')
+
+            expect(second.firstSeenAt).toBe(first.firstSeenAt)
+            expect(second.updatedAt).toBeGreaterThan(first.updatedAt)
         })
 
         it('returns empty array for empty input', async () => {
@@ -547,6 +574,229 @@ describe('asset repository', () => {
 
             expect(result).toEqual(['1'])
         })
+
+        it('filters candidate lists beyond SQLite bound-parameter limits', async () => {
+            // A 10k-asset wallet feeds every held id into this gate; a
+            // parameter-per-id query dies at SQLITE_MAX_VARIABLE_NUMBER and
+            // costs seconds of JS in query build below it (PERA-4953).
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+            const candidates = Array.from(
+                { length: 40_000 },
+                (_, i) => `${i + 1}`,
+            )
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: candidates,
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toHaveLength(39_999)
+            expect(result).not.toContain('1')
+        })
+    })
+
+    describe('getStaleOrMissingAssetIds — unclassified recheck', () => {
+        // The backend types an asset as a collectible only after its crawler
+        // has fetched the asset's media, which lands seconds to hours after
+        // the mint. These params are what stop that first "not a collectible"
+        // answer from being cached for the full ttlMs (PERA-4955).
+        const recheck = (ttlMs: number, windowMs = 60_000) => ({
+            ttlMs: 60_000,
+            recheckUnclassified: { ttlMs, windowMs },
+        })
+
+        // Pure-NFT shape, since only NFT-shaped assets are worth re-asking
+        // about. makeAsset's default is a fungible token.
+        const seed = async (
+            items: Array<{ assetId: string; type?: string }>,
+            overrides: Partial<PeraAsset> = {
+                decimals: 0,
+                totalSupply: new Decimal(1),
+            },
+        ): Promise<void> => {
+            await upsertAssets({
+                db,
+                items: items.map(({ assetId, type }) =>
+                    makeAsset({
+                        assetId,
+                        ...overrides,
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'unverified',
+                            ...(type
+                                ? { type: type as PeraAssetType }
+                                : undefined),
+                        },
+                    }),
+                ),
+                network: 'mainnet',
+            })
+        }
+
+        it('rechecks newly seen assets the backend has not typed as a collectible', async () => {
+            await seed([
+                { assetId: '1', type: 'standard_asset' },
+                { assetId: '2' },
+                { assetId: '3', type: 'collectible' },
+            ])
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1', '2', '3'],
+                network: 'mainnet',
+                ...recheck(-1),
+            })
+
+            expect(new Set(result)).toEqual(new Set(['1', '2']))
+        })
+
+        it('leaves fungible tokens alone however recently they were seen', async () => {
+            // Without this filter a wallet of ~600 plain tokens re-asks about
+            // every one of them for the whole window, on every sync tick and
+            // account view.
+            await seed(
+                [{ assetId: '1', type: 'standard_asset' }, { assetId: '2' }],
+                { decimals: 6, totalSupply: new Decimal('10000000000') },
+            )
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1', '2'],
+                network: 'mainnet',
+                ...recheck(-1),
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('rechecks editioned and fractional NFTs, not just one-of-ones', async () => {
+            // Editions (indivisible, many copies) are a quarter of the NFTs in
+            // a real wallet; fractional ARC-3 NFTs hold 10^decimals units.
+            await seed([{ assetId: '1', type: 'standard_asset' }], {
+                decimals: 0,
+                totalSupply: new Decimal(1000),
+            })
+            await seed([{ assetId: '2', type: 'standard_asset' }], {
+                decimals: 2,
+                totalSupply: new Decimal(100),
+            })
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1', '2'],
+                network: 'mainnet',
+                ...recheck(-1),
+            })
+
+            expect(new Set(result)).toEqual(new Set(['1', '2']))
+        })
+
+        it('waits out the recheck TTL between rechecks', async () => {
+            await seed([{ assetId: '1', type: 'standard_asset' }])
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ...recheck(60_000),
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('stops rechecking once the asset is no longer newly seen', async () => {
+            await seed([{ assetId: '1', type: 'standard_asset' }])
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                // Negative window: the row's first sight is already outside it.
+                ...recheck(-1, -1),
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('leaves rows cached before the column existed on the long TTL', async () => {
+            await seed([{ assetId: '1', type: 'standard_asset' }])
+            await db.run(sql`update assets_pera set first_seen_at = null`)
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ...recheck(-1),
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('leaves an install that upgraded into the column on the long TTL', async () => {
+            // The real upgrade path: a DB migrated to just before first_seen_at,
+            // holding an asset the backend never typed as a collectible. Its
+            // rows must survive the migration and stay on the long TTL rather
+            // than every pre-existing asset re-fetching at once.
+            const upgrading = createTestDatabase()
+            try {
+                await runMigrations(
+                    upgrading.db,
+                    Object.fromEntries(
+                        Object.entries(migrations).filter(
+                            ([tag]) => Number(tag.slice(0, 4)) < 5,
+                        ),
+                    ),
+                )
+                const cachedAt = Date.now()
+                await upgrading.db.run(
+                    // NFT-shaped, so a NULL first_seen_at is the only thing
+                    // keeping it off the recheck list.
+                    sql`insert into assets_node (asset_id, network, decimals, total_supply, updated_at) values ('1', 'mainnet', 0, '1', ${cachedAt})`,
+                )
+                await upgrading.db.run(
+                    sql`insert into assets_pera (asset_id, network, asset_type, updated_at) values ('1', 'mainnet', 'standard_asset', ${cachedAt})`,
+                )
+
+                await runMigrations(upgrading.db, migrations)
+
+                const result = await getStaleOrMissingAssetIds({
+                    db: upgrading.db,
+                    assetIds: ['1'],
+                    network: 'mainnet',
+                    ...recheck(-1),
+                })
+
+                expect(result).toEqual([])
+                expect(
+                    await getAssetsByIds({
+                        db: upgrading.db,
+                        assetIds: ['1'],
+                        network: 'mainnet',
+                    }),
+                ).toHaveLength(1)
+            } finally {
+                upgrading.teardown()
+            }
+        })
+
+        it('does not recheck when the caller omits the recheck params', async () => {
+            await seed([{ assetId: '1', type: 'standard_asset' }])
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual([])
+        })
     })
 
     describe('getStaleOrMissingPriceAssetIds', () => {
@@ -628,6 +878,37 @@ describe('asset repository', () => {
             })
 
             expect(result).toEqual(['1'])
+        })
+
+        it('applies the fresh and miss filters to candidate lists beyond SQLite bound-parameter limits', async () => {
+            // Same constraint as the assets-gate twin above (PERA-4953): the
+            // whole held set flows through here every price pass.
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+            await recordPriceMisses({
+                db,
+                assetIds: ['2'],
+                network: 'mainnet',
+            })
+            const candidates = Array.from(
+                { length: 40_000 },
+                (_, i) => `${i + 1}`,
+            )
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: candidates,
+                network: 'mainnet',
+                ttlMs: 60_000,
+                missRetryMs: 60_000,
+            })
+
+            expect(result).toHaveLength(39_998)
+            expect(result).not.toContain('1')
+            expect(result).not.toContain('2')
         })
     })
 

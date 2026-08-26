@@ -32,9 +32,27 @@ export const toDecimalUnits = (
 }
 
 /** Pure (non-fractional) NFT per ARC-3: 1 total supply, 0 decimals. */
-export const isPureNft = (asset: PeraAsset): boolean => {
+export const isPureNft = (
+    asset: Pick<PeraAsset, 'totalSupply' | 'decimals'>,
+): boolean => {
     return asset.totalSupply.eq(1) && asset.decimals === 0
 }
+
+/**
+ * Whether an asset is shaped like an NFT. Used only to decide whether
+ * re-asking the backend about an unclassified asset is worthwhile — never as a
+ * classification, since `isCollectible` is the only answer that counts. A
+ * false positive costs one request; a false negative falls back to the long
+ * cache TTL.
+ *
+ * NFTs are indivisible, whether one-of-one or an edition of many. The lone
+ * exception is ARC-3's fractional NFT, which holds exactly 10^decimals units.
+ */
+export const hasNftShape = (
+    asset: Pick<PeraAsset, 'totalSupply' | 'decimals'>,
+): boolean =>
+    asset.decimals === 0 ||
+    asset.totalSupply.eq(Decimal.pow(10, asset.decimals))
 
 /** Backend-driven classification, via the `type` field in Pera metadata. */
 export const isCollectible = (asset: PeraAsset): boolean => {

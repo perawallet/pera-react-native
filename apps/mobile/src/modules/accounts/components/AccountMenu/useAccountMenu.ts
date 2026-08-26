@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
-    useAccountBalancesQuery,
+    useAccountValueTotalsQuery,
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -41,7 +41,7 @@ export const useAccountMenu = (
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
-    const { accountBalances } = useAccountBalancesQuery(accounts, true)
+    const { accountValueTotals } = useAccountValueTotalsQuery(accounts, true)
 
     // Controlled mode: when `selectedAddress` is passed (even `null`), the caller
     // owns the highlight and tapping won't mutate the global account.
@@ -60,7 +60,7 @@ export const useAccountMenu = (
 
     const { sortedAccounts, sortMode } = useSortedAccounts(
         filteredAccounts,
-        accountBalances,
+        accountValueTotals,
     )
 
     const { isAuthenticated } = useCardSession()

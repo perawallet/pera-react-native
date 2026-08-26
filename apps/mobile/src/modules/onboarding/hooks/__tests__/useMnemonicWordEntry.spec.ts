@@ -335,6 +335,67 @@ describe('useMnemonicWordEntry — handleSelectSuggestion', () => {
     })
 })
 
+describe('useMnemonicWordEntry - normalization and validity', () => {
+    it('lowercases a capitalized typed word', () => {
+        const { result } = renderHook(() =>
+            useMnemonicWordEntry({
+                wordCount: 2,
+                onTooManyWords: vi.fn(),
+                onInsufficientSlots: vi.fn(),
+            }),
+        )
+
+        act(() => result.current.updateWord('Abandon', 0))
+
+        expect(result.current.words[0]).toBe('abandon')
+    })
+
+    it('lowercases every word of a capitalized paste', () => {
+        const { result } = renderHook(() =>
+            useMnemonicWordEntry({
+                wordCount: 2,
+                onTooManyWords: vi.fn(),
+                onInsufficientSlots: vi.fn(),
+            }),
+        )
+
+        act(() => result.current.updateWord('Abandon Ability', 0))
+
+        expect(result.current.words).toEqual(['abandon', 'ability'])
+    })
+
+    it('marks a non-wordlist word invalid but leaves empty slots unmarked', () => {
+        const { result } = renderHook(() =>
+            useMnemonicWordEntry({
+                wordCount: 2,
+                onTooManyWords: vi.fn(),
+                onInsufficientSlots: vi.fn(),
+            }),
+        )
+
+        act(() => result.current.updateWord('zzzz', 0))
+
+        expect(result.current.invalidWordIndices.has(0)).toBe(true)
+        expect(result.current.invalidWordIndices.has(1)).toBe(false)
+        expect(result.current.areAllWordsValid).toBe(false)
+    })
+
+    it('reports all words valid once every slot holds a wordlist word', () => {
+        const { result } = renderHook(() =>
+            useMnemonicWordEntry({
+                wordCount: 2,
+                onTooManyWords: vi.fn(),
+                onInsufficientSlots: vi.fn(),
+            }),
+        )
+
+        act(() => result.current.updateWord('Abandon Ability', 0))
+
+        expect(result.current.areAllWordsValid).toBe(true)
+        expect(result.current.invalidWordIndices.size).toBe(0)
+    })
+})
+
 describe('useMnemonicWordEntry — handleSubmitEditing', () => {
     it('advances focus to the next slot when called for any non-last index', () => {
         const { result } = renderEntry()

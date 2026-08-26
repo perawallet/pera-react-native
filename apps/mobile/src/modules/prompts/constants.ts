@@ -27,6 +27,17 @@ export const PromptPriority = {
     forcedBanner: 300,
     /** A nudge; the user can carry on without answering. */
     securityPinSetup: 200,
+    /**
+     * A nudge, but about protection the user already had and just lost, so it
+     * outranks the purely informational notices below it.
+     */
+    biometricsDisabled: 175,
+    /**
+     * A nudge, informational about an existing account's recovery-phrase
+     * behaviour rather than a security setup step — more important than the
+     * softest banner, less urgent than the PIN setup nudge.
+     */
+    legacyQuantumNotice: 150,
     /** Banners marked autoOpenMode: 'select' — the softest interruption. */
     autoOpenBanner: 100,
 } as const

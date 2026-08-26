@@ -235,6 +235,12 @@
             "total_supply": "Total Supply",
             "no_freeze": "No Freeze",
             "no_clawback": "No Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
+            "freeze_info_body": "A freeze address is an account that can temporarily block specific accounts from transferring the asset until the freeze is lifted. This is useful for compliance checks, trading restrictions, or responding to security incidents.",
+            "clawback_info_body": "A clawback address is an account that can revoke the asset from any holder and redirect it to another address. This is useful for meeting regulatory requirements, enforcing trading restrictions, or recovering assets from a compromised account.",
+            "freeze_address": "Freeze address",
+            "clawback_address": "Clawback address",
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
@@ -278,6 +284,15 @@
             "suspicious_title": "Suspicious ASA",
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
+        }
+    },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "About your quantum account",
+            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "markerLabel": "About this quantum account",
+            "dismiss": "Got it"
         }
     },
     "account_details": {
@@ -349,9 +364,11 @@
         "view_passphrase_quantum": "View Quantum account passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
-        "rekey_to_ledger": "Rekey to Ledger Account",
-        "rekey_to_standard": "Rekey to Standard Account",
-        "rekey_to_shared": "Rekey to Shared Account",
+        "rekey_account": "Rekey Account",
+        "rekey_option_ledger_title": "To a Ledger account",
+        "rekey_option_ledger_description": "Transactions will be authorized on your Ledger device.",
+        "rekey_option_standard_title": "To a standard account",
+        "rekey_option_standard_description": "Transactions will be authorized by another account in your wallet.",
         "export_share_account": "Export/Share Account",
         "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",
@@ -392,12 +409,12 @@
         "type_multisig": "Shared Account",
         "type_quantum": "Quantum Account",
         "type_rekeyed": "Rekeyed Account",
-        "type_rekeyed_transition": "Rekeyed ({{from}} to {{to}})",
-        "rekey_part_standard": "Standard",
-        "rekey_part_ledger": "Ledger",
-        "rekey_part_watch": "Watch",
-        "rekey_part_shared": "Shared Account",
-        "rekey_part_quantum": "Quantum",
+        "type_rekeyed_signer": "Rekeyed (Signed by {{to}})",
+        "rekey_signer_standard": "a standard account",
+        "rekey_signer_ledger": "a Ledger account",
+        "rekey_signer_watch": "a watch account",
+        "rekey_signer_shared": "a shared account",
+        "rekey_signer_quantum": "a Quantum account",
         "type_no_auth": "No Auth",
         "type_unknown": "Unknown Account"
     },
@@ -411,10 +428,11 @@
         "no_auth_title": "No Auth",
         "no_auth_description": "Your account is rekeyed to an Algorand account that is not in your wallet. You can't send assets or sign transactions.",
         "rekeyed_standard_title": "Rekeyed account",
-        "rekeyed_standard_description": "Your account is rekeyed to another standard Algorand account. Transactions for this account will be authorized by the other account.",
+        "rekeyed_standard_description": "Your account is rekeyed to a standard Algorand account in your wallet. Transactions for this account will be authorized by that account.",
         "rekeyed_shared_description": "Your account is rekeyed to a shared account. Transactions for this account will be authorized by the shared account.",
         "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
         "rekeyed_ledger_to_ledger_description": "Your Ledger account is rekeyed to an account on another Ledger hardware device. Transactions for this account will be authorized by the other Ledger device.",
+        "rekeyed_quantum_description": "Your account is rekeyed to a Quantum account in your wallet. Transactions for this account will be authorized by that account, using post-quantum cryptography.",
         "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
         "multisig_title": "Shared Account",
@@ -515,6 +533,9 @@
         "error_failed": "Pera couldn't open that link. Check it and try again."
     },
     "chart": {
+        "one_day": {
+            "label": "1D"
+        },
         "one_week": {
             "label": "1W"
         },
@@ -665,7 +686,7 @@
         "algod": {
             "overspend": {
                 "title": "Insufficient ALGO",
-                "body": "This account doesn't have enough ALGO to cover the transaction and keep its minimum balance. Add at least {{missing}} microALGO and try again."
+                "body": "This account doesn't have enough ALGO to cover the transaction and keep its minimum balance. Add more ALGO and try again."
             },
             "below_min_balance": {
                 "title": "Below minimum balance",
@@ -677,7 +698,7 @@
             },
             "asset_frozen": {
                 "title": "Asset frozen",
-                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. Contact the asset's creator to unfreeze it."
+                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
             },
             "duplicate_txn": {
                 "title": "Already submitted",
@@ -705,7 +726,7 @@
             },
             "group_fee_too_small": {
                 "title": "Network fee too low",
-                "body": "This transaction group paid {{paid}} microALGO in fees but the network requires {{required}} microALGO. Please try again."
+                "body": "This transaction group's fees are below what the network requires. Please try again."
             },
             "unknown_node_error": {
                 "title": "Transaction failed",
@@ -1543,7 +1564,9 @@
         "searching_accounts": {
             "title": "Searching your accounts",
             "no_new_addresses_title": "No new addresses found",
-            "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet."
+            "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet.",
+            "rekey_scan_failed_title": "Couldn't check for rekeyed accounts",
+            "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings."
         },
         "create_account": {
             "processing": "Setting up your wallet...",
@@ -2079,6 +2102,15 @@
             "enable_prompt_title": "Enable biometric login",
             "unlock_prompt_title": "Unlock Pera Wallet",
             "cancel_label": "Cancel"
+        },
+        "biometrics_disabled": {
+            "title": "Biometric unlock is off",
+            "body_enrollment-changed": "Your device's biometric settings changed, so Pera turned off biometric unlock. Turn it back on to keep unlocking with biometrics.",
+            "body_weak-biometric": "Pera needs a fingerprint or other strong biometric to unlock your wallet, so biometric unlock was turned off. Add one in your device settings, then turn it back on.",
+            "confirm": "Turn back on",
+            "cancel": "Not now",
+            "unavailable_title": "Biometrics unavailable",
+            "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again."
         }
     },
     "send_funds": {
@@ -2563,6 +2595,7 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "key_registration": "Key Registration",
+            "heartbeat": "Heartbeat",
             "default": "Transaction",
             "more_impacts": "Show {{count}} more"
         },
@@ -2653,6 +2686,13 @@
             "status": "Registration Status",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "A heartbeat proves an account is still online and participating in Algorand consensus. It moves no funds.",
+            "account": "Account Proved Online",
+            "submitted_by": "Submitted By",
+            "key_dilution": "Key Dilution",
+            "vote_id": "Vote ID"
         },
         "app_call": {
             "app_id": "Application ID",

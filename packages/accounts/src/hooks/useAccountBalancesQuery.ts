@@ -17,6 +17,7 @@ import {
     isAlgoAssetId,
     logger,
     pow10,
+    useStableIdList,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -36,6 +37,7 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
+import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 
 type AccountDbSnapshot = {
     holdings: AccountHoldingsPageRow[]
@@ -88,16 +90,20 @@ export const useAccountBalancesQuery = (
     const { network } = useNetwork()
     const hasAccounts = !!accounts?.length
 
+    // Call sites routinely pass a fresh array literal (`[account]`) per
+    // render. Only addresses are read below, so key the memos on this stable
+    // list instead of array identity — otherwise every render of every such
+    // call site re-walks all holdings, a Decimal per field per asset
+    // (PERA-4953).
+    const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
+
     const queries = useMemo(() => {
-        if (!hasAccounts) {
-            return []
-        }
-        return accounts.map(acc => {
-            const address = acc.address
+        return addresses.map(address => {
             return {
                 queryKey: getAccountBalancesQueryKey(address, network, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
+                gcTime: HOLDINGS_ROWS_GC_TIME_MS,
                 // SQLite is the source of truth; run the queryFn even while offline
                 // instead of pausing it (TanStack's default networkMode: 'online'),
                 // which would strand consumers in `pending`. Network segments are
@@ -115,8 +121,7 @@ export const useAccountBalancesQuery = (
         // by the caller; deep equality is enforced via getAccountBalancesQueryKey.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-        accounts,
-        hasAccounts,
+        addresses,
         enabled,
         network,
         filters?.hideZeroBalance,
@@ -135,7 +140,7 @@ export const useAccountBalancesQuery = (
     const resultsSig = results
         .map(
             (r, i) =>
-                `${accounts[i]?.address ?? ''}|${r.dataUpdatedAt}|${
+                `${addresses[i] ?? ''}|${r.dataUpdatedAt}|${
                     r.isPending ? 1 : 0
                 }${r.isFetched ? 1 : 0}${r.isRefetching ? 1 : 0}${
                     r.isError ? 1 : 0
@@ -173,9 +178,9 @@ export const useAccountBalancesQuery = (
                 new Decimal(0)
 
             let algoValue = new Decimal(0)
-            // Accumulated in the same pass as `algoValue`: `usePortfolioTotals`
-            // used to re-walk every account's holdings to derive this, doubling
-            // the accounts×holdings Decimal work on every price poll.
+            // Accumulated in the same pass as `algoValue`: the portfolio
+            // roll-up used to re-walk every account's holdings to derive this,
+            // doubling the accounts×holdings Decimal work on every price poll.
             let usdValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
@@ -232,7 +237,7 @@ export const useAccountBalancesQuery = (
         })
 
         const accountBalances: AccountBalances = new Map(
-            accounts.map((a, i) => [a.address, accountBalanceList[i]]),
+            addresses.map((address, i) => [address, accountBalanceList[i]]),
         )
 
         const portfolioAlgoValue = accountBalanceList.reduce(
@@ -255,10 +260,10 @@ export const useAccountBalancesQuery = (
             isError,
             isPaused,
         }
-        // `results` is read inside but deliberately not a dep — `resultsSig` is
-        // its stable stand-in; see the comment where it is built.
+        // `results` is read inside but deliberately not a dep — `resultsSig`
+        // is its stable stand-in; see the comment where it is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, accounts, hasAccounts])
+    }, [resultsSig, addresses, hasAccounts])
 
     return {
         accountBalances,

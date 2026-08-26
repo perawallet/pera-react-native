@@ -88,6 +88,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleSelectSuggestion,
         refCallbacks,
         handleSubmitEditing,
+        invalidWordIndices,
+        areAllWordsValid,
     } = useMnemonicWordEntry({
         wordCount: mnemonicLength,
         onTooManyWords,
@@ -101,7 +103,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
-    const canImport = useMemo(() => words.every(w => w.length > 0), [words])
+    const canImport = useMemo(() => areAllWordsValid, [areAllWordsValid])
 
     // Pre-populate the passphrase from a scanned QR / recover-address deeplink
     // so the user reviews and confirms the words before importing. The mnemonic
@@ -129,7 +131,19 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: accountType,
                 })
 
-                if (result.type === 'hdWallet' && 'walletKeyId' in result) {
+                if (Array.isArray(result)) {
+                    // Quantum import: one 25-word phrase backs up every
+                    // derivation that got minted, so mark them all complete;
+                    // the first entry (canonical when it was minted, else
+                    // the sole legacy import) carries the flow forward.
+                    result.forEach(account => markBackupComplete(account))
+                    navigation.replace('SearchAccounts', {
+                        account: result[0],
+                    })
+                } else if (
+                    result.type === 'hdWallet' &&
+                    'walletKeyId' in result
+                ) {
                     navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,
@@ -237,6 +251,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         focused,
         setFocused,
         canImport,
+        invalidWordIndices,
         processing,
         updateWord,
         handleWordChange: (word: string, index: number) =>

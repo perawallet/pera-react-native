@@ -14,7 +14,6 @@ export * from './useAccountBalancesQuery'
 export * from './useAccountInformationQuery'
 export * from './useAccountOptInRoundsQuery'
 export * from './useOnChainAccountInformationQuery'
-export * from './usePortfolioTotals'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'
 export * from './useAllAccounts'
@@ -62,8 +61,10 @@ export {
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,
+    getRekeyedAddressesQueryKey,
 } from './querykeys'
 export * from './useAccountSummaryQuery'
+export * from './useAccountValueTotalsQuery'
 export * from './useAccountAssetsQuery'
 export * from './useAccountCollectiblesQuery'
 export * from './useEnsureAccountEnriched'

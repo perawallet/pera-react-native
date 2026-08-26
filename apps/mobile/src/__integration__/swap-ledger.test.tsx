@@ -148,6 +148,7 @@ const buildQuote = (swapperAddress: string): SwapQuote =>
         quoteIdStr: 'quote-ledger-1',
         swapperAddress,
         assetIn: { assetId: '0' },
+        assetOut: { assetId: '31566704' },
         // Base units; the prepared payment below spends exactly this plus the
         // network fee, which validateSwapGroupAgainstQuote allows for.
         amountIn: new Decimal(1_000_000),

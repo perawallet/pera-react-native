@@ -64,6 +64,11 @@ const buildServices = (): PlatformServices => {
         async authenticate() {
             return { success: true } as const
         },
+        async createEnrollmentBinding() {},
+        async checkEnrollmentBinding() {
+            return 'valid' as const
+        },
+        async clearEnrollmentBinding() {},
     }
 
     const analytics: AnalyticsService = {

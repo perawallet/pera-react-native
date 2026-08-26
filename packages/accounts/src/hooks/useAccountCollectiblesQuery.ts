@@ -18,6 +18,7 @@ import {
     type CollectibleSqlSortMode,
 } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
+import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 import { getAccountCollectiblesQueryKey } from './querykeys'
 
 export type UseAccountCollectiblesQueryParams = {
@@ -69,6 +70,7 @@ export const useAccountCollectiblesQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
+        gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Sort mode and search term are part of the key, so changing either
         // starts a cold query that would blank the gallery until SQL answers —
         // on a large, freshly imported account that read as "sorting does

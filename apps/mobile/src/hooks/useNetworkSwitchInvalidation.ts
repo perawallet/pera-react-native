@@ -11,7 +11,11 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { getSyncService } from '@perawallet/wallet-core-background'
+import { useQueryClient } from '@tanstack/react-query'
+import {
+    getSyncService,
+    releaseNetworkScopedQueries,
+} from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 /**
@@ -25,15 +29,18 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
  */
 export const useNetworkSwitchInvalidation = (): void => {
     const { network } = useNetwork()
+    const queryClient = useQueryClient()
     const previousNetwork = useRef(network)
 
     useEffect(() => {
         if (previousNetwork.current === network) return
+        const departed = previousNetwork.current
         previousNetwork.current = network
+        releaseNetworkScopedQueries(queryClient, departed)
         try {
             getSyncService().invalidateQueries()
         } catch {
             // SyncService not yet initialized
         }
-    }, [network])
+    }, [network, queryClient])
 }

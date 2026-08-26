@@ -110,7 +110,7 @@ export const hasSigningKeys = (account: WalletAccount): boolean => {
 }
 
 /** Signing capability for a single account, without following rekeys. */
-const canSignDirectly = (account: WalletAccount): boolean =>
+export const canSignDirectly = (account: WalletAccount): boolean =>
     hasSigningKeys(account) || isHardwareWalletAccount(account)
 
 /**
@@ -237,11 +237,39 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
 
 /**
- * Broader than {@link canSignArbitraryData} because ARC-60 — unlike the legacy
- * `algo_signData` path — also has an on-device Ledger signing path.
+ * Diverges from {@link canSignArbitraryData} on two counts: ARC-60 also has an
+ * on-device Ledger signing path, and it falls back to the single rekey hop.
+ *
+ * Strictly additive over "can this account sign for itself": the hop is only
+ * consulted for a signer that has no key of its own, which is what let a
+ * rekeyed account be refused outright (PERA-4977). A signer that can sign
+ * directly keeps signing with its own key — deliberately, because a dApp that
+ * already resolved the auth address itself names *that* account as the signer,
+ * and hopping again off a chained rekey would sign with a key the requested
+ * account's auth-addr does not designate.
+ *
+ * The hop target is refused when it cannot produce a verifiable ARC-60
+ * signature: multisig (a response carries one signature, so a threshold can
+ * never be represented) and quantum (ARC-60 verifies Ed25519 only — the same
+ * reason {@link canSignViaParticipants} excludes it).
+ *
+ * Must stay in lockstep with `resolveSigningAccount` in the signing package,
+ * which applies the same fallback when picking the account that signs.
  */
-export const canSignArc60 = (account: WalletAccount): boolean =>
-    canSignArbitraryData(account) || isHardwareWalletAccount(account)
+export const canSignArc60 = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    if (canSignDirectly(account)) return true
+    if (!account.rekeyAddress) return false
+    const auth = accounts.find(a => a.address === account.rekeyAddress)
+    return (
+        !!auth &&
+        !isMultisigAccount(auth) &&
+        !isQuantumAccount(auth) &&
+        canSignDirectly(auth)
+    )
+}
 
 /**
  * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
@@ -301,7 +329,7 @@ export type RekeyTransition = {
     to: WalletAccount['type']
 }
 
-/** Backs the UI's "Rekeyed (<from> to <to>)" label. */
+/** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
 export const rekeyTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],

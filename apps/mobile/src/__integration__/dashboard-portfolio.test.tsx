@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-// Portfolio aggregation: accounts store -> useAccountBalancesQuery (balances,
-// holdings, metadata and prices out of SQLite) -> usePortfolioTotals.
+// Portfolio aggregation: accounts store -> useAccountValueTotalsQuery (the
+// per-account SQL totals PortfolioView and the account lists render) plus
+// useAccountBalancesQuery for the per-asset rows.
 //
 // Stays at the hook layer deliberately, so the assertion is on the aggregation
 // math. PortfolioView wraps these same hooks but also pulls balance history and
@@ -47,7 +48,7 @@ import {
     upsertAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
-    usePortfolioTotals,
+    useAccountValueTotalsQuery,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -184,9 +185,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             // Prices: USDC at $1, ALGO at... whatever — the per-asset
             // arithmetic is well-tested in the unit suite. The
             // integration value here is "DB → hook → totals" with both
-            // assets contributing. usdPrice for ALGO is in the units the
-            // production code expects (per-asset, applied to the
-            // assetBalance.amount in usePortfolioTotals).
+            // assets contributing.
             await upsertAssetPrices({
                 prices: [
                     { assetId: '0', usdPrice: new Decimal('0.30') },
@@ -212,9 +211,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 () => {
                     const accounts = useSigningAccounts()
                     const balances = useAccountBalancesQuery(accounts, true)
-                    const portfolio = usePortfolioTotals(
-                        balances.accountBalances,
-                    )
+                    const portfolio = useAccountValueTotalsQuery(accounts)
                     return { accounts, balances, portfolio }
                 },
                 { wrapper },
@@ -255,12 +252,12 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             // Portfolio total accumulates contributions from both
             // accounts — proves the aggregation crosses the per-account
             // boundary rather than collapsing on a single one.
-            const totalA = result.current.portfolio.accountUsdValues.get(
+            const totalA = result.current.portfolio.accountValueTotals.get(
                 ACCOUNT_A.address,
-            )
-            const totalB = result.current.portfolio.accountUsdValues.get(
+            )?.usdValue
+            const totalB = result.current.portfolio.accountValueTotals.get(
                 ACCOUNT_B.address,
-            )
+            )?.usdValue
             expect(totalA).toBeDefined()
             expect(totalB).toBeDefined()
             // ACCOUNT_A holds more of both assets, so its USD subtotal
@@ -295,24 +292,21 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 () => {
                     const accounts = useSigningAccounts()
                     const balances = useAccountBalancesQuery(accounts, true)
-                    const portfolio = usePortfolioTotals(
-                        balances.accountBalances,
-                    )
+                    const portfolio = useAccountValueTotalsQuery(accounts)
                     return { accounts, balances, portfolio }
                 },
                 { wrapper },
             )
 
-            // No accounts → useSigningAccounts returns []. The balance
-            // hook short-circuits and skips the queries entirely. The
-            // portfolio hook produces a zero total without needing any
-            // network or DB I/O.
+            // No accounts → useSigningAccounts returns []. Both hooks
+            // short-circuit and skip the queries entirely, producing a zero
+            // total without needing any network or DB I/O.
             expect(result.current.accounts).toEqual([])
             expect(result.current.balances.accountBalances.size).toBe(0)
             expect(result.current.portfolio.portfolioUsdValue.isZero()).toBe(
                 true,
             )
-            expect(result.current.portfolio.accountUsdValues.size).toBe(0)
+            expect(result.current.portfolio.accountValueTotals.size).toBe(0)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

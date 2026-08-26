@@ -54,6 +54,7 @@ import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
+import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
@@ -212,6 +213,53 @@ describe('Flow: Account management', () => {
         expect(handleSelected).toHaveBeenCalledWith(
             expect.objectContaining({ address: ACCOUNT_B.address }),
         )
+    })
+
+    it('Given two accounts in the account menu, when the user long-presses a row, then its address is copied and the selection is untouched', async () => {
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+
+        const noop = () => {}
+        renderWithNavigation(
+            () => (
+                <AccountMenu
+                    onSelected={noop}
+                    onAddAccount={noop}
+                    onOpenSort={noop}
+                />
+            ),
+            'AccountMenuHost',
+        )
+
+        // `contextMenu` is the DOM stand-in for onLongPress — see the
+        // PWTouchableOpacity mock in vitest.setup.ts.
+        fireEvent.contextMenu(
+            screen.getByTestId(`account_switcher_row_${ACCOUNT_B.address}`),
+        )
+
+        await waitFor(() => {
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ACCOUNT_B.address,
+            )
+        })
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            ACCOUNT_A.address,
+        )
+    })
+
+    it('Given the account header trigger, when the user long-presses it, then the selected account address is copied', async () => {
+        useAccountsStore.getState().setAccounts([ACCOUNT_A])
+        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+
+        renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
+
+        fireEvent.contextMenu(screen.getByTestId('account_selection_button'))
+
+        await waitFor(() => {
+            expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
+                ACCOUNT_A.address,
+            )
+        })
     })
 
     it(

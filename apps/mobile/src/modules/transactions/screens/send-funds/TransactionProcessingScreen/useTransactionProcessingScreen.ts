@@ -155,8 +155,8 @@ export const useTransactionProcessingScreen =
                 })
 
             return () => subscription.remove()
-            // Submits the transaction exactly once on mount; re-running on any
-            // param change would re-send. Intentional empty dependency array.
+            // Mount-only: this effect must submit exactly once. Do not add
+            // anything to this array — a re-run means a duplicate send.
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
 

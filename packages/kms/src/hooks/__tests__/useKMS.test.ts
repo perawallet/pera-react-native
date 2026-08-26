@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain'
 import {
     InvalidKeyError,
     KeyAccessError,
@@ -929,8 +930,9 @@ describe('useKMS', () => {
             it('returns the committed Falcon public key, matching the real seed derivation', async () => {
                 const { seedFromMnemonic } = await import('algosdk')
                 const seed = seedFromMnemonic(TEST_MNEMONIC)
-                const { publicKey } =
-                    getPQProvider().generateKeypairFromSeed(seed)
+                const { publicKey } = getPQProvider().generateKeypairFromSeed(
+                    derivePQKeygenSeed(seed),
+                )
 
                 seedQuantumRoot('quantum-1')
                 mockKeystoreKeys.push({
@@ -999,7 +1001,9 @@ describe('useKMS', () => {
         it('returns the scheme id and public key for a quantum child', async () => {
             const { seedFromMnemonic } = await import('algosdk')
             const seed = seedFromMnemonic(TEST_MNEMONIC)
-            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(
+                derivePQKeygenSeed(seed),
+            )
 
             seedQuantumRoot('quantum-1')
             mockKeystoreKeys.push({

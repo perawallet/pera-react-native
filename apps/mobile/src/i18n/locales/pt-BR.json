@@ -235,6 +235,12 @@
             "total_supply": "Fornecimento total",
             "no_freeze": "Sem congelamento",
             "no_clawback": "Sem clawback",
+            "freeze": "Congelamento",
+            "clawback": "Clawback",
+            "freeze_info_body": "Um endereço de congelamento é uma conta que pode impedir temporariamente que determinadas contas transfiram o ativo até que o congelamento seja removido. Isso é útil para verificações de conformidade, restrições de negociação ou resposta a incidentes de segurança.",
+            "clawback_info_body": "Um endereço de clawback é uma conta que pode revogar o ativo de qualquer detentor e redirecioná-lo para outro endereço. Isso é útil para atender a requisitos regulatórios, aplicar restrições de negociação ou recuperar ativos de uma conta comprometida.",
+            "freeze_address": "Endereço de congelamento",
+            "clawback_address": "Endereço de clawback",
             "description": "Descrição",
             "social_media": "Redes sociais",
             "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
@@ -278,6 +284,15 @@
             "suspicious_title": "ASA suspeito",
             "suspicious_description": "Este ASA foi sinalizado como suspeito pelo programa de verificação de ASA da Pera.",
             "learn_more": "Saiba mais sobre a verificação de ASA"
+        }
+    },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "Sobre sua conta Quantum",
+            "body": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nNo entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos para ela, assim sua frase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
+            "bodyWithDependents": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nOutra conta está com rekey para esta, então não deixe de usá-la por enquanto — ela é a única signatária dessa conta no momento. No entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos assim que o rekey da outra conta for refeito, assim sua frase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
+            "markerLabel": "Sobre esta conta Quantum",
+            "dismiss": "Entendi"
         }
     },
     "account_details": {
@@ -349,9 +364,11 @@
         "view_passphrase_quantum": "Ver passphrase da conta Quantum",
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
-        "rekey_to_ledger": "Fazer rekey para conta Ledger",
-        "rekey_to_standard": "Fazer rekey para conta padrão",
-        "rekey_to_shared": "Fazer rekey para conta compartilhada",
+        "rekey_account": "Fazer rekey da conta",
+        "rekey_option_ledger_title": "Para uma conta Ledger",
+        "rekey_option_ledger_description": "As transações serão autorizadas no seu dispositivo Ledger.",
+        "rekey_option_standard_title": "Para uma conta padrão",
+        "rekey_option_standard_description": "As transações serão autorizadas por outra conta da sua wallet.",
         "export_share_account": "Exportar/compartilhar conta",
         "scan_rekeyed": "Buscar contas com rekey",
         "rename_account": "Renomear conta",
@@ -392,12 +409,12 @@
         "type_multisig": "Conta compartilhada",
         "type_quantum": "Conta Quantum",
         "type_rekeyed": "Conta com rekey",
-        "type_rekeyed_transition": "Rekey ({{from}} para {{to}})",
-        "rekey_part_standard": "Padrão",
-        "rekey_part_ledger": "Ledger",
-        "rekey_part_watch": "Observação",
-        "rekey_part_shared": "Conta compartilhada",
-        "rekey_part_quantum": "Quantum",
+        "type_rekeyed_signer": "Rekey (Assinada por {{to}})",
+        "rekey_signer_standard": "uma conta padrão",
+        "rekey_signer_ledger": "uma conta Ledger",
+        "rekey_signer_watch": "uma conta de observação",
+        "rekey_signer_shared": "uma conta compartilhada",
+        "rekey_signer_quantum": "uma conta Quantum",
         "type_no_auth": "Sem autorização",
         "type_unknown": "Conta desconhecida"
     },
@@ -411,10 +428,11 @@
         "no_auth_title": "Sem autorização",
         "no_auth_description": "Sua conta passou por rekey para uma conta Algorand que não está na sua wallet. Você não pode enviar ativos nem assinar transações.",
         "rekeyed_standard_title": "Conta com rekey",
-        "rekeyed_standard_description": "Sua conta passou por rekey para outra conta Algorand padrão. As transações desta conta serão autorizadas pela outra conta.",
+        "rekeyed_standard_description": "Sua conta passou por rekey para uma conta Algorand padrão que está na sua wallet. As transações desta conta serão autorizadas por essa conta.",
         "rekeyed_shared_description": "Sua conta passou por rekey para uma conta compartilhada. As transações desta conta serão autorizadas pela conta compartilhada.",
         "rekeyed_ledger_description": "Sua conta passou por rekey para uma conta em um dispositivo de hardware Ledger. As transações desta conta precisam ser autorizadas no dispositivo Ledger.",
         "rekeyed_ledger_to_ledger_description": "Sua conta Ledger passou por rekey para uma conta em outro dispositivo de hardware Ledger. As transações desta conta serão autorizadas pelo outro dispositivo Ledger.",
+        "rekeyed_quantum_description": "Sua conta passou por rekey para uma conta Quantum que está na sua wallet. As transações desta conta serão autorizadas por essa conta, com criptografia pós-quântica.",
         "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Wallet que permite derivar novas contas, todas usando a mesma chave.",
         "multisig_title": "Conta compartilhada",
@@ -515,6 +533,9 @@
         "error_failed": "A Pera não conseguiu abrir esse link. Confira o link e tente novamente."
     },
     "chart": {
+        "one_day": {
+            "label": "1D"
+        },
         "one_week": {
             "label": "1S"
         },
@@ -665,7 +686,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuficiente",
-                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione pelo menos {{missing}} microALGO e tente novamente."
+                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione mais ALGO e tente novamente."
             },
             "below_min_balance": {
                 "title": "Abaixo do saldo mínimo",
@@ -677,7 +698,7 @@
             },
             "asset_frozen": {
                 "title": "Ativo congelado",
-                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. Contate o criador do ativo para descongelá-lo."
+                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
             },
             "duplicate_txn": {
                 "title": "Já enviada",
@@ -705,7 +726,7 @@
             },
             "group_fee_too_small": {
                 "title": "Taxa de rede muito baixa",
-                "body": "Este grupo de transações pagou {{paid}} microALGO de taxas, mas a rede exige {{required}} microALGO. Tente novamente."
+                "body": "As taxas deste grupo de transações estão abaixo do que a rede exige. Tente novamente."
             },
             "unknown_node_error": {
                 "title": "A transação falhou",
@@ -1547,7 +1568,9 @@
         "searching_accounts": {
             "title": "Buscando suas contas",
             "no_new_addresses_title": "Nenhum novo endereço encontrado",
-            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet."
+            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet.",
+            "rekey_scan_failed_title": "Não foi possível verificar contas com rekey",
+            "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações."
         },
         "create_account": {
             "processing": "Configurando sua wallet...",
@@ -2095,6 +2118,15 @@
             "enable_prompt_title": "Ativar login com biometria",
             "unlock_prompt_title": "Desbloquear a Pera Wallet",
             "cancel_label": "Cancelar"
+        },
+        "biometrics_disabled": {
+            "title": "O desbloqueio biométrico está desativado",
+            "body_enrollment-changed": "As configurações biométricas do seu dispositivo mudaram, então a Pera desativou o desbloqueio biométrico. Ative novamente para continuar desbloqueando com biometria.",
+            "body_weak-biometric": "A Pera precisa de uma impressão digital ou outra biometria forte para desbloquear sua carteira, então o desbloqueio biométrico foi desativado. Adicione uma nas configurações do dispositivo e ative novamente.",
+            "confirm": "Ativar novamente",
+            "cancel": "Agora não",
+            "unavailable_title": "Biometria indisponível",
+            "unavailable_body": "Ative o Face ID ou Touch ID para a Pera nas configurações do dispositivo e habilite o desbloqueio biométrico novamente."
         }
     },
     "send_funds": {
@@ -2580,6 +2612,7 @@
             "asset_freeze": "Congelamento de ativo",
             "app_call": "Chamada de app",
             "key_registration": "Registro de chave",
+            "heartbeat": "Heartbeat",
             "default": "Transação",
             "more_impacts": "Mostrar mais {{count}}"
         },
@@ -2672,6 +2705,13 @@
             "status": "Status do registro",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "Um heartbeat comprova que uma conta continua online e participando do consenso da Algorand. Não movimenta fundos.",
+            "account": "Conta comprovada online",
+            "submitted_by": "Enviado por",
+            "key_dilution": "Diluição de chave",
+            "vote_id": "ID de voto"
         },
         "app_call": {
             "app_id": "ID do aplicativo",

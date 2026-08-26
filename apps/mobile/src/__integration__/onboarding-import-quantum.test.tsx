@@ -39,13 +39,19 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
-import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
+import {
+    mockAlgodAccountInformation,
+    mockIndexerSearchForAccounts,
+} from '@perawallet/wallet-core-blockchain/test-handlers'
 
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_WORDS,
 } from './__fixtures__/onboarding'
-import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+import {
+    QUANTUM_TEST_ADDRESS,
+    QUANTUM_TEST_LEGACY_ADDRESS,
+} from './__fixtures__/quantum'
 
 const QUANTUM_FLAG = 'enable_quantum_accounts'
 
@@ -184,6 +190,21 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         // account on to NameAccount (the fix for the hang) rather than stalling
         // on the "Searching your accounts" step.
         server.use(mockIndexerSearchForAccounts())
+
+        // Dual-probe import (PERA-4972): neither candidate address has
+        // on-chain activity for this pinned test mnemonic, so the import
+        // resolves to canonical-only — the single-account flow these tests
+        // already exercise.
+        server.use(
+            mockAlgodAccountInformation({
+                address: QUANTUM_TEST_ADDRESS,
+                response: {},
+            }),
+            mockAlgodAccountInformation({
+                address: QUANTUM_TEST_LEGACY_ADDRESS,
+                response: {},
+            }),
+        )
     })
 
     it(

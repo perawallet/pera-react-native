@@ -149,13 +149,37 @@ const createAppCallTx = (
         ...overrides,
     }) as TransactionHistoryItem
 
+// Sent by a proposer's heartbeat service on the user's behalf, so the sender
+// is a third party and there is no receiver, amount or fee.
+const createHeartbeatTx = (
+    overrides: Partial<TransactionHistoryItem> = {},
+): TransactionHistoryItem =>
+    ({
+        id: 'tx4',
+        txType: 'hb',
+        sender: OTHER_ADDRESS,
+        receiver: null,
+        amount: null,
+        fee: new Decimal(0),
+        confirmedRound: 100,
+        roundTime: 1_700_000_000,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        groupId: null,
+        closeTo: null,
+        balanceImpacts: [],
+        ...overrides,
+    }) as TransactionHistoryItem
+
 // The hook now reads the open-submission badge set via React Query.
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={new QueryClient()}>
         {children}
     </QueryClientProvider>
 )
-
 describe('useTransactionListItem', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
@@ -227,6 +251,19 @@ describe('useTransactionListItem', () => {
                 { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.opt_out')
+        })
+
+        it('returns heartbeat key for a heartbeat', () => {
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createHeartbeatTx(),
+                    }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe(
+                'transactions.list_item.heartbeat',
+            )
         })
 
         it('uses interpretedMeaning title when available', () => {
@@ -324,6 +361,17 @@ describe('useTransactionListItem', () => {
                 { wrapper },
             )
             expect(result.current.iconType).toBe('asset-opt-out')
+        })
+
+        it('returns "heartbeat" for a heartbeat', () => {
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createHeartbeatTx(),
+                    }),
+                { wrapper },
+            )
+            expect(result.current.iconType).toBe('heartbeat')
         })
 
         it('returns "app-call" for application call', () => {
