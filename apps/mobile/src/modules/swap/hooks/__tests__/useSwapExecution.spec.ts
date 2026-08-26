@@ -639,6 +639,7 @@ describe('useSwapExecution', () => {
             network: 'mainnet',
             sender: 'SWAPPER',
             intentKey: { kind: 'swap', swapId: 'SWAP1' },
+            unevaluatableBefore: expect.any(Number),
         })
         // The rebuilt attempt must not sign, broadcast, or report anything.
         expect(mockAddSignRequest).not.toHaveBeenCalled()
@@ -666,6 +667,7 @@ describe('useSwapExecution', () => {
             network: 'mainnet',
             sender: 'SWAPPER',
             intentKey: { kind: 'swap', swapId: 'SWAP1' },
+            unevaluatableBefore: expect.any(Number),
         })
         // The submit call carries the ledger metadata for this intent.
         expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith({
@@ -704,8 +706,8 @@ describe('useSwapExecution', () => {
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
             sender: 'SWAPPER',
-            flow: 'swap',
-            createdAfter: expect.any(Number),
+            flows: ['swap', 'cosign'],
+            unevaluatableBefore: expect.any(Number),
         })
         // Nothing signed or broadcast — otherwise this is the double spend
         // the ledger exists to prevent.
@@ -733,8 +735,8 @@ describe('useSwapExecution', () => {
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
             sender: 'SWAPPER',
-            flow: 'swap',
-            createdAfter: expect.any(Number),
+            flows: ['swap', 'cosign'],
+            unevaluatableBefore: expect.any(Number),
         })
         // A blank swapId is no identity at all — recording `{swap:''}` would
         // put unrelated swaps under one intent key.

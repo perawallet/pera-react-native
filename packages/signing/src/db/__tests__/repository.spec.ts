@@ -188,25 +188,46 @@ describe('submission ledger repository', () => {
         expect(remaining).toHaveLength(1)
     })
 
-    it('drops rows older than createdAfter from the guard lookup', async () => {
-        const staleId = await recordRekey({ txIds: ['TXID-STALE-OPEN'] })
+    it('drops only unevaluatable stale rows from the guard lookup', async () => {
+        // No validity window: the reconciler can never prove this either way,
+        // so past the bound it must stop blocking new activity.
+        const unevaluatableId = await recordRekey({
+            txIds: ['TXID-NO-WINDOW'],
+            lastValid: undefined,
+        })
         await db
             .update(SubmissionAttemptsSchema)
             .set({ createdAt: Date.now() - 2 * 60 * 60 * 1000 })
-            .where(eq(SubmissionAttemptsSchema.id, staleId))
+            .where(eq(SubmissionAttemptsSchema.id, unevaluatableId))
             .run()
 
-        // Still open — only proof resolves a row — but past the bound it must
-        // stop blocking new activity, or a row the reconciler can never
-        // settle wedges the flow for the life of the install.
         const open = await getOpenSubmissionAttempts({ db })
         expect(open).toHaveLength(1)
 
         const blocking = await getOpenSubmissionAttempts({
             db,
-            createdAfter: Date.now() - 60 * 60 * 1000,
+            unevaluatableBefore: Date.now() - 60 * 60 * 1000,
         })
         expect(blocking).toHaveLength(0)
+    })
+
+    it('keeps an equally old row that still carries a validity window', async () => {
+        // Rounds are not wall-clock: on a slow-block network a 1000-round
+        // window outlives an hour, so ageing this row out would reopen the
+        // double-spend window the guard exists to close.
+        const liveId = await recordRekey({ txIds: ['TXID-STILL-LIVE'] })
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt: Date.now() - 2 * 60 * 60 * 1000 })
+            .where(eq(SubmissionAttemptsSchema.id, liveId))
+            .run()
+
+        const blocking = await getOpenSubmissionAttempts({
+            db,
+            unevaluatableBefore: Date.now() - 60 * 60 * 1000,
+        })
+        expect(blocking).toHaveLength(1)
+        expect(blocking[0]!.id).toBe(liveId)
     })
 
     it('matches open attempts by sender + intent key only', async () => {

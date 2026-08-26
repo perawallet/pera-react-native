@@ -259,29 +259,46 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             const swapSender =
                 account?.address ?? quote.swapperAddress ?? undefined
             if (swapSender) {
-                const [byIntent, bySender] = await Promise.all([
-                    prepareResult.swapIdStr
-                        ? getOpenSubmissionAttemptsForIntent({
-                              network,
-                              sender: swapSender,
-                              intentKey: {
-                                  kind: 'swap',
-                                  swapId: prepareResult.swapIdStr,
-                              },
-                          })
-                        : Promise.resolve([]),
-                    getOpenSubmissionAttempts({
-                        network,
-                        sender: swapSender,
-                        flow: 'swap',
-                        // Bounded on purpose: a row the reconciler can never
-                        // settle (no decodable validity window) would
-                        // otherwise block every future swap for this sender
-                        // for the life of the install.
-                        createdAfter: Date.now() - STALE_OPEN_ATTEMPT_MS,
-                    }),
-                ])
-                if (byIntent.length > 0 || bySender.length > 0) {
+                // Only rows with no decodable validity window are dropped —
+                // never merely old ones. Rounds are not wall-clock, so ageing
+                // out a row that may still be live would reopen the very
+                // window this guard closes.
+                const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
+                let blocked: boolean
+                try {
+                    const [byIntent, bySender] = await Promise.all([
+                        prepareResult.swapIdStr
+                            ? getOpenSubmissionAttemptsForIntent({
+                                  network,
+                                  sender: swapSender,
+                                  intentKey: {
+                                      kind: 'swap',
+                                      swapId: prepareResult.swapIdStr,
+                                  },
+                                  unevaluatableBefore,
+                              })
+                            : Promise.resolve([]),
+                        // Both flows: a shared-account swap records its row
+                        // under 'cosign', so a swap-only filter would miss a
+                        // re-proposed multisig retry.
+                        getOpenSubmissionAttempts({
+                            network,
+                            sender: swapSender,
+                            flows: ['swap', 'cosign'],
+                            unevaluatableBefore,
+                        }),
+                    ])
+                    blocked = byIntent.length > 0 || bySender.length > 0
+                } catch (error) {
+                    // Fail closed. This block sits outside any try, and the
+                    // confirmation sheet has no catch — an escaping SQLite
+                    // error would hang it on the spinner forever.
+                    logger.warn('swap: rebuild guard lookup failed, refusing', {
+                        error,
+                    })
+                    blocked = true
+                }
+                if (blocked) {
                     setStatus('verifying')
                     return { kind: 'verifying-previous' }
                 }

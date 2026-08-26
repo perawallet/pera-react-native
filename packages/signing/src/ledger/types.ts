@@ -38,11 +38,17 @@ export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
 ]
 
 /**
- * Age past which an open row can no longer describe a group that might still
- * land: a validity window is capped at 1000 rounds (~50 min), so anything
- * older has expired whatever the reconciler could still prove. Rows past it
- * stay open (only proof resolves them) but stop blocking new activity, so a
- * row the reconciler can never settle cannot wedge a flow forever.
+ * Age past which an *unevaluatable* open row — one with no decodable
+ * `lastValid`, which the reconciler can therefore never prove either way —
+ * stops blocking new activity, so it cannot wedge a flow for the life of the
+ * install.
+ *
+ * Deliberately NOT a general age bound. Rounds are not wall-clock: 1000
+ * rounds is ~47 min on mainnet but exceeds an hour on any network with
+ * slower blocks (Custom/fetch-from-node), so ageing out a row that still
+ * carries a live validity window would re-open the double-spend window this
+ * ledger exists to close. A row with a `lastValid` is one the reconciler
+ * will settle on its own and is never dropped here.
  */
 export const STALE_OPEN_ATTEMPT_MS = 60 * 60 * 1000
 

@@ -247,6 +247,9 @@ describe('resolveSwapHandoffOutcome', () => {
             txIds: ['id-a'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+            // Without a sender no sender-scoped guard can match a cosign row,
+            // which let a re-proposed shared-account swap past the guard.
+            sender: 'JOINT_ADDR',
             lastValid: 20,
         })
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
@@ -254,6 +257,7 @@ describe('resolveSwapHandoffOutcome', () => {
             txIds: ['id-b'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+            sender: 'JOINT_ADDR',
             lastValid: 40,
         })
         // The durable row must exist before the POST, not after.

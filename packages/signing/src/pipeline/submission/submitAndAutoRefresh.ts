@@ -26,6 +26,7 @@ import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
 } from '../../db'
+import { toRound } from '../../ledger'
 import type { IntentKey, SubmissionFlow } from '../../ledger'
 import type {
     AlgokitClientInterface,
@@ -193,17 +194,6 @@ export const submitAndAutoRefreshCore = async (
  * Txids and the validity window come from the decoded signed txns — no chain
  * round-trip — and the row is skipped only when no txid can be derived.
  */
-/**
- * A validity round, or undefined when it is absent or non-numeric. Bare
- * `Number(undefined)` yields NaN, which passes every downstream null check
- * and leaves the row with a window the reconciler can never evaluate.
- */
-const toRound = (value: unknown): number | undefined => {
-    if (value === undefined || value === null) return undefined
-    const round = Number(value)
-    return Number.isFinite(round) ? round : undefined
-}
-
 const recordLedgerRow = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<string | null> => {

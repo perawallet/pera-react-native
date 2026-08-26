@@ -12,6 +12,7 @@
 
 export {
     deriveSubmissionAttemptFromBytes,
+    toRound,
     type DerivedSubmissionAttempt,
 } from './derive'
 export {

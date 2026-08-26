@@ -25,6 +25,12 @@ export type CosignSubmissionAttemptParams = {
     txIds: string[]
     flow: 'cosign'
     intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
+    /**
+     * The multisig account the group spends from. Without it no sender-scoped
+     * guard can match a cosign row, which is what let a re-proposed
+     * shared-account swap past the rebuild guard entirely.
+     */
+    sender?: string
     lastValid?: number
 }
 
@@ -193,6 +199,7 @@ export const resolveSwapHandoffOutcome = async ({
                                 signRequestId,
                                 swapId: swapIdStr,
                             },
+                            sender: record.multisigAddress,
                             lastValid: derived.lastValid,
                         })
                     }

@@ -104,7 +104,14 @@ export const reconcileOpenSubmissions = async ({
 
     let open: SubmissionAttempt[]
     try {
-        open = await getOpenSubmissionAttempts({ db, limit })
+        open = await getOpenSubmissionAttempts({
+            db,
+            limit,
+            // Rows with no validity window can never be proven either way.
+            // Left in the pass they would fill the budget (createdAt ASC,
+            // limited) and starve every newer row for good.
+            unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
+        })
     } catch (error) {
         // Never throw into the caller (the SyncService tick) — a DB failure
         // must not kill the poll loop; the next tick retries.

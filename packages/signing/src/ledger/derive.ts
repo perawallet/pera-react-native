@@ -25,6 +25,18 @@ export type DerivedSubmissionAttempt = {
  * flows that submit raw bytes (cosign). Bytes that fail to decode are
  * skipped rather than aborting the group.
  */
+/**
+ * A validity round, or undefined when absent or non-numeric. Bare
+ * `Number(undefined)` yields NaN, which slips past every downstream null
+ * check and leaves the row with a window the reconciler can never evaluate —
+ * an open row nothing can ever settle.
+ */
+export const toRound = (value: unknown): number | undefined => {
+    if (value === undefined || value === null) return undefined
+    const round = Number(value)
+    return Number.isFinite(round) ? round : undefined
+}
+
 export const deriveSubmissionAttemptFromBytes = (
     bytesList: readonly Uint8Array[],
 ): DerivedSubmissionAttempt => {
@@ -36,8 +48,11 @@ export const deriveSubmissionAttemptFromBytes = (
             const signed = decodeSignedTransaction(bytes)
             const txId = signed.txn.txID()
             txIds.push(txId)
-            const lv = Number(signed.txn.lastValid)
-            lastValid = lastValid === undefined ? lv : Math.max(lastValid, lv)
+            const lv = toRound(signed.txn.lastValid)
+            if (lv !== undefined) {
+                lastValid =
+                    lastValid === undefined ? lv : Math.max(lastValid, lv)
+            }
         } catch (error) {
             logger.warn(
                 'deriveSubmissionAttemptFromBytes: decode failed, slot skipped',
