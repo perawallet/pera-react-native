@@ -90,8 +90,8 @@ export const reconcileOpenSubmissions = async ({
     retentionMs,
     getClient = defaultProbeClient,
 }: ReconcileOpenSubmissionsParams = {}): Promise<ReconcileSummary> => {
-    // Sweep first: terminal rows retain their signed bytes, and a pass that
-    // finds nothing open is still the right cadence to keep the table bounded.
+    // Sweep first: a pass that finds nothing open is still the right cadence
+    // to keep the table bounded.
     try {
         await pruneResolvedSubmissionAttempts({ db, olderThanMs: retentionMs })
     } catch (error) {

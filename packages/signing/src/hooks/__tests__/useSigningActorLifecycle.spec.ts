@@ -129,6 +129,7 @@ import { useSigningStore } from '../../store'
 import { approvalGate } from '../../pipeline/approvalGate'
 import { signingEventBus } from '../../pipeline/signingEventBus'
 import { createSigningMachine } from '../../machine/createSigningMachine'
+import { flushQueue } from '../../test-utils/queue'
 import type { SignRequest, TransactionSignRequest } from '../../models'
 
 type MockActor = {
@@ -215,14 +216,6 @@ const makeTxRequest = (
         txs: [{ sender: { toString: () => 'ADDR1' } } as never],
         ...overrides,
     }) as TransactionSignRequest
-
-// The queue effect awaits the fail-open ledger guard before creating an
-// actor, so a request added in an act() block starts one microtask later.
-const flushQueue = async (): Promise<void> => {
-    await act(async () => {
-        await Promise.resolve()
-    })
-}
 
 describe('useSigningActorLifecycle', () => {
     beforeEach(() => {
@@ -678,5 +671,3 @@ describe('useSigningActorLifecycle', () => {
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
     })
 })
-
-await flushQueue()

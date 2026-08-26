@@ -222,28 +222,4 @@ describe('submission ledger repository', () => {
         })
         expect(matches).toHaveLength(0)
     })
-
-    it('retains the signed bytes base64 when provided', async () => {
-        const bytes = new Uint8Array([1, 2, 3, 4])
-        const id = await recordSubmissionAttempt({
-            db,
-            network: 'mainnet',
-            txIds: ['TXID-BYTES'],
-            flow: 'swap',
-            signedBytes: bytes,
-        })
-
-        const rows = await getOpenSubmissionAttempts({ db })
-        expect(rows).toHaveLength(1)
-        expect(rows[0]!.signedBytesBase64).toBe(
-            Buffer.from(bytes).toString('base64'),
-        )
-        expect(rows[0]!.id).toBe(id)
-    })
-
-    it('uses the first txid as the bytes hash', async () => {
-        await recordRekey()
-        const rows = await getOpenSubmissionAttempts({ db })
-        expect(rows[0]!.bytesHash).toBe('TXID-REKEY-1')
-    })
 })

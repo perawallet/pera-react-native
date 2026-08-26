@@ -270,7 +270,6 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
-            verifyTxnLanded: vi.fn(),
             verifyTxnLanded,
             walletAddresses: [WALLET],
             network: 'mainnet',

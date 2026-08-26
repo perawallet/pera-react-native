@@ -114,8 +114,6 @@ describe('submission reconciler', () => {
         intentKey: null,
         flow: 'cosign',
         sender: null,
-        bytesHash: 'TXID-1',
-        signedBytesBase64: null,
         status: 'submitted',
         firstValid: 1,
         lastValid: 100,

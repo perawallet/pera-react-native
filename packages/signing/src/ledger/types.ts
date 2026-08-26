@@ -63,10 +63,6 @@ export type SubmissionAttempt = {
     intentKey: IntentKey | null
     flow: SubmissionFlow
     sender: string | null
-    /** First txid — the SHA-512/256-derived bytes identity (see schema). */
-    bytesHash: string | null
-    /** base64 of the submitted group bytes, when retained. */
-    signedBytesBase64: string | null
     status: SubmissionStatus
     /** Validity window of the decoded txn, in rounds. */
     firstValid: number | null

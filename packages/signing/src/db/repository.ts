@@ -12,10 +12,7 @@
 
 import { and, eq, inArray, lt, notInArray, sql } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import {
-    encodeToBase64,
-    generateOrderedUniqueId,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { SubmissionAttemptsSchema } from './schema'
 import {
     OPEN_SUBMISSION_STATUSES,
@@ -36,8 +33,6 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
         : null,
     flow: row.flow as SubmissionFlow,
     sender: row.sender,
-    bytesHash: row.bytesHash,
-    signedBytesBase64: row.signedBytesBase64,
     status: row.status as SubmissionStatus,
     firstValid: row.firstValid,
     lastValid: row.lastValid,
@@ -55,8 +50,6 @@ export type RecordSubmissionAttemptParams = {
     flow: SubmissionFlow
     intentKey?: IntentKey
     sender?: string
-    /** Submitted group bytes, retained for a dedupe-safe re-broadcast. */
-    signedBytes?: Uint8Array
     /** Decoded txn validity window, in rounds. */
     firstValid?: number
     lastValid?: number
@@ -73,7 +66,6 @@ export const recordSubmissionAttempt = async ({
     flow,
     intentKey,
     sender,
-    signedBytes,
     firstValid,
     lastValid,
 }: RecordSubmissionAttemptParams): Promise<string> => {
@@ -87,11 +79,6 @@ export const recordSubmissionAttempt = async ({
             intentKeyJson: intentKey ? serializeIntentKey(intentKey) : null,
             flow,
             sender: sender ?? null,
-            // A txid is the SHA-512/256 digest of its signed transaction —
-            // equal bytes imply equal txids, so the first txid doubles as
-            // the bytes identity without an extra crypto dependency.
-            bytesHash: txIds[0] ?? null,
-            signedBytesBase64: signedBytes ? encodeToBase64(signedBytes) : null,
             status: 'submitted',
             firstValid: firstValid ?? null,
             lastValid: lastValid ?? null,
@@ -261,7 +248,7 @@ export type PruneResolvedSubmissionAttemptsParams = {
     olderThanMs?: number
 }
 
-/** Terminal rows retain their signed bytes, so the table needs a floor. */
+/** The table grows with every submission, so terminal rows need a floor. */
 const DEFAULT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 
 /**

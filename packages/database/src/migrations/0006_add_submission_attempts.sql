@@ -5,8 +5,6 @@ CREATE TABLE `submission_attempts` (
 	`intent_key_json` text,
 	`flow` text NOT NULL,
 	`sender` text,
-	`bytes_hash` text,
-	`signed_bytes_base64` text,
 	`status` text NOT NULL,
 	`first_valid` integer,
 	`last_valid` integer,

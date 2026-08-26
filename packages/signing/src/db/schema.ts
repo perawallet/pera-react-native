@@ -34,14 +34,6 @@ export const SubmissionAttemptsSchema = sqliteTable(
         flow: text('flow').notNull(),
         /** Wallet-held sender address, when known — part of the intent match. */
         sender: text('sender'),
-        /**
-         * First txid doubles as the bytes identity: a txid is the
-         * SHA-512/256 digest of its signed transaction, so equal bytes
-         * imply equal txids (algod dedupes on it).
-         */
-        bytesHash: text('bytes_hash'),
-        /** base64 of the submitted group bytes, for a dedupe-safe re-broadcast. */
-        signedBytesBase64: text('signed_bytes_base64'),
         status: text('status').notNull(),
         /** Decoded txn validity window, in rounds (null when undecodable). */
         firstValid: integer('first_valid'),

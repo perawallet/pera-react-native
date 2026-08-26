@@ -224,14 +224,11 @@ const recordLedgerRow = async (
  * The ledger is a safety net: a local-write failure must never block the
  * submit itself (the same best-effort discipline as markConfirmed).
  */
-const runLedgerBestEffort = async (
-    run: () => Promise<void>,
-    label = 'operation',
-): Promise<void> => {
+const runLedgerBestEffort = async (run: () => Promise<void>): Promise<void> => {
     try {
         await run()
     } catch (error) {
-        logger.warn(`submission ledger ${label} failed (non-fatal)`, {
+        logger.warn('submission ledger operation failed (non-fatal)', {
             error,
         })
     }

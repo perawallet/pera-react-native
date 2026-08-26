@@ -31,6 +31,7 @@ import type {
 } from '../../models'
 import type { TransportResult } from '../../pipeline/types'
 import { createSigningMachine } from '../../machine/createSigningMachine'
+import { flushQueue } from '../../test-utils/queue'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -179,15 +180,6 @@ const makeArbRequest = (
     data: [{ signer: 'ADDR1', data: 'hello', chainId: 4160 }],
     ...overrides,
 })
-
-// The queue effect (useSigningActorLifecycle) awaits its fail-open ledger
-// guard before creating an actor, so a request added in an act() block
-// starts one microtask later.
-const flushQueue = async (): Promise<void> => {
-    await act(async () => {
-        await Promise.resolve()
-    })
-}
 
 describe('useSigningRequest', () => {
     beforeEach(() => {

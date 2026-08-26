@@ -775,6 +775,7 @@ describe('useTransactionHistoryQuery', () => {
 
         expect(result.current.transactions).toBe(firstIdentity)
     })
+
     describe('pending submission entries (PERA-4588)', () => {
         beforeEach(() => {
             mockGetOpenSubmissionAttempts.mockReset()
@@ -788,8 +789,6 @@ describe('useTransactionHistoryQuery', () => {
             intentKey: null,
             flow: 'generic',
             sender: mockAddress,
-            bytesHash: 'PENDING-TX-1',
-            signedBytesBase64: null,
             status: 'submitted',
             firstValid: null,
             lastValid: null,
