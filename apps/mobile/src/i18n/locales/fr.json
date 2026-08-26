@@ -162,6 +162,8 @@
             "title_keyreg": "Impossible de préparer l’enregistrement de clé",
             "body_keyreg": "Nous n’avons pas pu créer la transaction d’enregistrement de clé.",
             "body_keyreg_unknown_account": "Cet enregistrement de clé concerne un compte qui ne figure pas dans ce wallet. Ajoutez d’abord le compte, puis scannez à nouveau.",
+            "body_keyreg_cannot_sign": "Ce compte ne peut pas signer de transactions dans Pera. L’enregistrement nécessite la clé privée du compte, et non une copie en lecture seule.",
+            "body_keyreg_network_mismatch": "Cet enregistrement concerne un réseau Algorand différent de celui de votre wallet. Changez de réseau, puis scannez à nouveau.",
             "title_recover": "Impossible d’importer le compte",
             "body_recover": "Nous n’avons pas pu importer le compte depuis ce QR code.",
             "body_recover_duplicate": "Ce compte figure déjà dans votre wallet.",
@@ -2679,6 +2681,7 @@
             "key_dilution": "Dilution de clé",
             "participation_key": "Clé de participation",
             "selection_key": "Clé de sélection",
+            "state_proof_key": "Clé de preuve d’état",
             "status": "Statut d’enregistrement",
             "online": "En ligne",
             "offline": "Hors ligne"

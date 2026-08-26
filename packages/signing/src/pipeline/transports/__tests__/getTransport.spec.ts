@@ -114,6 +114,36 @@ describe('createTransportSelector', () => {
         expect(transport.send).toBeInstanceOf(Function)
     })
 
+    // A keyreg scanned from a QR has no dApp waiting on the signed bytes, so
+    // it tags `transport: 'algod'` and self-submits. Defaulting it to the
+    // callback transport threw "No approve callback provided" and nothing was
+    // ever broadcast (PERA-4976).
+    test('deeplink source tagged transport algod submits to algod', async () => {
+        const sendRawTransaction = vi.fn(() => ({
+            do: async () => ({ txid: 'KEYREG-TXID' }),
+        }))
+        const selector = createTransportSelector({
+            ...baseOptions(),
+            algokit: {
+                client: { algod: { sendRawTransaction } },
+            } as never,
+            encodeSignedTransactions: vi.fn(() => [new Uint8Array([0xa1])]),
+        })
+        const source = {
+            type: 'deeplink',
+            transport: 'algod',
+            requestId: 'dl-1',
+        } as SourceMetadata
+
+        const result = await selector(source, algo25Account).send(
+            stubResult,
+            source,
+        )
+
+        expect(sendRawTransaction).toHaveBeenCalled()
+        expect(result).toEqual({ type: 'submitted', txIds: ['KEYREG-TXID'] })
+    })
+
     test('multisig-cosign throws when addSignatures not provided', () => {
         const selector = createTransportSelector(baseOptions())
         expect(() =>

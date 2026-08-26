@@ -21,6 +21,8 @@ type Variant =
     | 'walletconnect_unsupported'
     | 'keyreg'
     | 'keyreg-unknown-account'
+    | 'keyreg-cannot-sign'
+    | 'keyreg-network-mismatch'
     | 'recover'
     | 'recover_duplicate'
     | 'timeout'
@@ -53,6 +55,14 @@ const MESSAGE_KEYS: Record<Variant, { title: string; body: string }> = {
     'keyreg-unknown-account': {
         title: 'deeplink.error.title_keyreg',
         body: 'deeplink.error.body_keyreg_unknown_account',
+    },
+    'keyreg-cannot-sign': {
+        title: 'deeplink.error.title_keyreg',
+        body: 'deeplink.error.body_keyreg_cannot_sign',
+    },
+    'keyreg-network-mismatch': {
+        title: 'deeplink.error.title_keyreg',
+        body: 'deeplink.error.body_keyreg_network_mismatch',
     },
     recover: {
         title: 'deeplink.error.title_recover',

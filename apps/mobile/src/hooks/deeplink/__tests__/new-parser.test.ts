@@ -383,6 +383,37 @@ describe('Deeplink Parser - New Format', () => {
                 expect(result.senderAddress).toBe(TEST_ADDRESS)
             }
         })
+
+        it('infers offline when no participation keys are present', () => {
+            const result = parseDeeplink(
+                `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('offline')
+            }
+        })
+
+        it('infers online from camelCase voteKey', () => {
+            const result = parseDeeplink(
+                `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=keyreg&voteKey=UU8&selkey=lfw&sprfkey=3No&votefst=1300&votelst=11300&votekd=100`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('online')
+            }
+        })
+
+        // Pera's own links state the intent outright; that wins over inference.
+        it('honours an explicit type=offline over inference', () => {
+            const result = parseDeeplink(
+                `perawallet://app/keyreg/?senderAddress=${TEST_ADDRESS}&type=offline`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('offline')
+            }
+        })
     })
 
     describe('Recover Address', () => {

@@ -58,6 +58,35 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     return errors
 }
 
+/**
+ * `qr-paste-input` is a CONTROLLED PWInput, and `submitPasted` reads the React
+ * state rather than the DOM node — with `if (!trimmed) return`, so submitting
+ * before React commits the change event dispatched by `fill()` is a SILENT
+ * no-op. Nothing dispatches, nothing throws, and the test dies much later on
+ * whatever it was waiting for. Reopening the sheet widens the window enough to
+ * lose it, because `fill()` then lands on a freshly mounted input mid
+ * enter-animation.
+ *
+ * Asserting the value once is not enough: that reads the DOM, which `fill()`
+ * has already set, so it can pass while the state update is still pending.
+ * Because the input is controlled, a render that never took the change resets
+ * the node to empty — so confirming the value again across a frame boundary is
+ * what proves React holds it. Never `fill()` this input directly.
+ */
+const fillPasteInput = async (targetPage: Page, uri: string): Promise<void> => {
+    const input = targetPage.getByTestId('qr-paste-input')
+    await expect(input).toBeVisible()
+    await input.fill(uri)
+    await expect(input).toHaveValue(uri)
+    await targetPage.evaluate(
+        () =>
+            new Promise(resolve => {
+                requestAnimationFrame(() => resolve(null))
+            }),
+    )
+    await expect(input).toHaveValue(uri)
+}
+
 // Web's age-gate resolves to 'unknown'/'manual', so the first focus of a gated
 // screen offers the self-declaration sheet. The result persists, so only one
 // test pays the cost — but call it at every gated entry point, since slice
@@ -166,7 +195,7 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     const scannerSheet = page.getByTestId('qr-scanner-sheet')
     await expect(scannerSheet).toBeVisible({ timeout: 20_000 })
 
-    await page.getByTestId('qr-paste-input').fill(UNREACHABLE_BRIDGE_WC_URI)
+    await fillPasteInput(page, UNREACHABLE_BRIDGE_WC_URI)
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
     // Bounded settle window for connect()'s async failure.
@@ -186,7 +215,7 @@ test('pasting a bridge-less WC URI is rejected and keeps the scanner open', asyn
     const scannerSheet = page.getByTestId('qr-scanner-sheet')
     await expect(scannerSheet).toBeVisible({ timeout: 20_000 })
 
-    await page.getByTestId('qr-paste-input').fill(GARBAGE_WC_URI)
+    await fillPasteInput(page, GARBAGE_WC_URI)
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
     await expect(scannerSheet).toBeVisible()
@@ -428,7 +457,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // `pera-wc-control` pair message directly. This is what drives
         // QRScannerContent.web -> useDeepLink -> useWalletConnectPairing.web
         // -> offscreen.
-        await page.getByTestId('qr-paste-input').fill(uri)
+        await fillPasteInput(page, uri)
         await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
         // useWalletConnectPairing.web's `pair` control message is now in
@@ -728,7 +757,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         await expect(pairingPage.getByTestId('qr-scanner-sheet')).toBeVisible({
             timeout: 20_000,
         })
-        await pairingPage.getByTestId('qr-paste-input').fill(uri)
+        await fillPasteInput(pairingPage, uri)
 
         // Kill the offscreen document AFTER the fill so nothing on this page
         // has time to trigger its recreation before the submit: the pair

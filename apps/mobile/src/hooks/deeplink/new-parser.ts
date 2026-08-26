@@ -21,6 +21,7 @@ import {
     type AlgoTransferDeeplink,
     type AssetTransferDeeplink,
     type KeyregDeeplink,
+    type KeyregParticipationFields,
     type RecoverAddressDeeplink,
     type PeraWebImportDeeplink,
     type WalletConnectDeeplink,
@@ -43,6 +44,7 @@ import {
 import {
     decodeBase64Param,
     extractPath,
+    inferKeyregType,
     isValidAssetId,
     normalizeUrl,
     parseQueryParams,
@@ -171,17 +173,27 @@ export function parsePerawalletAppUri(
 
     if (cleanPath === 'keyreg') {
         if (!params.senderAddress && !params.address) return null
-        return {
-            type: DeeplinkType.KEYREG,
-            sourceUrl: url,
-            senderAddress: params.senderAddress || params.address,
-            keyregType: params.type || 'keyreg',
+
+        const participation: KeyregParticipationFields = {
             voteKey: params.voteKey || params.votekey,
             selkey: params.selkey,
             sprfkey: params.sprfkey,
             votefst: params.votefst,
             votelst: params.votelst,
             votekd: params.votekd,
+        }
+
+        return {
+            type: DeeplinkType.KEYREG,
+            sourceUrl: url,
+            senderAddress: params.senderAddress || params.address,
+            // Pera's own links may state the intent outright; anything else
+            // (including ARC-78's `type=keyreg`) is inferred from the keys.
+            keyregType:
+                params.type === 'online' || params.type === 'offline'
+                    ? params.type
+                    : inferKeyregType(participation),
+            ...participation,
             fee: params.fee,
             note: params.note,
             xnote: params.xnote,

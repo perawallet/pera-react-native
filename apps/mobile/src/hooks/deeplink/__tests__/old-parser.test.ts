@@ -179,12 +179,22 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result?.type).toBe(DeeplinkType.KEYREG)
             if (result?.type === DeeplinkType.KEYREG) {
                 expect(result.senderAddress).toBe(TEST_ADDRESS)
-                expect(result.keyregType).toBe('keyreg')
+                expect(result.keyregType).toBe('online')
                 expect(result.voteKey).toBe(
                     'UU8zLMrFVfZPnzbnL6ThAArXFsznV3TvFVAun2ONcEI',
                 )
                 expect(result.votefst).toBe('1300')
                 expect(result.votelst).toBe('11300')
+            }
+        })
+
+        it('parses a participation-key-less keyreg as offline', () => {
+            const result = parseDeeplink(
+                `perawallet://${TEST_ADDRESS}?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('offline')
             }
         })
     })

@@ -216,6 +216,107 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.votekd).toBe('100')
             }
         })
+
+        it('marks a keyreg carrying participation keys as online', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&sprfkey=sprfKey123&votefst=1000&votelst=2000&votekd=100`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('online')
+            }
+        })
+
+        // ARC-78 has no online/offline discriminator: the smallest valid URI
+        // (`?type=keyreg` alone) IS the de-registration, and nodekit emits
+        // exactly that when a node runner goes offline.
+        it('marks a keyreg with no participation keys as offline', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('offline')
+            }
+        })
+
+        // RFC 3986 allows an empty final path segment, and Pera's own
+        // app-action links are written that way. Left on the address it fails
+        // validation, the whole URI parses to null, and the QR scanner
+        // silently re-arms with no feedback at all.
+        it('tolerates a trailing slash after the sender address', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}/?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.senderAddress).toBe(TEST_ADDRESS)
+                expect(result.keyregType).toBe('offline')
+            }
+        })
+
+        // ARC-90 `net:`/`gh:` names the chain the keyreg is for. Dropped, a
+        // testnet QR scanned on mainnet silently built a MAINNET keyreg —
+        // and the genesis-hash analyzer cannot catch it, because the txn is
+        // built with the active network's hash and so always matches.
+        it('carries the net: genesis id through as the target network', () => {
+            const result = parseAlgorandUri(
+                `algorand://net:testnet-v1.0/${TEST_ADDRESS}?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.senderAddress).toBe(TEST_ADDRESS)
+                expect(result.targetNetwork).toBe('testnet-v1.0')
+            }
+        })
+
+        // The `gh:` branch kept its own prefix, so every consumer had to know
+        // that one form carries it and the other doesn't.
+        it('carries the gh: genesis hash through without its prefix', () => {
+            const result = parseAlgorandUri(
+                `algorand://gh:abcDEF123-_xyz/${TEST_ADDRESS}?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.targetNetwork).toBe('abcDEF123-_xyz')
+            }
+        })
+
+        // A standard-base64 genesis hash contains `/`, and the network prefix
+        // is split on the FIRST `/` — so such a URI cannot be parsed. It fails
+        // closed (address ends up malformed → whole URI rejected) rather than
+        // dropping the qualifier and building against the active chain, which
+        // is the safe direction. Pinned so it stays that way; carrying `gh:`
+        // properly means percent-encoding or base64url in the emitter.
+        it('rejects a gh: hash containing a slash rather than mis-parsing it', () => {
+            expect(
+                parseAlgorandUri(
+                    `algorand://gh:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=/${TEST_ADDRESS}?type=keyreg`,
+                ),
+            ).toBeNull()
+        })
+
+        it('leaves the target network unset when the URI names none', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg`,
+            )
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.targetNetwork).toBeUndefined()
+            }
+        })
+
+        // A partial key set must NOT read as a de-registration: the user
+        // scanned a go-online QR, and silently signing an offline keyreg
+        // instead would take their node out of consensus.
+        it('treats a partial participation key set as online, not offline', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('online')
+            }
+        })
     })
 
     describe('Asset Query', () => {
