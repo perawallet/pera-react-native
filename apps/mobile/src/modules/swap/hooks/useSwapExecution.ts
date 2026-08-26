@@ -29,6 +29,7 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
+    STALE_OPEN_ATTEMPT_MS,
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -273,6 +274,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         network,
                         sender: swapSender,
                         flow: 'swap',
+                        // Bounded on purpose: a row the reconciler can never
+                        // settle (no decodable validity window) would
+                        // otherwise block every future swap for this sender
+                        // for the life of the install.
+                        createdAfter: Date.now() - STALE_OPEN_ATTEMPT_MS,
                     }),
                 ])
                 if (byIntent.length > 0 || bySender.length > 0) {

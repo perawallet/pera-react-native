@@ -388,6 +388,26 @@ describe('submission reconciler', () => {
         expect(rows[0]).toMatchObject({ id, status: 'submitted' })
     })
 
+    it('resolves a stale cosign row whose handler never registered', async () => {
+        const id = await record({ flow: 'cosign' })
+        // Older than STALE_OPEN_ATTEMPT_MS: the handoff is unrecoverable, and
+        // holding the row open would re-probe it every tick forever.
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt: Date.now() - 2 * 60 * 60 * 1000 })
+            .where(eq(SubmissionAttemptsSchema.id, id))
+            .run()
+
+        const summary = await reconcileOpenSubmissions({
+            db,
+            getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
+        })
+
+        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows[0]).toMatchObject({ id, status: 'confirmed' })
+    })
+
     it('resolves a handler-less flow that owns no external state', async () => {
         const id = await record({ flow: 'rekey' })
         const summary = await reconcileOpenSubmissions({

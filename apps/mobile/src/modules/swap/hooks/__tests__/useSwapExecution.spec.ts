@@ -109,6 +109,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
     getOpenSubmissionAttemptsForIntent: mockGetOpenSubmissionAttemptsForIntent,
     getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
+    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => {
@@ -698,10 +699,13 @@ describe('useSwapExecution', () => {
         })
 
         expect(outcome).toEqual({ kind: 'verifying-previous' })
+        // Age-bounded: a row the reconciler can never settle must not block
+        // every future swap for this sender.
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
             sender: 'SWAPPER',
             flow: 'swap',
+            createdAfter: expect.any(Number),
         })
         // Nothing signed or broadcast — otherwise this is the double spend
         // the ledger exists to prevent.
@@ -730,6 +734,7 @@ describe('useSwapExecution', () => {
             network: 'mainnet',
             sender: 'SWAPPER',
             flow: 'swap',
+            createdAfter: expect.any(Number),
         })
         // A blank swapId is no identity at all — recording `{swap:''}` would
         // put unrelated swaps under one intent key.

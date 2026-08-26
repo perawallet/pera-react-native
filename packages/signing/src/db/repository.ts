@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { and, eq, inArray, lt, notInArray, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, lt, notInArray, sql } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { SubmissionAttemptsSchema } from './schema'
@@ -131,6 +131,8 @@ export type GetOpenSubmissionAttemptsParams = {
     sender?: string
     /** Scopes to one flow — the swap guard's sender-wide fallback. */
     flow?: SubmissionFlow
+    /** Drops rows recorded before this epoch ms — see STALE_OPEN_ATTEMPT_MS. */
+    createdAfter?: number
     limit?: number
 }
 
@@ -139,6 +141,7 @@ export const getOpenSubmissionAttempts = async ({
     network,
     sender,
     flow,
+    createdAfter,
     limit,
 }: GetOpenSubmissionAttemptsParams = {}): Promise<SubmissionAttempt[]> => {
     const conditions = [
@@ -152,6 +155,9 @@ export const getOpenSubmissionAttempts = async ({
     }
     if (flow !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.flow, flow))
+    }
+    if (createdAfter !== undefined) {
+        conditions.push(gt(SubmissionAttemptsSchema.createdAt, createdAfter))
     }
 
     const query = db

@@ -37,6 +37,15 @@ export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
     'confirmed',
 ]
 
+/**
+ * Age past which an open row can no longer describe a group that might still
+ * land: a validity window is capped at 1000 rounds (~50 min), so anything
+ * older has expired whatever the reconciler could still prove. Rows past it
+ * stay open (only proof resolves them) but stop blocking new activity, so a
+ * row the reconciler can never settle cannot wedge a flow forever.
+ */
+export const STALE_OPEN_ATTEMPT_MS = 60 * 60 * 1000
+
 export type SubmissionFlow =
     | 'pipeline'
     | 'rekey'

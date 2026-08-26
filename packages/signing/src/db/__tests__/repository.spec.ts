@@ -188,6 +188,27 @@ describe('submission ledger repository', () => {
         expect(remaining).toHaveLength(1)
     })
 
+    it('drops rows older than createdAfter from the guard lookup', async () => {
+        const staleId = await recordRekey({ txIds: ['TXID-STALE-OPEN'] })
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt: Date.now() - 2 * 60 * 60 * 1000 })
+            .where(eq(SubmissionAttemptsSchema.id, staleId))
+            .run()
+
+        // Still open — only proof resolves a row — but past the bound it must
+        // stop blocking new activity, or a row the reconciler can never
+        // settle wedges the flow for the life of the install.
+        const open = await getOpenSubmissionAttempts({ db })
+        expect(open).toHaveLength(1)
+
+        const blocking = await getOpenSubmissionAttempts({
+            db,
+            createdAfter: Date.now() - 60 * 60 * 1000,
+        })
+        expect(blocking).toHaveLength(0)
+    })
+
     it('matches open attempts by sender + intent key only', async () => {
         await recordRekey()
         await recordRekey({

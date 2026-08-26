@@ -23,7 +23,11 @@ import {
     resolveSubmissionAttempt,
 } from '../db/repository'
 import { getSubmissionSettledHandler } from './settle-registry'
-import type { SubmissionAttempt, SubmissionFlow } from './types'
+import {
+    STALE_OPEN_ATTEMPT_MS,
+    type SubmissionAttempt,
+    type SubmissionFlow,
+} from './types'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
@@ -131,11 +135,22 @@ export const reconcileOpenSubmissions = async ({
             // retry. Resolving first makes the row terminal and the settle
             // event is then lost for good.
             if (!(await notifySettled(attempt, outcome))) {
-                logger.warn('reconcile: settle deferred, attempt left open', {
-                    flow: attempt.flow,
-                    id: attempt.id,
-                })
-                continue
+                // Deferring forever would re-probe this row every tick for
+                // the life of the install. Past the stale bound the handoff
+                // is unrecoverable anyway, so stop holding the row for it.
+                const stale =
+                    Date.now() - attempt.createdAt > STALE_OPEN_ATTEMPT_MS
+                if (!stale) {
+                    logger.warn(
+                        'reconcile: settle deferred, attempt left open',
+                        { flow: attempt.flow, id: attempt.id },
+                    )
+                    continue
+                }
+                logger.error(
+                    'reconcile: settle undeliverable past the stale bound, resolving anyway',
+                    { flow: attempt.flow, id: attempt.id, outcome },
+                )
             }
             summary[outcome]++
             await resolveSubmissionAttempt({

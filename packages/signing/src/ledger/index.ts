@@ -33,6 +33,7 @@ export {
 export {
     LANDABLE_SUBMISSION_STATUSES,
     OPEN_SUBMISSION_STATUSES,
+    STALE_OPEN_ATTEMPT_MS,
     type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionStatus,
