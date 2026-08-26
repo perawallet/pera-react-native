@@ -162,6 +162,8 @@
             "title_keyreg": "Couldn't prepare key registration",
             "body_keyreg": "We couldn't build the key-registration transaction.",
             "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
+            "body_keyreg_cannot_sign": "This account can't sign transactions in Pera. Key registration needs the account's private key, not a watch-only copy.",
+            "body_keyreg_network_mismatch": "This key registration is for a different Algorand network than the one your wallet is on. Switch networks, then scan again.",
             "title_recover": "Couldn't import account",
             "body_recover": "We couldn't import the account from this QR.",
             "body_recover_duplicate": "This account is already in your wallet.",
@@ -2679,6 +2681,7 @@
             "key_dilution": "Key Dilution",
             "participation_key": "Participation Key",
             "selection_key": "Selection Key",
+            "state_proof_key": "State Proof Key",
             "status": "Registration Status",
             "online": "Online",
             "offline": "Offline"

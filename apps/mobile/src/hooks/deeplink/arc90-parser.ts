@@ -79,10 +79,25 @@ export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
             const rest = beforeQuery.slice(slashIndex + 1)
 
             if (netPart.startsWith('net:') || netPart.startsWith('gh:')) {
-                if (netPart.startsWith('net:')) network = netPart.slice(4)
-                else network = netPart
+                // Strip BOTH prefixes: leaving `gh:` attached made every
+                // consumer responsible for knowing one form carries it and
+                // the other doesn't. `net:` yields a genesis id
+                // (`testnet-v1.0`), `gh:` a base64 genesis hash — callers
+                // that care match against both.
+                network = netPart.startsWith('net:')
+                    ? netPart.slice(4)
+                    : netPart.slice(3)
                 path = rest
             }
+        }
+
+        // RFC 3986 permits an empty final segment, and Pera's own app-action
+        // links are written with one. Left in place it rides along on the
+        // address, fails validation, and takes the whole URI down to `null` —
+        // which the QR scanner treats as an unrecognized barcode and silently
+        // re-arms on, giving the user no feedback whatsoever.
+        if (path.endsWith('/')) {
+            path = path.slice(0, -1)
         }
 
         // Check for special paths: app/, asset/

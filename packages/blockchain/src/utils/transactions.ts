@@ -135,6 +135,7 @@ export const mapToDisplayableTransaction = (
                 voteKeyDilution: keyregTx.voteKeyDilution,
                 selectionParticipationKey: keyregTx.selectionKey,
                 voteParticipationKey: keyregTx.voteKey,
+                stateProofKey: keyregTx.stateProofKey,
                 nonParticipation: keyregTx.nonParticipation,
             }
             break

@@ -162,6 +162,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         },
     ],
     resolveAuthAccount: (account: unknown) => account,
+    // The keyreg preflight resolves the signer through this; the seeded
+    // accounts above are all locally signable.
+    resolveSignerForAccount: (account: unknown) => ({
+        kind: 'ok',
+        signer: account,
+    }),
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/[,\s]+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }

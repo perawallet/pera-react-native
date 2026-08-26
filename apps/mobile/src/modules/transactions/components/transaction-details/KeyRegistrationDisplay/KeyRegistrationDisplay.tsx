@@ -23,7 +23,7 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useMemo } from 'react'
-import { getKeyRegType } from './utils'
+import { formatParticipationKey, getKeyRegType } from './utils'
 
 export type KeyRegistrationDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -39,6 +39,20 @@ export const KeyRegistrationDisplay = ({
     const { t } = useLanguage()
 
     const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
+    const participationKeys = useMemo(
+        () => ({
+            vote: formatParticipationKey(
+                transaction.keyregTransaction?.voteParticipationKey,
+            ),
+            selection: formatParticipationKey(
+                transaction.keyregTransaction?.selectionParticipationKey,
+            ),
+            stateProof: formatParticipationKey(
+                transaction.keyregTransaction?.stateProofKey,
+            ),
+        }),
+        [transaction],
+    )
     const showWarnings = useMemo(() => !transaction.id, [transaction])
     const keyReg = transaction.keyregTransaction
 
@@ -91,25 +105,31 @@ export const KeyRegistrationDisplay = ({
                             </KeyValueRow>
                         )}
 
-                        {keyReg.voteParticipationKey !== undefined && (
+                        {participationKeys.vote !== undefined && (
                             <KeyValueRow
                                 title={t(
                                     'transactions.key_reg.participation_key',
                                 )}
                             >
-                                <PWText>
-                                    {keyReg.voteParticipationKey.toString()}
-                                </PWText>
+                                <PWText>{participationKeys.vote}</PWText>
                             </KeyValueRow>
                         )}
 
-                        {keyReg.selectionParticipationKey !== undefined && (
+                        {participationKeys.selection !== undefined && (
                             <KeyValueRow
                                 title={t('transactions.key_reg.selection_key')}
                             >
-                                <PWText>
-                                    {keyReg.selectionParticipationKey.toString()}
-                                </PWText>
+                                <PWText>{participationKeys.selection}</PWText>
+                            </KeyValueRow>
+                        )}
+
+                        {participationKeys.stateProof !== undefined && (
+                            <KeyValueRow
+                                title={t(
+                                    'transactions.key_reg.state_proof_key',
+                                )}
+                            >
+                                <PWText>{participationKeys.stateProof}</PWText>
                             </KeyValueRow>
                         )}
                     </>

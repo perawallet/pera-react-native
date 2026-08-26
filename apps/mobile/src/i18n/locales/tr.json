@@ -162,6 +162,8 @@
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
             "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
             "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
+            "body_keyreg_cannot_sign": "Bu hesap Pera’da işlem imzalayamaz. Kayıt işlemi için hesabın özel anahtarı gerekir, yalnızca izleme kopyası yeterli değildir.",
+            "body_keyreg_network_mismatch": "Bu kayıt, cüzdanının bağlı olduğu ağdan farklı bir Algorand ağı için. Ağı değiştir ve yeniden tara.",
             "title_recover": "Hesap içe aktarılamadı",
             "body_recover": "Hesabı bu QR kodundan içe aktaramadık.",
             "body_recover_duplicate": "Bu hesap cüzdanında zaten var.",
@@ -2679,6 +2681,7 @@
             "key_dilution": "Key dilution",
             "participation_key": "Katılım anahtarı",
             "selection_key": "Seçim anahtarı",
+            "state_proof_key": "State proof anahtarı",
             "status": "Kayıt durumu",
             "online": "Çevrimiçi",
             "offline": "Çevrimdışı"

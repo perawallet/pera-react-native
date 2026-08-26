@@ -133,6 +133,14 @@ export interface KeyregDeeplink extends ParsedDeeplink {
      * value and silently miss the offline case (PERA-4976).
      */
     keyregType: KeyregType
+    /**
+     * ARC-90 `net:` genesis id or `gh:` genesis hash naming the chain this
+     * keyreg targets. Absent when the URI names none. Compared against the
+     * active network before building, because the transaction is built with
+     * whatever chain the wallet is on — so the genesis-hash analyzer downstream
+     * always matches and can never catch a cross-chain scan (PERA-4976).
+     */
+    targetNetwork?: string
     voteKey?: string
     selkey?: string
     sprfkey?: string

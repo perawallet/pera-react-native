@@ -115,7 +115,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
     }
 
     if (parsed.type === 'keyreg') {
-        const { address, params = {} } = parsed
+        const { address, network, params = {} } = parsed
 
         if (!address || !isValidAlgorandAddress(address)) {
             return null
@@ -138,6 +138,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             sourceUrl: url,
             senderAddress: address,
             keyregType: inferKeyregType(participation),
+            targetNetwork: network,
             ...participation,
             fee: params.fee,
             note: params.note,
