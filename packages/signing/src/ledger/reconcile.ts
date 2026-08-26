@@ -23,7 +23,7 @@ import {
     resolveSubmissionAttempt,
 } from '../db/repository'
 import { getSubmissionSettledHandler } from './settle-registry'
-import type { SubmissionAttempt } from './types'
+import type { SubmissionAttempt, SubmissionFlow } from './types'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
@@ -53,13 +53,13 @@ export type SubmissionProbeClient = {
             pendingTransactionInformation: (txId: string) => {
                 do: () => Promise<Record<string, unknown>>
             }
-            status: () => {
-                do: () => Promise<Record<string, unknown>>
-            }
         }
         indexer: {
             lookupTransactionByID: (txId: string) => {
                 do: () => Promise<unknown>
+            }
+            makeHealthCheck: () => {
+                do: () => Promise<Record<string, unknown>>
             }
         }
     }
@@ -126,13 +126,23 @@ export const reconcileOpenSubmissions = async ({
             summary.probed++
             const outcome = await probeSubmissionAttempt(attempt, client)
             if (outcome === null) continue
+            // Notify BEFORE resolving: a handler that has not mounted yet,
+            // or that throws, must leave the row open so a later pass can
+            // retry. Resolving first makes the row terminal and the settle
+            // event is then lost for good.
+            if (!(await notifySettled(attempt, outcome))) {
+                logger.warn('reconcile: settle deferred, attempt left open', {
+                    flow: attempt.flow,
+                    id: attempt.id,
+                })
+                continue
+            }
             summary[outcome]++
             await resolveSubmissionAttempt({
                 db,
                 id: attempt.id,
                 status: outcome,
             })
-            await notifySettled(attempt, outcome)
         } catch (error) {
             // Transient probe failure — leave the row open for the next pass.
             logger.warn('reconcile: probe failed, attempt left open', {
@@ -165,6 +175,9 @@ export const probeSubmissionAttempt = async (
     if (pending.kind === 'committed') return 'confirmed'
     if (pending.kind === 'in-pool') return null
     if (pending.kind === 'pool-error') return 'failed'
+    // algod itself was unreachable: without its verdict the indexer's
+    // silence cannot be read as absence.
+    if (pending.kind === 'unreachable') return null
 
     // Unknown to algod (not pending, not in its recent window) — check the
     // indexer before concluding. A committed group indexed after algod aged
@@ -178,15 +191,17 @@ export const probeSubmissionAttempt = async (
         // unreachable indexer is exactly the false report this ledger exists
         // to prevent — leave the row open for the next pass instead.
         if (!isNotFoundError(error)) return null
-        // Not indexed. If the decoded validity window has fully passed, the
-        // group can never land — provably not on chain.
-        if (
-            attempt.lastValid !== null &&
-            (await readLastRound(client)) > attempt.lastValid
-        ) {
-            return 'failed'
+        if (attempt.lastValid === null) return null
+        // The 404 only proves absence for rounds the indexer has actually
+        // processed. Reading algod's round here would let a lagging indexer
+        // (or one mid-migration) condemn a group that did land — the false
+        // report this ledger exists to prevent — so the proof is gated on
+        // the indexer's own round.
+        const indexerRound = await readIndexerRound(client)
+        if (indexerRound === null || indexerRound <= attempt.lastValid) {
+            return null
         }
-        return null
+        return 'failed'
     }
 }
 
@@ -194,7 +209,10 @@ type PendingState =
     | { kind: 'committed' }
     | { kind: 'in-pool' }
     | { kind: 'pool-error' }
+    /** algod does not hold it — the indexer decides from here. */
     | { kind: 'unknown' }
+    /** algod could not be asked, so nothing may be concluded this pass. */
+    | { kind: 'unreachable' }
 
 const readPending = async (
     client: SubmissionProbeClient,
@@ -221,31 +239,57 @@ const readPending = async (
         // Returning early avoids the indexer + status round-trips per tick.
         if (info.txn !== undefined) return { kind: 'in-pool' }
         return { kind: 'unknown' }
-    } catch {
+    } catch (error) {
+        // A 404 means algod genuinely does not hold the txn (committed long
+        // enough ago to age out of the pool, or never accepted) — the
+        // indexer decides from here. Anything else (5xx, 429, timeout) says
+        // nothing about the chain, so it must not read as absence.
+        if (!isNotFoundError(error)) {
+            logger.warn('reconcile: algod probe unreachable', { error })
+            return { kind: 'unreachable' }
+        }
         return { kind: 'unknown' }
     }
 }
 
-const readLastRound = async (
+/**
+ * Rounds the indexer has committed, or null when it cannot vouch for its own
+ * position (unreachable, or mid-migration with a stale round).
+ */
+const readIndexerRound = async (
     client: SubmissionProbeClient,
-): Promise<number> => {
-    const status = await client.client.algod.status().do()
-    return Number(status['last-round'] ?? status.lastRound ?? 0)
+): Promise<number | null> => {
+    const health = await client.client.indexer.makeHealthCheck().do()
+    if ((health['is-migrating'] ?? health.isMigrating) === true) return null
+    const round = health.round
+    return round === undefined || round === null ? null : Number(round)
 }
+
+/**
+ * Flows whose settlement is only half-done by resolving the row: the cosign
+ * handler owns the retained handoff, so a settle it never sees strands that
+ * handoff with no second chance. Such a row must stay open until a handler
+ * is registered and succeeds.
+ */
+const FLOWS_REQUIRING_SETTLE_HANDLER: readonly SubmissionFlow[] = ['cosign']
 
 const notifySettled = async (
     attempt: SubmissionAttempt,
     status: 'confirmed' | 'failed',
-): Promise<void> => {
+): Promise<boolean> => {
     const handler = getSubmissionSettledHandler(attempt.flow)
-    if (!handler) return
+    if (!handler) {
+        return !FLOWS_REQUIRING_SETTLE_HANDLER.includes(attempt.flow)
+    }
     try {
         await handler(attempt.txIds, attempt.network, status)
+        return true
     } catch (error) {
-        logger.warn('reconcile: settled handler failed (non-fatal)', {
+        logger.warn('reconcile: settled handler failed', {
             error,
             flow: attempt.flow,
             id: attempt.id,
         })
+        return false
     }
 }

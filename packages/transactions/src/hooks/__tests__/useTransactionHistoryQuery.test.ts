@@ -790,7 +790,6 @@ describe('useTransactionHistoryQuery', () => {
             flow: 'generic',
             sender: mockAddress,
             status: 'submitted',
-            firstValid: null,
             lastValid: null,
             createdAt: 1704067200000,
             resolvedAt: null,

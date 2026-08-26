@@ -34,7 +34,6 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     flow: row.flow as SubmissionFlow,
     sender: row.sender,
     status: row.status as SubmissionStatus,
-    firstValid: row.firstValid,
     lastValid: row.lastValid,
     createdAt: row.createdAt,
     resolvedAt: row.resolvedAt,
@@ -51,7 +50,6 @@ export type RecordSubmissionAttemptParams = {
     intentKey?: IntentKey
     sender?: string
     /** Decoded txn validity window, in rounds. */
-    firstValid?: number
     lastValid?: number
 }
 
@@ -66,7 +64,6 @@ export const recordSubmissionAttempt = async ({
     flow,
     intentKey,
     sender,
-    firstValid,
     lastValid,
 }: RecordSubmissionAttemptParams): Promise<string> => {
     const id = generateOrderedUniqueId()
@@ -80,7 +77,6 @@ export const recordSubmissionAttempt = async ({
             flow,
             sender: sender ?? null,
             status: 'submitted',
-            firstValid: firstValid ?? null,
             lastValid: lastValid ?? null,
             createdAt: Date.now(),
             resolvedAt: null,
@@ -133,6 +129,8 @@ export type GetOpenSubmissionAttemptsParams = {
     network?: string
     /** Scopes to one account — history renders per account. */
     sender?: string
+    /** Scopes to one flow — the swap guard's sender-wide fallback. */
+    flow?: SubmissionFlow
     limit?: number
 }
 
@@ -140,6 +138,7 @@ export const getOpenSubmissionAttempts = async ({
     db = getDatabase(),
     network,
     sender,
+    flow,
     limit,
 }: GetOpenSubmissionAttemptsParams = {}): Promise<SubmissionAttempt[]> => {
     const conditions = [
@@ -150,6 +149,9 @@ export const getOpenSubmissionAttempts = async ({
     }
     if (sender !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.sender, sender))
+    }
+    if (flow !== undefined) {
+        conditions.push(eq(SubmissionAttemptsSchema.flow, flow))
     }
 
     const query = db
@@ -269,7 +271,7 @@ export const pruneResolvedSubmissionAttempts = async ({
                 notInArray(SubmissionAttemptsSchema.status, [
                     ...OPEN_SUBMISSION_STATUSES,
                 ]),
-                lt(SubmissionAttemptsSchema.createdAt, cutoff),
+                lt(SubmissionAttemptsSchema.resolvedAt, cutoff),
             ),
         )
         .all()

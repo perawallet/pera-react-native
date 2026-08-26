@@ -39,15 +39,17 @@ const makeClient = ({
     pendingError,
     indexer,
     indexerError,
-    lastRound = 10,
-    statusError,
+    indexerRound = 10,
+    isMigrating = false,
+    healthError,
 }: {
     pending?: PendingResponse
     pendingError?: Error
     indexer?: unknown
     indexerError?: Error
-    lastRound?: number
-    statusError?: Error
+    indexerRound?: number
+    isMigrating?: boolean
+    healthError?: Error
 } = {}): SubmissionProbeClient => ({
     client: {
         algod: {
@@ -57,12 +59,6 @@ const makeClient = ({
                         ? Promise.reject(pendingError)
                         : Promise.resolve(pending ?? {}),
             }),
-            status: () => ({
-                do: () =>
-                    statusError
-                        ? Promise.reject(statusError)
-                        : Promise.resolve({ 'last-round': lastRound }),
-            }),
         },
         indexer: {
             lookupTransactionByID: () => ({
@@ -70,6 +66,15 @@ const makeClient = ({
                     indexerError
                         ? Promise.reject(indexerError)
                         : Promise.resolve(indexer ?? {}),
+            }),
+            makeHealthCheck: () => ({
+                do: () =>
+                    healthError
+                        ? Promise.reject(healthError)
+                        : Promise.resolve({
+                              round: indexerRound,
+                              'is-migrating': isMigrating,
+                          }),
             }),
         },
     },
@@ -115,7 +120,6 @@ describe('submission reconciler', () => {
         flow: 'cosign',
         sender: null,
         status: 'submitted',
-        firstValid: 1,
         lastValid: 100,
         createdAt: 0,
         resolvedAt: null,
@@ -174,7 +178,7 @@ describe('submission reconciler', () => {
         const outcome = await probeSubmissionAttempt(
             attemptFrom(id),
             makeClient({
-                pendingError: new Error('transaction not found'),
+                pendingError: httpError(404),
                 indexer: { 'confirmed-round': 42 },
             }),
         )
@@ -188,10 +192,54 @@ describe('submission reconciler', () => {
             makeClient({
                 pendingError: httpError(404),
                 indexerError: httpError(404),
-                lastRound: 101,
+                indexerRound: 101,
             }),
         )
         expect(outcome).toBe('failed')
+    })
+
+    it('leaves a row open when algod is unreachable, past lastValid or not', async () => {
+        const id = await record()
+        const outcome = await probeSubmissionAttempt(
+            attemptFrom(id),
+            makeClient({
+                // A 503 from algod is not a "never saw it" — concluding
+                // absence from it would skip the only authoritative probe.
+                pendingError: httpError(503),
+                indexerError: httpError(404),
+                indexerRound: 101,
+            }),
+        )
+        expect(outcome).toBeNull()
+    })
+
+    it('does not fail a row on a 404 the indexer has not caught up to', async () => {
+        const id = await record()
+        const outcome = await probeSubmissionAttempt(
+            attemptFrom(id),
+            makeClient({
+                pendingError: httpError(404),
+                indexerError: httpError(404),
+                // Lags behind lastValid: the 404 proves nothing about rounds
+                // this indexer has yet to process.
+                indexerRound: 60,
+            }),
+        )
+        expect(outcome).toBeNull()
+    })
+
+    it('does not fail a row while the indexer is migrating', async () => {
+        const id = await record()
+        const outcome = await probeSubmissionAttempt(
+            attemptFrom(id),
+            makeClient({
+                pendingError: httpError(404),
+                indexerError: httpError(404),
+                indexerRound: 101,
+                isMigrating: true,
+            }),
+        )
+        expect(outcome).toBeNull()
     })
 
     it('leaves a row open when the indexer probe fails transiently', async () => {
@@ -203,7 +251,7 @@ describe('submission reconciler', () => {
                 // A 503 is not evidence of absence — treating it as one would
                 // fail a group that may well be on chain.
                 indexerError: httpError(503),
-                lastRound: 101,
+                indexerRound: 101,
             }),
         )
         expect(outcome).toBeNull()
@@ -216,7 +264,7 @@ describe('submission reconciler', () => {
             makeClient({
                 pendingError: httpError(404),
                 indexerError: httpError(404),
-                lastRound: 50,
+                indexerRound: 50,
             }),
         )
         expect(outcome).toBeNull()
@@ -251,7 +299,9 @@ describe('submission reconciler', () => {
     })
 
     it('resolves unknown-status rows too (left open by a lost-ack submit)', async () => {
-        const id = await record()
+        // Not the default cosign flow: this asserts unknown-status handling,
+        // not the settle-handler gate.
+        const id = await record({ flow: 'rekey' })
         await markSubmissionUnknown({ db, id })
 
         const summary = await reconcileOpenSubmissions({
@@ -260,7 +310,7 @@ describe('submission reconciler', () => {
                 makeClient({
                     pendingError: httpError(404),
                     indexerError: httpError(404),
-                    lastRound: 101,
+                    indexerRound: 101,
                 }),
         })
 
@@ -278,8 +328,8 @@ describe('submission reconciler', () => {
 
         await reconcileOpenSubmissions({ db, retentionMs: 1 })
 
-        // Terminal rows retain their signed bytes; without a sweep the table
-        // grows for the life of the install.
+        // The table grows with every submission; without a sweep it grows
+        // for the life of the install.
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows).toHaveLength(0)
     })
@@ -297,7 +347,7 @@ describe('submission reconciler', () => {
                 makeClient({
                     pendingError: new Error('network down'),
                     indexerError: new Error('network down'),
-                    statusError: new Error('network down'),
+                    healthError: new Error('network down'),
                 }),
         })
 
@@ -307,5 +357,46 @@ describe('submission reconciler', () => {
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ status: 'submitted' })
+    })
+    it('leaves a cosign row open when no settle handler is registered', async () => {
+        const id = await record({ flow: 'cosign' })
+        const summary = await reconcileOpenSubmissions({
+            db,
+            getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
+        })
+
+        // Resolving here would make the row terminal with nobody having
+        // replayed the handoff — the settle event would be lost for good.
+        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows[0]).toMatchObject({ id, status: 'submitted' })
+    })
+
+    it('leaves a cosign row open when its settle handler throws', async () => {
+        const id = await record({ flow: 'cosign' })
+        setSubmissionSettledHandler('cosign', () => {
+            throw new Error('handoff replay failed')
+        })
+
+        const summary = await reconcileOpenSubmissions({
+            db,
+            getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
+        })
+
+        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows[0]).toMatchObject({ id, status: 'submitted' })
+    })
+
+    it('resolves a handler-less flow that owns no external state', async () => {
+        const id = await record({ flow: 'rekey' })
+        const summary = await reconcileOpenSubmissions({
+            db,
+            getClient: () => makeClient({ pending: { 'confirmed-round': 42 } }),
+        })
+
+        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows[0]).toMatchObject({ id, status: 'confirmed' })
     })
 })

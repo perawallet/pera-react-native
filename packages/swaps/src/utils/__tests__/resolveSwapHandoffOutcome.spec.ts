@@ -83,7 +83,6 @@ describe('resolveSwapHandoffOutcome', () => {
             .mockReset()
             .mockReturnValue({
                 txIds: ['derived-1'],
-                firstValid: 100,
                 lastValid: 200,
             })
     })
@@ -232,8 +231,8 @@ describe('resolveSwapHandoffOutcome', () => {
             .mockReset()
             .mockImplementation((bytes: readonly Uint8Array[]) =>
                 bytes[0] === a
-                    ? { txIds: ['id-a'], firstValid: 10, lastValid: 20 }
-                    : { txIds: ['id-b'], firstValid: 30, lastValid: 40 },
+                    ? { txIds: ['id-a'], lastValid: 20 }
+                    : { txIds: ['id-b'], lastValid: 40 },
             )
 
         await resolveSwapHandoffOutcome({
@@ -248,7 +247,6 @@ describe('resolveSwapHandoffOutcome', () => {
             txIds: ['id-a'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
-            firstValid: 10,
             lastValid: 20,
         })
         expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
@@ -256,7 +254,6 @@ describe('resolveSwapHandoffOutcome', () => {
             txIds: ['id-b'],
             flow: 'cosign',
             intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
-            firstValid: 30,
             lastValid: 40,
         })
         // The durable row must exist before the POST, not after.

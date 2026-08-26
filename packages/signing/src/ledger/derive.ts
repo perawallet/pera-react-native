@@ -15,8 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 
 export type DerivedSubmissionAttempt = {
     txIds: string[]
-    /** Group-wide validity window, in rounds. */
-    firstValid?: number
+    /** Highest lastValid in the group, in rounds. */
     lastValid?: number
 }
 
@@ -30,7 +29,6 @@ export const deriveSubmissionAttemptFromBytes = (
     bytesList: readonly Uint8Array[],
 ): DerivedSubmissionAttempt => {
     const txIds: string[] = []
-    let firstValid: number | undefined
     let lastValid: number | undefined
 
     for (const bytes of bytesList) {
@@ -38,10 +36,7 @@ export const deriveSubmissionAttemptFromBytes = (
             const signed = decodeSignedTransaction(bytes)
             const txId = signed.txn.txID()
             txIds.push(txId)
-            const fv = Number(signed.txn.firstValid)
             const lv = Number(signed.txn.lastValid)
-            firstValid =
-                firstValid === undefined ? fv : Math.min(firstValid, fv)
             lastValid = lastValid === undefined ? lv : Math.max(lastValid, lv)
         } catch (error) {
             logger.warn(
@@ -51,5 +46,5 @@ export const deriveSubmissionAttemptFromBytes = (
         }
     }
 
-    return { txIds, firstValid, lastValid }
+    return { txIds, lastValid }
 }

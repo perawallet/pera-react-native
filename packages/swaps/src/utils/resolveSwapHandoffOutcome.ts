@@ -25,7 +25,6 @@ export type CosignSubmissionAttemptParams = {
     txIds: string[]
     flow: 'cosign'
     intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
-    firstValid?: number
     lastValid?: number
 }
 
@@ -194,7 +193,6 @@ export const resolveSwapHandoffOutcome = async ({
                                 signRequestId,
                                 swapId: swapIdStr,
                             },
-                            firstValid: derived.firstValid,
                             lastValid: derived.lastValid,
                         })
                     }

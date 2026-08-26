@@ -51,8 +51,12 @@ const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
 // Same reason as mockValidate: the wallet-core-signing factory references
 // `getOpenSubmissionAttemptsForIntent` as an eager property, not inside a
 // function body, so a plain const would still be in TDZ when it runs.
-const { mockGetOpenSubmissionAttemptsForIntent } = vi.hoisted(() => ({
+const {
+    mockGetOpenSubmissionAttemptsForIntent,
+    mockGetOpenSubmissionAttempts,
+} = vi.hoisted(() => ({
     mockGetOpenSubmissionAttemptsForIntent: vi.fn(),
+    mockGetOpenSubmissionAttempts: vi.fn(),
 }))
 
 // We deliberately do NOT delegate to the real `submitAndAutoRefresh`
@@ -104,6 +108,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         return ids
     },
     getOpenSubmissionAttemptsForIntent: mockGetOpenSubmissionAttemptsForIntent,
+    getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => {
@@ -348,9 +353,10 @@ describe('useSwapExecution', () => {
         // Default: prepare returns valid result
         mockPrepareTransactions.mockResolvedValue(makePrepareResult())
 
-        // Default: no open ledger row for the intent — the retry guard
-        // passes and execution proceeds.
+        // Default: no open ledger row for the intent or the sender — the
+        // retry guard passes and execution proceeds.
         mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+        mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         // Default: status update succeeds
         mockUpdateSwapStatus.mockResolvedValue({ status: 'in_progress' })
@@ -671,6 +677,38 @@ describe('useSwapExecution', () => {
         expect(mockUpdateSwapStatus).toHaveBeenCalled()
     })
 
+    it('refuses a re-quoted retry whose swapId no longer matches the open row', async () => {
+        // The refusal path itself creates this case: the quote goes stale
+        // within SWAP_QUOTE_TTL_MS, the form re-quotes, and prepare returns
+        // a NEW backend swap_id — so the intent lookup misses the row it was
+        // meant to catch. Only the sender-wide swap-flow check sees it.
+        mockPrepareTransactions.mockResolvedValue(
+            makePrepareResult({ swapIdStr: 'SWAP2' }),
+        )
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+        mockGetOpenSubmissionAttempts.mockResolvedValue([
+            { intentKey: { kind: 'swap', swapId: 'SWAP1' } },
+        ])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-requoted'))
+        })
+
+        expect(outcome).toEqual({ kind: 'verifying-previous' })
+        expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
+            network: 'mainnet',
+            sender: 'SWAPPER',
+            flow: 'swap',
+        })
+        // Nothing signed or broadcast — otherwise this is the double spend
+        // the ledger exists to prevent.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockSendRawTransaction).not.toHaveBeenCalled()
+    })
+
     it('skips the retry guard when prepareResult carries no swapId', async () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: '' }),
@@ -686,6 +724,13 @@ describe('useSwapExecution', () => {
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(mockGetOpenSubmissionAttemptsForIntent).not.toHaveBeenCalled()
+        // The sender-wide check still runs: it needs no swapId, and it is
+        // the half of the guard that catches a re-quoted retry.
+        expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
+            network: 'mainnet',
+            sender: 'SWAPPER',
+            flow: 'swap',
+        })
         // A blank swapId is no identity at all — recording `{swap:''}` would
         // put unrelated swaps under one intent key.
         expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith(

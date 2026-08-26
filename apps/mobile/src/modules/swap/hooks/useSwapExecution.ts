@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
+    getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
     submitAndAutoRefresh,
     useSigningRequest,
@@ -242,22 +243,39 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
 
             // A rebuild after a possibly-false failure would produce a new
-            // txid algod can't dedupe — refuse while an earlier attempt for
-            // this swap intent is still open. The sender must match the one
-            // the ledger row was recorded with, so when no sender is known
-            // the guard is skipped rather than matched against a blank.
+            // txid algod can't dedupe — refuse while an earlier attempt is
+            // still open. The sender must match the one the ledger row was
+            // recorded with, so when no sender is known the guard is skipped
+            // rather than matched against a blank.
+            //
+            // The swapId intent key alone is not enough: a refused retry
+            // goes stale within SWAP_QUOTE_TTL_MS, the form re-quotes, and
+            // the backend hands back a NEW swap_id — so the intent lookup
+            // would miss the very row it was meant to catch. The sender-wide
+            // swap-flow check is what actually closes that path; the intent
+            // lookup stays because it also matches rows this device never
+            // recorded a flow tag for.
             const swapSender =
                 account?.address ?? quote.swapperAddress ?? undefined
-            if (prepareResult.swapIdStr && swapSender) {
-                const openAttempts = await getOpenSubmissionAttemptsForIntent({
-                    network,
-                    sender: swapSender,
-                    intentKey: {
-                        kind: 'swap',
-                        swapId: prepareResult.swapIdStr,
-                    },
-                })
-                if (openAttempts.length > 0) {
+            if (swapSender) {
+                const [byIntent, bySender] = await Promise.all([
+                    prepareResult.swapIdStr
+                        ? getOpenSubmissionAttemptsForIntent({
+                              network,
+                              sender: swapSender,
+                              intentKey: {
+                                  kind: 'swap',
+                                  swapId: prepareResult.swapIdStr,
+                              },
+                          })
+                        : Promise.resolve([]),
+                    getOpenSubmissionAttempts({
+                        network,
+                        sender: swapSender,
+                        flow: 'swap',
+                    }),
+                ])
+                if (byIntent.length > 0 || bySender.length > 0) {
                     setStatus('verifying')
                     return { kind: 'verifying-previous' }
                 }

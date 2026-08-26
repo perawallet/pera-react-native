@@ -488,7 +488,6 @@ describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
             flow: 'rekey',
             sender: WALLET,
             intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
-            firstValid: 1000,
             lastValid: 2000,
             status: 'confirmed',
         })

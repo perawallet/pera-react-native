@@ -36,7 +36,6 @@ export const SubmissionAttemptsSchema = sqliteTable(
         sender: text('sender'),
         status: text('status').notNull(),
         /** Decoded txn validity window, in rounds (null when undecodable). */
-        firstValid: integer('first_valid'),
         lastValid: integer('last_valid'),
         createdAt: integer('created_at').notNull(),
         resolvedAt: integer('resolved_at'),
@@ -47,7 +46,7 @@ export const SubmissionAttemptsSchema = sqliteTable(
         // full scan of a table that grows with every submission.
         index('submission_attempts_retention_idx').on(
             table.status,
-            table.createdAt,
+            table.resolvedAt,
         ),
     ],
 )

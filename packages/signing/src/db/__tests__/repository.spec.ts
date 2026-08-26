@@ -63,7 +63,6 @@ describe('submission ledger repository', () => {
             flow: 'rekey',
             intentKey: { kind: 'rekey', address: 'SENDER_A' },
             sender: 'SENDER_A',
-            firstValid: 1000,
             lastValid: 2000,
             ...overrides,
         })
@@ -81,7 +80,6 @@ describe('submission ledger repository', () => {
             flow: 'rekey',
             sender: 'SENDER_A',
             status: 'submitted',
-            firstValid: 1000,
             lastValid: 2000,
             resolvedAt: null,
         })
@@ -166,6 +164,28 @@ describe('submission ledger repository', () => {
         const remaining = await db.select().from(SubmissionAttemptsSchema).all()
         expect(remaining).toHaveLength(1)
         expect((remaining[0] as { id: string }).id).toBe(openId)
+    })
+
+    it('measures the retention window from resolution, not creation', async () => {
+        const id = await recordRekey({ txIds: ['TXID-LONG-OPEN'] })
+        await resolveSubmissionAttempt({ db, id, status: 'failed' })
+        // Stayed open for a long time, then resolved a moment ago. Sweeping
+        // on createdAt would drop it immediately and shrink the
+        // sign-request guard's protection window to nothing.
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt: 0, resolvedAt: Date.now() })
+            .where(eq(SubmissionAttemptsSchema.id, id))
+            .run()
+
+        const deleted = await pruneResolvedSubmissionAttempts({
+            db,
+            olderThanMs: 60_000,
+        })
+
+        expect(deleted).toBe(0)
+        const remaining = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(remaining).toHaveLength(1)
     })
 
     it('matches open attempts by sender + intent key only', async () => {

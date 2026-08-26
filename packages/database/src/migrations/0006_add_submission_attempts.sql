@@ -6,7 +6,6 @@ CREATE TABLE `submission_attempts` (
 	`flow` text NOT NULL,
 	`sender` text,
 	`status` text NOT NULL,
-	`first_valid` integer,
 	`last_valid` integer,
 	`created_at` integer NOT NULL,
 	`resolved_at` integer
@@ -14,4 +13,4 @@ CREATE TABLE `submission_attempts` (
 --> statement-breakpoint
 CREATE INDEX `submission_attempts_open_idx` ON `submission_attempts` (`network`, `status`);
 --> statement-breakpoint
-CREATE INDEX `submission_attempts_retention_idx` ON `submission_attempts` (`status`, `created_at`);
+CREATE INDEX `submission_attempts_retention_idx` ON `submission_attempts` (`status`, `resolved_at`);

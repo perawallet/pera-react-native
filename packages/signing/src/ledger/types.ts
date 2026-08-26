@@ -65,7 +65,6 @@ export type SubmissionAttempt = {
     sender: string | null
     status: SubmissionStatus
     /** Validity window of the decoded txn, in rounds. */
-    firstValid: number | null
     lastValid: number | null
     createdAt: number
     resolvedAt: number | null

@@ -213,7 +213,6 @@ const recordLedgerRow = async (
             // Fall back to the group's first sender so generic flows still
             // scope their pending history row to the right account.
             sender: input.ledger?.sender ?? firstTxn?.sender?.toString(),
-            firstValid: firstTxn ? Number(firstTxn.firstValid) : undefined,
             lastValid: firstTxn ? Number(firstTxn.lastValid) : undefined,
         })
     })
