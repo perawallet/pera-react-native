@@ -33,14 +33,25 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-        justifyContent: 'space-between',
+        paddingBottom: theme.spacing.md,
     },
     topGroup: {
         gap: theme.spacing.md,
     },
+    // Everything but the art and the CTA scrolls, so the action stays reachable
+    // however long the copy runs.
+    scrollArea: {
+        flex: 1,
+    },
+    scrollContent: {
+        gap: theme.spacing.md,
+        // Explicit, so PWScrollView does not add its own safe-area inset — the
+        // pinned footer below already sits above it.
+        paddingBottom: theme.spacing.md,
+    },
     bottomGroup: {
         gap: theme.spacing.sm,
+        flexShrink: 0,
     },
     iconBubble: {
         width: theme.spacing['3xl'],
