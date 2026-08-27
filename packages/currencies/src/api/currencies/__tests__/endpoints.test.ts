@@ -159,4 +159,30 @@ describe('currencies endpoints', () => {
 
         expect(result.usdPrice.toString()).toBe('0')
     })
+
+    test('fetchCurrenciesList returns [] on non-Pera-backed networks without calling the client', async () => {
+        for (const network of ['betanet', 'custom'] as const) {
+            const result = await fetchCurrenciesList({ network })
+
+            expect(result).toEqual([])
+            expect(queryClientMock).not.toHaveBeenCalled()
+            queryClientMock.mockClear()
+        }
+    })
+
+    test('fetchCurrency returns a zero rate on non-Pera-backed networks without calling the client', async () => {
+        for (const network of ['betanet', 'custom'] as const) {
+            const result = await fetchCurrency({
+                currencyId: 'EUR',
+                network,
+            })
+
+            expect(result).toEqual({
+                id: 'EUR',
+                usdPrice: new Decimal(0),
+            })
+            expect(queryClientMock).not.toHaveBeenCalled()
+            queryClientMock.mockClear()
+        }
+    })
 })
