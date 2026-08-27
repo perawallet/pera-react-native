@@ -155,6 +155,9 @@ export const buildTestPlatform = (
         async checkBiometricsAvailable() {
             return true
         },
+        async getAvailability() {
+            return 'available' as const
+        },
         async getSecurityLevel() {
             return 'strong'
         },

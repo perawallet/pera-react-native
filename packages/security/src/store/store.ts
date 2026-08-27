@@ -30,6 +30,7 @@ const initialState = {
     isAppLockActive: false,
     isBiometricsEnabled: false,
     biometricsDisabledReason: null,
+    acknowledgedBiometricsDisabledReason: null,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -55,7 +56,11 @@ const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
 const sanitizeDisabledReason = (
     value: unknown,
 ): Nullable<BiometricsDisabledReason> =>
-    value === 'enrollment-changed' || value === 'weak-biometric' ? value : null
+    value === 'enrollment-changed' ||
+    value === 'weak-biometric' ||
+    value === 'not-available'
+        ? value
+        : null
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
@@ -85,6 +90,9 @@ export const useSecurityStore: UseBoundStore<
             setBiometricsDisabledReason: (
                 reason: Nullable<BiometricsDisabledReason>,
             ) => set({ biometricsDisabledReason: reason }),
+            setAcknowledgedBiometricsDisabledReason: (
+                reason: Nullable<BiometricsDisabledReason>,
+            ) => set({ acknowledgedBiometricsDisabledReason: reason }),
             resetState: () => set(initialState),
         }),
         {
@@ -94,6 +102,8 @@ export const useSecurityStore: UseBoundStore<
             partialize: state => ({
                 autoLockStartedAt: state.autoLockStartedAt,
                 biometricsDisabledReason: state.biometricsDisabledReason,
+                acknowledgedBiometricsDisabledReason:
+                    state.acknowledgedBiometricsDisabledReason,
             }),
             merge: (persisted, current) => ({
                 ...current,
@@ -104,6 +114,10 @@ export const useSecurityStore: UseBoundStore<
                 biometricsDisabledReason: sanitizeDisabledReason(
                     (persisted as Partial<SecurityState> | undefined)
                         ?.biometricsDisabledReason,
+                ),
+                acknowledgedBiometricsDisabledReason: sanitizeDisabledReason(
+                    (persisted as Partial<SecurityState> | undefined)
+                        ?.acknowledgedBiometricsDisabledReason,
                 ),
             }),
         },

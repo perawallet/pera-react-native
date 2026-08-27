@@ -35,6 +35,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi
                 .fn()
@@ -140,6 +141,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi
                 .fn()
