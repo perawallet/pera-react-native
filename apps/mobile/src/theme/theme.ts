@@ -128,7 +128,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             heroBg: palette.gray[50],
 
             // Banner
-            bannerContentBg: palette.gray[700],
             bannerBg: palette.turquoise[200],
             bannerButton: 'rgba(255, 255, 255, 0.12)',
             bannerIconBg: 'rgba(31, 142, 157, 0.2)',
@@ -336,7 +335,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             heroBg: '#1D1D21',
 
             // Banner
-            bannerContentBg: palette.gray[700],
             bannerBg: palette.turquoise[200],
             bannerButton: 'rgba(255, 255, 255, 0.12)',
             bannerIconBg: 'rgba(31, 142, 157, 0.2)',

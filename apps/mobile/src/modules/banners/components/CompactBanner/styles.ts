@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { palette } from '@theme/colors'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
@@ -50,7 +49,8 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     // Equal min dimensions keep it circular; padding alone would leave the
-    // height short of the width. Opaque white — 18% was invisible on the mint.
+    // height short of the width. Opaque, because 18% was invisible on the mint
+    // this sits on (`bannerBg`, the same turquoise in both themes).
     moreBadge: {
         minWidth: theme.spacing.xl + theme.spacing.xs,
         minHeight: theme.spacing.xl + theme.spacing.xs,
@@ -58,7 +58,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: palette.white,
+        backgroundColor: theme.colors.white,
     },
     moreBadgeText: {
         ...getTypography(theme, 'captionMedium'),
