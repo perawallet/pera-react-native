@@ -10,29 +10,33 @@
  limitations under the License
  */
 
+import { Platform } from 'react-native'
 import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
+        flex: 1,
         backgroundColor: theme.colors.background,
+        // Bottom inset only, so the pager dots and the card's dismiss link sit
+        // clear of the home indicator / nav bar. Deliberately not PWScreen:
+        // this screen wants none of its zones, and its body padding is
+        // `insets.bottom + spacing.lg`, which read as a gap under the dots.
+        paddingBottom: insets.bottom,
     },
     // The carousel takes the full screen; banner art covers the modal. The
     // close X is absolutely positioned above the banner content so it does
     // not steal layout space.
     body: {
         flex: 1,
-        // Full-bleed, and PWScreen only insets its footer — which this screen
-        // has none of, so the dots would sit under the nav bar.
-        paddingBottom: insets.bottom,
     },
     closeButton: {
         position: 'absolute',
-        // PWScreen only safe-areas its footer, and this screen is presented
-        // full-bleed: on Android that puts y=0 under the status bar, so without
-        // the inset the X rides up into it. iOS modals already start below the
-        // bar, where `insets.top` is 0 and this is a no-op (PERA-4751).
-        top: insets.top + theme.spacing.md,
+        // Android renders this presentation full-screen, so y=0 lands under
+        // the status bar and the X needs the inset (PERA-4751). iOS presents it
+        // as a sheet that already starts below the bar, yet `insets.top` still
+        // reports the window's — adding it there pushed the X far too low.
+        top: (Platform.OS === 'android' ? insets.top : 0) + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,

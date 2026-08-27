@@ -22,8 +22,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     // Bottom inset only. The overlay is full-bleed and skips the container's
     // safe-area padding, so the card's "don't show again" link would otherwise
-    // sit under the home indicator — PWScreen supplies that inset to the
-    // carousel modal (`paddingBottom: hasFooter ? spacing.lg : bottomInset`).
+    // sit under the home indicator.
     //
     // Deliberately no top inset: the banner art is meant to run under the status
     // bar. Padding here shows this container's own background as a strip across

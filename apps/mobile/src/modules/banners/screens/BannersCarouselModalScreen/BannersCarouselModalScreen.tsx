@@ -12,7 +12,7 @@
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
-import { PWIcon, PWScreen, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { useBannersCarouselModalScreen } from './useBannersCarouselModalScreen'
 import { useStyles } from './styles'
 
@@ -30,9 +30,7 @@ export const BannersCarouselModalScreen = () => {
     } = useBannersCarouselModalScreen()
 
     return (
-        <PWScreen
-            scroll='never'
-            horizontalPadding='none'
+        <PWView
             style={styles.root}
             testID='banners_carousel_modal'
         >
@@ -58,6 +56,6 @@ export const BannersCarouselModalScreen = () => {
                     />
                 </PWTouchableOpacity>
             ) : null}
-        </PWScreen>
+        </PWView>
     )
 }
