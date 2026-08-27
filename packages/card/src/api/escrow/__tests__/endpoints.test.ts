@@ -53,6 +53,50 @@ describe('approveEscrowCard', () => {
         expect(result).toEqual({ cardAddress: 'ESCROW_CARD' })
     })
 
+    it('resolves null when AB reports the card was already created', async () => {
+        // Re-running the approval after a prior success must not surface an
+        // error toast — the desired end state is already reached.
+        request.mockRejectedValue({
+            response: {
+                status: 400,
+                text: async () =>
+                    JSON.stringify({ message: 'Card already created' }),
+            },
+        })
+
+        await expect(
+            approveEscrowCard({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                currency: 'usdc',
+                signData,
+                signature: 'c2ln',
+                txId: 'TX123',
+            }),
+        ).resolves.toBeNull()
+    })
+
+    it('rethrows a non-already-created approval failure', async () => {
+        request.mockRejectedValue({
+            response: {
+                status: 422,
+                text: async () =>
+                    JSON.stringify({ message: 'Invalid signature' }),
+            },
+        })
+
+        await expect(
+            approveEscrowCard({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                currency: 'usdc',
+                signData,
+                signature: 'c2ln',
+                txId: 'TX123',
+            }),
+        ).rejects.toBeTruthy()
+    })
+
     it('rejects on a malformed response', async () => {
         request.mockResolvedValue({ data: {} })
 

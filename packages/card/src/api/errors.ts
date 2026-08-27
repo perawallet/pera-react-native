@@ -200,6 +200,17 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
     )
 
 /**
+ * AB's `/api/approvals` re-run after a prior success (e.g. an app restart
+ * between create and approve, or a re-entered flow). Matched on text like
+ * {@link isDuplicateError}: AB's status for this case is unconfirmed — seen
+ * live only as a "Card already created" message.
+ */
+export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
+    /already (created|approved)/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
  * KYC not yet VERIFIED. Matched on text like {@link isDuplicateError}: the
  * guides document a `USER_NOT_VERIFIED` code, but the live sandbox has been
  * seen returning only the message.

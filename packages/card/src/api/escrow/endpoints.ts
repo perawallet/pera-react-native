@@ -11,6 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
 import type { CardSiwaSignData } from '../card-creation'
 import {
@@ -39,31 +40,41 @@ export type ApproveEscrowCardParams = {
  * this is called — this call carries that transaction's `txId` so AB can
  * register/confirm the card in its own systems. `amount` is "0": this call
  * funds nothing.
+ *
+ * Idempotent: AB rejects a re-run of an already-approved card ("Card already
+ * created") instead of replaying the success response. That end state is what
+ * this call exists to reach, so it resolves `null` rather than surfacing an
+ * error mid-flow.
  */
 export const approveEscrowCard = async (
     params: ApproveEscrowCardParams,
-): Promise<{ cardAddress: string }> => {
+): Promise<{ cardAddress: string } | null> => {
     const { network, address, currency, signData, signature, txId, signal } =
         params
 
-    const response = await getCardTransport().request({
-        network,
-        route: 'escrow',
-        method: 'POST',
-        path: '/api/approvals',
-        data: {
-            address,
-            currency,
-            amount: '0',
-            signData,
-            signature,
-            txId,
-            blockchain: 'algorand',
-        },
-        signal,
-    })
-
-    return escrowCardApprovalResponseSchema.parse(response.data)
+    try {
+        const response = await getCardTransport().request({
+            network,
+            route: 'escrow',
+            method: 'POST',
+            path: '/api/approvals',
+            data: {
+                address,
+                currency,
+                amount: '0',
+                signData,
+                signature,
+                txId,
+                blockchain: 'algorand',
+            },
+            signal,
+        })
+        return escrowCardApprovalResponseSchema.parse(response.data)
+    } catch (error) {
+        const apiError = await getCardApiError(error)
+        if (isAlreadyCreatedError(apiError)) return null
+        throw error
+    }
 }
 
 export type PostDelegatorLsigParams = {

@@ -15,6 +15,7 @@ import {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isAlreadyCreatedError,
     isDuplicateError,
     isNotVerifiedError,
 } from '../errors'
@@ -193,6 +194,31 @@ describe('isInvalidInputError', () => {
 
     it.each([409, 404, 500, undefined])('is false for %s', status => {
         expect(isInvalidInputError({ status })).toBe(false)
+    })
+})
+
+describe('isAlreadyCreatedError', () => {
+    it('matches AB approval re-runs by message text', () => {
+        expect(
+            isAlreadyCreatedError({
+                status: 400,
+                message: 'Card already created',
+            }),
+        ).toBe(true)
+        expect(
+            isAlreadyCreatedError({ message: 'Approval already approved' }),
+        ).toBe(true)
+    })
+
+    it('does not match other failures', () => {
+        expect(
+            isAlreadyCreatedError({
+                status: 422,
+                message: 'Invalid signature',
+            }),
+        ).toBe(false)
+        expect(isAlreadyCreatedError({ status: 409 })).toBe(false)
+        expect(isAlreadyCreatedError({})).toBe(false)
     })
 })
 
