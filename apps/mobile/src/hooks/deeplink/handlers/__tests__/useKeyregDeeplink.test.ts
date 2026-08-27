@@ -24,6 +24,8 @@ const {
     mockDecodeTransaction,
     mockAllAccounts,
     mockResolveAuthAccount,
+    mockResolveSignerForAccount,
+    mockNetwork,
     mockAssignFeeToGroup,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
@@ -34,6 +36,11 @@ const {
     mockDecodeTransaction: vi.fn((tx: unknown) => tx),
     mockAllAccounts: { current: [] as { address: string; id: string }[] },
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
+    mockResolveSignerForAccount: vi.fn(
+        (_account?: unknown, _accounts?: unknown) =>
+            ({ kind: 'ok' }) as { kind: string; authAddress?: string },
+    ),
+    mockNetwork: { current: 'mainnet' },
     mockAssignFeeToGroup: vi.fn(),
 }))
 
@@ -52,6 +59,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         encodeTransaction: mockEncodeTransaction,
         decodeTransaction: mockDecodeTransaction,
     }),
+    useNetwork: () => ({
+        network: mockNetwork.current,
+        networkConfig: { genesisId: `${mockNetwork.current}-v1.0` },
+    }),
+    getExpectedGenesisHash: (network: string) => `hash-${network}`,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -64,6 +76,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockAllAccounts.current,
     resolveAuthAccount: (account: unknown) => mockResolveAuthAccount(account),
+    resolveSignerForAccount: (account: unknown, accounts: unknown) =>
+        mockResolveSignerForAccount(account, accounts),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -113,6 +127,8 @@ const baseOnlineDeeplink = (
     })
 
 const seedSenderInWallet = () => {
+    mockResolveSignerForAccount.mockReturnValue({ kind: 'ok' })
+    mockNetwork.current = 'mainnet'
     mockAllAccounts.current = [
         { address: VALID_ADDRESS, id: 'wallet-account-1' },
     ]
@@ -186,13 +202,111 @@ describe('useKeyregDeeplink', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
-        it('rejects a rekeyed account whose auth-target is missing, surfacing the resolver error message', async () => {
-            // Sender is in the wallet but resolveAuthAccount throws because
-            // the rekey target isn't held — the hook should bubble the
-            // resolver's message into the error sheet.
+        // ARC-90 `net:`/`gh:` names the chain. Dropping it built the keyreg
+        // against whatever network the wallet happened to be on, and the
+        // genesis-hash analyzer cannot catch that — the txn carries the ACTIVE
+        // chain's hash, so it always matches. Fail closed instead.
+        it('rejects a keyreg whose target network is not the active one', async () => {
             seedSenderInWallet()
-            mockResolveAuthAccount.mockImplementation(() => {
-                throw new Error('Rekey target X not found in local accounts')
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(
+                    baseOfflineDeeplink({ targetNetwork: 'testnet-v1.0' }),
+                )
+            })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    variant: 'keyreg-network-mismatch',
+                }),
+            )
+            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('accepts a target naming the active network by genesis id', async () => {
+            seedSenderInWallet()
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(
+                    baseOfflineDeeplink({ targetNetwork: 'mainnet-v1.0' }),
+                )
+            })
+
+            expect(mockShowError).not.toHaveBeenCalled()
+            expect(mockOfflineKeyRegistration).toHaveBeenCalled()
+        })
+
+        // A `gh:` qualifier arrives as a base64 genesis hash, so match that
+        // too — and via getExpectedGenesisHash, so a Custom network resolves
+        // through its stored hash rather than an empty config value.
+        it('accepts a target naming the active network by genesis hash', async () => {
+            seedSenderInWallet()
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(
+                    baseOfflineDeeplink({ targetNetwork: 'hash-mainnet' }),
+                )
+            })
+
+            expect(mockShowError).not.toHaveBeenCalled()
+            expect(mockOfflineKeyRegistration).toHaveBeenCalled()
+        })
+
+        // A node runner who added their participation account as watch-only
+        // passes every existing check: it IS in the wallet and it has no
+        // broken rekey chain. It just cannot sign, which the pipeline only
+        // discovers at machine init — surfacing a bare "Signing failed" after
+        // the review sheet has already opened.
+        it('rejects a watch-only sender before opening the review sheet', async () => {
+            seedSenderInWallet()
+            mockResolveSignerForAccount.mockReturnValue({ kind: 'watch' })
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink())
+            })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ variant: 'keyreg-cannot-sign' }),
+            )
+            expect(mockOfflineKeyRegistration).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        // Signability is judged on the RESOLVED auth account: a signable
+        // account rekeyed to a watch-only one cannot sign either.
+        it('rejects a sender rekeyed to an account that cannot sign', async () => {
+            seedSenderInWallet()
+            mockResolveSignerForAccount.mockReturnValue({ kind: 'authIsWatch' })
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink())
+            })
+
+            expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ variant: 'keyreg-cannot-sign' }),
+            )
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+
+        // A missing rekey target is a different failure from an unsignable
+        // one: the account genuinely isn't in the wallet, so the copy telling
+        // the user to add it is correct.
+        it('rejects a missing rekey target as an unknown account', async () => {
+            seedSenderInWallet()
+            mockResolveSignerForAccount.mockReturnValue({
+                kind: 'authMissing',
+                authAddress: 'AUTH',
             })
 
             const { result } = renderHook(() => useKeyregDeeplink())
@@ -202,10 +316,7 @@ describe('useKeyregDeeplink', () => {
             })
 
             expect(mockShowError).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({
-                    variant: 'keyreg-unknown-account',
-                    error: 'Rekey target X not found in local accounts',
-                }),
+                expect.objectContaining({ variant: 'keyreg-unknown-account' }),
             )
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })

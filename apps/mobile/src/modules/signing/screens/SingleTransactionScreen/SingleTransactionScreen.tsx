@@ -16,6 +16,7 @@ import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
+import { KeyRegistrationSummary } from '@modules/signing/components/KeyRegistrationSummary'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import {
     useSigningPipeline,
@@ -73,6 +74,10 @@ export const SingleTransactionScreen = () => {
                 />
 
                 <SigningAccountDisplay transaction={transaction} />
+
+                {transaction.txType === 'keyreg' && (
+                    <KeyRegistrationSummary transaction={transaction} />
+                )}
 
                 <FeeDisplay transaction={transaction} />
             </PWView>

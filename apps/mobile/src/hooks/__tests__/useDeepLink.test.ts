@@ -155,7 +155,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         const { Decimal } = require('decimal.js')
         return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
     },
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({
+        network: 'mainnet',
+        networkConfig: { genesisId: 'mainnet-v1.0' },
+    }),
+    getExpectedGenesisHash: () => 'mainnet-hash',
     useAlgorandClient: () => ({
         createTransaction: {
             onlineKeyRegistration: mockOnlineKeyRegistration,
@@ -181,6 +185,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         { address: 'A'.repeat(58), id: 'mock', type: 'algo25' },
     ],
     resolveAuthAccount: (account: unknown) => account,
+    // The keyreg preflight resolves the signer through this; the seeded
+    // account above is locally signable.
+    resolveSignerForAccount: (account: unknown) => ({
+        kind: 'ok',
+        signer: account,
+    }),
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/\s+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
@@ -1785,7 +1795,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.KEYREG,
             senderAddress: 'A'.repeat(58),
-            keyregType: 'keyreg',
+            keyregType: 'online',
             voteKey: 'AAAA',
             // missing selkey, sprfkey, votefst, votelst, votekd
         })
@@ -1808,7 +1818,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.KEYREG,
             senderAddress: 'A'.repeat(58),
-            keyregType: 'keyreg',
+            keyregType: 'online',
             voteKey: 'AAAA',
             selkey: 'BBBB',
             sprfkey: 'CCCC',

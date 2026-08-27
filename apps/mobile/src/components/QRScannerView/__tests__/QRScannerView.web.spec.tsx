@@ -304,6 +304,24 @@ describe('QRScannerView (web)', () => {
             )
         })
 
+        // The paste field is CONTROLLED, so a submit that beats React
+        // committing the change event reads an empty string — and
+        // `submitPasted`'s `if (!trimmed) return` bails before `handleResult`
+        // runs at all, so there is no dispatch, no re-arm and no error.
+        // That silence is what made the extension e2e paste flaky: the click
+        // succeeded and the test died 20s later waiting on something that was
+        // never going to happen. Pinned so the bail stays a deliberate no-op
+        // rather than becoming a crash.
+        it('dispatches nothing when submitted before the value lands', () => {
+            const onSuccess = vi.fn()
+            renderScanner({ onSuccess, skipDeepLinkHandler: false })
+
+            fireEvent.click(screen.getByTestId('qr-paste-submit'))
+
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+            expect(onSuccess).not.toHaveBeenCalled()
+        })
+
         it('skips handleDeepLink and calls onSuccess directly when skipDeepLinkHandler is true', () => {
             const onSuccess = vi.fn()
             renderScanner({ onSuccess, skipDeepLinkHandler: true })
