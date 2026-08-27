@@ -27,6 +27,7 @@ import {
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { QueryProvider, queryClient } from '../QueryProvider'
 import { setOnPeraBackendUnavailable } from '../queryClient'
+import * as queryClientModule from '../queryClient'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -211,7 +212,11 @@ describe('pera-service-unavailable listener wiring', () => {
                 { wrapper },
             )
 
-            await waitFor(() => expect(handler).toHaveBeenCalledWith('betanet'))
+            await waitFor(() =>
+                expect(handler).toHaveBeenCalledWith(
+                    expect.any(PeraServiceUnavailableError),
+                ),
+            )
             expect(result.current.isError).toBe(true)
         } finally {
             unsubscribe()
@@ -238,7 +243,11 @@ describe('pera-service-unavailable listener wiring', () => {
                 result.current.mutate(undefined)
             })
 
-            await waitFor(() => expect(handler).toHaveBeenCalledWith('betanet'))
+            await waitFor(() =>
+                expect(handler).toHaveBeenCalledWith(
+                    expect.any(PeraServiceUnavailableError),
+                ),
+            )
         } finally {
             unsubscribe()
         }
@@ -310,5 +319,27 @@ describe('focusManager wiring', () => {
 
         unmount()
         expect(remove).toHaveBeenCalled()
+    })
+})
+
+describe('Pera-service-unavailable toast registration', () => {
+    const noopPersister: Persister = {
+        persistClient: vi.fn(),
+        restoreClient: vi.fn(async () => undefined),
+        removeClient: vi.fn(),
+    }
+
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it('registers the toast handler when the provider mounts', () => {
+        const spy = vi
+            .spyOn(queryClientModule, 'setOnPeraBackendUnavailable')
+            .mockReturnValue(() => {})
+
+        render(<QueryProvider persister={noopPersister}>{null}</QueryProvider>)
+
+        expect(spy).toHaveBeenCalledTimes(1)
     })
 })

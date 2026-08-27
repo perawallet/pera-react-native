@@ -12,21 +12,22 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 
-const { mockShowToast, mockSetOnPeraBackendUnavailable } = vi.hoisted(() => ({
-    mockShowToast: vi.fn(),
+const { mockShowError, mockSetOnPeraBackendUnavailable } = vi.hoisted(() => ({
+    mockShowError: vi.fn(),
     mockSetOnPeraBackendUnavailable: vi.fn(),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-vi.mock('../queryClient', () => ({
+vi.mock('@providers/queryClient', () => ({
     setOnPeraBackendUnavailable: mockSetOnPeraBackendUnavailable,
 }))
 
@@ -37,10 +38,12 @@ describe('usePeraServiceUnavailableToast', () => {
         vi.clearAllMocks()
     })
 
-    it('registers a handler and toasts once per network (deduped)', () => {
-        let capturedHandler: ((network: string) => void) | undefined
+    it('registers a handler that toasts once per network, deduped', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
         mockSetOnPeraBackendUnavailable.mockImplementation(
-            (handler: (network: string) => void) => {
+            (handler: (error: PeraServiceUnavailableError) => void) => {
                 capturedHandler = handler
                 return vi.fn()
             },
@@ -50,21 +53,25 @@ describe('usePeraServiceUnavailableToast', () => {
 
         expect(mockSetOnPeraBackendUnavailable).toHaveBeenCalledTimes(1)
 
-        capturedHandler?.('betanet')
-        capturedHandler?.('betanet')
-        capturedHandler?.('custom')
+        const betanet = new PeraServiceUnavailableError('betanet')
+        const custom = new PeraServiceUnavailableError('custom')
 
-        expect(mockShowToast).toHaveBeenCalledTimes(2)
-        expect(mockShowToast).toHaveBeenNthCalledWith(1, {
-            title: 'common.network_unavailable.title',
-            body: 'common.network_unavailable.body',
-            type: 'info',
-        })
-        expect(mockShowToast).toHaveBeenNthCalledWith(2, {
-            title: 'common.network_unavailable.title',
-            body: 'common.network_unavailable.body',
-            type: 'info',
-        })
+        capturedHandler?.(betanet)
+        capturedHandler?.(betanet)
+        capturedHandler?.(custom)
+        capturedHandler?.(betanet)
+
+        expect(mockShowError).toHaveBeenCalledTimes(2)
+        expect(mockShowError).toHaveBeenNthCalledWith(
+            1,
+            betanet,
+            'common.network_unavailable.title',
+        )
+        expect(mockShowError).toHaveBeenNthCalledWith(
+            2,
+            custom,
+            'common.network_unavailable.title',
+        )
     })
 
     it('unsubscribes the handler on unmount', () => {

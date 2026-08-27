@@ -25,10 +25,12 @@ import {
     isTransientNetworkError,
     logger,
     mutationDefaults,
-    type Network,
+    type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 
-type PeraBackendUnavailableHandler = (network: Network) => void
+type PeraBackendUnavailableHandler = (
+    error: PeraServiceUnavailableError,
+) => void
 
 // Set by QueryProvider (a React subtree that can reach the toast layer); this
 // module itself stays free of react-native imports so the browser extension's
@@ -69,7 +71,7 @@ const cache = new QueryCache({
         // isTransientNetworkError, which means "retrying may succeed" and
         // must keep meaning exactly that.
         if (isPeraServiceUnavailableError(error)) {
-            peraBackendUnavailableHandler?.(error.network)
+            peraBackendUnavailableHandler?.(error)
             return
         }
         logger.error('An error has occurred:', { error })
@@ -80,11 +82,11 @@ const mutationCache = new MutationCache({
     onError: (error, _variables, _context, mutation) => {
         // Same transient- and not-deployed-skip rationale as the query cache
         // above.
-        if (isPeraServiceUnavailableError(error)) {
-            peraBackendUnavailableHandler?.(error.network)
+        if (isTransientNetworkError(error)) {
             return
         }
-        if (isTransientNetworkError(error)) {
+        if (isPeraServiceUnavailableError(error)) {
+            peraBackendUnavailableHandler?.(error)
             return
         }
         logger.error('Mutation failed:', {
