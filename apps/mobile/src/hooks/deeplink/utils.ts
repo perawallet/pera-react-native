@@ -15,6 +15,7 @@ import {
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
 } from './constants'
+import type { KeyregParticipationFields, KeyregType } from './types'
 
 /**
  * Parse query parameters from a URL
@@ -62,6 +63,25 @@ export const parseQueryParams = (url: string): Record<string, string> => {
  */
 export const isValidAssetId = (assetId: string): boolean =>
     /^\d+$/.test(assetId)
+
+/**
+ * ARC-78 carries no online/offline discriminator — `type=keyreg` is its only
+ * value — so the intent is read off the participation keys: a bare
+ * `?type=keyreg` IS the de-registration (spec appendix example 2, and exactly
+ * what nodekit emits for "go offline").
+ *
+ * Takes the already-resolved fields rather than the raw query params, because
+ * the three parsers spell them differently (`votekey` vs `voteKey`, plus the
+ * legacy `votekdkey`).
+ *
+ * A *partial* key set resolves to `online`, never `offline`: the user scanned
+ * a go-online QR, and quietly building a de-registration instead would drop
+ * their node out of consensus. The handler rejects the incomplete set instead.
+ */
+export const inferKeyregType = (
+    participation: KeyregParticipationFields,
+): KeyregType =>
+    Object.values(participation).some(Boolean) ? 'online' : 'offline'
 
 /**
  * Decode base64-encoded parameter

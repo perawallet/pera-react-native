@@ -13,8 +13,10 @@
 import { useCallback } from 'react'
 import { microAlgo } from '@algorandfoundation/algokit-utils'
 import {
+    getExpectedGenesisHash,
     isValidAlgorandAddress,
     useAlgorandClient,
+    useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -22,7 +24,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
-    resolveAuthAccount,
+    resolveSignerForAccount,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -31,6 +33,7 @@ import {
     generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-config'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { withTimeout } from './timeout'
 import type { KeyregDeeplink } from '../types'
@@ -54,39 +57,75 @@ const decodeKeyregBase64 = (key: string): Uint8Array => {
     return decodeFromBase64(key + '='.repeat(padLen))
 }
 
-/**
- * SignRequestView already renders a keyreg summary, so there's no separate
- * review UI here. Online keyreg needs every participation key field — a partial
- * deeplink is rejected rather than producing a malformed txn.
- */
+type Ineligible = {
+    variant: 'keyreg-unknown-account' | 'keyreg-cannot-sign'
+    reason: string
+}
+
 /**
  * Mirrors the pipeline's `resolveInitialContext` checks at the deeplink layer,
  * so a doomed request never gets queued into a useless review sheet.
+ *
+ * Delegates to `resolveSignerForAccount` — the same resolution the pipeline
+ * uses — rather than re-deriving it. Checking only that the account exists and
+ * its rekey chain resolves let a watch-only sender through, which the node
+ * runner's setup makes likely; the pipeline then threw at machine init and the
+ * user got a bare "Signing failed" with the sheet already open.
+ *
+ * The two rejections are NOT interchangeable: an absent account (or rekey
+ * target) is fixable by adding it, whereas a watch-only one is in the wallet
+ * already and needs its key instead.
  */
 const checkSigningEligibility = (
     senderAddress: string,
     accounts: WalletAccount[],
-): { reason: string } | null => {
+): Ineligible | null => {
     const account = accounts.find(a => a.address === senderAddress)
     if (!account) {
         return {
+            variant: 'keyreg-unknown-account',
             reason: `Account ${senderAddress} is not in this wallet`,
         }
     }
-    try {
-        // Throws RekeyTargetNotFoundError when the account is rekeyed
-        // and the rekey target is also missing.
-        resolveAuthAccount(account, accounts)
+
+    // Judged on the RESOLVED signer, so a signable account rekeyed to an
+    // unsignable one is rejected too.
+    const resolution = resolveSignerForAccount(account, accounts)
+    if (resolution.kind === 'ok') {
         return null
-    } catch (err) {
+    }
+    if (resolution.kind === 'authMissing') {
         return {
-            reason: err instanceof Error ? err.message : String(err),
+            variant: 'keyreg-unknown-account',
+            reason: `Rekey target ${resolution.authAddress} is not in this wallet`,
         }
+    }
+    return {
+        variant: 'keyreg-cannot-sign',
+        reason: `Account ${senderAddress} cannot sign (${resolution.kind})`,
     }
 }
 
+/**
+ * ARC-90 lets a URI name its chain as a `net:` genesis id or a `gh:` genesis
+ * hash, so accept either spelling — plus the bare network name, which is what
+ * the assetquery/appquery branches already compare against.
+ *
+ * Resolved through `getExpectedGenesisHash` rather than the static config so a
+ * Custom network matches on its stored hash instead of config's empty string.
+ */
+const namesActiveNetwork = (
+    target: string,
+    network: Network,
+    genesisId: string,
+): boolean =>
+    target === network ||
+    (!!genesisId && target === genesisId) ||
+    target === getExpectedGenesisHash(network)
+
 export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const algorandClient = useAlgorandClient()
+    const { network, networkConfig } = useNetwork()
     const { encodeTransaction, decodeTransaction } = useTransactionEncoder()
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
@@ -114,9 +153,29 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             )
             if (ineligible) {
                 showError({
-                    variant: 'keyreg-unknown-account',
+                    variant: ineligible.variant,
                     parsedType: 'KEYREG',
                     error: ineligible.reason,
+                })
+                return
+            }
+
+            // The transaction is built against the ACTIVE network, so a
+            // cross-chain scan produces a valid-looking txn for the wrong
+            // chain that no downstream genesis-hash check can catch. Fail
+            // closed on anything that doesn't name the active network.
+            if (
+                data.targetNetwork &&
+                !namesActiveNetwork(
+                    data.targetNetwork,
+                    network,
+                    networkConfig.genesisId,
+                )
+            ) {
+                showError({
+                    variant: 'keyreg-network-mismatch',
+                    parsedType: 'KEYREG',
+                    error: `Deeplink targets ${data.targetNetwork}, wallet is on ${network}`,
                 })
                 return
             }
@@ -229,6 +288,8 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             assignFeeToGroup,
             decodeTransaction,
             encodeTransaction,
+            network,
+            networkConfig,
             showError,
         ],
     )

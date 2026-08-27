@@ -162,6 +162,8 @@
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
             "body_keyreg": "Die Schlüsselregistrierungs-Transaktion konnte nicht erstellt werden.",
             "body_keyreg_unknown_account": "Diese Schlüsselregistrierung gehört zu einem Konto, das sich nicht in diesem Wallet befindet. Füge das Konto zuerst hinzu und scanne dann erneut.",
+            "body_keyreg_cannot_sign": "Dieses Konto kann in Pera keine Transaktionen signieren. Für die Registrierung wird der private Schlüssel des Kontos benötigt, nicht nur eine Beobachtungskopie.",
+            "body_keyreg_network_mismatch": "Diese Registrierung gilt für ein anderes Algorand-Netzwerk als das deiner Wallet. Wechsle das Netzwerk und scanne erneut.",
             "title_recover": "Konto konnte nicht importiert werden",
             "body_recover": "Das Konto konnte nicht aus diesem QR-Code importiert werden.",
             "body_recover_duplicate": "Dieses Konto befindet sich bereits in deinem Wallet.",
@@ -2672,6 +2674,7 @@
             "key_dilution": "Schlüsselverdünnung",
             "participation_key": "Teilnahmeschlüssel",
             "selection_key": "Auswahlschlüssel",
+            "state_proof_key": "State-Proof-Schlüssel",
             "status": "Registrierungsstatus",
             "online": "Online",
             "offline": "Offline"

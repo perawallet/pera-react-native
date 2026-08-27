@@ -162,6 +162,8 @@
             "title_keyreg": "Não foi possível preparar o registro de chaves",
             "body_keyreg": "Não conseguimos criar a transação de registro de chaves.",
             "body_keyreg_unknown_account": "Este registro de chaves é de uma conta que você não tem nesta wallet. Adicione a conta primeiro e escaneie novamente.",
+            "body_keyreg_cannot_sign": "Esta conta não pode assinar transações na Pera. O registro precisa da chave privada da conta, não de uma cópia somente leitura.",
+            "body_keyreg_network_mismatch": "Este registro é para uma rede Algorand diferente da que sua wallet está usando. Troque de rede e escaneie novamente.",
             "title_recover": "Não foi possível importar a conta",
             "body_recover": "Não conseguimos importar a conta a partir deste QR.",
             "body_recover_duplicate": "Esta conta já está na sua wallet.",
@@ -2699,6 +2701,7 @@
             "key_dilution": "Diluição de chave",
             "participation_key": "Chave de participação",
             "selection_key": "Chave de seleção",
+            "state_proof_key": "Chave de prova de estado",
             "status": "Status do registro",
             "online": "Online",
             "offline": "Offline"
