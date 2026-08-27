@@ -38,6 +38,11 @@ export const TabBarStackNavigator = () => {
             screenOptions={({ route }) => ({
                 ...(Platform.OS === 'web' ? getWebTabTransition(width) : null),
                 headerShown: false,
+                // Left unset, BottomTabBar's shouldUseHorizontalLabels flips the
+                // label beside the icon whenever the tabs fit side by side —
+                // every tablet, and any phone in landscape. Pin it so the
+                // stacked layout `tabBarStyle.height` is sized for always holds.
+                tabBarLabelPosition: 'below-icon',
                 tabBarStyle: {
                     backgroundColor: theme.colors.background,
                     borderTopWidth: theme.borders.none,
