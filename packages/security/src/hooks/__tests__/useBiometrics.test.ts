@@ -32,6 +32,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 const mockCheckBiometricsAvailable = vi.fn()
+const mockGetAvailability = vi.fn()
 const mockAuthenticate = vi.fn()
 const mockGetSecurityLevel = vi.fn()
 const mockCreateEnrollmentBinding = vi.fn()
@@ -40,6 +41,7 @@ const mockClearEnrollmentBinding = vi.fn()
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
+    getAvailability: mockGetAvailability,
     authenticate: mockAuthenticate,
     getSecurityLevel: mockGetSecurityLevel,
     getSupportedBiometricType: vi.fn(),
@@ -119,6 +121,7 @@ describe('useBiometrics', () => {
         // matching the set bound at opt-in; tests covering unavailable / weak /
         // revoked / re-enrolled devices override these.
         mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockGetAvailability.mockResolvedValue('available')
         mockGetSecurityLevel.mockResolvedValue('strong')
         mockCheckEnrollmentBinding.mockResolvedValue('valid')
     })
@@ -931,6 +934,75 @@ describe('useBiometrics', () => {
                 reason: 'weak-biometric',
             })
             expect(result.current.disabledReason).toBe('weak-biometric')
+        })
+
+        // The distinction ticket 2 could not make with a boolean: both of these
+        // read as "unavailable", but only one of them is the user's problem to
+        // solve.
+        test.each(['none-enrolled', 'denied'] as const)(
+            'explains a persistent %s state without destroying the opt-in',
+            async availability => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                mockCheckBiometricsAvailable.mockResolvedValue(false)
+                mockGetAvailability.mockResolvedValue(availability)
+
+                const { result } = await renderAndSettle()
+
+                await act(async () => {
+                    await result.current.checkBiometricsEnabled()
+                })
+
+                expect(result.current.disabledReason).toBe('not-available')
+                expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+                expect(kmsMocks.biometricBytes).not.toBeNull()
+            },
+        )
+
+        // An Android fingerprint lockout lands here. It clears itself, so
+        // telling the user to go and fix their device settings would be both
+        // wrong and alarming.
+        test.each(['unavailable', 'unknown'] as const)(
+            'stays silent while biometrics are transiently %s',
+            async availability => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                mockCheckBiometricsAvailable.mockResolvedValue(false)
+                mockGetAvailability.mockResolvedValue(availability)
+
+                const { result } = await renderAndSettle()
+
+                await act(async () => {
+                    await result.current.checkBiometricsEnabled()
+                })
+
+                expect(result.current.disabledReason).toBeNull()
+                expect(kmsMocks.biometricBytes).not.toBeNull()
+            },
+        )
+
+        // The blob survives a `not-available` state, so the user can recover it
+        // entirely in device settings without ever touching Pera. Leaving the
+        // reason behind would then greet them with a screen offering to fix
+        // something that already works.
+        test('drops the explanation once biometrics work again', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('denied')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            expect(result.current.disabledReason).toBe('not-available')
+
+            // Permission granted back in device settings.
+            mockCheckBiometricsAvailable.mockResolvedValue(true)
+            mockGetAvailability.mockResolvedValue('available')
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.isEnabled).toBe(true)
+            expect(result.current.disabledReason).toBeNull()
         })
 
         test('records no reason when the user disables biometrics themselves', async () => {

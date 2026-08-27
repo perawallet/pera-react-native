@@ -136,11 +136,17 @@ export const useBiometrics = (): UseBiometricsResult => {
         // through "every biometric removed" is dropped as soon as a new one is
         // enrolled, which is the only way it could have re-armed unlock.
         if (!(await biometricsService.checkBiometricsAvailable())) {
-            // No reason recorded either, deliberately: it would queue the
-            // re-enable prompt, and on Android this branch fires for a lockout
-            // that clears itself. Telling the user to go fix their device
-            // settings for a 30-second state would be worse than saying nothing.
             setIsEnabled(false)
+            // Whether to say anything is a different question from whether to
+            // destroy anything, and only `getAvailability` can answer it: a
+            // lockout clears itself and must stay silent, while an empty
+            // enrollment or a revoked app permission persists until the user
+            // acts, and biometric unlock quietly not working is exactly what
+            // this is meant to prevent.
+            const availability = await biometricsService.getAvailability()
+            if (availability === 'none-enrolled' || availability === 'denied') {
+                setDisabledReason('not-available')
+            }
             return false
         }
 
@@ -163,6 +169,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                 await biometricsService.createEnrollmentBinding()
             }
             setIsEnabled(true)
+            // Biometric unlock works, so there is nothing left to explain. This
+            // matters now that `not-available` is recorded without destroying
+            // the blob: the user who grants a revoked permission back recovers
+            // here silently, and a stale reason would put a screen in front of
+            // them offering to fix what they just fixed. Every other reason
+            // implies a destroyed blob, which never reaches this line.
+            setDisabledReason(null)
             return true
         }
 
@@ -179,7 +192,13 @@ export const useBiometrics = (): UseBiometricsResult => {
         }
         setIsEnabled(false)
         return false
-    }, [hasSecret, dropOptIn, biometricsService, setIsEnabled])
+    }, [
+        hasSecret,
+        dropOptIn,
+        biometricsService,
+        setIsEnabled,
+        setDisabledReason,
+    ])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()

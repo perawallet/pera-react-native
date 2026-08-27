@@ -2107,7 +2107,8 @@
             "confirm": "Volver a activar",
             "cancel": "Ahora no",
             "unavailable_title": "Biometría no disponible",
-            "unavailable_body": "Activa Face ID o Touch ID para Pera en los ajustes de tu dispositivo y vuelve a habilitar el desbloqueo biométrico."
+            "unavailable_body": "Activa Face ID o Touch ID para Pera en los ajustes de tu dispositivo y vuelve a habilitar el desbloqueo biométrico.",
+            "body_not-available": "El desbloqueo biométrico no funciona porque tu dispositivo no tiene biometría configurada para Pera. Configúrala en los ajustes de tu dispositivo y vuelve a activarla aquí."
         }
     },
     "send_funds": {

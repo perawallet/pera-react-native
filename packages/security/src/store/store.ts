@@ -55,7 +55,11 @@ const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
 const sanitizeDisabledReason = (
     value: unknown,
 ): Nullable<BiometricsDisabledReason> =>
-    value === 'enrollment-changed' || value === 'weak-biometric' ? value : null
+    value === 'enrollment-changed' ||
+    value === 'weak-biometric' ||
+    value === 'not-available'
+        ? value
+        : null
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>

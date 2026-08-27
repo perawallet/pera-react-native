@@ -49,6 +49,34 @@ public class PeraBiometricBindingModule: Module {
     AsyncFunction("clearBinding") { () -> Void in
       Self.delete()
     }
+
+    // `LAContext` distinguishes what expo's `isEnrolledAsync` boolean cannot:
+    // a lockout (temporary) from an empty enrollment or a revoked per-app Face
+    // ID permission (both permanent until the user acts).
+    AsyncFunction("getAvailability") { () -> String in
+      let context = LAContext()
+      var error: NSError?
+      if context.canEvaluatePolicy(
+        .deviceOwnerAuthenticationWithBiometrics,
+        error: &error
+      ) {
+        return "available"
+      }
+
+      switch error?.code {
+      case LAError.biometryNotEnrolled.rawValue:
+        return "none-enrolled"
+      case LAError.biometryLockout.rawValue:
+        return "unavailable"
+      // Covers both "the user denied Face ID for this app" and "no biometric
+      // hardware". Only the first is reachable for someone who had biometric
+      // unlock switched on, and it is the case worth telling them about.
+      case LAError.biometryNotAvailable.rawValue:
+        return "denied"
+      default:
+        return "unknown"
+      }
+    }
   }
 
   /// `evaluatedPolicyDomainState` is only populated once the policy has been

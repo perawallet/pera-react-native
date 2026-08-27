@@ -78,9 +78,43 @@ export type BiometricEnrollmentBinding =
     | 'absent'
     | 'unavailable'
 
+/**
+ * Why biometrics cannot be used right now, at the granularity the *user-facing*
+ * decision needs: whether they have to go and fix something, or whether it will
+ * come back on its own.
+ *
+ * {@link BiometricsService.checkBiometricsAvailable} cannot answer that. On
+ * Android it reduces to `canAuthenticate(BIOMETRIC_WEAK) == SUCCESS`, which
+ * collapses a fingerprint lockout in with "nothing enrolled" — so acting on it
+ * either nags users through a state that clears itself, or says nothing about
+ * one that never will.
+ *
+ * - `available`    — usable now.
+ * - `none-enrolled`— no biometric is enrolled. Persistent until the user
+ *                    enrolls one.
+ * - `denied`       — enrolled, but this app may not use it (iOS per-app Face ID
+ *                    permission). Persistent until the user grants it. Android
+ *                    has no equivalent and never reports this.
+ * - `unavailable`  — temporarily unusable: sensor busy, or locked out after too
+ *                    many attempts. Clears itself; must not be surfaced as a
+ *                    problem the user has to solve.
+ * - `unknown`      — the platform declined to say. Treated as `unavailable`.
+ */
+export type BiometricAvailability =
+    | 'available'
+    | 'none-enrolled'
+    | 'denied'
+    | 'unavailable'
+    | 'unknown'
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
+    /**
+     * The reason behind {@link checkBiometricsAvailable} returning false.
+     * Prefer this wherever the answer drives something the user sees.
+     */
+    getAvailability(): Promise<BiometricAvailability>
     /**
      * The strongest enrolled authentication level. Distinct from
      * {@link checkBiometricsAvailable}, which only reports whether *some*

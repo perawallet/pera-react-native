@@ -2099,7 +2099,8 @@
             "confirm": "Wieder aktivieren",
             "cancel": "Jetzt nicht",
             "unavailable_title": "Biometrie nicht verfügbar",
-            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein."
+            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein.",
+            "body_not-available": "Die biometrische Entsperrung funktioniert nicht, weil auf deinem Gerät keine Biometrie für Pera eingerichtet ist. Richte sie in den Geräteeinstellungen ein und aktiviere sie hier wieder."
         }
     },
     "send_funds": {

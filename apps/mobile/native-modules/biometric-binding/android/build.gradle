@@ -16,3 +16,9 @@ android {
     abortOnError false
   }
 }
+
+dependencies {
+  // Matched to the version expo-local-authentication already pulls in, so the
+  // app resolves a single androidx.biometric.
+  implementation 'androidx.biometric:biometric:1.2.0-alpha04'
+}
