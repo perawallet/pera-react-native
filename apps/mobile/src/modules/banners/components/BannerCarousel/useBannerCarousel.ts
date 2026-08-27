@@ -19,6 +19,8 @@ import type {
 
 type UseBannerCarouselParams = {
     initialIndex: number
+    /** Banner count, so a dismissal can't leave the active index past the end. */
+    count: number
 }
 
 type PageSize = {
@@ -38,6 +40,7 @@ type UseBannerCarouselResult = {
 
 export const useBannerCarousel = ({
     initialIndex,
+    count,
 }: UseBannerCarouselParams): UseBannerCarouselResult => {
     const [pageSize, setPageSize] = useState<PageSize>({ width: 0, height: 0 })
     const [activeIndex, setActiveIndex] = useState(initialIndex)
@@ -66,5 +69,15 @@ export const useBannerCarousel = ({
         [],
     )
 
-    return { activeIndex, pageSize, handleLayout, handleMomentumScrollEnd }
+    // Clamped on read rather than synced to `count`: dismissing a banner
+    // shrinks the list under us, and a stored index past the end lights no dot
+    // at all.
+    const clampedIndex = Math.min(activeIndex, Math.max(count - 1, 0))
+
+    return {
+        activeIndex: clampedIndex,
+        pageSize,
+        handleLayout,
+        handleMomentumScrollEnd,
+    }
 }

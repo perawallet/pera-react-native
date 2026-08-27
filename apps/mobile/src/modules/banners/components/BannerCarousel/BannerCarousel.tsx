@@ -40,7 +40,7 @@ export const BannerCarousel = ({
 }: BannerCarouselProps) => {
     const styles = useStyles()
     const { activeIndex, pageSize, handleLayout, handleMomentumScrollEnd } =
-        useBannerCarousel({ initialIndex })
+        useBannerCarousel({ initialIndex, count: banners.length })
 
     const renderItem = useCallback(
         ({ item }: { item: Banner }) => (
@@ -85,7 +85,8 @@ export const BannerCarousel = ({
                 own layout and clipped at the bottom — taking the card's CTA and
                 dismiss link with it. Pages mount only once this box is measured,
                 so each is exactly one viewport and initialScrollIndex lands on
-                the right banner. */}
+                the right banner — which also means this subtree renders nothing
+                under jsdom, where onLayout never fires. */}
             <PWView
                 style={styles.pagerArea}
                 onLayout={handleLayout}
