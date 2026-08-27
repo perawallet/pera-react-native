@@ -15,30 +15,18 @@ import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-
 import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { migrateWalletConnect } from '../migrateWalletConnect'
 
-const {
-    storeState,
-    setWalletConnectConnectionsMock,
-    accountsState,
-    loggerMock,
-} = vi.hoisted(() => {
-    const setWalletConnectConnectionsMock = vi.fn()
-    const loggerMock = { warn: vi.fn(), error: vi.fn(), debug: vi.fn() }
-    const storeState = {
-        walletConnectConnections: [] as unknown[],
-        setWalletConnectConnections: setWalletConnectConnectionsMock,
-    }
-    const accountsState = {
-        accounts: [] as { address: string }[],
-    }
-    return {
-        storeState,
-        setWalletConnectConnectionsMock,
-        accountsState,
-        loggerMock,
-    }
-})
-
-vi.mock('@perawallet/wallet-core-shared', () => ({ logger: loggerMock }))
+const { storeState, setWalletConnectConnectionsMock, accountsState } =
+    vi.hoisted(() => {
+        const setWalletConnectConnectionsMock = vi.fn()
+        const storeState = {
+            walletConnectConnections: [] as unknown[],
+            setWalletConnectConnections: setWalletConnectConnectionsMock,
+        }
+        const accountsState = {
+            accounts: [] as { address: string }[],
+        }
+        return { storeState, setWalletConnectConnectionsMock, accountsState }
+    })
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: {
@@ -47,7 +35,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    AlgorandChainId: { mainnet: 416_001, all: 4160 },
+    AlgorandChainId: { mainnet: 416_001 },
     PERA_CLIENT_META: {
         name: 'Pera Wallet',
         description: 'Simply the best Algorand wallet',
@@ -95,7 +83,6 @@ const writtenConnections = (): WalletConnectConnection[] =>
 describe('migrateWalletConnect', () => {
     beforeEach(() => {
         setWalletConnectConnectionsMock.mockReset()
-        loggerMock.warn.mockReset()
         storeState.walletConnectConnections = []
         accountsState.accounts = [
             { address: 'APPROVED_ADDR' },
@@ -163,11 +150,11 @@ describe('migrateWalletConnect', () => {
         expect(written[0].session?.chainId).toBe(416_002)
     })
 
-    it('imports a session with no legacy chainId as the any-chain wildcard', () => {
+    it('skips a session whose chainId is unknown rather than guessing the network', () => {
         const result = migrateWalletConnect([buildSession({ chainId: null })])
 
-        expect(result).toEqual({ imported: 1, skipped: 0 })
-        expect(writtenConnections()[0].session?.chainId).toBe(4160)
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(setWalletConnectConnectionsMock).not.toHaveBeenCalled()
     })
 
     it('falls back to connectedAccounts when approvedAccounts is null or empty', () => {
@@ -342,108 +329,6 @@ describe('migrateWalletConnect', () => {
         const written = writtenConnections()
         expect(written).toHaveLength(1)
         expect(written[0].clientId).toBe('client-1')
-    })
-
-    it.each([
-        ['missing-client-id', { clientId: null }],
-        ['missing-peer-id', { peerId: null }],
-        ['no-accounts', { approvedAccounts: null, connectedAccounts: [] }],
-        ['unparseable-session-meta', { sessionMetaJson: 'not-json{{' }],
-        [
-            'missing-bridge',
-            {
-                sessionMetaJson: JSON.stringify({
-                    bridge: '',
-                    key: 'k',
-                    topic: 'topic-1',
-                }),
-            },
-        ],
-        [
-            'missing-topic',
-            {
-                sessionMetaJson: JSON.stringify({
-                    bridge: 'https://bridge.walletconnect.org',
-                    key: 'k',
-                    topic: '',
-                }),
-            },
-        ],
-        [
-            'missing-key',
-            {
-                currentKey: null,
-                sessionMetaJson: JSON.stringify({
-                    bridge: 'https://bridge.walletconnect.org',
-                    topic: 'topic-1',
-                }),
-            },
-        ],
-    ] as const)(
-        'warns with the legacy session id, dApp and the %s reason when skipping',
-        (reason, overrides) => {
-            migrateWalletConnect([
-                buildSession(
-                    overrides as Partial<LegacyWalletConnectV1Session>,
-                ),
-            ])
-
-            expect(loggerMock.warn).toHaveBeenCalledWith(
-                '[Migration] walletConnect session skipped',
-                expect.objectContaining({
-                    id: '42',
-                    dApp: 'Test dApp',
-                    reason,
-                }),
-            )
-        },
-    )
-
-    it('names the un-migrated address when skipping for a missing account', () => {
-        accountsState.accounts = []
-
-        migrateWalletConnect([buildSession()])
-
-        expect(loggerMock.warn).toHaveBeenCalledWith(
-            '[Migration] walletConnect session skipped',
-            expect.objectContaining({
-                id: '42',
-                reason: 'unmigrated-accounts',
-                missingAccounts: ['APPROVED_ADDR'],
-            }),
-        )
-    })
-
-    it.each([
-        [
-            'duplicate-client-id',
-            { clientId: 'client-1', session: { handshakeTopic: 'other' } },
-        ],
-        [
-            'duplicate-topic',
-            {
-                clientId: 'other-client',
-                session: { handshakeTopic: 'topic-1' },
-            },
-        ],
-    ] as const)(
-        'reports an already-stored session as %s',
-        (reason, existing) => {
-            storeState.walletConnectConnections = [existing]
-
-            migrateWalletConnect([buildSession()])
-
-            expect(loggerMock.warn).toHaveBeenCalledWith(
-                '[Migration] walletConnect session skipped',
-                expect.objectContaining({ id: '42', reason }),
-            )
-        },
-    )
-
-    it('keeps a legacy chainId of 0 rather than reading it as absent', () => {
-        migrateWalletConnect([buildSession({ chainId: 0 })])
-
-        expect(writtenConnections()[0].session?.chainId).toBe(0)
     })
 
     it('returns zeros and writes nothing for an empty input', () => {

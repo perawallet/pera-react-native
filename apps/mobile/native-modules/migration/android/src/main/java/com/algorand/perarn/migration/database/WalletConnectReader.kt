@@ -56,19 +56,7 @@ private fun JSONObject.optNonEmptyString(key: String): String? =
 
 private fun readSessionStore(context: Context): Map<String, WcSessionStoreState> {
     val file = File(context.cacheDir, LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME)
-    if (!file.exists()) {
-        // The durable DB row carries everything except clientId, peerId,
-        // handshakeId, currentKey, approvedAccounts and chainId — those six
-        // live only here, and cacheDir is OS-evictable. Once it is gone no v1
-        // session can be rehydrated, so say so instead of letting the
-        // migration report "no sessions existed" (PERA-4787).
-        Log.w(
-            LegacyMigrationConstants.LOG_TAG,
-            "${LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME} absent from cacheDir; " +
-                "no WalletConnect v1 session can be migrated",
-        )
-        return emptyMap()
-    }
+    if (!file.exists()) return emptyMap()
     return try {
         val root = JSONObject(file.readText())
         val out = HashMap<String, WcSessionStoreState>()
@@ -132,19 +120,7 @@ internal class WalletConnectReader(
             }
             val states = readSessionStore(context)
             sessions.map { session ->
-                val topic = parseHandshakeTopic(session.sessionMetaJson)
-                val state = topic?.let { states[it] }
-                // Per-topic lookup, so the store only has to be *partially* stale
-                // for one dApp to be lost while its siblings migrate. Suppressed
-                // when the store came back wholly empty — that is already logged
-                // once above, and repeating it per row buries the signal.
-                if (state == null && states.isNotEmpty()) {
-                    Log.w(
-                        LegacyMigrationConstants.LOG_TAG,
-                        "WalletConnect v1 session ${session.id} has no session_store " +
-                            "entry (topic=${topic ?: "unparseable"}); it cannot be migrated",
-                    )
-                }
+                val state = parseHandshakeTopic(session.sessionMetaJson)?.let { states[it] }
                 session.copy(
                     connectedAccounts = readConnectedAccounts(db, session.id),
                     clientId = state?.clientId,
