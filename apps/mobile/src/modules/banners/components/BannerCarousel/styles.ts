@@ -33,10 +33,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'center',
         gap: theme.spacing.xs,
-        // Top only — both hosts already pad the bottom by the safe-area inset,
-        // so a symmetric padding here reads as a gap under the dots. Kept small
-        // because the card already contributes its own bottom padding above.
-        paddingTop: theme.spacing.xs,
+        // No top padding: the card's own bottom padding already separates the
+        // dots from its dismiss link, and stacking both read as a gap. Bottom
+        // only, since each host pads the safe-area inset below this.
         paddingBottom: theme.spacing.xs,
     },
     dot: {

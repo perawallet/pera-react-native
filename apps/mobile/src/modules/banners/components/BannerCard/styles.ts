@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
+        paddingBottom: theme.spacing.sm,
     },
     topGroup: {
         gap: theme.spacing.md,
