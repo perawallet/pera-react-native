@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { QueryProvider, queryClient } from '../QueryProvider'
+import { setOnPeraBackendUnavailable } from '../queryClient'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -183,6 +184,85 @@ describe('queryClient query error policy', () => {
             'An error has occurred:',
             expect.objectContaining({ error: expect.any(Error) }),
         )
+    })
+})
+
+describe('pera-service-unavailable listener wiring', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks()
+        queryClient.getQueryCache().clear()
+        queryClient.getMutationCache().clear()
+    })
+
+    it('forwards a Pera service-unavailable query error to the registered handler', async () => {
+        const handler = vi.fn()
+        const unsubscribe = setOnPeraBackendUnavailable(handler)
+
+        try {
+            const { result } = renderHook(
+                () =>
+                    useQuery({
+                        queryKey: ['pera-listener-query'],
+                        queryFn: () =>
+                            Promise.reject(
+                                new PeraServiceUnavailableError('betanet'),
+                            ),
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(handler).toHaveBeenCalledWith('betanet'))
+            expect(result.current.isError).toBe(true)
+        } finally {
+            unsubscribe()
+        }
+    })
+
+    it('forwards a Pera service-unavailable mutation error to the registered handler', async () => {
+        const handler = vi.fn()
+        const unsubscribe = setOnPeraBackendUnavailable(handler)
+
+        try {
+            const { result } = renderHook(
+                () =>
+                    useMutation({
+                        mutationFn: () =>
+                            Promise.reject(
+                                new PeraServiceUnavailableError('betanet'),
+                            ),
+                    }),
+                { wrapper },
+            )
+
+            act(() => {
+                result.current.mutate(undefined)
+            })
+
+            await waitFor(() => expect(handler).toHaveBeenCalledWith('betanet'))
+        } finally {
+            unsubscribe()
+        }
+    })
+
+    it('does not forward an unrelated query failure to the handler', async () => {
+        const handler = vi.fn()
+        const unsubscribe = setOnPeraBackendUnavailable(handler)
+
+        try {
+            const { result } = renderHook(
+                () =>
+                    useQuery({
+                        queryKey: ['unrelated-listener-query'],
+                        queryFn: () => Promise.reject(new Error('boom')),
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(handler).not.toHaveBeenCalled()
+        } finally {
+            unsubscribe()
+        }
     })
 })
 

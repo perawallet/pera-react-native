@@ -21,6 +21,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { isActiveAppState } from '@utils/app-state'
 import { shouldDehydrateQuery } from './query-persistence'
 import { queryClient } from './queryClient'
+import { usePeraServiceUnavailableToast } from './usePeraServiceUnavailableToast'
 
 export type QueryProviderProps = OmitKeyof<
     PersistQueryClientRootOptions,
@@ -29,6 +30,8 @@ export type QueryProviderProps = OmitKeyof<
     PropsWithChildren
 
 export function QueryProvider({ persister, children }: QueryProviderProps) {
+    usePeraServiceUnavailableToast()
+
     // Drive React Query's focusManager from AppState: on React Native the
     // manager has no default signal, so interval polls keep firing while the
     // app is backgrounded (refetchIntervalInBackground defaults to false, but
