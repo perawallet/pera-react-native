@@ -77,7 +77,7 @@ export const SwapProviderContent = ({
                 <ProviderSelectionItem
                     left={
                         <PWIcon
-                            name='sparkle'
+                            name='sparkle-badge'
                             size='lg'
                         />
                     }

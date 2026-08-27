@@ -15,13 +15,16 @@ import { type EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
-        backgroundColor: theme.colors.bannerContentBg,
+        backgroundColor: theme.colors.background,
     },
     // The carousel takes the full screen; banner art covers the modal. The
     // close X is absolutely positioned above the banner content so it does
     // not steal layout space.
     body: {
         flex: 1,
+        // Full-bleed, and PWScreen only insets its footer — which this screen
+        // has none of, so the dots would sit under the nav bar.
+        paddingBottom: insets.bottom,
     },
     closeButton: {
         position: 'absolute',

@@ -35,10 +35,10 @@ export const useStyles = makeStyles(theme => ({
         width: theme.spacing.xs,
         height: theme.spacing.xs,
         borderRadius: theme.borderRadius.full,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: theme.colors.layerGray,
     },
     dotActive: {
         width: theme.spacing.lg,
-        backgroundColor: 'rgba(255, 255, 255, 1)',
+        backgroundColor: theme.colors.textMain,
     },
 }))

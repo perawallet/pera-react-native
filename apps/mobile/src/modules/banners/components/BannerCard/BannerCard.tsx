@@ -58,7 +58,7 @@ export const BannerCard = ({
                         <BannerIcon
                             type={banner.type}
                             size='md'
-                            variant='white'
+                            variant='banner'
                         />
                     </PWView>
                     {banner.title ? (

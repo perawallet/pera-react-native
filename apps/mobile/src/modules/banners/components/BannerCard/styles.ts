@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { palette } from '@theme/colors'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
@@ -31,7 +30,7 @@ export const useStyles = makeStyles(theme => ({
     },
     contentHalf: {
         flex: 0.55,
-        backgroundColor: palette.gray[700],
+        backgroundColor: theme.colors.background,
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
@@ -53,11 +52,11 @@ export const useStyles = makeStyles(theme => ({
     },
     title: {
         ...getTypography(theme, 'h2'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
     },
     subtitle: {
         ...getTypography(theme, 'body'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
     },
     cta: {
         alignSelf: 'stretch',
@@ -79,7 +78,7 @@ export const useStyles = makeStyles(theme => ({
     },
     dismissLinkText: {
         ...getTypography(theme, 'bodySemibold'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
         textDecorationLine: 'underline',
     },
 }))
