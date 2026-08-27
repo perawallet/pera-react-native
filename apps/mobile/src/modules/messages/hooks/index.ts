@@ -13,6 +13,7 @@
 export { useNotificationPress } from './useNotificationPress'
 export {
     getMultisigIntentKind,
+    isTerminalMultisigNotification,
     useHandleMultisigNotification,
     type MultisigIntentKind,
 } from './useHandleMultisigNotification'

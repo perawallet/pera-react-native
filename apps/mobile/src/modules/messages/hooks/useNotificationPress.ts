@@ -11,14 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import {
-    MULTISIG_DECLINED_NOTIFICATION_TYPE,
-    MULTISIG_EXPIRED_NOTIFICATION_TYPE,
-    type PeraNotification,
-} from '@perawallet/wallet-core-messages'
+import { type PeraNotification } from '@perawallet/wallet-core-messages'
 import { useDeepLink } from '@hooks/useDeepLink'
 import {
     getMultisigIntentKind,
+    isTerminalMultisigNotification,
     useHandleMultisigNotification,
 } from './useHandleMultisigNotification'
 import {
@@ -52,14 +49,7 @@ export const useNotificationPress = (): UseNotificationPressResult => {
                 )
                 return
             }
-            // Declined/expired notifications carry an `account-detail` URL for a
-            // shared account that often isn't local, which silently bounces the
-            // user to Home. There is no actionable target for terminal sign
-            // requests, so suppress navigation entirely.
-            if (
-                notification.type === MULTISIG_DECLINED_NOTIFICATION_TYPE ||
-                notification.type === MULTISIG_EXPIRED_NOTIFICATION_TYPE
-            ) {
+            if (isTerminalMultisigNotification(notification.type)) {
                 return
             }
             if (notification.url && isValidDeepLink(notification.url)) {

@@ -89,17 +89,32 @@ const asNonEmptyString = (value: unknown): string | undefined =>
 
 /**
  * Pulls the actionable fields out of a push payload. Both notifee and FCM
- * expose the dApp-supplied custom fields under `data`; we mirror the in-app
- * notification schema (`url`, `type`, `account_address`). `type`/`accountAddress`
+ * expose the dApp-supplied custom fields under `data`. `type`/`accountAddress`
  * are forwarded because some notifications (e.g. multisig sign requests) carry
  * no sign-request `url` and can only be routed by type.
+ *
+ * The push and the REST notifications API disagree on field names. FCM sends
+ * `notification_type`, and names the shared account `multisig_account_address`
+ * on a sign request while omitting it on an invitation; `/v1/notifications`
+ * sends `type` and `account_address`. Reading only the REST spellings left
+ * `type` undefined on every push, so multisig taps fell through to URL routing
+ * and bounced to Home (PERA-4934).
+ *
+ * Do NOT cover the invitation's missing address with the deeplink's `address`
+ * param: its meaning varies by notification type — the shared account on a sign
+ * request, the *invitee's* account on an invitation — so it yields a wrong
+ * match rather than no match, which routing cannot detect.
  */
 const extractNotificationPayload = (
     data: Record<string, unknown> | undefined,
 ): NotificationOpenPayload => ({
     url: asNonEmptyString(data?.url),
-    type: asNonEmptyString(data?.type),
-    accountAddress: asNonEmptyString(data?.account_address),
+    type:
+        asNonEmptyString(data?.notification_type) ??
+        asNonEmptyString(data?.type),
+    accountAddress:
+        asNonEmptyString(data?.account_address) ??
+        asNonEmptyString(data?.multisig_account_address),
 })
 
 export class RNFirebaseService
