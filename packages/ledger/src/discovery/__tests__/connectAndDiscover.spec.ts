@@ -11,7 +11,10 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { LEDGER_CONNECTION_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-shared'
+import {
+    LEDGER_CONNECTION_TIMEOUT_MS,
+    LedgerDeviceNotFoundError,
+} from '@perawallet/wallet-extension-ledger-shared'
 import { connectAndDiscoverAccounts } from '../connectAndDiscover'
 import type {
     LedgerTransport,
@@ -112,7 +115,7 @@ describe('connectAndDiscoverAccounts', () => {
             vi.useRealTimers()
         })
 
-        it('rejects with a typed timeout error when connect never settles', async () => {
+        it('rejects as device-not-found when connect never settles', async () => {
             vi.useFakeTimers()
             const provider: LedgerTransportProvider = {
                 manufacturer: 'ledger',
@@ -125,7 +128,9 @@ describe('connectAndDiscoverAccounts', () => {
                 provider,
                 deviceId: 'test-device-id',
             })
-            const assertion = expect(promise).rejects.toThrow(/timed out/)
+            const assertion = expect(promise).rejects.toThrow(
+                LedgerDeviceNotFoundError,
+            )
             await vi.advanceTimersByTimeAsync(LEDGER_CONNECTION_TIMEOUT_MS + 1)
             await assertion
         })
@@ -150,7 +155,9 @@ describe('connectAndDiscoverAccounts', () => {
                 provider,
                 deviceId: 'test-device-id',
             })
-            const assertion = expect(promise).rejects.toThrow(/timed out/)
+            const assertion = expect(promise).rejects.toThrow(
+                LedgerDeviceNotFoundError,
+            )
             await vi.advanceTimersByTimeAsync(LEDGER_CONNECTION_TIMEOUT_MS + 1)
             await assertion
 
