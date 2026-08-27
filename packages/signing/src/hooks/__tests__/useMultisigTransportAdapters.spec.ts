@@ -14,8 +14,13 @@ import React from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
-import { proposeSignRequestSchema } from '@perawallet/wallet-core-multisig'
+import {
+    proposeSignRequestSchema,
+    useDraftSignRequestStore,
+} from '@perawallet/wallet-core-multisig'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
+import { draftProposeContexts } from '../../pipeline/draftProposeContexts'
+import { walletConnectHandoffs } from '../../pipeline/walletConnectHandoffs'
 import type { SigningResult } from '../../pipeline/types'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 
@@ -508,6 +513,185 @@ describe('useMultisigTransportAdapters', () => {
                     signers: [{ address: 'A', signatures: ['x'] }],
                 }),
             ).rejects.toThrow('backend down')
+        })
+    })
+
+    describe('addSignatures draft bootstrap', () => {
+        const createDraft = (proposeType: 'sync' | 'async' = 'sync') =>
+            useDraftSignRequestStore.getState().createDraft({
+                network: 'testnet',
+                multisigAddress: 'MSIG',
+                multisigDetails: {
+                    threshold: 2,
+                    version: 1,
+                    participantAddresses: ['A', 'B'],
+                },
+                rawTransactionsBase64: ['cmF3MQ=='],
+                proposeType,
+            })
+
+        beforeEach(() => {
+            useDraftSignRequestStore.getState().resetState()
+            walletConnectHandoffs.__resetForTests()
+            draftProposeContexts.__resetForTests()
+        })
+
+        test('registers the sync handoff under the real id and fires onProposed', async () => {
+            const draftId = createDraft('sync')
+            const approveSignedBytes = vi.fn()
+            const error = vi.fn()
+            const reject = vi.fn()
+            const onProposed = vi.fn().mockResolvedValue(undefined)
+            const handoffDelivery = {
+                clientId: 'client-1',
+                payloadId: 7,
+                indicesToSign: [0],
+                totalLength: 1,
+            }
+            draftProposeContexts.set(draftId, {
+                source: {
+                    type: 'walletconnect',
+                    callbacks: {
+                        approveSignedBytes,
+                        error,
+                        reject,
+                        onProposed,
+                    },
+                    handoffDelivery,
+                },
+                msigMetadata: {
+                    version: 1,
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                },
+                deviceId: 'device-from-draft',
+            })
+            mocks.proposeSignRequest.mockResolvedValue({
+                ...baseSignRequestResponse,
+                id: 'sr-real',
+                type: 'sync',
+            })
+            const { result } = renderTransportFns()
+
+            const response = await result.current.addSignatures({
+                signRequestId: draftId,
+                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+            })
+
+            expect(response).toEqual({
+                status: 'pending',
+                resolvedSignRequestId: 'sr-real',
+            })
+            const handoff = walletConnectHandoffs.get('sr-real')
+            expect(handoff).toBeDefined()
+            expect(handoff?.multisigAddress).toBe('MSIG')
+            expect(handoff?.msigMetadata).toEqual({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B'],
+            })
+            expect(handoff?.expectedRawTransactionsBase64).toEqual(['cmF3MQ=='])
+            // The hook's live device id wins; the stashed one is the fallback.
+            expect(handoff?.deviceId).toBe('device-1')
+            expect(handoff?.network).toBe('testnet')
+            expect(handoff?.sourceType).toBe('walletconnect')
+            expect(handoff?.proposerAddress).toBe('A')
+            expect(handoff?.callbacks?.approveSignedBytes).toBe(
+                approveSignedBytes,
+            )
+            expect(handoff?.callbacks?.error).toBe(error)
+            expect(handoff?.callbacks?.reject).toBe(reject)
+            expect(handoff?.recovery).toEqual(handoffDelivery)
+            expect(onProposed).toHaveBeenCalledWith({
+                signRequestId: 'sr-real',
+                status: 'pending',
+                rawTransactionsBase64: ['cmF3MQ=='],
+            })
+            // Consumed: a later cosign on the real id must not re-register.
+            expect(draftProposeContexts.get(draftId)).toBeUndefined()
+        })
+
+        test('local-source draft fires onProposed without registering a handoff', async () => {
+            const draftId = createDraft('sync')
+            const onProposed = vi.fn().mockResolvedValue(undefined)
+            draftProposeContexts.set(draftId, {
+                source: { type: 'local', callbacks: { onProposed } },
+            })
+            mocks.proposeSignRequest.mockResolvedValue({
+                ...baseSignRequestResponse,
+                id: 'sr-swap',
+                type: 'sync',
+            })
+            const { result } = renderTransportFns()
+
+            await result.current.addSignatures({
+                signRequestId: draftId,
+                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+            })
+
+            // Local sync proposes (shared-account swaps) run their own
+            // resolver keyed off onProposed; there is no external peer.
+            expect(walletConnectHandoffs.list()).toEqual([])
+            expect(onProposed).toHaveBeenCalledWith({
+                signRequestId: 'sr-swap',
+                status: 'pending',
+                rawTransactionsBase64: ['cmF3MQ=='],
+            })
+        })
+
+        test('keeps the context when the bootstrap propose fails so a retry can still deliver', async () => {
+            const draftId = createDraft('sync')
+            const onProposed = vi.fn()
+            draftProposeContexts.set(draftId, {
+                source: { type: 'walletconnect', callbacks: { onProposed } },
+                msigMetadata: {
+                    version: 1,
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                },
+                deviceId: 'device-from-draft',
+            })
+            mocks.proposeSignRequest.mockRejectedValue(
+                new Error('backend down'),
+            )
+            const { result } = renderTransportFns()
+
+            await expect(
+                result.current.addSignatures({
+                    signRequestId: draftId,
+                    signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+                }),
+            ).rejects.toThrow('backend down')
+
+            expect(walletConnectHandoffs.list()).toEqual([])
+            expect(onProposed).not.toHaveBeenCalled()
+            expect(draftProposeContexts.get(draftId)).toBeDefined()
+        })
+
+        test('a failing onProposed does not fail the already-succeeded bootstrap', async () => {
+            const draftId = createDraft('sync')
+            const onProposed = vi
+                .fn()
+                .mockRejectedValue(new Error('listener died'))
+            draftProposeContexts.set(draftId, {
+                source: { type: 'local', callbacks: { onProposed } },
+            })
+            mocks.proposeSignRequest.mockResolvedValue({
+                ...baseSignRequestResponse,
+                id: 'sr-real',
+                type: 'sync',
+            })
+            const { result } = renderTransportFns()
+
+            const response = await result.current.addSignatures({
+                signRequestId: draftId,
+                signers: [{ address: 'A', signatures: ['c2lnQTA='] }],
+            })
+
+            expect(response).toEqual({
+                status: 'pending',
+                resolvedSignRequestId: 'sr-real',
+            })
         })
     })
 })

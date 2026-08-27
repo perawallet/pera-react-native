@@ -18,6 +18,7 @@ import { createWalletConnectTransport } from '../createWalletConnectTransport'
 import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
 import { walletConnectHandoffs } from '../../walletConnectHandoffs'
+import { draftProposeContexts } from '../../draftProposeContexts'
 import {
     NetworkChangedError,
     SubmissionError,
@@ -538,6 +539,7 @@ describe('createMultisigProposeTransport', () => {
             // `'omit'` indicates the caller wants getDeviceId to return
             // undefined; bare `undefined` falls through to the default.
             deviceId?: string | 'omit'
+            createDraftSignRequest?: ReturnType<typeof vi.fn>
         } = {},
     ) => {
         const msigMetadata =
@@ -549,11 +551,23 @@ describe('createMultisigProposeTransport', () => {
             'testnet',
             () => msigMetadata ?? undefined,
             () => deviceId,
+            opts.createDraftSignRequest,
         )
+    }
+
+    // Deferred-propose signal: a hardware-only proposer signs nothing during
+    // Send, so the actor hands the transport an empty signers array.
+    const deferredResult: SigningResult = {
+        signedData: {
+            type: 'transactions',
+            signed: [{ txn: {} as never, blob: new Uint8Array() } as never],
+        } as SignedTransactionData,
+        signers: [],
     }
 
     beforeEach(() => {
         walletConnectHandoffs.__resetForTests()
+        draftProposeContexts.__resetForTests()
     })
 
     test('proposes (type=async) and returns proposed result for local source', async () => {
@@ -774,5 +788,122 @@ describe('createMultisigProposeTransport', () => {
         // successful Retry still needs to deliver to.
         expect(error).not.toHaveBeenCalled()
         expect(walletConnectHandoffs.list()).toEqual([])
+    })
+
+    test('deferred draft for an external source stashes the delivery context for the bootstrap', async () => {
+        const proposeSignRequest = vi.fn()
+        const createDraftSignRequest = vi.fn().mockReturnValue('draft-1')
+        const approveSignedBytes = vi.fn()
+        const transport = buildPropose(proposeSignRequest, {
+            createDraftSignRequest,
+        })
+        const source: SourceMetadata = {
+            type: 'walletconnect',
+            callbacks: { approveSignedBytes },
+            handoffDelivery: {
+                clientId: 'client-1',
+                payloadId: 7,
+                indicesToSign: [0],
+                totalLength: 1,
+            },
+        }
+
+        const result = await transport.send(
+            deferredResult,
+            source,
+            'JOINT_ADDR',
+        )
+
+        expect(result).toEqual({
+            type: 'proposed',
+            signRequestId: 'draft-1',
+            status: 'pending',
+            sourceType: 'walletconnect',
+        })
+        expect(proposeSignRequest).not.toHaveBeenCalled()
+        // Nothing to register yet: the backend record doesn't exist. The
+        // validated preconditions ride along so the bootstrap can register.
+        expect(walletConnectHandoffs.list()).toEqual([])
+        expect(draftProposeContexts.get('draft-1')).toEqual({
+            source,
+            msigMetadata: MSIG_METADATA,
+            deviceId: 'device-1',
+        })
+    })
+
+    test('deferred draft for a local source stashes the source so onProposed can fire at bootstrap', async () => {
+        const createDraftSignRequest = vi.fn().mockReturnValue('draft-2')
+        const transport = buildPropose(vi.fn(), { createDraftSignRequest })
+        const onProposed = vi.fn()
+        const source: SourceMetadata = {
+            type: 'local',
+            callbacks: { onProposed },
+        }
+
+        await transport.send(deferredResult, source, 'JOINT_ADDR')
+
+        expect(draftProposeContexts.get('draft-2')).toEqual({
+            source,
+            msigMetadata: undefined,
+            deviceId: undefined,
+        })
+    })
+
+    test('deferred draft for an external source fails non-retryably when msig metadata is missing', async () => {
+        const createDraftSignRequest = vi.fn()
+        const error = vi.fn().mockResolvedValue(undefined)
+        const transport = buildPropose(vi.fn(), {
+            msigMetadata: null,
+            createDraftSignRequest,
+        })
+
+        const thrown = await transport
+            .send(
+                deferredResult,
+                { type: 'walletconnect', callbacks: { error } },
+                'JOINT_ADDR',
+            )
+            .then(
+                () => null,
+                e => e as TransportError,
+            )
+
+        expect(thrown).toBeInstanceOf(TransportError)
+        expect(thrown?.metadata.retryable).toBe(false)
+        // No draft either: a draft whose bootstrap could never deliver would
+        // recreate the stranded-at-ready record this validation prevents.
+        expect(createDraftSignRequest).not.toHaveBeenCalled()
+
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(error).toHaveBeenCalled()
+    })
+
+    test('deferred draft for an external source fails retryably when device id is missing', async () => {
+        const createDraftSignRequest = vi.fn()
+        const error = vi.fn().mockResolvedValue(undefined)
+        const transport = buildPropose(vi.fn(), {
+            deviceId: 'omit',
+            createDraftSignRequest,
+        })
+
+        const thrown = await transport
+            .send(
+                deferredResult,
+                { type: 'walletconnect', callbacks: { error } },
+                'JOINT_ADDR',
+            )
+            .then(
+                () => null,
+                e => e as TransportError,
+            )
+
+        expect(thrown).toBeInstanceOf(TransportError)
+        expect(thrown?.metadata.retryable).toBe(true)
+        expect(createDraftSignRequest).not.toHaveBeenCalled()
+
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(error).not.toHaveBeenCalled()
     })
 })
