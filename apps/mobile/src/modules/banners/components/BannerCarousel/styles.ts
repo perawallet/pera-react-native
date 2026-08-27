@@ -21,6 +21,7 @@ export const useStyles = makeStyles(theme => ({
     pagerArea: {
         flex: 1,
     },
+    // Fills that measured box — without it the list sizes to its content.
     pager: {
         flex: 1,
     },
