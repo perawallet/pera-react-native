@@ -22,14 +22,13 @@ export const useStyles = makeStyles(theme => ({
     page: {
         flex: 1,
     },
+    // Laid out below the pager rather than absolutely positioned over it, so
+    // the dots reserve their own height instead of landing on the card's CTA.
     dotsContainer: {
-        position: 'absolute',
-        bottom: theme.spacing.md,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
         gap: theme.spacing.xs,
+        paddingVertical: theme.spacing.md,
     },
     dot: {
         width: theme.spacing.xs,
