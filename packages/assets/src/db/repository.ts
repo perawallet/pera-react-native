@@ -15,6 +15,7 @@ import {
     and,
     inArray,
     gte,
+    like,
     lt,
     ne,
     or,
@@ -160,7 +161,11 @@ export async function upsertNodeAssets({
                     totalSupply: sql`excluded.total_supply`,
                     name: sql`excluded.name`,
                     unitName: sql`excluded.unit_name`,
-                    url: sql`excluded.url`,
+                    // Asset urls are immutable on-chain, but not every source
+                    // carries one — the bulk /v2/assets/ serializer has no url
+                    // field at all. An absent url must not erase one already
+                    // learned (the ARC19 recheck keys on it).
+                    url: sql`coalesce(excluded.url, url)`,
                     metadata: sql`excluded.metadata`,
                     updatedAt: sql`excluded.updated_at`,
                 },
@@ -639,20 +644,126 @@ async function getUnclassifiedNftIds({
         .map(row => row.assetId)
 }
 
+export type Arc19Recheck = {
+    /** How often a held ARC19 collectible is re-fetched. */
+    ttlMs: number
+}
+
+/**
+ * Held ARC19 collectibles whose pera-half row has outlived `ttlMs`.
+ *
+ * ARC19 media is mutable: the manager's acfg re-points the reserve address at
+ * a new CID and the backend re-crawls to a new media URL, but only a re-fetch
+ * of the assets_pera row picks that URL up — the long ASSET_CACHE_TTL_MS kept
+ * the pre-update image on screen for up to a week (PERA-4956).
+ *
+ * Keyed on the PERA half's updatedAt: the detail screen persists through
+ * upsertNodeAssets, which bumps the node half's timestamp (the one the main
+ * gate reads) without refreshing media — a regularly viewed NFT would
+ * otherwise never re-qualify.
+ */
+async function getStaleArc19CollectibleIds({
+    db,
+    assetIds,
+    network,
+    ttlMs,
+}: {
+    db: Database
+    assetIds: string[]
+    network: string
+} & Arc19Recheck): Promise<string[]> {
+    const now = Date.now()
+
+    const rows = await db
+        .select({ assetId: sql<string>`${AssetsPeraSchema.assetId}` })
+        .from(AssetsPeraSchema)
+        .innerJoin(
+            AssetsNodeSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+            ),
+        )
+        .where(
+            and(
+                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                like(AssetsNodeSchema.url, 'template-ipfs://%'),
+                lt(AssetsPeraSchema.updatedAt, now - ttlMs),
+                idPredicate(AssetsPeraSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
+/**
+ * Held collectibles whose `assets_node.url` was never resolved.
+ *
+ * The bulk /v2/assets/ serializer carries no url field, so rows synced
+ * through it can't be recognized as ARC19 until the indexer is asked once.
+ * NULL means "never asked"; the backfill writes '' for a chain-confirmed
+ * absent url, so those are never re-asked.
+ */
+export async function getCollectibleIdsMissingUrl({
+    db = getDatabase(),
+    assetIds,
+    network,
+    limit,
+}: {
+    db?: Database
+    assetIds: string[]
+    network: string
+    /** Bounds one backfill pass; the remainder converges on later passes. */
+    limit?: number
+}): Promise<string[]> {
+    if (assetIds.length === 0) return []
+
+    const query = db
+        .select({ assetId: sql<string>`${AssetsPeraSchema.assetId}` })
+        .from(AssetsPeraSchema)
+        .innerJoin(
+            AssetsNodeSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+            ),
+        )
+        .where(
+            and(
+                eq(AssetsPeraSchema.network, network),
+                eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                isNull(AssetsNodeSchema.url),
+                idPredicate(AssetsPeraSchema.assetId, assetIds),
+            ),
+        )
+
+    const rows = await (limit === undefined ? query : query.limit(limit)).all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
 /**
  * Given a candidate set of asset IDs, returns those that are either not in
  * the DB at all or older than `ttlMs`. Used by the syncer to skip work
  * during steady-state polling.
  *
  * `recheckUnclassified` additionally returns assets still awaiting
- * classification — see `getUnclassifiedNftIds`.
+ * classification — see `getUnclassifiedNftIds`. `recheckArc19` additionally
+ * returns ARC19 collectibles due a media re-fetch — see
+ * `getStaleArc19CollectibleIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
     recheckUnclassified,
+    recheckArc19,
     ...params
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
+    recheckArc19?: Arc19Recheck
 }): Promise<string[]> {
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
@@ -660,18 +771,27 @@ export async function getStaleOrMissingAssetIds({
         ...params,
     })
 
-    if (!recheckUnclassified) return staleOrMissing
+    const unclassified = recheckUnclassified
+        ? await getUnclassifiedNftIds({
+              db,
+              assetIds: params.assetIds,
+              network: params.network,
+              ...recheckUnclassified,
+          })
+        : []
 
-    const unclassified = await getUnclassifiedNftIds({
-        db,
-        assetIds: params.assetIds,
-        network: params.network,
-        ...recheckUnclassified,
-    })
+    const arc19 = recheckArc19
+        ? await getStaleArc19CollectibleIds({
+              db,
+              assetIds: params.assetIds,
+              network: params.network,
+              ...recheckArc19,
+          })
+        : []
 
-    return unclassified.length === 0
+    return unclassified.length === 0 && arc19.length === 0
         ? staleOrMissing
-        : [...new Set([...staleOrMissing, ...unclassified])]
+        : [...new Set([...staleOrMissing, ...unclassified, ...arc19])]
 }
 
 type GetStaleOrMissingPriceAssetIdsParams = GetStaleOrMissingAssetIdsParams & {
