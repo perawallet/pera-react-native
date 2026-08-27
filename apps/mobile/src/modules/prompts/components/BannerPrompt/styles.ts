@@ -13,8 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
 
-// Mirrors BannersCarouselModalScreen: the carousel is full-bleed and the banner
-// art covers the surface, so any padding here shows as a frame around the art.
+// Mirrors BannersCarouselModalScreen: same full-bleed carousel, same safe-area
+// insets, so the banner looks identical whichever way the user reaches it.
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     // The overlay is full-bleed and skips the container's safe-area padding, so
     // both insets are applied here: without them the art runs under the status

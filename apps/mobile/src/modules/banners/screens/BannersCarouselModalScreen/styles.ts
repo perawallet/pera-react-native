@@ -17,9 +17,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        // Deliberately not PWScreen: this screen
-        // wants none of its zones, and its body padding is
-        // `insets.bottom + spacing.lg`, which read as a gap under the dots.
+        // Deliberately not a PWScreen: this screen wants none of its zones, and
+        // its body padding is `insets.bottom + spacing.lg`, which read as a gap
+        // under the pager dots. So the safe-area insets are applied here.
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
     },
