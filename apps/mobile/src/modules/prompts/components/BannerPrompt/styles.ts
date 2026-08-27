@@ -18,7 +18,7 @@ import { type EdgeInsets } from 'react-native-safe-area-context'
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
         flex: 1,
-        backgroundColor: theme.colors.bannerContentBg,
+        backgroundColor: theme.colors.background,
     },
     // Bottom inset only. The overlay is full-bleed and skips the container's
     // safe-area padding, so the card's "don't show again" link would otherwise
