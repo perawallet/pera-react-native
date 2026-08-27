@@ -3428,6 +3428,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_duress_pin: 'enable_duress_pin',
         onramp_currency_decimals: 'onramp_currency_decimals',
         enable_quantum_accounts: 'enable_quantum_accounts',
+        enable_quantum_swap: 'enable_quantum_swap',
         enable_gift_cards: 'enable_gift_cards',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
