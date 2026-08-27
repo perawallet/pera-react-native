@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { useState } from 'react'
-import PagerView from 'react-native-pager-view'
+import { useCallback } from 'react'
 import type { Banner } from '@perawallet/wallet-core-banners'
-import { PWView } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { BannerCard } from '../BannerCard'
+import { BannerCarouselPage } from './BannerCarouselPage'
 import { PagerDots } from './PagerDots'
+import { useBannerCarousel } from './useBannerCarousel'
 import { useStyles } from './styles'
 
 export type BannerCarouselProps = {
@@ -27,6 +28,8 @@ export type BannerCarouselProps = {
     testID?: string
 }
 
+const keyExtractor = (banner: Banner) => banner.id
+
 export const BannerCarousel = ({
     banners,
     initialIndex = 0,
@@ -36,14 +39,29 @@ export const BannerCarousel = ({
     testID = 'banner_carousel',
 }: BannerCarouselProps) => {
     const styles = useStyles()
-    const [activeIndex, setActiveIndex] = useState(initialIndex)
+    const { activeIndex, pageSize, handleLayout, handleMomentumScrollEnd } =
+        useBannerCarousel({ initialIndex })
+
+    const renderItem = useCallback(
+        ({ item }: { item: Banner }) => (
+            <BannerCarouselPage
+                banner={item}
+                width={pageSize.width}
+                height={pageSize.height}
+                onPressCTA={onPressCTA}
+                onDismiss={onDismiss}
+                isDismissable={isDismissable}
+            />
+        ),
+        [pageSize, onPressCTA, onDismiss, isDismissable],
+    )
 
     if (banners.length === 0) return null
 
     if (banners.length === 1) {
         return (
             <PWView
-                style={styles.page}
+                style={styles.singlePage}
                 testID={testID}
             >
                 <BannerCard
@@ -61,25 +79,30 @@ export const BannerCarousel = ({
             style={styles.multiBannerRoot}
             testID={testID}
         >
-            <PagerView
-                style={styles.pager}
-                initialPage={initialIndex}
-                onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
+            {/* A paging list rather than react-native-pager-view: that library
+                renders the iOS pager through SwiftUI and does not size a page to
+                the pager's frame, so a full-height page is drawn offset from its
+                own layout and clipped at the bottom — taking the card's CTA and
+                dismiss link with it. Pages mount only once this box is measured,
+                so each is exactly one viewport and initialScrollIndex lands on
+                the right banner. */}
+            <PWView
+                style={styles.pagerArea}
+                onLayout={handleLayout}
             >
-                {banners.map(banner => (
-                    <PWView
-                        key={banner.id}
-                        style={styles.page}
-                    >
-                        <BannerCard
-                            banner={banner}
-                            onPressCTA={onPressCTA}
-                            onDismiss={onDismiss}
-                            isDismissable={isDismissable}
-                        />
-                    </PWView>
-                ))}
-            </PagerView>
+                {pageSize.width > 0 ? (
+                    <PWFlatList
+                        data={banners}
+                        horizontal
+                        pagingEnabled
+                        initialScrollIndex={initialIndex}
+                        keyExtractor={keyExtractor}
+                        renderItem={renderItem}
+                        onMomentumScrollEnd={handleMomentumScrollEnd}
+                        style={styles.pager}
+                    />
+                ) : null}
+            </PWView>
             <PagerDots
                 count={banners.length}
                 activeIndex={activeIndex}
