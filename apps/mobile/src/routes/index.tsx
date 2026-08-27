@@ -179,7 +179,15 @@ export const MainRoutes = () => {
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}
                             options={{
-                                presentation: 'modal',
+                                // Full-screen on both platforms. `modal` is an
+                                // iOS-only presentation — Android has no
+                                // page-sheet equivalent and renders it
+                                // full-screen anyway — so the same banner
+                                // looked like a sheet on one platform and a
+                                // takeover on the other, and different again
+                                // from the auto-open prompt, which is a
+                                // full-bleed overlay.
+                                presentation: 'fullScreenModal',
                                 headerShown: false,
                             }}
                         />

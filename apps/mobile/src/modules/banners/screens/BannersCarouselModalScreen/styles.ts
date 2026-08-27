@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
 
@@ -18,10 +17,10 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        // Bottom inset only, so the pager dots and the card's dismiss link sit
-        // clear of the home indicator / nav bar. Deliberately not PWScreen:
-        // this screen wants none of its zones, and its body padding is
+        // Deliberately not PWScreen: this screen
+        // wants none of its zones, and its body padding is
         // `insets.bottom + spacing.lg`, which read as a gap under the dots.
+        paddingTop: insets.top,
         paddingBottom: insets.bottom,
     },
     // The carousel takes the full screen; banner art covers the modal. The
@@ -32,11 +31,10 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     closeButton: {
         position: 'absolute',
-        // Android renders this presentation full-screen, so y=0 lands under
-        // the status bar and the X needs the inset (PERA-4751). iOS presents it
-        // as a sheet that already starts below the bar, yet `insets.top` still
-        // reports the window's — adding it there pushed the X far too low.
-        top: (Platform.OS === 'android' ? insets.top : 0) + theme.spacing.md,
+        // Keeps its own `insets.top`: Yoga does not inset absolutely positioned
+        // children by the parent's padding, so `root`'s does not apply here and
+        // without this the X sits in the status bar (PERA-4751).
+        top: insets.top + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,

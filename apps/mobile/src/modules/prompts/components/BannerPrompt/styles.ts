@@ -16,29 +16,24 @@ import { type EdgeInsets } from 'react-native-safe-area-context'
 // Mirrors BannersCarouselModalScreen: the carousel is full-bleed and the banner
 // art covers the surface, so any padding here shows as a frame around the art.
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    // The overlay is full-bleed and skips the container's safe-area padding, so
+    // both insets are applied here: without them the art runs under the status
+    // bar and the card's "don't show again" link under the home indicator.
     root: {
         flex: 1,
         backgroundColor: theme.colors.background,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
     },
-    // Bottom inset only. The overlay is full-bleed and skips the container's
-    // safe-area padding, so the card's "don't show again" link would otherwise
-    // sit under the home indicator.
-    //
-    // Deliberately no top inset: the banner art is meant to run under the status
-    // bar. Padding here shows this container's own background as a strip across
-    // the top, and since the image is `resizeMode: cover` inside a 45%-height
-    // half, the shorter box also crops more of the art off. The close button
-    // carries its own `insets.top`, so nothing tappable ends up under the bar.
     body: {
         flex: 1,
-        paddingBottom: insets.bottom,
     },
     // Absolutely positioned so it does not steal layout space from the art.
     closeButton: {
         position: 'absolute',
-        // The prompt overlay is full-bleed, so without the inset this rides up
-        // under the status bar on Android — same reason as PERA-4751 on the
-        // modal, where iOS starts below the bar and insets.top is 0.
+        // Keeps its own `insets.top`: Yoga does not inset absolutely positioned
+        // children by the parent's padding, so `root`'s does not apply here and
+        // without this the X sits in the status bar (PERA-4751).
         top: insets.top + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,
