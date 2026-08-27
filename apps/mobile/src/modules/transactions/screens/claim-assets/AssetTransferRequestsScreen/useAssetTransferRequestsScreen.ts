@@ -23,6 +23,7 @@ import type { MessagesStackParamList } from '@modules/messages/routes/types'
 type UseAssetTransferRequestsScreenResult = {
     assetRequests: Arc59AssetRequest[]
     isPending: boolean
+    isUnavailableOnNetwork: boolean
     handleItemPress: (index: number) => void
 }
 
@@ -39,8 +40,11 @@ export const useAssetTransferRequestsScreen =
         useEffect(() => {
             setAccountAddress(route.params.item.address)
         }, [route.params.item.address, setAccountAddress])
-        const { data: assetRequests, isPending } =
-            useArc59AssetRequestsQuery(accountAddress)
+        const {
+            data: assetRequests,
+            isPending,
+            isUnavailableOnNetwork,
+        } = useArc59AssetRequestsQuery(accountAddress)
 
         const handleItemPress = useCallback(
             (index: number) => {
@@ -59,6 +63,7 @@ export const useAssetTransferRequestsScreen =
         return {
             assetRequests: assetRequests ?? [],
             isPending,
+            isUnavailableOnNetwork,
             handleItemPress,
         }
     }

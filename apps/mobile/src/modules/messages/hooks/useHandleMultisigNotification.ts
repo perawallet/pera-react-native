@@ -85,11 +85,12 @@ export const useHandleMultisigNotification =
                 })
                 // Refetch so a sign request / invitation that landed between the
                 // last poll and this tap is present, then hand the matching item
-                // to the same handler the inbox list uses on tap.
+                // to the same handler the inbox list uses on tap. refetch()
+                // resolves to the refreshed items directly, not a query result.
                 void refetchInbox()
-                    .then(({ data }) => {
+                    .then(items => {
                         const match = findInboxItemForNotification(
-                            data ?? [],
+                            items,
                             kind,
                             accountAddress,
                         )

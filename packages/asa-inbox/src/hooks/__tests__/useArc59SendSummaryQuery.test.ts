@@ -14,20 +14,14 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { Networks } from '@perawallet/wallet-core-config'
 
 import { useArc59SendSummaryQuery } from '../useArc59SendSummaryQuery'
 import { fetchArc59SendSummary } from '../../api'
 
+const mockNetwork = { network: 'testnet' }
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(() => ({
-        network: 'testnet',
-        networkConfig: {
-            backendUrl: 'https://testnet.api.example.com',
-            algodUrl: 'https://testnet.algod.node',
-            indexerUrl: 'https://testnet.indexer.node',
-        },
-        isMainnet: false,
-    })),
+    useNetwork: vi.fn(() => mockNetwork),
 }))
 
 vi.mock('../../api', () => ({
@@ -53,6 +47,7 @@ describe('useArc59SendSummaryQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork.network = 'testnet'
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: { retry: false },
@@ -74,10 +69,10 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.isPending).toBe(true)
+        expect(result.current.isLoading).toBe(true)
         expect(result.current.data).toBeUndefined()
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
 
         expect(result.current.data).toEqual(mockSummary)
         expect(result.current.isError).toBe(false)
@@ -92,7 +87,7 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
 
         expect(fetchArc59SendSummary).toHaveBeenCalledWith(
             'testnet',
@@ -125,7 +120,7 @@ describe('useArc59SendSummaryQuery', () => {
         )
 
         // Query is disabled, should stay in pending state without fetching
-        await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
 
         expect(fetchArc59SendSummary).not.toHaveBeenCalled()
         expect(result.current.data).toBeUndefined()
@@ -139,7 +134,7 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
 
         expect(fetchArc59SendSummary).not.toHaveBeenCalled()
         expect(result.current.data).toBeUndefined()
@@ -158,7 +153,7 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result1.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result1.current.isLoading).toBe(false))
         expect(result1.current.data?.is_arc59_opted_in).toBe(true)
 
         const { result: result2 } = renderHook(
@@ -166,9 +161,43 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() => expect(result2.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result2.current.isLoading).toBe(false))
         expect(result2.current.data?.is_arc59_opted_in).toBe(false)
 
         expect(fetchArc59SendSummary).toHaveBeenCalledTimes(2)
     })
+
+    test.each([Networks.betanet, Networks.custom])(
+        'does not fetch and reports isUnavailableOnNetwork on %s',
+        network => {
+            mockNetwork.network = network
+
+            const { result } = renderHook(
+                () => useArc59SendSummaryQuery(RECEIVER, ASSET_ID),
+                { wrapper },
+            )
+
+            expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(result.current.isLoading).toBe(false)
+            expect(fetchArc59SendSummary).not.toHaveBeenCalled()
+        },
+    )
+
+    test.each([Networks.mainnet, Networks.testnet])(
+        'reports isUnavailableOnNetwork false on %s',
+        async network => {
+            mockNetwork.network = network
+            ;(fetchArc59SendSummary as Mock).mockResolvedValue(mockSummary)
+
+            const { result } = renderHook(
+                () => useArc59SendSummaryQuery(RECEIVER, ASSET_ID),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+            expect(fetchArc59SendSummary).toHaveBeenCalled()
+        },
+    )
 })

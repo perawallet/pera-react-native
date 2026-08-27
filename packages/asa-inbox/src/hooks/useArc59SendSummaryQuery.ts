@@ -10,25 +10,45 @@
  limitations under the License
  */
 
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchArc59SendSummary } from '../api'
 import type { Arc59SendSummaryResponse } from '../api'
 import { getArc59SendSummaryQueryKey } from './querykeys'
 
+export type UseArc59SendSummaryQueryResult = {
+    data: Maybe<Arc59SendSummaryResponse>
+    isLoading: boolean
+    isError: boolean
+    error: Nullable<Error>
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
+}
+
 export const useArc59SendSummaryQuery = (
     receiverAddress: string,
     assetId: string,
-): UseQueryResult<Arc59SendSummaryResponse> => {
+): UseArc59SendSummaryQueryResult => {
     const { network } = useNetwork()
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getArc59SendSummaryQueryKey(
             receiverAddress,
             assetId,
             network,
         ),
         queryFn: () => fetchArc59SendSummary(network, receiverAddress, assetId),
-        enabled: !!receiverAddress && !!assetId,
+        enabled: !!receiverAddress && !!assetId && !isUnavailableOnNetwork,
     })
+
+    return {
+        data: query.data,
+        isLoading: isUnavailableOnNetwork ? false : query.isLoading,
+        isError: query.isError,
+        error: query.error,
+        isUnavailableOnNetwork,
+    }
 }

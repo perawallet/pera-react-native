@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { Networks } from '@perawallet/wallet-core-config'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -31,8 +33,14 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
+
+beforeEach(() => {
+    vi.mocked(useNetwork).mockReturnValue({
+        network: 'mainnet',
+    } as ReturnType<typeof useNetwork>)
+})
 
 describe('useNotificationsListQuery', () => {
     it('should fetch notifications list and map response', async () => {
@@ -62,11 +70,11 @@ describe('useNotificationsListQuery', () => {
         })
 
         await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
+            expect(result.current.isPending).toBe(false)
         })
 
         expect(fetchNotificationList).toHaveBeenCalledWith(
-            'test-network',
+            'mainnet',
             'test-device-id',
             '',
         )
@@ -109,7 +117,7 @@ describe('useNotificationsListQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data).toEqual([
             {
@@ -146,7 +154,7 @@ describe('useNotificationsListQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data?.[0].icon).toBeNull()
     })
@@ -175,7 +183,7 @@ describe('useNotificationsListQuery', () => {
             wrapper: createWrapper(),
         })
 
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
         vi.mocked(fetchNotificationList).mockResolvedValueOnce({
             count: 0,
@@ -187,9 +195,56 @@ describe('useNotificationsListQuery', () => {
         await result.current.fetchNextPage()
 
         expect(fetchNotificationList).toHaveBeenLastCalledWith(
-            'test-network',
+            'mainnet',
             'test-device-id',
             nextCursor,
+        )
+    })
+
+    describe('non-Pera-backed networks', () => {
+        beforeEach(() => {
+            vi.mocked(fetchNotificationList).mockClear()
+        })
+
+        it.each([Networks.betanet, Networks.custom])(
+            'disables the query, flags isUnavailableOnNetwork and returns [] on %s',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(
+                    () => useNotificationsListQuery(),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(result.current.isPending).toBe(false)
+                expect(result.current.data).toEqual([])
+                expect(fetchNotificationList).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'no-ops fetchNextPage on %s',
+            async network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(
+                    () => useNotificationsListQuery(),
+                    {
+                        wrapper: createWrapper(),
+                    },
+                )
+
+                await result.current.fetchNextPage()
+
+                expect(fetchNotificationList).not.toHaveBeenCalled()
+            },
         )
     })
 })
