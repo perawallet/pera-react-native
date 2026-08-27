@@ -74,10 +74,9 @@ export const transactionInterpretedMeaningSchema = z.object({
 /**
  * Deliberately a bare string, NOT `z.nativeEnum(TransactionTypes)` — the same
  * call the indexer path makes (see `indexer/schema.ts`). A type the app does
- * not model yet (`stpf`, and whatever the next consensus upgrade adds) must
- * still reach the renderers, which all have a `default:` branch for exactly
- * that. Validating against the enum here drops the row instead. Do not
- * tighten this.
+ * not model yet (whatever the next consensus upgrade adds) must still reach
+ * the renderers, which all have a `default:` branch for exactly that.
+ * Validating against the enum here drops the row instead. Do not tighten this.
  */
 const txTypeSchema = z.string().transform(value => value as TransactionType)
 
