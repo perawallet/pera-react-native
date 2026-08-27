@@ -97,6 +97,12 @@ export const useBiometrics = (): UseBiometricsResult => {
     const setDisabledReason = useSecurityStore(
         state => state.setBiometricsDisabledReason,
     )
+    const acknowledgedReason = useSecurityStore(
+        state => state.acknowledgedBiometricsDisabledReason,
+    )
+    const setAcknowledgedReason = useSecurityStore(
+        state => state.setAcknowledgedBiometricsDisabledReason,
+    )
     const [isAvailable, setIsAvailable] = useState(false)
 
     // The blob and its enrollment binding are two halves of one opt-in and
@@ -113,8 +119,17 @@ export const useBiometrics = (): UseBiometricsResult => {
             await biometricsService.clearEnrollmentBinding()
             setIsEnabled(false)
             setDisabledReason(reason)
+            // A fresh drop is its own event: an earlier decline must not
+            // swallow the offer for this one.
+            setAcknowledgedReason(null)
         },
-        [removeSecret, biometricsService, setIsEnabled, setDisabledReason],
+        [
+            removeSecret,
+            biometricsService,
+            setIsEnabled,
+            setDisabledReason,
+            setAcknowledgedReason,
+        ],
     )
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
@@ -144,7 +159,13 @@ export const useBiometrics = (): UseBiometricsResult => {
             // acts, and biometric unlock quietly not working is exactly what
             // this is meant to prevent.
             const availability = await biometricsService.getAvailability()
-            if (availability === 'none-enrolled' || availability === 'denied') {
+            const isPersistent =
+                availability === 'none-enrolled' || availability === 'denied'
+            // Re-derived from live device state on every reconcile, unlike the
+            // event-driven reasons — so a decline has to be remembered here or
+            // the offer would come back on the very next unlock, and every one
+            // after it, until the user gave in.
+            if (isPersistent && acknowledgedReason !== 'not-available') {
                 setDisabledReason('not-available')
             }
             return false
@@ -176,6 +197,9 @@ export const useBiometrics = (): UseBiometricsResult => {
             // them offering to fix what they just fixed. Every other reason
             // implies a destroyed blob, which never reaches this line.
             setDisabledReason(null)
+            // Resolved, so a later recurrence is a new event and deserves the
+            // offer again even if this one was declined.
+            setAcknowledgedReason(null)
             return true
         }
 
@@ -198,6 +222,8 @@ export const useBiometrics = (): UseBiometricsResult => {
         biometricsService,
         setIsEnabled,
         setDisabledReason,
+        acknowledgedReason,
+        setAcknowledgedReason,
     ])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
@@ -326,8 +352,9 @@ export const useBiometrics = (): UseBiometricsResult => {
     // a decline is remembered — the prompt is shown once per drop, not on every
     // unlock until the user gives in.
     const acknowledgeBiometricsDisabled = useCallback((): void => {
+        if (disabledReason) setAcknowledgedReason(disabledReason)
         setDisabledReason(null)
-    }, [setDisabledReason])
+    }, [disabledReason, setAcknowledgedReason, setDisabledReason])
 
     const authenticateWithBiometrics = useCallback(
         async (

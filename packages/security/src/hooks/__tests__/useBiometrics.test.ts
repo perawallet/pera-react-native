@@ -1005,6 +1005,56 @@ describe('useBiometrics', () => {
             expect(result.current.disabledReason).toBeNull()
         })
 
+        // `not-available` is re-derived from device state on every reconcile, so
+        // without remembering the decline the offer would return on every
+        // unlock until the user gave in.
+        test('does not re-offer a persistent state the user declined', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('none-enrolled')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            expect(result.current.disabledReason).toBe('not-available')
+
+            act(() => {
+                result.current.acknowledgeBiometricsDisabled()
+            })
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.disabledReason).toBeNull()
+        })
+
+        // Declining once must not make the user permanently un-warnable: a drop
+        // that actually destroys the opt-in is a new event.
+        test('offers again when a later drop destroys the opt-in', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('none-enrolled')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            act(() => {
+                result.current.acknowledgeBiometricsDisabled()
+            })
+
+            // A biometric is enrolled again, and it is not the bound one.
+            mockCheckBiometricsAvailable.mockResolvedValue(true)
+            mockGetAvailability.mockResolvedValue('available')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.disabledReason).toBe('enrollment-changed')
+        })
+
         test('records no reason when the user disables biometrics themselves', async () => {
             kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 

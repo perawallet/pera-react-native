@@ -76,6 +76,14 @@ export type SecurityState = BaseStoreState & {
      * re-enable is not a claim that anything is enabled.
      */
     biometricsDisabledReason: Nullable<BiometricsDisabledReason>
+    /**
+     * The reason the user has already declined to act on. Needed because
+     * `not-available` is re-derived from live device state on every reconcile:
+     * without this, dismissing it would only last until the next one and the
+     * offer would return on every unlock. Cleared when the situation resolves,
+     * so a later recurrence prompts again.
+     */
+    acknowledgedBiometricsDisabledReason: Nullable<BiometricsDisabledReason>
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -86,6 +94,9 @@ export type SecurityState = BaseStoreState & {
     setAppLockActive: (active: boolean) => void
     setBiometricsEnabled: (enabled: boolean) => void
     setBiometricsDisabledReason: (
+        reason: Nullable<BiometricsDisabledReason>,
+    ) => void
+    setAcknowledgedBiometricsDisabledReason: (
         reason: Nullable<BiometricsDisabledReason>,
     ) => void
 }
