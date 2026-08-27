@@ -38,7 +38,9 @@ import type {
     ProposeSignRequestFn,
 } from '../pipeline/transports/createMultisigProposeTransport'
 import type { AddSignaturesFn } from '../pipeline/transports/createMultisigCosignTransport'
-import type { SigningResult } from '../pipeline/types'
+import { draftProposeContexts } from '../pipeline/draftProposeContexts'
+import { walletConnectHandoffs } from '../pipeline/walletConnectHandoffs'
+import { isExternalCallbackSource, type SigningResult } from '../pipeline/types'
 
 type UseMultisigTransportAdaptersResult = {
     /** Adapter for createMultisigProposeTransport */
@@ -266,6 +268,55 @@ export const useMultisigTransportAdapters =
                                 proposer.address,
                         },
                     )
+                    // The draft was created before any backend record existed,
+                    // so the sync-flow delivery wiring the immediate-propose
+                    // path does at create time happens here instead. Without
+                    // it a `sync` record has no deliverer anywhere and the
+                    // backend holds it at `ready` forever (PERA-4987).
+                    const context = draftProposeContexts.take(signRequestId)
+                    if (context) {
+                        const { source, msigMetadata } = context
+                        const handoffDeviceId = deviceId ?? context.deviceId
+                        if (
+                            isExternalCallbackSource(source.type) &&
+                            msigMetadata &&
+                            handoffDeviceId
+                        ) {
+                            walletConnectHandoffs.register({
+                                signRequestId: proposeResponse.id,
+                                multisigAddress: draft.multisigAddress,
+                                msigMetadata,
+                                expectedRawTransactionsBase64:
+                                    draft.rawTransactionsBase64,
+                                deviceId: handoffDeviceId,
+                                network,
+                                sourceType: source.type,
+                                registeredAt: Date.now(),
+                                proposerAddress: proposer.address,
+                                callbacks: {
+                                    approveSignedBytes:
+                                        source.callbacks?.approveSignedBytes,
+                                    error: source.callbacks?.error,
+                                    reject: source.callbacks?.reject,
+                                },
+                                recovery: source.handoffDelivery,
+                            })
+                        }
+                        // Best-effort, same contract as the propose transport:
+                        // the backend record exists, so a listener failure must
+                        // not fail the bootstrap that already succeeded.
+                        try {
+                            await source.callbacks?.onProposed?.({
+                                signRequestId: proposeResponse.id,
+                                status: proposeResponse.status,
+                                rawTransactionsBase64:
+                                    draft.rawTransactionsBase64,
+                            })
+                        } catch {
+                            // Swallowed: delivery can still finish from the
+                            // registered handoff or the inbox flow.
+                        }
+                    }
                     // `useMultisigProposeListener` deletes the draft atomically
                     // with `openSheet(realId)`, so no draft-deleted-but-real-not-
                     // set flicker.
@@ -302,7 +353,7 @@ export const useMultisigTransportAdapters =
                 })
                 return { status: response.status }
             },
-            [network, queryClient],
+            [network, queryClient, deviceId],
         )
 
         const createDraftSignRequest = useCallback<CreateDraftSignRequestFn>(
