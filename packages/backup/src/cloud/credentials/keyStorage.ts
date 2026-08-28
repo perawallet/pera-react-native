@@ -13,10 +13,19 @@
 import {
     commitSecret,
     hasSecret,
+    mnemonicWordsToIndices,
     removeSecret,
     withSecret,
+    zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+export class BackupMnemonicParseError extends Error {
+    constructor(message = 'Stored backup phrase is not a wordlist phrase') {
+        super(message)
+        this.name = 'BackupMnemonicParseError'
+    }
+}
 
 export const CLOUD_BACKUP_ENC_KEY_ID = 'cloud-backup/k-enc'
 export const CLOUD_BACKUP_AUTH_KEY_ID = 'cloud-backup/k-auth-priv'
@@ -34,12 +43,14 @@ export const persistBackupKeys = async ({
     mnemonic,
 }: PersistBackupKeysParams): Promise<void> => {
     await commitSecret({ id: CLOUD_BACKUP_ENC_KEY_ID, bytes: encryptionKey })
+    // `commitSecret` zeroes only its own copy, so this buffer is ours to wipe.
+    let mnemonicBytes: Uint8Array | null = null
     try {
         await commitSecret({
             id: CLOUD_BACKUP_AUTH_KEY_ID,
             bytes: authSecretKey,
         })
-        const mnemonicBytes = new TextEncoder().encode(mnemonic.join(' '))
+        mnemonicBytes = new TextEncoder().encode(mnemonic.join(' '))
         await commitSecret({
             id: CLOUD_BACKUP_MNEMONIC_ID,
             bytes: mnemonicBytes,
@@ -48,15 +59,36 @@ export const persistBackupKeys = async ({
         await removeSecret(CLOUD_BACKUP_ENC_KEY_ID)
         await removeSecret(CLOUD_BACKUP_AUTH_KEY_ID)
         throw error
+    } finally {
+        zeroBytes(mnemonicBytes)
     }
 }
 
-export const withBackupMnemonic = async <T>(
-    handler: (words: string[]) => T | Promise<T>,
+/**
+ * `handler` must `.slice()` anything it holds past its own return — the buffer
+ * is zeroed afterwards.
+ *
+ * `null` means nothing is stored; `BackupMnemonicParseError` means something is
+ * stored but doesn't decode to a wordlist phrase. Callers must route these apart.
+ */
+export const withBackupMnemonicIndices = async <T>(
+    handler: (indices: Uint16Array) => T | Promise<T>,
 ): Promise<Nullable<T>> =>
-    withSecret(CLOUD_BACKUP_MNEMONIC_ID, bytes =>
-        handler(new TextDecoder().decode(bytes).split(' ')),
-    )
+    withSecret<Nullable<T>>(CLOUD_BACKUP_MNEMONIC_ID, async bytes => {
+        // The keystore holds UTF-8 text, so words exist for this one expression.
+        const indices = mnemonicWordsToIndices(
+            new TextDecoder().decode(bytes).split(' '),
+        )
+        // Safe to throw here: `mnemonicWordsToIndices` zeroes its partial
+        // buffer before returning null, so nothing survives the unwind.
+        if (!indices) throw new BackupMnemonicParseError()
+
+        try {
+            return await handler(indices)
+        } finally {
+            zeroBytes(indices)
+        }
+    })
 
 export const withBackupAuthSecretKey = async <T>(
     handler: (bytes: Uint8Array) => T | Promise<T>,

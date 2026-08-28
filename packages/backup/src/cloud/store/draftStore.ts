@@ -11,58 +11,144 @@
  */
 
 import { create } from 'zustand'
+import {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type CloudBackupDraft = {
-    mnemonic: string[]
+    mnemonicIndices: Uint16Array
     salt: string
 }
 
 type CloudBackupDraftState = BaseStoreState & {
-    mnemonic: string[] | null
+    mnemonicIndices: Uint16Array | null
     salt: string | null
 }
 
 type CloudBackupDraftActions = {
     setDraft: (draft: CloudBackupDraft) => void
-    setMnemonic: (mnemonic: string[]) => void
-    setSalt: (salt: string) => void
     clearDraft: () => void
 }
 
 export type CloudBackupDraftStore = CloudBackupDraftState &
     CloudBackupDraftActions
 
-const initialState = {
-    mnemonic: null as string[] | null,
+const initialDraftState = {
+    mnemonicIndices: null as Uint16Array | null,
     salt: null as string | null,
 }
 
-const createCloudBackupDraftStore = (storeName: string) => {
-    const useStore = create<CloudBackupDraftStore>()(set => ({
-        ...initialState,
-        setDraft: ({ mnemonic, salt }: CloudBackupDraft) =>
-            set({ mnemonic, salt }),
-        setMnemonic: (mnemonic: string[]) => set({ mnemonic }),
-        setSalt: (salt: string) => set({ salt }),
-        clearDraft: () => set(initialState),
-        resetState: () => set(initialState),
-    }))
+/** Setup draft: the credentials we generate. */
+export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
+    set,
+    get,
+) => {
+    const clear = () => {
+        zeroBytes(get().mnemonicIndices)
+        set(initialDraftState)
+    }
 
-    registerStore({
-        name: storeName,
-        clearStorage: () => useStore.getState().resetState(),
-        resetState: () => useStore.getState().resetState(),
-    })
+    return {
+        ...initialDraftState,
+        setDraft: ({ mnemonicIndices, salt }: CloudBackupDraft) => {
+            // Copy, don't alias: the caller zeroes its own buffer on unmount.
+            zeroBytes(get().mnemonicIndices)
+            set({ mnemonicIndices: mnemonicIndices.slice(), salt })
+        },
+        clearDraft: clear,
+        resetState: clear,
+    }
+})
 
-    return useStore
+registerStore({
+    name: 'cloud-backup-draft-store',
+    clearStorage: () => useCloudBackupDraftStore.getState().resetState(),
+    resetState: () => useCloudBackupDraftStore.getState().resetState(),
+})
+
+type CloudBackupRestoreDraftState = BaseStoreState & {
+    /** Wordlist indices, when every entered token is a wordlist word. */
+    mnemonicIndices: Uint16Array | null
+    /** UTF-8 fallback for an entry containing a non-wordlist token. */
+    mnemonicRawBytes: Uint8Array | null
+    salt: string | null
 }
 
-export const useCloudBackupDraftStore = createCloudBackupDraftStore(
-    'cloud-backup-draft-store',
-)
+type CloudBackupRestoreDraftActions = {
+    setMnemonic: (mnemonic: string[]) => void
+    setSalt: (salt: string) => void
+    clearDraft: () => void
+}
 
-export const useCloudBackupRestoreDraftStore = createCloudBackupDraftStore(
-    'cloud-backup-restore-draft-store',
-)
+export type CloudBackupRestoreDraftStore = CloudBackupRestoreDraftState &
+    CloudBackupRestoreDraftActions
+
+const initialRestoreDraftState = {
+    mnemonicIndices: null as Uint16Array | null,
+    mnemonicRawBytes: null as Uint8Array | null,
+    salt: null as string | null,
+}
+
+/**
+ * Restore draft: the phrase the user types, so unvalidated. The raw-bytes
+ * fallback is deliberate — preserving exactly what was typed lets the server
+ * answer NOT_FOUND vs INVALID_CREDENTIALS instead of us rejecting locally.
+ * Shape follows `pendingImportMnemonic` in `@perawallet/wallet-core-accounts`.
+ */
+export const useCloudBackupRestoreDraftStore =
+    create<CloudBackupRestoreDraftStore>()((set, get) => {
+        const clear = () => {
+            const { mnemonicIndices, mnemonicRawBytes } = get()
+            zeroBytes(mnemonicIndices, mnemonicRawBytes)
+            set(initialRestoreDraftState)
+        }
+
+        return {
+            ...initialRestoreDraftState,
+            setMnemonic: (mnemonic: string[]) => {
+                const indices = mnemonicWordsToIndices(mnemonic)
+                const { mnemonicIndices, mnemonicRawBytes } = get()
+                zeroBytes(mnemonicIndices, mnemonicRawBytes)
+                set(
+                    indices
+                        ? { mnemonicIndices: indices, mnemonicRawBytes: null }
+                        : {
+                              mnemonicIndices: null,
+                              mnemonicRawBytes: new TextEncoder().encode(
+                                  mnemonic.join(' '),
+                              ),
+                          },
+                )
+            },
+            setSalt: (salt: string) => set({ salt }),
+            clearDraft: clear,
+            resetState: clear,
+        }
+    })
+
+/**
+ * Leaves the retained buffer intact so a rejected attempt can be retried with a
+ * different encryption key; `clearDraft` is what zeroes it.
+ */
+export const readCloudBackupRestoreMnemonic = (): string[] | null => {
+    const { mnemonicIndices, mnemonicRawBytes } =
+        useCloudBackupRestoreDraftStore.getState()
+
+    if (mnemonicIndices) {
+        return Array.from(mnemonicIndices, index => mnemonicIndexToWord(index))
+    }
+    if (mnemonicRawBytes) {
+        return new TextDecoder().decode(mnemonicRawBytes).split(' ')
+    }
+    return null
+}
+
+registerStore({
+    name: 'cloud-backup-restore-draft-store',
+    clearStorage: () => useCloudBackupRestoreDraftStore.getState().resetState(),
+    resetState: () => useCloudBackupRestoreDraftStore.getState().resetState(),
+})
