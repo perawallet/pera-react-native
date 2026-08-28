@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -73,6 +74,18 @@ export const usePeraWebImportLoadingScreen = (): void => {
         const run = async () => {
             const qr = usePeraWebImportFlowStore.getState().qr
             if (!qr) {
+                navigationRef.current.goBack()
+                return
+            }
+
+            // The deeplink handler jumps here straight from a QR scan,
+            // bypassing the disabled menu row on the options screen, so
+            // the network needs its own check here too.
+            if (!isPeraBackedNetwork(network)) {
+                errorToastRef.current(
+                    tRef.current('common.network_unavailable.title'),
+                    tRef.current('common.network_unavailable.body'),
+                )
                 navigationRef.current.goBack()
                 return
             }

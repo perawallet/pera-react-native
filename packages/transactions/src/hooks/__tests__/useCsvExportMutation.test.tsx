@@ -15,6 +15,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { useCsvExportMutation } from '../useCsvExportMutation'
 import { fetchTransactionsCsv, CsvExportError } from '../../api/csv-export'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks as ConfigNetworks } from '@perawallet/wallet-core-config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
@@ -217,5 +218,48 @@ describe('useCsvExportMutation', () => {
             network: Networks.mainnet,
         })
         expect(result.current.result?.assetId).toBe('12345')
+    })
+
+    describe('non-Pera-backed networks', () => {
+        it.each([ConfigNetworks.betanet, ConfigNetworks.custom])(
+            'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
+            async network => {
+                const { result, rerender } = renderHook(
+                    () =>
+                        useCsvExportMutation({
+                            network,
+                            onSuccess: mockOnSuccess,
+                            onError: mockOnError,
+                        }),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+
+                const firstExportCsv = result.current.exportCsv
+                act(() => {
+                    result.current.exportCsv({ accountAddress: VALID_ADDRESS })
+                })
+
+                expect(fetchTransactionsCsv).not.toHaveBeenCalled()
+                expect(mockOnSuccess).not.toHaveBeenCalled()
+                expect(mockOnError).not.toHaveBeenCalled()
+
+                rerender()
+                expect(result.current.exportCsv).toBe(firstExportCsv)
+            },
+        )
+
+        it.each([Networks.mainnet, Networks.testnet])(
+            'reports isUnavailableOnNetwork as false on %s',
+            network => {
+                const { result } = renderHook(
+                    () => useCsvExportMutation({ network }),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(false)
+            },
+        )
     })
 })

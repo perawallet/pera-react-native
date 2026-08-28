@@ -124,7 +124,11 @@ export const useAssetTransactionList = ({
 
     const { showError } = useErrorToast()
 
-    const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
+    const {
+        exportCsv,
+        isLoading: isExportingCsv,
+        isUnavailableOnNetwork,
+    } = useCsvExportMutation({
         network,
         onSuccess: result => {
             void (async () => {
@@ -196,7 +200,8 @@ export const useAssetTransactionList = ({
     // `transactions.length > 0` rather than `!isEmpty` also keeps the button
     // hidden during the initial load (when results may still end up empty),
     // avoiding a brief visible-then-gone flicker.
-    const isCsvExportVisible = transactions.length > 0
+    const isCsvExportVisible =
+        transactions.length > 0 && !isUnavailableOnNetwork
 
     return {
         rows,

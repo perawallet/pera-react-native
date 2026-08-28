@@ -16,6 +16,8 @@ import {
     resolveImportAccountType,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -47,6 +49,7 @@ export const useImportAccountOptionsScreen =
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
         const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+        const { network } = useNetwork()
 
         const {
             isOpen: isQRScannerVisible,
@@ -197,15 +200,22 @@ export const useImportAccountOptionsScreen =
                 })
             }
 
+            // There is no Pera-free source for a Pera Web backup, so the
+            // flow can't work on betanet/custom — disable the row instead
+            // of letting the user hit a misleading fetch failure.
+            const isPeraWebImportAvailable = isPeraBackedNetwork(network)
+
             allOptions.push(
                 {
                     testID: 'import_account_options_pera_web_button',
                     titleKey:
                         'onboarding.import_account_options.pera_web_title',
-                    descriptionKey:
-                        'onboarding.import_account_options.pera_web_description',
+                    descriptionKey: isPeraWebImportAvailable
+                        ? 'onboarding.import_account_options.pera_web_description'
+                        : 'common.network_unavailable.title',
                     leftIcon: 'globe' as IconName,
                     onPress: handleImportPeraWeb,
+                    isDisabled: !isPeraWebImportAvailable,
                 },
                 {
                     testID: 'import_account_options_asb_button',
@@ -227,6 +237,7 @@ export const useImportAccountOptionsScreen =
             handleImportPeraWeb,
             handleImportQuantum,
             isQuantumAccountsEnabled,
+            network,
         ])
 
         return {

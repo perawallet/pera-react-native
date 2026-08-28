@@ -25,6 +25,7 @@ import { TransactionFilter } from '../../../../../accounts/components/Transactio
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -694,6 +695,55 @@ describe('useAssetTransactionList', () => {
                 }),
             )
         })
+    })
+
+    describe('CSV export visibility', () => {
+        it('shows the export action when transactions exist', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+        })
+
+        it.each([Networks.betanet, Networks.custom])(
+            'hides the export action on %s even when transactions exist',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+                vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                    transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                    isLoading: false,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+                vi.mocked(useCsvExportMutation).mockReturnValue({
+                    exportCsv: mockExportCsv,
+                    isLoading: false,
+                    isUnavailableOnNetwork: true,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+
+                const { result } = renderHook(() =>
+                    useAssetTransactionList({
+                        account: mockAccount,
+                        asset: mockAsset,
+                    }),
+                )
+
+                expect(result.current.isCsvExportVisible).toBe(false)
+            },
+        )
     })
 
     describe('transaction press', () => {

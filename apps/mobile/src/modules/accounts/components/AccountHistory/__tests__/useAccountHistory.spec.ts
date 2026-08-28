@@ -25,6 +25,7 @@ import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { AppError } from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -531,6 +532,45 @@ describe('useAccountHistory', () => {
             // The raw error must never be handed directly to showToast.
             expect(mockShowToast).not.toHaveBeenCalled()
         })
+    })
+
+    describe('CSV export visibility', () => {
+        it('shows the export action when transactions exist', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isCsvExportVisible).toBe(true)
+        })
+
+        it.each([Networks.betanet, Networks.custom])(
+            'hides the export action on %s even when transactions exist',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+                vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                    transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                    isLoading: false,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+                vi.mocked(useCsvExportMutation).mockReturnValue({
+                    exportCsv: mockExportCsv,
+                    isLoading: false,
+                    isUnavailableOnNetwork: true,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any)
+
+                const { result } = renderHook(() => useAccountHistory())
+
+                expect(result.current.isCsvExportVisible).toBe(false)
+            },
+        )
     })
 
     describe('transaction press', () => {
