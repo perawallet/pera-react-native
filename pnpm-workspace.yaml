@@ -48,7 +48,7 @@ catalog:
   "@types/react": ~19.2.14
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.0.5
+  "@vitejs/plugin-react": 6.1.0
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
