@@ -39,12 +39,10 @@ type PlainModel<T> = T extends Uint8Array
         ? PlainModel<U>[]
         : T extends object
           ? {
-                [
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    K in keyof T as T[K] extends (...args: any[]) => any
-                        ? never
-                        : K
-                ]: PlainModel<T[K]>
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                [K in keyof T as T[K] extends (...args: any[]) => any
+                    ? never
+                    : K]: PlainModel<T[K]>
             }
           : T
 
