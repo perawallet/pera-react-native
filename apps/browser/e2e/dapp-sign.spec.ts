@@ -28,6 +28,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import algosdk from 'algosdk'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import {
+    expectApprovalSurfaceUrl,
+    openApprovalSurface,
+    trackPageErrors,
+} from './approval-surface'
 
 declare global {
     interface Window {
@@ -60,61 +65,8 @@ let dappOrigin: string
 let grantedAddress: string
 const PASSWORD = 'e2e-dapp-sign-password-1'
 
-const trackPageErrors = (targetPage: Page): Error[] => {
-    const errors: Error[] = []
-    targetPage.on('pageerror', error => errors.push(error))
-    return errors
-}
-
-// Playwright can neither click the toolbar icon nor see its popup as a 'page',
-// so open popup.html directly — the same surface and getCurrentApproval()
-// discovery path the real popup uses. Waiting for the SW to register the
-// pending approval first guarantees the popup discovers it.
-const openApprovalPopup = async (): Promise<{
-    approvalPage: Page
-    approvalErrors: Error[]
-}> => {
-    await expect
-        .poll(
-            () =>
-                page.evaluate(
-                    scope =>
-                        new Promise<unknown>(resolve => {
-                            const runtime = (
-                                globalThis as unknown as {
-                                    chrome?: {
-                                        runtime?: {
-                                            sendMessage?: (
-                                                message: unknown,
-                                                callback: (r: unknown) => void,
-                                            ) => void
-                                        }
-                                    }
-                                }
-                            ).chrome?.runtime
-                            if (!runtime?.sendMessage) {
-                                resolve(null)
-                                return
-                            }
-                            runtime.sendMessage(
-                                { scope, kind: 'get-current-approval' },
-                                resolve,
-                            )
-                        }),
-                    'pera-dapp-approval',
-                ),
-            { timeout: 20_000 },
-        )
-        .not.toBeNull()
-    const approvalPage = await context.newPage()
-    // The real toolbar popup's dimensions.
-    await approvalPage.setViewportSize({ width: 360, height: 600 })
-    // Before navigation, so module-eval crashes on load are caught.
-    const approvalErrors = trackPageErrors(approvalPage)
-    await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
-    await approvalPage.waitForLoadState('domcontentloaded')
-    return { approvalPage, approvalErrors }
-}
+const openApprovalPopup = () =>
+    openApprovalSurface({ context, page, extensionId })
 
 const openEnableApprovalPopup = async (): Promise<Page> => {
     await dappPage.evaluate(() => {
@@ -243,7 +195,7 @@ test('sign_transactions before enable resolves UnauthorizedSignerError with no a
 
 test('enable connects the dapp, granting one account', async () => {
     const approvalPage = await openEnableApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -296,7 +248,7 @@ test('sign_transactions on a connected origin opens the approval popup and decod
 
     await dappPage.evaluate(txn => window.signTxns([{ txn }]), unsignedTxnB64)
     const { approvalPage, approvalErrors } = await openApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -353,7 +305,7 @@ test('closing the approval popup rejects with MethodCanceledError', async () => 
 
     await dappPage.evaluate(txn => window.signTxns([{ txn }]), unsignedTxnB64)
     const { approvalPage } = await openApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     // Defensive — the vault should still be unlocked from the previous test.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
