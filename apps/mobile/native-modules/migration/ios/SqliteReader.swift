@@ -191,21 +191,28 @@ final class SqliteReader {
 
     // MARK: - WalletConnect v1 live sessions
 
-    struct WCSessionBlob: Decodable {
-        struct URLMeta: Decodable {
+    /// Hand-parsed rather than `Decodable` on purpose: a synthesized `Decodable`
+    /// throws for the whole session when *any* field disagrees on JSON type —
+    /// including the optional ones, since Swift's `decodeIfPresent` forgives a
+    /// missing key but not a wrong type. Pera 6 wrote these blobs over several
+    /// years and dApp SDK versions, so one session storing `chainId` as a string
+    /// or `accounts` as a comma-joined list would take the whole row down while
+    /// its siblings migrated fine. See PERA-4787.
+    struct WCSessionBlob {
+        struct URLMeta {
             let topic: String
             let version: String
             let bridge: String
             let key: String
         }
-        struct PeerMeta: Decodable {
+        struct PeerMeta {
             let id: String?
             let name: String?
             let description: String?
             let icons: [String]?
             let url: String?
         }
-        struct WalletMeta: Decodable {
+        struct WalletMeta {
             let accounts: [String]?
             let chainId: Int?
             let peerId: String?
@@ -225,33 +232,151 @@ final class SqliteReader {
 
     func readWalletConnectV1Sessions() -> [WCSessionListEntry] {
         guard let db = try? connection() else { return [] }
-        let sql = "SELECT ZSESSIONS FROM ZWCSESSIONLIST LIMIT 1;"
+        // No LIMIT: Core Data models this as a single session-list row, but the
+        // old `LIMIT 1` had no ORDER BY, so if an install ever holds more than
+        // one it read an arbitrary row and lost whole dApps — which is this
+        // bug's exact signature. Read every row and merge.
+        let sql = "SELECT ZSESSIONS FROM ZWCSESSIONLIST;"
         var statement: OpaquePointer?
         defer { sqlite3_finalize(statement) }
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             return []
         }
-        guard sqlite3_step(statement) == SQLITE_ROW,
-              sqlite3_column_type(statement, 0) != SQLITE_NULL,
-              let blob = sqlite3_column_blob(statement, 0) else {
-            return []
-        }
-        let length = Int(sqlite3_column_bytes(statement, 0))
-        let data = Data(bytes: blob, count: length)
-        guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
-            return []
-        }
+
         var entries: [WCSessionListEntry] = []
-        for (topic, value) in root.sorted(by: { $0.key < $1.key }) {
-            guard JSONSerialization.isValidJSONObject(value),
-                  let valueData = try? JSONSerialization.data(withJSONObject: value),
-                  let session = try? JSONDecoder().decode(WCSessionBlob.self, from: valueData) else {
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard sqlite3_column_type(statement, 0) != SQLITE_NULL,
+                  let blob = sqlite3_column_blob(statement, 0) else {
                 continue
             }
-            entries.append(WCSessionListEntry(topic: topic, session: session))
+            let length = Int(sqlite3_column_bytes(statement, 0))
+            let data = Data(bytes: blob, count: length)
+            guard let root = (try? JSONSerialization.jsonObject(with: data))
+                    as? [String: Any] else {
+                continue
+            }
+            for (topic, value) in root.sorted(by: { $0.key < $1.key }) {
+                // Only unreachable-in-Pera-6 rows land here now: `urlMeta`
+                // absent or not an object, or bridge/key/topic not strings.
+                guard let session = parseWCSessionBlob(value) else { continue }
+                entries.append(WCSessionListEntry(topic: topic, session: session))
+            }
         }
         return entries
     }
+}
+
+// MARK: - Tolerant WalletConnect v1 blob parsing
+
+/// Strings only. Coercing a number or bool here would be worse than useless:
+/// JSON booleans bridge to `NSNumber`, so `true` would become `"1"` and could
+/// manufacture a plausible-looking `bridge`/`key`/`topic` where rejecting the
+/// field is correct. Tolerance comes from parsing each field independently, not
+/// from inventing values.
+private func jsonString(_ value: Any?) -> String? { value as? String }
+
+/// Exact integers only: `intValue` would truncate a fractional chainId into a
+/// different, valid-looking chain and wraps silently past `Int` range.
+private func jsonInt(_ value: Any?) -> Int? {
+    switch value {
+    case let number as NSNumber: return Int(exactly: number.doubleValue)
+    case let string as String: return Int(string)
+    default: return nil
+    }
+}
+
+private func jsonDouble(_ value: Any?) -> Double? {
+    switch value {
+    case let number as NSNumber: return number.doubleValue
+    case let string as String: return Double(string)
+    default: return nil
+    }
+}
+
+private func jsonBool(_ value: Any?) -> Bool? {
+    switch value {
+    case let number as NSNumber: return number.boolValue
+    case let string as String: return ["1", "true", "yes"].contains(string.lowercased())
+    default: return nil
+    }
+}
+
+/// Accepts a JSON array, and also a single comma-joined string — some legacy
+/// WC v1 client builds persisted account lists that way. Non-string elements
+/// are dropped rather than failing the whole session, so the result can be
+/// shorter than the input: a session with one fewer approved account still
+/// works, whereas rejecting the row loses the session outright.
+private func jsonStringArray(_ value: Any?) -> [String]? {
+    if let array = value as? [Any] {
+        return array.compactMap { jsonString($0) }
+    }
+    if let joined = value as? String {
+        // A bare string here is a comma-joined list; an icon URL containing a
+        // comma (a data: URI) splits into junk, which costs a broken icon
+        // rather than a lost session.
+        let parts = joined
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts
+    }
+    return nil
+}
+
+/// Empty strings are passed through rather than rejected here so the row still
+/// reaches the bridge — the JS migrator rejects it, and it stays visible in the
+/// developer Migration Viewer, which is where a lost session gets diagnosed.
+private func parseWCURLMeta(_ value: Any?) -> SqliteReader.WCSessionBlob.URLMeta? {
+    guard let dict = value as? [String: Any],
+          let topic = jsonString(dict["topic"]),
+          let bridge = jsonString(dict["bridge"]),
+          let key = jsonString(dict["key"]) else {
+        return nil
+    }
+    // `version` is echoed into the bridged `sessionMetaJson` but no JS consumer
+    // parses it (`parseSessionMeta` reads only bridge/key/topic, and
+    // `WalletConnectConnection.version` is hardcoded to 1), so a missing one
+    // must never cost us the session.
+    return SqliteReader.WCSessionBlob.URLMeta(
+        topic: topic,
+        version: jsonString(dict["version"]) ?? "1",
+        bridge: bridge,
+        key: key
+    )
+}
+
+private func parseWCPeerMeta(_ value: Any?) -> SqliteReader.WCSessionBlob.PeerMeta? {
+    guard let dict = value as? [String: Any] else { return nil }
+    return SqliteReader.WCSessionBlob.PeerMeta(
+        id: jsonString(dict["id"]),
+        name: jsonString(dict["name"]),
+        description: jsonString(dict["description"]),
+        icons: jsonStringArray(dict["icons"]),
+        url: jsonString(dict["url"])
+    )
+}
+
+private func parseWCWalletMeta(_ value: Any?) -> SqliteReader.WCSessionBlob.WalletMeta? {
+    guard let dict = value as? [String: Any] else { return nil }
+    return SqliteReader.WCSessionBlob.WalletMeta(
+        accounts: jsonStringArray(dict["accounts"]),
+        chainId: jsonInt(dict["chainId"]),
+        peerId: jsonString(dict["peerId"])
+    )
+}
+
+private func parseWCSessionBlob(_ value: Any) -> SqliteReader.WCSessionBlob? {
+    guard let dict = value as? [String: Any],
+          let urlMeta = parseWCURLMeta(dict["urlMeta"]) else {
+        return nil
+    }
+    return SqliteReader.WCSessionBlob(
+        urlMeta: urlMeta,
+        peerMeta: parseWCPeerMeta(dict["peerMeta"]),
+        walletMeta: parseWCWalletMeta(dict["walletMeta"]),
+        date: jsonDouble(dict["date"]),
+        isSubscribed: jsonBool(dict["isSubscribed"])
+    )
 }
 
 enum LegacyMigrationError: Error, LocalizedError {
