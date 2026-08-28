@@ -56,8 +56,8 @@ export const PWDRAWER_SHADOW_FADE_PROGRESS = 0.12
  * Just enough to read as a seam rather than a drop shadow. Paired with
  * PWDRAWER_SCRIM_OPACITY, which carries most of the layer separation.
  */
-export const PWDRAWER_SHADOW_OPACITY = 0.06
-export const PWDRAWER_SHADOW_ELEVATION = 3
+export const PWDRAWER_SHADOW_OPACITY = 0
+export const PWDRAWER_SHADOW_ELEVATION = 0
 
 /**
  * Peak tint over the content, at fully open. An order of magnitude lighter than
@@ -65,7 +65,7 @@ export const PWDRAWER_SHADOW_ELEVATION = 3
  * layer above it, not dimmed out of use. This is the knob to turn if the two
  * layers need more or less separation.
  */
-export const PWDRAWER_SCRIM_OPACITY = 0.1
+export const PWDRAWER_SCRIM_OPACITY = 0.3
 
 /**
  * The panel contents grow and fade into place as the drawer opens. Keyed off

@@ -83,7 +83,6 @@ export const AccountTabNavigator = ({
         <PWView style={styles.container}>
             <PWPagerTabBar
                 tabs={tabs}
-                index={index}
                 onIndexChange={handleIndexChange}
                 offset={offset}
             />

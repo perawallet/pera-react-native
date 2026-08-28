@@ -10,9 +10,22 @@
  limitations under the License
  */
 
-export { PWPager } from './PWPager'
-export { PWPagerTabBar } from './PWPagerTabBar'
-export { usePWPagerGesture } from './PWPagerGestureContext'
-export { PWPAGER_DRAWER_EDGE_WIDTH, PWPAGER_FLING_VELOCITY } from './constants'
-export type { PWPagerProps } from './types'
-export type { PWPagerTab, PWPagerTabBarProps } from './PWPagerTabBar'
+import { makeStyles } from '@rneui/themed'
+
+// Moved verbatim from the Swap and Fund screens, which carried identical copies
+// before the select header became shared.
+export const useSelectHeaderStyles = makeStyles(theme => ({
+    selectHeader: {
+        paddingTop: theme.spacing.sm,
+        gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
+    },
+    selectTitle: {
+        minWidth: 0,
+    },
+    selectDescription: {
+        color: theme.colors.textGray,
+        minWidth: 0,
+    },
+}))

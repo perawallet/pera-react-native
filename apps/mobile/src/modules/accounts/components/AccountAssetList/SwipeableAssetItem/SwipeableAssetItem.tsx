@@ -15,6 +15,7 @@ import { type GestureResponderEvent } from 'react-native'
 import {
     PWIcon,
     PWSwipeable,
+    usePWPagerGesture,
     type PWSwipeableRef,
     PWView,
 } from '@components/core'
@@ -40,6 +41,7 @@ const SwipeableAssetItemInner = ({
 }: SwipeableAssetItemProps) => {
     const styles = useStyles()
     const swipeableRef = useRef<PWSwipeableRef>(null)
+    const pagerGesture = usePWPagerGesture()
 
     const handleSwipeOpen = useCallback(() => {
         swipeableRef.current?.close()
@@ -82,6 +84,10 @@ const SwipeableAssetItemInner = ({
             renderRightActions={renderRightActions}
             onSwipeableOpen={handleSwipeOpen}
             overshootRight={false}
+            // The account screen's pager owns the same axis as this swipe and is
+            // an ancestor, so without this it wins the drag and the row stops
+            // sliding. Blocking it makes the pager wait for this to fail.
+            block={pagerGesture ?? undefined}
         >
             <PWView style={styles.swipeableContent}>
                 <AssetListItemView

@@ -15,20 +15,16 @@ import { ActivityIndicator } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    canSignWith,
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
-    AccountDrawer,
     AccountDrawerPager,
+    useAccountDrawerPickerKind,
+    useSigningPicker,
 } from '@modules/accounts/components/AccountDrawer'
 import {
     OnrampCountryChip,
@@ -53,11 +49,6 @@ export const OnrampScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { network } = useNetwork()
-    const accounts = useAllAccounts()
-    const onrampAccountFilter = useCallback(
-        (account: WalletAccount) => canSignWith(account, accounts),
-        [accounts],
-    )
     const {
         isReady,
         pairsState,
@@ -75,6 +66,11 @@ export const OnrampScreen = () => {
     // The screen stays mounted in the navigator after navigating away, so tab
     // state alone would keep the history poll alive off-screen.
     const isFocused = useIsFocused()
+
+    // Above the mainnet gate below: these are hooks, so they must run on every
+    // render. One definition behind the drawer and the sheet fallback alike.
+    const accountPicker = useSigningPicker()
+    useAccountDrawerPickerKind('select')
 
     // The pager is controlled off the active tab, so the header and a swipe are
     // two ways of setting the same value rather than two sources of truth.
@@ -102,106 +98,72 @@ export const OnrampScreen = () => {
         )
     }
 
-    // Declared once and spread into both the drawer and the trigger, so the two
-    // entry points can never offer a different set of accounts.
-    const accountPicker = {
-        accountFilter: onrampAccountFilter,
-        hideDefaultHeader: true,
-        headerContent: (
-            <PWView style={styles.selectHeader}>
-                <PWText
-                    variant='h1'
-                    style={styles.selectTitle}
-                    truncate
-                >
-                    {t('account_menu.select_title')}
-                </PWText>
-                <PWText
-                    style={styles.selectDescription}
-                    numberOfLines={2}
-                    ellipsizeMode='tail'
-                >
-                    {t('account_menu.select_description')}
-                </PWText>
-            </PWView>
-        ),
-    }
-
     return (
-        // `headeredLayout` already applies the top inset for this tab screen.
-        <AccountDrawer
-            {...accountPicker}
-            isWithinSafeArea
-            // The pager drives the drawer from the same pan that pages, so the
-            // drawer must not also run an edge gesture of its own.
-            hasOwnOpenGesture={false}
+        <PWView
+            style={styles.screen}
+            testID='onramp-screen'
         >
-            <PWView
-                style={styles.screen}
-                testID='onramp-screen'
-            >
-                <PWView style={styles.header}>
-                    <PWView style={styles.headerRow}>
-                        <OnrampCountryChip
-                            countryCode={region?.countryCode}
-                            onInfoPress={handleRegionInfoPress}
-                        />
-                        <AccountSelection
-                            {...accountPicker}
-                            triggerStyle={styles.accountTrigger}
-                            triggerIconProps={ACCOUNT_TRIGGER_ICON_PROPS}
-                            triggerChevronProps={ACCOUNT_TRIGGER_CHEVRON_PROPS}
-                            triggerTextProps={ACCOUNT_TRIGGER_TEXT_PROPS}
-                        />
-                    </PWView>
-
-                    <OnrampHeaderTabs
-                        activeTab={activeTab}
-                        onTabChange={handleTabChange}
-                        badges={{ history: hasPendingHistory }}
+            <PWView style={styles.header}>
+                <PWView style={styles.headerRow}>
+                    <OnrampCountryChip
+                        countryCode={region?.countryCode}
+                        onInfoPress={handleRegionInfoPress}
+                    />
+                    <AccountSelection
+                        {...accountPicker}
+                        triggerStyle={styles.accountTrigger}
+                        triggerIconProps={ACCOUNT_TRIGGER_ICON_PROPS}
+                        triggerChevronProps={ACCOUNT_TRIGGER_CHEVRON_PROPS}
+                        triggerTextProps={ACCOUNT_TRIGGER_TEXT_PROPS}
                     />
                 </PWView>
 
-                <AccountDrawerPager
-                    index={TAB_PAGES.indexOf(activeTab)}
-                    onIndexChange={handleIndexChange}
-                >
-                    <PWView
-                        key='fund'
-                        style={styles.page}
-                    >
-                        {isReady ? (
-                            <OnrampForm
-                                sourceToken={sourceToken}
-                                destinationToken={destinationToken}
-                                selectedPair={selectedPair}
-                                onNavigateToHistory={handleNavigateToHistory}
-                            />
-                        ) : (
-                            <OfflineTolerantView
-                                isOffline={pairsState === 'offline'}
-                                isError={pairsState === 'error'}
-                                onRetry={handleRetryPairs}
-                            >
-                                <PWView style={styles.loadingWrapper}>
-                                    <ActivityIndicator
-                                        size='large'
-                                        color={theme.colors.textMain}
-                                    />
-                                </PWView>
-                            </OfflineTolerantView>
-                        )}
-                    </PWView>
-                    <PWView
-                        key='history'
-                        style={styles.page}
-                    >
-                        <OnrampHistoryContent
-                            isActive={activeTab === 'history' && isFocused}
-                        />
-                    </PWView>
-                </AccountDrawerPager>
+                <OnrampHeaderTabs
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    badges={{ history: hasPendingHistory }}
+                />
             </PWView>
-        </AccountDrawer>
+
+            <AccountDrawerPager
+                index={TAB_PAGES.indexOf(activeTab)}
+                onIndexChange={handleIndexChange}
+            >
+                <PWView
+                    key='fund'
+                    style={styles.page}
+                >
+                    {isReady ? (
+                        <OnrampForm
+                            sourceToken={sourceToken}
+                            destinationToken={destinationToken}
+                            selectedPair={selectedPair}
+                            onNavigateToHistory={handleNavigateToHistory}
+                        />
+                    ) : (
+                        <OfflineTolerantView
+                            isOffline={pairsState === 'offline'}
+                            isError={pairsState === 'error'}
+                            onRetry={handleRetryPairs}
+                        >
+                            <PWView style={styles.loadingWrapper}>
+                                <ActivityIndicator
+                                    size='large'
+                                    color={theme.colors.textMain}
+                                />
+                            </PWView>
+                        </OfflineTolerantView>
+                    )}
+                </PWView>
+                <PWView
+                    key='history'
+                    style={styles.page}
+                >
+                    <OnrampHistoryContent
+                        isActive={activeTab === 'history' && isFocused}
+                    />
+                </PWView>
+            </AccountDrawerPager>
+        </PWView>
     )
 }

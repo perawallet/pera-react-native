@@ -41,19 +41,6 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
         overflow: 'hidden',
     },
-    selectHeader: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
-    },
-    selectTitle: {
-        minWidth: 0,
-    },
-    selectDescription: {
-        color: theme.colors.textGray,
-        minWidth: 0,
-    },
     accountTrigger: {
         flexGrow: 0,
         flexShrink: 1,

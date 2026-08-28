@@ -90,10 +90,12 @@ export const usePWDrawerDrag = ({
                           ? false
                           : progress.value > PWDRAWER_COMMIT_THRESHOLD
 
-                progress.value = withSpring(
-                    shouldOpen ? 1 : 0,
-                    PWDRAWER_SPRING_CONFIG,
-                )
+                progress.value = withSpring(shouldOpen ? 1 : 0, {
+                    ...PWDRAWER_SPRING_CONFIG,
+                    // Carry the finger's speed into the settle, or the motion
+                    // stalls on lift-off and re-accelerates.
+                    velocity: event.velocityX / panelWidth,
+                })
 
                 if (shouldOpen) {
                     runOnJS(onOpen)()

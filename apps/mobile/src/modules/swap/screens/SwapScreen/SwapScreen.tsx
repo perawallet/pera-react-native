@@ -14,15 +14,11 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import {
-    canSignWith,
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
-    AccountDrawer,
     AccountDrawerPager,
+    useAccountDrawerPickerKind,
+    useSigningPicker,
 } from '@modules/accounts/components/AccountDrawer'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
@@ -34,11 +30,6 @@ import { useSwapScreen } from './useSwapScreen'
 export const SwapScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const accounts = useAllAccounts()
-    const swapAccountFilter = useCallback(
-        (account: WalletAccount) => canSignWith(account, accounts),
-        [accounts],
-    )
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -66,83 +57,52 @@ export const SwapScreen = () => {
         pushWebView({ url: config.swapSupportUrl })
     }, [pushWebView])
 
-    // Declared once and spread into both the drawer and the trigger, so the
-    // two entry points can never offer a different set of accounts — the
-    // filter here is what keeps unsignable accounts out of a swap.
-    const accountPicker = {
-        accountFilter: swapAccountFilter,
-        hideDefaultHeader: true,
-        headerContent: (
-            <PWView style={styles.selectHeader}>
-                <PWText
-                    variant='h1'
-                    style={styles.selectTitle}
-                    truncate
-                >
-                    {t('account_menu.select_title')}
-                </PWText>
-                <PWText
-                    style={styles.selectDescription}
-                    numberOfLines={2}
-                    ellipsizeMode='tail'
-                >
-                    {t('account_menu.select_description')}
-                </PWText>
-            </PWView>
-        ),
-    }
+    // One definition behind the drawer and the bottom-sheet fallback alike.
+    const accountPicker = useSigningPicker()
+    useAccountDrawerPickerKind('select')
 
     return (
-        // `safeAreaLayout` already applies the top inset for this tab screen.
-        <AccountDrawer
-            {...accountPicker}
-            isWithinSafeArea
-            // The pager drives the drawer from the same pan, so the drawer must
-            // not also run an edge gesture of its own.
-            hasOwnOpenGesture={false}
-        >
-            {/* One page, so nothing to page between — the pager is here purely
-                because its pan opens the drawer from anywhere on the screen
-                rather than from a strip at the edge. */}
-            <AccountDrawerPager>
-                <PWView
-                    key='swap'
-                    style={styles.screen}
-                >
-                    <PWToolbar
-                        paddingStyle='none'
-                        left={
-                            <PWView style={styles.titleSection}>
-                                <PWText
-                                    variant='h3'
-                                    truncate
-                                >
-                                    {t('tabbar.swap')}
-                                </PWText>
-                                <PWIcon
-                                    name='info'
-                                    onPress={handleInfoPress}
-                                    testID='swap_info_button'
-                                />
-                            </PWView>
-                        }
-                        right={
-                            <AccountSelection
-                                {...accountPicker}
-                                triggerStyle={styles.accountTrigger}
-                                triggerIconProps={{ size: 'sm' }}
-                                triggerChevronProps={{ size: 'sm' }}
-                                triggerTextProps={{ variant: 'body' }}
+        // One page, so nothing to page between — the pager is here purely
+        // because its pan is what opens the shared drawer, from anywhere on the
+        // screen rather than from a strip at the edge.
+        <AccountDrawerPager>
+            <PWView
+                key='swap'
+                style={styles.screen}
+            >
+                <PWToolbar
+                    paddingStyle='none'
+                    left={
+                        <PWView style={styles.titleSection}>
+                            <PWText
+                                variant='h3'
+                                truncate
+                            >
+                                {t('tabbar.swap')}
+                            </PWText>
+                            <PWIcon
+                                name='info'
+                                onPress={handleInfoPress}
+                                testID='swap_info_button'
                             />
-                        }
-                        style={styles.toolbar}
-                    />
+                        </PWView>
+                    }
+                    right={
+                        <AccountSelection
+                            {...accountPicker}
+                            triggerStyle={styles.accountTrigger}
+                            triggerIconProps={{ size: 'sm' }}
+                            triggerChevronProps={{ size: 'sm' }}
+                            triggerTextProps={{ variant: 'body' }}
+                        />
+                    }
+                    style={styles.toolbar}
+                />
 
-                    <PWView style={styles.formWrapper}>
-                        <SwapForm />
-                    </PWView>
+                <PWView style={styles.formWrapper}>
+                    <SwapForm />
                 </PWView>
-            </AccountDrawerPager>
-        </AccountDrawer>
+            </PWView>
+        </AccountDrawerPager>
     )
 }

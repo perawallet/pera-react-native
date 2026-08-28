@@ -14,12 +14,11 @@ import {
     Children,
     useCallback,
     useEffect,
-    useMemo,
     useState,
     type ReactNode,
 } from 'react'
 import { useWindowDimensions, type LayoutChangeEvent } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler'
 import Animated, {
     runOnJS,
     useAnimatedStyle,
@@ -35,6 +34,7 @@ import {
     PWPAGER_SPRING_CONFIG,
     PWPAGER_VERTICAL_CANCEL_OFFSET,
 } from './constants'
+import { PWPagerGestureContext } from './PWPagerGestureContext'
 import { type PWPagerProps } from './types'
 import { useStyles } from './styles'
 
@@ -95,6 +95,13 @@ export const PWPager = ({
     const lastPageIndex = pages.length - 1
 
     useEffect(() => {
+        // Skip when this is just React catching up to a page the gesture has
+        // already settled on. `onEnd` starts its own spring and then reports the
+        // new index; re-springing here would restart that animation from zero
+        // velocity partway through, which reads as a jolt in the last few
+        // frames — worse the slower the re-render, so worst on a large account.
+        if (committedIndex.value === index) return
+
         committedIndex.value = index
         offset.value = withSpring(index, PWPAGER_SPRING_CONFIG)
     }, [index, offset, committedIndex])
@@ -103,104 +110,100 @@ export const PWPager = ({
         setMeasuredWidth(event.nativeEvent.layout.width)
     }, [])
 
-    const gesture = useMemo(() => {
-        const canDriveDrawer = Boolean(drawerProgress) && drawerWidth > 0
+    const canDriveDrawer = Boolean(drawerProgress) && drawerWidth > 0
 
-        return Gesture.Pan()
-            .enabled(isSwipeEnabled && width > 0)
-            .activeOffsetX([
-                -PWPAGER_ACTIVATION_OFFSET,
-                PWPAGER_ACTIVATION_OFFSET,
-            ])
-            .failOffsetY([
-                -PWPAGER_VERTICAL_CANCEL_OFFSET,
-                PWPAGER_VERTICAL_CANCEL_OFFSET,
-            ])
-            .onStart(event => {
-                'worklet'
-                dragStartOffset.value = offset.value
-                dragStartDrawer.value = drawerProgress?.value ?? 0
+    // The v3 hook API rather than the deprecated `Gesture.Pan()` builder, for a
+    // concrete reason beyond deprecation: this gesture is published so nested
+    // swipeable rows can block it, and a builder gesture only receives its
+    // handler tag when its detector attaches — after descendants have already
+    // read it. The hook allocates the tag during render, so a child's relation
+    // resolves to something real.
+    const gesture = usePanGesture({
+        enabled: isSwipeEnabled && width > 0,
+        activeOffsetX: [-PWPAGER_ACTIVATION_OFFSET, PWPAGER_ACTIVATION_OFFSET],
+        failOffsetY: [
+            -PWPAGER_VERTICAL_CANCEL_OFFSET,
+            PWPAGER_VERTICAL_CANCEL_OFFSET,
+        ],
+        onActivate: event => {
+            'worklet'
+            dragStartOffset.value = offset.value
+            dragStartDrawer.value = drawerProgress?.value ?? 0
 
-                // translationX has already passed activeOffsetX by now, so its
-                // sign is the drag's direction.
-                const isRightward = event.translationX > 0
-                const isFromLeadingEdge = event.x <= drawerEdgeWidth
-                const isOnFirstPage = offset.value <= 0
-                const isDrawerPartlyOpen = (drawerProgress?.value ?? 0) > 0
+            // translationX has already passed activeOffsetX by now, so its
+            // sign is the drag's direction.
+            const isRightward = event.translationX > 0
+            const isFromLeadingEdge = event.x <= drawerEdgeWidth
+            const isOnFirstPage = offset.value <= 0
+            const isDrawerPartlyOpen = (drawerProgress?.value ?? 0) > 0
 
-                isDrivingDrawer.value =
-                    canDriveDrawer &&
-                    (isDrawerPartlyOpen ||
-                        (isRightward && (isOnFirstPage || isFromLeadingEdge)))
-                        ? 1
-                        : 0
+            isDrivingDrawer.value =
+                canDriveDrawer &&
+                (isDrawerPartlyOpen ||
+                    (isRightward && (isOnFirstPage || isFromLeadingEdge)))
+                    ? 1
+                    : 0
+        },
+        onUpdate: event => {
+            'worklet'
+            if (isDrivingDrawer.value === 1 && drawerProgress) {
+                const next =
+                    dragStartDrawer.value + event.translationX / drawerWidth
+                drawerProgress.value = Math.min(Math.max(next, 0), 1)
+                return
+            }
+
+            const next = dragStartOffset.value - event.translationX / width
+            offset.value = Math.min(Math.max(next, 0), lastPageIndex)
+        },
+        onDeactivate: event => {
+            'worklet'
+            if (isDrivingDrawer.value === 1 && drawerProgress) {
+                const shouldOpen =
+                    event.velocityX > PWPAGER_FLING_VELOCITY
+                        ? true
+                        : event.velocityX < -PWPAGER_FLING_VELOCITY
+                          ? false
+                          : drawerProgress.value > 0.5
+
+                drawerProgress.value = withSpring(shouldOpen ? 1 : 0, {
+                    ...PWPAGER_SPRING_CONFIG,
+                    // Carry the finger's speed into the settle. Without it the
+                    // spring starts from a standstill the moment you lift off,
+                    // which stalls the motion and then re-accelerates — a
+                    // visible clunk at the end.
+                    velocity: event.velocityX / drawerWidth,
+                })
+
+                if (shouldOpen && onDrawerOpen) runOnJS(onDrawerOpen)()
+                if (!shouldOpen && onDrawerClose) runOnJS(onDrawerClose)()
+                return
+            }
+
+            // A flick commits to the neighbouring page even from a short drag;
+            // otherwise the nearest page wins.
+            const settled =
+                event.velocityX < -PWPAGER_FLING_VELOCITY
+                    ? Math.ceil(offset.value)
+                    : event.velocityX > PWPAGER_FLING_VELOCITY
+                      ? Math.floor(offset.value)
+                      : Math.round(offset.value)
+            const target = Math.min(Math.max(settled, 0), lastPageIndex)
+
+            offset.value = withSpring(target, {
+                ...PWPAGER_SPRING_CONFIG,
+                // Negated: offset counts up as content moves left, so a
+                // rightward flick is a negative page velocity.
+                velocity: -event.velocityX / width,
             })
-            .onUpdate(event => {
-                'worklet'
-                if (isDrivingDrawer.value === 1 && drawerProgress) {
-                    const next =
-                        dragStartDrawer.value + event.translationX / drawerWidth
-                    drawerProgress.value = Math.min(Math.max(next, 0), 1)
-                    return
-                }
-
-                const next = dragStartOffset.value - event.translationX / width
-                offset.value = Math.min(Math.max(next, 0), lastPageIndex)
-            })
-            .onEnd(event => {
-                'worklet'
-                if (isDrivingDrawer.value === 1 && drawerProgress) {
-                    const shouldOpen =
-                        event.velocityX > PWPAGER_FLING_VELOCITY
-                            ? true
-                            : event.velocityX < -PWPAGER_FLING_VELOCITY
-                              ? false
-                              : drawerProgress.value > 0.5
-
-                    drawerProgress.value = withSpring(
-                        shouldOpen ? 1 : 0,
-                        PWPAGER_SPRING_CONFIG,
-                    )
-
-                    if (shouldOpen && onDrawerOpen) runOnJS(onDrawerOpen)()
-                    if (!shouldOpen && onDrawerClose) runOnJS(onDrawerClose)()
-                    return
-                }
-
-                // A flick commits to the neighbouring page even from a short
-                // drag; otherwise the nearest page wins.
-                const settled =
-                    event.velocityX < -PWPAGER_FLING_VELOCITY
-                        ? Math.ceil(offset.value)
-                        : event.velocityX > PWPAGER_FLING_VELOCITY
-                          ? Math.floor(offset.value)
-                          : Math.round(offset.value)
-                const target = Math.min(Math.max(settled, 0), lastPageIndex)
-
-                offset.value = withSpring(target, PWPAGER_SPRING_CONFIG)
-                // A drag that settles back where it started, or one on a
-                // single-page pager, isn't a page change worth reporting.
-                if (target !== committedIndex.value) {
-                    committedIndex.value = target
-                    runOnJS(onIndexChange)(target)
-                }
-            })
-    }, [
-        isSwipeEnabled,
-        width,
-        lastPageIndex,
-        offset,
-        dragStartOffset,
-        dragStartDrawer,
-        isDrivingDrawer,
-        committedIndex,
-        drawerProgress,
-        drawerWidth,
-        drawerEdgeWidth,
-        onDrawerOpen,
-        onDrawerClose,
-        onIndexChange,
-    ])
+            // A drag that settles back where it started, or one on a
+            // single-page pager, isn't a page change worth reporting.
+            if (target !== committedIndex.value) {
+                committedIndex.value = target
+                runOnJS(onIndexChange)(target)
+            }
+        },
+    })
 
     const trackStyle = useAnimatedStyle(
         () => ({ transform: [{ translateX: -offset.value * width }] }),
@@ -208,27 +211,31 @@ export const PWPager = ({
     )
 
     return (
-        <GestureDetector gesture={gesture}>
-            <PWView
-                style={styles.viewport}
-                onLayout={handleLayout}
-                testID='pw_pager'
-            >
-                {width > 0 && (
-                    <Animated.View style={[styles.track, trackStyle]}>
-                        {pages.map((page: ReactNode, pageIndex: number) => (
-                            <PWView
-                                // Pages are a fixed, ordered list; there is no
-                                // identity to key on beyond position.
-                                key={pageIndex}
-                                style={styles.page}
-                            >
-                                {page}
-                            </PWView>
-                        ))}
-                    </Animated.View>
-                )}
-            </PWView>
-        </GestureDetector>
+        // Published so nested horizontal gestures can block this one — see
+        // PWPagerGestureContext.
+        <PWPagerGestureContext.Provider value={gesture}>
+            <GestureDetector gesture={gesture}>
+                <PWView
+                    style={styles.viewport}
+                    onLayout={handleLayout}
+                    testID='pw_pager'
+                >
+                    {width > 0 && (
+                        <Animated.View style={[styles.track, trackStyle]}>
+                            {pages.map((page: ReactNode, pageIndex: number) => (
+                                <PWView
+                                    // Pages are a fixed, ordered list; there is no
+                                    // identity to key on beyond position.
+                                    key={pageIndex}
+                                    style={styles.page}
+                                >
+                                    {page}
+                                </PWView>
+                            ))}
+                        </Animated.View>
+                    )}
+                </PWView>
+            </GestureDetector>
+        </PWPagerGestureContext.Provider>
     )
 }

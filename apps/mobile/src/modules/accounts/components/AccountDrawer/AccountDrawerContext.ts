@@ -10,19 +10,25 @@
  limitations under the License
  */
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useEffect } from 'react'
+import { useIsFocused } from '@react-navigation/native'
 import { type SharedValue } from 'react-native-reanimated'
 import { type Nullable } from '@perawallet/wallet-core-shared'
+
+import { type AccountPickerKind } from './useAccountPickers'
 
 export type AccountDrawerContextValue = {
     isOpen: boolean
     openDrawer: () => void
     closeDrawer: () => void
     /**
-     * 0-1 open progress. Published so a pager on the same screen can drive the
+     * 0-1 open progress. Published so a pager on the screen can drive the
      * drawer from its own pan instead of running a competing one — see PWPager.
      */
     progress: SharedValue<number>
+    /** How the focused screen wants the account list shaped. */
+    pickerKind: AccountPickerKind
+    publishPickerKind: (kind: AccountPickerKind) => void
 }
 
 export const AccountDrawerContext =
@@ -35,3 +41,22 @@ export const AccountDrawerContext =
  */
 export const useAccountDrawerControls =
     (): Nullable<AccountDrawerContextValue> => useContext(AccountDrawerContext)
+
+/**
+ * Declares how this screen wants the shared drawer's list shaped.
+ *
+ * Gated on focus because tab screens stay mounted after you switch away: an
+ * unfocused screen must not restyle the drawer for the one on display. Nothing
+ * is published on blur — the next focused screen overwrites it, and the drawer
+ * is only reachable from screens that declare a kind.
+ */
+export const useAccountDrawerPickerKind = (kind: AccountPickerKind): void => {
+    const controls = useAccountDrawerControls()
+    const isFocused = useIsFocused()
+    const publish = controls?.publishPickerKind
+
+    useEffect(() => {
+        if (!publish || !isFocused) return
+        publish(kind)
+    }, [publish, isFocused, kind])
+}

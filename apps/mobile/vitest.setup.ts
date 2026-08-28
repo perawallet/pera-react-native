@@ -1952,8 +1952,26 @@ vi.mock('react-native-gesture-handler', () => {
         Simultaneous: (...gestures: any[]) => gestures[0],
         Exclusive: (...gestures: any[]) => gestures[0],
     }
+    // The v3 hook API. PWPager uses it so nested swipeables can reference its
+    // handler tag, which the deprecated builder only assigns on attach — too
+    // late for a descendant to read. A stable object is all the tree needs here.
+    let nextHandlerTag = 1
+    const createHookGesture = () => ({
+        handlerTag: nextHandlerTag++,
+        type: 'PanGestureHandler',
+        config: {},
+        gestureRelations: {
+            simultaneousHandlers: [],
+            waitFor: [],
+            blocksHandlers: [],
+        },
+    })
+
     return {
         Gesture,
+        usePanGesture: createHookGesture,
+        useNativeGesture: createHookGesture,
+        useTapGesture: createHookGesture,
         GestureDetector: ({ children }: any) => children,
         GestureHandlerRootView: MockView,
         Swipeable: MockView,

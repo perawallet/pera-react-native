@@ -22,7 +22,7 @@ import { useAccountScreenAnimation } from './useAccountScreenAnimation'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
-import { AccountDrawer } from '@modules/accounts/components/AccountDrawer'
+import { useAccountDrawerPickerKind } from '@modules/accounts/components/AccountDrawer'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -57,6 +57,9 @@ export const AccountScreen = () => {
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
     const { request: requestBottomSheet } = useBottomSheet()
 
+    // Shapes the shared tab-shell drawer while this screen is focused.
+    useAccountDrawerPickerKind('portfolio')
+
     const openPasteLink = useCallback(() => {
         trackEvent(HomeEvent.PasteLink)
         void requestBottomSheet({
@@ -79,88 +82,74 @@ export const AccountScreen = () => {
     }
 
     return (
-        // Wrapped at the screen, not the navigator: the drawer's drag surface
-        // owns the left edge, so anything pushed inside it would lose the
-        // platform back-swipe. AccountScreen is this stack's root, so nothing
-        // pushed on top of it is affected.
-        <AccountDrawer
-            showSearch
-            showPeraCardActivation
-            // AccountTabNavigator's pager drives the drawer from the same pan
-            // that pages the tabs, so the drawer must not also run an edge
-            // gesture of its own — two pans on one progress value cancel each
-            // other mid-drag and the release never settles.
-            hasOwnOpenGesture={false}
+        <PWView
+            style={styles.container}
+            testID='account_screen'
         >
-            <PWView
-                style={styles.container}
-                testID='account_screen'
+            <ConfettiAnimation
+                play={shouldPlayConfetti}
+                onFinish={() => setShouldPlayConfetti(false)}
+            />
+            {hasHomeBanner && <HomeBannersStrip />}
+            <AnimatedPWView
+                style={[
+                    styles.content,
+                    hasHomeBanner && styles.contentWithBanner,
+                    hasHomeBanner && styles.contentClipped,
+                    hasHomeBanner ? animatedCornerStyle : undefined,
+                ]}
             >
-                <ConfettiAnimation
-                    play={shouldPlayConfetti}
-                    onFinish={() => setShouldPlayConfetti(false)}
-                />
-                {hasHomeBanner && <HomeBannersStrip />}
-                <AnimatedPWView
-                    style={[
-                        styles.content,
-                        hasHomeBanner && styles.contentWithBanner,
-                        hasHomeBanner && styles.contentClipped,
-                        hasHomeBanner ? animatedCornerStyle : undefined,
-                    ]}
-                >
-                    <PWToolbar
-                        paddingStyle='none'
-                        style={styles.iconBar}
-                        left={
-                            <AccountSelection
-                                showSearch
-                                style={styles.accountSelectionToolbar}
-                                showPeraCardActivation
-                            />
-                        }
-                        right={
-                            <PWView style={styles.iconBarSection}>
-                                <AccountHeaderMenu testID='account_screen_dropdown' />
-                                {routeCapabilities.qrScanner && (
-                                    <PWTouchableOpacity
-                                        onPress={() => {
-                                            trackEvent(HomeEvent.QrScan)
-                                            scannerState.open()
-                                        }}
-                                        testID='account_screen_qr_scanner_button'
-                                    >
-                                        <PWIcon name='camera' />
-                                    </PWTouchableOpacity>
-                                )}
-                                {routeCapabilities.deepLinkPaste && (
-                                    <PWTouchableOpacity
-                                        onPress={openPasteLink}
-                                        testID='account_screen_paste_link_button'
-                                    >
-                                        <PWIcon name='link' />
-                                    </PWTouchableOpacity>
-                                )}
-                                <NotificationsIcon testID='account_screen_notifications' />
-                            </PWView>
-                        }
-                    />
-                    <PWView style={styles.tabNavigator}>
-                        <AccountTabNavigator
-                            account={account}
-                            chartVisible={chartVisible}
+                <PWToolbar
+                    paddingStyle='none'
+                    style={styles.iconBar}
+                    left={
+                        <AccountSelection
+                            showSearch
+                            style={styles.accountSelectionToolbar}
+                            showPeraCardActivation
                         />
-                    </PWView>
-                </AnimatedPWView>
-                {routeCapabilities.qrScanner && (
-                    <QRScannerView
-                        isVisible={scannerState.isOpen}
-                        onSuccess={scannerState.close}
-                        onClose={scannerState.close}
-                        animationType='slide'
+                    }
+                    right={
+                        <PWView style={styles.iconBarSection}>
+                            <AccountHeaderMenu testID='account_screen_dropdown' />
+                            {routeCapabilities.qrScanner && (
+                                <PWTouchableOpacity
+                                    onPress={() => {
+                                        trackEvent(HomeEvent.QrScan)
+                                        scannerState.open()
+                                    }}
+                                    testID='account_screen_qr_scanner_button'
+                                >
+                                    <PWIcon name='camera' />
+                                </PWTouchableOpacity>
+                            )}
+                            {routeCapabilities.deepLinkPaste && (
+                                <PWTouchableOpacity
+                                    onPress={openPasteLink}
+                                    testID='account_screen_paste_link_button'
+                                >
+                                    <PWIcon name='link' />
+                                </PWTouchableOpacity>
+                            )}
+                            <NotificationsIcon testID='account_screen_notifications' />
+                        </PWView>
+                    }
+                />
+                <PWView style={styles.tabNavigator}>
+                    <AccountTabNavigator
+                        account={account}
+                        chartVisible={chartVisible}
                     />
-                )}
-            </PWView>
-        </AccountDrawer>
+                </PWView>
+            </AnimatedPWView>
+            {routeCapabilities.qrScanner && (
+                <QRScannerView
+                    isVisible={scannerState.isOpen}
+                    onSuccess={scannerState.close}
+                    onClose={scannerState.close}
+                    animationType='slide'
+                />
+            )}
+        </PWView>
     )
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, type ReactNode } from 'react'
+import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { useSharedValue } from 'react-native-reanimated'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWDrawer } from '@components/core'
@@ -22,50 +22,13 @@ import {
     type AccountDrawerContextValue,
 } from './AccountDrawerContext'
 import { useAccountDrawer } from './useAccountDrawer'
+import { useAccountPickers, type AccountPickerKind } from './useAccountPickers'
 
-/**
- * Shapes the account list exactly as `AccountSelection`'s bottom sheet would.
- * A screen declares this once and spreads it into both, so the drawer and the
- * trigger can't drift into offering different accounts — on Swap and Fund the
- * filter is what keeps unusable accounts out of the list.
- */
-export type AccountDrawerPickerProps = {
-    headerContent?: ReactNode
-    hideDefaultHeader?: boolean
-    showSearch?: boolean
-    accountFilter?: (account: WalletAccount) => boolean
-    showPeraCardActivation?: boolean
-    onSelected?: (account: WalletAccount) => void
-}
-
-export type AccountDrawerProps = AccountDrawerPickerProps & {
+export type AccountDrawerProps = {
     children: ReactNode
-    /**
-     * Set when the wrapped screen already sits inside a safe-area layout
-     * (`safeAreaLayout`, `headeredLayout`). `useSafeAreaInsets` still reports the
-     * full window inset to descendants regardless, so without this the panel
-     * adds a top inset the host has already paid for.
-     */
-    isWithinSafeArea?: boolean
-    /**
-     * Set false when a PWPager on the screen drives the drawer from its own pan.
-     * The drawer then publishes its progress and stops running an opening
-     * gesture of its own.
-     */
-    hasOwnOpenGesture?: boolean
 }
 
-const AccountDrawerHost = ({
-    children,
-    isWithinSafeArea,
-    hasOwnOpenGesture,
-    headerContent,
-    hideDefaultHeader,
-    showSearch,
-    accountFilter,
-    showPeraCardActivation,
-    onSelected,
-}: AccountDrawerProps) => {
+const AccountDrawerHost = ({ children }: AccountDrawerProps) => {
     const {
         isOpen,
         openDrawer,
@@ -79,20 +42,43 @@ const AccountDrawerHost = ({
     } = useAccountDrawer()
 
     // Owned here rather than inside PWDrawer so it can be published to the
-    // screen, letting a pager drive the drawer from the same pan.
+    // screens, letting a pager drive the drawer from the same pan.
     const progress = useSharedValue(0)
 
+    const [pickerKind, setPickerKind] = useState<AccountPickerKind>('portfolio')
+    const pickers = useAccountPickers()
+    const picker = pickers[pickerKind]
+
+    const publishPickerKind = useCallback(
+        (kind: AccountPickerKind) => setPickerKind(kind),
+        [],
+    )
+
     const controls = useMemo<AccountDrawerContextValue>(
-        () => ({ isOpen, openDrawer, closeDrawer, progress }),
-        [isOpen, openDrawer, closeDrawer, progress],
+        () => ({
+            isOpen,
+            openDrawer,
+            closeDrawer,
+            progress,
+            pickerKind,
+            publishPickerKind,
+        }),
+        [
+            isOpen,
+            openDrawer,
+            closeDrawer,
+            progress,
+            pickerKind,
+            publishPickerKind,
+        ],
     )
 
     const handleAccountSelected = useCallback(
         (account: WalletAccount) => {
             handleSelected()
-            onSelected?.(account)
+            picker.onSelected?.(account)
         },
-        [handleSelected, onSelected],
+        [handleSelected, picker],
     )
 
     const renderContent = useCallback(
@@ -104,12 +90,11 @@ const AccountDrawerHost = ({
                 onOpenSort={handleOpenSort}
                 onPeraCardActivate={handlePeraCardActivate}
                 onPeraCardOpen={handlePeraCardOpen}
-                headerContent={headerContent}
-                hideDefaultHeader={hideDefaultHeader}
-                showSearch={showSearch}
-                accountFilter={accountFilter}
-                showPeraCardActivation={showPeraCardActivation}
-                isWithinSafeArea={isWithinSafeArea}
+                headerContent={picker.headerContent}
+                hideDefaultHeader={picker.hideDefaultHeader}
+                showSearch={picker.showSearch}
+                accountFilter={picker.accountFilter}
+                showPeraCardActivation={picker.showPeraCardActivation}
             />
         ),
         [
@@ -119,12 +104,7 @@ const AccountDrawerHost = ({
             handleOpenSort,
             handlePeraCardActivate,
             handlePeraCardOpen,
-            headerContent,
-            hideDefaultHeader,
-            showSearch,
-            accountFilter,
-            showPeraCardActivation,
-            isWithinSafeArea,
+            picker,
         ],
     )
 
@@ -137,7 +117,10 @@ const AccountDrawerHost = ({
                 renderContent={renderContent}
                 variant='back'
                 progress={progress}
-                hasOwnOpenGesture={hasOwnOpenGesture}
+                // Every screen that can open this drives it from a PWPager pan;
+                // an edge gesture here would both compete with those and claim
+                // the platform back-swipe for the entire tab shell.
+                hasOwnOpenGesture={false}
             >
                 {children}
             </PWDrawer>
@@ -146,21 +129,26 @@ const AccountDrawerHost = ({
 }
 
 /**
- * Mounts the account switcher as a left-edge drawer over whatever it wraps.
+ * Mounts the account switcher as a drawer beneath the whole tab shell.
  *
- * Wrap the individual screen, never a navigator: the drag surface occupies the
- * same left edge as the platform back-swipe, so anything pushed inside the
- * wrapped subtree would lose it. Home works because only `AccountScreen` — the
- * root of its stack, with nothing to go back to — is wrapped.
+ * Wraps the tab navigator rather than each screen, so the panel spans the full
+ * screen height and the tab bar — being inside the sliding content — travels
+ * with it rather than needing to be animated separately.
+ *
+ * Safe at this level only because there is no gesture surface here: the drag
+ * lives in each screen's PWPager, so nothing claims the left edge and the
+ * platform back-swipe survives for screens pushed inside the tabs. That was the
+ * reason an earlier version had to be mounted per screen.
+ *
+ * Screens declare how they want the list shaped with
+ * `useAccountDrawerPickerKind`. Only screens with a pager can open it, which is
+ * what keeps it to the ones carrying an account selector.
  *
  * With the capability off it stays out of the tree entirely, so no context is
  * published and the selection trigger falls back to the bottom sheet.
  */
-export const AccountDrawer = ({
-    children,
-    ...hostProps
-}: AccountDrawerProps) => {
+export const AccountDrawer = ({ children }: AccountDrawerProps) => {
     if (!routeCapabilities.accountDrawer) return <>{children}</>
 
-    return <AccountDrawerHost {...hostProps}>{children}</AccountDrawerHost>
+    return <AccountDrawerHost>{children}</AccountDrawerHost>
 }

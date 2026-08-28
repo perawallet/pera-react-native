@@ -16,10 +16,9 @@ import Animated, {
     useAnimatedStyle,
     type SharedValue,
 } from 'react-native-reanimated'
-import { PWText } from '../PWText'
-import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
 import { useStyles } from '../PWTabView/tabBarStyles'
+import { PWPagerTabItem } from './PWPagerTabItem'
 
 export type PWPagerTab = {
     /** Stable identifier, also used to derive the tab's testID. */
@@ -29,12 +28,11 @@ export type PWPagerTab = {
 
 export type PWPagerTabBarProps = {
     tabs: PWPagerTab[]
-    index: number
     onIndexChange: (index: number) => void
     /**
-     * The pager's live position. Driving the indicator from this rather than
-     * from `index` is what makes it track the drag instead of jumping when the
-     * page settles.
+     * The pager's live position, and the only thing this bar reads. Both the
+     * indicator and the label cross-fade derive from it, so they track the drag
+     * instead of snapping when the page settles.
      */
     offset: SharedValue<number>
 }
@@ -46,7 +44,6 @@ export type PWPagerTabBarProps = {
  */
 export const PWPagerTabBar = ({
     tabs,
-    index,
     onIndexChange,
     offset,
 }: PWPagerTabBarProps) => {
@@ -83,30 +80,14 @@ export const PWPagerTabBar = ({
                 )}
 
                 {tabs.map((tab, tabIndex) => (
-                    <PWTouchableOpacity
+                    <PWPagerTabItem
                         key={tab.key}
                         testID={`tab_${tab.key.toLowerCase()}`}
+                        title={tab.title}
+                        index={tabIndex}
+                        offset={offset}
                         onPress={() => onIndexChange(tabIndex)}
-                        style={styles.tab}
-                        activeOpacity={1}
-                    >
-                        <PWView style={styles.labelContainer}>
-                            <PWText
-                                variant='bodyLarge'
-                                weight={500}
-                                numberOfLines={2}
-                                ellipsizeMode='tail'
-                                style={[
-                                    styles.label,
-                                    tabIndex === index
-                                        ? { color: styles.activeTitle.color }
-                                        : { color: styles.inactiveTitle.color },
-                                ]}
-                            >
-                                {tab.title}
-                            </PWText>
-                        </PWView>
-                    </PWTouchableOpacity>
+                    />
                 ))}
             </PWView>
         </PWView>
