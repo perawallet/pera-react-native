@@ -123,7 +123,7 @@
     "expo-application": "catalog:",
     "expo-asset": "57.0.14",
     "expo-audio": "~57.0.2",
-    "expo-build-properties": "57.0.14",
+    "expo-build-properties": "57.0.15",
     "expo-clipboard": "~57.0.1",
     "expo-dev-client": "57.0.16",
     "expo-device": "catalog:",
