@@ -35,6 +35,10 @@ export type RouteCapabilities = {
     walletConnectSettings: boolean
     /** Native passkey-autofill credential-manager settings (not vault passkey unlock). */
     passkeysAutofillSettings: boolean
+    /** Account switcher as a left-edge drawer over the tab shell instead of a
+     * bottom sheet. Off on web: the popup has no edge-swipe affordance, and
+     * PWDrawer.web.tsx is a passthrough there. */
+    accountDrawer: boolean
     storeRating: boolean
     /** The slide-vs-tap confirmation choice in Advanced Preferences. Web
      * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx

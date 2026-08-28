@@ -20,6 +20,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import {
+    AccountDrawer,
+    AccountDrawerPager,
+} from '@modules/accounts/components/AccountDrawer'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
 import { SwapForm, SwapIntroductionContent } from '@modules/swap/components'
@@ -62,59 +66,83 @@ export const SwapScreen = () => {
         pushWebView({ url: config.swapSupportUrl })
     }, [pushWebView])
 
+    // Declared once and spread into both the drawer and the trigger, so the
+    // two entry points can never offer a different set of accounts — the
+    // filter here is what keeps unsignable accounts out of a swap.
+    const accountPicker = {
+        accountFilter: swapAccountFilter,
+        hideDefaultHeader: true,
+        headerContent: (
+            <PWView style={styles.selectHeader}>
+                <PWText
+                    variant='h1'
+                    style={styles.selectTitle}
+                    truncate
+                >
+                    {t('account_menu.select_title')}
+                </PWText>
+                <PWText
+                    style={styles.selectDescription}
+                    numberOfLines={2}
+                    ellipsizeMode='tail'
+                >
+                    {t('account_menu.select_description')}
+                </PWText>
+            </PWView>
+        ),
+    }
+
     return (
-        <PWView style={styles.screen}>
-            <PWToolbar
-                paddingStyle='none'
-                left={
-                    <PWView style={styles.titleSection}>
-                        <PWText
-                            variant='h3'
-                            truncate
-                        >
-                            {t('tabbar.swap')}
-                        </PWText>
-                        <PWIcon
-                            name='info'
-                            onPress={handleInfoPress}
-                            testID='swap_info_button'
-                        />
-                    </PWView>
-                }
-                right={
-                    <AccountSelection
-                        accountFilter={swapAccountFilter}
-                        triggerStyle={styles.accountTrigger}
-                        triggerIconProps={{ size: 'sm' }}
-                        triggerChevronProps={{ size: 'sm' }}
-                        triggerTextProps={{ variant: 'body' }}
-                        hideDefaultHeader
-                        headerContent={
-                            <PWView style={styles.selectHeader}>
+        // `safeAreaLayout` already applies the top inset for this tab screen.
+        <AccountDrawer
+            {...accountPicker}
+            isWithinSafeArea
+            // The pager drives the drawer from the same pan, so the drawer must
+            // not also run an edge gesture of its own.
+            hasOwnOpenGesture={false}
+        >
+            {/* One page, so nothing to page between — the pager is here purely
+                because its pan opens the drawer from anywhere on the screen
+                rather than from a strip at the edge. */}
+            <AccountDrawerPager>
+                <PWView
+                    key='swap'
+                    style={styles.screen}
+                >
+                    <PWToolbar
+                        paddingStyle='none'
+                        left={
+                            <PWView style={styles.titleSection}>
                                 <PWText
-                                    variant='h1'
-                                    style={styles.selectTitle}
+                                    variant='h3'
                                     truncate
                                 >
-                                    {t('account_menu.select_title')}
+                                    {t('tabbar.swap')}
                                 </PWText>
-                                <PWText
-                                    style={styles.selectDescription}
-                                    numberOfLines={2}
-                                    ellipsizeMode='tail'
-                                >
-                                    {t('account_menu.select_description')}
-                                </PWText>
+                                <PWIcon
+                                    name='info'
+                                    onPress={handleInfoPress}
+                                    testID='swap_info_button'
+                                />
                             </PWView>
                         }
+                        right={
+                            <AccountSelection
+                                {...accountPicker}
+                                triggerStyle={styles.accountTrigger}
+                                triggerIconProps={{ size: 'sm' }}
+                                triggerChevronProps={{ size: 'sm' }}
+                                triggerTextProps={{ variant: 'body' }}
+                            />
+                        }
+                        style={styles.toolbar}
                     />
-                }
-                style={styles.toolbar}
-            />
 
-            <PWView style={styles.formWrapper}>
-                <SwapForm />
-            </PWView>
-        </PWView>
+                    <PWView style={styles.formWrapper}>
+                        <SwapForm />
+                    </PWView>
+                </PWView>
+            </AccountDrawerPager>
+        </AccountDrawer>
     )
 }

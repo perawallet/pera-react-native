@@ -481,6 +481,15 @@ vi.mock('@components/core', () => {
                 : null,
         PWDivider: () =>
             React.createElement('hr', { 'data-testid': 'PWDivider' }),
+        // Passthrough: the drawer panel is closed in every flow test, and
+        // rendering its content anyway would put a second copy of the account
+        // list into the tree for screen queries to trip over.
+        PWDrawer: ({ children }: any) => children,
+        // Renders every page inline, matching the react-native-pager-view mock
+        // it replaced — flow tests reach across pages (fund form, then history)
+        // without driving a swipe.
+        PWPager: ({ children }: any) =>
+            React.createElement('div', { 'data-testid': 'PWPager' }, children),
         PWHeader: ({ title, children, testID, ...props }: any) =>
             React.createElement(
                 'div',

@@ -35,12 +35,6 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
     },
-    pager: {
-        flex: 1,
-        minHeight: 0,
-        width: '100%',
-        minWidth: 0,
-    },
     page: {
         flex: 1,
         minHeight: 0,
