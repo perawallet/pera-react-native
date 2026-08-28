@@ -102,4 +102,33 @@ describe('useBackupReminderMnemonicScreen', () => {
             10, 20, 30,
         ])
     })
+
+    it('zeroes the retained buffer when the screen unmounts', async () => {
+        const { result, unmount } = renderHook(() =>
+            useBackupReminderMnemonicScreen(),
+        )
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        const retained = result.current.wordIndices!
+
+        unmount()
+
+        // Routing this wipe through a setState updater silently skipped it:
+        // React does not invoke updaters on an unmounted fiber.
+        expect(Array.from(retained)).toEqual([0, 0, 0])
+    })
+
+    it('zeroes the previous buffer when a re-fetch replaces it', async () => {
+        const { result } = renderHook(() => useBackupReminderMnemonicScreen())
+
+        await waitFor(() => expect(result.current.wordIndices).not.toBeNull())
+        const first = result.current.wordIndices!
+
+        act(() => {
+            nav.fireFocus()
+        })
+        await waitFor(() => expect(result.current.wordIndices).not.toBe(first))
+
+        expect(Array.from(first)).toEqual([0, 0, 0])
+    })
 })

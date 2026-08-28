@@ -10,23 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    scrollContent: {
-        gap: theme.spacing.lg,
-    },
-    // Outer spacing only — PassphraseGrid owns the grid's own appearance.
-    grid: {
-        marginTop: theme.spacing.md,
-    },
-    errorBox: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.sm,
-    },
-}))
+export { PassphraseGrid } from './PassphraseGrid'
+export type { PassphraseGridProps } from './PassphraseGrid'

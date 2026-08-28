@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
+import { PassphraseGrid } from '@components/PassphraseGrid'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
@@ -90,21 +90,10 @@ export const BackupReminderMnemonicScreen = () => {
                     title={t('backup.mnemonic.title')}
                     description={t('backup.mnemonic.body')}
                 />
-                <PWView style={styles.grid}>
-                    {Array.from(wordIndices ?? []).map((wordIndex, i) => (
-                        <PWView
-                            key={`${i}-${wordIndex}`}
-                            style={styles.wordCell}
-                        >
-                            <PWText style={styles.wordIndex}>
-                                {String(i + 1)}
-                            </PWText>
-                            <PWText style={styles.wordText}>
-                                {mnemonicIndexToWord(wordIndex)}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
+                <PassphraseGrid
+                    wordIndices={wordIndices}
+                    style={styles.grid}
+                />
             </PWView>
         </PWScreen>
     )
