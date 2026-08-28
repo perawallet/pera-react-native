@@ -28,4 +28,10 @@ export type PWBottomSheetProps = {
     autoCreateContainer?: boolean
     testID?: string
     enableCloseOnBackdropPress?: boolean
+    /**
+     * Shrink a fixed-height sheet to the space above the keyboard. Defaults to
+     * true. Set false when the content already insets itself for the keyboard —
+     * a WebView does, and avoiding on top of that shifts the page twice.
+     */
+    avoidKeyboard?: boolean
 } & PropsWithChildren

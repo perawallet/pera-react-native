@@ -73,7 +73,14 @@ export type KeyboardAvoidingViewProps = ViewProps & {
 export const KeyboardAvoidingView = ({
     children,
     style,
-}: KeyboardAvoidingViewProps) => <View style={style}>{children}</View>
+}: KeyboardAvoidingViewProps) => (
+    <View
+        style={style}
+        testID='keyboard-avoiding-view'
+    >
+        {children}
+    </View>
+)
 
 export const KeyboardController = {
     setInputMode: () => {},
