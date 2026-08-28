@@ -166,8 +166,8 @@ index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..f6c5d9095ed1b1ad22a343ec0bf57efa
      private var origin: String = "unknown-origin"
      private var displayOrigin: String = "unknown-origin"
 +    // PERA LOCAL PATCH: the origin to sign into clientData. Separate from
-+    // `origin`, which stays the caller's app identity because credential scoping
-+    // and key derivation are keyed on that.
++    // `origin`, the derivation input — that is the rpId when the request carries
++    // one, and only otherwise the caller's app identity. Do not merge the two.
 +    private var clientDataOrigin: String = "unknown-origin"
 +    // PERA LOCAL PATCH (PERA-4714): the rpId the caller asserted, kept separate
 +    // from `displayOrigin` (which is only a UI label) so the assertion path can
