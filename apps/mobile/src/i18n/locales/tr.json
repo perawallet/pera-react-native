@@ -2595,6 +2595,7 @@
             "app_call": "Uygulama çağrısı",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster"
         },
@@ -2654,6 +2655,9 @@
         "unknown": {
             "title": "Desteklenmeyen işlem türü",
             "body": "Bu işlem türü desteklenmiyor."
+        },
+        "state_proof": {
+            "body": "Ağ, diğer zincirlerin Algorand bloklarını doğrulayabilmesi için bir State Proof yayımladı."
         },
         "asset_transfer": {
             "clawback_from": "Clawback yapılan adres"

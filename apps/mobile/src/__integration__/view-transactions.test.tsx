@@ -118,6 +118,29 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     balanceImpacts: [],
 }
 
+// PERA-4985: `stpf` used to fall through to the unsupported branch. Seeded
+// per-test rather than in `beforeEach` so the existing row assertions keep
+// counting exactly two transactions.
+const TX_STATE_PROOF: TransactionHistoryItem = {
+    id: 'TXSTATEPROOF000000000000000000000000000000000000000003',
+    txType: 'stpf',
+    sender: HD_TEST_ADDRESS,
+    receiver: null,
+    confirmedRound: 98,
+    roundTime: 1_699_800_000,
+    swapGroupDetail: null,
+    interpretedMeaning: null,
+    fee: new Decimal(1000),
+    groupId: null,
+    amount: null,
+    closeTo: null,
+    closeAmount: null,
+    asset: null,
+    applicationId: null,
+    innerTransactionCount: null,
+    balanceImpacts: [],
+}
+
 describe('Flow: View transactions → tap into details', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
@@ -576,6 +599,99 @@ describe('Flow: View transactions → tap into details', () => {
                 },
                 { timeout: 5000 },
             )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+    it(
+        'Given a state proof transaction, when the user taps its row, then the details screen names the type instead of calling it unsupported',
+        async () => {
+            await upsertTransactions({
+                items: [TX_STATE_PROOF],
+                accountAddress: ACCOUNT.address,
+                network: 'mainnet',
+            })
+
+            const lookupSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        'current-round': 100,
+                        transaction: {
+                            id: TX_STATE_PROOF.id,
+                            'tx-type': 'stpf',
+                            sender: TX_STATE_PROOF.sender,
+                            'confirmed-round': TX_STATE_PROOF.confirmedRound,
+                            'round-time': TX_STATE_PROOF.roundTime,
+                            fee: 1000,
+                        },
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(
+                http.get(`*/v2/transactions/${TX_STATE_PROOF.id}`, lookupSpy),
+            )
+
+            renderWithNavigation(AccountHistory, 'AccountHistory', {
+                additionalScreens: [
+                    {
+                        name: 'TransactionDetails',
+                        component: TransactionDetailsScreen,
+                    },
+                ],
+            })
+
+            const ROW_LABEL = 'transactions.list_item.state_proof'
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') === ROW_LABEL,
+                        ).length,
+                    ).toBeGreaterThan(0)
+                },
+                { timeout: 5000 },
+            )
+
+            const matches = screen.queryAllByText(
+                (_, node) => (node?.textContent ?? '') === ROW_LABEL,
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            const row = leaf.closest('button')
+            if (!row) {
+                throw new Error('State proof row button not found')
+            }
+            fireEvent.click(row)
+
+            await waitFor(
+                () => {
+                    expect(lookupSpy).toHaveBeenCalled()
+                },
+                { timeout: 5000 },
+            )
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') ===
+                                'transactions.state_proof.body',
+                        ).length,
+                    ).toBeGreaterThan(0)
+                },
+                { timeout: 5000 },
+            )
+
+            // The regression: this type used to render the unsupported copy.
+            expect(
+                screen.queryAllByText(
+                    (_, node) =>
+                        (node?.textContent ?? '') ===
+                        'transactions.unknown.body',
+                ).length,
+            ).toBe(0)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

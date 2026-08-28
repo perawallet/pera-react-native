@@ -2595,6 +2595,7 @@
             "app_call": "Appel d’application",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transaction",
             "more_impacts": "Afficher {{count}} de plus"
         },
@@ -2654,6 +2655,9 @@
         "unknown": {
             "title": "Type de transaction non pris en charge",
             "body": "Ce type de transaction n’est pas pris en charge."
+        },
+        "state_proof": {
+            "body": "Le réseau a publié un State Proof afin que d’autres chaînes puissent vérifier les blocs Algorand."
         },
         "asset_transfer": {
             "clawback_from": "Clawback depuis"
