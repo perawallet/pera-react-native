@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     fetchTransactionsCsv,
     CsvExportError,
@@ -64,6 +66,8 @@ export type UseCsvExportMutationResult = {
     result: Nullable<CsvExportResult>
     /** Reset mutation state */
     reset: () => void
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
 
 /**
@@ -103,6 +107,7 @@ export const useCsvExportMutation = (
     params: UseCsvExportMutationParams,
 ): UseCsvExportMutationResult => {
     const { network, onSuccess, onError } = params
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
@@ -137,8 +142,17 @@ export const useCsvExportMutation = (
         },
     })
 
+    const { mutate } = mutation
+    const exportCsv = useCallback(
+        (exportParams: ExportMutationParams) => {
+            if (isUnavailableOnNetwork) return
+            mutate(exportParams)
+        },
+        [isUnavailableOnNetwork, mutate],
+    )
+
     return {
-        exportCsv: mutation.mutate,
+        exportCsv,
         isLoading: mutation.isPending,
         isError: mutation.isError,
         error:
@@ -150,5 +164,6 @@ export const useCsvExportMutation = (
         isSuccess: mutation.isSuccess,
         result: mutation.data ?? null,
         reset: mutation.reset,
+        isUnavailableOnNetwork,
     }
 }

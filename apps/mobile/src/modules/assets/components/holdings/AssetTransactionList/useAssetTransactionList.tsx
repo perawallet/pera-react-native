@@ -35,8 +35,12 @@ import {
     type TransactionListRow,
 } from '@modules/transactions/utils/transactionListRows'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    PeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 
 type UseAssetTransactionListParams = {
@@ -122,9 +126,14 @@ export const useAssetTransactionList = ({
         addresses: refreshAddresses,
     })
 
+    const { t } = useLanguage()
     const { showError } = useErrorToast()
 
-    const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
+    const {
+        exportCsv,
+        isLoading: isExportingCsv,
+        isUnavailableOnNetwork,
+    } = useCsvExportMutation({
         network,
         onSuccess: result => {
             void (async () => {
@@ -141,13 +150,30 @@ export const useAssetTransactionList = ({
     })
 
     const handleExportCsv = useCallback(() => {
+        // Guarding the request would silence PERA-4929's central toast too, so
+        // the reason has to be raised here or the button would do nothing.
+        if (isUnavailableOnNetwork) {
+            showError(
+                new PeraServiceUnavailableError(network),
+                t('common.network_unavailable.title'),
+            )
+            return
+        }
         if (account.address) {
             exportCsv({
                 accountAddress: account.address,
                 assetId,
             })
         }
-    }, [account.address, assetId, exportCsv])
+    }, [
+        account.address,
+        assetId,
+        exportCsv,
+        isUnavailableOnNetwork,
+        network,
+        showError,
+        t,
+    ])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {

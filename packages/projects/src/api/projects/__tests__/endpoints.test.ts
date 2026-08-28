@@ -11,28 +11,24 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { fetchApplication } from '../endpoints'
+import { fetchProjectByUrl } from '../endpoints'
 
 const mockQueryClient = vi.fn()
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<object>()),
     queryClient: (...args: unknown[]) => mockQueryClient(...args),
-    logger: { warn: vi.fn() },
 }))
 
-describe('fetchApplication', () => {
+describe('fetchProjectByUrl', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    test('returns transformed application on success', async () => {
+    test('returns transformed project list on success', async () => {
         mockQueryClient.mockResolvedValue({
-            data: {
-                application_id: 123,
-                name: 'Test App',
-                project: {
+            data: [
+                {
                     name: 'Test Project',
                     url: 'https://test.com',
                     description: 'A test project',
@@ -45,18 +41,16 @@ describe('fetchApplication', () => {
                     categories: [],
                     popularity_score: 10,
                 },
-            },
+            ],
         })
 
-        const result = await fetchApplication({
-            applicationId: '123',
+        const result = await fetchProjectByUrl({
+            sourceUrl: 'https://test.com',
             network: 'mainnet',
         })
 
-        expect(result).toEqual({
-            applicationId: '123',
-            name: 'Test App',
-            project: {
+        expect(result).toEqual([
+            {
                 name: 'Test Project',
                 url: 'https://test.com',
                 description: 'A test project',
@@ -69,68 +63,27 @@ describe('fetchApplication', () => {
                 categories: [],
                 popularityScore: 10,
             },
-        })
-    })
-
-    test('returns null when the application is not found (typed 404)', async () => {
-        mockQueryClient.mockRejectedValueOnce(
-            new PeraNetworkError('client', { status: 404 }),
-        )
-
-        const result = await fetchApplication({
-            applicationId: '999',
-            network: 'mainnet',
-        })
-
-        expect(result).toBeNull()
-    })
-
-    test('returns null on schema validation failure', async () => {
-        mockQueryClient.mockResolvedValue({
-            data: { unexpected: 'shape' },
-        })
-
-        const result = await fetchApplication({
-            applicationId: '123',
-            network: 'mainnet',
-        })
-
-        expect(result).toBeNull()
-    })
-
-    test('rethrows non-404 errors', async () => {
-        mockQueryClient.mockRejectedValue(
-            new PeraNetworkError('server', { status: 500 }),
-        )
-
-        await expect(
-            fetchApplication({
-                applicationId: '123',
-                network: 'mainnet',
-            }),
-        ).rejects.toThrow(PeraNetworkError)
+        ])
     })
 
     describe('non-Pera-backed networks', () => {
         test.each(['betanet', 'custom'] as const)(
-            'returns null on %s without calling the client',
+            'returns [] on %s without calling the client',
             async network => {
-                const result = await fetchApplication({
-                    applicationId: '123',
+                const result = await fetchProjectByUrl({
+                    sourceUrl: 'https://test.com',
                     network,
                 })
 
-                expect(result).toBeNull()
+                expect(result).toEqual([])
                 expect(mockQueryClient).not.toHaveBeenCalled()
             },
         )
 
         test('still calls through normally on testnet', async () => {
             mockQueryClient.mockResolvedValue({
-                data: {
-                    application_id: 123,
-                    name: 'Test App',
-                    project: {
+                data: [
+                    {
                         name: 'Test Project',
                         url: 'https://test.com',
                         description: 'A test project',
@@ -143,15 +96,15 @@ describe('fetchApplication', () => {
                         categories: [],
                         popularity_score: 10,
                     },
-                },
+                ],
             })
 
-            const result = await fetchApplication({
-                applicationId: '123',
+            const result = await fetchProjectByUrl({
+                sourceUrl: 'https://test.com',
                 network: 'testnet',
             })
 
-            expect(result).not.toBeNull()
+            expect(result).toHaveLength(1)
             expect(mockQueryClient).toHaveBeenCalledTimes(1)
         })
     })

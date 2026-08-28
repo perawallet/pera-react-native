@@ -38,7 +38,10 @@ import {
     buildTransactionListRows,
     type TransactionListRow,
 } from '@modules/transactions/utils/transactionListRows'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    PeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Return type for useAccountHistory hook.
@@ -163,7 +166,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
 
-    const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
+    const {
+        exportCsv,
+        isLoading: isExportingCsv,
+        isUnavailableOnNetwork,
+    } = useCsvExportMutation({
         network,
         onSuccess: result => {
             void (async () => {
@@ -181,10 +188,26 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleExportCsv = useCallback(() => {
         trackEvent(AccountDetailsEvent.TransactionDownload)
+        // Guarding the request would silence PERA-4929's central toast too, so
+        // the reason has to be raised here or the button would do nothing.
+        if (isUnavailableOnNetwork) {
+            showError(
+                new PeraServiceUnavailableError(network),
+                t('common.network_unavailable.title'),
+            )
+            return
+        }
         if (account?.address) {
             exportCsv({ accountAddress: account.address })
         }
-    }, [account?.address, exportCsv])
+    }, [
+        account?.address,
+        exportCsv,
+        isUnavailableOnNetwork,
+        network,
+        showError,
+        t,
+    ])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
