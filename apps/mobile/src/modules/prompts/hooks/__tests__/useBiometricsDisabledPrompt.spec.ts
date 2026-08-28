@@ -73,7 +73,7 @@ describe('useBiometricsDisabledPrompt', () => {
 
     // The reported bug: with biometrics off at the OS level the enable fails
     // before any system prompt appears, so the button looked inert.
-    it.each(['unavailable', 'weak-biometric'])(
+    it.each(['unavailable', 'weak-biometric', 'unconfirmed'])(
         'explains a %s failure instead of doing nothing visible',
         async reason => {
             enableMock.mockResolvedValue({ ok: false, reason })
@@ -89,7 +89,7 @@ describe('useBiometricsDisabledPrompt', () => {
 
     // The fix has to be made outside the app, so the prompt stays up: keeping
     // the reason set is what holds it on screen for the retry.
-    it.each(['unavailable', 'weak-biometric'])(
+    it.each(['unavailable', 'weak-biometric', 'unconfirmed'])(
         'keeps the offer open after a %s failure',
         async reason => {
             enableMock.mockResolvedValue({ ok: false, reason })

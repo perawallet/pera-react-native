@@ -2376,6 +2376,8 @@
             "biometric_error_message": "Kimliğini doğrulayamadık. Lütfen tekrar dene.",
             "biometric_weak_title": "Daha güçlü biyometri gerekli",
             "biometric_weak_message": "Pera, cüzdanının kilidini açmak için parmak izi ya da başka güçlü bir biyometri gerektirir. Cihazının biyometri ayarlarından bir parmak izi ekle, sonra bunu yeniden aç.",
+            "biometric_unconfirmed_title": "Önce cihazının kilidini aç",
+            "biometric_unconfirmed_message": "Cihazının biyometrisi kilitli. Biyometriyi geri getirmek için cihazının kilidini parolanla aç, sonra bunu yeniden aç.",
             "advanced_security_settings": "Gelişmiş güvenlik ayarları",
             "enable_asset_freeze_support": "Varlık dondurma desteğini etkinleştir",
             "enable_asset_freeze_support_description": "Bunu etkinleştirdiğinde, hesaplardaki varlıkları donduran veya dondurmayı kaldıran işlem isteklerini onaylayabilirsin. Bu, hedef hesabın belirtilen varlıkla işlem yapmasını engelleyebilir.",

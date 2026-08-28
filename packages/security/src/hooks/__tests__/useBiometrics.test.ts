@@ -285,15 +285,15 @@ describe('useBiometrics', () => {
         expect(result.current.isEnabled).toBe(false)
     })
 
-    // The reconcile keeps an unconfirmable blob, and with `isEnabled` false the
-    // Settings toggle reads OFF — so its delete branch is unpressable and the
-    // blob would be stranded. Refusing an explicit enable is the user-driven
-    // moment where clearing it is unambiguously safe.
-    test('enableBiometrics clears a blob it refuses to bind', async () => {
+    // A class-2 ("weak") enrollment can never be bound, and with `isEnabled`
+    // false the Settings toggle reads OFF — so its delete branch is unpressable
+    // and the blob would be stranded. Refusing an explicit enable is the
+    // user-driven moment where clearing it is unambiguously safe.
+    test('enableBiometrics clears a blob it refuses to bind for a weak enrollment', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockGetSecurityLevel.mockResolvedValue('secret')
+        mockGetSecurityLevel.mockResolvedValue('weak')
 
         const { result } = await renderAndSettle()
 
@@ -307,11 +307,14 @@ describe('useBiometrics', () => {
         expect(kmsMocks.biometricBytes).toBeNull()
     })
 
-    // Binding is stricter than the reconcile's delete rule on purpose: the
-    // reconcile tolerates an unconfirmable level, but nothing may be bound
-    // against one.
-    test('enableBiometrics refuses to bind when the security level cannot be confirmed', async () => {
+    // 'secret'/'none' is ambiguous: iOS reports enrolled-but-'secret' during a
+    // Face ID lockout the user clears with the device passcode, not from inside
+    // the app. Binding is refused, but the opt-in must survive so unlock
+    // auto-restores when the lockout clears — dropping it would turn a
+    // self-clearing lockout into a permanent opt-out.
+    test('enableBiometrics preserves the opt-in for an unconfirmed level (iOS Face ID lockout)', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockGetSecurityLevel.mockResolvedValue('secret')
 
@@ -322,9 +325,11 @@ describe('useBiometrics', () => {
             enableResult = await result.current.enableBiometrics()
         })
 
-        expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
+        expect(enableResult).toEqual({ ok: false, reason: 'unconfirmed' })
         expect(mockAuthenticate).not.toHaveBeenCalled()
-        expect(kmsMocks.biometricBytes).toBeNull()
+        // The blob must survive the lockout so unlock recovers on its own.
+        expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.biometricBytes).not.toBeNull()
     })
 
     test('authenticateWithBiometrics reports unavailable when only a weak biometric remains', async () => {

@@ -2368,6 +2368,8 @@
             "biometric_error_message": "Wir konnten dich nicht authentifizieren.  Bitte versuche es erneut.",
             "biometric_weak_title": "Stärkere Biometrie erforderlich",
             "biometric_weak_message": "Pera benötigt einen Fingerabdruck oder eine andere starke biometrische Methode, um dein Wallet zu entsperren. Füge einen Fingerabdruck in den biometrischen Einstellungen deines Geräts hinzu und aktiviere dies erneut.",
+            "biometric_unconfirmed_title": "Entsperre zuerst dein Gerät",
+            "biometric_unconfirmed_message": "Die Biometrie deines Geräts ist gesperrt. Entsperre dein Gerät mit deinem Passcode, um sie wiederherzustellen, und aktiviere dies dann erneut.",
             "advanced_security_settings": "Erweiterte Sicherheitseinstellungen",
             "enable_asset_freeze_support": "Asset-Freeze-Unterstützung aktivieren",
             "enable_asset_freeze_support_description": "Sobald du dies aktivierst, kannst du Transaktionsanfragen zum Einfrieren oder Auftauen von Assets auf Konten bestätigen. Dies kann verhindern, dass das Zielkonto mit dem angegebenen Asset transagiert.",

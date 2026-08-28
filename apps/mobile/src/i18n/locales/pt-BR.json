@@ -2392,6 +2392,8 @@
             "biometric_error_message": "Não foi possível autenticar você. Tente novamente.",
             "biometric_weak_title": "É necessária uma biometria mais forte",
             "biometric_weak_message": "A Pera exige uma impressão digital ou outra biometria forte para desbloquear sua wallet. Adicione uma impressão digital nas configurações de biometria do seu aparelho e ative esta opção novamente.",
+            "biometric_unconfirmed_title": "Desbloqueie seu aparelho primeiro",
+            "biometric_unconfirmed_message": "A biometria do seu aparelho está bloqueada. Desbloqueie o aparelho com sua senha para restaurá-la e ative esta opção novamente.",
             "advanced_security_settings": "Configurações avançadas de segurança",
             "enable_asset_freeze_support": "Ativar congelamento de ativos",
             "enable_asset_freeze_support_description": "Ao ativar isso, você poderá confirmar solicitações de transação para congelar ou descongelar ativos nas contas. Isso pode impedir que a conta afetada faça transações com o ativo indicado.",
