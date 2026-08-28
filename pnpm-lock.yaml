@@ -770,6 +770,9 @@ importers:
       expo-media-library:
         specifier: 57.0.4
         version: 57.0.4(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-navigation-bar:
+        specifier: ~57.0.2
+        version: 57.0.2(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-screen-capture:
         specifier: 57.0.2
         version: 57.0.2(expo@57.0.11)(react@19.2.3)
@@ -8744,6 +8747,13 @@ packages:
     peerDependencies:
       react-native: 0.86.2
 
+  expo-navigation-bar@57.0.2:
+    resolution: {integrity: sha512-Ufe49dsTZjarA7gMMwwwnNJWpXo+oTyl5Ud0g3lsGVrj2HXjyw9cb9098N8+CoWpjfIa5PghuRYYXrcCrGQIHg==}
+    peerDependencies:
+      expo: '*'
+      react: 19.2.3
+      react-native: 0.86.2
+
   expo-screen-capture@57.0.2:
     resolution: {integrity: sha512-Ww8LFdSXuW7YeHc6/DwZd5tOEUqHAsOy4hLrfBxu99pbv+14sD9Lh0ueZeutg4QVktI+u2XJqFjMqyJ0b/5yxA==}
     peerDependencies:
@@ -15066,7 +15076,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -16231,6 +16241,15 @@ snapshots:
   expo-modules-jsi@57.0.4(patch_hash=9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
     dependencies:
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+
+  expo-navigation-bar@57.0.2(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+    dependencies:
+      debug: 4.4.3
+      expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      react: 19.2.3
+      react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+    transitivePeerDependencies:
+      - supports-color
 
   expo-screen-capture@57.0.2(expo@57.0.11)(react@19.2.3):
     dependencies:

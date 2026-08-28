@@ -26,6 +26,7 @@ import { ThemeProvider } from '@rneui/themed'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { PWButton } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useSystemBarsAppearance } from '@hooks/useSystemBarsAppearance'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
 import { QueryProvider } from './providers/QueryProvider'
@@ -78,6 +79,7 @@ const AppContent = () => {
     const { bootstrapped, persister, fcmToken, initError, retryBootstrap } =
         useAppBootstrap()
 
+    useSystemBarsAppearance(isDarkMode)
     usePasskeyAutofillLifecycle()
     useAppIntegrityBootstrap()
 

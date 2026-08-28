@@ -304,6 +304,20 @@ function buildAppConfig(env) {
     // Expo plugins configuration
     // These modify native code during prebuild
     plugins: [
+      // System navigation bar. `AppTheme` inherits Theme.AppCompat.DayNight,
+      // which never sets `windowLightNavigationBar`, so the buttons stay light
+      // in BOTH system themes and vanish against any light surface under
+      // edge-to-edge (targetSdk 36). `style` seeds the build-time default for
+      // the light splash; useSystemBarsAppearance then drives it from the
+      // user's in-app theme. `enforceContrast: false` is required or Android
+      // paints a scrim over that choice.
+      [
+        'expo-navigation-bar',
+        {
+          style: 'dark',
+          enforceContrast: false,
+        },
+      ],
       // Expo font loading
       [
         'expo-font',
