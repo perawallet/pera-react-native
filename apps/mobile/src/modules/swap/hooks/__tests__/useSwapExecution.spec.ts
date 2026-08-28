@@ -42,6 +42,7 @@ const mockUpdateSwapStatus = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseSignerFor = vi.fn()
+const mockUseIsQuantumSwapEnabled = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 const mockIsAssetFrozen = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
@@ -220,6 +221,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     isPeraNetworkError: () => false,
 }))
 
+vi.mock('@hooks/useIsQuantumSwapEnabled', () => ({
+    useIsQuantumSwapEnabled: () => mockUseIsQuantumSwapEnabled(),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
@@ -340,6 +345,10 @@ describe('useSwapExecution', () => {
 
         // Default: status update succeeds
         mockUpdateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+
+        // Default: quantum swaps stay behind the flag, matching the
+        // production default. Flag-on tests opt in explicitly.
+        mockUseIsQuantumSwapEnabled.mockReturnValue(false)
 
         // Default: single-signer account — the normal inline sign → submit
         // flow. The shared-account branch only triggers for multisig senders.
@@ -844,6 +853,52 @@ describe('useSwapExecution', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 
+    it('signs and submits for a quantum signer when the quantum-swap flag is on', async () => {
+        // With `enable_quantum_swap` on, the backend prices the PQ fee
+        // surcharge into the prepared groups, so the fee guard must step
+        // aside and the request must reach the signing pipeline.
+        mockUseIsQuantumSwapEnabled.mockReturnValue(true)
+        mockUseSelectedAccount.mockReturnValue(quantumAccount)
+        mockUseSignerFor.mockReturnValue(quantumAccount)
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-quantum-enabled'),
+            )
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(result.current.status).toBe('success')
+        expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+        // Success path: the backend must never receive a failure report.
+        expect(mockUpdateSwapStatus).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ status: 'failed' }),
+            }),
+        )
+    })
+
+    it('signs and submits for a rekeyed-to-quantum sender when the quantum-swap flag is on', async () => {
+        mockUseIsQuantumSwapEnabled.mockReturnValue(true)
+        mockUseSelectedAccount.mockReturnValue(standardAccountRekeyedToQuantum)
+        mockUseSignerFor.mockReturnValue(quantumAccount)
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-rekeyed-quantum-enabled'),
+            )
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+    })
+
     it('swaps successfully for a standard account that is NOT rekeyed', async () => {
         // Companion to the regression test above: resolving the effective
         // signer must not start rejecting ordinary, non-rekeyed swaps. The
@@ -1185,6 +1240,32 @@ describe('useSwapExecution', () => {
                 message: expect.stringMatching(/quantum/i),
             })
             expect(result.current.status).toBe('error')
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockRegisterHandoff).not.toHaveBeenCalled()
+        })
+
+        it('keeps the quantum propose guard even when the quantum-swap flag is on', async () => {
+            // `enable_quantum_swap` only lifts the FEE guard on the inline
+            // signing path. Quantum keys still can't take part in multisig
+            // signing at all, so the propose guard must stay unconditional —
+            // this pins that the flag is never threaded into it.
+            mockUseIsQuantumSwapEnabled.mockReturnValue(true)
+            mockUseSignerFor.mockReturnValue(quantumAccount)
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(
+                    makeQuote('quote-msig-quantum-flag-on'),
+                )
+            })
+
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase: 'signing',
+                message: 'swap.execution.quantum_multisig_unsupported',
+            })
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(mockRegisterHandoff).not.toHaveBeenCalled()
         })
