@@ -2376,6 +2376,8 @@
             "biometric_error_message": "We were unable to authenticate you.  Please try again.",
             "biometric_weak_title": "Stronger biometric required",
             "biometric_weak_message": "Pera requires a fingerprint or other strong biometric to unlock your wallet. Add a fingerprint in your device's biometric settings, then turn this on again.",
+            "biometric_unconfirmed_title": "Unlock your device first",
+            "biometric_unconfirmed_message": "Your device's biometrics are locked. Unlock your device with your passcode to restore them, then turn this on again.",
             "advanced_security_settings": "Advanced Security Settings",
             "enable_asset_freeze_support": "Enable Asset Freeze Support",
             "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset.",

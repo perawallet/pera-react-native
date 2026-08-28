@@ -34,7 +34,13 @@ import { useSecurityStore } from '../store'
  *                      strength (e.g. Samsung 2D face unlock). Wallet unlock
  *                      requires a hardware-backed class-3 ("strong")
  *                      authenticator, so the user must enroll a fingerprint or
- *                      other strong biometric.
+ *                      other strong biometric. Android-only in practice.
+ * - `unconfirmed`    — a biometric is enrolled but the device reports a
+ *                      non-strong level we can't bind to right now, without it
+ *                      being a weak enrollment: iOS reports enrolled-but-'secret'
+ *                      during a Face ID lockout the user clears with the device
+ *                      passcode, not from inside the app. The opt-in is left
+ *                      intact so unlock auto-restores once the level does.
  * - `declined`       — the user dismissed or failed the OS prompt.
  * - `error`          — an unexpected failure.
  */
@@ -42,6 +48,7 @@ export type EnableBiometricsFailureReason =
     | 'no-pin'
     | 'unavailable'
     | 'weak-biometric'
+    | 'unconfirmed'
     | 'declined'
     | 'error'
 
@@ -264,27 +271,33 @@ export const useBiometrics = (): UseBiometricsResult => {
                         }
 
                         // Only bind biometrics to a hardware-backed class-3
-                        // ("strong") authenticator. A class-2 ("weak") modality
-                        // — e.g. Samsung 2D face unlock — must not be bound;
-                        // fail fast with a distinct reason (before popping a
-                        // doomed OS prompt) so the UI can tell the user to
-                        // enroll a fingerprint.
+                        // ("strong") authenticator. Anything below that fails
+                        // fast, before popping a doomed OS prompt — but the two
+                        // non-strong cases must be handled apart, exactly as the
+                        // reconcile's own branches do (PERA-4702).
                         const level = await biometricsService.getSecurityLevel()
-                        if (level !== 'strong') {
-                            // Clear any blob the reconcile kept for an
-                            // unconfirmable level. With `isEnabled` false the
-                            // Settings toggle reads OFF, so its delete branch
-                            // is unreachable and this is the only user-driven
-                            // moment where dropping it is unambiguously safe.
-                            //
-                            // The reason is recorded, not cleared: this is the
-                            // app disabling biometrics for a class-2 enrollment,
-                            // exactly as the reconcile's own `weak` branch does.
-                            // Clearing it here would dismiss the prompt that
-                            // asked for this enable, leaving the user with an
-                            // error toast and nothing to retry.
+                        if (level === 'weak') {
+                            // A class-2 ("weak") modality — e.g. Samsung 2D face
+                            // unlock — must not be bound. Drop the opt-in for it,
+                            // just as the reconcile's `weak` branch does: with
+                            // `isEnabled` false the Settings toggle reads OFF, so
+                            // its own delete branch is unreachable and this is the
+                            // only user-driven moment where dropping it is
+                            // unambiguously safe. The reason is recorded, not
+                            // cleared, so the UI can guide the user to enroll a
+                            // fingerprint.
                             await dropOptIn('weak-biometric')
                             return { ok: false, reason: 'weak-biometric' }
+                        }
+                        if (level !== 'strong') {
+                            // 'secret' / 'none': a biometric is enrolled but the
+                            // level is ambiguous — iOS reports enrolled-but-
+                            // 'secret' during a Face ID lockout the user can only
+                            // clear with the device passcode. Preserve the opt-in
+                            // (the reconcile's secret/none branch does the same):
+                            // dropping it here would turn a self-clearing lockout
+                            // into a permanent opt-out.
+                            return { ok: false, reason: 'unconfirmed' }
                         }
 
                         const authenticated =

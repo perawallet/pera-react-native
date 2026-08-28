@@ -2376,6 +2376,8 @@
             "biometric_error_message": "No hemos podido autenticarte.  Vuelve a intentarlo.",
             "biometric_weak_title": "Se requiere una biometría más segura",
             "biometric_weak_message": "Pera requiere una huella u otra biometría segura para desbloquear tu wallet. Añade una huella en los ajustes de biometría de tu dispositivo y vuelve a activar esta opción.",
+            "biometric_unconfirmed_title": "Desbloquea primero tu dispositivo",
+            "biometric_unconfirmed_message": "La biometría de tu dispositivo está bloqueada. Desbloquéalo con tu código de acceso para restaurarla y vuelve a activar esta opción.",
             "advanced_security_settings": "Ajustes de seguridad avanzados",
             "enable_asset_freeze_support": "Activar congelación de activos",
             "enable_asset_freeze_support_description": "Al activar esto, podrás confirmar solicitudes de transacción para congelar o descongelar activos en las cuentas. Esto puede impedir que la cuenta afectada realice transacciones con el activo indicado.",

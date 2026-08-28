@@ -2376,6 +2376,8 @@
             "biometric_error_message": "Nous n’avons pas pu vous authentifier. Veuillez réessayer.",
             "biometric_weak_title": "Biométrie plus forte requise",
             "biometric_weak_message": "Pera exige une empreinte digitale ou une autre biométrie forte pour déverrouiller votre wallet. Ajoutez une empreinte dans les paramètres de biométrie de votre appareil, puis réactivez cette option.",
+            "biometric_unconfirmed_title": "Déverrouillez d’abord votre appareil",
+            "biometric_unconfirmed_message": "La biométrie de votre appareil est verrouillée. Déverrouillez votre appareil avec votre code d’accès pour la rétablir, puis réactivez cette option.",
             "advanced_security_settings": "Paramètres de sécurité avancés",
             "enable_asset_freeze_support": "Activer la prise en charge du gel des actifs",
             "enable_asset_freeze_support_description": "Une fois cette option activée, vous pourrez confirmer les demandes de transaction visant à geler ou dégeler des actifs sur des comptes. Cela peut empêcher le compte ciblé d’effectuer des transactions avec l’actif concerné.",
