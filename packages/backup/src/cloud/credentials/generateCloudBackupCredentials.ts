@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
+import { entropyToIndices, zeroBytes } from '@perawallet/wallet-core-kms'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 const MNEMONIC_ENTROPY_BYTES = 16
@@ -24,15 +24,22 @@ const generateSecureRandomBytes = (length: number): Uint8Array => {
 }
 
 export type CloudBackupCredentials = {
-    mnemonic: string[]
+    /** Zeroable buffer the caller owns; resolve to words only at display time. */
+    mnemonicIndices: Uint16Array
+    /** Base64-encoded salt. */
     salt: string
 }
 
 export const generateCloudBackupCredentials = (): CloudBackupCredentials => {
-    const mnemonic = entropyToMnemonic(
-        generateSecureRandomBytes(MNEMONIC_ENTROPY_BYTES),
-    ).split(' ')
-    const salt = encodeToBase64(generateSecureRandomBytes(SALT_BYTES))
+    const entropy = generateSecureRandomBytes(MNEMONIC_ENTROPY_BYTES)
+    const saltBytes = generateSecureRandomBytes(SALT_BYTES)
 
-    return { mnemonic, salt }
+    try {
+        return {
+            mnemonicIndices: entropyToIndices(entropy),
+            salt: encodeToBase64(saltBytes),
+        }
+    } finally {
+        zeroBytes(entropy, saltBytes)
+    }
 }
