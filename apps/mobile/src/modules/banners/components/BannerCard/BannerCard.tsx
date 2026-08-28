@@ -11,7 +11,13 @@
  */
 
 import type { Banner } from '@perawallet/wallet-core-banners'
-import { PWImage, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWImage,
+    PWScrollView,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BannerIcon } from '../BannerIcon'
 import { getBannerBackgroundSource } from './bannerBackgrounds'
@@ -53,31 +59,29 @@ export const BannerCard = ({
             </PWView>
 
             <PWView style={styles.contentHalf}>
-                <PWView style={styles.topGroup}>
-                    <PWView style={styles.iconBubble}>
-                        <BannerIcon
-                            type={banner.type}
-                            size='md'
-                            variant='white'
-                        />
+                <PWScrollView
+                    style={styles.scrollArea}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    <PWView style={styles.topGroup}>
+                        <PWView style={styles.iconBubble}>
+                            <BannerIcon
+                                type={banner.type}
+                                size='md'
+                                variant='banner'
+                            />
+                        </PWView>
+                        {banner.title ? (
+                            <PWText style={styles.title}>{banner.title}</PWText>
+                        ) : null}
                     </PWView>
-                    {banner.title ? (
-                        <PWText
-                            style={styles.title}
-                            numberOfLines={3}
-                        >
-                            {banner.title}
-                        </PWText>
-                    ) : null}
                     {banner.subtitle ? (
-                        <PWText
-                            style={styles.subtitle}
-                            numberOfLines={5}
-                        >
+                        <PWText style={styles.subtitle}>
                             {banner.subtitle}
                         </PWText>
                     ) : null}
-                </PWView>
+                </PWScrollView>
 
                 <PWView style={styles.bottomGroup}>
                     {hasCTA ? (

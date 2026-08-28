@@ -16,29 +16,46 @@ export const useStyles = makeStyles(theme => ({
     multiBannerRoot: {
         flex: 1,
     },
+    // Measured separately from the root so a page gets the pager's own box,
+    // with the dots' height already excluded.
+    pagerArea: {
+        flex: 1,
+    },
+    // Fills that measured box — without it the list sizes to its content.
     pager: {
         flex: 1,
     },
-    page: {
+    singlePage: {
         flex: 1,
     },
+    // Laid out below the pager rather than absolutely positioned over it, so
+    // the dots reserve their own height instead of landing on the card's CTA.
     dotsContainer: {
-        position: 'absolute',
-        bottom: theme.spacing.md,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
         gap: theme.spacing.xs,
+        // No top padding: the card's own bottom padding already separates the
+        // dots from its dismiss link, and stacking both read as a gap. Bottom
+        // only, since each host pads the safe-area inset below this.
+        paddingBottom: theme.spacing.xs,
     },
     dot: {
         width: theme.spacing.xs,
         height: theme.spacing.xs,
         borderRadius: theme.borderRadius.full,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: theme.colors.layerGray,
     },
     dotActive: {
         width: theme.spacing.lg,
-        backgroundColor: 'rgba(255, 255, 255, 1)',
+        backgroundColor: theme.colors.textMain,
     },
 }))
+
+export const usePageStyles = makeStyles(
+    (_theme, { width, height }: { width: number; height: number }) => ({
+        page: {
+            width,
+            height,
+        },
+    }),
+)

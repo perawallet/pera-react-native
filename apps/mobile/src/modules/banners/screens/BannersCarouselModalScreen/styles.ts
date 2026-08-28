@@ -15,7 +15,13 @@ import { type EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
-        backgroundColor: theme.colors.bannerContentBg,
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        // Deliberately not a PWScreen: this screen wants none of its zones, and
+        // its body padding is `insets.bottom + spacing.lg`, which read as a gap
+        // under the pager dots. So the safe-area insets are applied here.
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
     },
     // The carousel takes the full screen; banner art covers the modal. The
     // close X is absolutely positioned above the banner content so it does
@@ -25,10 +31,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     closeButton: {
         position: 'absolute',
-        // PWScreen only safe-areas its footer, and this screen is presented
-        // full-bleed: on Android that puts y=0 under the status bar, so without
-        // the inset the X rides up into it. iOS modals already start below the
-        // bar, where `insets.top` is 0 and this is a no-op (PERA-4751).
+        // Keeps its own `insets.top`: Yoga does not inset absolutely positioned
+        // children by the parent's padding, so `root`'s does not apply here and
+        // without this the X sits in the status bar (PERA-4751).
         top: insets.top + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,

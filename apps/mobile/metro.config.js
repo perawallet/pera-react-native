@@ -115,8 +115,8 @@ const webStubs = {
     // SpotBannerCarousel) even when only HomeBannersStrip was imported — that
     // barrel (modules/banners/index.ts) was later split so the carousel
     // pieces are no longer in the module's main entry; the shim stays because
-    // MediaCarousel/FullScreenMediaViewer/BannerCarousel/SpotBannerCarousel/
-    // OnrampScreen still import react-native-pager-view directly. The shim is
+    // MediaCarousel/FullScreenMediaViewer/SpotBannerCarousel/OnrampScreen
+    // still import react-native-pager-view directly. The shim is
     // a real horizontal paging ScrollView, not an inert no-op.
     'react-native-pager-view': 'react-native-pager-view.js',
     // Store rating: react-native-rate-app calls TurboModuleRegistry.getEnforcing
