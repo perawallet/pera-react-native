@@ -11,22 +11,30 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    scrollContent: {
-        gap: theme.spacing.lg,
-    },
-    // Outer spacing only — PassphraseGrid owns the grid's own appearance.
     grid: {
-        marginTop: theme.spacing.md,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        padding: theme.spacing.xl,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
-    errorBox: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
+    wordCell: {
+        flexBasis: '50%',
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
+    },
+    wordIndex: {
+        ...getTypography(theme, 'mono'),
+        minWidth: theme.spacing.xl,
+        textAlign: 'right',
+        color: theme.colors.textGray,
+    },
+    wordText: {
+        ...getTypography(theme, 'mono'),
     },
 }))
