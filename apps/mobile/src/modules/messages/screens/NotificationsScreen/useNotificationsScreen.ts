@@ -31,6 +31,7 @@ export type UseNotificationsScreenResult = {
     refetch: () => void
     handleNotificationPress: (notification: PeraNotification) => void
     listRef: RefObject<PWFlatListRef | null>
+    isUnavailableOnNetwork: boolean
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
@@ -42,6 +43,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isFetchingNextPage,
         isRefetching,
         refetch,
+        isUnavailableOnNetwork,
     } = useNotificationsListQuery()
     const { markAsRead } = useMarkNotificationsAsReadMutation()
     const { handleNotificationPress } = useNotificationPress()
@@ -94,5 +96,6 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         refetch: () => void refetch(),
         handleNotificationPress,
         listRef,
+        isUnavailableOnNetwork,
     }
 }

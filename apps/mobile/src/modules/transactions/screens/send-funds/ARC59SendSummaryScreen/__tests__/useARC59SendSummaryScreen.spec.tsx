@@ -261,6 +261,20 @@ describe('useARC59SendSummaryScreen', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
+    it('forwards isUnavailableOnNetwork from the summary query', async () => {
+        const { useArc59SendSummaryQuery } =
+            await import('@perawallet/wallet-core-asa-inbox')
+        ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: false,
+            isUnavailableOnNetwork: true,
+        })
+
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
     it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {
         const { useArc59SendSummaryQuery } =
             await import('@perawallet/wallet-core-asa-inbox')

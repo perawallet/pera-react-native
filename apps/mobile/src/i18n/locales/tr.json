@@ -2109,7 +2109,8 @@
             "confirm": "Yeniden aç",
             "cancel": "Şimdi değil",
             "unavailable_title": "Biyometri kullanılamıyor",
-            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin."
+            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin.",
+            "body_not-available": "Cihazınızda Pera için ayarlanmış bir biyometri olmadığından biyometrik kilit açma çalışmıyor. Cihaz ayarlarınızdan bir tane ayarlayın, ardından burada yeniden açın."
         }
     },
     "send_funds": {

@@ -59,12 +59,14 @@ const mockInbox = (data: InboxItem[] | undefined) => {
 const mockStatus = ({
     hasUnreadInboxItems = false,
     hasUnreadNotifications = false,
+    isUnavailableOnNetwork = false,
 } = {}) => {
     vi.mocked(useInboxStatus).mockReturnValue({
         hasUnreadItems: hasUnreadInboxItems || hasUnreadNotifications,
         hasUnreadInboxItems,
         hasUnreadNotifications,
         unreadInboxCount: hasUnreadInboxItems ? 1 : 0,
+        isUnavailableOnNetwork,
     })
 }
 
@@ -144,5 +146,21 @@ describe('useMessagesScreen', () => {
         expect(result.current.activeTab).toBe('Inbox')
         expect(result.current.showInboxBadge).toBe(false)
         expect(result.current.showNotificationsBadge).toBe(true)
+    })
+
+    it('suppresses both tab badges when the network is unavailable', () => {
+        mockRoute('Notifications')
+        mockInbox([signItem])
+        mockStatus({
+            hasUnreadInboxItems: true,
+            hasUnreadNotifications: true,
+            isUnavailableOnNetwork: true,
+        })
+
+        const { result } = renderHook(() => useMessagesScreen())
+
+        expect(result.current.activeTab).toBe('Notifications')
+        expect(result.current.showInboxBadge).toBe(false)
+        expect(result.current.showNotificationsBadge).toBe(false)
     })
 })

@@ -25,6 +25,7 @@ import type {
 } from '../types'
 import { isExternalCallbackSource } from '../types'
 import { NetworkChangedError, TransportError } from '../errors'
+import { draftProposeContexts } from '../draftProposeContexts'
 import { walletConnectHandoffs } from '../walletConnectHandoffs'
 
 /**
@@ -137,41 +138,12 @@ export const createMultisigProposeTransport = (
                 source.transportOptions?.multisig?.proposeMode ??
                 (isExternal ? 'sync' : 'async')
 
-            // An empty `signers` array is how `multisigSignerActor` signals a
-            // hardware-only proposer. Create a local draft instead of calling
-            // the backend; the first per-row Sign bootstraps the real propose.
-            if (result.signers.length === 0) {
-                if (!createDraftSignRequest) {
-                    throw new TransportError(
-                        'Multisig propose received empty signers but no draft creator was provided',
-                    )
-                }
-                if (result.signedData.type !== 'transactions') {
-                    throw new TransportError(
-                        'Deferred propose is only supported for transaction signing',
-                    )
-                }
-                const draftLocalId = createDraftSignRequest({
-                    multisigAddress,
-                    signedTransactions: result.signedData.signed,
-                    proposeType,
-                    source,
-                })
-                // Reuse the existing `'proposed'` transport result so the
-                // app-side listener (`useMultisigProposeListener`) opens the
-                // pending sheet without needing a new event type.
-                return {
-                    type: 'proposed',
-                    signRequestId: draftLocalId,
-                    status: 'pending',
-                    sourceType: source.type,
-                }
-            }
-
-            // Handoff preconditions are validated BEFORE the create: failing
-            // after it would orphan a live backend sign-request with no
-            // handoff registered (so the resolver's cancel-on-failure never
-            // sees it), and a retry would then create a duplicate.
+            // Handoff preconditions are validated BEFORE anything is created
+            // (backend record or local draft): failing after the create would
+            // orphan a live backend sign-request with no handoff registered
+            // (so the resolver's cancel-on-failure never sees it), a retry
+            // would then create a duplicate, and a draft whose bootstrap can
+            // never deliver would strand a sync record at `ready` forever.
             let msig: MsigMetadata | undefined
             let deviceId: string | undefined
             if (isExternal) {
@@ -198,6 +170,48 @@ export const createMultisigProposeTransport = (
                     throw new TransportError(
                         'Device id not available; cannot register WC handoff',
                     )
+                }
+            }
+
+            // An empty `signers` array is how `multisigSignerActor` signals a
+            // hardware-only proposer. Create a local draft instead of calling
+            // the backend; the first per-row Sign bootstraps the real propose.
+            if (result.signers.length === 0) {
+                if (!createDraftSignRequest) {
+                    throw new TransportError(
+                        'Multisig propose received empty signers but no draft creator was provided',
+                    )
+                }
+                if (result.signedData.type !== 'transactions') {
+                    throw new TransportError(
+                        'Deferred propose is only supported for transaction signing',
+                    )
+                }
+                const draftLocalId = createDraftSignRequest({
+                    multisigAddress,
+                    signedTransactions: result.signedData.signed,
+                    proposeType,
+                    source,
+                })
+                // No backend record exists yet, so the sync-flow delivery
+                // wiring (handoff registration, onProposed) can't attach here.
+                // Stash the source and the validated preconditions so the
+                // bootstrap propose can wire delivery under the real id;
+                // without this a sync record is stranded at `ready` forever
+                // (PERA-4987).
+                draftProposeContexts.set(draftLocalId, {
+                    source,
+                    msigMetadata: msig,
+                    deviceId,
+                })
+                // Reuse the existing `'proposed'` transport result so the
+                // app-side listener (`useMultisigProposeListener`) opens the
+                // pending sheet without needing a new event type.
+                return {
+                    type: 'proposed',
+                    signRequestId: draftLocalId,
+                    status: 'pending',
+                    sourceType: source.type,
                 }
             }
 

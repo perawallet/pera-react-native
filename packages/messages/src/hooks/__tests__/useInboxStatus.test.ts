@@ -12,8 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { config } from '@perawallet/wallet-core-config'
+import { config, Networks } from '@perawallet/wallet-core-config'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useInboxStatus } from '../useInboxStatus'
 import {
     fetchMessageStatus,
@@ -41,7 +42,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
 
 const mockInbox = (items: number) =>
@@ -53,6 +54,9 @@ describe('useInboxStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockInbox(0)
+        vi.mocked(useNetwork).mockReturnValue({
+            network: 'mainnet',
+        } as ReturnType<typeof useNetwork>)
     })
 
     it('surfaces the unread flags and inbox count from message-status', async () => {
@@ -72,7 +76,7 @@ describe('useInboxStatus', () => {
         })
 
         expect(fetchMessageStatus).toHaveBeenCalledWith(
-            'test-network',
+            'mainnet',
             'test-device-id',
         )
         expect(result.current.hasUnreadItems).toBe(true)
@@ -97,7 +101,7 @@ describe('useInboxStatus', () => {
 
         await waitFor(() => {
             expect(fetchNotificationStatus).toHaveBeenCalledWith(
-                'test-network',
+                'mainnet',
                 'test-device-id',
             )
         })
@@ -185,5 +189,28 @@ describe('useInboxStatus', () => {
         expect(typeof result.current.hasUnreadInboxItems).toBe('boolean')
         expect(typeof result.current.hasUnreadNotifications).toBe('boolean')
         expect(typeof result.current.unreadInboxCount).toBe('number')
+    })
+
+    describe('non-Pera-backed networks', () => {
+        it.each([Networks.betanet, Networks.custom])(
+            'returns zeroed-out defaults and flags isUnavailableOnNetwork on %s without polling',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(() => useInboxStatus(), {
+                    wrapper: createWrapper(),
+                })
+
+                expect(fetchMessageStatus).not.toHaveBeenCalled()
+                expect(fetchNotificationStatus).not.toHaveBeenCalled()
+                expect(result.current.hasUnreadItems).toBe(false)
+                expect(result.current.hasUnreadInboxItems).toBe(false)
+                expect(result.current.hasUnreadNotifications).toBe(false)
+                expect(result.current.unreadInboxCount).toBe(0)
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+            },
+        )
     })
 })

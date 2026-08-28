@@ -455,6 +455,11 @@ function buildAppConfig(env) {
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
 
+      // Let R8 optimize (the template's proguard-android.txt sets -dontoptimize)
+      // and let the resource shrinker remove rather than stub. Must run after
+      // expo-build-properties, which owns minify/shrinkResources.
+      './plugins/withAndroidR8Optimization',
+
       // Drop the Android portrait lock — Android 16 ignores it on large screens
       // anyway, so keeping it only hides tablet landscape from us. iOS stays
       // portrait via the top-level `orientation`.

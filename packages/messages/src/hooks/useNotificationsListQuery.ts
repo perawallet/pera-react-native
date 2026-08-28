@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
     fetchNotificationList,
@@ -49,28 +50,65 @@ const extractCursor = (url: Nullable<string>): Maybe<string> => {
     }
 }
 
-export const useNotificationsListQuery = () => {
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
-
-    return useInfiniteQuery({
-        queryKey: getNotificationsListQueryKey(network, deviceID!),
-        queryFn: ({ pageParam }) =>
-            fetchNotificationList(
-                network,
-                deviceID ?? '',
-                pageParam as Optional<string>,
-            ),
-        initialPageParam: '',
-        getNextPageParam: lastPage => extractCursor(lastPage.next),
-        getPreviousPageParam: firstPage => extractCursor(firstPage.previous),
-        enabled: !!deviceID?.length,
-        select: useCallback((data: InfiniteData<NotificationsListResponse>) => {
-            return data.pages.flatMap((p: NotificationsListResponse) =>
-                p.results.map((r: NotificationResponse) =>
-                    mapNotificationResponseToNotification(r),
-                ),
-            )
-        }, []),
-    })
+export type UseNotificationsListQueryResult = {
+    data: PeraNotification[]
+    isPending: boolean
+    isFetchingNextPage: boolean
+    isRefetching: boolean
+    fetchNextPage: () => void
+    refetch: () => void
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
+
+export const useNotificationsListQuery =
+    (): UseNotificationsListQueryResult => {
+        const { network } = useNetwork()
+        const deviceID = useDeviceID(network)
+        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+
+        const query = useInfiniteQuery({
+            queryKey: getNotificationsListQueryKey(network, deviceID!),
+            queryFn: ({ pageParam }) =>
+                fetchNotificationList(
+                    network,
+                    deviceID ?? '',
+                    pageParam as Optional<string>,
+                ),
+            initialPageParam: '',
+            getNextPageParam: lastPage => extractCursor(lastPage.next),
+            getPreviousPageParam: firstPage =>
+                extractCursor(firstPage.previous),
+            enabled: !!deviceID?.length && !isUnavailableOnNetwork,
+            select: useCallback(
+                (data: InfiniteData<NotificationsListResponse>) => {
+                    return data.pages.flatMap((p: NotificationsListResponse) =>
+                        p.results.map((r: NotificationResponse) =>
+                            mapNotificationResponseToNotification(r),
+                        ),
+                    )
+                },
+                [],
+            ),
+        })
+
+        return {
+            data: query.data ?? [],
+            isPending: isUnavailableOnNetwork ? false : query.isPending,
+            isFetchingNextPage: isUnavailableOnNetwork
+                ? false
+                : query.isFetchingNextPage,
+            isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
+            // The observer's fetchNextPage()/refetch() ignore `enabled` and would
+            // still fire the doomed Pera request on a non-backed network.
+            fetchNextPage: () => {
+                if (isUnavailableOnNetwork) return
+                void query.fetchNextPage()
+            },
+            refetch: () => {
+                if (isUnavailableOnNetwork) return
+                void query.refetch()
+            },
+            isUnavailableOnNetwork,
+        }
+    }

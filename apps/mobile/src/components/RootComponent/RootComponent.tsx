@@ -39,6 +39,7 @@ import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkL
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
+import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
 import { useTokenListener } from '@modules/token'
@@ -172,6 +173,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     }, [])
 
     useNetworkSwitchInvalidation()
+    useImageMemoryRelease()
 
     useEffect(() => {
         // Hold the background poll until migration finishes: its initial

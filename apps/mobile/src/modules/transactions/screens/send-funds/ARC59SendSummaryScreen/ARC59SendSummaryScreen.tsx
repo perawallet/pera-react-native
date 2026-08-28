@@ -12,6 +12,7 @@
 
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { ConfirmAction } from '@components/ConfirmAction'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
@@ -28,6 +29,7 @@ export const ARC59SendSummaryScreen = () => {
     const {
         summary,
         isLoading,
+        isUnavailableOnNetwork,
         amount,
         assetId,
         recipientAddress,
@@ -39,6 +41,22 @@ export const ARC59SendSummaryScreen = () => {
         handleReadMore,
         isProcessing,
     } = useARC59SendSummaryScreen()
+
+    // Defence-in-depth: useSendDestinationRouter already blocks routing here on
+    // a non-Pera-backed network (PERA-4923); this only guards a direct/stale
+    // navigation where the disabled query resolves with no data to show.
+    if (isUnavailableOnNetwork) {
+        return (
+            <PWScreen>
+                <OfflineTolerantView
+                    isOffline={false}
+                    isUnavailable
+                >
+                    <></>
+                </OfflineTolerantView>
+            </PWScreen>
+        )
+    }
 
     if (isLoading) {
         return <LoadingView variant='circle' />

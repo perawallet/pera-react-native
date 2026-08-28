@@ -14,6 +14,7 @@ package com.algorand.perarn.perabiometricbinding
 
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import androidx.biometric.BiometricManager
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
 import android.security.keystore.UserNotAuthenticatedException
@@ -78,6 +79,40 @@ class PeraBiometricBindingModule : Module() {
         // caller has already dropped the secret this guarded.
       }
       promise.resolve(null)
+    }
+
+    // The raw `canAuthenticate` code, which expo's `isEnrolledAsync` throws away
+    // by collapsing every non-SUCCESS result into `false`. `NONE_ENROLLED` is
+    // the only one the user has to act on; `HW_UNAVAILABLE` is the lockout and
+    // clears itself.
+    AsyncFunction("getAvailability") { promise: Promise ->
+      val context = appContext.reactContext
+      if (context == null) {
+        promise.resolve("unknown")
+        return@AsyncFunction
+      }
+      val status =
+        try {
+          BiometricManager.from(context)
+            .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK)
+        } catch (t: Throwable) {
+          promise.resolve("unknown")
+          return@AsyncFunction
+        }
+
+      promise.resolve(
+        when (status) {
+          BiometricManager.BIOMETRIC_SUCCESS -> "available"
+          BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED -> "none-enrolled"
+          // A pending security patch also needs the user to act, but the fix is
+          // a system update rather than an enrollment, and the copy would be
+          // wrong. Treated as temporary so nothing misleading is shown.
+          BiometricManager.BIOMETRIC_ERROR_SECURITY_UPDATE_REQUIRED -> "unavailable"
+          BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE -> "unavailable"
+          BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE -> "unavailable"
+          else -> "unknown"
+        },
+      )
     }
   }
 

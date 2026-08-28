@@ -24,3 +24,10 @@ export const ASSET_RECLASSIFY_TTL_MS = 5 * 60 * 1000
 // off 15-30 minutes per attempt. After this the asset falls back to
 // ASSET_CACHE_TTL_MS.
 export const ASSET_NEWLY_SEEN_WINDOW_MS = 6 * 60 * 60 * 1000
+
+// ARC19 media is mutable forever (the manager's acfg re-points the reserve
+// address at a new CID), so unlike the unclassified recheck there is no
+// expiry window. Effective cadence is max(this, the sync service's 10-min
+// asset pass); the cost is one bulk-fetch slot per held ARC19 collectible
+// per interval.
+export const ARC19_COLLECTIBLE_RECHECK_TTL_MS = 15 * 60 * 1000

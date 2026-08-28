@@ -10,20 +10,25 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
 
 type UseMarkNotificationsAsReadMutationResult = {
     markAsRead: (lastSeenNotificationId: number) => void
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
 
 export const useMarkNotificationsAsReadMutation =
     (): UseMarkNotificationsAsReadMutationResult => {
         const { network } = useNetwork()
         const deviceID = useDeviceID(network)
+        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
         const { invalidate } = useInboxInvalidator()
 
         const { mutate } = useMutation({
@@ -39,7 +44,21 @@ export const useMarkNotificationsAsReadMutation =
             throwOnError: false,
         })
 
+        // The caller is an unmount effect with no UI to explain a doomed
+        // request, so the guard lives here rather than at the call site.
+        // Identity must stay stable: that effect lists `markAsRead` as a
+        // dependency, so a fresh function each render would run its
+        // mark-as-read cleanup on every render instead of on unmount.
+        const markAsRead = useCallback(
+            (lastSeenNotificationId: number) => {
+                if (isUnavailableOnNetwork) return
+                mutate(lastSeenNotificationId)
+            },
+            [isUnavailableOnNetwork, mutate],
+        )
+
         return {
-            markAsRead: mutate,
+            markAsRead,
+            isUnavailableOnNetwork,
         }
     }
