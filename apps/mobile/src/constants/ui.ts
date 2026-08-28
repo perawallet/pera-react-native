@@ -13,6 +13,13 @@
 import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
 import { Easing } from 'react-native-reanimated'
 
+/**
+ * Stands in for a monetary value the app genuinely doesn't know — an
+ * unresolved exchange rate, an unsynced price. Never substitute 0: a rendered
+ * 0 has to mean a real zero balance.
+ */
+export const UNKNOWN_AMOUNT_PLACEHOLDER = '---'
+
 export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140
 export const CHART_ANIMATION_DURATION = 200

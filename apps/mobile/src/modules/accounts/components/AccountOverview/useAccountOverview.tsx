@@ -103,19 +103,23 @@ export const useAccountOverview = ({
     // resolves. The chart history is a separate, slower network query that's
     // gated on chart visibility — it must not hold the header in a skeleton
     // (and previously did, blocking ~10s on the wealth endpoint timeout).
-    const { isPending: isBalancesPending } = useAccountSummaryQuery(
-        account?.address,
-    )
+    const { isPending: isBalancesPending, isPaused: isBalancesPaused } =
+        useAccountSummaryQuery(account?.address)
     // Guarantee the viewed account's holdings + metadata + prices are fetched
     // and enriched, regardless of the background poll's gating.
     useEnsureAccountEnriched(account?.address)
     const [hasCompletedInitialLoad, setHasCompletedInitialLoad] =
         useState(false)
+    // A paused read counts as loaded: it will not resolve while offline, and
+    // holding the skeleton would hide the SQLite-backed values underneath it.
     useEffect(() => {
-        if (!hasCompletedInitialLoad && !isBalancesPending) {
+        if (
+            !hasCompletedInitialLoad &&
+            (!isBalancesPending || isBalancesPaused)
+        ) {
             setHasCompletedInitialLoad(true)
         }
-    }, [hasCompletedInitialLoad, isBalancesPending])
+    }, [hasCompletedInitialLoad, isBalancesPending, isBalancesPaused])
     const isLoading = !hasCompletedInitialLoad
 
     const refreshAddresses = useMemo(

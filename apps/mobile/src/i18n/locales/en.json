@@ -258,6 +258,8 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "offline_empty_title": "You're offline",
+            "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "filter": "Filter",
             "csv": "CSV"
         },

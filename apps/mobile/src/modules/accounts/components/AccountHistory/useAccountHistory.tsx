@@ -26,6 +26,7 @@ import {
 import { shareCsvFile } from '@utils/shareCsvFile'
 import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useNetworkStatus } from '@modules/network'
 import {
     TransactionFilter,
     TransactionsFilterContent,
@@ -66,6 +67,13 @@ export type UseAccountHistoryResult = {
     isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
+    /**
+     * Empty *because* nothing is cached and we're offline, rather than because
+     * the account has no transactions. The history query reads SQLite with
+     * `networkMode: 'always'`, so it never reports `isPaused` — connectivity
+     * has to come from the network store instead.
+     */
+    isOfflineEmpty: boolean
     /** Function to export transaction history to CSV */
     handleExportCsv: () => void
     /** Whether CSV export is in progress */
@@ -92,6 +100,7 @@ export type UseAccountHistoryResult = {
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
     const { network } = useNetwork()
+    const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
@@ -210,6 +219,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
     const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isOfflineEmpty = isEmpty && !hasInternet
     const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
@@ -231,6 +241,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleRefresh,
         isRefreshing,
         isEmpty,
+        isOfflineEmpty,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,

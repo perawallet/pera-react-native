@@ -271,7 +271,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
 
             const sumOfParts = totalA!.plus(totalB!)
             expect(
-                result.current.portfolio.portfolioUsdValue.equals(sumOfParts),
+                result.current.portfolio.portfolioUsdValue?.equals(sumOfParts),
             ).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -303,7 +303,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             // total without needing any network or DB I/O.
             expect(result.current.accounts).toEqual([])
             expect(result.current.balances.accountBalances.size).toBe(0)
-            expect(result.current.portfolio.portfolioUsdValue.isZero()).toBe(
+            expect(result.current.portfolio.portfolioUsdValue?.isZero()).toBe(
                 true,
             )
             expect(result.current.portfolio.accountValueTotals.size).toBe(0)

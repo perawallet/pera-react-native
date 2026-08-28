@@ -11,6 +11,7 @@
  */
 
 import { memo, useMemo } from 'react'
+import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -34,7 +35,8 @@ export type WealthChartProps = {
 }
 
 const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
-    item.preferredValue.toNumber()
+    // Non-null by construction: `plottablePoints` drops unpriced points below.
+    (item.preferredValue as Decimal).toNumber()
 
 // Memoised because the account header re-renders on every scrub sample it
 // receives. Without this each sample re-rendered CartesianChart — re-deriving
@@ -66,9 +68,17 @@ export const WealthChart = memo(function WealthChart({
         isUnavailableOnNetwork,
     } = useAccountBalancesHistoryQuery(addresses, period, enabled)
 
+    // A point with no preferred value has no rate behind it (offline, never
+    // synced). Plotting it as 0 would draw a cliff to the axis, so drop it —
+    // an all-unpriced series lands on the chart's own empty/offline state.
+    const plottablePoints = useMemo(
+        () => data.filter(point => point.preferredValue !== null),
+        [data],
+    )
+
     return (
         <BalanceLineChart
-            series={data}
+            series={plottablePoints}
             getValue={getPreferredValue}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}

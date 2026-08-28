@@ -11,10 +11,15 @@
  */
 
 import { useMemo } from 'react'
-import { ALGO_ASSET_ID, type Network } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
@@ -23,8 +28,11 @@ import { getAccountSummaryQueryKey } from './querykeys'
 export type UseAccountSummaryResult = {
     /** ALGO balance in display units (price-independent). */
     algoAmount: Decimal
-    /** Total portfolio value in USD (includes ALGO). */
-    portfolioUsdValue: Decimal
+    /**
+     * Total portfolio value in USD (includes ALGO); `null` when ALGO is held
+     * but its price has never synced, so the value is unknown — not 0.
+     */
+    portfolioUsdValue: Nullable<Decimal>
     /** Total portfolio value expressed in ALGO. */
     portfolioAlgoValue: Decimal
     /** Number of holdings (includes the ALGO holding). */
@@ -90,9 +98,18 @@ export const useAccountSummaryQuery = (
 
         // ALGO contributes its raw amount to the ALGO-denominated total (1:1,
         // price-independent); non-ALGO holdings convert via the ALGO/USD rate.
-        const portfolioUsdValue = nonAlgoUsdValue.plus(
-            algoAmount.times(usdAlgoPrice),
-        )
+        //
+        // Valuing held ALGO needs that rate, so a never-synced install (no
+        // price rows) can't express the USD total at all — `null`, not 0.
+        // Networks with no Pera backend are excluded: a zero rate is the
+        // deliberate answer there (PERA-4928), not a missing one.
+        // See useAccountValueTotalsQuery, which derives this identically.
+        const portfolioUsdValue =
+            usdAlgoPrice.isZero() &&
+            !algoAmount.isZero() &&
+            isPeraBackedNetwork(network)
+                ? null
+                : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
         const portfolioAlgoValue = usdAlgoPrice.isZero()
             ? algoAmount
             : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))

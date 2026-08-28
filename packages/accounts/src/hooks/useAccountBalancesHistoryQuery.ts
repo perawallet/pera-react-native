@@ -31,7 +31,7 @@ import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
 const mapAccountBalanceHistoryItem = (
     item: AccountBalanceHistoryResponseItem,
-    usdToPreferred: (amount: Decimal) => Decimal,
+    usdToPreferred: (amount: Decimal) => Nullable<Decimal>,
 ): AccountBalanceHistoryItem => {
     return {
         datetime: new Date(item.datetime),

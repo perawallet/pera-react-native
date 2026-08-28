@@ -117,7 +117,7 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.portfolioAlgoValue.toString()).toBe('100')
-        expect(result.current.portfolioPreferredValue.toString()).toBe('200')
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('200')
     })
 
     it('determines hasBalance correctly when balance is greater than zero', () => {

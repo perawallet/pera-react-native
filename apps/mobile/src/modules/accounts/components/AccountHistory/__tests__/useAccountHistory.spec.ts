@@ -31,6 +31,11 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
 }))
 
+const mockUseNetworkStatus = vi.hoisted(() => vi.fn())
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: mockUseNetworkStatus,
+}))
+
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
@@ -116,6 +121,7 @@ describe('useAccountHistory', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNavigate.mockReset()
+        mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
         mockRefreshAccounts.mockResolvedValue(undefined)
         vi.mocked(getSyncService).mockReturnValue({
             refreshAccounts: mockRefreshAccounts,
@@ -192,6 +198,50 @@ describe('useAccountHistory', () => {
 
             expect(result.current.rows).toHaveLength(0)
             expect(result.current.isEmpty).toBe(true)
+        })
+
+        it('reports an empty online history as a genuine empty history', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isEmpty).toBe(true)
+            expect(result.current.isOfflineEmpty).toBe(false)
+        })
+
+        it('distinguishes an empty offline history from a genuine empty one', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: false })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isEmpty).toBe(true)
+            expect(result.current.isOfflineEmpty).toBe(true)
+        })
+
+        it('does not claim an offline empty state when cached rows exist', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: false })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isOfflineEmpty).toBe(false)
         })
     })
 

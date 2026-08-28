@@ -258,6 +258,8 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "offline_empty_title": "Çevrimdışısın",
+            "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "filter": "Filtrele",
             "csv": "CSV"
         },

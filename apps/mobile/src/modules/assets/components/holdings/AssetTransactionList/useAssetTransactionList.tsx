@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { shareCsvFile } from '@utils/shareCsvFile'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useNetworkStatus } from '@modules/network'
 import {
     TransactionFilter,
     TransactionsFilterContent,
@@ -55,6 +56,8 @@ export type UseAssetTransactionListResult = {
     error: Nullable<Error>
     hasNextPage: boolean
     isEmpty: boolean
+    /** See `useAccountHistory`: empty because nothing is cached and we're offline. */
+    isOfflineEmpty: boolean
     handleLoadMore: () => void
     handleRefresh: () => void
     isRefreshing: boolean
@@ -72,6 +75,7 @@ export const useAssetTransactionList = ({
     asset,
 }: UseAssetTransactionListParams): UseAssetTransactionListResult => {
     const { network } = useNetwork()
+    const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
@@ -189,6 +193,7 @@ export const useAssetTransactionList = ({
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.
     const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isOfflineEmpty = isEmpty && !hasInternet
     const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
@@ -207,6 +212,7 @@ export const useAssetTransactionList = ({
         error,
         hasNextPage,
         isEmpty,
+        isOfflineEmpty,
         handleLoadMore,
         handleRefresh,
         isRefreshing,

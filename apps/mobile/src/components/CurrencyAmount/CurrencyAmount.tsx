@@ -29,6 +29,7 @@ import {
     type FontWeight,
     type TypographyVariant,
 } from '@theme/typography'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { resolvePrecision, type PrecisionVariant } from './precision'
 
 const ALGO_SYMBOL = '¦'
@@ -134,7 +135,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         }
 
         if (value == null) {
-            return '---'
+            return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
         return privacyMode

@@ -13,8 +13,13 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID, useStableIdList } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    useStableIdList,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { WalletAccount } from '../models'
 import { getAccountSummaryQueryKey } from './querykeys'
@@ -23,8 +28,11 @@ import { readAccountSummary } from './useAccountSummaryQuery'
 export type AccountValueTotals = {
     /** Account value expressed in ALGO (display units). */
     algoValue: Decimal
-    /** Account value in USD (display units). */
-    usdValue: Decimal
+    /**
+     * Account value in USD (display units); `null` when ALGO is held but its
+     * price has never synced, so the value is genuinely unknown — not 0.
+     */
+    usdValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -36,7 +44,8 @@ export type AccountValueTotalsMap = Map<string, AccountValueTotals>
 export type UseAccountValueTotalsQueryResult = {
     accountValueTotals: AccountValueTotalsMap
     portfolioAlgoValue: Decimal
-    portfolioUsdValue: Decimal
+    /** `null` when any account's USD value is unknown — see `usdValue`. */
+    portfolioUsdValue: Nullable<Decimal>
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -67,6 +76,9 @@ export const useAccountValueTotalsQuery = (
     enabled?: boolean,
 ): UseAccountValueTotalsQueryResult => {
     const { network } = useNetwork()
+    // See the usdValue derivation: only a Pera-backed network can be missing a
+    // price it ought to have.
+    const isPricedNetwork = isPeraBackedNetwork(network)
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass fresh array literals per render; only
@@ -120,7 +132,7 @@ export const useAccountValueTotalsQuery = (
         }
 
         let portfolioAlgoValue = new Decimal(0)
-        let portfolioUsdValue = new Decimal(0)
+        let portfolioUsdValue: Nullable<Decimal> = new Decimal(0)
         const accountValueTotals: AccountValueTotalsMap = new Map(
             addresses.map((address, i) => {
                 const r = results[i]
@@ -133,15 +145,30 @@ export const useAccountValueTotalsQuery = (
                 // price-independent); non-ALGO holdings convert via the
                 // ALGO/USD rate, or drop out of the ALGO total while the rate
                 // is unknown.
-                const usdValue = nonAlgoUsdValue.plus(
-                    algoAmount.times(usdAlgoPrice),
-                )
+                //
+                // The USD total needs that rate for any ALGO held, so a
+                // never-synced install (no price rows) can't express it at
+                // all — `null`, not 0. Pricing 10 ALGO at $0.00 is the fake
+                // number the offline epic forbids. Networks with no Pera
+                // backend are excluded: a zero rate is the deliberate answer
+                // there (PERA-4928), not a missing one.
+                const usdValue =
+                    usdAlgoPrice.isZero() &&
+                    !algoAmount.isZero() &&
+                    isPricedNetwork
+                        ? null
+                        : nonAlgoUsdValue.plus(algoAmount.times(usdAlgoPrice))
                 const algoValue = usdAlgoPrice.isZero()
                     ? algoAmount
                     : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))
 
                 portfolioAlgoValue = portfolioAlgoValue.plus(algoValue)
-                portfolioUsdValue = portfolioUsdValue.plus(usdValue)
+                // One unknown account makes the portfolio total unknown —
+                // silently summing the rest would understate it.
+                portfolioUsdValue =
+                    portfolioUsdValue === null || usdValue === null
+                        ? null
+                        : portfolioUsdValue.plus(usdValue)
 
                 return [
                     address,
