@@ -297,6 +297,63 @@ describe('PWBottomSheet', () => {
         })
     })
 
+    it('shrinks a full-height sheet above the keyboard by default', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='full'
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByTestId('keyboard-avoiding-view')).toBeTruthy()
+    })
+
+    it('skips the keyboard avoider when the content insets itself (PERA-4708)', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='full'
+                avoidKeyboard={false}
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(screen.queryByTestId('keyboard-avoiding-view')).toBeNull()
+        expect(screen.getByText('Sheet Content')).toBeTruthy()
+    })
+
+    it('holds the sheet at its detent instead of avoiding, when the content insets itself (PERA-4708)', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='full'
+                avoidKeyboard={false}
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        // `interactive` would move the sheet up by the keyboard height, a second
+        // avoider on top of the WebView's own inset.
+        expect(capturedProps.keyboardBehavior).toBe('extend')
+    })
+
+    it('lets gorhom track the keyboard when the sheet does the avoiding', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                size='full'
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.keyboardBehavior).toBe('interactive')
+    })
+
     it('renders children when autoCreateContainer is false', () => {
         render(
             <PWBottomSheet

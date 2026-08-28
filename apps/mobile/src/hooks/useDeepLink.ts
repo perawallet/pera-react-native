@@ -23,6 +23,7 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
 import {
     isValidAlgorandAddress,
@@ -407,15 +408,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
-                    void requestByType(
-                        'bidali',
-                        {},
-                        {
-                            size: 'modal',
-                            enablePanDownToClose: true,
-                            autoCreateContainer: false,
-                        },
-                    )
+                    void requestByType('bidali', {}, BIDALI_SHEET_OPTIONS)
                     break
                 }
 
