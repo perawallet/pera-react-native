@@ -18,6 +18,15 @@ export default defineConfig({
     // Extension state (chrome.storage) persists per launch context; keep
     // workers at 1 so tests don't share/clobber a profile.
     workers: 1,
+    // CI only, and deliberately not a timeout increase. These specs pair a real
+    // WC bridge / WebAuthn flow through a service worker and an offscreen
+    // document; on a loaded single-worker runner a step occasionally never
+    // completes at all, so raising margins does not help — `passkey-provider`
+    // already polls for 90s and still timed out. A retry re-runs the whole
+    // serial describe from a fresh context, which is what actually clears it.
+    // Playwright reports the result as `flaky` rather than passing silently, so
+    // the underlying raciness stays visible instead of being buried.
+    retries: process.env.CI ? 2 : 0,
     use: {
         trace: 'retain-on-failure',
     },
