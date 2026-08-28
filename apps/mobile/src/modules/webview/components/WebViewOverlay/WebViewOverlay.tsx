@@ -56,6 +56,8 @@ export const WebViewOverlay = () => {
                 options: {
                     size: 'full',
                     autoCreateContainer: false,
+                    // The WebView insets its own content (PERA-4708).
+                    avoidKeyboard: false,
                 },
             }).finally(() => {
                 openedRef.current.delete(view.id)

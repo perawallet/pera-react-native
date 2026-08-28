@@ -29,6 +29,7 @@ import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { PasteLinkContent } from '@modules/menu/components/PasteLinkContent'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
@@ -62,11 +63,7 @@ export const MenuScreen = () => {
         trackEvent(FundEvent.BidaliSelected)
         void requestBottomSheet({
             contents: <BidaliContent />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
+            options: BIDALI_SHEET_OPTIONS,
         })
     }, [requestBottomSheet])
 

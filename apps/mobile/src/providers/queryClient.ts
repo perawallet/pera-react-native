@@ -25,7 +25,34 @@ import {
     isTransientNetworkError,
     logger,
     mutationDefaults,
+    type PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
+
+type PeraBackendUnavailableHandler = (
+    error: PeraServiceUnavailableError,
+) => void
+
+// Set by QueryProvider (a React subtree that can reach the toast layer); this
+// module itself stays free of react-native imports so the browser extension's
+// offscreen document can share the same QueryClient instance.
+let peraBackendUnavailableHandler: PeraBackendUnavailableHandler | undefined
+
+/**
+ * Registers the single handler notified whenever a `backend: 'pera'` request
+ * raises `PeraServiceUnavailableError` (a Pera request made on BetaNet/custom).
+ * Returns a cleanup that unregisters it. Used by `usePeraServiceUnavailableToast`
+ * to surface the "not available on this network" toast in one central place.
+ */
+export const setOnPeraBackendUnavailable = (
+    handler: PeraBackendUnavailableHandler,
+): (() => void) => {
+    peraBackendUnavailableHandler = handler
+    return () => {
+        if (peraBackendUnavailableHandler === handler) {
+            peraBackendUnavailableHandler = undefined
+        }
+    }
+}
 
 const cache = new QueryCache({
     onError: error => {
@@ -44,6 +71,7 @@ const cache = new QueryCache({
         // isTransientNetworkError, which means "retrying may succeed" and
         // must keep meaning exactly that.
         if (isPeraServiceUnavailableError(error)) {
+            peraBackendUnavailableHandler?.(error)
             return
         }
         logger.error('An error has occurred:', { error })
@@ -54,10 +82,11 @@ const mutationCache = new MutationCache({
     onError: (error, _variables, _context, mutation) => {
         // Same transient- and not-deployed-skip rationale as the query cache
         // above.
-        if (
-            isTransientNetworkError(error) ||
-            isPeraServiceUnavailableError(error)
-        ) {
+        if (isTransientNetworkError(error)) {
+            return
+        }
+        if (isPeraServiceUnavailableError(error)) {
+            peraBackendUnavailableHandler?.(error)
             return
         }
         logger.error('Mutation failed:', {

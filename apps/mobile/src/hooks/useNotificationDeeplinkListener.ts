@@ -16,6 +16,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import {
     getMultisigIntentKind,
+    isTerminalMultisigNotification,
     useHandleMultisigNotification,
 } from '@modules/messages/hooks'
 
@@ -49,6 +50,9 @@ export const useNotificationDeeplinkListener = () => {
                         intentKind,
                         payload.accountAddress,
                     )
+                    return
+                }
+                if (isTerminalMultisigNotification(payload.type)) {
                     return
                 }
                 if (payload.url && isValidDeepLink(payload.url)) {

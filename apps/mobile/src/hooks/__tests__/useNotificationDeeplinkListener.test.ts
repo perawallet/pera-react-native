@@ -62,6 +62,8 @@ vi.mock('@modules/messages/hooks', () => ({
             : type === 'multi-sig-import-account'
               ? 'import'
               : null,
+    isTerminalMultisigNotification: (type: string | undefined) =>
+        type === 'multisig-declined' || type === 'multisig-expired',
     useHandleMultisigNotification: () => ({
         handleMultisigNotification: mocks.handleMultisigNotification,
     }),
@@ -132,6 +134,25 @@ describe('useNotificationDeeplinkListener', () => {
         )
         expect(mocks.handleDeepLink).not.toHaveBeenCalled()
     })
+
+    // Their `account-detail` URL points at a shared account that often isn't
+    // local, so routing it would bounce the user to Home.
+    it.each(['multisig-declined', 'multisig-expired'])(
+        'suppresses navigation for a terminal %s push',
+        type => {
+            renderHook(() => useNotificationDeeplinkListener())
+
+            act(() =>
+                mocks.state.listener?.({
+                    type,
+                    url: 'perawallet://app/account-detail/?address=MSIG_ADDR',
+                }),
+            )
+
+            expect(mocks.handleDeepLink).not.toHaveBeenCalled()
+            expect(mocks.handleMultisigNotification).not.toHaveBeenCalled()
+        },
+    )
 
     it('routes a multisig import push through the multisig resolver', () => {
         renderHook(() => useNotificationDeeplinkListener())

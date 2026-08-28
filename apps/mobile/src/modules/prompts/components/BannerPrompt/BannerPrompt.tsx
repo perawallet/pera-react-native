@@ -19,9 +19,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // Direct subpath, not the module barrel: the barrel deliberately excludes the
-// carousel so screens that only want HomeBannersStrip don't drag
-// react-native-pager-view along. This surface genuinely renders banners, and
-// web resolves pager-view to a real paging ScrollView shim (metro.config.js).
+// carousel so screens that only want HomeBannersStrip don't drag it in. This
+// surface genuinely renders banners, so it takes the carousel knowingly.
 import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
 import { useBannerLinkRouter } from '@modules/banners/hooks/useBannerLinkRouter'
 import { type PromptViewProps } from '@modules/prompts/models'

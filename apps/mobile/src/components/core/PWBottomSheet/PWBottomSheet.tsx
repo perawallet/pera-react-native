@@ -67,6 +67,7 @@ export const PWBottomSheet = ({
     testID,
     children,
     enableCloseOnBackdropPress = true,
+    avoidKeyboard = true,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
@@ -180,7 +181,13 @@ export const PWBottomSheet = ({
             }
             backgroundStyle={mergedBackgroundStyle}
             detached={false}
-            keyboardBehavior='interactive'
+            // gorhom is an avoider in its own right: `interactive` moves the
+            // sheet to `highestDetent - keyboardHeight`. Inert while the
+            // KeyboardAvoidingView below is mounted, but `avoidKeyboard: false`
+            // skips that view — leaving gorhom to shift a WebView that already
+            // insets itself, which is the double avoidance PERA-4708 is about.
+            // `extend` holds the sheet at its highest detent instead.
+            keyboardBehavior={avoidKeyboard ? 'interactive' : 'extend'}
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}
             // Never derive this to false: gorhom wraps content in a disabled
@@ -202,11 +209,12 @@ export const PWBottomSheet = ({
             >
                 <PWInBottomSheetContext.Provider value={true}>
                     <PWView style={styles.contentWrapper}>
-                        {isFullScreen ? (
+                        {isFullScreen && avoidKeyboard ? (
                             // Fixed-height sheets shrink to the space above the
                             // keyboard via keyboard-controller — the app's single
                             // keyboard owner (KeyboardProvider). gorhom's own
-                            // keyboardBehavior is inert while it's active. Skipped
+                            // keyboardBehavior is inert while it's active (and is
+                            // switched to `extend` above when it is not). Skipped
                             // for `auto` (content-sized) sheets, where a
                             // height-based avoider would collapse to zero.
                             <KeyboardAvoidingView

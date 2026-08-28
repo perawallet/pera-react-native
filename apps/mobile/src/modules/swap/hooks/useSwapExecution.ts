@@ -47,6 +47,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import {
@@ -144,6 +145,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     // (Falcon) via the resolved auth account. Same pattern as
     // `useTransactionConfirmationScreen`'s `isQuantumFee` check.
     const signer = useSignerFor(account?.address)
+    const isQuantumSwapEnabled = useIsQuantumSwapEnabled()
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -382,6 +384,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                               },
                               unsignedTxs,
                               groupContext,
+                              { isQuantumSwapEnabled },
                           )
                         : []
             } catch (e) {
@@ -477,6 +480,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             network,
             account,
             signer,
+            isQuantumSwapEnabled,
             deviceId,
             registerHandoff,
         ],
