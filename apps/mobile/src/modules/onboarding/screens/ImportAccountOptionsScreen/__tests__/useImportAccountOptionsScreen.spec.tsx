@@ -485,7 +485,7 @@ describe('useImportAccountOptionsScreen', () => {
 
                 expect(peraWebOption.isDisabled).toBe(true)
                 expect(peraWebOption.descriptionKey).toBe(
-                    'common.network_unavailable.title',
+                    'common.network_unavailable.body',
                 )
             },
         )

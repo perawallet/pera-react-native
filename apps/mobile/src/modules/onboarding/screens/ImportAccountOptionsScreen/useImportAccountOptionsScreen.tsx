@@ -212,7 +212,7 @@ export const useImportAccountOptionsScreen =
                         'onboarding.import_account_options.pera_web_title',
                     descriptionKey: isPeraWebImportAvailable
                         ? 'onboarding.import_account_options.pera_web_description'
-                        : 'common.network_unavailable.title',
+                        : 'common.network_unavailable.body',
                     leftIcon: 'globe' as IconName,
                     onPress: handleImportPeraWeb,
                     isDisabled: !isPeraWebImportAvailable,

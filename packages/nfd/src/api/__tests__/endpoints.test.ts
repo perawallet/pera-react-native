@@ -230,4 +230,17 @@ describe('non-Pera-backed networks', () => {
             expect(queryClientMock).not.toHaveBeenCalled()
         },
     )
+
+    test.each(['betanet', 'custom'] as const)(
+        'fetchNfdNamesForAddress returns [] without calling queryClient on %s',
+        async network => {
+            const result = await fetchNfdNamesForAddress({
+                address: 'ADDR1',
+                network,
+            })
+
+            expect(result).toEqual([])
+            expect(queryClientMock).not.toHaveBeenCalled()
+        },
+    )
 })

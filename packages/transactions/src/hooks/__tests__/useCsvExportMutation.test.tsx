@@ -15,7 +15,6 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { useCsvExportMutation } from '../useCsvExportMutation'
 import { fetchTransactionsCsv, CsvExportError } from '../../api/csv-export'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { Networks as ConfigNetworks } from '@perawallet/wallet-core-config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
@@ -221,7 +220,7 @@ describe('useCsvExportMutation', () => {
     })
 
     describe('non-Pera-backed networks', () => {
-        it.each([ConfigNetworks.betanet, ConfigNetworks.custom])(
+        it.each([Networks.betanet, Networks.custom])(
             'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
             async network => {
                 const { result, rerender } = renderHook(

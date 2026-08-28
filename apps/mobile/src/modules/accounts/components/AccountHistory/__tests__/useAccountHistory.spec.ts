@@ -24,7 +24,12 @@ import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { AppError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    isPeraServiceUnavailableError,
+    type Network,
+    type PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
@@ -534,6 +539,22 @@ describe('useAccountHistory', () => {
         })
     })
 
+    const mockUnavailableNetwork = (network: Network) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.mocked(useNetwork).mockReturnValue({ network } as any)
+        vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+            transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+            isLoading: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        vi.mocked(useCsvExportMutation).mockReturnValue({
+            exportCsv: mockExportCsv,
+            isLoading: false,
+            isUnavailableOnNetwork: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+    }
+
     describe('CSV export visibility', () => {
         it('shows the export action when transactions exist', () => {
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
@@ -548,27 +569,32 @@ describe('useAccountHistory', () => {
         })
 
         it.each([Networks.betanet, Networks.custom])(
-            'hides the export action on %s even when transactions exist',
+            'keeps the export action visible on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
-                vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                    transactions: [{ id: '1', roundTime: 1_704_067_200 }],
-                    isLoading: false,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
-                vi.mocked(useCsvExportMutation).mockReturnValue({
-                    exportCsv: mockExportCsv,
-                    isLoading: false,
-                    isUnavailableOnNetwork: true,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
+                mockUnavailableNetwork(network)
 
                 const { result } = renderHook(() => useAccountHistory())
 
-                expect(result.current.isCsvExportVisible).toBe(false)
+                expect(result.current.isCsvExportVisible).toBe(true)
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'explains why instead of exporting on %s',
+            network => {
+                mockUnavailableNetwork(network)
+
+                const { result } = renderHook(() => useAccountHistory())
+                result.current.handleExportCsv()
+
+                expect(mockExportCsv).not.toHaveBeenCalled()
+                expect(mockShowError).toHaveBeenCalledTimes(1)
+                const [error, title] = mockShowError.mock.calls[0]
+                expect(isPeraServiceUnavailableError(error)).toBe(true)
+                expect((error as PeraServiceUnavailableError).network).toBe(
+                    network,
+                )
+                expect(title).toBe('common.network_unavailable.title')
             },
         )
     })

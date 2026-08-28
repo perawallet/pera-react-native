@@ -25,6 +25,11 @@ import { TransactionFilter } from '../../../../../accounts/components/Transactio
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
+import {
+    isPeraServiceUnavailableError,
+    type Network,
+    type PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
@@ -103,6 +108,7 @@ describe('useAssetTransactionList', () => {
 
     const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
+    const mockShowError = vi.fn()
     const mockExportCsv = vi.fn()
     const mockFetchNextPage = vi.fn()
     const mockRefreshAccounts = vi.fn()
@@ -122,7 +128,7 @@ describe('useAssetTransactionList', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
-            showError: mockShowToast,
+            showError: mockShowError,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
@@ -658,7 +664,7 @@ describe('useAssetTransactionList', () => {
                 assetId: 12_345,
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith(
+            expect(mockShowError).toHaveBeenCalledWith(
                 expect.objectContaining({
                     message: 'Share cancelled',
                 }),
@@ -689,13 +695,29 @@ describe('useAssetTransactionList', () => {
 
             errorCallback(new Error('API Down'))
 
-            expect(mockShowToast).toHaveBeenCalledWith(
+            expect(mockShowError).toHaveBeenCalledWith(
                 expect.objectContaining({
                     message: 'API Down',
                 }),
             )
         })
     })
+
+    const mockUnavailableNetwork = (network: Network) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.mocked(useNetwork).mockReturnValue({ network } as any)
+        vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+            transactions: [{ id: '1', roundTime: 1_704_067_200 }],
+            isLoading: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+        vi.mocked(useCsvExportMutation).mockReturnValue({
+            exportCsv: mockExportCsv,
+            isLoading: false,
+            isUnavailableOnNetwork: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+    }
 
     describe('CSV export visibility', () => {
         it('shows the export action when transactions exist', () => {
@@ -716,23 +738,9 @@ describe('useAssetTransactionList', () => {
         })
 
         it.each([Networks.betanet, Networks.custom])(
-            'hides the export action on %s even when transactions exist',
+            'keeps the export action visible on %s',
             network => {
-                vi.mocked(useNetwork).mockReturnValue({
-                    network,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
-                vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                    transactions: [{ id: '1', roundTime: 1_704_067_200 }],
-                    isLoading: false,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
-                vi.mocked(useCsvExportMutation).mockReturnValue({
-                    exportCsv: mockExportCsv,
-                    isLoading: false,
-                    isUnavailableOnNetwork: true,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any)
+                mockUnavailableNetwork(network)
 
                 const { result } = renderHook(() =>
                     useAssetTransactionList({
@@ -741,7 +749,31 @@ describe('useAssetTransactionList', () => {
                     }),
                 )
 
-                expect(result.current.isCsvExportVisible).toBe(false)
+                expect(result.current.isCsvExportVisible).toBe(true)
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'explains why instead of exporting on %s',
+            network => {
+                mockUnavailableNetwork(network)
+
+                const { result } = renderHook(() =>
+                    useAssetTransactionList({
+                        account: mockAccount,
+                        asset: mockAsset,
+                    }),
+                )
+                result.current.handleExportCsv()
+
+                expect(mockExportCsv).not.toHaveBeenCalled()
+                expect(mockShowError).toHaveBeenCalledTimes(1)
+                const [error, title] = mockShowError.mock.calls[0]
+                expect(isPeraServiceUnavailableError(error)).toBe(true)
+                expect((error as PeraServiceUnavailableError).network).toBe(
+                    network,
+                )
+                expect(title).toBe('common.network_unavailable.title')
             },
         )
     })

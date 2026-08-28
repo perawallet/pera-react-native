@@ -43,6 +43,9 @@ export const fetchNfdNamesForAddress = async (
 ): Promise<NfdName[]> => {
     const { address, network, signal } = params
 
+    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
+    if (!isPeraBackedNetwork(network)) return []
+
     const response = await queryClient<NfdNamesListApiResponse>({
         backend: 'pera',
         network,
