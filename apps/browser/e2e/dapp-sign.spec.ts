@@ -250,13 +250,18 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     const { approvalPage, approvalErrors } = await openApprovalPopup()
     // TTCDIAG: temporary instrumentation, remove before commit.
     const ttcLog: string[] = []
-    const record = (label: string) => (m: { text: () => string; type: () => string }) => {
-        ttcLog.push(`+${Date.now() % 1000000}ms [${label}/${m.type()}] ${m.text().slice(0, 400)}`)
-        if (ttcLog.length > 300) ttcLog.shift()
-    }
+    const record =
+        (label: string) => (m: { text: () => string; type: () => string }) => {
+            ttcLog.push(
+                `+${Date.now() % 1_000_000}ms [${label}/${m.type()}] ${m.text().slice(0, 400)}`,
+            )
+            if (ttcLog.length > 300) ttcLog.shift()
+        }
     approvalPage.on('console', record('approval'))
     approvalPage.on('pageerror', e =>
-        ttcLog.push(`+${Date.now() % 1000000}ms [approval/PAGEERROR] ${String(e)}`),
+        ttcLog.push(
+            `+${Date.now() % 1_000_000}ms [approval/PAGEERROR] ${String(e)}`,
+        ),
     )
     dappPage.on('console', record('dapp'))
     expectApprovalSurfaceUrl(approvalPage)
@@ -332,9 +337,7 @@ test('sign_transactions on a connected origin opens the approval popup and decod
             .locator('body')
             .innerText()
             .catch(() => '<unavailable>')
-        console.log(
-            '[TTCDIAG] approval body text:\n' + bodyText.slice(0, 1200),
-        )
+        console.log('[TTCDIAG] approval body text:\n' + bodyText.slice(0, 1200))
         throw error
     }
     const signResult = JSON.parse(
