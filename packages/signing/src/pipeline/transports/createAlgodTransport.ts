@@ -79,7 +79,7 @@ export const createAlgodTransport = (
                 // A classified submit failure keeps its txIds, classification
                 // and retryability — wrapping it in TransportError would
                 // collapse "node rejected" and "outcome unknown" back into
-                // one retryable-looking failure (PERA-4587 / PERA-4896).
+                // one retryable-looking failure.
                 if (error instanceof SubmissionError) {
                     throw error
                 }

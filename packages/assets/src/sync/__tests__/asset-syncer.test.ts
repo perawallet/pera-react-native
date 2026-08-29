@@ -142,7 +142,7 @@ describe('fetchAndPersistAssets', () => {
     test('opts the freshness gate into rechecking newly seen, unclassified assets', async () => {
         // Without these the gate answers from the 7-day TTL alone, and a
         // freshly minted NFT stays typed as a plain asset for a week even
-        // after the backend's crawler classifies it (PERA-4955).
+        // after the backend's crawler classifies it.
         fetchAssetsMock.mockResolvedValue({ results: [] })
 
         await fetchAndPersistAssets(['1'], 'mainnet')
@@ -160,7 +160,7 @@ describe('fetchAndPersistAssets', () => {
 
     test('opts the freshness gate into rechecking ARC19 collectibles', async () => {
         // ARC19 media is mutable via the manager's acfg; without this the
-        // 7-day TTL keeps serving the pre-update media URL (PERA-4956).
+        // 7-day TTL keeps serving the pre-update media URL.
         fetchAssetsMock.mockResolvedValue({ results: [] })
 
         await fetchAndPersistAssets(['1'], 'mainnet')

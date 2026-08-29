@@ -520,7 +520,7 @@ type GetStaleOrMissingAssetIdsParams = {
 /**
  * Above this, the id predicate moves out of SQL: a parameter-per-id query
  * dies at SQLITE_MAX_VARIABLE_NUMBER and costs seconds of JS in query
- * build/bind below it on a 10k-asset wallet (PERA-4953). A network-scoped
+ * build/bind below it on a 10k-asset wallet. A network-scoped
  * scan returning one column bridges in tens of milliseconds instead; the
  * id filter happens here against a Set.
  */
@@ -592,7 +592,7 @@ export type UnclassifiedRecheck = {
  * The backend only flips the type once its crawler has fetched the asset's
  * media, which lands seconds to hours after a mint — caching that first
  * answer for the whole of `ASSET_CACHE_TTL_MS` is what stranded minted NFTs
- * in the tokens tab for a week (PERA-4955). The shape filter is what keeps a
+ * in the tokens tab for a week. The shape filter is what keeps a
  * wallet full of fungible tokens from re-asking about all of them.
  */
 async function getUnclassifiedNftIds({
@@ -655,7 +655,7 @@ export type Arc19Recheck = {
  * ARC19 media is mutable: the manager's acfg re-points the reserve address at
  * a new CID and the backend re-crawls to a new media URL, but only a re-fetch
  * of the assets_pera row picks that URL up — the long ASSET_CACHE_TTL_MS kept
- * the pre-update image on screen for up to a week (PERA-4956).
+ * the pre-update image on screen for up to a week.
  *
  * Keyed on the PERA half's updatedAt: the detail screen persists through
  * upsertNodeAssets, which bumps the node half's timestamp (the one the main

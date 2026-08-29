@@ -31,85 +31,41 @@ import {
 } from '../nativeCredentialRecord'
 
 /**
- * Re-writes the flat bare-id record the native Android/iOS passkey credential
- * provider reads, for every passkey credential upstream's `adopt-flat-records`
- * (revision `0002` of `@algorandfoundation/react-native-keystore`'s own
- * manifest) has just split into `k/`+`m/`, then removes that split pair.
+ * Un-adopts passkey credentials: rewrites the flat bare-id record the native
+ * provider reads, then removes the `k/`+`m/` pair upstream's
+ * `adopt-flat-records` revision just split them into. That revision runs
+ * immediately before this one and destroys every migrated credential's
+ * provider-visible copy, because neither provider can read a credential from
+ * the split layout. See `packages/passkeys/src/native/README.md` for why.
  *
- * Neither provider reads a credential from `k/`+`m/`. iOS's only
- * credential-from-keystore path, `allKeystoreCredentials()`, guards on
- * `dataArray(keyData["publicKey"])` **and** `dataArray(keyData["privateKey"])`
- * — `dataArray` only accepts a JSON number array, and a split `k/` record's
- * `publicKey` is `{"$u8": …}` with no `privateKey` field at all, so the guard
- * fails silently. Android's `CredentialRepository.getCredential` is worse than
- * silent: it tries the split layout *first* and returns on a hit before ever
- * reading the bare id, so a surviving `k/` record — even beside a freshly
- * rematerialized flat one — wins the race, `credentialFromMetadataRecord`
- * returns `privateKey = ""`, and `getKeyPair` falls through to
- * `createDomainKeyPair`: re-derivation, which cannot reproduce a migrated
- * Pera 6 credential (case-sensitive `userName` matching versus the provider's
- * lowercasing, and a missing `parentKeyId`/`scheme` that pins the wrong
- * derivation scheme). See `packages/passkeys/src/native/README.md`.
+ * A dual-write is not enough. Android's `CredentialRepository.getCredential`
+ * tries the split layout first and returns on a hit, so a surviving `k/` record
+ * shadows a correct flat copy beside it. Removing the pair also dissolves two
+ * dependent symptoms: `getAllCredentials()` listing a credential twice (it
+ * appends from both branches with no dedup by `credentialId`), and
+ * `deleteCredential` only removing bare-id candidates, so a deleted credential
+ * reappears from its orphaned pair.
  *
- * So upstream's adoption — which runs immediately before this module, as the
- * keystore package's own revision `0002` — silently destroys every migrated
- * credential's provider-visible copy: it decrypts the flat record fine (its
- * `{iv,tag,content}` envelope and base64url-of-JSON-with-number-arrays
- * plaintext are exactly the shapes `adoptLegacyRecords`/`decode` accept), sees
- * a top-level `privateKey` `Uint8Array`, and adopts it — writing `k/`+`m/`
- * and deleting the flat original the provider needs.
+ * The layout does not need to survive but its content does. Upstream's
+ * `migrateLegacyPasskeys` stamps `metadata.migration` onto a legacy
+ * credential's `k/` record moments before this module deletes it, and that flag
+ * is what surfaces "needs migration" in the passkeys UI. The `...rest` spread
+ * below carries it into the flat record by construction, pinned by a test.
  *
- * This is an **un-adopt**, not a dual-write: a dual-write (rematerialize the
- * flat copy, leave `k/`+`m/` beside it) fixes iOS but not Android, because
- * Android's split-first lookup shadows the flat copy it can't read from.
- * Removing `k/`+`m/` once the flat copy is proven readable also dissolves two
- * dependent symptoms of the split surviving: Android's `getAllCredentials()`
- * listing the same credential twice (it appends from both branches with no
- * dedup by `credentialId`), and `deleteCredential` only ever removing bare-id
- * candidates, so a deleted credential reappears from its orphaned `k/`+`m/`
- * pair. This restores exactly the pre-branch layout shipped Pera 7 works on
- * today — the keystore's own reactive store never needs a passkey credential
- * in `k/`+`m/` (unlike the derivation parent, which stays there; see the
- * README). The `k/`+`m/` **layout** doesn't need to survive, but its
- * **content** does: upstream's own `migrateLegacyPasskeys` stamps
- * `metadata.migration` onto a legacy credential's `k/` record moments before
- * this module deletes it, and that flag is Task 8's entire signal for
- * surfacing "needs migration" in the passkeys UI. The `...rest` spread below
- * carries `metadata` (and anything else unrecognised) into the flat record
- * unmodified, so the flag rides along by construction — pinned by a test, not
- * merely assumed.
+ * Copy, verify, delete, and never the reverse. The delete is a second, separate
+ * step: once verification passes, a failure removing `k/`+`m/` must not roll
+ * back the flat write, because that copy is already proven correct and
+ * destroying it would leave nothing readable at all.
  *
- * Copy, verify, delete — never the reverse, and the delete is a **second,
- * separate** step from the write-and-verify: once verification passes, a
- * failure removing `k/`+`m/` must never roll back the flat write, because
- * that copy is already proven correct and destroying it would leave nothing
- * readable at all (the rollback that undoes a bad *write* must not also catch
- * a bad *removal*).
+ * There is usually no next run to lean on, because the runner records the
+ * revision applied as soon as `up` resolves. So every storage mutation a
+ * per-credential failure can trigger swallows its own failure: an escaping one
+ * rejects `keystore.ready`, stops the app booting, and re-fails on every
+ * subsequent launch. The resume gate below (is `k/` still there?) therefore
+ * only helps a process killed mid-run. A completed decline is final.
  *
- * There is usually no "next run" to lean on: the runner records this revision
- * applied as soon as `up` resolves. For that to hold, every storage mutation
- * a per-credential failure can trigger has to be guarded against throwing
- * itself — the write-and-verify rollback, the k/+m/ removal, and
- * `declined.record` (guarded once, centrally, inside `createDeclinedRegister`
- * rather than at each of its five call sites) all swallow their own storage
- * failures rather than let one escape, precisely because an unguarded one
- * previously escaped `up`, rejected
- * `keystore.ready`, and — since the ledger only writes after `up`
- * resolves — re-ran and re-failed on every subsequent launch. With that
- * true, the resume gate above (`is k/ still there?`) only ever helps a
- * process that never reached `up`'s resolution at all — killed mid-run, not
- * merely a prior run that "declined." A completed decline is final:
- * recorded via `declined`, a durable note that nothing in this codebase
- * currently reads back (Task 4 already deferred that consuming revision),
- * so a declined credential's `k/` shadow is permanent, not revisited.
- *
- * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
- * scanned and decoded (plaintext, no master key) first, and the master key is
- * touched only if at least one credential is pending. A record whose material
- * cannot be reached (no master key, an unreadable seal, a failed
- * verification) is left alone and recorded through `declined` rather than
- * failing the module — that would reject `keystore.ready` and stop the app
- * booting.
+ * Idle runs are cheap: the `k/` bucket is scanned and decoded as plaintext
+ * first, and the master key is touched only if a credential is pending.
  */
 
 const PASSKEY_CREDENTIAL_TYPES: ReadonlySet<string> = new Set([
@@ -129,10 +85,7 @@ export const migration: Migration<PeraMigrationContext> = {
     ): Promise<void> => {
         const { storage, subtle } = context
 
-        // An MMKV read failing here must not reject `up` — same reasoning as
-        // every other guard in this module: that would reject
-        // `keystore.ready` and stop the app booting over a scan, not even a
-        // single record.
+        // Must not reject `up`: this is a scan, not even a single record.
         let allKeys: string[]
         try {
             allKeys = storage.getAllKeys()
@@ -145,20 +98,12 @@ export const migration: Migration<PeraMigrationContext> = {
             if (!key.startsWith(METADATA_PREFIX)) continue
             const id = key.slice(METADATA_PREFIX.length)
 
-            // "Done" is the absence of k/, not the presence of a flat copy:
-            // a launch killed between the flat write and the k/+m/ removals
-            // leaves both a flat record AND k/ behind, and the work is not
-            // finished until k/ is gone (Android's split-first lookup means a
-            // surviving k/ still shadows a correct flat copy beside it). So a
-            // record with a pre-existing flat copy is deliberately
-            // reprocessed here, not skipped.
-            // Silently skipped, not `untouched`-tracked, on a read failure:
-            // at this point the scan doesn't yet know `id` names a passkey
-            // credential at all (that's decided below), so there's nothing
-            // meaningful to decline yet — same reasoning as the decode
-            // failure two lines down. The per-credential material read
-            // further down tracks failures because by then `id` is already
-            // a confirmed pending credential.
+            // "Done" is the absence of k/, not the presence of a flat copy: a
+            // run killed between the write and the removals leaves both, and a
+            // surviving k/ still shadows the flat copy. So a record that
+            // already has a flat copy is reprocessed, not skipped.
+            // Read failures here are skipped untracked because the scan does
+            // not yet know this id names a passkey credential.
             let metadataRaw: string | undefined
             try {
                 metadataRaw = storage.getString(key)
@@ -184,12 +129,10 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
-            // A credential's k/+m/ pair cannot exist without a master key
-            // having sealed its material, so `MasterKeyNotFoundError` should
-            // not happen in practice; a cancelled or locked Keychain arrives
-            // as a plain `Error` and is far likelier. Both are "cannot reach
-            // the material", and rejecting `up` would re-fail every launch
-            // because the ledger is written only after `up` resolves.
+            // A pair cannot exist without a master key having sealed it, so a
+            // cancelled or locked Keychain (a plain `Error`) is far likelier
+            // than `MasterKeyNotFoundError`. Both mean the material is out of
+            // reach, and both decline rather than reject.
             if (!(error instanceof MasterKeyNotFoundError)) {
                 safeWarn(
                     `[provider] rematerialize-passkey-credentials: master key unavailable: ${safeErrorMessage(error)}`,

@@ -39,7 +39,7 @@ export const WebViewTitleBar = ({
 
     // An opaque origin (about:/data:/blob:) has no host to show. Say so
     // explicitly — a blank origin line under a page-controlled title reads as
-    // "no claim made" when the page is in fact unattributable (PERA-4665).
+    // "no claim made" when the page is in fact unattributable.
     const domain = useMemo(
         () => getDisplayHost(url) ?? t('common.webview.unknown_host'),
         [url, t],

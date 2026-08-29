@@ -46,7 +46,7 @@ export const transformSearchResults = (
         // send destination. The backend is semi-trusted, so a malformed/garbage
         // address must never reach the destination picker. This closes the
         // malformed-response case; a VALID attacker-supplied address still needs
-        // on-chain registry verification (PERA-4718, follow-up).
+        // on-chain registry verification, which is a follow-up.
         .filter(item => {
             if (isValidAlgorandAddress(item.address)) return true
             logger.warn('NFD search result dropped: invalid Algorand address', {

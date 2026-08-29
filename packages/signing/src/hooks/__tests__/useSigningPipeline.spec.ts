@@ -254,7 +254,7 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0, 1]))
     })
 
-    // PERA-4417: a dApp can set a foreign `sender` it never imported while
+    // a dApp can set a foreign `sender` it never imported while
     // signing with a wallet-held account via `signerOverrides`. The rekey/close
     // warning (and its blocking gate) must follow the authorizing entity, and
     // the override is keyed by position in `txs` (the signable subset) — so the

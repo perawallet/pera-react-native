@@ -117,7 +117,7 @@ describe('createTransportSelector', () => {
     // A keyreg scanned from a QR has no dApp waiting on the signed bytes, so
     // it tags `transport: 'algod'` and self-submits. Defaulting it to the
     // callback transport threw "No approve callback provided" and nothing was
-    // ever broadcast (PERA-4976).
+    // ever broadcast.
     test('deeplink source tagged transport algod submits to algod', async () => {
         const sendRawTransaction = vi.fn(() => ({
             do: async () => ({ txid: 'KEYREG-TXID' }),

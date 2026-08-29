@@ -247,7 +247,7 @@ describe('useBiometrics', () => {
         },
     )
 
-    // The reported PERA-4702 symptom was a stale ON toggle in Settings while the
+    // The reported symptom was a stale ON toggle in Settings while the
     // lock screen had fallen back to PIN, so the downgrade has to clear the
     // shared flag for every consumer — not just for the one that reconciled.
     test('a downgrade to an unconfirmable level clears isEnabled for every mounted consumer', async () => {
@@ -746,7 +746,7 @@ describe('useBiometrics', () => {
 
     // The QA gap in the first revision: the reconcile cleared the blob but only
     // the calling screen's copy of isEnabled, so Settings kept showing ON while
-    // the lock screen had already fallen back to PIN (PERA-4702).
+    // the lock screen had already fallen back to PIN.
     test('a revoked blob clears isEnabled for every mounted consumer', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 

@@ -56,7 +56,7 @@ export const WebViewOverlay = () => {
                 options: {
                     size: 'full',
                     autoCreateContainer: false,
-                    // The WebView insets its own content (PERA-4708).
+                    // The WebView insets its own content.
                     avoidKeyboard: false,
                 },
             }).finally(() => {

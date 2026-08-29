@@ -19,7 +19,7 @@ const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 const { version: packageVersion, versionCodeBase } = require('./package.json');
 
 // iOS build number / Android versionCode floor. The committed base clears the
-// live store values (in-place update over the native apps, PERA-4451); adding
+// live store values (in-place update over the native apps); adding
 // the monotonic CI BUILD_NUMBER keeps each build unique and strictly higher.
 function resolveBuildNumber(env) {
   return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10);
@@ -230,7 +230,7 @@ function buildAppConfig(env) {
       // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
       // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
       // overlay permission (never in release — blocked defensively).
-      // Confirm the final set against the native pera-android manifest (WB-7).
+      // Confirm the final set against the native pera-android manifest.
       blockedPermissions: [
         'android.permission.RECORD_AUDIO',
         'android.permission.SYSTEM_ALERT_WINDOW',
@@ -256,7 +256,7 @@ function buildAppConfig(env) {
             { scheme: 'wc' },
             { scheme: 'perawallet-wc' },
             // Native iOS parity (algorand-wc) + Liquid Auth (liquid). Registered
-            // on Android too so there's a single source of truth (WB-8).
+            // on Android too so there's a single source of truth.
             { scheme: 'algorand-wc' },
             { scheme: 'liquid' },
           ],
@@ -495,7 +495,7 @@ function buildAppConfig(env) {
       // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
       './plugins/withPublicSwiftImports.js',
 
-      // On-device Falcon-1024 signing (@joe-p/react-native-falcon, PQ-020):
+      // On-device Falcon-1024 signing (@joe-p/react-native-falcon):
       // pin the New Architecture flag the Nitro module requires. The native
       // pod/Gradle module itself is picked up by RN/Nitro autolinking.
       './plugins/withFalconNitro.js',

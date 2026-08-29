@@ -33,7 +33,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         position: 'absolute',
         // Keeps its own `insets.top`: Yoga does not inset absolutely positioned
         // children by the parent's padding, so `root`'s does not apply here and
-        // without this the X sits in the status bar (PERA-4751).
+        // without this the X sits in the status bar.
         top: insets.top + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,

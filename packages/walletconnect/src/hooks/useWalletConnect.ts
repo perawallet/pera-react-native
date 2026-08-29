@@ -275,7 +275,7 @@ export const useWalletConnect = (
             // reject is a repeat-handshake attempt, not the pending one the
             // user is declining. Dropping the stored entry there would
             // force-delete a live session while the connector stays connected
-            // (store desync, PERA-4713). Only remove on genuine cleanup.
+            // (store desync). Only remove on genuine cleanup.
             const wasConnected = getConnector(clientId)?.connected ?? false
             let delivered = false
             try {
@@ -415,7 +415,7 @@ export const useWalletConnect = (
             // session for it, a fresh session_request is a peerMeta-overwrite
             // attempt: the library rewrites peerMeta/peerId before this fires,
             // so refuse the frame outright rather than re-opening an approval
-            // sheet or reacting to a poisoned handshake (PERA-4713).
+            // sheet or reacting to a poisoned handshake.
             const storedSession = useWalletConnectStore
                 .getState()
                 .walletConnectConnections.find(
@@ -468,7 +468,7 @@ export const useWalletConnect = (
                 // `rejectSession()` throws on an already-connected connector;
                 // guarding it keeps the throw from escaping before the error is
                 // surfaced, which is what let the mismatch branch go silent and
-                // masked the peerMeta poisoning (PERA-4713).
+                // masked the peerMeta poisoning.
                 if (!connector.connected) {
                     connector.rejectSession()
                 }

@@ -153,8 +153,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                     // is short: `txgroup with 1mA fees is less than 3mA
                     // (usage=3.000000 * base=1mA)`. AlgoKit sizes fees from an
                     // Ed25519 envelope, so the PQ minimum has to be applied
-                    // here. Non-quantum senders pass through untouched
-                    // (PERA-4922).
+                    // here. Non-quantum senders pass through untouched.
                     const { transactions: unsignedTxs } =
                         await assignFeeToGroup({
                             transactions: transactions.map(t => t.txn),
@@ -174,7 +173,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                 })
                 // Same as the opt-in: the delete must invalidate every
                 // staleTime-Infinity account read; the sync diff won't see
-                // the already-persisted change (PERA-4845).
+                // the already-persisted change.
                 invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return { txIds }

@@ -174,7 +174,7 @@ export default defineConfig(({ mode }) => {
                     'tweetnacl',
                     'uuid',
                     '@perawallet/wallet-extension-provider',
-                    // On-device Falcon-1024 nitro module (Seam A, PQ-020). Kept
+                    // On-device Falcon-1024 nitro module (Seam A). Kept
                     // external so the app's Metro bundler resolves it; bundling it
                     // here would pull in react-native (Flow) and instantiate the
                     // native HybridObject at load. rnFalconProvider requires it

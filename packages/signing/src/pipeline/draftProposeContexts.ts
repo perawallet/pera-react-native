@@ -21,7 +21,7 @@ import type { MsigMetadata } from './transports/createMultisigProposeTransport'
  * attach to a real backend record. Without this stash the bootstrapped record
  * is created with `type: 'sync'` and no registered deliverer, so the backend
  * holds it at `ready` forever and every participant's sheet hangs on
- * "Submitting transaction" (PERA-4987). In-memory on purpose, matching the
+ * "Submitting transaction". In-memory on purpose, matching the
  * draft store's lifetime: if the app dies before bootstrap, the draft itself
  * is gone and there is nothing left to deliver.
  */

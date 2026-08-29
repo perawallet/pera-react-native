@@ -160,7 +160,7 @@ describe('useGroupSimulationQuery', () => {
         // Real dApp interactions arrive already grouped — every txn carries a
         // group id. The composer rejects grouped txns, so the hook must clone
         // and clear the group before adding, or simulation never runs and the
-        // receive side is lost. [PERA-4464]
+        // receive side is lost.
         const grouped = groupTransactions([payment(1n), payment(2n)])
         expect(grouped[0].group).toBeDefined()
 

@@ -1046,7 +1046,7 @@ describe('useAccountOptions', () => {
             expect(mockShowToast).not.toHaveBeenCalled()
         })
 
-        // R3 (PERA-4585 residual): docs/OFFLINE_PAUSED_STATE.md says screens
+        // docs/OFFLINE_PAUSED_STATE.md says screens
         // should use the pending flag to disable the control rather than let
         // a tap silently resolve `false`. This row now does.
         it('disables the toggle-notifications option while a toggle for this address is pending', () => {

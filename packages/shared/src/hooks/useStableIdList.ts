@@ -28,7 +28,7 @@ const isSameList = (a: string[], b: string[]): boolean => {
  *
  * Compares element-wise rather than by joining into a key string: the list can
  * run to tens of thousands of entries, where building a join string every
- * render allocated hundreds of kilobytes per keystroke (PERA-4861). The
+ * render allocated hundreds of kilobytes per keystroke. The
  * comparison short-circuits on reference equality, so a caller that already
  * memoises its array pays nothing.
  */

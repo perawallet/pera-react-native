@@ -242,7 +242,7 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
  *
  * Strictly additive over "can this account sign for itself": the hop is only
  * consulted for a signer that has no key of its own, which is what let a
- * rekeyed account be refused outright (PERA-4977). A signer that can sign
+ * rekeyed account be refused outright. A signer that can sign
  * directly keeps signing with its own key — deliberately, because a dApp that
  * already resolved the auth address itself names *that* account as the signer,
  * and hopping again off a chained rekey would sign with a key the requested
@@ -377,7 +377,6 @@ type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
  * but mainnet and testnet algod still reject the `pqsig` field, so on those
  * networks the rekey is a one-way door that strands the funds: every later
  * transaction needs a `pqsig`, *including the rekey-back that would undo it*.
- * See `docs/QUANTUM_PQ_INTEGRATION.md`.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,
@@ -508,7 +507,7 @@ export type MnemonicAccountTypeResult =
 /**
  * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to algo25
  * (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
- * goes through auto-detection, only its dedicated entrypoint (PQ-009).
+ * goes through auto-detection, only its dedicated entrypoint.
  */
 export const resolveImportAccountType = (
     mnemonic: string,

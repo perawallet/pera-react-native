@@ -151,13 +151,13 @@ export const useImportAccount = () => {
         if (type === 'quantum') {
             // A quantum mnemonic is 25 words — indistinguishable from algo25
             // by count. Reaching this branch requires the caller to have
-            // picked quantum EXPLICITLY (dedicated entrypoint, PQ-009);
+            // picked quantum EXPLICITLY (dedicated entrypoint);
             // resolveImportAccountType never auto-detects it.
             //
             // Re-importing 25 words on a fresh device could land on either
             // derivation's address depending on which tool minted the
             // account originally, so probe both on chain and adopt whatever
-            // actually exists (see quantumAddressCandidates/PERA-4972).
+            // actually exists (see quantumAddressCandidates/).
             const entropy = seedFromMnemonic(mnemonic)
             let candidates: QuantumAddressCandidate[]
             try {

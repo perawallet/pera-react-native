@@ -105,8 +105,8 @@ updates:
       # symbols, not *changed struct layouts*, which instead corrupt the heap at
       # runtime.
       #
-      # Now aligned at 0.86.2 under Expo SDK 57.0.11 / expo-modules-core 57.0.10
-      # (PERA-4834). The pin stays because the coupling is structural, not
+      # Now aligned at 0.86.2 under Expo SDK 57.0.11 / expo-modules-core 57.0.10.
+      # The pin stays because the coupling is structural, not
       # because of any one incident: RN and the Expo SDK move together or not at
       # all. Bump this only as part of an SDK move, with a device launch test.
       - dependency-name: react-native
@@ -125,8 +125,8 @@ updates:
       - dependency-name: "@react-native/*"
       # Same reasoning as react-native above, and for the same reason it lists
       # patch: an `expo` patch is an SDK move. 57.0.17 bundles
-      # expo-modules-core ~57.0.14 against the 57.0.10 this tree is aligned on
-      # (PERA-4834), so taking it either splits core or drags the whole native
+      # expo-modules-core ~57.0.14 against the 57.0.10 this tree is aligned on,
+      # so taking it either splits core or drags the whole native
       # set forward. It also floors expo-constants at ~57.0.15, which the
       # 57.0.9 override below contradicts — so pnpm resolves the conflict by
       # keeping expo where it is, and the bump reopens every week having
@@ -192,7 +192,7 @@ updates:
       # and it is why that check is not a CI gate. Do not "fix" it by pulling
       # these back to the SDK's set without a device pass.
       #
-      # Moved as a set in PERA-4834: reanimated 4.5.3, worklets 0.10.3,
+      # Moved as a set: reanimated 4.5.3, worklets 0.10.3,
       # nitro-modules 0.36.5, pager-view 8.0.4, keyboard-controller 1.22.2.
       # Note worklets stays on the 0.10 line deliberately — expo-modules-core
       # 57.0.10 peers it at `^0.7.4 || ^0.8.0 || ^0.9.0 || ^0.10.0` and rejects
@@ -232,7 +232,7 @@ updates:
       # Nothing catches this: expo-image declares no dependency on
       # expo-modules-core, and each artifact is fetched per-package.
       #
-      # Now at 57.0.2 against core 57.0.10 (PERA-4834), which is the pairing it
+      # Now at 57.0.2 against core 57.0.10, which is the pairing it
       # was built for — 57.0.2 needs the module-lifecycle API (didCreate,
       # didStartListening, didStopListening, willDestroy) that core gained in
       # 57.0.9. Still pinned exactly, and still moves only when the SDK does.

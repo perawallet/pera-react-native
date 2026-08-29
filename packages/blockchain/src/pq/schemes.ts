@@ -33,20 +33,20 @@ import { FALCON_1024_SCHEME } from 'algosdk'
  * first, both out of scope here:
  *
  * 1. **Fee shape.** `fees/feeCalculator.ts`'s `CalculateMinTxnFeeParams` has a
- *    single `pqMultiplier` and a boolean `isPQSigner`. One multiplier cannot
- *    express two schemes with very different signature sizes (Falcon-1024 is
- *    ~1.2 KB, ML-DSA-65 ~3.3 KB), and `isPQSigner` is derived from
- *    `isQuantumAccount(authAccount)` in the fee path, where the account carries
- *    no scheme — so the scheme is not even retrievable there. Supporting a
- *    second scheme means making the multiplier scheme-keyed and threading the
- *    scheme (not a boolean) into fee calculation.
+ * single `pqMultiplier` and a boolean `isPQSigner`. One multiplier cannot
+ * express two schemes with very different signature sizes (Falcon-1024 is
+ * ~1.2 KB, ML-DSA-65 ~3.3 KB), and `isPQSigner` is derived from
+ * `isQuantumAccount(authAccount)` in the fee path, where the account carries
+ * no scheme — so the scheme is not even retrievable there. Supporting a
+ * second scheme means making the multiplier scheme-keyed and threading the
+ * scheme (not a boolean) into fee calculation.
  * 2. **Key ids.** `quantumSignKeyId(seedId, derivation)`
- *    (`packages/kms/src/models/keys.ts`) is now keyed by *derivation*
- *    (`legacy` → `${seedId}-quantum`, `pqk1` → `${seedId}-quantum-pqk1`; see
- *    PERA-4972) so one seed can host a legacy and a canonical child side by
- *    side — but it is still agnostic about *scheme*: a second signature
- *    scheme has nowhere to go without colliding with whichever derivation's
- *    id it lands on. Per-seed multi-scheme support remains unsolved.
+ * (`packages/kms/src/models/keys.ts`) is now keyed by *derivation*
+ * (`legacy` → `${seedId}-quantum`, `pqk1` → `${seedId}-quantum-pqk1`)
+ * so one seed can host a legacy and a canonical child side by
+ * side — but it is still agnostic about *scheme*: a second signature
+ * scheme has nowhere to go without colliding with whichever derivation's
+ * id it lands on. Per-seed multi-scheme support remains unsolved.
  */
 export const PQ_SCHEMES = {
     falcon1024: FALCON_1024_SCHEME,

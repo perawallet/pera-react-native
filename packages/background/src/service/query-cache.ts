@@ -37,7 +37,7 @@ const keyReferencesNetwork = (queryKey: QueryKey, network: Network): boolean =>
  * Drops a departed network's DB-backed cache entries instead of letting the
  * 1-hour default gcTime retain them. On a 10k-asset wallet each holdings-shaped
  * entry is a multi-MB hydrated array, so a few switches ratchet the heap until
- * GC pauses dominate the JS thread (PERA-4953). SQLite is the source of truth
+ * GC pauses dominate the JS thread. SQLite is the source of truth
  * for all of these — a re-read on switch-back is cheap. The persisted chart
  * histories (network-only, no SQLite backing) are deliberately kept.
  */

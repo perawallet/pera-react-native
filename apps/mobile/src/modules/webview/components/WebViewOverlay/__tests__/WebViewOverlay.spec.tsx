@@ -45,7 +45,7 @@ describe('WebViewOverlay', () => {
     })
 
     // The sheet must not avoid the keyboard on top of the inset the WebView
-    // already applies to its own content (PERA-4708).
+    // already applies to its own content.
     it('requests the webview sheet with keyboard avoidance off', () => {
         render(<WebViewOverlay />)
 

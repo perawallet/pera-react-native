@@ -816,8 +816,7 @@ export async function getAccountCollectiblesLite({
     // Collectible title / collection name live inside `pera_metadata_json`.
     // Reading them with SQLite's `json_extract` keeps sorting and searching in
     // the engine: shipping 15k metadata blobs over the bridge to parse in JS is
-    // what made a large NFT gallery take double-digit seconds to first paint
-    // (PERA-4861).
+    // what made a large NFT gallery take double-digit seconds to first paint.
     const collectibleTitleExpr = sql<
         Nullable<string>
     >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.collectible.title')`

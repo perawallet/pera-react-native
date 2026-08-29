@@ -19,13 +19,13 @@ const TXID = 'X4CQTNNARMMELORLYBJY27776Z2453LLREFIZKJYVE3B5FJSL7HA'
 
 describe('parseAlgodMessage', () => {
     describe('overspend', () => {
-        // PERA-4908: go-algorand has shipped at least two incompatible
+        // go-algorand has shipped at least two incompatible
         // renderings of the balance/spend figures inside this message, and
         // the newer one also folds in an un-recoverable fee subtraction (see
         // `algodErrorCodes.ts`'s `overspend.balance` doc). Every case here
         // asserts classification + address only — no numeric params — since
         // that is now deliberately all `matchOverspend` extracts.
-        test('parses the legacy PERA-4038 raw-struct rendering', () => {
+        test('parses the legacy raw-struct rendering', () => {
             // Full message copied verbatim from an algod rejection (older
             // go-algorand build).
             const message =

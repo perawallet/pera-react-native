@@ -62,8 +62,8 @@ type RegisterDeviceResult = { createdNew: boolean }
 // takes the update branch instead of minting a second device row. Do not
 // weaken it into a per-call-path lock — `registerDevice` has more than one
 // caller per mounted app (the account/network-driven registrar in
-// `useDeviceRegistration` and, since PERA-4705's notification-toggle
-// rewrite, `useAccountNotificationToggle`) and both usually hold the id
+// `useDeviceRegistration`, and the notification toggle,
+// `useAccountNotificationToggle`) and both usually hold the id
 // already. Toggling a preference writes the local store optimistically,
 // which changes `useDeviceRegistration`'s `accountsKey` and refires its own
 // `registerDevice` call concurrently with the toggle's; if the toggle's own
@@ -220,18 +220,15 @@ export const useDevice = () => {
                 await createDeviceForNetwork(targetNetwork, accounts)
                 // Replacing a migrated id orphans its device-keyed server
                 // state (Discover favorites, price alerts, banner
-                // dismissals) — no reconciliation endpoint exists yet
-                // (PERA-4670), so the loss is only made observable here.
+                // dismissals) — no reconciliation endpoint exists yet,
+                // so the loss is only made observable here.
                 //
-                // PERA-4670 additionally guarded this on an in-flight attempt
-                // id, to be sure the write it is reporting is still the
-                // current one. v3 does not need that guard: every registration
-                // is chained through `enqueueRegistration`, so only one task
-                // per network runs at a time and this recreate cannot be
-                // superseded while it is in flight (see `registerDevice`).
+                // No in-flight guard is needed: every registration is chained
+                // through `enqueueRegistration`, so only one task per network
+                // runs at a time and this recreate cannot be superseded while
+                // it is in flight (see `registerDevice`).
                 //
-                // `reason` is always `not_found` here, unlike PERA-4670's
-                // 404-or-`device_already_exists` pair: v3's
+                // `reason` is always `not_found` here:
                 // `shouldRecreateDevice` matches 404 only, because a 400 is a
                 // push-token race that must be retried rather than re-created
                 // (see `isPushTokenClaimedError`). A 400 therefore never

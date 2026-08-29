@@ -17,7 +17,7 @@ const { AndroidConfig, withAndroidManifest } = require('expo/config-plugins');
  * @type {import('expo/config-plugins').ConfigPlugin}
  *
  * Drops the Android portrait lock so the app resizes and rotates on large
- * screens (PERA-4963; Play Console "Remove resizability and orientation
+ * screens (Play Console "Remove resizability and orientation
  * restrictions").
  *
  * From Android 16 the platform *ignores* `screenOrientation` and

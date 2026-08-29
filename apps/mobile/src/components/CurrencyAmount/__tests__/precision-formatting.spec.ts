@@ -60,7 +60,7 @@ describe('resolvePrecision + real formatNumber', () => {
         expect(format('1.5', 'compact')).toBe('1.50')
     })
 
-    // PERA-4973: a 0.004 ALGO fee rendered as "0.00" in the History list.
+    // a 0.004 ALGO fee rendered as "0.00" in the History list.
     it('compact reveals a nonzero amount that 2 dp would round to zero', () => {
         expect(format('0.004', 'compact')).toBe('0.004')
         expect(format('0.0001', 'compact')).toBe('0.0001')

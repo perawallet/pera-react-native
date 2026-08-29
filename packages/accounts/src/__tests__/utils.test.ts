@@ -526,7 +526,7 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
         expect(canSignArc60(multisig, [multisig])).toBe(false)
     })
 
-    describe('canSignArc60 - rekeyed signers (PERA-4977)', () => {
+    describe('canSignArc60 - rekeyed signers', () => {
         const rekeyedTo = (auth: { address: string }) =>
             ({ ...watch, rekeyAddress: auth.address }) as any
 
@@ -773,7 +773,7 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         // Product decision: a 25-word quantum mnemonic is indistinguishable
         // from legacy algo25 by word count. Auto-detection deliberately keeps
         // resolving 25 words to algo25; quantum import only happens through
-        // its dedicated explicit entrypoint (PQ-009).
+        // its dedicated explicit entrypoint.
         const result = resolveImportAccountType(words(25))
         expect(result).toEqual({ success: true, accountType: 'algo25' })
     })

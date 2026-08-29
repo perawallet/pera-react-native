@@ -177,7 +177,7 @@ describe('transformIndexerTransactions', () => {
     test('emits close_to and close_amount for a close-out payment', () => {
         // A "send max" builds amount=0 with the whole balance in
         // close-amount; dropping close_amount is how history ends up
-        // showing "0 ALGO" for a full-balance send (PERA-4897).
+        // showing "0 ALGO" for a full-balance send.
         const closeOut = {
             'current-round': 1,
             transactions: [

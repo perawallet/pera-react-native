@@ -878,7 +878,7 @@ describe('useKMS', () => {
             expect(received).toEqual([7, 8, 9])
         })
 
-        // Roundtrip (device-portability NFR, PQ-012): a quantum account created
+        // Roundtrip (device-portability NFR): a quantum account created
         // from a known 25-word mnemonic must reconstruct the SAME 25 words when
         // the backup flow calls executeWithMnemonic. Uses the REAL seed→indices
         // derivation (not the top-of-file stub) to prove the end-to-end contract.
@@ -1052,7 +1052,7 @@ describe('useKMS', () => {
             // the un-digested `encodeTransaction(txn)` bytes while
             // `signTransactionsWithKey` (driven by the seed-scheme oracle
             // alone) still Falcon-signs them — silently re-creating the
-            // exact un-digested-signing bug PERA-4653 closed.
+            // exact un-digested-signing bug closed.
             seedQuantumRoot('quantum-1')
             childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
 

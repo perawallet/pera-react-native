@@ -117,7 +117,7 @@ export type UseTransactionHistoryQueryResult = {
      * disabled (no account address yet), which `isLoading` cannot express —
      * a disabled query reports `isLoading: false` with no data, so consumers
      * that gate an empty state on `!isLoading` flash "no transactions" before
-     * the first read (PERA-4861). Gate empty states on this instead.
+     * the first read. Gate empty states on this instead.
      */
     isFetched: boolean
     /** Whether more data is being fetched */

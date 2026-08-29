@@ -155,7 +155,7 @@ export type TransactionWarning =
           // 'close-account' is a payment close-remainder-to: the whole account
           // is emptied and deleted. 'close-asset' is an asset-transfer close-to:
           // the sender opts out of that one ASA. Both warrant a warning, but
-          // they are not the same severity and must not share copy. [PERA-4902]
+          // they are not the same severity and must not share copy.
           type: 'close-account' | 'close-asset' | 'rekey' | 'asset-freeze'
           senderAddress: string
           targetAddress: string

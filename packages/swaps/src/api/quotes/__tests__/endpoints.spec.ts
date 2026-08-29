@@ -123,7 +123,7 @@ describe('createQuotes', () => {
         expect(result[0].swapperAddress).toBe(request.swapper_address)
     })
 
-    test('rejects a quote whose swapper_address differs from the requested address (PERA-4709)', async () => {
+    test('rejects a quote whose swapper_address differs from the requested address', async () => {
         ;(queryClient as Mock).mockResolvedValue({
             data: {
                 results: [

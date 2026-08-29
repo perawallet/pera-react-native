@@ -89,7 +89,7 @@ vi.mock('@modules/card/hooks', async () => {
 })
 
 // The AutoDraw program pin is deliberately empty in source until the compiled
-// artifacts are committed (PERA-4712), so `compileAutoDrawProgram` fails closed
+// artifacts are committed, so `compileAutoDrawProgram` fails closed
 // for every network — correct in production, but it would stop this flow test at
 // the LSig step. The MSW compile handler also answers with `BoEB` (`int 1`),
 // which is exactly the substituted program the guard exists to reject. Stub the

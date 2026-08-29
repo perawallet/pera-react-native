@@ -216,7 +216,7 @@ describe('useAccountAssetList', () => {
         )
     })
 
-    // PERA-4921: re-sorting or switching account is a new query key, so the rows
+    // re-sorting or switching account is a new query key, so the rows
     // go through a gap before the new ones land. The reset has to survive it.
     describe('scroll reset when the requested view changes', () => {
         const attachListRef = (result: {
@@ -298,7 +298,7 @@ describe('useAccountAssetList', () => {
 
         // A placeholder gap re-runs the effect, and its cleanup cancels the
         // frame the previous run scheduled. Recording the request as applied
-        // before that frame ran made the cancellation permanent (PERA-4932).
+        // before that frame ran made the cancellation permanent.
         it('still resets once the rows land if a placeholder gap cancelled the scheduled frame', async () => {
             const { result, rerender } = renderHook(() =>
                 useAccountAssetList({ account: mockAccount, t: mockT }),

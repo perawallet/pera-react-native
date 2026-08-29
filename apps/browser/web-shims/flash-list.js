@@ -32,7 +32,7 @@
 //
 // `refreshControl` is passed straight through to FlatList. Nothing sets it
 // today — pull-to-refresh (PWRefreshControl) was removed repo-wide
-// [PERA-4678][PERA-4679][PERA-4681] — but if it returns, any web-safe
+// — but if it returns, any web-safe
 // control should be handled at the component, not by dropping the prop here.
 //
 // `onScrollToIndexFailed` gets a no-op default. FlashList tolerates

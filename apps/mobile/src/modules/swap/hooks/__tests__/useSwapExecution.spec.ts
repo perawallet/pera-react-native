@@ -253,7 +253,7 @@ const makeQuote = (quoteIdStr: string): SwapQuote =>
         assetIn: { assetId: '0' },
         assetOut: { assetId: '999' },
         // Freshly stamped: the confirm-time freshness guard refuses
-        // unstamped or expired quotes before prepare (PERA-4589).
+        // unstamped or expired quotes before prepare.
         fetchedAt: Date.now(),
     }) as unknown as SwapQuote
 
@@ -757,7 +757,7 @@ describe('useSwapExecution', () => {
         })
 
         // Generic localized copy, not the pipeline's raw text — that goes to
-        // the log only (PERA-4795).
+        // the log only.
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
@@ -784,8 +784,7 @@ describe('useSwapExecution', () => {
         // raising the fee forces a `grp` recompute that would invalidate
         // signatures the backend already produced and the device can't
         // recreate. The guard must therefore fire on the account BEFORE the
-        // signing pipeline is ever invoked (PQ-024 / PERA-4705 tracks the
-        // backend-side fix).
+        // signing pipeline is ever invoked; the real fix is backend-side.
         mockUseSelectedAccount.mockReturnValue(quantumAccount)
 
         const { result } = renderHook(() => useSwapExecution())

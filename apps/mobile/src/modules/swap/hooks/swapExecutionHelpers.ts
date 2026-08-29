@@ -38,8 +38,8 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * invalidate those signatures. The swap flow also never calls the minimum-fee
  * pipeline at all — there is no `signableIndices` to key an adjustment off.
  * The guard yields to the `enable_quantum_swap` remote flag: turning it on
- * asserts that the backend prices the pqsig surcharge into prepared groups
- * (PQ-024 / PERA-4705), and turning it off restores the hard block — the
+ * asserts that the backend prices the pqsig surcharge into prepared groups,
+ * and turning it off restores the hard block — the
  * flag is the kill switch if that pricing regresses.
  */
 export const QUANTUM_SWAP_FEE_BLOCKED_KEY =

@@ -249,7 +249,7 @@ describe('useSelectDestinationScreen', () => {
 
     // ARC-59 needs the router contract + Pera backend; on networks without
     // them (getArc59Config → null) the route is blocked with a toast instead
-    // of landing on a summary screen that can never load (PERA-4923).
+    // of landing on a summary screen that can never load.
     describe('inbox unavailable on network', () => {
         it('blocks the inbox route with a toast for a local unsignable receiver', () => {
             mockGetArc59Config.mockReturnValue(null)

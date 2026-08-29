@@ -64,11 +64,11 @@ const TEST_MNEMONIC =
 // Falcon keygen, per go-algorand `cmd/algokey/pq_scheme.go`. The previous value
 // here — TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU — is what
 // raw-entropy derivation produced, and remains the address of accounts minted
-// before PERA-4972.
+// before.
 const CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
     'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 
-/** The pre-PERA-4972 address for TEST_MNEMONIC: raw entropy fed straight to
+/** The pre- address for TEST_MNEMONIC: raw entropy fed straight to
  * Falcon keygen, with no SHA512_256("PQK" || scheme || entropy) hop. This is
  * the address of every legacy quantum account minted before the fix, so the
  * `legacy` derivation must keep producing it forever. */
@@ -350,7 +350,7 @@ describe('useQuantum', () => {
             })
 
             // Legacy IS the raw entropy — the seed handed to Falcon must be the
-            // entropy itself, and the address must be the pre-PERA-4972 one.
+            // entropy itself, and the address must be the pre- one.
             expect(created.signKeyId).toBe(
                 quantumSignKeyId('my-key', PQ_DERIVATION_LEGACY),
             )

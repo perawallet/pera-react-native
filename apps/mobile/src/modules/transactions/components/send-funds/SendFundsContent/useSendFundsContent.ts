@@ -114,7 +114,7 @@ export const useSendFundsContent = (
     // ✕/Done buttons alone, and a backdrop press dismisses straight through
     // `remove()`. The leftover `canSelectAsset: false` then made the next Send
     // open on the previous transfer instead of asset selection, and a leftover
-    // `destination` auto-advanced past the receiver picker (PERA-4894).
+    // `destination` auto-advanced past the receiver picker.
     // Teardown, not mount: the deeplink and account-actions callers prefill the
     // store *before* opening the sheet, so a mount-time reset would wipe them.
     useEffect(() => () => reset(), [reset])

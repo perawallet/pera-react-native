@@ -44,8 +44,7 @@ describe('getDisplayHost', () => {
 
     // Opaque origins parse without throwing but carry no host. Returning ''
     // rendered a blank origin line under a page-chosen title; echoing the raw
-    // value would print an entire data: payload. Both are worse than "no host"
-    // (PERA-4665).
+    // value would print an entire data: payload. Both are worse than "no host".
     it.each([
         'about:blank',
         'data:text/html,<h1>hi</h1>',

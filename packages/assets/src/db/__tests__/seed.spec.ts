@@ -87,7 +87,7 @@ describe('seedAlgoAsset', () => {
 
     it('preserves device-local metadata across a re-seed (app restart)', async () => {
         // The seed runs on every bootstrap, but favorites and price alerts are
-        // device-local state it must not assert — PERA-4904: favoriting ALGO
+        // device-local state it must not assert —: favoriting ALGO
         // then force-closing removed the favorite.
         await seedAlgoAsset(db)
 

@@ -108,7 +108,7 @@ describe('useDeeplinkListener', () => {
         expect(mockHandleDeepLink).toHaveBeenCalledTimes(1)
     })
 
-    describe('unsupported wc: URIs (PERA-4856)', () => {
+    describe('unsupported wc: URIs', () => {
         const WC_V2_URL = 'wc:abc@2?relay-protocol=irn&symKey=ff'
 
         beforeEach(() => {

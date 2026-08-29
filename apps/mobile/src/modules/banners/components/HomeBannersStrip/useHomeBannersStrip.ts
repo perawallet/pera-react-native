@@ -40,8 +40,8 @@ export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
     // No auto-open effect here any more. This used to navigate to the carousel
     // modal the moment banners loaded, with no knowledge of the terms gate or
     // the PIN prompt, which is how a migrating user met three unrelated
-    // interruptions in whatever order their triggers happened to fire
-    // (PERA-4874). The prompt container owns that decision now; this hook is
+    // interruptions in whatever order their triggers happened to fire.
+    // The prompt container owns that decision now; this hook is
     // only the strip, and only opens the modal when the user taps it.
 
     // The strip surfaces the first visible banner only — extras are signalled

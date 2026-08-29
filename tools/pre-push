@@ -151,6 +151,19 @@ else
 fi
 rm "$I18N_LOG"
 
+# Doc hygiene. Blocks on wrongness (a path that no longer exists, a dead link,
+# a reference to a work item nobody will be able to look up); reports on length
+# without blocking, because that needs a human's judgement.
+echo "\n${YELLOW}Checking doc hygiene...${NC}"
+DOCS_LOG=$(mktemp)
+if pnpm run lint:docs > "$DOCS_LOG" 2>&1; then
+    echo "${GREEN}✓ docs and comments clean${NC}"
+else
+    echo "${RED}Doc hygiene check failed.${NC}"
+    record_failure "Doc Hygiene" "$DOCS_LOG" "${YELLOW}Fix the stale reference, or record an exception with a reason.${NC}"
+fi
+rm "$DOCS_LOG"
+
 # Secret scan. The CI job is authoritative; this catches obvious leaks
 # before they hit the network. Soft-skip if gitleaks isn't installed so
 # new contributors aren't blocked on install friction.

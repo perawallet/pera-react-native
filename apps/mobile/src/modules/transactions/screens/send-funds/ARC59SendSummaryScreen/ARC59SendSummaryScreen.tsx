@@ -43,7 +43,7 @@ export const ARC59SendSummaryScreen = () => {
     } = useARC59SendSummaryScreen()
 
     // Defence-in-depth: useSendDestinationRouter already blocks routing here on
-    // a non-Pera-backed network (PERA-4923); this only guards a direct/stale
+    // a non-Pera-backed network; this only guards a direct/stale
     // navigation where the disabled query resolves with no data to show.
     if (isUnavailableOnNetwork) {
         return (

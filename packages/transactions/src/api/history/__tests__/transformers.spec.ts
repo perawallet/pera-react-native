@@ -85,8 +85,8 @@ describe('transformTransactionItem', () => {
 
     describe('closeAmount derivation from balance impacts (backend omits close_amount)', () => {
         it('derives the swept amount for the sender from the ALGO impact minus amount and fee', () => {
-            // Sender impact nets amount + close + fee. The real close-out
-            // from PERA-4896: amount 0, fee 1000, swept 50_854_132_929.
+            // Sender impact nets amount + close + fee. A real close-out:
+            // amount 0, fee 1000, swept 50_854_132_929.
             const apiItem = makeApiItem({
                 amount: '0',
                 fee: '1000',

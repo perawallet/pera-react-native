@@ -281,7 +281,7 @@ export const usePendingSignaturesContent =
                     })
                     addSignRequest(cosignRequest)
                 } catch (error) {
-                    // A cosign request that fails validation (PERA-4711) must
+                    // A cosign request that fails validation must
                     // never be signed; skip it without crashing the handler.
                     logger.error('Skipping invalid multisig cosign request', {
                         error,

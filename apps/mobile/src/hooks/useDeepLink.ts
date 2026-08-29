@@ -110,7 +110,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
      * separate OS window above that root. The trailing `onSuccess?.()` below is
      * what dismisses the Modal, so awaiting a handler that itself waits on a
      * sheet pins the camera open on top of UI the user can neither see nor
-     * reach — it reads as a freeze rather than an error (PERA-4744).
+     * reach — it reads as a freeze rather than an error.
      *
      * Every sheet-opening case must dispatch through here instead of `await`.
      * WalletConnect is the one deliberate exception: the scanner observes its

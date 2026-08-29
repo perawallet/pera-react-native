@@ -136,7 +136,7 @@ function injectBackupExclusion(contents) {
 
 // Exclude-all backup rule resources. The native app excludes every domain
 // from both cloud backup and device-to-device transfer. Confirm the exact
-// domains against the native pera-android res/xml files (WB-7).
+// domains against the native pera-android res/xml files.
 const DATA_EXTRACTION_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>

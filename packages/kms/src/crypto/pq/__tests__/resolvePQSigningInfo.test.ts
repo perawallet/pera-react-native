@@ -114,7 +114,7 @@ describe('resolvePQSigningInfo', () => {
         expect(info?.publicKey).toEqual(new Uint8Array([10, 1, 2, 3]))
     })
 
-    // The two oracles disagreeing is the PERA-4653 failure mode: returning
+    // The two oracles disagreeing is the failure mode: returning
     // null here would make the caller sign un-digested bytes while the
     // keystore still Falcon-signs them.
     test('throws when a quantum seed carries a non-Falcon child', () => {

@@ -63,7 +63,7 @@ const renderAddAccount = () =>
         ],
     })
 
-describe('create quantum account (PQ-015)', () => {
+describe('create quantum account', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
         server.resetHandlers()

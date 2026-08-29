@@ -188,7 +188,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleExportCsv = useCallback(() => {
         trackEvent(AccountDetailsEvent.TransactionDownload)
-        // Guarding the request would silence PERA-4929's central toast too, so
+        // Guarding the request would silence's central toast too, so
         // the reason has to be raised here or the button would do nothing.
         if (isUnavailableOnNetwork) {
             showError(
@@ -228,7 +228,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
     // selected account resolves, and a disabled query reports `isLoading:
     // false` with no rows — which rendered "no transactions" over a history
-    // that had not been read yet (PERA-4861).
+    // that had not been read yet.
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.

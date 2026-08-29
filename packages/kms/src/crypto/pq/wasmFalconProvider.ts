@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// SWAP: joe-p WASM Falcon-1024. Replace with the official PQ crypto lib per
-// docs/QUANTUM_PQ_INTEGRATION.md (Seam A).
+// SWAP: joe-p WASM Falcon-1024 (Seam A). Replace with an official PQ crypto lib
+// alongside `rnFalconProvider.ts`; both `getPQProvider` factories change together.
 import type { PQSignatureProvider } from './types'
 
 /**

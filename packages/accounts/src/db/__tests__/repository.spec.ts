@@ -1414,7 +1414,7 @@ describe('account repository', () => {
         })
 
         // Substring, not exact: mirrors the global search's
-        // `assetId.includes(term)` semantics (PERA-4900).
+        // `assetId.includes(term)` semantics.
         it('searches by asset id', async () => {
             const byFullId = await getAccountCollectiblesLite({
                 db,

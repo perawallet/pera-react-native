@@ -30,7 +30,7 @@ export const useOptInConfirmationContent = (
 ): UseOptInConfirmationContentResult => {
     const { minTxnFee } = useMinimumFeeConfig()
     // Sender-aware so a quantum account is quoted the PQ multiple it will
-    // actually pay, matching what useAssetOptInMutation builds (PERA-4922).
+    // actually pay, matching what useAssetOptInMutation builds.
     const { minFee } = useMinFeeForSender(accountAddress)
     return {
         resolvedFee:

@@ -141,7 +141,7 @@ describe('buildAppConfig — refactor invariants', () => {
     })
 })
 
-describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
+describe('buildAppConfig — iOS identity (production only)', () => {
     it('uses the native production bundle id for production', () => {
         expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).toBe(
             'com.algorandllc.algorand',
@@ -176,7 +176,7 @@ describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
     })
 })
 
-describe('buildAppConfig — entitlements parity (WB-6, production only)', () => {
+describe('buildAppConfig — entitlements parity (production only)', () => {
     const DOMAINS = 'com.apple.developer.associated-domains'
 
     it('adds the legacy applinks:perawallet host for production only', () => {
@@ -236,7 +236,7 @@ describe('buildAppConfig — entitlements parity (WB-6, production only)', () =>
     })
 })
 
-describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
+describe('buildAppConfig — associated-domains restore plugin', () => {
     const findRestorePlugin = (config: ResolvedConfig) =>
         config.plugins.find(
             plugin =>
@@ -278,7 +278,7 @@ describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
     })
 })
 
-describe('buildAppConfig — Android identity (WB-2, production only)', () => {
+describe('buildAppConfig — Android identity (production only)', () => {
     it('uses the native production package for production', () => {
         expect(build({ APP_ENV: 'production' }).android.package).toBe(
             'com.algorand.android',
@@ -358,7 +358,7 @@ describe('buildAppConfig — production app images (icon + name)', () => {
 
 import pkg from '../package.json'
 
-describe('buildAppConfig — store versioning floor (WB-5)', () => {
+describe('buildAppConfig — store versioning floor', () => {
     const base = (pkg as { versionCodeBase: number }).versionCodeBase
 
     it('exposes a numeric versionCodeBase from package.json', () => {
@@ -434,7 +434,7 @@ describe('buildAppConfig — Android notification icon (all lanes)', () => {
     })
 })
 
-describe('buildAppConfig — Android manifest parity (WB-7)', () => {
+describe('buildAppConfig — Android manifest parity', () => {
     const buildPropsAndroid = (config: ResolvedConfig) => {
         const entry = config.plugins.find(
             plugin =>
@@ -488,7 +488,7 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
     })
 })
 
-describe('buildAppConfig — deep-link scheme parity (WB-8)', () => {
+describe('buildAppConfig — deep-link scheme parity', () => {
     const SCHEMES = [
         'perawallet',
         'algorand',

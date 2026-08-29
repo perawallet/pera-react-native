@@ -384,7 +384,7 @@ describe('useLockScreen', () => {
             it('honours a successful prompt even when collaborator identities change mid-flight', async () => {
                 // A re-render that hands the hook fresh function identities
                 // (store update, i18n change) must not cancel an in-flight
-                // biometric prompt — same failure class as PERA-4466.
+                // biometric prompt.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
                 let resolveAuth:
                     | ((result: BiometricsAuthenticateResult) => void)
@@ -517,7 +517,7 @@ describe('useLockScreen', () => {
                 setAppState('active')
             })
 
-            it('defers the cold-start prompt until the app becomes active (PERA-4854)', async () => {
+            it('defers the cold-start prompt until the app becomes active', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
                 mockAuthenticateWithBiometrics.mockResolvedValue({
@@ -611,7 +611,7 @@ describe('useLockScreen', () => {
                 expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
             })
 
-            it('retries after a system-cancel once the app becomes active, then unlocks (PERA-4854)', async () => {
+            it('retries after a system-cancel once the app becomes active, then unlocks', async () => {
                 // The deeplink cold-start repro: RN already reports 'active'
                 // when the first prompt fires, but the OS cancels it because
                 // the app is still mid-launch.
@@ -714,7 +714,7 @@ describe('useLockScreen', () => {
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
-            it('ignores AppState churn from a prompt that already succeeded (PERA-4196)', async () => {
+            it('ignores AppState churn from a prompt that already succeeded', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
                 mockAuthenticateWithBiometrics.mockResolvedValue({

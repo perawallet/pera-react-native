@@ -52,7 +52,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
     // Mirror the guard overlay outward: the bottom-sheet hold is what keeps
     // ALL sheets from painting into the covered layer and "popping in" the
-    // moment the PIN is accepted (PERA-4743) — BottomSheetManager reads it
+    // moment the PIN is accepted — BottomSheetManager reads it
     // directly. The security-store flag stays mirrored for any non-sheet
     // consumer.
     const isGuardActive = isLocked || isChecking || !isInitialized
@@ -77,7 +77,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     // overlay. Coalesce it into one re-run after the in-flight check settles.
     const hasPendingForegroundCheck = useRef(false)
     // Only `background` (not `inactive`) tells a real backgrounding apart from
-    // banner/Face-ID noise on iOS (PERA-4870); seed from currentState so a
+    // banner/Face-ID noise on iOS; seed from currentState so a
     // cold mount already in background isn't missed.
     const hasEnteredRealBackgroundRef = useRef(
         AppState.currentState === 'background',
@@ -115,7 +115,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     // drives the app through inactive→active, and an
                     // `else` branch would unlock an already-locked app
                     // within milliseconds of showing the lock screen.
-                    // (PERA-4196)
+                    //
                     if (expired) {
                         setIsLocked(true)
                     }

@@ -35,7 +35,7 @@ export const useStakingDisclaimerSheet =
         /**
          * On a tall viewport (tablet, landscape, large text off) the disclaimer
          * fits without scrolling, so `onScroll` never fires and the accept
-         * button would stay disabled forever (PERA-4969). Nothing is left to
+         * button would stay disabled forever. Nothing is left to
          * read in that case, so treat "fits" the same as "scrolled to bottom".
          *
          * One-way, like the scroll path: a later reflow that overflows does not

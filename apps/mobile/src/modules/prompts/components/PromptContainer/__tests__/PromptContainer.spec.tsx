@@ -18,7 +18,7 @@ import { navigationRef } from '@routes/navigationRef'
 import { PWText } from '@components/core'
 import { PromptContainer } from '../PromptContainer'
 
-// PERA-4870 moved this container out of AccountScreen and up to RootComponent,
+// This container sits at RootComponent rather than inside AccountScreen,
 // where it is a sibling of <MainRoutes /> and so mounts outside
 // NavigationContainer. PinSecurityPrompt's useNavigation threw there and the
 // root error boundary replaced the app with its error screen. Asserting the

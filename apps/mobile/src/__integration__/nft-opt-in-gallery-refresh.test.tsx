@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PERA-4845 QA follow-up: the NFT gallery must reflect a fresh opt-in in
+// QA follow-up: the NFT gallery must reflect a fresh opt-in in
 // EVERY sort mode, purely from the opt-in mutation's own writes and
 // invalidation. The gallery queries cache with staleTime: Infinity, so sort
 // caches warmed before the opt-in keep serving the pre-opt-in list unless

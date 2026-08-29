@@ -52,7 +52,7 @@ export const useQRScannerView = ({
     // Camera goes still the moment a code is accepted, and a WalletConnect
     // pairing then spends seconds on the network before any of the callbacks
     // below fire. Without this the frozen frame is the only feedback, so a slow
-    // connect is indistinguishable from a hang (PERA-4748).
+    // connect is indistinguishable from a hang.
     //
     // Set for every handled type, not just WalletConnect — the browser paths
     // are also slow and ASSET_OPT_IN dispatches detached. Hence the neutral

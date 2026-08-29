@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Integration coverage for PERA-4970: a field report where a 25-word
+// Integration coverage for a field report where a 25-word
 // passphrase the user knew was valid failed to import on Android because an
 // IME capitalized every word. Unit tests cover the normalization hook in
 // isolation; this proves the actual screen flow — an IME-style capitalized

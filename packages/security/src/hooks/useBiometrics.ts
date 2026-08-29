@@ -28,21 +28,21 @@ import { useSecurityStore } from '../store'
  * Why enabling biometrics failed, so callers can show targeted guidance
  * instead of a single generic error.
  *
- * - `no-pin`         — no PIN record to wrap; a PIN must be set first.
- * - `unavailable`    — the device has no usable biometric hardware/enrollment.
+ * - `no-pin` — no PIN record to wrap; a PIN must be set first.
+ * - `unavailable` — the device has no usable biometric hardware/enrollment.
  * - `weak-biometric` — a biometric is enrolled, but only at class-2 ("weak")
- *                      strength (e.g. Samsung 2D face unlock). Wallet unlock
- *                      requires a hardware-backed class-3 ("strong")
- *                      authenticator, so the user must enroll a fingerprint or
- *                      other strong biometric. Android-only in practice.
- * - `unconfirmed`    — a biometric is enrolled but the device reports a
- *                      non-strong level we can't bind to right now, without it
- *                      being a weak enrollment: iOS reports enrolled-but-'secret'
- *                      during a Face ID lockout the user clears with the device
- *                      passcode, not from inside the app. The opt-in is left
- *                      intact so unlock auto-restores once the level does.
- * - `declined`       — the user dismissed or failed the OS prompt.
- * - `error`          — an unexpected failure.
+ * strength (e.g. Samsung 2D face unlock). Wallet unlock
+ * requires a hardware-backed class-3 ("strong")
+ * authenticator, so the user must enroll a fingerprint or
+ * other strong biometric. Android-only in practice.
+ * - `unconfirmed` — a biometric is enrolled but the device reports a
+ * non-strong level we can't bind to right now, without it
+ * being a weak enrollment: iOS reports enrolled-but-'secret'
+ * during a Face ID lockout the user clears with the device
+ * passcode, not from inside the app. The opt-in is left
+ * intact so unlock auto-restores once the level does.
+ * - `declined` — the user dismissed or failed the OS prompt.
+ * - `error` — an unexpected failure.
  */
 export type EnableBiometricsFailureReason =
     | 'no-pin'
@@ -95,7 +95,7 @@ export const useBiometrics = (): UseBiometricsResult => {
     // Shared, not per-hook: Settings, the lock screen and PIN edit all mount
     // their own useBiometrics, and a reconcile that cleared a revoked blob used
     // to update only the calling screen's copy — leaving the Settings toggle
-    // showing ON (PERA-4702). Granular selectors, per the store conventions.
+    // showing ON. Granular selectors, per the store conventions.
     const isEnabled = useSecurityStore(state => state.isBiometricsEnabled)
     const setIsEnabled = useSecurityStore(state => state.setBiometricsEnabled)
     const disabledReason = useSecurityStore(
@@ -212,7 +212,7 @@ export const useBiometrics = (): UseBiometricsResult => {
 
         // Something is enrolled but cannot be bound by `enableBiometrics` or
         // pass the Android prompt's `strong` bar, so report disabled. Only an
-        // affirmative class-2 report may also destroy the opt-in (PERA-4702:
+        // affirmative class-2 report may also destroy the opt-in (
         // removing every fingerprint where weak 2D face remains used to keep
         // the blob armed). 'secret' and 'none' are ambiguous — iOS reports
         // enrolled-but-'secret' during a Face ID lockout the user cannot clear
@@ -274,7 +274,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                         // ("strong") authenticator. Anything below that fails
                         // fast, before popping a doomed OS prompt — but the two
                         // non-strong cases must be handled apart, exactly as the
-                        // reconcile's own branches do (PERA-4702).
+                        // reconcile's own branches do.
                         const level = await biometricsService.getSecurityLevel()
                         if (level === 'weak') {
                             // A class-2 ("weak") modality — e.g. Samsung 2D face

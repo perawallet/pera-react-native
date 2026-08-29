@@ -157,7 +157,7 @@ const advanceToDisplayedWords = async (): Promise<void> => {
     )
 }
 
-describe('backup quantum account (PQ-015)', () => {
+describe('backup quantum account', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

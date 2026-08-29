@@ -176,7 +176,7 @@ const ReviewSurface = () => {
         if (ready.current) return
         ready.current = true
         setPreference('hasSeenTransactionRequestFAQ', true)
-        // This file exercises the PQ-017 fee override, not the PQ-025 dApp
+        // This file exercises the fee override, not the dApp
         // warning, so it runs as a returning user who already acknowledged it.
         setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
     }, [setPreference])
@@ -185,7 +185,7 @@ const ReviewSurface = () => {
 
 /**
  * Same as `ReviewSurface`, but leaves the quantum dApp warning unacknowledged
- * — a first-time user, for the PQ-025 backstop coverage below.
+ * — a first-time user, for the backstop coverage below.
  */
 const ReviewSurfaceFirstTimeQuantumWarning = () => {
     const { setPreference } = usePreferences()
@@ -313,7 +313,7 @@ const fireSignRequest = (
     })
 }
 
-describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
+describe('Flow: WalletConnect quantum fee override end-to-end', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
@@ -526,7 +526,7 @@ describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
     )
 
     it(
-        'Given a quantum signer whose dApp warning is unacknowledged, when a WC sign request is opened, then the PQ-025 warning sheet appears before signing',
+        'Given a quantum signer whose dApp warning is unacknowledged, when a WC sign request is opened, then the warning sheet appears before signing',
         async () => {
             await enableQuantumFlag()
             const signer = await seedQuantumSender()
@@ -580,7 +580,7 @@ describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
 // `useWalletConnectPairing`, reached from `useDeeplinkListener()` in every
 // screen layout — so pairing from one screen and navigating away is the
 // ordinary case, not an edge case.
-describe('Flow: WalletConnect rekey after the pairing surface unmounts (PERA-4950)', () => {
+describe('Flow: WalletConnect rekey after the pairing surface unmounts', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
@@ -759,7 +759,7 @@ describe('Flow: WalletConnect rekey after the pairing surface unmounts (PERA-495
 
     // Both tests above start the sender rekeyed to an address the wallet
     // does NOT hold, so the discriminating condition they exercise is
-    // signability, not the fee transition PERA-4950's own repro shows: an
+    // signability, not the fee transition's own repro shows: an
     // already-signable sender whose fee moves 3000n -> 1000n when a rekey to
     // a held quantum auth account is undone. This test covers that
     // transition directly.

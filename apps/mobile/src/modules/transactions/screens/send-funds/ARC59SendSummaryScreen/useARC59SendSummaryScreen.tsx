@@ -99,7 +99,7 @@ export const useARC59SendSummaryScreen =
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
-            // Gate on the amount actually signed (PERA-4710), not the
+            // Gate on the amount actually signed, not the
             // independent `total_protocol_and_mbr_fee` field.
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 

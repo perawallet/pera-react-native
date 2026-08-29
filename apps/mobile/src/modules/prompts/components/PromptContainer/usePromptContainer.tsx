@@ -58,7 +58,7 @@ export type Prompt = {
      * render with no delay, so there is no window in which the hold is on and
      * nothing is on screen. That window has to be closed rather than tolerated:
      * a sheet painting inside it is recorded as presented and then survives the
-     * hold (PERA-4743/PERA-4870), and to the user the app just swallows a tap.
+     * hold, and to the user the app just swallows a tap.
      *
      * Nudges hold only while actually on screen, so a sheet the user opened
      * deliberately still presents.
@@ -217,7 +217,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             // The delay is "don't ambush someone the instant they open the
             // app", which is a property of the session, not of each prompt.
             // Paying it per prompt is what made a post-migration launch a
-            // sequence of separate ambushes (PERA-4874) — the second and third
+            // sequence of separate ambushes — the second and third
             // now follow the first immediately.
             //
             // A gate skips the delay outright: it holds sheet presentation from

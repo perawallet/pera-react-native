@@ -413,7 +413,7 @@ const createKeyStoreApi = (
             if (type === FALCON_KEY_TYPE) {
                 // The engine resolves the seed from `params.seed` and falls
                 // back to the parent's stored bytes. These deliberately
-                // diverge post-PERA-4972: `params.seed` is the caller's
+                // diverge: `params.seed` is the caller's
                 // already-canonicalized keygen seed, while the fallback is
                 // the raw parent entropy (legacy derivation) — same Falcon-1024
                 // primitive, different input, different minted address.

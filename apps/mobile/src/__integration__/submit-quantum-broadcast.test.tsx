@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PQ-019 / PERA-4643: a Falcon-signed group is broadcast through the ordinary
+// a Falcon-signed group is broadcast through the ordinary
 // submission path — quantum is not special-cased at submit time. The
 // carrier-aware `encodeSignedTransaction` emits the node-ready `pqsig` bytes,
 // so a quantum payment over the ALGOD transport reaches algod's
@@ -106,7 +106,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     return sender
 }
 
-describe('submit from quantum account over algod transport (PQ-019)', () => {
+describe('submit from quantum account over algod transport', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

@@ -185,7 +185,7 @@ export const PWBottomSheet = ({
             // sheet to `highestDetent - keyboardHeight`. Inert while the
             // KeyboardAvoidingView below is mounted, but `avoidKeyboard: false`
             // skips that view — leaving gorhom to shift a WebView that already
-            // insets itself, which is the double avoidance PERA-4708 is about.
+            // insets itself, which is the double avoidance is about.
             // `extend` holds the sheet at its highest detent instead.
             keyboardBehavior={avoidKeyboard ? 'interactive' : 'extend'}
             keyboardBlurBehavior='restore'
@@ -193,8 +193,8 @@ export const PWBottomSheet = ({
             // Never derive this to false: gorhom wraps content in a disabled
             // GestureDetector, which stops delivering touches on Android —
             // taps fall through to the closing backdrop and dismiss the
-            // sheet (PERA-4647). Tap-swallowing by the enabled gesture
-            // (PERA-4437) is instead solved by activeOffsetY below.
+            // sheet. Tap-swallowing by the enabled gesture
+            // is instead solved by activeOffsetY below.
             enableContentPanningGesture={enableContentPanningGesture}
             // The content pan claims a touch only after ~10px of vertical
             // travel, so taps reach the touchables underneath — gorhom's
