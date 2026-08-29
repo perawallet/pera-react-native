@@ -47,6 +47,7 @@ let page: Page
 let pageErrors: Error[]
 // WCDIAG: temporary instrumentation, remove before commit.
 let swWorker: { evaluate: <T>(fn: () => T) => Promise<T> } | undefined
+const pageConsole: string[] = []
 const PASSWORD = 'e2e-walletconnect-password-1'
 
 // A `.invalid` TLD guarantees DNS failure with no real network dependency,
@@ -148,6 +149,17 @@ test.beforeAll(async () => {
 
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
+    // WCDIAG: temporary instrumentation, remove before commit.
+    page.on('console', message => {
+        const text = message.text()
+        if (
+            text.includes('WCDIAG') ||
+            /walletConnect|offscreen|pair/i.test(text)
+        ) {
+            pageConsole.push(`[${message.type()}] ${text.slice(0, 300)}`)
+            if (pageConsole.length > 200) pageConsole.shift()
+        }
+    })
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
 
     await page.getByTestId('create-password-input').fill(PASSWORD)
@@ -466,6 +478,9 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             console.log(
                 '[WCDIAG] service-worker log:\n  ' +
                     (swLog ?? ['<no worker>']).join('\n  '),
+            )
+            console.log(
+                '[WCDIAG] page console:\n  ' + pageConsole.join('\n  '),
             )
             throw error
         }
