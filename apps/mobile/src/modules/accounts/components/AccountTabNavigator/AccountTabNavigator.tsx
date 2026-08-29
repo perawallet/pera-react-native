@@ -10,99 +10,33 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
-import {
-    runOnJS,
-    useAnimatedReaction,
-    useSharedValue,
-} from 'react-native-reanimated'
-import { PWPagerTabBar, PWView, type PWPagerTab } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import { PWPagerTabBar, PWView } from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { AccountDrawerPager } from '@modules/accounts/components/AccountDrawer'
 
 import { AccountOverview } from '../AccountOverview'
 import { AccountNfts } from '../AccountNfts'
 import { AccountHistory } from '../AccountHistory'
 import { useStyles } from './styles'
+import { useAccountTabNavigator } from './useAccountTabNavigator'
 
 export type AccountTabNavigatorProps = {
     account: WalletAccount
     chartVisible: boolean
 }
 
-const TAB_EVENTS = [
-    AccountDetailsEvent.Assets,
-    AccountDetailsEvent.Collectibles,
-    AccountDetailsEvent.History,
-]
-
 /**
  * Overview / NFTs / History as a PWPager rather than a material-top-tabs
  * navigator, so the account drawer and the tabs share one horizontal pan — see
- * PWPager for why the two cannot otherwise coexist. Nothing navigated to these
- * tabs by route name, so dropping the navigator costs no navigation behaviour.
+ * PWPager for why the two cannot otherwise coexist.
  */
 export const AccountTabNavigator = ({
     account,
     chartVisible,
 }: AccountTabNavigatorProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const [index, setIndex] = useState(0)
-    const offset = useSharedValue(0)
-
-    // Mounting the asset list, the NFT pipeline and the transaction list in one
-    // frame is what `lazy` avoided on the navigator; a page stays unmounted
-    // until first visited, and stays mounted after so returning is instant.
-    const [visitedPages, setVisitedPages] = useState(() => new Set([0]))
-
-    const tabs = useMemo<PWPagerTab[]>(
-        () => [
-            {
-                key: 'Overview',
-                title: t('account_details.main_screen.overview_tab'),
-            },
-            { key: 'Nfts', title: t('account_details.main_screen.nfts_tab') },
-            {
-                key: 'History',
-                title: t('account_details.main_screen.history_tab'),
-            },
-        ],
-        [t],
-    )
-
-    const markVisited = useCallback((pageIndex: number) => {
-        setVisitedPages(previous =>
-            previous.has(pageIndex)
-                ? previous
-                : new Set(previous).add(pageIndex),
-        )
-    }, [])
-
-    // Mount the incoming page the moment the drag passes halfway, rather than
-    // when it settles. `Math.round` only changes at that crossing, so this fires
-    // once per page — and the mount lands while the finger is still moving
-    // instead of inside the settle animation, where a dropped frame reads as a
-    // jolt. Costly pages (the NFT pipeline, the transaction list) still mount
-    // only for tabs actually reached, so nothing loads speculatively.
-    useAnimatedReaction(
-        () => Math.round(offset.value),
-        (nearest, previous) => {
-            if (nearest !== previous) runOnJS(markVisited)(nearest)
-        },
-        [markVisited],
-    )
-
-    const handleIndexChange = useCallback(
-        (nextIndex: number) => {
-            setIndex(nextIndex)
-            markVisited(nextIndex)
-            trackEvent(TAB_EVENTS[nextIndex])
-        },
-        [markVisited],
-    )
+    const { index, offset, tabs, isPageVisited, handleIndexChange } =
+        useAccountTabNavigator()
 
     return (
         <PWView style={styles.container}>
@@ -123,10 +57,10 @@ export const AccountTabNavigator = ({
                     />
                 </PWView>
                 <PWView style={styles.page}>
-                    {visitedPages.has(1) && <AccountNfts />}
+                    {isPageVisited(1) && <AccountNfts />}
                 </PWView>
                 <PWView style={styles.page}>
-                    {visitedPages.has(2) && <AccountHistory />}
+                    {isPageVisited(2) && <AccountHistory />}
                 </PWView>
             </AccountDrawerPager>
         </PWView>

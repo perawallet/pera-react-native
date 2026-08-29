@@ -28,16 +28,14 @@ export type PWDrawerProps = {
     renderContent: () => ReactNode
     variant?: PWDrawerVariant
     /**
-     * 0-1 open progress, when the caller wants to hold it — to publish it, or to
-     * let something else drive it. Supplying it does not by itself hand over the
-     * gesture; see `hasOwnOpenGesture`.
+     * 0-1 open progress, when the caller wants to hold it. Supplying it does not
+     * by itself hand over the gesture; see `hasOwnOpenGesture`.
      */
     progress?: SharedValue<number>
     /**
      * Set false when something else on the screen owns the opening drag — a
-     * pager sharing the same horizontal axis. The closed-state edge strip is
-     * dropped so the two don't compete; the surfaces that dismiss an open
-     * drawer stay, since nothing else provides them.
+     * pager sharing the same horizontal axis. Drops the closed-state edge strip
+     * so the two don't compete, and keeps the dismiss surfaces.
      */
     hasOwnOpenGesture?: boolean
     isSwipeEnabled?: boolean
@@ -45,16 +43,9 @@ export type PWDrawerProps = {
     edgeWidth?: number
     /** Panel width as a fraction of the window width (0-1). */
     widthRatio?: number
-    /**
-     * Casts a shadow along the content's leading edge as the panel is revealed.
-     * Deliberately the only depth cue — dimming the content would flatten the
-     * illusion that the panel sits physically underneath it.
-     */
+    /** Casts a shadow along the content's leading edge as the panel is revealed. */
     hasEdgeShadow?: boolean
-    /**
-     * Grows and fades the panel's contents into place as it opens, easing into
-     * the final value.
-     */
+    /** Grows and fades the panel's contents into place as it opens. */
     hasContentGrowIn?: boolean
     contentStyle?: StyleProp<ViewStyle>
     children: ReactNode

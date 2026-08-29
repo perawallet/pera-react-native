@@ -31,14 +31,12 @@ export type AccountDrawerPagerProps = {
 }
 
 /**
- * Hands the account drawer to a pager so one pan drives both.
+ * Hands the account drawer to a pager so one pan drives both, degrading to a
+ * plain pager where no drawer is mounted.
  *
- * Screens render the drawer themselves, which puts their own body outside its
- * provider — the controls are only readable from a child, hence this wrapper.
- * With no drawer mounted it degrades to a plain pager.
- *
- * A single-page screen still benefits: the pager contributes no paging, but its
- * pan is what makes the drawer openable from anywhere rather than the edge.
+ * Worth wrapping even a single-page screen: the pager contributes no paging,
+ * but its pan is what makes the drawer openable from anywhere rather than only
+ * from the edge.
  */
 export const AccountDrawerPager = ({
     children,

@@ -28,10 +28,6 @@ export const useStyles = makeStyles(
         },
         // Pinned beneath the content and left there: in `back` the panel never
         // moves, so revealing it is purely the content sliding off it.
-        //
-        // A recessed off-white, so the layer underneath reads as recessed.
-        // Watch the account rows: AccountWithBalance is itself
-        // layerGrayLightest, so on this panel they lose their card edge.
         panel: {
             position: 'absolute',
             left: 0,
@@ -53,8 +49,6 @@ export const useStyles = makeStyles(
         },
         // Offset leftwards so the content reads as the upper layer. Opacity and
         // elevation are animated with drag progress, so they're absent here.
-        // iOS honours the direction; Android's elevation shadow is symmetric,
-        // so there it reads as a lift rather than a left-cast shadow.
         contentShadow: {
             shadowColor: theme.shadows.md.shadowColor,
             shadowOffset: { width: -theme.spacing.xxs, height: 0 },

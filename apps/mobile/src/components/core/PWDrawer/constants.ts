@@ -53,42 +53,29 @@ export const PWDRAWER_SPRING_CONFIG = {
 export const PWDRAWER_SHADOW_FADE_PROGRESS = 0.12
 
 /**
- * Just enough to read as a seam rather than a drop shadow. Paired with
- * PWDRAWER_SCRIM_OPACITY, which carries most of the layer separation.
+ * Both zero: PWDRAWER_SCRIM_OPACITY carries the layer separation on its own.
+ * Raise these to add a seam at the content's leading edge.
  */
 export const PWDRAWER_SHADOW_OPACITY = 0
 export const PWDRAWER_SHADOW_ELEVATION = 0
 
 /**
  * Peak tint over the content, at fully open. An order of magnitude lighter than
- * a modal backdrop (0.64): the content should read as slightly shaded by the
- * layer above it, not dimmed out of use. This is the knob to turn if the two
- * layers need more or less separation.
+ * a modal backdrop (0.64): the content should read as shaded by the layer above
+ * it, not dimmed out of use. The knob to turn for more or less separation.
  */
 export const PWDRAWER_SCRIM_OPACITY = 0.3
 
 /**
- * The panel contents grow and fade into place as the drawer opens. Keyed off
- * progress rather than run as a separate animation, so a finger-tracked drag
- * passes through the same curve a flick does — the growth follows the thumb
- * instead of firing after the gesture is over.
+ * Ramps the panel contents grow and fade in on, keyed off progress so a
+ * finger-tracked drag passes through the same curve a flick does. Sampled
+ * quadratic ease-out rather than composed from `Easing`, which keeps them a
+ * plain `interpolate` with no easing function captured into the worklet.
  *
- * Applied to the contents, not the panel: scaling the panel itself would pull
- * its background out of its own slot and show the layer behind it.
- *
- * Both ramps are sampled quadratic ease-out (`1 - (1 - p)²`) — quick off the
- * mark, decelerating in — rather than composed from `Easing`, which keeps this a
- * plain `interpolate` with no easing function captured into the worklet. They
- * share their progress stops, so the growth and the fade stay locked together.
- */
-
-/**
- * Peaks 2% over full size just before the end, then settles back. The flourish
- * wants to be felt rather than seen; much more than this reads as a bounce.
+ * Scale peaks 2% over full size before settling — much more reads as a bounce.
+ * Opacity has no overshoot, since above 1 isn't a value.
  */
 export const PWDRAWER_CONTENT_SCALE_PROGRESS = [0, 0.25, 0.5, 0.75, 0.88, 1]
 export const PWDRAWER_CONTENT_SCALE_VALUES = [0.9, 0.955, 0.985, 1.008, 1.01, 1]
-
-/** No overshoot here — opacity above 1 isn't a value, so it eases in flat. */
 export const PWDRAWER_CONTENT_OPACITY_PROGRESS = [0, 0.25, 0.5, 0.75, 1]
 export const PWDRAWER_CONTENT_OPACITY_VALUES = [0.2, 0.5, 0.875, 0.97, 1]

@@ -28,11 +28,10 @@ export type UseAccountDrawerResult = {
     openDrawer: () => void
     closeDrawer: () => void
     /**
-     * Records that a gesture has already animated the drawer to this state.
-     * Kept separate from `openDrawer`/`closeDrawer` because a gesture settles
-     * `progress` itself, carrying the finger's velocity: animating again here
-     * would restart that spring from a standstill partway through, which reads
-     * as a jolt in the closing frames.
+     * Records a state a gesture has already animated to. Separate from
+     * `openDrawer`/`closeDrawer` because a gesture settles `progress` itself
+     * carrying the finger's velocity, and animating again would restart that
+     * spring from a standstill partway through.
      */
     markOpen: () => void
     markClosed: () => void
@@ -69,9 +68,8 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         setIsOpen(false)
     }, [progress])
 
-    // The drawer lives inside the tab screen, so react-navigation's back
-    // handler would pop the tab out from under an open drawer. Claim back
-    // while it's open and just close instead. (Inert on iOS.)
+    // react-navigation's back handler would otherwise pop the tab out from under
+    // an open drawer. Inert on iOS.
     useEffect(() => {
         if (!isOpen) return
 
@@ -86,10 +84,8 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         return () => subscription.remove()
     }, [isOpen, closeDrawer])
 
-    // Every navigating action closes first: pushing a screen over an open
-    // drawer otherwise leaves it open behind, and it's still there on the way
-    // back. Selecting an account is the exception-free case — AccountMenu has
-    // already written the global selection by the time this fires.
+    // Pushing a screen over an open drawer leaves it open behind, and it's still
+    // there on the way back — so every navigating action closes first.
     const closeThen = useCallback(
         (action: () => void) => {
             closeDrawer()
@@ -115,8 +111,8 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         [closeThen, openPeraCard],
     )
 
-    // Sorting doesn't navigate — the sheet is a portal above the drawer, so
-    // the list stays put underneath and re-sorts in place.
+    // Sorting doesn't navigate: the sheet is a portal above the drawer, so the
+    // list stays put underneath and re-sorts in place.
     const handleOpenSort = useCallback(() => {
         void openSort()
     }, [openSort])

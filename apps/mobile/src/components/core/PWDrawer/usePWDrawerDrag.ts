@@ -43,11 +43,10 @@ export type UsePWDrawerDragParams = {
 /**
  * The drawer's drag, shared by every surface that can move it.
  *
- * `activeOffsetX` with `failOffsetY` is what lets this coexist with a vertical
- * list underneath: a mostly-vertical drag fails the pan and the list scrolls,
- * a mostly-horizontal one takes over. That cooperation only works because the
- * pan receives ACTION_DOWN — see PWDrawerGestureSurface for the case where
- * something upstream takes it away.
+ * `activeOffsetX` with `failOffsetY` is what lets it coexist with a vertical
+ * list underneath: a mostly-vertical drag fails the pan and the list scrolls.
+ * That only works while the pan receives ACTION_DOWN — see
+ * PWDrawerGestureSurface for where something upstream takes it away.
  */
 export const usePWDrawerDrag = ({
     progress,

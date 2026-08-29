@@ -28,6 +28,9 @@ export const PWPAGER_VERTICAL_CANCEL_OFFSET = 24
 /** Release velocity, px/s, that commits to the next page regardless of travel. */
 export const PWPAGER_FLING_VELOCITY = 500
 
+/** Drawer progress past which a slow release settles open rather than closed. */
+export const PWPAGER_DRAWER_COMMIT_THRESHOLD = 0.5
+
 /**
  * Width of the leading strip that reaches the drawer from a page other than the
  * first. Past the first page a mid-screen drag pages backwards instead, so this

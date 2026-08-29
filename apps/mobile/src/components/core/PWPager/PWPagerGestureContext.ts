@@ -15,20 +15,14 @@ import { type PanGesture } from 'react-native-gesture-handler'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * The pager's *trailing* (leftward) pan, published so nested content can take
- * precedence over it.
- *
- * A row that reveals an action on a leftward swipe competes directly with
- * paging: same axis, same threshold, and the pager's pan is the ancestor.
- * Without a declared relation gesture-handler simply lets whichever activates
- * first cancel the other, and the ancestor tends to win, so the row's swipe
+ * The pager's *trailing* (leftward) pan. Consumers pass it to their own
+ * gesture's `block` so the pager waits for theirs to fail instead of competing
+ * — without a declared relation the ancestor tends to win and a row's swipe
  * silently stops working.
  *
- * Consumers pass this to their own gesture's `block`, which makes the pager wait
- * for theirs to fail rather than competing with it. Only the leftward pan is
- * exposed on purpose: blocking both directions would also swallow the rightward
- * swipe that opens the drawer, and a row that never activates rightward never
- * fails either — so the drawer would hang rather than open.
+ * Only the leftward pan is exposed: blocking both directions would swallow the
+ * rightward swipe that opens the drawer, and a row that never activates
+ * rightward never fails, so the drawer would hang rather than open.
  */
 export const PWPagerGestureContext = createContext<Nullable<PanGesture>>(null)
 

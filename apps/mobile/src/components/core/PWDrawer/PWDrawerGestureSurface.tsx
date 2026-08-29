@@ -28,18 +28,14 @@ export type PWDrawerGestureSurfaceProps = {
 }
 
 /**
- * The surface that opens the drawer, rendered last so it draws above the content.
+ * The surface that opens the drawer, rendered last so it draws above the
+ * content. That z-order is the whole point: `react-native-pager-view`'s root
+ * calls `requestDisallowInterceptTouchEvent(true)` on ACTION_DOWN, so any pan in
+ * an ancestor of a pager silently never receives the touch stream. Sitting on
+ * top means ACTION_DOWN never reaches the pager and the lockout never fires.
  *
- * That z-order is the whole point. `react-native-pager-view`'s root view is a
- * `NestedScrollableHost`, which calls
- * `parent.requestDisallowInterceptTouchEvent(true)` on every ACTION_DOWN and so
- * locks RNGH's root out of the entire gesture. Any pan handler in an ancestor of
- * the pager silently never receives the touch stream — which is why wrapping a
- * drawer library around the screen could not be made reliable. Sitting on top
- * means ACTION_DOWN never reaches the pager's host and the lockout never fires.
- *
- * Closed it is a narrow edge strip. Open it covers only the sliver of content
- * still on screen, never the panel: blanketing the panel would swallow the
+ * Closed it is a narrow edge strip; open it covers only the sliver of content
+ * still on screen, never the panel — blanketing the panel would swallow the
  * account list's scrolling and turn every tap into a dismiss.
  */
 export const PWDrawerGestureSurface = ({

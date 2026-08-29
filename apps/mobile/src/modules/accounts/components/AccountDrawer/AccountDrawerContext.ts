@@ -43,12 +43,9 @@ export const useAccountDrawerControls =
     (): Nullable<AccountDrawerContextValue> => useContext(AccountDrawerContext)
 
 /**
- * Declares how this screen wants the shared drawer's list shaped.
- *
- * Gated on focus because tab screens stay mounted after you switch away: an
- * unfocused screen must not restyle the drawer for the one on display. Nothing
- * is published on blur — the next focused screen overwrites it, and the drawer
- * is only reachable from screens that declare a kind.
+ * Declares how this screen wants the shared drawer's list shaped. Gated on
+ * focus because tab screens stay mounted after you switch away, and an
+ * unfocused screen must not restyle the drawer for the one on display.
  */
 export const useAccountDrawerPickerKind = (kind: AccountPickerKind): void => {
     const controls = useAccountDrawerControls()

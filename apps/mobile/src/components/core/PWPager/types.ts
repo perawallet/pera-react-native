@@ -24,9 +24,9 @@ export type PWPagerProps = {
      */
     offset?: SharedValue<number>
     /**
-     * A drawer's 0-1 open progress. When supplied, this pager's pan also drives
-     * the drawer, so the two share one horizontal axis instead of competing for
-     * it — see PWPager for the rules that decide which one a drag moves.
+     * A drawer's 0-1 open progress. When supplied, this pager's pan drives the
+     * drawer too, so the two share one horizontal axis instead of competing —
+     * see PWPager for the rules that decide which one a drag moves.
      */
     drawerProgress?: SharedValue<number>
     /** Travel that counts as fully open, in px. Required with `drawerProgress`. */
