@@ -38,10 +38,9 @@ export const useIsQuantumDataSigningBlocked = (
     // A request naming a quantum account as `signer` is caught here.
     //
     // The one case this can't see is an ARC-60 request whose keyless rekeyed
-    // signer resolves to a quantum auth account ( made that hop
-    // possible). `canSignArc60` refuses a quantum hop target outright, so such
-    // a request is rejected by the transport before it is ever enqueued and
-    // never reaches this hook.
+    // signer resolves to a quantum auth account. `canSignArc60` refuses a
+    // quantum hop target outright, so such a request is rejected by the
+    // transport before it is ever enqueued and never reaches this hook.
     return resolveAllSignerAddresses(request).some(address => {
         const account = accounts.find(a => a.address === address)
         return !!account && isQuantumAccount(account)

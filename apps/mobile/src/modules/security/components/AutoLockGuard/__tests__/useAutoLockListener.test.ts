@@ -300,7 +300,7 @@ describe('useAutoLockListener', () => {
         )
     })
 
-    it('should not unlock an already-locked app when foreground check returns false ( cancel-FaceID race)', async () => {
+    it('should not unlock an already-locked app when foreground check returns false (cancel-FaceID race)', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
         mockCheckAutoLock.mockResolvedValue(false)
 

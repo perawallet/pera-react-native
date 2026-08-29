@@ -110,7 +110,7 @@ describe('useNeedsMigration', () => {
     })
 
     it('still needs migration for a legacy-sentinel user because accounts v2 must reconcile', async () => {
-        // accounts target is 2 ( watch-account reconciliation); a
+        // accounts target is 2 (watch-account reconciliation); a
         // legacy-sentinel-only user (no per-step record) is synthesized at
         // version 1 for every step, so accounts is pending once more even
         // though the old boolean sentinel says migration is "complete".

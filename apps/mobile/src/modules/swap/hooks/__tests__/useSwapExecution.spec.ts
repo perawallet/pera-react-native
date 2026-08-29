@@ -784,8 +784,7 @@ describe('useSwapExecution', () => {
         // raising the fee forces a `grp` recompute that would invalidate
         // signatures the backend already produced and the device can't
         // recreate. The guard must therefore fire on the account BEFORE the
-        // signing pipeline is ever invoked ( tracks the
-        // backend-side fix).
+        // signing pipeline is ever invoked; the real fix is backend-side.
         mockUseSelectedAccount.mockReturnValue(quantumAccount)
 
         const { result } = renderHook(() => useSwapExecution())

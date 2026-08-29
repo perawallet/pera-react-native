@@ -527,8 +527,8 @@ export const useWalletConnectHandlers = () => {
                 },
             )
 
-            // enqueueSignRequest is async ( may fetch suggested params
-            // for a quantum signer), but this handler must stay synchronous:
+            // enqueueSignRequest is async (it may fetch suggested params for a
+            // quantum signer), but this handler must stay synchronous:
             // the WC listener wraps it in a sync try/catch and unit tests
             // assert its validate/resolve throws propagate synchronously.
             // The enqueue handles its own failures via `respondWithError`, so

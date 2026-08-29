@@ -10,7 +10,8 @@ history) 401 against staging; `bundle` still succeeds but prints a warning.
     pnpm --filter extension bundle
 
 Then open `chrome://extensions`, enable Developer mode, "Load unpacked",
-select `apps/browser/dist/`. Click the toolbar icon to open the popup.
+select the `dist/` folder the bundle writes into. Click the toolbar icon to
+open the popup.
 
 ## How it fits together
 

@@ -41,7 +41,7 @@ describe('useBalanceLineChart', () => {
     })
 
     it('renders the chart whenever there is data, even paused or errored', () => {
-        // Stale data beats every state screen ( branch order).
+        // Stale data beats every state screen (branch order).
         const { result } = renderHook(() =>
             useBalanceLineChart({
                 ...defaultParams,
