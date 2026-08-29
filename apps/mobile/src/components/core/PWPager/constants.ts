@@ -41,3 +41,10 @@ export const PWPAGER_SPRING_CONFIG = {
     mass: 1,
     overshootClamping: true,
 } as const
+
+/**
+ * Progress above which the drawer counts as open for gesture routing. Not zero:
+ * an interrupted settle can rest a hair off, and an exact `> 0` test would then
+ * hand every later swipe to a drawer the user considers shut.
+ */
+export const PWPAGER_DRAWER_OPEN_EPSILON = 0.01

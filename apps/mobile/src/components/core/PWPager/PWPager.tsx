@@ -35,6 +35,7 @@ import { PWView } from '../PWView'
 import {
     PWPAGER_ACTIVATION_OFFSET,
     PWPAGER_DRAWER_EDGE_WIDTH,
+    PWPAGER_DRAWER_OPEN_EPSILON,
     PWPAGER_OPPOSITE_BOUND,
     PWPAGER_FLING_VELOCITY,
     PWPAGER_SPRING_CONFIG,
@@ -140,17 +141,29 @@ export const PWPager = ({
                       ? false
                       : drawerProgress.value > 0.5
 
-            drawerProgress.value = withSpring(shouldOpen ? 1 : 0, {
-                ...PWPAGER_SPRING_CONFIG,
-                // Carry the finger's speed into the settle. Without it the
-                // spring starts from a standstill the moment you lift off,
-                // which stalls the motion and then re-accelerates — a
-                // visible clunk at the end.
-                velocity: event.velocityX / drawerWidth,
-            })
-
-            if (shouldOpen && onDrawerOpen) runOnJS(onDrawerOpen)()
-            if (!shouldOpen && onDrawerClose) runOnJS(onDrawerClose)()
+            drawerProgress.value = withSpring(
+                shouldOpen ? 1 : 0,
+                {
+                    ...PWPAGER_SPRING_CONFIG,
+                    // Carry the finger's speed into the settle. Without it the
+                    // spring starts from a standstill the moment you lift off,
+                    // which stalls the motion and then re-accelerates — a
+                    // visible clunk at the end.
+                    velocity: event.velocityX / drawerWidth,
+                },
+                // Reported on completion, not here. Committing flips the
+                // drawer's open state, and PWDrawer mounts its dismiss surface
+                // and re-arms the panel drag off that — two gesture handlers
+                // attaching in the final frames. A drag that settles back where
+                // it started changes no state, and has never had the jump,
+                // which is what points at this.
+                finished => {
+                    'worklet'
+                    if (!finished) return
+                    if (shouldOpen && onDrawerOpen) runOnJS(onDrawerOpen)()
+                    if (!shouldOpen && onDrawerClose) runOnJS(onDrawerClose)()
+                },
+            )
             return
         }
 
@@ -217,7 +230,15 @@ export const PWPager = ({
             'worklet'
             dragStartOffset.value = offset.value
             dragStartDrawer.value = drawerProgress?.value ?? 0
-            isDrivingDrawer.value = 0
+
+            // Leftward closes the drawer when one is open, and only pages
+            // otherwise. Without this an open drawer's close swipe falls through
+            // to the pager and switches tabs instead.
+            isDrivingDrawer.value =
+                canDriveDrawer &&
+                (drawerProgress?.value ?? 0) > PWPAGER_DRAWER_OPEN_EPSILON
+                    ? 1
+                    : 0
         },
         onUpdate: onPanUpdate,
         onDeactivate: onPanEnd,
@@ -239,7 +260,8 @@ export const PWPager = ({
 
             const isFromLeadingEdge = event.x <= drawerEdgeWidth
             const isOnFirstPage = offset.value <= 0
-            const isDrawerPartlyOpen = (drawerProgress?.value ?? 0) > 0
+            const isDrawerPartlyOpen =
+                (drawerProgress?.value ?? 0) > PWPAGER_DRAWER_OPEN_EPSILON
 
             isDrivingDrawer.value =
                 canDriveDrawer &&

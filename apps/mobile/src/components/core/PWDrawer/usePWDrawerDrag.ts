@@ -90,18 +90,27 @@ export const usePWDrawerDrag = ({
                           ? false
                           : progress.value > PWDRAWER_COMMIT_THRESHOLD
 
-                progress.value = withSpring(shouldOpen ? 1 : 0, {
-                    ...PWDRAWER_SPRING_CONFIG,
-                    // Carry the finger's speed into the settle, or the motion
-                    // stalls on lift-off and re-accelerates.
-                    velocity: event.velocityX / panelWidth,
-                })
-
-                if (shouldOpen) {
-                    runOnJS(onOpen)()
-                } else {
-                    runOnJS(onClose)()
-                }
+                progress.value = withSpring(
+                    shouldOpen ? 1 : 0,
+                    {
+                        ...PWDRAWER_SPRING_CONFIG,
+                        // Carry the finger's speed into the settle, or the
+                        // motion stalls on lift-off and re-accelerates.
+                        velocity: event.velocityX / panelWidth,
+                    },
+                    // Reported on completion so the re-render it causes — which
+                    // mounts and unmounts gesture surfaces — lands after the
+                    // motion rather than in its final frames.
+                    finished => {
+                        'worklet'
+                        if (!finished) return
+                        if (shouldOpen) {
+                            runOnJS(onOpen)()
+                        } else {
+                            runOnJS(onClose)()
+                        }
+                    },
+                )
             })
 
         if (!hasTapToClose) return pan
@@ -110,8 +119,14 @@ export const usePWDrawerDrag = ({
             .enabled(isEnabled)
             .onEnd(() => {
                 'worklet'
-                progress.value = withSpring(0, PWDRAWER_SPRING_CONFIG)
-                runOnJS(onClose)()
+                progress.value = withSpring(
+                    0,
+                    PWDRAWER_SPRING_CONFIG,
+                    finished => {
+                        'worklet'
+                        if (finished) runOnJS(onClose)()
+                    },
+                )
             })
 
         return Gesture.Race(pan, tap)

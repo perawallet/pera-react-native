@@ -14,7 +14,7 @@
  * Leaves a sliver of the covered screen visible, so the content still reads as
  * a layer sitting on top rather than a full-screen replacement.
  */
-export const PWDRAWER_WIDTH_RATIO = 0.9
+export const PWDRAWER_WIDTH_RATIO = 0.92
 
 /**
  * Width of the closed-state grab strip, in px. Everything under it is
