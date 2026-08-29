@@ -44,12 +44,6 @@ export const PWTouchableOpacity = ({
     // onPress before Keyboard.dismiss — bottom-sheet open races if reversed.
     const handlePress = useCallback(
         (event: GestureResponderEvent) => {
-            // TTCDIAG: temporary instrumentation, remove before commit.
-            if (testID === 'signing-confirm-slide') {
-                console.log(
-                    `[TTCDIAG] touchable press allowRapid=${allowRapidPress} disabled=${String((rest as { disabled?: boolean }).disabled)}`,
-                )
-            }
             if (!allowRapidPress) {
                 const now = Date.now()
                 if (now - lastPressAtRef.current < DOUBLE_PRESS_GUARD_MS) return
@@ -60,8 +54,7 @@ export const PWTouchableOpacity = ({
                 Keyboard.dismiss()
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [onPress, dismissKeyboardOnPress, allowRapidPress, testID, rest],
+        [onPress, dismissKeyboardOnPress, allowRapidPress],
     )
 
     return (

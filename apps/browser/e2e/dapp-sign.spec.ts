@@ -248,22 +248,6 @@ test('sign_transactions on a connected origin opens the approval popup and decod
 
     await dappPage.evaluate(txn => window.signTxns([{ txn }]), unsignedTxnB64)
     const { approvalPage, approvalErrors } = await openApprovalPopup()
-    // TTCDIAG: temporary instrumentation, remove before commit.
-    const ttcLog: string[] = []
-    const record =
-        (label: string) => (m: { text: () => string; type: () => string }) => {
-            ttcLog.push(
-                `+${Date.now() % 1_000_000}ms [${label}/${m.type()}] ${m.text().slice(0, 400)}`,
-            )
-            if (ttcLog.length > 300) ttcLog.shift()
-        }
-    approvalPage.on('console', record('approval'))
-    approvalPage.on('pageerror', e =>
-        ttcLog.push(
-            `+${Date.now() % 1_000_000}ms [approval/PAGEERROR] ${String(e)}`,
-        ),
-    )
-    dappPage.on('console', record('dapp'))
     expectApprovalSurfaceUrl(approvalPage)
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -296,50 +280,23 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await confirmControl.click()
     await confirmControl.click()
 
-    // TTCDIAG: temporary instrumentation, remove before commit.
-    try {
-        await expect
-            .poll(() => dappPage.locator('#sign-result').textContent(), {
-                timeout: 20_000,
-            })
-            .not.toBe('')
-    } catch (error) {
-        console.log('[TTCDIAG] console log:\n  ' + ttcLog.join('\n  '))
-        console.log(
-            '[TTCDIAG] approvalPage closed=' +
-                approvalPage.isClosed() +
-                ' url=' +
-                (approvalPage.isClosed() ? 'n/a' : approvalPage.url()),
+    // Poll BOTH outcomes, not just the success one. The fixture writes a
+    // rejection to `#sign-error` and clears `#sign-result` (dapp-test-page.html),
+    // so waiting on `#sign-result` alone turns every decline — including a
+    // genuine signing failure in the wallet — into a bare 20s timeout with the
+    // actual reason sitting unread in the DOM. That is exactly what made this
+    // spec's intermittent failures undiagnosable.
+    await expect
+        .poll(
+            async () =>
+                (await dappPage.locator('#sign-result').textContent()) ||
+                (await dappPage.locator('#sign-error').textContent()) ||
+                '',
+            { timeout: 20_000 },
         )
-        console.log(
-            '[TTCDIAG] pages:\n  ' +
-                context
-                    .pages()
-                    .map(p => `${p.isClosed() ? '(closed) ' : ''}${p.url()}`)
-                    .join('\n  '),
-        )
-        // Is a bottom sheet or the pin nudge sitting unanswered on the approval
-        // surface right now? A held presentation is silent by design.
-        for (const id of [
-            'pin_security_prompt_not_now_button',
-            'qr-scanner-sheet',
-            'pw-bottom-sheet-stage',
-            'pw-bottom-sheet-backdrop',
-            'signing-confirm-slide',
-        ]) {
-            const visible = await approvalPage
-                .getByTestId(id)
-                .isVisible()
-                .catch(() => 'error')
-            console.log(`[TTCDIAG] approval testID ${id} visible=${visible}`)
-        }
-        const bodyText = await approvalPage
-            .locator('body')
-            .innerText()
-            .catch(() => '<unavailable>')
-        console.log('[TTCDIAG] approval body text:\n' + bodyText.slice(0, 1200))
-        throw error
-    }
+        .not.toBe('')
+    const signError = await dappPage.locator('#sign-error').textContent()
+    expect(signError, 'the wallet declined the sign request').toBe('')
     const signResult = JSON.parse(
         (await dappPage.locator('#sign-result').textContent()) ?? '{}',
     ) as { stxns?: string[] }

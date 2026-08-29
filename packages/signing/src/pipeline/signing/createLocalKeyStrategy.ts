@@ -161,19 +161,6 @@ export const createLocalKeyStrategy = (
                 }
             } catch (error) {
                 const cause = toError(error)
-                // TTCDIAG: temporary instrumentation, remove before commit.
-                console.log(
-                    '[TTCDIAG] localKeyStrategy caught',
-                    JSON.stringify({
-                        name: cause.name,
-                        message: cause.message,
-                        raw: String(error),
-                        keys: Object.keys(
-                            (error ?? {}) as Record<string, unknown>,
-                        ),
-                        stack: cause.stack?.slice(0, 600),
-                    }),
-                )
                 const signingError = new SigningError(cause.message, cause, {
                     retryable: isRetryableError(cause),
                 })

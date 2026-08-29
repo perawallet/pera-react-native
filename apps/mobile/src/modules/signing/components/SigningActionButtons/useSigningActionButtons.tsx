@@ -183,10 +183,6 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     }, [currentRequest, allTransactions.length])
 
     const handleSignAndSend = useCallback(() => {
-        // TTCDIAG: temporary instrumentation, remove before commit.
-        console.log(
-            `[TTCDIAG] handleSignAndSend enter cannotSign=${String(!!cannotSignNotice)} guardedWarning=${String(guardedWarningType)} source=${String(currentRequest?.sourceType)}`,
-        )
         if (cannotSignNotice) return
 
         void (async () => {
@@ -197,11 +193,9 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 currentRequest &&
                 isExternalCallbackSource(currentRequest.sourceType)
             ) {
-                console.log('[TTCDIAG] awaiting confirmQuantumDappUsage')
                 const decision = await confirmQuantumDappUsage(
                     resolveAllSignerAddresses(currentRequest),
                 )
-                console.log(`[TTCDIAG] quantum decision=${decision}`)
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {
                         trackEvent(
@@ -244,7 +238,6 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                     walletConnectTxPayload,
                 )
             }
-            console.log('[TTCDIAG] calling pipeline.next()')
             pipeline.next()
         })()
     }, [
