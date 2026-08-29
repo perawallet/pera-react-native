@@ -61,12 +61,15 @@ describe('useSystemBarsAppearance', () => {
         expect(mockSetStyle).toHaveBeenCalledWith('dark')
     })
 
-    it('leaves the navigation bar alone off Android', () => {
+    // Touching the status bar off Android is not merely redundant: it trips
+    // RCTStatusBarManager, which refuses to run while react-native-screens owns
+    // the iOS status bar via UIViewControllerBasedStatusBarAppearance.
+    it('leaves both bars alone off Android', () => {
         Platform.OS = 'ios'
 
         renderHook(() => useSystemBarsAppearance(false))
 
-        expect(mockSetStatusBarStyle).toHaveBeenCalledWith('dark')
+        expect(mockSetStatusBarStyle).not.toHaveBeenCalled()
         expect(mockSetStyle).not.toHaveBeenCalled()
     })
 })
