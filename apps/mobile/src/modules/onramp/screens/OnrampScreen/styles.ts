@@ -45,13 +45,4 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    accountTrigger: {
-        flexGrow: 0,
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '100%',
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        paddingVertical: theme.spacing.xs,
-    },
 }))

@@ -37,10 +37,6 @@ import { useHasPendingRampOrders } from '@modules/onramp/hooks/useHasPendingRamp
 import { useStyles } from './styles'
 import { useOnrampScreen } from './useOnrampScreen'
 
-const ACCOUNT_TRIGGER_ICON_PROPS = { size: 'sm' } as const
-const ACCOUNT_TRIGGER_CHEVRON_PROPS = { size: 'sm' } as const
-const ACCOUNT_TRIGGER_TEXT_PROPS = { variant: 'body' } as const
-
 // Pager page order mirrors the header tab order.
 const TAB_PAGES: OnrampTab[] = ['fund', 'history']
 
