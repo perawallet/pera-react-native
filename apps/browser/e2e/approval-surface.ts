@@ -118,22 +118,87 @@ export const openApprovalSurface = async ({
     // by the caller), so read the page list rather than only waiting for the
     // next 'page' event.
     let windowPage: Page | undefined
-    await expect
-        .poll(
-            async () => {
-                windowPage = context
+    // WCDIAG: temporary instrumentation, remove before commit.
+    const seenUrls = new Set<string>()
+    const t0 = Date.now()
+    const timeline: string[] = []
+    try {
+        await expect
+            .poll(
+                async () => {
+                    for (const candidate of context.pages()) {
+                        const u = candidate.url()
+                        if (!seenUrls.has(u)) {
+                            seenUrls.add(u)
+                            timeline.push(`+${Date.now() - t0}ms page: ${u}`)
+                        }
+                    }
+                    windowPage = context
+                        .pages()
+                        .find(candidate =>
+                            candidate.url().includes(APPROVAL_WINDOW_URL),
+                        )
+                    if (windowPage) return 'window'
+                    return (await pendingPopupApproval(page)) === null
+                        ? null
+                        : 'popup'
+                },
+                { timeout },
+            )
+            .not.toBeNull()
+    } catch (error) {
+        console.log('[WCDIAG] openApprovalSurface TIMED OUT after', timeout)
+        console.log('[WCDIAG] page-url timeline:\n  ' + timeline.join('\n  '))
+        console.log(
+            '[WCDIAG] final pages:\n  ' +
+                context
                     .pages()
-                    .find(candidate =>
-                        candidate.url().includes(APPROVAL_WINDOW_URL),
-                    )
-                if (windowPage) return 'window'
-                return (await pendingPopupApproval(page)) === null
-                    ? null
-                    : 'popup'
-            },
-            { timeout },
+                    .map(p => `${p.isClosed() ? '(closed) ' : ''}${p.url()}`)
+                    .join('\n  '),
         )
-        .not.toBeNull()
+        const swState = await page
+            .evaluate(
+                scope =>
+                    new Promise(resolve => {
+                        const rt = (
+                            globalThis as unknown as {
+                                chrome?: {
+                                    runtime?: {
+                                        sendMessage?: (
+                                            m: unknown,
+                                            cb: (r: unknown) => void,
+                                        ) => void
+                                        getContexts?: (
+                                            f: unknown,
+                                        ) => Promise<unknown>
+                                    }
+                                }
+                            }
+                        ).chrome?.runtime
+                        if (!rt?.sendMessage) {
+                            resolve('no chrome.runtime')
+                            return
+                        }
+                        void Promise.resolve(
+                            rt.getContexts?.({}) ?? 'getContexts unavailable',
+                        ).then(ctxs => {
+                            rt.sendMessage!(
+                                { scope, kind: 'get-current-approval' },
+                                cur => {
+                                    resolve({
+                                        currentApproval: cur,
+                                        contexts: ctxs,
+                                    })
+                                },
+                            )
+                        })
+                    }),
+                'pera-dapp-approval',
+            )
+            .catch((e: unknown) => `evaluate failed: ${String(e)}`)
+        console.log('[WCDIAG] SW state:', JSON.stringify(swState, null, 2))
+        throw error
+    }
 
     if (windowPage) {
         await windowPage.waitForLoadState('domcontentloaded')

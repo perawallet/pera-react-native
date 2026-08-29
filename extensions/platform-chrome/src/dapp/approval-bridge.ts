@@ -343,6 +343,12 @@ export class ApprovalWindowBridge
             )
         }
         this.assertCapacity(approval.origin)
+        // WCDIAG: temporary instrumentation, remove before commit.
+        console.log(
+            '[WCDIAG-SW] awaitApproval REGISTERED',
+            approval.kind,
+            approval.requestId,
+        )
         return new Promise<T | null>(resolve => {
             this.pending.set(approval.requestId, {
                 approval,
@@ -467,13 +473,24 @@ export class ApprovalWindowBridge
         const url = this.chromeLike.runtime.getURL(
             `approval.html?requestId=${encodeURIComponent(requestId)}`,
         )
-        const win = await this.chromeLike.windows.create({
-            url,
-            type: 'popup',
-            width: 360,
-            height: 600,
-            focused: true,
-        })
+        // WCDIAG: temporary instrumentation, remove before commit.
+        console.log('[WCDIAG-SW] windows.create: awaiting', url)
+        const win = await this.chromeLike.windows
+            .create({
+                url,
+                type: 'popup',
+                width: 360,
+                height: 600,
+                focused: true,
+            })
+            .then(w => {
+                console.log('[WCDIAG-SW] windows.create: RESOLVED id=', w?.id)
+                return w
+            })
+            .catch((e: unknown) => {
+                console.log('[WCDIAG-SW] windows.create: REJECTED', String(e))
+                throw e
+            })
         const entry = this.pending.get(requestId)
         if (entry && typeof win?.id === 'number') {
             entry.windowId = win.id
@@ -496,9 +513,13 @@ export class ApprovalWindowBridge
             | undefined
         if (!openPopup) return false
         try {
+            // WCDIAG: temporary instrumentation, remove before commit.
+            console.log('[WCDIAG-SW] openPopup: awaiting')
             await openPopup.call(this.chromeLike.action)
+            console.log('[WCDIAG-SW] openPopup: RESOLVED true')
             return true
-        } catch {
+        } catch (e) {
+            console.log('[WCDIAG-SW] openPopup: REJECTED', String(e))
             return false
         }
     }

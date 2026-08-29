@@ -45,6 +45,8 @@ let context: BrowserContext
 let extensionId: string
 let page: Page
 let pageErrors: Error[]
+// WCDIAG: temporary instrumentation, remove before commit.
+let swWorker: { evaluate: <T>(fn: () => T) => Promise<T> } | undefined
 const PASSWORD = 'e2e-walletconnect-password-1'
 
 // A `.invalid` TLD guarantees DNS failure with no real network dependency,
@@ -117,6 +119,32 @@ test.beforeAll(async () => {
         serviceWorker = await context.waitForEvent('serviceworker')
     }
     extensionId = new URL(serviceWorker.url()).host
+
+    // WCDIAG: temporary instrumentation, remove before commit. Playwright does
+    // not surface service-worker console output, so tee it into a global the
+    // test can read back on failure.
+    await serviceWorker
+        .evaluate(() => {
+            const sink: string[] = []
+            ;(globalThis as unknown as { __wcdiag: string[] }).__wcdiag = sink
+            const original = console.log.bind(console)
+            console.log = (...args: unknown[]) => {
+                try {
+                    sink.push(
+                        args
+                            .map(a =>
+                                typeof a === 'string' ? a : JSON.stringify(a),
+                            )
+                            .join(' '),
+                    )
+                } catch {
+                    sink.push('<unserializable>')
+                }
+                original(...args)
+            }
+        })
+        .catch(() => {})
+    swWorker = serviceWorker
 
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
@@ -407,7 +435,9 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // QRScannerContent.web -> useDeepLink -> useWalletConnectPairing.web
         // -> offscreen.
         await fillPasteInput(page, uri)
+        console.log('[WCDIAG] about to click qr-paste-submit')
         await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
+        console.log('[WCDIAG] clicked qr-paste-submit')
 
         // useWalletConnectPairing.web's `pair` control message is now in
         // flight to offscreen; offscreen constructs the wallet-side
@@ -421,7 +451,25 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // the mechanism note on the window-fallback test below, and
         // openApprovalSurface). What this test is about is that the session
         // survives the popup closing, not which surface Chrome gave us.
-        const { approvalPage, approvalErrors } = await openWcApproval()
+        // WCDIAG: temporary instrumentation, remove before commit.
+        let opened
+        try {
+            opened = await openWcApproval()
+        } catch (error) {
+            const swLog = await swWorker
+                ?.evaluate(
+                    () =>
+                        (globalThis as unknown as { __wcdiag?: string[] })
+                            .__wcdiag ?? ['<no sink>'],
+                )
+                .catch((e: unknown) => [`<sw evaluate failed: ${String(e)}>`])
+            console.log(
+                '[WCDIAG] service-worker log:\n  ' +
+                    (swLog ?? ['<no worker>']).join('\n  '),
+            )
+            throw error
+        }
+        const { approvalPage, approvalErrors } = opened
         expectApprovalSurfaceUrl(approvalPage)
 
         const unlockInput = approvalPage.getByTestId('unlock-password-input')
