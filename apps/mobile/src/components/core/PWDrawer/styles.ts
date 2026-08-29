@@ -47,13 +47,6 @@ export const useStyles = makeStyles(
             flex: 1,
             backgroundColor: theme.colors.background,
         },
-        // Offset leftwards so the content reads as the upper layer. Opacity and
-        // elevation are animated with drag progress, so they're absent here.
-        contentShadow: {
-            shadowColor: theme.shadows.md.shadowColor,
-            shadowOffset: { width: -theme.spacing.xxs, height: 0 },
-            shadowRadius: theme.spacing.xs,
-        },
         // Sits over the content, so once open it tints only the sliver still on
         // screen — reading as shading at the seam rather than a modal backdrop.
         scrim: {

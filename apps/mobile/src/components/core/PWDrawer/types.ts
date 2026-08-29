@@ -43,8 +43,6 @@ export type PWDrawerProps = {
     edgeWidth?: number
     /** Panel width as a fraction of the window width (0-1). */
     widthRatio?: number
-    /** Casts a shadow along the content's leading edge as the panel is revealed. */
-    hasEdgeShadow?: boolean
     /** Grows and fades the panel's contents into place as it opens. */
     hasContentGrowIn?: boolean
     contentStyle?: StyleProp<ViewStyle>

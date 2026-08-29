@@ -46,23 +46,9 @@ export const PWDRAWER_SPRING_CONFIG = {
 } as const
 
 /**
- * Progress over which the content's left shadow fades in. Short, so the shadow
- * is established as soon as the panel is revealed rather than ramping with the
- * whole drag; kept non-zero so nothing bleeds at the screen edge when closed.
- */
-export const PWDRAWER_SHADOW_FADE_PROGRESS = 0.12
-
-/**
- * Both zero: PWDRAWER_SCRIM_OPACITY carries the layer separation on its own.
- * Raise these to add a seam at the content's leading edge.
- */
-export const PWDRAWER_SHADOW_OPACITY = 0
-export const PWDRAWER_SHADOW_ELEVATION = 0
-
-/**
- * Peak tint over the content, at fully open. An order of magnitude lighter than
- * a modal backdrop (0.64): the content should read as shaded by the layer above
- * it, not dimmed out of use. The knob to turn for more or less separation.
+ * Peak tint over the content, at fully open, and the only cue separating the two
+ * layers. An order of magnitude lighter than a modal backdrop (0.64): the
+ * content should read as shaded by the layer above it, not dimmed out of use.
  */
 export const PWDRAWER_SCRIM_OPACITY = 0.3
 

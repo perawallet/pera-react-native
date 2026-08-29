@@ -28,9 +28,6 @@ import {
     PWDRAWER_CONTENT_SCALE_PROGRESS,
     PWDRAWER_CONTENT_SCALE_VALUES,
     PWDRAWER_SCRIM_OPACITY,
-    PWDRAWER_SHADOW_ELEVATION,
-    PWDRAWER_SHADOW_FADE_PROGRESS,
-    PWDRAWER_SHADOW_OPACITY,
     PWDRAWER_SPRING_CONFIG,
 } from './constants'
 import { useStyles } from './styles'
@@ -46,7 +43,6 @@ export type UsePWDrawerParams = Required<
         | 'variant'
         | 'isSwipeEnabled'
         | 'widthRatio'
-        | 'hasEdgeShadow'
         | 'hasContentGrowIn'
         | 'hasOwnOpenGesture'
     >
@@ -73,7 +69,6 @@ export const usePWDrawer = ({
     progress: externalProgress,
     isSwipeEnabled,
     widthRatio,
-    hasEdgeShadow,
     hasContentGrowIn,
     hasOwnOpenGesture,
 }: UsePWDrawerParams): UsePWDrawerResult => {
@@ -98,26 +93,14 @@ export const usePWDrawer = ({
 
     const isBack = variant === 'back'
 
-    const contentAnimatedStyle = useAnimatedStyle(() => {
-        const shadowStrength = interpolate(
-            progress.value,
-            [0, PWDRAWER_SHADOW_FADE_PROGRESS],
-            [0, 1],
-            Extrapolation.CLAMP,
-        )
-
-        return {
+    const contentAnimatedStyle = useAnimatedStyle(
+        () => ({
             transform: [
                 { translateX: isBack ? progress.value * panelWidth : 0 },
             ],
-            ...(hasEdgeShadow
-                ? {
-                      shadowOpacity: shadowStrength * PWDRAWER_SHADOW_OPACITY,
-                      elevation: shadowStrength * PWDRAWER_SHADOW_ELEVATION,
-                  }
-                : null),
-        }
-    }, [isBack, panelWidth, hasEdgeShadow])
+        }),
+        [isBack, panelWidth],
+    )
 
     const panelAnimatedStyle = useAnimatedStyle(() => {
         if (isBack) return {}

@@ -36,7 +36,6 @@ export const PWDrawer = ({
     isSwipeEnabled = true,
     edgeWidth,
     widthRatio = PWDRAWER_WIDTH_RATIO,
-    hasEdgeShadow = true,
     hasContentGrowIn = true,
     contentStyle,
     children,
@@ -60,7 +59,6 @@ export const PWDrawer = ({
         hasOwnOpenGesture,
         isSwipeEnabled,
         widthRatio,
-        hasEdgeShadow,
         hasContentGrowIn,
     })
 
@@ -84,12 +82,7 @@ export const PWDrawer = ({
             </GestureDetector>
 
             <Animated.View
-                style={[
-                    styles.content,
-                    hasEdgeShadow && styles.contentShadow,
-                    contentStyle,
-                    contentAnimatedStyle,
-                ]}
+                style={[styles.content, contentStyle, contentAnimatedStyle]}
                 accessibilityElementsHidden={isOpen}
                 importantForAccessibility={
                     isOpen ? 'no-hide-descendants' : 'auto'
