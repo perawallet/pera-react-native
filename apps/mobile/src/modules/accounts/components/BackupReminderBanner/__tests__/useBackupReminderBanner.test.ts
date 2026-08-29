@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 const mockSummaryQuery = vi.fn()
+const mockAccountsRekeyedTo = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -39,6 +40,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...original,
         useAccountSummaryQuery: (...args: unknown[]) =>
             mockSummaryQuery(...args),
+        useAccountsRekeyedTo: (...args: unknown[]) =>
+            mockAccountsRekeyedTo(...args),
     }
 })
 
@@ -75,6 +78,8 @@ describe('useBackupReminderBanner', () => {
         mockLaunch.mockReset()
         mockRequiresBackup.mockReset()
         mockSummaryQuery.mockReset()
+        mockAccountsRekeyedTo.mockReset()
+        mockAccountsRekeyedTo.mockReturnValue([])
     })
 
     test('isVisible false when account does not require backup', () => {
@@ -85,7 +90,7 @@ describe('useBackupReminderBanner', () => {
         expect(result.current.isVisible).toBe(false)
     })
 
-    test('isVisible false when account balance is 0', () => {
+    test('isVisible false when the account is unfunded and signs for nothing', () => {
         mockRequiresBackup.mockReturnValue(true)
         mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
 
@@ -99,6 +104,29 @@ describe('useBackupReminderBanner', () => {
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         expect(result.current.isVisible).toBe(true)
+    })
+
+    test("isVisible true when an unfunded account is another account's rekey target", () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockAccountsRekeyedTo.mockReturnValue([
+            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+        ])
+
+        const { result } = renderHook(() => useBackupReminderBanner(accountHD))
+        expect(result.current.isVisible).toBe(true)
+        expect(mockAccountsRekeyedTo).toHaveBeenCalledWith(accountHD.address)
+    })
+
+    test('isVisible false for a rekey target that no longer needs backup', () => {
+        mockRequiresBackup.mockReturnValue(false)
+        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockAccountsRekeyedTo.mockReturnValue([
+            { id: 'a', type: AccountTypes.algo25, address: 'A' },
+        ])
+
+        const { result } = renderHook(() => useBackupReminderBanner(accountHD))
+        expect(result.current.isVisible).toBe(false)
     })
 
     test('onPress calls launcher with the account', () => {

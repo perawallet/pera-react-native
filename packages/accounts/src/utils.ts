@@ -322,6 +322,27 @@ export const canInitiateRekey = (
     accounts: WalletAccount[],
 ): boolean => canSignWith(account, accounts)
 
+/**
+ * Wallet accounts whose auth-addr is `address` — the accounts `address` signs
+ * for. Self-references are excluded (an account rekeyed to itself is not
+ * "another account").
+ *
+ * Looks at every network the wallet has observed, not just the active-network
+ * `rekeyAddress` mirror: a mainnet rekey still strands the mainnet account
+ * while the user is browsing testnet. The legacy mirror is kept in the check
+ * for accounts persisted before `rekeyAddressByNetwork` existed.
+ */
+export const getAccountsRekeyedTo = (
+    address: string,
+    accounts: WalletAccount[],
+): WalletAccount[] =>
+    accounts.filter(
+        a =>
+            a.address !== address &&
+            (a.rekeyAddress === address ||
+                Object.values(a.rekeyAddressByNetwork ?? {}).includes(address)),
+    )
+
 export type RekeyTransition = {
     /** Raw type of the rekeyed account itself. */
     from: WalletAccount['type']
