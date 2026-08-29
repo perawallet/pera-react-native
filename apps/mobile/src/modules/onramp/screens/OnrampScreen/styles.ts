@@ -24,7 +24,6 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 0,
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
         gap: theme.spacing.lg,
     },
     headerRow: {

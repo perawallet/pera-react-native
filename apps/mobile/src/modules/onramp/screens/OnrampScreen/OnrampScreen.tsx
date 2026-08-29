@@ -105,16 +105,10 @@ export const OnrampScreen = () => {
         >
             <PWView style={styles.header}>
                 <PWView style={styles.headerRow}>
+                    <AccountSelection {...accountPicker} />
                     <OnrampCountryChip
                         countryCode={region?.countryCode}
                         onInfoPress={handleRegionInfoPress}
-                    />
-                    <AccountSelection
-                        {...accountPicker}
-                        triggerStyle={styles.accountTrigger}
-                        triggerIconProps={ACCOUNT_TRIGGER_ICON_PROPS}
-                        triggerChevronProps={ACCOUNT_TRIGGER_CHEVRON_PROPS}
-                        triggerTextProps={ACCOUNT_TRIGGER_TEXT_PROPS}
                     />
                 </PWView>
 

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { type Query } from '@tanstack/react-query'
 import type { Network, Optional } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'swaps'
@@ -46,3 +47,26 @@ export const swapQueryKeys = {
     topPairs: (limit: Optional<number>, network: Network) =>
         [MODULE_PREFIX, 'top-pairs', { limit, network }] as const,
 }
+
+/**
+ * What a completed swap can change: the caller's own history — the "see all"
+ * list and the distinct-pair chips — plus the system-wide top pairs, which rank
+ * on 24h volume that this swap just contributed to. On a quiet window a single
+ * account's swaps can be most of that volume, so top pairs really can go stale
+ * on the strength of one trade.
+ *
+ * Matched on the leading segments so every cached address, status filter and
+ * network refreshes at once; after a swap lands, any of them could be out of
+ * date. Providers and available assets are left alone — a swap doesn't move
+ * them.
+ */
+const INVALIDATED_ON_SWAP = [
+    'history-infinite',
+    'distinct-pairs-history',
+    'top-pairs',
+]
+
+export const getInvalidateSwapHistoryPredicate = (query: Query) =>
+    query.queryKey.length >= 2 &&
+    query.queryKey.at(0) === MODULE_PREFIX &&
+    INVALIDATED_ON_SWAP.includes(query.queryKey.at(1) as string)

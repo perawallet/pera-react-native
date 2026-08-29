@@ -1972,6 +1972,11 @@ vi.mock('react-native-gesture-handler', () => {
         usePanGesture: createHookGesture,
         useNativeGesture: createHookGesture,
         useTapGesture: createHookGesture,
+        // Composition: PWPager runs one pan per direction so nested content can
+        // defer only the direction it needs. The tree just needs a gesture back.
+        useCompetingGestures: (...gestures: any[]) => gestures[0],
+        useExclusiveGestures: (...gestures: any[]) => gestures[0],
+        useSimultaneousGestures: (...gestures: any[]) => gestures[0],
         GestureDetector: ({ children }: any) => children,
         GestureHandlerRootView: MockView,
         Swipeable: MockView,
@@ -2881,6 +2886,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
         useProvidersQuery: vi.fn(() => ({ data: [] })),
+        useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
 

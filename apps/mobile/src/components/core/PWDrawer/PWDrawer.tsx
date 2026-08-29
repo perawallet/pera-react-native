@@ -79,9 +79,17 @@ export const PWDrawer = ({
     const ownProgress = useSharedValue(isOpen ? 1 : 0)
     const progress = externalProgress ?? ownProgress
 
+    // Only when nobody else owns progress. An owner animates it themselves —
+    // and a gesture settles it carrying the finger's velocity, so re-springing
+    // from `isOpen` here would restart that animation from a standstill partway
+    // through and jolt the closing frames.
+    const isOwnedElsewhere = Boolean(externalProgress)
+
     useEffect(() => {
+        if (isOwnedElsewhere) return
+
         progress.value = withSpring(isOpen ? 1 : 0, PWDRAWER_SPRING_CONFIG)
-    }, [isOpen, progress])
+    }, [isOpen, progress, isOwnedElsewhere])
 
     const isBack = variant === 'back'
 

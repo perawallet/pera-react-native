@@ -15,6 +15,7 @@ import { type GestureResponderEvent } from 'react-native'
 import {
     PWIcon,
     PWSwipeable,
+    PWSWIPEABLE_IGNORE_DIRECTION,
     usePWPagerGesture,
     type PWSwipeableRef,
     PWView,
@@ -84,10 +85,18 @@ const SwipeableAssetItemInner = ({
             renderRightActions={renderRightActions}
             onSwipeableOpen={handleSwipeOpen}
             overshootRight={false}
-            // The account screen's pager owns the same axis as this swipe and is
-            // an ancestor, so without this it wins the drag and the row stops
-            // sliding. Blocking it makes the pager wait for this to fail.
+            // The account screen's pager owns the same axis as this swipe and
+            // is an ancestor, so without this it wins the drag and the row stops
+            // sliding. Blocking makes the pager wait for this to fail — and only
+            // its leftward pan is exposed, so a rightward swipe still reaches
+            // the drawer.
             block={pagerGesture ?? undefined}
+            // Rightward reveals nothing here: opening runs the opt-out and
+            // closes immediately, so there is never a row to swipe shut. Left
+            // unset it would still capture that drag at the default 10 and
+            // silently swallow it, which is what stopped the drawer opening from
+            // a row.
+            dragOffsetFromLeft={PWSWIPEABLE_IGNORE_DIRECTION}
         >
             <PWView style={styles.swipeableContent}>
                 <AssetListItemView

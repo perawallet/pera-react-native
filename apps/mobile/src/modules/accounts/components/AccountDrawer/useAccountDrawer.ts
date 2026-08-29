@@ -12,12 +12,30 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { BackHandler } from 'react-native'
+import {
+    useSharedValue,
+    withSpring,
+    type SharedValue,
+} from 'react-native-reanimated'
+import { PWDRAWER_SPRING_CONFIG } from '@components/core/PWDrawer/constants'
 import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
 
 export type UseAccountDrawerResult = {
     isOpen: boolean
+    /** 0-1 open progress. The single source of truth for the animation. */
+    progress: SharedValue<number>
+    /** Animates and updates state — for taps, back, and selection. */
     openDrawer: () => void
     closeDrawer: () => void
+    /**
+     * Records that a gesture has already animated the drawer to this state.
+     * Kept separate from `openDrawer`/`closeDrawer` because a gesture settles
+     * `progress` itself, carrying the finger's velocity: animating again here
+     * would restart that spring from a standstill partway through, which reads
+     * as a jolt in the closing frames.
+     */
+    markOpen: () => void
+    markClosed: () => void
     handleSelected: () => void
     handleAddAccount: () => void
     handleSearch: () => void
@@ -36,8 +54,20 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         openSort,
     } = useAccountSwitcherActions()
 
-    const openDrawer = useCallback(() => setIsOpen(true), [])
-    const closeDrawer = useCallback(() => setIsOpen(false), [])
+    const progress = useSharedValue(0)
+
+    const markOpen = useCallback(() => setIsOpen(true), [])
+    const markClosed = useCallback(() => setIsOpen(false), [])
+
+    const openDrawer = useCallback(() => {
+        progress.value = withSpring(1, PWDRAWER_SPRING_CONFIG)
+        setIsOpen(true)
+    }, [progress])
+
+    const closeDrawer = useCallback(() => {
+        progress.value = withSpring(0, PWDRAWER_SPRING_CONFIG)
+        setIsOpen(false)
+    }, [progress])
 
     // The drawer lives inside the tab screen, so react-navigation's back
     // handler would pop the tab out from under an open drawer. Claim back
@@ -48,22 +78,25 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
         const subscription = BackHandler.addEventListener(
             'hardwareBackPress',
             () => {
-                setIsOpen(false)
+                closeDrawer()
                 return true
             },
         )
 
         return () => subscription.remove()
-    }, [isOpen])
+    }, [isOpen, closeDrawer])
 
     // Every navigating action closes first: pushing a screen over an open
     // drawer otherwise leaves it open behind, and it's still there on the way
     // back. Selecting an account is the exception-free case — AccountMenu has
     // already written the global selection by the time this fires.
-    const closeThen = useCallback((action: () => void) => {
-        setIsOpen(false)
-        action()
-    }, [])
+    const closeThen = useCallback(
+        (action: () => void) => {
+            closeDrawer()
+            action()
+        },
+        [closeDrawer],
+    )
 
     const handleAddAccount = useCallback(
         () => closeThen(goToAddAccount),
@@ -90,8 +123,11 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
 
     return {
         isOpen,
+        progress,
         openDrawer,
         closeDrawer,
+        markOpen,
+        markClosed,
         handleSelected: closeDrawer,
         handleAddAccount,
         handleSearch,

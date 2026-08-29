@@ -34,20 +34,10 @@ export const useStyles = makeStyles(theme => ({
         overflow: 'hidden',
     },
     titleSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        flexShrink: 1,
-        minWidth: 0,
-        overflow: 'hidden',
+        paddingTop: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.xl,
     },
-    accountTrigger: {
-        flexGrow: 0,
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '100%',
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        paddingVertical: theme.spacing.xs,
+    infoIcon: {
+        marginRight: theme.spacing.lg,
     },
 }))

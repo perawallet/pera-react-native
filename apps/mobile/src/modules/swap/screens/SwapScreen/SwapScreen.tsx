@@ -72,32 +72,26 @@ export const SwapScreen = () => {
             >
                 <PWToolbar
                     paddingStyle='none'
-                    left={
-                        <PWView style={styles.titleSection}>
-                            <PWText
-                                variant='h3'
-                                truncate
-                            >
-                                {t('tabbar.swap')}
-                            </PWText>
-                            <PWIcon
-                                name='info'
-                                onPress={handleInfoPress}
-                                testID='swap_info_button'
-                            />
-                        </PWView>
-                    }
+                    left={<AccountSelection {...accountPicker} />}
                     right={
-                        <AccountSelection
-                            {...accountPicker}
-                            triggerStyle={styles.accountTrigger}
-                            triggerIconProps={{ size: 'sm' }}
-                            triggerChevronProps={{ size: 'sm' }}
-                            triggerTextProps={{ variant: 'body' }}
+                        <PWIcon
+                            name='info'
+                            onPress={handleInfoPress}
+                            testID='swap_info_button'
+                            style={styles.infoIcon}
                         />
                     }
                     style={styles.toolbar}
                 />
+
+                <PWView style={styles.titleSection}>
+                    <PWText
+                        variant='h1'
+                        truncate
+                    >
+                        {t('tabbar.swap')}
+                    </PWText>
+                </PWView>
 
                 <PWView style={styles.formWrapper}>
                     <SwapForm />

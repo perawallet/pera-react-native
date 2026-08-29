@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useSharedValue } from 'react-native-reanimated'
+import {
+    runOnJS,
+    useAnimatedReaction,
+    useSharedValue,
+} from 'react-native-reanimated'
 import { PWPagerTabBar, PWView, type PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -69,15 +73,36 @@ export const AccountTabNavigator = ({
         [t],
     )
 
-    const handleIndexChange = useCallback((nextIndex: number) => {
-        setIndex(nextIndex)
+    const markVisited = useCallback((pageIndex: number) => {
         setVisitedPages(previous =>
-            previous.has(nextIndex)
+            previous.has(pageIndex)
                 ? previous
-                : new Set(previous).add(nextIndex),
+                : new Set(previous).add(pageIndex),
         )
-        trackEvent(TAB_EVENTS[nextIndex])
     }, [])
+
+    // Mount the incoming page the moment the drag passes halfway, rather than
+    // when it settles. `Math.round` only changes at that crossing, so this fires
+    // once per page — and the mount lands while the finger is still moving
+    // instead of inside the settle animation, where a dropped frame reads as a
+    // jolt. Costly pages (the NFT pipeline, the transaction list) still mount
+    // only for tabs actually reached, so nothing loads speculatively.
+    useAnimatedReaction(
+        () => Math.round(offset.value),
+        (nearest, previous) => {
+            if (nearest !== previous) runOnJS(markVisited)(nearest)
+        },
+        [markVisited],
+    )
+
+    const handleIndexChange = useCallback(
+        (nextIndex: number) => {
+            setIndex(nextIndex)
+            markVisited(nextIndex)
+            trackEvent(TAB_EVENTS[nextIndex])
+        },
+        [markVisited],
+    )
 
     return (
         <PWView style={styles.container}>

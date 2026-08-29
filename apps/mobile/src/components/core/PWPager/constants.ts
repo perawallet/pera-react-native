@@ -14,6 +14,12 @@
 export const PWPAGER_ACTIVATION_OFFSET = 10
 
 /**
+ * The bound a direction-specific pan will never reach, so it activates on one
+ * side only. Large rather than Infinity, which gesture-handler won't serialise.
+ */
+export const PWPAGER_OPPOSITE_BOUND = 100_000
+
+/**
  * Vertical travel, in px, that abandons the pan and hands the touch to whatever
  * scrolls inside the page.
  */

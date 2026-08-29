@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { useSharedValue } from 'react-native-reanimated'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWDrawer } from '@components/core'
 import { routeCapabilities } from '@routes/capabilities'
@@ -31,8 +30,11 @@ export type AccountDrawerProps = {
 const AccountDrawerHost = ({ children }: AccountDrawerProps) => {
     const {
         isOpen,
+        progress,
         openDrawer,
         closeDrawer,
+        markOpen,
+        markClosed,
         handleSelected,
         handleAddAccount,
         handleSearch,
@@ -40,10 +42,6 @@ const AccountDrawerHost = ({ children }: AccountDrawerProps) => {
         handlePeraCardOpen,
         handleOpenSort,
     } = useAccountDrawer()
-
-    // Owned here rather than inside PWDrawer so it can be published to the
-    // screens, letting a pager drive the drawer from the same pan.
-    const progress = useSharedValue(0)
 
     const [pickerKind, setPickerKind] = useState<AccountPickerKind>('portfolio')
     const pickers = useAccountPickers()
@@ -112,8 +110,10 @@ const AccountDrawerHost = ({ children }: AccountDrawerProps) => {
         <AccountDrawerContext.Provider value={controls}>
             <PWDrawer
                 isOpen={isOpen}
-                onOpen={openDrawer}
-                onClose={closeDrawer}
+                // Reporting only: the gestures inside PWDrawer settle progress
+                // themselves, so animating again here would restart their spring.
+                onOpen={markOpen}
+                onClose={markClosed}
                 renderContent={renderContent}
                 variant='back'
                 progress={progress}

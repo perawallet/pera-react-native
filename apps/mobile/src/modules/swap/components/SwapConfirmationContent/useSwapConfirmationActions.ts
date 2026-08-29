@@ -23,7 +23,10 @@ import {
     AnalyticsMetadataKey,
     type RequiredEventPayloads,
 } from '@analytics'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapHistoryInvalidator,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (
@@ -64,6 +67,7 @@ export const useSwapConfirmationActions = ({
     quote,
 }: UseSwapConfirmationActionsParams): UseSwapConfirmationActionsResult => {
     const { resolve, dismiss } = useBottomSheetResult<SwapConfirmationResult>()
+    const { invalidate: invalidateSwapHistory } = useSwapHistoryInvalidator()
     const swapExecution = useSwapExecution()
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
@@ -78,6 +82,13 @@ export const useSwapConfirmationActions = ({
         try {
             const outcome = await execute(quote)
             if (outcome.kind === 'success') {
+                // The pair chips and the "see all" list are both derived from
+                // the account's swap record, which this swap just changed.
+                // Nothing else refreshes them and the swap screen stays mounted
+                // for the life of the tab, so without this they keep showing
+                // whatever was cached — across restarts, since the result is
+                // persisted.
+                invalidateSwapHistory()
                 trackEvent(SwapEvent.Completed, {
                     ...buildSwapStatusPayload(quote),
                     [AnalyticsMetadataKey.PeraFeeAsAlgo]:
@@ -116,7 +127,14 @@ export const useSwapConfirmationActions = ({
         } finally {
             inFlightRef.current = false
         }
-    }, [quote, quoteIdStr, execute, successCloseTimer, resolve])
+    }, [
+        quote,
+        quoteIdStr,
+        execute,
+        successCloseTimer,
+        resolve,
+        invalidateSwapHistory,
+    ])
 
     const handleClose = useCallback(
         (isCommitted: boolean, isCancellable: boolean) => {

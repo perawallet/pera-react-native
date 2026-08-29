@@ -16,9 +16,9 @@ import { getTypography } from '@theme/typography'
 // Frame, label and spacing live in the shared `AmountField`; this only holds the
 // amount-text typography and the PWInput resets that ride on the amount node.
 export const useStyles = makeStyles(theme => ({
-    amountText: getTypography(theme, 'h1'),
+    amountText: getTypography(theme, 'h2'),
     amountTextMuted: {
-        ...getTypography(theme, 'h1'),
+        ...getTypography(theme, 'h2'),
         color: theme.colors.textGrayLighter,
     },
     amountInputContainer: {
