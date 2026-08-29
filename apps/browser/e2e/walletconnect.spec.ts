@@ -479,9 +479,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
                 '[WCDIAG] service-worker log:\n  ' +
                     (swLog ?? ['<no worker>']).join('\n  '),
             )
-            console.log(
-                '[WCDIAG] page console:\n  ' + pageConsole.join('\n  '),
-            )
+            console.log('[WCDIAG] page console:\n  ' + pageConsole.join('\n  '))
             throw error
         }
         const { approvalPage, approvalErrors } = opened
