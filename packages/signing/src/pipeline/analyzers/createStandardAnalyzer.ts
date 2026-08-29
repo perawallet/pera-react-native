@@ -203,7 +203,7 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
 
     // Like the close fields in detectWarnings, receiver/amount/assetIndex
     // live under the type-specific payload on an algosdk v3 Transaction,
-    // never at the top level (PERA-4506).
+    // never at the top level.
     if (tx.payment) {
         summary.receiver = tx.payment.receiver.toString()
         summary.amount = tx.payment.amount
@@ -244,7 +244,7 @@ const detectWarnings = (
         // Close fields live under the type-specific payload (algosdk v3 /
         // algokit v10), never at the top level — only `rekeyTo` is a top-level
         // header field. Reading them off `tx` directly silently never matches,
-        // which is how these danger warnings went dead (PERA-4506).
+        // which is how these danger warnings went dead.
 
         // Payment close: sweeps the account's entire remaining ALGO balance to
         // the target and closes the account.

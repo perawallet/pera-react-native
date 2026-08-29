@@ -22,7 +22,7 @@ const setPlatform = (os: string) => {
 describe('buildIosBrowserFocusUrl', () => {
     // Bare launch schemes, no URL payload: focusing must never navigate,
     // or the dApp page reloads and drops its in-flight state (QA finding
-    // on PERA-4856).
+    // on).
     it.each([
         ['Chrome', 'googlechrome://'],
         ['chrome', 'googlechrome://'],

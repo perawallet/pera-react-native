@@ -53,7 +53,7 @@ describe('useAlgodErrorMessage', () => {
         })
     })
 
-    // PERA-4908: overspend can no longer carry balance/spent/missing —
+    // overspend can no longer carry balance/spent/missing —
     // parseAlgodMessage.ts leaves them unset because the message's rendered
     // balance is fee-adjusted, not the account's actual balance (see
     // algodErrorCodes.ts). below_min_balance's params aren't affected by that

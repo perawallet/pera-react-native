@@ -100,7 +100,7 @@ describe('validateSwapGroupAgainstQuote', () => {
     it('rejects a signable transaction from a non-swapper sender (Variant B)', () => {
         // Every entry is a slot the wallet will sign; one whose sender is not
         // the swapper is a second account the user never reviewed, so the
-        // wallet must fail closed rather than sign it. (PERA-4709)
+        // wallet must fail closed rather than sign it.
         expect(() =>
             validateSwapGroupAgainstQuote(
                 [axfer(), axfer({ sender: 'ACCOUNT_B', assetId: 7n })],
@@ -158,7 +158,7 @@ describe('validateSwapGroupAgainstQuote', () => {
         // A wrong swapper used to disable the validator entirely: `outflow` is
         // only populated for matching senders, so a mismatch left it empty and
         // the spend-ceiling loop ran zero times — a full drain passed. With
-        // fail-closed the mismatched sender throws first. (PERA-4709)
+        // fail-closed the mismatched sender throws first.
         const wrongSwapperQuote = {
             ...baseQuote,
             swapperAddress: 'WRONG_SWAPPER_ADDRESS',

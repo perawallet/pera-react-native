@@ -134,7 +134,7 @@ describe('useSigningCompletedDriver', () => {
         expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
-    describe('return-to-dapp hand-off (PERA-4856)', () => {
+    describe('return-to-dapp hand-off', () => {
         beforeEach(() => {
             useWalletConnectStore.getState().pruneDappOrigins([])
         })

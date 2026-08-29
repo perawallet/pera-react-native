@@ -226,7 +226,7 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.enablePanDownToClose).toBe(false)
     })
 
-    it('leaves content panning enabled by default so sheet content stays touchable on Android (PERA-4647)', () => {
+    it('leaves content panning enabled by default so sheet content stays touchable on Android', () => {
         // Disabling the gesture wraps content in a disabled GestureDetector,
         // which stops delivering touches on Android — taps then fall through
         // to the closing backdrop and dismiss the sheet.
@@ -239,7 +239,7 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.enableContentPanningGesture).toBeUndefined()
     })
 
-    it('activates the content pan only after vertical movement so taps reach touchables (PERA-4437)', () => {
+    it('activates the content pan only after vertical movement so taps reach touchables', () => {
         render(
             <PWBottomSheet isVisible={true}>
                 <Text>Content</Text>
@@ -310,7 +310,7 @@ describe('PWBottomSheet', () => {
         expect(screen.getByTestId('keyboard-avoiding-view')).toBeTruthy()
     })
 
-    it('skips the keyboard avoider when the content insets itself (PERA-4708)', () => {
+    it('skips the keyboard avoider when the content insets itself', () => {
         render(
             <PWBottomSheet
                 isVisible={true}
@@ -325,7 +325,7 @@ describe('PWBottomSheet', () => {
         expect(screen.getByText('Sheet Content')).toBeTruthy()
     })
 
-    it('holds the sheet at its detent instead of avoiding, when the content insets itself (PERA-4708)', () => {
+    it('holds the sheet at its detent instead of avoiding, when the content insets itself', () => {
         render(
             <PWBottomSheet
                 isVisible={true}

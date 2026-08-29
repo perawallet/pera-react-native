@@ -144,7 +144,7 @@ describe('useCardAutoFundingSigningScreen', () => {
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true)
     })
 
-    it('degrades to Manual funding when the AutoDraw program fails verification (PERA-4712)', async () => {
+    it('degrades to Manual funding when the AutoDraw program fails verification', async () => {
         // An unverified program can never succeed on retry, so the generic
         // "please try again" error toast would strand the user here.
         mockEnableAutoDraw.mockRejectedValueOnce(

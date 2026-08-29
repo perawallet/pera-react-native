@@ -19,7 +19,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     // Yoga tree: an ancestor toggling `display: none` (AutoLockGuard) zeroes
     // its content while the window stays up, and unmounting it mid-present
     // animation can leave the window behind. Either way the app renders
-    // normally and swallows every touch (PERA-4870).
+    // normally and swallows every touch.
     overlay: {
         position: 'absolute',
         top: 0,

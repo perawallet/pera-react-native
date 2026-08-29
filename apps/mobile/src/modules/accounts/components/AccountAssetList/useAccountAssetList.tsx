@@ -143,7 +143,7 @@ export const useAccountAssetList = ({
     // gap. Scrolling as soon as the request changes lands before the rows do, and
     // the FlashList re-population that follows (with the sticky search bar at
     // index 0) pushes the list past the header; keying off the sort alone missed
-    // the reset entirely whenever the rows hadn't arrived yet (PERA-4921).
+    // the reset entirely whenever the rows hadn't arrived yet.
     const viewRequestKey = `${account.address}|${assetSortMode}`
     const appliedViewRequestKeyRef = useRef(viewRequestKey)
     const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
@@ -154,12 +154,12 @@ export const useAccountAssetList = ({
 
         const [appliedAddress] = appliedViewRequestKeyRef.current.split('|')
         // Next frame: FlashList settles its own offset on the layout pass that
-        // follows a data change, and a scroll issued before it loses (PERA-4406).
+        // follows a data change, and a scroll issued before it loses.
         const frame = requestAnimationFrame(() => {
             // Recorded here, not before scheduling: every placeholder gap
             // re-runs this effect and its cleanup cancels the pending frame, so
             // marking the request applied up front turned that cancellation
-            // into a reset that silently never happened (PERA-4932).
+            // into a reset that silently never happened.
             appliedViewRequestKeyRef.current = viewRequestKey
             listRef.current?.scrollToOffset({
                 offset: 0,

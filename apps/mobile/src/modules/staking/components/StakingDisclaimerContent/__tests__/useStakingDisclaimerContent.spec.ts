@@ -43,7 +43,7 @@ describe('useStakingDisclaimerSheet', () => {
         expect(result.current.isScrolledToBottom).toBe(false)
     })
 
-    it('unlocks without a scroll when the content fits the viewport (PERA-4969)', () => {
+    it('unlocks without a scroll when the content fits the viewport', () => {
         const { result } = renderHook(() => useStakingDisclaimerSheet())
 
         act(() => {

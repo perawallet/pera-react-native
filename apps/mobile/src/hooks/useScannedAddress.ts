@@ -51,7 +51,7 @@ export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
  * liquid-auth (`fido:`/`liquid:`), Pera web import and the legacy mnemonic JSON
  * payloads. Note a WalletConnect *v2* URI never reaches here: the parser only
  * accepts a `wc:` URI carrying `bridge=`, so a v2 pairing code fails
- * `isValidDeepLink` and the scanner rejects it upstream (PERA-4746).
+ * `isValidDeepLink` and the scanner rejects it upstream.
  *
  * Callers must dismiss the scanner too, but the toast does not depend on doing
  * so first: it routes to the global Notifier, which renders in the root tree and

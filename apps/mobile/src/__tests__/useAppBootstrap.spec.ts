@@ -241,7 +241,7 @@ describe('useAppBootstrap', () => {
     // rAF does not fire while the app produces no frames, so a cold start that
     // begins in the background must still reach hideAsync via the backstop
     // timer — otherwise the splash sits there until the user foregrounds the
-    // app (PERA-4727).
+    // app.
     it('hides the splash via the backstop when no frames are produced', async () => {
         const rafSpy = vi
             .spyOn(globalThis, 'requestAnimationFrame')
@@ -488,8 +488,8 @@ describe('useAppBootstrap', () => {
         ).not.toHaveBeenCalledWith('active_locales', '')
     })
 
-    // Cold start is the only place the launch account preference is applied
-    // (PERA-4855), and it must land inside the bootstrap gate so the pinned
+    // Cold start is the only place the launch account preference is applied,
+    // and it must land inside the bootstrap gate so the pinned
     // account is selected before the splash lifts.
     it('applies the launch account preference before bootstrap completes', async () => {
         vi.useFakeTimers()

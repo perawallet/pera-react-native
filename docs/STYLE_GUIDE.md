@@ -1,139 +1,57 @@
 # Style Guide
 
-This guide covers the key coding standards for the project.
+The enforced rules and their examples live in `CLAUDE.md`, which every agent session loads. This page
+covers the decisions behind them and the few things `CLAUDE.md` doesn't carry.
 
-## TypeScript
+## The rules in one breath
 
-- **Strict mode is on** — don't disable it
-- **Avoid `any`** — use `unknown` with type guards, or define proper types
-- **Define return types** for exported functions
+TypeScript strict mode stays on; reach for `unknown` and a type guard rather than `any`; give
+exported functions explicit return types. Components are functions, styled with `makeStyles` from
+`@rneui/themed` and theme tokens only. Every external component is wrapped in a `PW*` before use.
+React Query for anything async, Zustand for local state. Complex logic comes out of the component
+body into a colocated `use[ComponentName]` hook.
 
-## Components
+Hook return types must be dependency-agnostic. Never hand a caller a `UseQueryResult`,
+`UseMutationResult` or `StoreApi`; declare your own `Use[Name]QueryResult` so the library underneath
+can be swapped without touching call sites.
 
-- Use **functional components** (no classes)
-- Keep styles in separate `styles.ts` files
-- Use RNE theme-based `makeStyles`/`useStyles` — **never** `StyleSheet.create`
+## Why RNE
 
-## Styling
+We keep React Native Elements as the primary UI and styling library. Unistyles and NativeWind were
+both considered.
 
-All component styling uses React Native Elements (RNE) theming via the `makeStyles` hook. This ensures:
+The deciding factor is that RNE ships complex components (bottom sheets, tabs, accordions) and the
+alternatives are pure styling engines. Moving to one would mean building and maintaining those
+ourselves, which is a maintenance bill we would be paying forever for a nicer styling API.
 
-- Consistent theming across the app
-- Automatic dark mode support
-- Centralized design tokens
+## Comments
 
-**Key rules:**
+Code says what. Comments say why, and only when the why isn't obvious. Default to none.
 
-- Always use `makeStyles` from `@rneui/themed`
-- Never use `StyleSheet.create` from `react-native`
-- Use theme tokens (`theme.colors.*`, `theme.spacing.*`) — no hardcoded values
-- No inline styles
+Worth a comment: non-obvious rationale, a trap or workaround, units and encodings the type can't
+express.
 
-### Why RNE?
+Not worth a comment: restating the code, JSDoc repeating the signature, section banners, "this hook
+does X" above `useX`, change-log narration, commented-out code.
 
-**Decision:** Maintain React Native Elements (RNE) as the primary UI and styling library.
+One line is the norm and three is a lot. Longer explanations belong in `docs/`.
 
-**Alternatives Considered:** Unistyles, NativeWind (Tailwind).
+## Images
 
-**Reasoning:**
+SVG for icons, logos and anything that has to scale. WebP for photos, complex images and
+screenshots.
 
-- **Component Ecosystem:** Unlike pure styling engines (Unistyles/NativeWind), RNE provides complex, pre-built components (e.g., BottomSheets, Tabs, Accordions) out of the box.
-- **Maintenance Overhead:** Migrating to a pure styling engine would require building and maintaining these core components from scratch, significantly increasing our maintenance burden.
-
-For detailed patterns and examples, see `.agent/rules/code-patterns.md`.
-
-## External Component Wrappers (Design System)
-
-`PW*` components form the app's **design system** — they wrap external dependencies and provide a consistent, project-specific API.
-
-All components from external dependencies **must be wrapped** before use:
-
-- Components from `@rneui/themed` → Wrap in `PW*` components
-- Components from `react-native` → Wrap common ones (`TouchableOpacity`, etc.)
-- Third-party components → Always wrap before use
-
-**Key rules:**
-
-- Design system location: `apps/mobile/src/components/core/PW[ComponentName]/`
-- Define a clean, project-specific props interface
-- Never import external components directly in screens or modules
-
-For detailed patterns and examples, see `.agent/rules/component-patterns.md`.
-
-## Hooks
-
-Hooks follow strict conventions for consistency and maintainability.
-
-**Technology Requirements:**
-
-- **React Query**: REQUIRED for all async requests (API calls, data fetching)
-- **Zustand**: REQUIRED for all local application state management
-
-**Naming Conventions:**
-
-- All hooks start with `use` prefix (camelCase)
-- Query hooks end with `Query` (e.g., `useAccountBalanceQuery`)
-- Mutation hooks end with `Mutation` (e.g., `useCreateAccountMutation`)
-- Store hooks end with `Store` (e.g., `useAccountsStore`)
-
-**Location Rules:**
-
-- Domain-level hooks: `modules/[moduleName]/hooks/`
-- Screen-specific hooks: Same folder as the screen
-- Component-specific hooks: Same folder as the component
-
-**Component Logic Extraction:**
-Complex logic MUST be extracted from component/screen bodies into dedicated hooks.
-
-**Type Safety (REQUIRED):**
-
-- All hooks must define explicit types for inputs and outputs
-- Never expose dependency-specific types (UseQueryResult, UseMutationResult, StoreApi)
-- Return types must be dependency-agnostic to enable library swapping
-
-For detailed patterns and examples, see `.agent/rules/hook-patterns.md`.
-
-## Code Quality
-
-Run these before pushing:
+## Before pushing
 
 ```sh
 pnpm pre-push   # Lint, format, copyright, i18n
 pnpm test       # Run tests
 ```
 
-If checks fail:
+If those fail, `pnpm lint:fix` handles lint and type-aware issues and `pnpm format` handles
+formatting.
 
-```sh
-pnpm lint:fix   # Auto-fix lint/type-aware issues
-pnpm format     # Auto-fix formatting
-```
+## Learn more
 
-## Comments
-
-Code says **what**. Comments say **why** — and only when the why isn't obvious. Default to none.
-
-**Worth a comment:** non-obvious rationale, a trap or workaround, units/encodings the type can't express.
-
-**Not worth a comment:** restating the code, JSDoc repeating the signature, section banners, "this hook does X" above `useX`, change-log narration, commented-out code.
-
-One line is the norm; three is a lot. Longer explanations belong in `docs/`.
-
-## Key Principles
-
-1. **Self-documenting code** — comment the why, not the what
-2. **No magic numbers** — use named constants
-3. **Theme-based styling** — always use `makeStyles` with theme tokens
-
-## Images
-
-| Format   | Use For                                          |
-| -------- | ------------------------------------------------ |
-| **SVG**  | Icons, logos, simple graphics that need to scale |
-| **WebP** | Photos, complex images, screenshots              |
-
-## Learn More
-
-- [Architecture](ARCHITECTURE.md) - Where logic vs UI goes
-- [Naming Conventions](NAMING_CONVENTIONS.md) - How to name things
-- [Folder Structure](FOLDER_STRUCTURE.md) - Where to put files
+- [Architecture](ARCHITECTURE.md) for where logic goes versus UI
+- [Code Layout](CODE_LAYOUT.md) for where files go and what to call them

@@ -16,7 +16,7 @@ import { BIDALI_SHEET_OPTIONS } from '../sheet-options'
 describe('BIDALI_SHEET_OPTIONS', () => {
     // Every Bidali opener shares this object, so asserting it here covers all
     // of them. Bidali is a WebView: avoiding the keyboard on top of the inset
-    // the page already applies shifts it twice (PERA-4708).
+    // the page already applies shifts it twice.
     it('opts out of sheet keyboard avoidance', () => {
         expect(BIDALI_SHEET_OPTIONS.avoidKeyboard).toBe(false)
     })

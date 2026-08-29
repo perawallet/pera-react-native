@@ -50,7 +50,7 @@ describe('useOptInConfirmationContent', () => {
         expect(result.current.resolvedFee.toString()).toBe('0.002')
     })
 
-    // PERA-4922: a quantum sender pays the PQ multiple, and the quote has to
+    // a quantum sender pays the PQ multiple, and the quote has to
     // match the fee useAssetOptInMutation actually builds.
     it('quotes the sender-resolved fee once it is available', () => {
         mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })

@@ -28,7 +28,7 @@ import { flattenSimulatedInnerTransactions } from '../utils/simulateImpact'
  * transaction already carries a group id — but `composer.addTransaction` throws
  * on any transaction that is "already in a group". Without stripping it, the
  * simulation throws for every grouped request, the inner transactions are never
- * surfaced, and the balance impact shows only the spend side. [PERA-4464]
+ * surfaced, and the balance impact shows only the spend side.
  *
  * We clone via the canonical encode/decode round-trip (never mutating the real
  * signing payload) and drop the group, letting the composer re-group the set

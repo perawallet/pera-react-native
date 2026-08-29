@@ -45,7 +45,7 @@ export const useSourceMetadataView = (
     const displayName = metadata.name ?? project?.name
 
     // The lookup key (metadata.url) is peer-asserted, so a `verified` tier is
-    // trusted only against the platform-observed origin (PERA-4715).
+    // trusted only against the platform-observed origin.
     const verificationTier = resolveDisplayableVerificationTier(
         project,
         verifiedOrigin,

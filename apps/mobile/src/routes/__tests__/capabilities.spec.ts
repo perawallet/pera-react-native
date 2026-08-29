@@ -66,7 +66,7 @@ describe('route capabilities', () => {
             storeRating: false,
             vaultSecuritySettings: true,
             dappConnections: true,
-            // Task 6: Menu icon bar swaps the camera for paste-a-deeplink on
+            // Menu icon bar swaps the camera for paste-a-deeplink on
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,
             deepLinkPaste: true,
@@ -75,7 +75,7 @@ describe('route capabilities', () => {
             // reach real screens instead of no-oping on an unregistered route.
             rekeyFlows: true,
             sharedAccounts: true,
-            // Task 11: unified Connections settings screen supersedes the
+            // The unified Connections settings screen supersedes the
             // separate WalletConnect/Connected Sites menu entries on web.
             connectionsSettings: true,
         })

@@ -93,8 +93,7 @@ export const useAccountBalancesQuery = (
     // Call sites routinely pass a fresh array literal (`[account]`) per
     // render. Only addresses are read below, so key the memos on this stable
     // list instead of array identity — otherwise every render of every such
-    // call site re-walks all holdings, a Decimal per field per asset
-    // (PERA-4953).
+    // call site re-walks all holdings, a Decimal per field per asset.
     const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
 
     const queries = useMemo(() => {

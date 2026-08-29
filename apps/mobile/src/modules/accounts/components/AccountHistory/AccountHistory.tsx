@@ -89,7 +89,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     // Loading (nothing cached yet) and empty history render as plain views
     // rather than the list's ListEmptyComponent: an empty list inside the
     // account tab pager collapses to zero height on native, which blanked the
-    // whole History tab — title included (PERA-4676). The NFTs tab handles its
+    // whole History tab — title included. The NFTs tab handles its
     // empty state the same way.
     if (isInitialLoad || isEmpty) {
         return (

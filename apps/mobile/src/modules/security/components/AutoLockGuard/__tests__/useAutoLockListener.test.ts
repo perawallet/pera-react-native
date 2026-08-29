@@ -157,7 +157,7 @@ describe('useAutoLockListener', () => {
     })
 
     // The bottom-sheet hold is what actually keeps sheets from painting under
-    // the lock overlay (PERA-4743) — BottomSheetManager reads it directly, so
+    // the lock overlay — BottomSheetManager reads it directly, so
     // the guard must mirror its overlay state there too.
     describe('mirroring the guard overlay into the bottom-sheet hold', () => {
         const heldValue = () =>
@@ -300,7 +300,7 @@ describe('useAutoLockListener', () => {
         )
     })
 
-    it('should not unlock an already-locked app when foreground check returns false (PERA-4196 cancel-FaceID race)', async () => {
+    it('should not unlock an already-locked app when foreground check returns false ( cancel-FaceID race)', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
         mockCheckAutoLock.mockResolvedValue(false)
 
@@ -559,7 +559,7 @@ describe('useAutoLockListener', () => {
             // A notification banner or Face ID prompt drives inactive->active
             // without the app ever leaving the screen. Raising the checking
             // overlay there hides the whole app tree and tears down whatever
-            // is mounted underneath (PERA-4870).
+            // is mounted underneath.
             act(() => {
                 appStateChangeHandler?.('inactive')
                 appStateChangeHandler?.('active')

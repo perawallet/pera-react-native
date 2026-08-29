@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-// PERA-4874: migrating from Pera 6 landed the user in a pile of unrelated
+// migrating from Pera 6 landed the user in a pile of unrelated
 // interruptions — terms, then the PIN screen, then a Pera 7 announcement, then
 // terms again — because each decided independently when to appear.
 //
 // These exercise the real queue against the real banner stack (served over
 // MSW), rather than the unit tests' stubbed candidates: ordering across all
 // three, the delay being paid once for the session, and the guarantee that no
-// bottom sheet paints while the legal gate is up (PERA-4743/PERA-4870).
+// bottom sheet paints while the legal gate is up.
 
 import {
     afterAll,
@@ -120,7 +120,7 @@ const buildWrapper = () => {
     )
 }
 
-describe('Flow: prompt arbiter (PERA-4874)', () => {
+describe('Flow: prompt arbiter', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
     afterAll(() => server.close())
 
@@ -224,9 +224,9 @@ describe('Flow: prompt arbiter (PERA-4874)', () => {
             expect(result.current.nextPrompt?.id).toBe(TERMS_PROMPT_ID),
         )
 
-        // A sheet requested under a live legal gate must be held, not painted:
-        // PERA-4743/PERA-4870. The hold engaging with the gate rather than
-        // ahead of it is what makes this safe without a silent dead zone.
+        // A sheet requested under a live legal gate must be held, not painted.
+        // The hold engaging with the gate rather than ahead of it is what
+        // makes this safe without a silent dead zone.
         expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
     })
 

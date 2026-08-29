@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Two consumers, one set of changelog rules: the Slack release card wants
-# `<url|PERA-123>` link syntax and a short list, the changelog artifact
+# `<url|>` link syntax and a short list, the changelog artifact
 # uploaded alongside it wants plain text and every entry.
 #   LINK_FORMAT  slack (default) renders jira refs as Slack links; plain
 #                leaves the bare ticket id

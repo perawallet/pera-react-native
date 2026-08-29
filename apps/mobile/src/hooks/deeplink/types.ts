@@ -130,7 +130,7 @@ export interface KeyregDeeplink extends ParsedDeeplink {
     /**
      * Resolved intent, never the raw `type` query param. ARC-78 only ever
      * spells that `keyreg`, so leaving it loose let each parser invent its own
-     * value and silently miss the offline case (PERA-4976).
+     * value and silently miss the offline case.
      */
     keyregType: KeyregType
     /**
@@ -138,7 +138,7 @@ export interface KeyregDeeplink extends ParsedDeeplink {
      * keyreg targets. Absent when the URI names none. Compared against the
      * active network before building, because the transaction is built with
      * whatever chain the wallet is on — so the genesis-hash analyzer downstream
-     * always matches and can never catch a cross-chain scan (PERA-4976).
+     * always matches and can never catch a cross-chain scan.
      */
     targetNetwork?: string
     voteKey?: string

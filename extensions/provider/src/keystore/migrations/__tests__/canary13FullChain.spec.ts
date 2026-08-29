@@ -277,7 +277,7 @@ describe('canary.13 migration chain (preflight + repairs; upstream mocked)', () 
         expect(child.metadata?.parentKeyId).toBe('root-1')
         // XHD signing reads `metadata.bip44Path`; canary.13 stored the raw
         // `derivationPath` string, so a child adopted without rewriting it
-        // renders but cannot sign (PERA-4917).
+        // renders but cannot sign.
         expect(child.metadata?.bip44Path).toEqual([
             0x8000_0000 + 44,
             0x8000_0000 + 283,

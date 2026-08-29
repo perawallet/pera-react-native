@@ -129,8 +129,7 @@ describe('useAssetOptInMutation', () => {
             'testnet',
         )
         // The scoped invalidation is what refreshes every staleTime-Infinity
-        // account read (balances, holdings page, NFT gallery sort caches) —
-        // PERA-4845.
+        // account read (balances, holdings page, NFT gallery sort caches).
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
         expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
             'SENDER',
@@ -206,7 +205,7 @@ describe('useAssetOptInMutation', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
-    // PERA-4922: a Falcon-signed opt-in must carry the PQ minimum, or algod
+    // a Falcon-signed opt-in must carry the PQ minimum, or algod
     // rejects it with `txgroup with 1mA fees is less than 3mA`.
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
         const built = { sender: 'SENDER', fee: 1000n }

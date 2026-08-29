@@ -112,7 +112,7 @@ describe('useSettingsOptions', () => {
             title: 'settings.main.security_title',
         })
         // The wallet-wide rekeyed-account sweep is an action, not a
-        // settings sub-route (PERA-4619).
+        // settings sub-route.
         expect(settingsOptions[0].items[4]).toEqual({
             action: 'scanRekeyed',
             icon: 'magnifying-glass',

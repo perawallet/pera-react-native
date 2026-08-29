@@ -196,7 +196,7 @@ describe('crypto.ts nonce randomness (real crypto.getRandomValues)', () => {
 
     // Proves the `vi.spyOn` fix in the describe above actually restores the
     // real Crypto instance rather than leaving a crippled plain-object stand-in.
-    // Task 7 vendors sign/verify, which depend on crypto.subtle — a broken
+    // The vendored sign/verify depend on crypto.subtle, so a broken
     // restore here would fail those tests for a reason unrelated to their own code.
     it('leaves globalThis.crypto as the real Crypto instance after the stubbing describe above has run', () => {
         expect(globalThis.crypto instanceof Crypto).toBe(true)

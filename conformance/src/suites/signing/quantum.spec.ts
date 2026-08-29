@@ -35,14 +35,14 @@ import { balanceOf, getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
 
 /**
- * PERA-4643: the quantum signing preimage was `sha512_256(bytesToSign())`
+ * the quantum signing preimage was `sha512_256(bytesToSign)`
  * instead of `bytesToSign()`. Every unit test passed — the bug only showed up
  * against a real `pqsig`-capable node, which verifies the Falcon signature
  * over `HashRep(message)` directly and does its own internal hashing.
  * Re-hashing first changes the message and gets `falcon verify failed`.
  */
 describe('quantum signing conformance', () => {
-    it('pins the exact PERA-4643 preimage contract: pqSigningDigest is bytesToSign(), not a digest of it', async () => {
+    it('pins the exact preimage contract: pqSigningDigest is bytesToSign, not a digest of it', async () => {
         const keyStore = await createConformanceKeyStore()
         const account = await createQuantumAccount(keyStore)
         const txn = await buildTxn(composer => {
@@ -58,7 +58,7 @@ describe('quantum signing conformance', () => {
         // regression check by itself — it pins the contract in the one place a
         // future edit to `pqSigningDigest` would have to touch. The assertions
         // below (byte-parity against algokey, then node acceptance) are what
-        // actually catch a reintroduced pre-hash: PERA-4643 passed every unit
+        // actually catch a reintroduced pre-hash: passed every unit
         // test and only a real node caught it.
         expect(pqSigningDigest(txn)).toEqual(txn.bytesToSign())
     })
@@ -104,7 +104,7 @@ describe('quantum signing conformance', () => {
             unsignedTxn: algosdk.encodeUnsignedTransaction(txn),
         })
 
-        // Byte-parity: catches a wrong preimage (exactly PERA-4643's failure
+        // Byte-parity: catches a wrong preimage (exactly's failure
         // mode) offline, without ever touching the node — algokey's own Falcon
         // signer produces a different signature for a wrong preimage, so a
         // regression here fails before submission.
@@ -125,7 +125,7 @@ describe('quantum signing conformance', () => {
             fee: expectedFee,
         }
 
-        // Node acceptance: the actual PERA-4643 catch. Byte-parity against
+        // Node acceptance: the actual catch. Byte-parity against
         // algokey proves the app matches an independent Falcon implementation;
         // this proves a real `pqsig`-capable node's own verifier accepts the
         // signature end-to-end, which unit tests and mocks never exercised.

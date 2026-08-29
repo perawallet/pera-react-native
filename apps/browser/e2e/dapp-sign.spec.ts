@@ -273,7 +273,7 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     // below the overflow:hidden fold.
     await expect(confirmControl).toBeInViewport()
 
-    // Web always uses tap-to-confirm (PERA-4949): first tap arms, second
+    // Web always uses tap-to-confirm: first tap arms, second
     // confirms. Unlike the old slide gesture (which a synthetic pointer could
     // never complete), this lets the test drive acceptance end-to-end and
     // assert the signed txn actually reaches the dapp.

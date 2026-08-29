@@ -48,8 +48,8 @@ export type SecurityState = BaseStoreState & {
      * AutoLockGuard's overlay (the lock screen or the startup/foreground
      * check) covers the app. UI drivers hold NEW overlay presentation
      * (e.g. the sign-request sheet) while it is set, so nothing presents
-     * into the covered layer and "pops in" when the PIN is accepted
-     * (PERA-4743). Mirrored by AutoLockGuard's useAutoLockListener.
+     * into the covered layer and "pops in" when the PIN is accepted.
+     * Mirrored by AutoLockGuard's useAutoLockListener.
      */
     isAppLockActive: boolean
     /**
@@ -57,8 +57,7 @@ export type SecurityState = BaseStoreState & {
      * blob is currently usable, shared so every consumer of `useBiometrics`
      * (Settings, the lock screen, PIN edit) sees the same answer. It was
      * per-hook state, so when a reconcile cleared a blob revoked in OS settings
-     * only the calling screen updated and Settings kept showing the toggle ON
-     * (PERA-4702).
+     * only the calling screen updated and Settings kept showing the toggle ON.
      *
      * A cache, never the source of truth: the keystore blob is, and it is
      * re-read on every `checkBiometricsEnabled`. Persisting this would make a

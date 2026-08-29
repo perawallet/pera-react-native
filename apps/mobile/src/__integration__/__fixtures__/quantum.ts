@@ -45,7 +45,7 @@ export const QUANTUM_TEST_ADDRESS = deriveQuantumAddress(
 )
 
 // Legacy-derivation address for the same mnemonic — Falcon seeded with the
-// raw entropy instead of the canonical PQK1 hash (see PERA-4972). The dual-
+// raw entropy instead of the canonical PQK1 hash. The dual-
 // probe import path needs both candidate addresses mockable on chain.
 export const QUANTUM_TEST_LEGACY_PUBLIC_KEY =
     getPQProvider().generateKeypairFromSeed(

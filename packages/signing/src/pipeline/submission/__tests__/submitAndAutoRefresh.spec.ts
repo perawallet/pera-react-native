@@ -228,7 +228,7 @@ describe('submitAndAutoRefreshCore', () => {
     })
 
     test('resolves as success when an unknown-outcome submit failure verifies as landed on-chain', async () => {
-        // The user's scenario in PERA-4896: the POST response is lost on a
+        // The reported scenario: the POST response is lost on a
         // flaky connection but the node received the bytes — the transaction
         // confirms two rounds later while the app claims failure.
         const timeout = new Error('The operation timed out')

@@ -126,7 +126,7 @@ const syncLanguagePreference = async (): Promise<void> => {
     }
 }
 
-// Cold start is the only place the launch preference is applied (PERA-4855).
+// Cold start is the only place the launch preference is applied.
 // Running it here — inside the bootstrap gate, before the splash lifts — means
 // no visible flash of a non-pinned account. Deep links land strictly later,
 // from mounted UI, so a notification tap still wins for that session.
@@ -159,7 +159,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // pinning — which the calls below genuinely depend on — but not
                 // push registration. That is bounded at several seconds and used
                 // to hold the splash for the whole round trip on a slow or
-                // offline start (PERA-4727); nothing in bootstrap needs the
+                // offline start; nothing in bootstrap needs the
                 // token, so it lands whenever it lands.
                 const { notifications } = await provider.initialize()
                 void notifications.then(({ token }) =>
@@ -248,7 +248,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // Deferred so the initial layout lands before the native splash
                 // goes away. Two frames is what that actually needs; the
                 // previous flat 200ms charged every cold start the full delay
-                // however fast the first paint was (PERA-4727).
+                // however fast the first paint was.
                 //
                 // The timer is a backstop, not a duplicate: rAF does not fire
                 // while the app is producing no frames, so a cold start that

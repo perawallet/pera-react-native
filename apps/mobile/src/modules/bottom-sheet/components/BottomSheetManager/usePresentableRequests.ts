@@ -20,7 +20,7 @@ import type { InternalRequest } from '../../types'
  * While `isPresentationHeld` (set by the app-lock guard), NEW requests are
  * held here — a sheet presented under the lock overlay surfaces the instant
  * the PIN is accepted, which read as "entered my PIN, then the TX appeared"
- * in the field (PERA-4743). Holding at the manager covers every sheet at
+ * in the field. Holding at the manager covers every sheet at
  * once, so drivers (dApp signing, multisig, FAQ, …) don't need per-driver
  * gates.
  *

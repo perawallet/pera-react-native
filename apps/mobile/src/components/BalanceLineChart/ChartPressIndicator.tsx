@@ -39,7 +39,7 @@ type ChartPressIndicatorProps = {
 // rather than being conditionally rendered on the hook's JS `isActive`
 // boolean. That boolean arrives through runOnJS + a setState, so gating on it
 // put appearing and disappearing behind the very thread that's congested
-// during a scrub — seconds of lag at both ends of the gesture (PERA-4849).
+// during a scrub — seconds of lag at both ends of the gesture.
 export const ChartPressIndicator = ({
     pressState,
     top,

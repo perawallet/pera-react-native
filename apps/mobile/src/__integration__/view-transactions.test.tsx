@@ -118,7 +118,7 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     balanceImpacts: [],
 }
 
-// PERA-4985: `stpf` used to fall through to the unsupported branch. Seeded
+// `stpf` used to fall through to the unsupported branch. Seeded
 // per-test rather than in `beforeEach` so the existing row assertions keep
 // counting exactly two transactions.
 const TX_STATE_PROOF: TransactionHistoryItem = {
@@ -186,7 +186,7 @@ describe('Flow: View transactions → tap into details', () => {
     })
 
     it(
-        'Given an account with an empty history, the History tab shows its title and empty view (PERA-4676)',
+        'Given an account with an empty history, the History tab shows its title and empty view',
         async () => {
             // Clear the transactions seeded in beforeEach so the selected
             // account has an empty history — the brand-new "deposit ALGO to
@@ -258,7 +258,7 @@ describe('Flow: View transactions → tap into details', () => {
                             'confirmed-round': TX_PAYMENT.confirmedRound,
                             'round-time': TX_PAYMENT.roundTime,
                             fee: 1000,
-                            // PERA-4974: a note is what crashed this screen
+                            // a note is what crashed this screen
                             // once the detail had been cached to disk. The
                             // indexer sends it base64; algosdk decodes it to
                             // bytes, so this also guards the note row against
@@ -357,7 +357,7 @@ describe('Flow: View transactions → tap into details', () => {
     )
 
     it(
-        'Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row (PERA-4897)',
+        'Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row',
         async () => {
             // A close-out carries the whole balance in closeAmount with
             // amount 0 — the bug rendered these rows as "0 ALGO". Re-seed

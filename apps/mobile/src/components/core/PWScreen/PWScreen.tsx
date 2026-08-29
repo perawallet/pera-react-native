@@ -58,7 +58,7 @@ export type PWScreenProps = {
     /** Whether the fixed body (`scroll='never'`) shrinks above the keyboard.
      * `'never'` lets the keyboard overlay the body instead, for screens whose
      * body handles the keyboard itself, e.g. a WebView whose page is laid out
-     * against a viewport height it snapshots at load (PERA-4905). */
+     * against a viewport height it snapshots at load. */
     keyboardAvoidance?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
     style?: StyleProp<ViewStyle>

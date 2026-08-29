@@ -45,7 +45,7 @@ export const submitSignedTransactionGroup = async (
     const concatenated = concatBytes(...encoded)
 
     // Derived before the POST so a failed broadcast still knows which
-    // transactions to verify against the chain (PERA-4587 / PERA-4896).
+    // transactions to verify against the chain.
     const localIds: string[] = []
     for (const signedTxn of signedTxns) {
         if (signedTxn.txn.txID) {

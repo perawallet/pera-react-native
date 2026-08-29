@@ -351,7 +351,7 @@ export const useWalletConnectHandlers = () => {
                 // Identity is stamped from the session snapshot the user
                 // approved, never the live connector — a paired dApp can
                 // overwrite `connector.session.peerMeta` after approval and
-                // sign under a spoofed brand otherwise (PERA-4713).
+                // sign under a spoofed brand otherwise.
                 sourceMetadata: foundSession.session?.peerMeta,
                 stdSigData,
                 metadata,
@@ -447,7 +447,7 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                // Approved-snapshot identity, not the live connector (PERA-4713).
+                // Approved-snapshot identity, not the live connector.
                 sourceMetadata: foundSession.session?.peerMeta,
                 data: params,
                 approve: async (signedData: PeraArbitraryDataSignResult[]) => {
@@ -527,7 +527,7 @@ export const useWalletConnectHandlers = () => {
                 },
             )
 
-            // enqueueSignRequest is async (PQ-017 may fetch suggested params
+            // enqueueSignRequest is async ( may fetch suggested params
             // for a quantum signer), but this handler must stay synchronous:
             // the WC listener wraps it in a sync try/catch and unit tests
             // assert its validate/resolve throws propagate synchronously.
@@ -539,7 +539,7 @@ export const useWalletConnectHandlers = () => {
                 // Serializable id so a multisig sync-flow handoff can answer this
                 // exact request after an app kill (WC v1 keeps no pending request).
                 payloadId: payload.id,
-                // Approved-snapshot identity, not the live connector (PERA-4713).
+                // Approved-snapshot identity, not the live connector.
                 sourceMetadata: foundSession.session?.peerMeta ?? undefined,
                 // deliverApprove guards the WC v1 dead-socket case: the
                 // bridge can silently drop our response once the app has

@@ -99,7 +99,7 @@ export type UseAccountIconOptions = {
      * The type of the auth account, for callers that force `rekeyedSignable`
      * on a synthetic account. `useRekeyAccount` can only resolve an auth
      * address that is already in the store, so without this a rekeyed-to-Ledger
-     * preview falls back to the turquoise standard glyph (PERA-4403).
+     * preview falls back to the turquoise standard glyph.
      */
     authType?: AccountType
 }

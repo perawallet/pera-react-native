@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# tools/jira-sync.sh <target-status> [PERA-1 PERA-2 ...]
+# tools/jira-sync.sh <target-status> [...]
 #
 # Moves Jira issues to a target status, optionally reassigning them and stamping
 # a fix version. Shared by .github/workflows/jira-sync.yml (branch pushed / PR

@@ -14,7 +14,7 @@
 // account as a selectable target (the migration path onto post-quantum keys),
 // and rekey-OUT opens the QuantumDowngradeWarningSheet before any signing.
 //
-// Rekey-out CAN be signed since PQ-006/PERA-4653, so the last test drives
+// Rekey-out CAN be signed, so the last test drives
 // past the sheet with a real Falcon key and a rejecting algod: no algod in
 // production accepts `pqsig`, which makes a failed submission the normal
 // rekey-out outcome there, and the CTA must recover from it.
@@ -223,7 +223,7 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
     return { quantumSource: signableSource, target }
 }
 
-describe('rekey quantum account (PQ-015)', () => {
+describe('rekey quantum account', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

@@ -50,7 +50,7 @@ export const buildMultisigCosignRequest = ({
 
     // A cosignature is only ever a subsig of the joint (multisig) account, and
     // the backend is a relay — not a trust anchor — for what we sign. Two hard
-    // checks close the standalone-single-sig drain (PERA-4711):
+    // checks close the standalone-single-sig drain:
     const { address, version, threshold, participantAddresses } =
         signRequest.multisigAccount
 

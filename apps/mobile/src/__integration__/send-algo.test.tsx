@@ -499,7 +499,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             // landing verification comes up empty. The surfaced copy must be
             // the honest "status unknown" message — not "failed" and not
             // plain "no connection" — because the transaction may still have
-            // landed (PERA-4896).
+            // landed.
             await waitFor(
                 () => {
                     expect(
@@ -518,7 +518,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     )
 
     it(
-        'Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure (PERA-4896)',
+        'Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure',
         async () => {
             await seedAlgo25Sender()
             useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
@@ -579,7 +579,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     )
 
     it(
-        'Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success (PERA-4896)',
+        'Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success',
         async () => {
             await seedAlgo25Sender()
             useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)

@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-// Quantum accounts have no dedicated signing path since PQ-006/PERA-4653:
+// Quantum accounts have no dedicated signing path:
 // `useLocalKeyTransactionSigner` handles them like any other local key and
 // yields an ordinary `SignedTransaction` carrying `pqsig` instead of `sig`.
 //
 // A local send self-submits through the callback transport rather than algod,
 // so this asserts the pqsig-bearing transaction reaches the request's `approve`
 // callback and that no algod broadcast ever happens. Submission over the algod
-// transport is covered by submit-quantum-broadcast.test.tsx (PQ-019).
+// transport is covered by submit-quantum-broadcast.test.tsx.
 
 import {
     afterAll,
@@ -129,7 +129,7 @@ const renderSendConfirmationStack = () =>
         ],
     })
 
-describe('send from quantum account (PQ-015)', () => {
+describe('send from quantum account', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

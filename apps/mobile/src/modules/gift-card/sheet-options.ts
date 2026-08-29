@@ -14,7 +14,7 @@ import type { BottomSheetOptions } from '@modules/bottom-sheet'
 
 /**
  * Shared by every Bidali opener so the sheet cannot be requested without
- * `avoidKeyboard: false` — Bidali is a WebView sheet (PERA-4708).
+ * `avoidKeyboard: false` — Bidali is a WebView sheet.
  *
  * Kept out of `BidaliContent` on purpose: callers that only need the options
  * would otherwise pull the Bidali navigator into their module graph.

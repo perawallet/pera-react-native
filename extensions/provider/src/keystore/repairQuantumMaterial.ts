@@ -61,8 +61,9 @@ export type QuantumMaterialRepairResult = {
  * Falcon derivation is deterministic in the seed, so re-minting reproduces the
  * same keypair and the account's address is unchanged. The public key is
  * compared afterwards and a mismatch is reported rather than trusted: a changed
- * public key would mean a changed address, and per the PQ-020 note in
- * `docs/QUANTUM_PQ_INTEGRATION.md` that is invisible from the address alone.
+ * public key would mean a changed address, and a malformed stored key is
+ * invisible from the address, because `PQAddress(scheme, salt, publicKey)` stays
+ * self-consistent with whatever bytes were stored.
  */
 export const repairQuantumMaterial = async (
     deps: QuantumMaterialRepairDeps,

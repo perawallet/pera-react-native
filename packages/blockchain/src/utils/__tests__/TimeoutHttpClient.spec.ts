@@ -101,7 +101,7 @@ describe('TimeoutHttpClient', () => {
             vi.stubGlobal('fetch', fetch)
 
             // AbortSignal.timeout aborts with a `TimeoutError` DOMException,
-            // which Task 3's toAlgodError classifies as retryable.
+            // which toAlgodError classifies as retryable.
             await expect(buildClient().get('/v2/status')).rejects.toThrow(
                 expect.objectContaining({ name: 'TimeoutError' }),
             )
@@ -218,7 +218,7 @@ describe('TimeoutHttpClient', () => {
         // React Native's Response.arrayBuffer() routes through the
         // Blob/FileReader polyfill, whose per-char conversion is quadratic on
         // Hermes — a ~110KB indexer page measured ~19s of JS and ~1.5GB of
-        // allocations on device (PERA-4953). Textual bodies must go through
+        // allocations on device. Textual bodies must go through
         // the native text() path instead.
         it('reads JSON bodies via text(), never arrayBuffer()', async () => {
             const payload = JSON.stringify({ assets: [{ 'asset-id': 1 }] })

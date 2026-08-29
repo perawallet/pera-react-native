@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
     container: {
         // flex (not flexGrow) so the tab scene body always fills the account
         // tab pager. With flexGrow the empty branch collapsed to zero height on
-        // native, blanking the whole History tab (PERA-4676).
+        // native, blanking the whole History tab.
         flex: 1,
         minHeight: 0,
         backgroundColor: theme.colors.background,

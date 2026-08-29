@@ -33,7 +33,7 @@ vi.mock('../../PendingSignaturesContent', () => ({
 }))
 
 // App-lock behavior is NOT tested here on purpose: the hold lives in
-// BottomSheetManager's usePresentableRequests (PERA-4743, centralized), so
+// BottomSheetManager's usePresentableRequests, centralized there, so
 // this driver requests unconditionally.
 describe('usePendingSignaturesSheetDriver', () => {
     beforeEach(() => {

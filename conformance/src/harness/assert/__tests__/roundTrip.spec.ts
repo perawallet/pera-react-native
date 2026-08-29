@@ -38,7 +38,7 @@ type SubmittedPayment = {
     senderBalanceBefore: bigint
 }
 
-const NOTE = new TextEncoder().encode('PERA-4908')
+const NOTE = new TextEncoder.encode('')
 const AMOUNT = 250_000n
 
 describe('expectConformant', () => {

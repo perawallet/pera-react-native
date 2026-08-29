@@ -289,8 +289,7 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     await discoverPage.close()
 })
 
-// Task 11: the end-to-end proof the whole headless-WalletConnect project
-// exists for. Everything above this point is deliberately networkless (see
+// The end-to-end proof the whole headless-WalletConnect design exists for. Everything above this point is deliberately networkless (see
 // the file header); a real paired session and a real inbound sign request
 // need a real WC v1 bridge, so this block spins up a local one
 // (fixtures/fake-wc-bridge.mjs — pub/sub over topics with offline queueing,

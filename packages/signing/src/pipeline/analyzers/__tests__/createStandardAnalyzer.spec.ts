@@ -72,7 +72,7 @@ const makeTx = (overrides: {
 // Type-specific fields (receiver, amount, closeRemainderTo, ...) live under
 // the payload on a real SDK Transaction, never at the top level — so warnings
 // and summaries must be exercised against genuine algosdk objects. Hand-built
-// literals with top-level fields are exactly what let PERA-4506 ship as dead
+// literals with top-level fields are exactly what let ship as dead
 // code.
 const REAL_SENDER = makeTestAddress(1)
 const REAL_EXTERNAL_SENDER = makeTestAddress(7)

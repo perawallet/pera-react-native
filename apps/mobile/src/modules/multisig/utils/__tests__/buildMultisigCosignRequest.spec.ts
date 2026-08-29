@@ -176,7 +176,7 @@ describe('buildMultisigCosignRequest', () => {
         ).toThrow(/no transaction lists/)
     })
 
-    // PERA-4711: a cosignature must never be a standalone-valid single sig.
+    // a cosignature must never be a standalone-valid single sig.
     it('throws when a transaction is sent by the co-signer themselves (standalone-single-sig drain)', () => {
         // The joint account derives correctly, but one tx is sent by the
         // co-signer's OWN address. useLocalKeyTransactionSigner omits `sgnr`

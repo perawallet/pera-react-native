@@ -129,7 +129,7 @@ export const useSwapConfirmationActions = ({
                 return
             }
             // Signing onward the swap may already be committing — the sheet
-            // stays until the outcome lands (PERA-4587 owns the richer
+            // stays until the outcome lands ( owns the richer
             // "verifying" semantics for the submitted window).
             if (isCommitted) return
             successCloseTimer.flush()

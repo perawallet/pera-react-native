@@ -146,4 +146,4 @@ result = client.send.add(a=10, b=20)
 - [ARC-4 ABI Details](./references/arc4-abi.md) - Types, encoding rules, method invocation
 - [ARC-32/56 App Specs](./references/arc32-arc56.md) - Application specification details
 - [ARC Standards](https://dev.algorand.co/arc-standards/) - Official ARC documentation
-- [Call Smart Contracts](../call-smart-contracts/SKILL.md) - Using AlgoKit Utils for ABI calls
+- Using AlgoKit Utils for ABI calls: the `use-algokit-utils` skill

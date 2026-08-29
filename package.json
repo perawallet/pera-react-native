@@ -19,6 +19,8 @@
     "lint:guardrails:warn": "pnpm --filter @perawallet/wallet-core-devtools guardrails --warn-only",
     "lint:guardrails:json": "pnpm --silent --filter @perawallet/wallet-core-devtools guardrails --json",
     "lint:i18n": "node tools/i18n-lint.cjs",
+    "lint:docs": "node tools/check-doc-hygiene.mjs",
+    "lint:docs:warn": "node tools/check-doc-hygiene.mjs --warn-only",
     "lint:copyright": "node tools/copyright-header.mjs --fix",
     "lint:copyright:check": "node tools/copyright-header.mjs --check",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",

@@ -29,7 +29,7 @@ export type AsbBackupEnvelope = {
 // TODO(quantum, phase 2): the ASB envelope has no representation for
 // post-quantum (Falcon) keys, so quantum accounts are neither exported nor
 // importable here — they are silently absent from this format by design. A
-// quantum-capable ASB kind is out of scope for PQ-012; see EPIC phase 2.
+// quantum-capable ASB kind is out of scope for this format.
 export const AsbAccountKind = {
     Single: 'single',
     Watch: 'watch',

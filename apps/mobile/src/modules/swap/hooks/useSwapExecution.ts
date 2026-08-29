@@ -348,7 +348,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         ? t('swap.execution.user_rejected')
                         : // Guard rejections carry an i18n key of their own;
                           // everything else gets the generic localized copy
-                          // rather than the raw error text (PERA-4795).
+                          // rather than the raw error text.
                           e instanceof QuantumSwapBlockedError
                           ? t(e.translationKey)
                           : t('swap.execution.error_body')
@@ -396,7 +396,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     ? t('swap.execution.user_rejected')
                     : // Guard rejections carry an i18n key of their own;
                       // everything else gets the generic localized copy rather
-                      // than the raw error text (PERA-4795).
+                      // than the raw error text.
                       e instanceof QuantumSwapBlockedError
                       ? t(e.translationKey)
                       : t('swap.execution.error_body')

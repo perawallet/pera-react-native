@@ -20,7 +20,7 @@ type PromptState = {
      *
      * Lives here rather than in the container's component state because the
      * container remounts, and a hidden prompt returning after a remount is one
-     * of the ways the same prompt appeared twice (PERA-4874).
+     * of the ways the same prompt appeared twice.
      */
     dismissedIds: string[]
     /**

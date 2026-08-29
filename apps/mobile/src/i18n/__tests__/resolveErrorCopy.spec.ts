@@ -41,7 +41,7 @@ describe('resolveErrorCopy', () => {
     it('renders the status-unknown copy for an unverified unknown-outcome SubmissionError', () => {
         // The transaction may have landed (lost response, timeout) — calling
         // it failed or "no connection" would be a lie; the user needs to
-        // check history before retrying (PERA-4896).
+        // check history before retrying.
         const algodError = new AlgodError('network_unavailable', {})
         const result = resolveErrorCopy(
             new SubmissionError(['TXID'], 'unknown-outcome', algodError),

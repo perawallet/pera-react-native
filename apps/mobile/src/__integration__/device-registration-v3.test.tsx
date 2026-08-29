@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Acceptance test for the whole PERA-4705 device-API-v3 migration: the swap
+// Acceptance test for the whole device-API-v3 migration: the swap
 // backend can only price a quantum account's fee correctly once device
 // registration reports `account_type: 'quantum'` for its address. Everything
 // else in the migration (endpoints, serializers, the account-type mapping) is
@@ -129,7 +129,7 @@ const algo25Account: WalletAccount = {
     name: 'Algo25 account',
 }
 
-describe('Device registration v3 (PERA-4705)', () => {
+describe('Device registration v3', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterAll(() => server.close())
 

@@ -24,7 +24,7 @@ const TXID = 'X4CQTNNARMMELORLYBJY27776Z2453LLREFIZKJYVE3B5FJSL7HA'
 // actually throws: a plain Error carrying a numeric `status` and a `response`
 // with the decoded body text, and — crucially — NO `url`. The node's body
 // message is also appended to the error `message`, exactly as algosdk does.
-// Building the real shape is what guards against the PERA-4502 regression,
+// Building the real shape is what guards against the regression,
 // where the guard required a v10-only `url` and never matched.
 const makeAlgodHttpError = ({
     status,
@@ -60,7 +60,7 @@ describe('toAlgodError', () => {
 
         expect(e).toBeInstanceOf(AlgodError)
         expect(e.code).toBe(AlgodErrorCode.OVERSPEND)
-        // PERA-4908: balance/spent/missing are no longer extracted — algod's
+        // balance/spent/missing are no longer extracted — algod's
         // rendering of these figures isn't safely reconstructable from the
         // message text (see algodErrorCodes.ts's overspend doc).
         expect(e.params).toEqual({ address: ADDR })

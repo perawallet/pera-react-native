@@ -271,7 +271,7 @@ export const useAccountOptions = ({
     const handleToggleNotifications = useCallback(() => {
         const currentlyEnabled = isAccountEnabled(account.address)
         // The sheet closes at once so the interaction feels immediate; the
-        // confirmation waits for the backend, because before PERA-4585 this
+        // confirmation waits for the backend, because before this
         // toast fired for a request that was never sent.
         onClose()
         void toggleAccountNotification(account.address, !currentlyEnabled).then(

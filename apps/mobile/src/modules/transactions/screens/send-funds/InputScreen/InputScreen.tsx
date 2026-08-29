@@ -150,8 +150,8 @@ export const InputScreen = () => {
     // params, a network-only fetch that pauses offline, and it's only needed
     // to build the transaction (fetched fresh at build time in
     // useTransactionSendFlow) — not to render the amount form. Gating on
-    // it kept the whole Send entry point on a spinner while offline
-    // (PERA-4579). The DB-backed gates below resolve offline.
+    // it kept the whole Send entry point on a spinner while offline.
+    // The DB-backed gates below resolve offline.
     if (!asset || !accountAssetBalance || !accountInformation) {
         return <LoadingView variant='circle' />
     }

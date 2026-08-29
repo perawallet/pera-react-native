@@ -257,7 +257,7 @@ describe('completeMultisigHandoff', () => {
         expect(deps.decline).not.toHaveBeenCalled()
         expect(deps.reportError).toHaveBeenCalled()
         // Deliberate: the backend still gets a terminal status. Correcting it later
-        // is reconciliation, which is PERA-4588's scope.
+        // is reconciliation, which is's scope.
         expect(deps.onFailed).toHaveBeenCalled()
     })
 

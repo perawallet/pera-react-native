@@ -187,7 +187,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         // A row with no known round is newer than the indexer's view: holdings
         // mirror algod, so only a just-opted-in asset can be missing from the
         // (lagging) indexer map. Float those to the top so a fresh opt-in
-        // lands first instantly (PERA-4845). `sort` is stable, so ties keep
+        // lands first instantly. `sort` is stable, so ties keep
         // SQL's asset-id-descending order, which also covers the map's empty
         // pre-load state.
         return [...rows].sort((a, b) => {
@@ -217,7 +217,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // previous order held as placeholder data — before the reordered ones land.
     // Deriving the trigger from the rows read that gap as "nothing changed" and
     // skipped the reset exactly when it was needed, which is how sorting a
-    // freshly imported account dropped the user mid-list (PERA-4921).
+    // freshly imported account dropped the user mid-list.
     const viewRequestKey = [
         account?.address ?? '',
         sortMode,
@@ -239,13 +239,13 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
         // Next frame, not this commit: FlashList settles its own offset on the
         // layout pass that follows a data change, and a scroll issued before
-        // that pass loses to it (PERA-4406).
+        // that pass loses to it.
         const frame = requestAnimationFrame(() => {
             // Recorded here, not before scheduling: every placeholder gap
             // re-runs this effect, and the cleanup cancels the pending frame.
             // Marking the request applied up front turned that cancellation
             // into a reset that silently never happened, leaving the gallery
-            // wherever the previous request had scrolled it (PERA-4932).
+            // wherever the previous request had scrolled it.
             appliedViewRequestKeyRef.current = viewRequestKey
             flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
         })

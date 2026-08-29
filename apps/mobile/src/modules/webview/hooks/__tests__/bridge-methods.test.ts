@@ -19,7 +19,7 @@ import {
 } from '../bridge-methods'
 
 // The written v3 contract — keep in lockstep with the method table in
-// docs/DISCOVER_BRIDGE_CONTRACT.md. A mismatch here means a method was added
+// docs/WEBVIEW_ARCHITECTURE.md. A mismatch here means a method was added
 // or removed without updating the documented contract.
 const DOCUMENTED_V3_METHODS = [
     'canOpenURI',
@@ -40,7 +40,7 @@ const DOCUMENTED_V3_METHODS = [
 ]
 
 describe('Discover bridge contract (protocol v3)', () => {
-    it('supports exactly the method set documented in docs/DISCOVER_BRIDGE_CONTRACT.md', () => {
+    it('supports exactly the method set documented in docs/WEBVIEW_ARCHITECTURE.md', () => {
         expect([...PERA_WEBVIEW_BRIDGE_METHODS].sort()).toEqual(
             DOCUMENTED_V3_METHODS,
         )

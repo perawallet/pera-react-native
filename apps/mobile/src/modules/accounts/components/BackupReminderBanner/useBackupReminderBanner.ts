@@ -31,7 +31,7 @@ export const useBackupReminderBanner = (
     // Only the ALGO amount matters here; the one-row SQL summary answers it
     // without useAccountBalancesQuery's full holdings walk, which on a
     // 10k-asset account re-read and re-hydrated every holding from the home
-    // screen (PERA-4953).
+    // screen.
     const { algoAmount } = useAccountSummaryQuery(account.address)
     const launch = useBackupFlowLauncher()
 

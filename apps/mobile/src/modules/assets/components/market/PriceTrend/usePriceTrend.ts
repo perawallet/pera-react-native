@@ -36,7 +36,7 @@ type UsePriceTrendResult = {
      * True when there is nothing truthful to show: the price fetch is
      * offline-paused with no data (fresh or persisted), or the active
      * network has no Pera backend at all. Rendering would fake a 0.00%
-     * trend (PERA-4581).
+     * trend.
      */
     isHidden: boolean
 }

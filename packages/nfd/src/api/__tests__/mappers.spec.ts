@@ -50,7 +50,7 @@ const searchResponse = (
 })
 
 describe('transformSearchResults', () => {
-    it('drops results whose backend-asserted address is not a valid Algorand address (PERA-4718)', () => {
+    it('drops results whose backend-asserted address is not a valid Algorand address', () => {
         const result = transformSearchResults(
             searchResponse([
                 { name: 'alice.algo', address: validAddress },

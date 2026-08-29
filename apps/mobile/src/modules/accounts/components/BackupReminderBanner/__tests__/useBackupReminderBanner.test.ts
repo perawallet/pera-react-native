@@ -58,7 +58,7 @@ const accountHD: WalletAccount = {
 }
 
 // The banner only needs the ALGO amount, served by the one-row SQL summary —
-// not the full holdings walk (PERA-4953).
+// not the full holdings walk.
 const summaryWith = (algoAmount: Decimal) => ({
     algoAmount,
     portfolioUsdValue: new Decimal(0),

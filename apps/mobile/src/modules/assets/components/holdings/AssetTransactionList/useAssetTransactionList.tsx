@@ -150,7 +150,7 @@ export const useAssetTransactionList = ({
     })
 
     const handleExportCsv = useCallback(() => {
-        // Guarding the request would silence PERA-4929's central toast too, so
+        // Guarding the request would silence's central toast too, so
         // the reason has to be raised here or the button would do nothing.
         if (isUnavailableOnNetwork) {
             showError(
@@ -210,7 +210,7 @@ export const useAssetTransactionList = ({
 
     // Gated on `isFetched`, not `!isLoading`: a query that has not run yet
     // reports `isLoading: false` with no rows, which rendered "no
-    // transactions" over a history nobody had read (PERA-4861).
+    // transactions" over a history nobody had read.
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.

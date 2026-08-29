@@ -580,7 +580,7 @@ describe('asset repository', () => {
         it('filters candidate lists beyond SQLite bound-parameter limits', async () => {
             // A 10k-asset wallet feeds every held id into this gate; a
             // parameter-per-id query dies at SQLITE_MAX_VARIABLE_NUMBER and
-            // costs seconds of JS in query build below it (PERA-4953).
+            // costs seconds of JS in query build below it.
             await upsertAssets({
                 db,
                 items: [makeAsset({ assetId: '1' })],
@@ -607,7 +607,7 @@ describe('asset repository', () => {
         // The backend types an asset as a collectible only after its crawler
         // has fetched the asset's media, which lands seconds to hours after
         // the mint. These params are what stop that first "not a collectible"
-        // answer from being cached for the full ttlMs (PERA-4955).
+        // answer from being cached for the full ttlMs.
         const recheck = (ttlMs: number, windowMs = 60_000) => ({
             ttlMs: 60_000,
             recheckUnclassified: { ttlMs, windowMs },
@@ -804,7 +804,7 @@ describe('asset repository', () => {
     describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
         // ARC19 media is mutable: the manager's acfg re-points the reserve
         // address at a new CID and the backend re-crawls, but only a re-fetch
-        // of the assets_pera row picks the new media URL up (PERA-4956).
+        // of the assets_pera row picks the new media URL up.
         const ARC19_URL =
             'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}#arc3'
 
@@ -1108,7 +1108,7 @@ describe('asset repository', () => {
         })
 
         it('applies the fresh and miss filters to candidate lists beyond SQLite bound-parameter limits', async () => {
-            // Same constraint as the assets-gate twin above (PERA-4953): the
+            // Same constraint as the assets-gate twin above: the
             // whole held set flows through here every price pass.
             await upsertAssetPrices({
                 db,

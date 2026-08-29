@@ -29,7 +29,7 @@ import { validateTransactionGroupIntegrity } from '../../utils/validateTransacti
 /**
  * Why a fee was raised. Today the only rule is the post-quantum surcharge for
  * quantum signers; future protocol rules (per-resource surcharges, a node
- * `simulate()`-derived requirement — see PQ-022) add members here without
+ * `simulate()`-derived requirement) add members here without
  * changing the record shape. The `quantum-minimum` value predates the switch
  * from a minimum to a surcharge and is kept for wire/log compatibility.
  */
@@ -133,7 +133,7 @@ export const groupHasQuantumSigner = ({
  * Underfunded groups are out of scope: a group whose fees don't cover its
  * pre-quantum cost already fails for an Ed25519 signer, and the wallet can't
  * know a group's true cost offline (inner-transaction count is only knowable
- * from `simulate` — PQ-022).
+ * from `simulate` —).
  *
  * ARC-0001 `groupContext` consumers see the modified group: the returned
  * array replaces the original payload for everything downstream (display,

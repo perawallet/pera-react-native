@@ -21,7 +21,7 @@ import { sha256 } from '@noble/hashes/sha256'
 
 /**
  * Play Integrity request hash: base64(SHA256(utf8(challengeString))). Must match
- * the backend's recomputation over the same challenge string (see PERA-4077).
+ * the backend's recomputation over the same challenge string.
  */
 const computeRequestHash = (challenge: string): string =>
     Buffer.from(sha256(new TextEncoder().encode(challenge))).toString('base64')

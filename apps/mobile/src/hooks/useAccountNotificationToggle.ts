@@ -104,7 +104,7 @@ export const useAccountNotificationToggle =
 
                 try {
                     // Fail fast offline instead of trusting the native
-                    // transport to reject (PERA-4863). Registration runs under
+                    // transport to reject. Registration runs under
                     // networkMode 'always', and iOS rejects promptly while
                     // Android in airplane mode does not — so without this the
                     // rollback below never ran and the persisted store diverged

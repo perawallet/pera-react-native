@@ -152,7 +152,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // immediate fetch + asset/price enrichment — the gated background poll
     // never picks up an account whose activity predates its checkpoint.
     // Gated on migration like DeviceRegistrar below: syncing before the
-    // migrated device id lands caches favorites as false (PERA-4564).
+    // migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
@@ -178,7 +178,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useEffect(() => {
         // Hold the background poll until migration finishes: its initial
         // full pass would otherwise fetch assets before the migrated device
-        // id is written and cache favorites as false (PERA-4564).
+        // id is written and cache favorites as false.
         if (!hasAccounts || migrationInProgress) {
             runSyncAction('stop')
             return

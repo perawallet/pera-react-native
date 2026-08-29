@@ -39,7 +39,7 @@ type UseArbitraryDataSigningScreenResult = {
     /**
      * A named signer is a quantum account, whose Falcon signature the
      * arbitrary-data scheme can't verify yet — the screen must show a
-     * terminal notice instead of the confirm control (PERA-4919).
+     * terminal notice instead of the confirm control.
      */
     isQuantumBlocked: boolean
     handleApprove: () => void

@@ -101,7 +101,7 @@ export const useSignRequestDriver = () => {
         if (openIdRef.current === sheetId) return
 
         // No app-lock gate here: BottomSheetManager holds every sheet's
-        // presentation while the lock overlay is up (PERA-4743), so
+        // presentation while the lock overlay is up, so
         // requesting while locked is safe — the sheet paints after unlock.
 
         // A hardware sign is in flight for a different request — leave the

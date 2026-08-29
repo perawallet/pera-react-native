@@ -439,7 +439,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             expect(body.byteLength).toBeGreaterThan(50)
             expect(account.address).toBe(ALGO25_TEST_ADDRESS)
 
-            // Core Task 4-6 guarantee: with an inbox address on record, the
+            // The core guarantee: with an inbox address on record, the
             // claim group is built via explicit resource refs (`buildGroup`)
             // and never falls back to a live `/v2/transactions/simulate`
             // call.

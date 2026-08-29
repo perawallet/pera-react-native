@@ -30,7 +30,7 @@ export const GroupPreviewItem = ({
     const styles = useStyles()
     const { t } = useLanguage()
     // The signing store persists through the same serializer as the query
-    // cache, so a group written before PERA-4974 rehydrates as a plain object
+    // cache, so a group written before rehydrates as a plain object
     // rather than bytes — truthy, so `?? ''` does not catch it.
     const groupId = useMemo(() => {
         const group = toBytes(transactions.at(0)?.transaction.group)

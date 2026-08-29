@@ -97,7 +97,7 @@ describe('useSuggestedParametersQuery', () => {
         expect(result.current.error).toBe(mockError)
     })
 
-    describe('offline behavior (PERA-4579)', () => {
+    describe('offline behavior', () => {
         afterEach(() => {
             onlineManager.setOnline(true)
         })
@@ -122,7 +122,7 @@ describe('useSuggestedParametersQuery', () => {
         })
     })
 
-    describe('freshness (PERA-4579)', () => {
+    describe('freshness', () => {
         test('serves cache within the TTL and refetches once stale', async () => {
             vi.useFakeTimers()
             try {

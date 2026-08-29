@@ -60,7 +60,7 @@ export const NotificationsScreen = () => {
                 // Newest-first list: reveal freshly-prepended notifications when
                 // the user is near the top, natively and atomically with layout.
                 // A JS-side scrollToOffset reveal loses to MVCP's re-anchoring on
-                // later layout passes (PERA-4406) — don't reintroduce one.
+                // later layout passes — don't reintroduce one.
                 maintainVisibleContentPosition={{
                     autoscrollToTopThreshold: 200,
                 }}

@@ -23,8 +23,7 @@ import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
  * This is a `Record` over the whole union ON PURPOSE: adding a `DeeplinkType`
  * is a compile error until someone classifies it, so a new value-bearing type
  * can never be admitted by forgetting about this file. Default-deny, because
- * the failure mode of the opposite default is a phishing primitive
- * (PERA-4666).
+ * the failure mode of the opposite default is a phishing primitive.
  *
  * The locale tour is the one excluded key: its type has no runtime member to
  * write here (see types.ts), and naming it as a bare string would put the tag

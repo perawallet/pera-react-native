@@ -65,7 +65,7 @@ export const WithReactNativePlatformExtension = (
 
         // Started, deliberately NOT awaited: FCM/APNs registration is bounded
         // at NOTIFICATIONS_INIT_TIMEOUT_MS, and awaiting it here held the splash
-        // for that whole window on a slow or offline start (PERA-4727). Bootstrap
+        // for that whole window on a slow or offline start. Bootstrap
         // only needs the services above; the token is consumed whenever it
         // arrives. Resolves with no token rather than rejecting, so no caller
         // has to guard it.

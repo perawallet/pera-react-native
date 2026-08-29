@@ -39,7 +39,7 @@ export const useDiscoverScreen = (): UseDiscoverScreenResult => {
     const route = useRoute<RouteProp<TabBarStackParamList, 'Discover'>>()
     const { isChecking, needsMigration } = useNeedsMigration()
 
-    // PERA-4564: hold the Discover WebView until the migration gate settles.
+    // hold the Discover WebView until the migration gate settles.
     // The Discover web app reads the device id once on load; loading it before
     // the migrated device id is written would fetch favorites with no id and
     // never retry. Gating on migration completion (not device-id presence)

@@ -24,7 +24,7 @@ import { isCardQuery } from '@perawallet/wallet-core-card'
 import { isBlockchainQuery } from '@perawallet/wallet-core-blockchain'
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
-    // PERA-4581: chart-history snapshots are allowlisted AHEAD of the module
+    // chart-history snapshots are allowlisted AHEAD of the module
     // exclusions below. They are network-only (no SQLite history table backs
     // them) and carry no PII, so persisting the last successful snapshot is
     // what lets charts render last-known data offline across restarts.
@@ -38,7 +38,7 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
     // Card queries are excluded too: their responses can carry KYC
     // PII that must never land in the unencrypted disk cache.
     // Blockchain queries are indexer/algod-backed, and the raw byte fields
-    // they carry are what PERA-4974 crashed on once round-tripped through
+    // they carry are what crashed on once round-tripped through
     // disk. Both consumers degrade acceptably without a disk copy: Transaction
     // Details falls back to the mapped SQLite row (losing only the indexer
     // enrichment), and the group list renders empty until the fetch lands.
