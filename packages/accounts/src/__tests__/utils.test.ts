@@ -19,6 +19,7 @@ import {
     canSignWith,
     findAccountByKey,
     getAccountDisplayName,
+    getAccountsRekeyedTo,
     getRekeyAccount,
     getSignerFor,
     hasSigningKeys,
@@ -1284,5 +1285,40 @@ describe('services/accounts/utils - resolveAuthAccount', () => {
         expect(() => resolveAuthAccount(a, [a])).toThrow(
             RekeyTargetNotFoundError,
         )
+    })
+})
+
+describe('services/accounts/utils - getAccountsRekeyedTo', () => {
+    test('returns the accounts whose active-network auth-addr is the address', () => {
+        const target = quantum({ address: 'PQ' })
+        const rekeyed = algo25({ address: 'A', rekeyAddress: 'PQ' })
+        const unrelated = algo25({ address: 'B' })
+
+        expect(
+            getAccountsRekeyedTo('PQ', [target, rekeyed, unrelated]),
+        ).toEqual([rekeyed])
+    })
+
+    test('excludes the address itself', () => {
+        const selfRekeyed = algo25({ address: 'A', rekeyAddress: 'A' })
+        expect(getAccountsRekeyedTo('A', [selfRekeyed])).toEqual([])
+    })
+
+    test('matches a rekey recorded on a non-active network', () => {
+        // The mirror follows the active network, so a mainnet rekey seen while
+        // browsing testnet lives only in the per-network map.
+        const rekeyed = algo25({
+            address: 'A',
+            rekeyAddressByNetwork: { mainnet: 'PQ' },
+        })
+        expect(getAccountsRekeyedTo('PQ', [rekeyed])).toEqual([rekeyed])
+    })
+
+    test('returns an empty list when nothing points at the address', () => {
+        expect(
+            getAccountsRekeyedTo('PQ', [
+                algo25({ address: 'A', rekeyAddress: 'OTHER' }),
+            ]),
+        ).toEqual([])
     })
 })

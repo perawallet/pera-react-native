@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import {
     useAccountSummaryQuery,
+    useAccountsRekeyedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -33,9 +34,14 @@ export const useBackupReminderBanner = (
     // 10k-asset account re-read and re-hydrated every holding from the home
     // screen (PERA-4953).
     const { algoAmount } = useAccountSummaryQuery(account.address)
+    const rekeyedToThisAccount = useAccountsRekeyedTo(account.address)
     const launch = useBackupFlowLauncher()
 
-    const isVisible = requiresBackup && algoAmount.gt(0)
+    // An unfunded account still holds the keys for anything rekeyed to it, so
+    // losing its passphrase strands those accounts — funding is not the only
+    // reason to prompt (PERA-5002).
+    const isVisible =
+        requiresBackup && (algoAmount.gt(0) || rekeyedToThisAccount.length > 0)
 
     const onPress = useCallback(() => launch(account), [launch, account])
 
