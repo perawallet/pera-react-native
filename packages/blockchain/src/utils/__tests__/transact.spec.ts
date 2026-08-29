@@ -17,7 +17,7 @@ import {
     makePaymentTxnWithSuggestedParamsFromObject,
     decodeSignedTransaction,
 } from 'algosdk'
-import { generateKey, signCompressed } from 'falcon-1024'
+import { falcon1024 } from '@algorandfoundation/falcon-wasm'
 import { compactSignedResults, encodeSignedTransaction } from '..'
 import type { PeraSignedTransaction } from '..'
 import {
@@ -55,7 +55,7 @@ describe('utils/transact — compactSignedResults', () => {
 
 describe('utils/transact — pqsig transactions use the ordinary encoding path', () => {
     it('msgpack-encodes a pqsig SignedTransaction like any other', () => {
-        const { publicKey, privateKey } = generateKey(
+        const { publicKey, privateKey } = falcon1024.generateKey(
             new Uint8Array(48).fill(5),
         )
         const sender = deriveQuantumAddress(publicKey)
@@ -77,7 +77,10 @@ describe('utils/transact — pqsig transactions use the ordinary encoding path',
             signature: {
                 schemeId: 'falcon1024',
                 publicKey,
-                signature: signCompressed(privateKey, pqSigningDigest(txn)),
+                signature: falcon1024.signCompressed(
+                    privateKey,
+                    pqSigningDigest(txn),
+                ),
             },
         })
 

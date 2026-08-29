@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, test } from 'vitest'
-import { generateKey } from 'falcon-1024'
+import { falcon1024 } from '@algorandfoundation/falcon-wasm'
 import { derivePQKeygenSeed } from '../derivation'
 import { deriveQuantumAddress } from '../quantumAdapter'
 
@@ -26,7 +26,7 @@ const GO_ALGORAND_ADDRESS =
 describe('derivePQKeygenSeed', () => {
     test('reproduces go-algorand algokey pq for its published vector', () => {
         const seed = derivePQKeygenSeed(GO_ALGORAND_ENTROPY)
-        const { publicKey } = generateKey(seed)
+        const { publicKey } = falcon1024.generateKey(seed)
 
         expect(deriveQuantumAddress(publicKey)).toBe(GO_ALGORAND_ADDRESS)
     })

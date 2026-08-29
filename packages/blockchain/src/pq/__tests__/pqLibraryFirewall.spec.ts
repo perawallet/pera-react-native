@@ -22,21 +22,23 @@ import { join, dirname, sep } from 'node:path'
 import { tmpdir } from 'node:os'
 import { describe, it, expect } from 'vitest'
 
-// Pera's quantum (post-quantum, Falcon-1024) accounts integrate Joe Polny's
-// interim PQ libraries behind a swap seam so they can later be replaced with
-// official Algorand code via a one-module change. `@joe-p/algosdk` is no longer one of the
+// Pera's quantum (post-quantum, Falcon-1024) accounts keep every Falcon
+// library behind a swap seam so a backend can be replaced via a one-module
+// change. `@joe-p/algosdk` is no longer one of the
 // forbidden specifiers, and is no longer installed at all: the PQ transaction
 // surface now comes from official `algosdk` itself (3.7.0, resolved by the
 // `algosdk` catalog range in pnpm-workspace.yaml), so application code
-// imports `algosdk` everywhere, including in the former Seam B. Only the Falcon
-// libraries (`@joe-p/react-native-falcon`, WASM `falcon-1024`), which still
-// have no official counterpart, remain confined to Seam A. The quote class
-// includes backticks so template-literal dynamic imports (e.g.
-// `import(\`falcon-1024\`)`) are caught too. The falcon-1024 alternative also
-// allows an optional subpath (e.g. `falcon-1024/wasm`) so a deep import can't
+// imports `algosdk` everywhere, including in the former Seam B. The Falcon
+// libraries stay confined to Seam A: the official WASM
+// `@algorandfoundation/falcon-wasm` (which replaced interim `falcon-1024` —
+// itself still forbidden so it cannot creep back in) and the interim native
+// `@joe-p/react-native-falcon`, which has no official counterpart yet. The
+// quote class includes backticks so template-literal dynamic imports (e.g.
+// `import(\`falcon-1024\`)`) are caught too. The WASM alternatives also
+// allow an optional subpath (e.g. `falcon-1024/wasm`) so a deep import can't
 // slip past a bare-specifier-only check.
 const QUOTED_PQ_LIBRARY_SOURCE =
-    '[`\'"](@joe-p/react-native-falcon|falcon-1024(?:/[^\'"`]*)?)[`\'"]'
+    '[`\'"](@joe-p/react-native-falcon|(?:falcon-1024|@algorandfoundation/falcon-wasm)(?:/[^\'"`]*)?)[`\'"]'
 
 // A quoted MENTION of a PQ library — an import, a bundler `external` entry, or
 // a plain string that merely looks like one. Not what the guard enforces; it
@@ -71,7 +73,7 @@ const ALLOWLISTED_SEAM_DIRS = ['packages/kms/src/crypto/pq']
 // Scanned roots. `tools/` is deliberately NOT scanned and is an accepted blind
 // spot of this guard: dev-only scripts there are never bundled into the app and
 // legitimately need the PQ libs directly. Concretely,
-// `tools/localnet-quantum-check.ts` imports `falcon-1024` on purpose — it drives
+// `tools/localnet-quantum-check.ts` imports `@algorandfoundation/falcon-wasm` on purpose — it drives
 // a real keypair through derive → sign → assemble → submit against LocalNet,
 // which cannot be done through the seam (the seam's provider intentionally
 // exposes no raw key material for a script to reuse). Do NOT extend the scan to
@@ -161,7 +163,7 @@ describe('PQ library import firewall', () => {
     // Reads every source file under packages/ and apps/ synchronously; under
     // a full-parallel turbo run the default 5s deadline flakes on disk
     // contention, so the scan carries its own timeout.
-    it('confines @joe-p/react-native-falcon and falcon-1024 imports to the one remaining swap seam', () => {
+    it('confines the Falcon library imports (native, falcon-wasm, legacy falcon-1024) to the swap seam', () => {
         const files = SCAN_ROOT_DIRS.flatMap(dir =>
             listSourceFilesRecursively(root, join(root, dir)),
         )
@@ -179,6 +181,11 @@ describe('PQ library import firewall', () => {
         expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'falcon-1024'")).toBe(
             true,
         )
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "from '@algorandfoundation/falcon-wasm'",
+            ),
+        ).toBe(true)
         expect(
             FORBIDDEN_SPECIFIER_PATTERN.test(
                 "from '@joe-p/react-native-falcon'",
@@ -250,7 +257,7 @@ describe('PQ library import firewall', () => {
         )
     })
 
-    it('positive control: wasmFalconProvider.ts still imports falcon-1024 (Seam A)', () => {
+    it('positive control: wasmFalconProvider.ts still imports @algorandfoundation/falcon-wasm (Seam A)', () => {
         const file = join(
             root,
             'packages',
@@ -261,13 +268,15 @@ describe('PQ library import firewall', () => {
             'wasmFalconProvider.ts',
         )
         const content = readFileSync(file, 'utf-8')
-        expect(content).toMatch(/['"]falcon-1024['"]/)
+        expect(content).toMatch(/['"]@algorandfoundation\/falcon-wasm['"]/)
 
         // The real import in the real seam file must still trip the ENFORCED
         // pattern. This is what proves tightening the regex to an import
         // context did not blind the guard: were the seam not exempt, this file
         // would be reported as a violation.
-        expect(findViolations([file])).toEqual([`${file} → falcon-1024`])
+        expect(findViolations([file])).toEqual([
+            `${file} → @algorandfoundation/falcon-wasm`,
+        ])
     })
 
     it('regression: a sibling dir merely prefixed by a seam name (e.g. pq-legacy) is NOT treated as inside the seam', () => {

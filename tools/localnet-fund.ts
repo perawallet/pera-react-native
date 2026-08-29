@@ -1,6 +1,6 @@
 import { AlgorandClient, algo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
-import { generateKey } from 'falcon-1024'
+import { falcon1024 } from '@algorandfoundation/falcon-wasm'
 import { deriveQuantumAddress } from '../packages/blockchain/src/pq/quantumAdapter'
 
 const DEFAULT_ALGOS = 100
@@ -41,7 +41,7 @@ async function main(): Promise<void> {
         // `generateKey` with it to reconstruct the same keypair.
         const seed = new Uint8Array(48)
         crypto.getRandomValues(seed)
-        const { publicKey } = generateKey(seed)
+        const { publicKey } = falcon1024.generateKey(seed)
         receiver = deriveQuantumAddress(publicKey)
         quantumSeedHex = Buffer.from(seed).toString('hex')
         amountIndex = 0

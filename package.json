@@ -54,7 +54,7 @@
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
-    "falcon-1024": "catalog:",
+    "@algorandfoundation/falcon-wasm": "catalog:",
     "fallow": "3.17.0",
     "msw": "catalog:",
     "oxfmt": "catalog:",

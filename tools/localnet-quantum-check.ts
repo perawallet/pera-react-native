@@ -46,7 +46,7 @@ import {
     FALCON_1024_SCHEME,
     waitForConfirmation,
 } from 'algosdk'
-import { generateKey, signCompressed } from 'falcon-1024'
+import { falcon1024 } from '@algorandfoundation/falcon-wasm'
 import { calculateMinTxnFee } from '../packages/blockchain/src/fees/feeCalculator'
 import {
     assemblePQSignedTransaction,
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
     // --- Derivation --------------------------------------------------------
     const seed = new Uint8Array(48)
     crypto.getRandomValues(seed)
-    const { publicKey, privateKey } = generateKey(seed)
+    const { publicKey, privateKey } = falcon1024.generateKey(seed)
     const address = deriveQuantumAddress(publicKey)
     console.log(`quantum address: ${address}`)
 
@@ -148,7 +148,10 @@ async function main(): Promise<void> {
     // same preimage `pqSigningDigest` returns — and this Falcon build is
     // deterministic, so the encodings must match exactly, signature included.
     // On-chain confirmation below independently proves the preimage. ----------
-    const signature = signCompressed(privateKey, pqSigningDigest(txn))
+    const signature = falcon1024.signCompressed(
+        privateKey,
+        pqSigningDigest(txn),
+    )
     const ours = encodeMsgpack(
         assemblePQSignedTransaction({
             txn,
@@ -159,7 +162,8 @@ async function main(): Promise<void> {
     const { txnSigner } = addressWithSignersFromRawPQSigner({
         pqScheme: FALCON_1024_SCHEME,
         pqPublicKey: publicKey,
-        pqSigner: bytes => Promise.resolve(signCompressed(privateKey, bytes)),
+        pqSigner: bytes =>
+            Promise.resolve(falcon1024.signCompressed(privateKey, bytes)),
     })
     const [reference] = await txnSigner([txn], [0])
 

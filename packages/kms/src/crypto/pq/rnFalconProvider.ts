@@ -11,8 +11,13 @@
  */
 
 // SWAP: joe-p native Falcon-1024 (`@joe-p/react-native-falcon`, a nitro C++
-// HybridObject). Seam A on-device implementation — replace alongside the WASM
-// provider when an official PQ crypto lib exists.
+// HybridObject). Seam A on-device implementation. The WASM sibling already
+// moved to the official `@algorandfoundation/falcon-wasm`; this one stays on
+// the interim module because no official React Native binding is published —
+// upstream `react-native-keystore` itself still peer-depends on
+// `@joe-p/react-native-falcon`. Swap here (and in `falconModule*.ts`,
+// `apps/mobile`'s dependency + `withFalconNitro` plugin, and the pq firewall
+// spec) when the Foundation publishes one.
 //
 // This file lives INSIDE the Seam A dir (`crypto/pq/`), so importing the native
 // module here does NOT breach the two-seam PQ-library firewall

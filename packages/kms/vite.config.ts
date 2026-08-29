@@ -29,8 +29,9 @@ const NATIVE_OVERRIDES = new Map([
 /**
  * The native module reached through rolldown's `require` shim (`k("…")`)
  * rather than a static import. Scoped to this specifier on purpose: the
- * off-device WASM provider legitimately keeps a lazy `require('falcon-1024')`,
- * so the shim's mere presence in a chunk says nothing.
+ * off-device WASM provider legitimately keeps a lazy
+ * `require('@algorandfoundation/falcon-wasm')`, so the shim's mere presence in
+ * a chunk says nothing.
  */
 const SHIMMED_NATIVE_REQUIRE = /\(\s*["']@joe-p\/react-native-falcon["']\s*\)/
 

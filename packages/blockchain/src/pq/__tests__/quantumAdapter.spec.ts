@@ -20,7 +20,7 @@ import {
     makePaymentTxnWithSuggestedParamsFromObject,
 } from 'algosdk'
 import { sha512_256 } from '@noble/hashes/sha2'
-import { generateKey, signCompressed } from 'falcon-1024'
+import { falcon1024 } from '@algorandfoundation/falcon-wasm'
 import {
     assemblePQSignedTransaction,
     deriveQuantumAddress,
@@ -40,7 +40,7 @@ const suggestedParams = {
 }
 
 const buildKeypair = () => {
-    const { publicKey, privateKey } = generateKey(SEED)
+    const { publicKey, privateKey } = falcon1024.generateKey(SEED)
     return { publicKey, privateKey }
 }
 
@@ -97,11 +97,16 @@ describe('pq adapter', () => {
             pqScheme: FALCON_1024_SCHEME,
             pqPublicKey: publicKey,
             pqSigner: bytesToSign =>
-                Promise.resolve(signCompressed(privateKey, bytesToSign)),
+                Promise.resolve(
+                    falcon1024.signCompressed(privateKey, bytesToSign),
+                ),
         })
         const [reference] = await txnSigner([txn], [0])
 
-        const signature = signCompressed(privateKey, pqSigningDigest(txn))
+        const signature = falcon1024.signCompressed(
+            privateKey,
+            pqSigningDigest(txn),
+        )
         const ours = encodeMsgpack(
             assemblePQSignedTransaction({
                 txn,
@@ -125,7 +130,10 @@ describe('pq adapter', () => {
             amount: 1000n,
             suggestedParams,
         })
-        const signature = signCompressed(privateKey, pqSigningDigest(txn))
+        const signature = falcon1024.signCompressed(
+            privateKey,
+            pqSigningDigest(txn),
+        )
 
         const decoded = decodeSignedTransaction(
             encodeMsgpack(
@@ -156,7 +164,10 @@ describe('pq adapter', () => {
             amount: 1000n,
             suggestedParams,
         })
-        const signature = signCompressed(privateKey, pqSigningDigest(txn))
+        const signature = falcon1024.signCompressed(
+            privateKey,
+            pqSigningDigest(txn),
+        )
 
         const ours = encodeMsgpack(
             assemblePQSignedTransaction({
@@ -180,7 +191,9 @@ describe('pq adapter', () => {
             pqScheme: FALCON_1024_SCHEME,
             pqPublicKey: publicKey,
             pqSigner: bytesToSign =>
-                Promise.resolve(signCompressed(privateKey, bytesToSign)),
+                Promise.resolve(
+                    falcon1024.signCompressed(privateKey, bytesToSign),
+                ),
         })
         const [reference] = await txnSigner([txn], [0])
 

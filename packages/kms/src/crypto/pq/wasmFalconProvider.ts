@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-// SWAP: joe-p WASM Falcon-1024 (Seam A). Replace with an official PQ crypto lib
-// alongside `rnFalconProvider.ts`; both `getPQProvider` factories change together.
+// Seam A, off-device backend: the official @algorandfoundation/falcon-wasm.
+// Its sibling `rnFalconProvider.ts` still wraps the interim
+// @joe-p/react-native-falcon — no official React Native binding exists yet.
 import type { PQSignatureProvider } from './types'
 
 /**
@@ -29,22 +30,24 @@ import type { PQSignatureProvider } from './types'
  * `getPQProvider` variant the bundler picked. So merely importing the barrel
  * pulls this file in on every platform, including on-device. Loaded lazily
  * via `require` (not a top-level `import`), mirroring
- * `createRNFalconProvider`: falcon-1024's CJS entry is Emscripten glue that
- * reads `__filename` at module scope, which Hermes/Metro never define, so
- * eager evaluation crashes the app at startup. The `require` only executes
- * when `createWasmFalconProvider` is actually called, not on import.
+ * `createRNFalconProvider`: falcon-wasm's entries instantiate the embedded
+ * Emscripten module at module scope (and the CJS build bakes `import.meta.url`
+ * into a `__filename` read), neither of which Hermes can evaluate — it defines
+ * no `__filename` and has no `WebAssembly` — so eager evaluation crashes the
+ * app at startup. The `require` only executes when `createWasmFalconProvider`
+ * is actually called, not on import.
  * (`import type` above is erased at compile time and is safe.)
  */
 export const createWasmFalconProvider = (): PQSignatureProvider => {
-    const { generateKey, FALCON_DET1024_PUBKEY_SIZE } =
+    const { falcon1024, FALCON_DET1024_PUBKEY_SIZE } =
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require('falcon-1024') as typeof import('falcon-1024')
+        require('@algorandfoundation/falcon-wasm') as typeof import('@algorandfoundation/falcon-wasm')
 
     return {
         scheme: 'falcon1024',
         publicKeyLength: FALCON_DET1024_PUBKEY_SIZE,
         generateKeypairFromSeed(seed) {
-            const { publicKey, privateKey } = generateKey(seed)
+            const { publicKey, privateKey } = falcon1024.generateKey(seed)
             return { publicKey, secretKey: privateKey }
         },
     }

@@ -67,9 +67,10 @@ const NATIVE_MODULE = '@joe-p/react-native-falcon'
 const NATIVE_STATIC_IMPORT = /from\s*["']@joe-p\/react-native-falcon["']/
 // The native module reached through rolldown's `require` shim (`k("…")`).
 // Scoped to this specifier: the off-device WASM provider legitimately keeps a
-// lazy `require('falcon-1024')`, so the shim's mere presence proves nothing.
+// lazy `require('@algorandfoundation/falcon-wasm')`, so the shim's mere
+// presence proves nothing.
 const SHIMMED_NATIVE_REQUIRE = /\(\s*["']@joe-p\/react-native-falcon["']\s*\)/
-// Emscripten glue symbol from falcon-1024, bundled into the off-device build.
+// Emscripten glue symbol from falcon-wasm, bundled into the off-device build.
 const WASM_MARKER = 'falcon_det1024'
 
 const failures = []

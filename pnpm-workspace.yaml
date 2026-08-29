@@ -7,6 +7,7 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
+  "@algorandfoundation/falcon-wasm": 1.0.0
   "@algorandfoundation/keystore-core": 1.0.0-canary.3
   "@algorandfoundation/keystore-web": 1.0.0-canary.3
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
@@ -72,6 +73,11 @@ catalog:
   expo-local-authentication: ~57.0.2
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
+  # Superseded by @algorandfoundation/falcon-wasm for everything Pera-owned.
+  # Still needed in two places until upstream keystore switches falcon libs:
+  # keystore-core's Falcon shim dynamically imports the literal 'falcon-1024'
+  # (optional peer, exercised by conformance and the web engine), and kms's
+  # keystoreFalconParity.spec pins byte-parity between the two libraries.
   falcon-1024: ^0.2.0
   fast-glob: ^3.3.2
   jsdom: ^27.4.0

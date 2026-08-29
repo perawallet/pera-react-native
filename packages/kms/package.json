@@ -39,6 +39,7 @@
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
+    "@algorandfoundation/falcon-wasm": "catalog:",
     "falcon-1024": "catalog:",
     "fast-glob": "catalog:",
     "react-dom": "catalog:",

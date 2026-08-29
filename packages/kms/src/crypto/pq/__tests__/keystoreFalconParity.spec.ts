@@ -15,17 +15,20 @@
 import { describe, expect, it } from 'vitest'
 import { webcrypto } from 'node:crypto'
 import * as falcon from 'falcon-1024'
+import { falcon1024 as officialFalcon } from '@algorandfoundation/falcon-wasm'
 import {
     consumeKeyMaterial,
     FALCON_ALGORITHM,
     withSubtleFalcon1024,
 } from '@algorandfoundation/keystore-core'
 
-// Custody of quantum keys moved into keystore-core's Falcon shim, but every
-// address fixture and the on-chain adapter are built on `falcon-1024` called
-// directly. Nothing else in the repo proves the two paths agree, so this file
-// is the byte-parity gate: if the shim ever wraps a different primitive or
-// pre-hashes the seed, previously-derived quantum addresses stop resolving.
+// Custody of quantum keys lives in keystore-core's Falcon shim, which loads
+// `falcon-1024`; the address fixtures and the on-chain adapter are built on
+// Seam A's provider, now backed by the official `@algorandfoundation/falcon-wasm`.
+// Nothing else in the repo proves those paths agree, so this file is the
+// byte-parity gate — shim vs `falcon-1024` direct, and `falcon-1024` vs
+// `falcon-wasm` across libraries: if either ever wraps a different primitive
+// or pre-hashes the seed, previously-derived quantum addresses stop resolving.
 //
 // Scope: WASM/off-device only. On device, react-native-keystore injects
 // `@joe-p/react-native-falcon` instead (RN cannot load WASM), so native-vs-WASM
@@ -125,5 +128,27 @@ describe('keystore-core Falcon parity with falcon-1024', () => {
                 MESSAGE,
             ),
         ).toBe(false)
+    })
+
+    // Cross-library gate: the keystore signs with falcon-1024 while Seam A
+    // derives addresses with @algorandfoundation/falcon-wasm, so the two
+    // builds of the deterministic Falcon C code must stay byte-identical or
+    // the address an account was created under stops matching its signer.
+    it('falcon-wasm and falcon-1024 agree byte-for-byte from the same seed', () => {
+        const direct = falcon.generateKey(copy(SEED))
+        const official = officialFalcon.generateKey(copy(SEED))
+
+        expect(official.publicKey).toEqual(direct.publicKey)
+        expect(official.privateKey).toEqual(direct.privateKey)
+        expect(
+            officialFalcon.signCompressed(copy(official.privateKey), MESSAGE),
+        ).toEqual(falcon.signCompressed(copy(direct.privateKey), MESSAGE))
+        expect(
+            officialFalcon.verifyCompressed(
+                copy(direct.publicKey),
+                falcon.signCompressed(copy(direct.privateKey), MESSAGE),
+                MESSAGE,
+            ),
+        ).toBe(true)
     })
 })

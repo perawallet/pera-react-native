@@ -61,9 +61,11 @@ Business logic in `packages/*` reaches the resolved services only through `getPr
 `chrome.*` out of `packages/` entirely.
 
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
-to miss when tracing: the keystore (`@algorandfoundation/react-native-keystore` resolves to
-`extensions/keystore-chrome` on web) and the Ledger transports (`.web.ts` twins in
-`extensions/provider`).
+to miss when tracing: the vault surface (`@algorandfoundation/react-native-keystore` resolves to
+`extensions/keystore-chrome` on web — but only for the password vault, auto-lock, passkey unlock and
+the WebAuthn signer; the web account-keystore engine itself is composed from upstream
+`@algorandfoundation/keystore-core` + `keystore-web` in `extensions/provider`'s `createKeystore.web.ts`)
+and the Ledger transports (`.web.ts` twins in `extensions/provider`).
 
 ### Where browser-specific code lives
 
