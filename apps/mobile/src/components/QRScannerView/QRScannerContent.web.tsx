@@ -84,13 +84,6 @@ export const QRScannerContent = ({
     const handleResult = useCallback(
         (value: string) => {
             try {
-                // WCDIAG: temporary instrumentation, remove before commit.
-                console.log(
-                    '[WCDIAG-PAGE] handleResult latched=',
-                    handlingRef.current,
-                    'valid=',
-                    isValidDeepLink(value),
-                )
                 if (handlingRef.current) return
                 if (!isValidDeepLink(value)) {
                     // Unrecognized payload — re-arm so the user can retry

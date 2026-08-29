@@ -32,35 +32,20 @@ export const startFakeBridge = async () => {
     await new Promise(resolve => wss.once('listening', resolve))
     const { port } = wss.address()
 
-    // WCDIAG: temporary instrumentation, remove before commit.
-    const t0 = Date.now()
-    const diag = (...args) =>
-        console.log(`[WCDIAG +${Date.now() - t0}ms]`, ...args)
-    diag('bridge listening on', port)
-
     const subscribers = new Map() // topic -> Set<ws>
     const queues = new Map() // topic -> payload[]
 
     const deliver = (topic, payload) => {
         const live = subscribers.get(topic)
         if (live && live.size > 0) {
-            diag(
-                `DELIVER topic=${String(topic).slice(0, 12)} to ${live.size} subscriber(s)`,
-            )
             for (const socket of live) socket.send(JSON.stringify(payload))
             return
         }
-        diag(`QUEUE topic=${String(topic).slice(0, 12)} (no subscriber)`)
         if (!queues.has(topic)) queues.set(topic, [])
         queues.get(topic).push(payload)
     }
 
-    let socketSeq = 0
     wss.on('connection', socket => {
-        const sid = ++socketSeq
-        diag(`socket#${sid} CONNECTED`)
-        socket.on('close', () => diag(`socket#${sid} CLOSED`))
-        socket.on('error', e => diag(`socket#${sid} ERROR`, e?.message))
         socket.on('message', raw => {
             let frame
             try {
@@ -68,9 +53,6 @@ export const startFakeBridge = async () => {
             } catch {
                 return
             }
-            diag(
-                `socket#${sid} <- ${frame.type} topic=${String(frame.topic).slice(0, 12)} payloadLen=${String(frame.payload ?? '').length}`,
-            )
             if (frame.type === 'sub') {
                 if (!subscribers.has(frame.topic)) {
                     subscribers.set(frame.topic, new Set())
@@ -78,9 +60,6 @@ export const startFakeBridge = async () => {
                 subscribers.get(frame.topic).add(socket)
                 const queued = queues.get(frame.topic) ?? []
                 queues.set(frame.topic, [])
-                diag(
-                    `socket#${sid} SUBSCRIBED topic=${String(frame.topic).slice(0, 12)} flushing=${queued.length}`,
-                )
                 for (const payload of queued) {
                     socket.send(JSON.stringify(payload))
                 }

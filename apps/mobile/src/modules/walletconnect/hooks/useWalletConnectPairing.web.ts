@@ -115,8 +115,6 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
                 correlationId,
                 WC_SESSION_OUTCOME_TIMEOUT_MS,
             )
-            // WCDIAG: temporary instrumentation, remove before commit.
-            console.log('[WCDIAG-PAGE] pair() start', correlationId)
             try {
                 await withTimeout(
                     'walletConnect.pair',
@@ -124,18 +122,10 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
                     sendWcControlMessage({ kind: 'pair', uri, correlationId }),
                 )
             } catch (error) {
-                console.log(
-                    '[WCDIAG-PAGE] pair() SEND FAILED',
-                    String((error as Error)?.message ?? error),
-                )
                 outcome.cancel()
                 return { type: 'connect-failed', error: error as Error }
             }
-            console.log('[WCDIAG-PAGE] pair() sent, awaiting outcome')
-            return outcome.promise.then(r => {
-                console.log('[WCDIAG-PAGE] pair() outcome', JSON.stringify(r))
-                return r
-            })
+            return outcome.promise
         },
         [],
     )

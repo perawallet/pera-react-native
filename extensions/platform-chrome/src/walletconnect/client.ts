@@ -132,11 +132,7 @@ export const sendWcControlMessage = async (
     message: DistributiveOmit<WcControlMessage, 'scope'>,
 ): Promise<void> => {
     const deadline = Date.now() + WC_CONTROL_ACK_BUDGET_MS
-    // WCDIAG: temporary instrumentation, remove before commit.
-    const started = Date.now()
-    let attempt = 0
     for (;;) {
-        attempt++
         await ensureOffscreenHost()
         let response: unknown
         try {
@@ -144,13 +140,7 @@ export const sendWcControlMessage = async (
                 scope: WC_CONTROL_SCOPE,
                 ...message,
             })
-            console.log(
-                `[WCDIAG-PAGE] control '${message.kind}' attempt ${attempt} +${Date.now() - started}ms response=${JSON.stringify(response)}`,
-            )
-        } catch (e) {
-            console.log(
-                `[WCDIAG-PAGE] control '${message.kind}' attempt ${attempt} +${Date.now() - started}ms THREW ${String(e)}`,
-            )
+        } catch {
             // Transport-shaped only ("receiving end does not exist" / "port
             // closed before a response") — the same transient no-host state
             // as an unanswered send.
@@ -158,9 +148,6 @@ export const sendWcControlMessage = async (
         }
         if (isWcAck(response)) return
         if (Date.now() + WC_CONTROL_RETRY_DELAY_MS > deadline) {
-            console.log(
-                `[WCDIAG-PAGE] control '${message.kind}' GAVE UP after ${attempt} attempts / ${Date.now() - started}ms`,
-            )
             // Budget exhausted with no host ack: the command genuinely did
             // not happen, and a caller that treated the send as success
             // would report a pairing or disconnect that never occurred.
