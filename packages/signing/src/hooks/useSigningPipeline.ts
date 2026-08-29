@@ -443,6 +443,15 @@ export const useSigningPipeline = (
 
     const isLoading = stage === 'signing' || stage === 'transporting'
     const isRetryable = stage === 'failed' && isRetryableError(error)
+    // TTCDIAG: temporary instrumentation, remove before commit. Logged only on
+    // change — a per-render log perturbed the race enough to hide it.
+    const lastStageRef = useRef<string>('')
+    if (lastStageRef.current !== String(stage)) {
+        lastStageRef.current = String(stage)
+        console.log(
+            `[TTCDIAG] pipeline stage=${String(stage)} error=${String((error as { message?: string } | null)?.message ?? error ?? '')}`,
+        )
+    }
 
     return {
         currentRequest,

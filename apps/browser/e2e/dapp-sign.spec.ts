@@ -248,6 +248,17 @@ test('sign_transactions on a connected origin opens the approval popup and decod
 
     await dappPage.evaluate(txn => window.signTxns([{ txn }]), unsignedTxnB64)
     const { approvalPage, approvalErrors } = await openApprovalPopup()
+    // TTCDIAG: temporary instrumentation, remove before commit.
+    const ttcLog: string[] = []
+    const record = (label: string) => (m: { text: () => string; type: () => string }) => {
+        ttcLog.push(`+${Date.now() % 1000000}ms [${label}/${m.type()}] ${m.text().slice(0, 400)}`)
+        if (ttcLog.length > 300) ttcLog.shift()
+    }
+    approvalPage.on('console', record('approval'))
+    approvalPage.on('pageerror', e =>
+        ttcLog.push(`+${Date.now() % 1000000}ms [approval/PAGEERROR] ${String(e)}`),
+    )
+    dappPage.on('console', record('dapp'))
     expectApprovalSurfaceUrl(approvalPage)
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -280,11 +291,52 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await confirmControl.click()
     await confirmControl.click()
 
-    await expect
-        .poll(() => dappPage.locator('#sign-result').textContent(), {
-            timeout: 20_000,
-        })
-        .not.toBe('')
+    // TTCDIAG: temporary instrumentation, remove before commit.
+    try {
+        await expect
+            .poll(() => dappPage.locator('#sign-result').textContent(), {
+                timeout: 20_000,
+            })
+            .not.toBe('')
+    } catch (error) {
+        console.log('[TTCDIAG] console log:\n  ' + ttcLog.join('\n  '))
+        console.log(
+            '[TTCDIAG] approvalPage closed=' +
+                approvalPage.isClosed() +
+                ' url=' +
+                (approvalPage.isClosed() ? 'n/a' : approvalPage.url()),
+        )
+        console.log(
+            '[TTCDIAG] pages:\n  ' +
+                context
+                    .pages()
+                    .map(p => `${p.isClosed() ? '(closed) ' : ''}${p.url()}`)
+                    .join('\n  '),
+        )
+        // Is a bottom sheet or the pin nudge sitting unanswered on the approval
+        // surface right now? A held presentation is silent by design.
+        for (const id of [
+            'pin_security_prompt_not_now_button',
+            'qr-scanner-sheet',
+            'pw-bottom-sheet-stage',
+            'pw-bottom-sheet-backdrop',
+            'signing-confirm-slide',
+        ]) {
+            const visible = await approvalPage
+                .getByTestId(id)
+                .isVisible()
+                .catch(() => 'error')
+            console.log(`[TTCDIAG] approval testID ${id} visible=${visible}`)
+        }
+        const bodyText = await approvalPage
+            .locator('body')
+            .innerText()
+            .catch(() => '<unavailable>')
+        console.log(
+            '[TTCDIAG] approval body text:\n' + bodyText.slice(0, 1200),
+        )
+        throw error
+    }
     const signResult = JSON.parse(
         (await dappPage.locator('#sign-result').textContent()) ?? '{}',
     ) as { stxns?: string[] }

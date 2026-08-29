@@ -101,6 +101,10 @@ export const usePWTapToConfirm = ({
     }, [isLoading, isConfirmed, phase])
 
     const handlePress = useCallback(() => {
+        // TTCDIAG: temporary instrumentation, remove before commit.
+        console.log(
+            `[TTCDIAG] handlePress armed=${isArmedRef.current} loading=${isLoading} disabled=${isDisabled} confirmed=${isConfirmed}`,
+        )
         if (isLoading || isDisabled || isConfirmed) return
 
         if (isArmedRef.current) {
