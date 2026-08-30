@@ -11,8 +11,8 @@
  */
 
 import {
+    useAccountFundedNetworksQuery,
     useAccountsRekeyedTo,
-    useAccountSummaryQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
@@ -23,17 +23,14 @@ export const useShouldPromptMnemonicBackup = (
     account: WalletAccount | null | undefined,
 ): boolean => {
     const requiresBackup = useRequiresMnemonicBackup(account)
-    // Only the ALGO amount matters here; the one-row SQL summary answers it
-    // without useAccountBalancesQuery's full holdings walk, which on a
-    // 10k-asset account re-read and re-hydrated every holding from the home
-    // screen.
-    const { algoAmount } = useAccountSummaryQuery(account?.address)
+    // Funding on ANY network counts, not just the one currently selected: the
+    // passphrase is the same secret whichever chain the balance sits on, and a
+    // warning that disappears on a network switch teaches the wrong lesson.
+    const { isFunded } = useAccountFundedNetworksQuery(account?.address)
     const rekeyedToThisAccount = useAccountsRekeyedTo(account?.address)
 
     // An unfunded account still holds the keys for anything rekeyed to it, so
     // losing its passphrase strands those accounts — funding is not the only
     // reason to prompt.
-    return (
-        requiresBackup && (algoAmount.gt(0) || rekeyedToThisAccount.length > 0)
-    )
+    return requiresBackup && (isFunded || rekeyedToThisAccount.length > 0)
 }

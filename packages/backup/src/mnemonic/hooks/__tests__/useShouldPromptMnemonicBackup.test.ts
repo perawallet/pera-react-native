@@ -12,7 +12,6 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import {
     AccountTypes,
     type WalletAccount,
@@ -24,7 +23,7 @@ vi.mock('../useRequiresMnemonicBackup', () => ({
         mockRequiresBackup(account),
 }))
 
-const mockSummaryQuery = vi.fn()
+const mockFundedNetworks = vi.fn()
 const mockAccountsRekeyedTo = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
@@ -33,8 +32,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...original,
-        useAccountSummaryQuery: (...args: unknown[]) =>
-            mockSummaryQuery(...args),
+        useAccountFundedNetworksQuery: (...args: unknown[]) =>
+            mockFundedNetworks(...args),
         useAccountsRekeyedTo: (...args: unknown[]) =>
             mockAccountsRekeyedTo(...args),
     }
@@ -55,28 +54,24 @@ const accountHD: WalletAccount = {
     },
 }
 
-const summaryWith = (algoAmount: Decimal) => ({
-    algoAmount,
-    portfolioUsdValue: new Decimal(0),
-    portfolioAlgoValue: algoAmount,
-    holdingsCount: 1,
-    isComplete: true,
+const fundedOn = (...networks: string[]) => ({
+    fundedNetworks: networks,
+    isFunded: networks.length > 0,
     isPending: false,
     isError: false,
-    isPaused: false,
 })
 
 describe('useShouldPromptMnemonicBackup', () => {
     beforeEach(() => {
         mockRequiresBackup.mockReset()
-        mockSummaryQuery.mockReset()
+        mockFundedNetworks.mockReset()
         mockAccountsRekeyedTo.mockReset()
         mockAccountsRekeyedTo.mockReturnValue([])
     })
 
     test('false when the account does not require backup', () => {
         mockRequiresBackup.mockReturnValue(false)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(1)))
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
             useShouldPromptMnemonicBackup(accountHD),
@@ -86,7 +81,7 @@ describe('useShouldPromptMnemonicBackup', () => {
 
     test('false when the account is unfunded and signs for nothing', () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockFundedNetworks.mockReturnValue(fundedOn())
 
         const { result } = renderHook(() =>
             useShouldPromptMnemonicBackup(accountHD),
@@ -94,9 +89,19 @@ describe('useShouldPromptMnemonicBackup', () => {
         expect(result.current).toBe(false)
     })
 
+    test('true when the only funded network is not the active one', () => {
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn('testnet'))
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD),
+        )
+        expect(result.current).toBe(true)
+    })
+
     test('true when the account requires backup and has balance > 0', () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0.000001)))
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
             useShouldPromptMnemonicBackup(accountHD),
@@ -106,7 +111,7 @@ describe('useShouldPromptMnemonicBackup', () => {
 
     test("true when an unfunded account is another account's rekey target", () => {
         mockRequiresBackup.mockReturnValue(true)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
             { id: 'a', type: AccountTypes.algo25, address: 'A' },
         ])
@@ -120,7 +125,7 @@ describe('useShouldPromptMnemonicBackup', () => {
 
     test('false for a rekey target that no longer needs backup', () => {
         mockRequiresBackup.mockReturnValue(false)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockFundedNetworks.mockReturnValue(fundedOn())
         mockAccountsRekeyedTo.mockReturnValue([
             { id: 'a', type: AccountTypes.algo25, address: 'A' },
         ])
@@ -133,13 +138,13 @@ describe('useShouldPromptMnemonicBackup', () => {
 
     test('false and skips lookups for an undefined account', () => {
         mockRequiresBackup.mockReturnValue(false)
-        mockSummaryQuery.mockReturnValue(summaryWith(new Decimal(0)))
+        mockFundedNetworks.mockReturnValue(fundedOn())
 
         const { result } = renderHook(() =>
             useShouldPromptMnemonicBackup(undefined),
         )
         expect(result.current).toBe(false)
-        expect(mockSummaryQuery).toHaveBeenCalledWith(undefined)
+        expect(mockFundedNetworks).toHaveBeenCalledWith(undefined)
         expect(mockAccountsRekeyedTo).toHaveBeenCalledWith(undefined)
     })
 })

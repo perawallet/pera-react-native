@@ -42,6 +42,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
 const NETWORK = 'mainnet' as const
 
@@ -67,10 +68,10 @@ const ACCOUNT_B: WalletAccount = {
     },
 }
 
-const seedUnfunded = async (address: string) => {
+const seedUnfunded = async (address: string, network: string = NETWORK) => {
     await upsertAccountBalance({
         accountAddress: address,
-        network: NETWORK,
+        network,
         algoBalance: new Decimal(0),
         totalAssetsOptedIn: 0,
         totalCreatedAssets: 0,
@@ -82,7 +83,7 @@ const seedUnfunded = async (address: string) => {
     await insertAssetHolding({
         accountAddress: address,
         assetId: '0',
-        network: NETWORK,
+        network,
         amount: '0',
     })
 }
@@ -139,6 +140,37 @@ describe('Flow: backup badge reacts to funding and rekey without remount', () =>
                 ACCOUNT_B.address,
             ])
         })
+
+        await waitFor(() => expect(result.current).toBe(true))
+    })
+
+    it('Given an account funded only on testnet, when mainnet is the selected network, then the prompt is still true', async () => {
+        await seedUnfunded(ACCOUNT_B.address)
+        await seedUnfunded(ACCOUNT_B.address, 'testnet')
+        await refreshAccountHoldings({
+            accountAddress: ACCOUNT_B.address,
+            network: 'testnet',
+            holdings: [
+                {
+                    assetId: '0',
+                    amount: new Decimal(5_000_000),
+                    isFrozen: false,
+                },
+            ],
+        })
+        useNetworkStore.getState().setNetwork(NETWORK)
+
+        const queryClient = createTestQueryClient()
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <QueryClientProvider client={queryClient}>
+                {children}
+            </QueryClientProvider>
+        )
+
+        const { result } = renderHook(
+            () => useShouldPromptMnemonicBackup(ACCOUNT_B),
+            { wrapper },
+        )
 
         await waitFor(() => expect(result.current).toBe(true))
     })
