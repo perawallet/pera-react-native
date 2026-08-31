@@ -11,6 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
+import { isExpectedError } from '../errors/expected'
 import type { Nullable, Optional } from './types'
 
 /**
@@ -327,7 +328,7 @@ const redactErrorForReport = (error: Error): Error => {
     }
 }
 
-export type LogErrorSeverity = 'error' | 'critical'
+export type LogErrorSeverity = 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
     severity: LogErrorSeverity
@@ -378,7 +379,17 @@ class Logger {
         this.log(LogLevel.WARN, message, context)
     }
 
-    public error(error: Error | string, context?: LogContext) {
+    public error(
+        error: Error | string,
+        context?: LogContext,
+        options?: { force?: boolean },
+    ) {
+        // A site that already knows better can opt out; everything else is
+        // classified centrally so the policy stays in one reviewable place.
+        if (!options?.force && isExpectedError(error)) {
+            this.log(LogLevel.WARN, error, context, 'expected')
+            return
+        }
         this.log(LogLevel.ERROR, error, context)
     }
 
@@ -598,6 +609,7 @@ class Logger {
         level: LogLevel,
         messageOrError: string | Error,
         context?: LogContext,
+        reportAs?: LogErrorSeverity,
     ) {
         // Filter out logs below current level
         if (level < this.level) {
@@ -630,6 +642,12 @@ class Logger {
             }
             case LogLevel.WARN: {
                 console.warn(`${prefix} ${message}`, ...args)
+                // Only a downgraded error reports; a plain `warn` stays
+                // console-only, so the breadcrumb trail reads as "errors we
+                // chose not to report" rather than every warning in the app.
+                if (reportAs) {
+                    this.reportError(reportAs, messageOrError, context)
+                }
                 break
             }
             case LogLevel.ERROR: {
