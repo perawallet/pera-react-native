@@ -648,7 +648,7 @@ export default defineConfig({
         },
         server: {
             deps: {
-                inline: [/@react-navigation/, /react-native-ratings/],
+                inline: [/@react-navigation/],
             },
         },
         // Two projects so unit and integration tests get different setup

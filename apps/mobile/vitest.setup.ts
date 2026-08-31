@@ -18,6 +18,38 @@ import { vi, afterEach } from 'vitest'
 
 const store = new Map<string, string>()
 
+// react-native accepts `style` as an array and flattens it natively; a DOM
+// element does not. React DOM walks the prop with for..in, so an array arrives
+// as style["0"], which jsdom >= 29 rejects with a strict-mode TypeError where
+// jsdom 27 silently no-opped it.
+//
+// Patched here rather than at each mock because ~60 of the component mocks
+// below spread `...props` straight into a DOM tag, so any of them can carry the
+// array form and the next one added would reintroduce the break. Narrow on
+// purpose: only a lowercase (DOM) tag with an actually-array style is rewritten
+// — composite components still receive the array, which is what react-native
+// contracts promise them. The mocks all `require('react')`, so they share the
+// module object patched here, and this runs before any vi.mock factory does.
+const flattenMockStyle = (style: any): any => {
+    if (!style || !Array.isArray(style)) return style
+    return style.reduce(
+        (merged: any, entry: any) =>
+            Object.assign(merged, flattenMockStyle(entry)),
+        {},
+    )
+}
+
+const reactModule = require('react')
+const createElementWithFlatStyle = reactModule.createElement
+reactModule.createElement = (type: any, props: any, ...children: any[]) =>
+    typeof type === 'string' && props && Array.isArray(props.style)
+        ? createElementWithFlatStyle(
+              type,
+              { ...props, style: flattenMockStyle(props.style) },
+              ...children,
+          )
+        : createElementWithFlatStyle(type, props, ...children)
+
 // Mock platform driver to prevent "No platform driver configured" errors
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({
@@ -2020,11 +2052,6 @@ vi.mock('react-native-gesture-handler', () => {
         RefreshControl: MockView,
     }
 })
-
-vi.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon')
-vi.mock('react-native-vector-icons/Ionicons', () => 'Icon')
-vi.mock('react-native-vector-icons/FontAwesome', () => 'Icon')
-vi.mock('react-native-vector-icons/FontAwesome5', () => 'Icon')
 
 vi.mock('react-native-tab-view', () => ({
     TabView: () => null,
