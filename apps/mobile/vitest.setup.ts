@@ -2371,6 +2371,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/utils/bytes')
     >('../../packages/shared/src/utils/bytes')
 
+    // Same reasoning again: expected.ts only imports the AppError type from
+    // base.ts, so pulling in the real classifier is side-effect free. Its
+    // `instanceof AppError` check targets the real class, not this mock's
+    // hand-rolled one, but every caller here has already exhausted the
+    // AppError/SubmissionError/NoConnectionError branches by the time it is
+    // reached, so it only ever sees plain Errors.
+    const { isExpectedError } = await vi.importActual<
+        typeof import('../../packages/shared/src/errors/expected')
+    >('../../packages/shared/src/errors/expected')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -2775,6 +2785,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         mutationDefaults: { throwOnError: false, networkMode: 'always' },
         assertOnline: vi.fn(),
         NoConnectionError,
+        isExpectedError,
     }
 })
 

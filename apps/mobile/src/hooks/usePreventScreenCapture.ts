@@ -29,7 +29,9 @@ const acquireCaptureLock = (tag: string): void => {
     activeHolders += 1
     if (activeHolders !== 1) return
     void preventScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
-        logger.error(
+        // The Expo module or Android's FLAG_SECURE refusing is a device
+        // condition, not a defect we can fix from here.
+        logger.warn(
             'usePreventScreenCapture: failed to prevent screen capture',
             { tag, error: err instanceof Error ? err.message : String(err) },
         )
@@ -40,7 +42,9 @@ const releaseCaptureLock = (tag: string): void => {
     activeHolders = Math.max(0, activeHolders - 1)
     if (activeHolders !== 0) return
     void allowScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
-        logger.error(
+        // The Expo module or Android's FLAG_SECURE refusing is a device
+        // condition, not a defect we can fix from here.
+        logger.warn(
             'usePreventScreenCapture: failed to re-allow screen capture',
             { tag, error: err instanceof Error ? err.message : String(err) },
         )
