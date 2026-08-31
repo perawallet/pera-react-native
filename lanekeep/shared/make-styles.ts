@@ -85,3 +85,59 @@ export function styleEntries(ctx: RuleContext, call: Node): StyleEntry[] {
     }
     return out
 }
+
+/**
+ * Resolves a relative import to a repo-relative path, trying the candidates
+ * the bundler tries.
+ *
+ * Returning a wrong answer is worse here than returning none: an unresolved
+ * consumer makes its keys look unused, and the remediation then tells someone
+ * to delete code that is in use. Callers must treat `undefined` as "unknown",
+ * never as "not used".
+ */
+export function resolveRelative(
+    ctx: RuleContext,
+    fromFile: string,
+    specifier: string,
+): string | undefined {
+    if (!specifier.startsWith('.')) return undefined
+
+    const segments = fromFile.split('/').slice(0, -1)
+    for (const part of specifier.split('/')) {
+        if (part === '.' || part === '') continue
+        if (part === '..') {
+            if (segments.pop() === undefined) return undefined
+            continue
+        }
+        segments.push(part)
+    }
+    const base = segments.join('/')
+
+    for (const candidate of [
+        `${base}.ts`,
+        `${base}.tsx`,
+        `${base}/index.ts`,
+        `${base}/index.tsx`,
+    ]) {
+        if (ctx.fileExists(candidate)) return candidate
+    }
+    return undefined
+}
+
+/**
+ * Metro resolves a plain `./styles` to `styles.web.ts` for web builds, so a key
+ * referenced through the platform-agnostic import is equally used in the `.web`
+ * sibling.
+ */
+export function webVariant(
+    ctx: RuleContext,
+    resolved: string,
+): string | undefined {
+    const dot = resolved.lastIndexOf('.')
+    if (dot < 0) return undefined
+    const stem = resolved.slice(0, dot)
+    const ext = resolved.slice(dot)
+    if (stem.endsWith('.web')) return undefined
+    const variant = `${stem}.web${ext}`
+    return ctx.fileExists(variant) ? variant : undefined
+}

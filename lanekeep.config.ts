@@ -12,6 +12,7 @@ import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
+import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 
 export default defineConfig({
     // Mirrors packages/devtools/guardrails/utils/discovery.ts. Every workspace
@@ -45,5 +46,6 @@ export default defineConfig({
         noErrorToastInCatch,
         errorMessageKeyExists,
         errorParamsMatchCopy,
+        noUnusedStyleKeys,
     ],
 })
