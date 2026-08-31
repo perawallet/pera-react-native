@@ -1861,12 +1861,14 @@
         "to_standard": {
             "intro": {
                 "title": "Rekey vers un compte standard",
-                "body": "Utilisez la clé privée d’un autre compte pour signer les transactions de ce compte.",
+                "title_with_quantum": "Rekey vers un compte standard ou quantique",
+                "body": "Le rekey attribue une nouvelle clé pour signer les futures transactions de ce compte, sans déplacer de fonds ni changer son adresse.",
                 "learn_more": "En savoir plus",
                 "expect_label": "Ce qui va se passer",
-                "expect_1": "Les transactions futures ne pourront être signées que par le compte délégué.",
-                "expect_2": "Ce compte ne pourra plus signer de transactions.",
-                "expect_3": "La clé publique, les soldes et la configuration de votre compte ne changeront pas.",
+                "expect_1": "Les futures transactions de ce compte ne pourront être signées qu’avec la clé du nouveau compte.",
+                "expect_2": "Sauvegardez la phrase de récupération de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
+                "expect_3": "L’adresse, les soldes et la configuration de votre compte ne changeront pas.",
+                "expect_4": "Si vous clôturez ce compte plus tard, le rekey est supprimé. Si l’adresse est de nouveau approvisionnée, le contrôle revient à la clé d’origine, et non au compte que vous configurez maintenant.",
                 "cta": "Démarrer"
             },
             "select": {

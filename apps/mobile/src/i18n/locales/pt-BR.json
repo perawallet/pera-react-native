@@ -1876,12 +1876,14 @@
         "to_standard": {
             "intro": {
                 "title": "Fazer rekey para conta padrão",
-                "body": "Use a chave privada de outra conta para assinar as transações desta conta.",
+                "title_with_quantum": "Fazer rekey para conta padrão ou Quantum",
+                "body": "O rekey atribui uma nova chave para assinar as futuras transações desta conta, sem mover fundos nem alterar o endereço dela.",
                 "learn_more": "Saiba mais",
                 "expect_label": "O que esperar",
-                "expect_1": "As transações futuras só poderão ser assinadas pela conta delegada.",
-                "expect_2": "Esta conta não poderá mais assinar transações.",
-                "expect_3": "A chave pública, os saldos e as configurações da sua conta não vão mudar.",
+                "expect_1": "As futuras transações desta conta só poderão ser assinadas com a chave da nova conta.",
+                "expect_2": "Faça backup da frase de recuperação dessa conta antes de continuar. Perdê-la significa perder a capacidade de assinar por esta conta, mesmo que todo o resto continue intacto.",
+                "expect_3": "O endereço, os saldos e as configurações da sua conta não vão mudar.",
+                "expect_4": "Se você encerrar esta conta mais tarde, o rekey é removido. Ao enviar fundos para o endereço novamente, o controle volta para a chave original, e não para a conta que você está configurando agora.",
                 "cta": "Iniciar processo"
             },
             "select": {
