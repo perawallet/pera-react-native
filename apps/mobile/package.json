@@ -196,7 +196,6 @@
     "@react-native/babel-preset": "0.86.2",
     "@react-native/codegen": "^0.86.0",
     "@react-native/typescript-config": "0.86.2",
-    "@tanstack/query-core": "^5.102.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",

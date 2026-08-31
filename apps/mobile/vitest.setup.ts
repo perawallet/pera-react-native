@@ -14,7 +14,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable max-lines */
 import { vi, afterEach } from 'vitest'
-// import '@testing-library/jest-native/extend-expect'
 
 const store = new Map<string, string>()
 

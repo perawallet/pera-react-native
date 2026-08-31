@@ -142,15 +142,6 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
-  # TEMPORARY — delete this entry (and this comment) after 2026-08-26 17:13 UTC,
-  # when 3.7.0 clears the 7-day window on its own. Present only so the PQ floor
-  # above could land the day the release shipped. Verified before adding:
-  # published by the same github-actions[bot] CI path as 3.6.0, npm signature
-  # present, no pre/postinstall scripts, and the maintainer set gained exactly
-  # one name — joe-p (Joe Polny), an Algorand Foundation engineer who also
-  # maintains @algorandfoundation/algokit-utils and authored the PQ PR this
-  # bump is for.
-  - algosdk
   - falcon-1024
   - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.

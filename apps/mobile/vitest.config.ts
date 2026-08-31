@@ -584,13 +584,6 @@ export default defineConfig({
                     './node_modules/@tanstack/react-query',
                 ),
             },
-            {
-                find: '@tanstack/query-core',
-                replacement: path.resolve(
-                    __dirname,
-                    './node_modules/@tanstack/query-core',
-                ),
-            },
         ],
         extensions: [
             '.mjs',
@@ -664,7 +657,7 @@ export default defineConfig({
                     // apps/browser's offscreen host is headless production
                     // code that lives with the extension shell, but its specs
                     // were written against this project's React Native mock
-                    // environment (the ~2300-line setup above) and need it —
+                    // environment (the React Native mock setup above) and need it —
                     // wallet-core packages pull native modules in transitively
                     // when their stores evaluate. Running them here is cheaper
                     // and less brittle than duplicating that environment in
