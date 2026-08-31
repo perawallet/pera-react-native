@@ -12,6 +12,10 @@
 
 import type { CrashReportingService } from './models'
 
+// Mirrors `LogErrorSeverity` in `packages/shared/src/utils/logging.ts`, whose
+// 'expected' downgrade this router consumes. This extension deliberately does
+// not depend on that package, so nothing checks the two unions against each
+// other — the literals have to be kept in step by hand.
 type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {

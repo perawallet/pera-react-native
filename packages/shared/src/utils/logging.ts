@@ -328,6 +328,11 @@ const redactErrorForReport = (error: Error): Error => {
     }
 }
 
+// Structurally mirrored by `LogSeverity` in
+// `extensions/platform/src/reporting/utils.ts`, which routes 'expected' to a
+// breadcrumb. The two unions are unrelated at compile time because the platform
+// extension deliberately does not depend on this package, so the literals have
+// to be kept in step by hand.
 export type LogErrorSeverity = 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
@@ -386,7 +391,17 @@ class Logger {
     ) {
         // A site that already knows better can opt out; everything else is
         // classified centrally so the policy stays in one reviewable place.
-        if (!options?.force && isExpectedError(error)) {
+        //
+        // The context is classified too because most call sites pass a constant
+        // string plus `{ error }` (the query cache's 'An error has occurred:'
+        // being the one every algod and indexer failure reaches). Judging only
+        // the first argument would leave the policy inert at the majority of
+        // sites, including every transport timeout and 5xx.
+        if (
+            !options?.force &&
+            (isExpectedError(error) ||
+                isExpectedError(this.findContextError(context)))
+        ) {
             this.log(LogLevel.WARN, error, context, 'expected')
             return
         }
