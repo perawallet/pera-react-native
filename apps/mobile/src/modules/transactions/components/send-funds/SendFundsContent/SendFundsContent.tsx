@@ -16,6 +16,7 @@ import {
 } from '@react-navigation/native'
 
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -54,7 +55,13 @@ export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
                         <SendFundsRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>
-            ) : null}
+            ) : (
+                // Asset-scoped entries hold here until the asset query settles
+                // so the initial route is computed from settled data (see
+                // useSendFundsContent). A DB read resolves fast; this keeps the
+                // sheet from flashing an empty scene while it does.
+                <LoadingView variant='circle' />
+            )}
         </TransactionErrorBoundary>
     )
 }

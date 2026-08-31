@@ -39,7 +39,7 @@ export const useBackupReminderBanner = (
 
     // An unfunded account still holds the keys for anything rekeyed to it, so
     // losing its passphrase strands those accounts — funding is not the only
-    // reason to prompt (PERA-5002).
+    // reason to prompt (pera-5002).
     const isVisible =
         requiresBackup && (algoAmount.gt(0) || rekeyedToThisAccount.length > 0)
 
