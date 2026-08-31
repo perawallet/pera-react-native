@@ -41,6 +41,11 @@ export const MnemonicSuggestionBar = ({
                 <PWTouchableOpacity
                     key={word}
                     onPress={() => onSelectSuggestion(word)}
+                    // Completing a word must not drop the keyboard: the caret
+                    // moves straight to the next slot, and on iOS the resign
+                    // would force any IME to commit its marked text over the
+                    // word just written.
+                    dismissKeyboardOnPress={false}
                     style={styles.pill}
                     testID={`${testIDPrefix}_${word}`}
                 >
