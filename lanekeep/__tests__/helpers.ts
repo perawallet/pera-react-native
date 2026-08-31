@@ -21,6 +21,16 @@ export interface Violation {
     message: string
 }
 
+/** The shape `lanekeep check --format json` actually emits, ahead of the flatter `Violation`. */
+interface RawViolation {
+    rule_id: string
+    location: {
+        file: string
+        position: { line: number; column: number }
+    }
+    message: string
+}
+
 /**
  * Runs one rule over the fixture directory and returns its violations, sorted.
  *
@@ -37,7 +47,10 @@ export async function runRule(
             include: [fixtureGlob],
             exclude: [],
             namespaces: ['pera'],
-            rules: [join(REPO_ROOT, rulePath)],
+            // lanekeep's rule loader only accepts a path `./`- or `../`-prefixed,
+            // resolved against the project-root argument passed to `check`; an
+            // absolute path is rejected and fails the whole run opaquely.
+            rules: [rulePath.startsWith('.') ? rulePath : `./${rulePath}`],
         }
         const configPath = join(dir, 'lanekeep.json')
         await writeFile(configPath, JSON.stringify(config, null, 2))
@@ -55,13 +68,21 @@ export async function runRule(
             throw new Error(`lanekeep failed: ${err.stderr ?? 'unknown'}`)
         })
 
-        const parsed = JSON.parse(stdout) as { violations: Violation[] }
-        return parsed.violations.sort(
-            (a, b) =>
-                a.file.localeCompare(b.file) ||
-                a.line - b.line ||
-                a.column - b.column,
-        )
+        const parsed = JSON.parse(stdout) as { violations: RawViolation[] }
+        return parsed.violations
+            .map(v => ({
+                ruleId: v.rule_id,
+                file: v.location.file,
+                line: v.location.position.line,
+                column: v.location.position.column,
+                message: v.message,
+            }))
+            .sort(
+                (a, b) =>
+                    a.file.localeCompare(b.file) ||
+                    a.line - b.line ||
+                    a.column - b.column,
+            )
     } finally {
         await rm(dir, { recursive: true, force: true })
     }
