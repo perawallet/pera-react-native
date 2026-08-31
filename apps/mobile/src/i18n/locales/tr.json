@@ -1304,7 +1304,9 @@
     },
     "notifications": {
         "empty_title": "Şu anda bildirim yok",
-        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek"
+        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek",
+        "unavailable_title": "Bildirimler kullanılamıyor",
+        "unavailable_body": "Bu cihazda bildirimler ayarlanamadı. İzinlerini ve bağlantını kontrol edip tekrar dene."
     },
     "messages": {
         "tabs": {
