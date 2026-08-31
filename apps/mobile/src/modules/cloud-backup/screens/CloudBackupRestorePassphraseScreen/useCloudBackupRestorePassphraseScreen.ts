@@ -31,7 +31,7 @@ type UseCloudBackupRestorePassphraseScreenResult = {
     focused: number
     suggestions: string[]
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
-    handleWordChange: (value: string, index: number) => Promise<void>
+    handleWordChange: (value: string, index: number) => void
     handleFocus: (index: number) => void
     handleSubmitEditing: (index: number) => void
     handleSelectSuggestion: (word: string) => void
@@ -104,7 +104,8 @@ export const useCloudBackupRestorePassphraseScreen =
             focused,
             suggestions,
             refCallbacks,
-            handleWordChange,
+            handleWordChange: (value: string, index: number) =>
+                void handleWordChange(value, index),
             handleFocus: setFocused,
             handleSubmitEditing,
             handleSelectSuggestion,

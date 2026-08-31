@@ -30,10 +30,12 @@ import {
     type AddressBackupPayload,
     type HardwareAddressPayload,
     type HdWalletAddressPayload,
+    type ImportSummary,
     type MultisigAddressPayload,
     type PulledAccount,
     type QuantumAddressPayload,
     type SecretsBackupPayload,
+    type SyncImportFn,
     type WatchAddressPayload,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -44,19 +46,10 @@ import {
 import { hdDerivedKeyId, hexToBytes, useKMS } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 
-type ImportFailure = {
-    address: string
-    reason: string
-}
-
-export type ImportSummary = {
-    imported: number
-    skippedDuplicate: number
-    failed: ImportFailure[]
-}
+type ImportFailure = ImportSummary['failed'][number]
 
 export type UseCloudBackupImportResult = {
-    importAccounts: (accounts: PulledAccount[]) => Promise<ImportSummary>
+    importAccounts: SyncImportFn
 }
 
 type ImportContext = Pick<
