@@ -50,11 +50,14 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     ),
 }))
 
+// Advances one position per call so a re-sample is observable: call 1 asks
+// about words 1-3, call 2 about words 2-4, and so on.
+let pickCallCount = 0
 vi.mock('@perawallet/wallet-core-kms', () => ({
     MNEMONIC_WORDLIST: ['alpha', 'bravo', 'charlie', 'delta'],
     mnemonicIndexToWord: (index: number) => MNEMONIC[index],
     pickDistinctIndexes: (count: number) =>
-        Array.from({ length: count }, (_, i) => i),
+        Array.from({ length: count }, (_, i) => i + pickCallCount++),
 }))
 
 vi.mock('@modules/backup', () => ({
@@ -94,8 +97,14 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+vi.mock('expo-haptics', () => ({
+    notificationAsync: vi.fn(),
+    NotificationFeedbackType: { Error: 'error' },
+}))
+
 beforeEach(() => {
     vi.clearAllMocks()
+    pickCallCount = 0
 })
 
 describe('useCloudBackupVerifyScreen', () => {
@@ -106,8 +115,8 @@ describe('useCloudBackupVerifyScreen', () => {
 
         expect(correctPairs).toEqual([
             { index: 0, word: 'marble' },
-            { index: 1, word: 'protect' },
             { index: 2, word: 'crawl' },
+            { index: 4, word: 'lion' },
         ])
     })
 
@@ -153,5 +162,24 @@ describe('useCloudBackupVerifyScreen', () => {
         expect(popToMock).toHaveBeenCalledWith('CloudBackupSetup')
         expect(navigateMock).not.toHaveBeenCalled()
         expect(enableBackupMock).not.toHaveBeenCalled()
+    })
+
+    // Fixed positions leave a 27-combination quiz that can be ground through
+    // without ever having stored the phrase.
+    test('re-samples the asked positions after a wrong answer', () => {
+        renderHook(() => useCloudBackupVerifyScreen())
+        const calls = (useBackupQuiz as Mock).mock.calls
+        const before = calls[0][0]
+        const onWrong = calls[0][3]
+
+        act(() => {
+            onWrong()
+        })
+
+        const after = calls[calls.length - 1][0]
+        expect(after).not.toEqual(before)
+        expect(after.map((p: { index: number }) => p.index)).not.toEqual(
+            before.map((p: { index: number }) => p.index),
+        )
     })
 })
