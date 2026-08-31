@@ -147,38 +147,6 @@ describe('AppError', () => {
         expect(error.isMinor()).toBe(false)
     })
 
-    test('shouldReport returns false for LOW severity', () => {
-        const error = new AppError('Something went wrong', {
-            severity: ErrorSeverity.LOW,
-        })
-
-        expect(error.shouldReport()).toBe(false)
-    })
-
-    test('shouldReport returns false for MEDIUM severity', () => {
-        const error = new AppError('Something went wrong', {
-            severity: ErrorSeverity.MEDIUM,
-        })
-
-        expect(error.shouldReport()).toBe(false)
-    })
-
-    test('shouldReport returns true for HIGH severity', () => {
-        const error = new AppError('Something went wrong', {
-            severity: ErrorSeverity.HIGH,
-        })
-
-        expect(error.shouldReport()).toBe(true)
-    })
-
-    test('shouldReport returns true for CRITICAL severity', () => {
-        const error = new AppError('Something went wrong', {
-            severity: ErrorSeverity.CRITICAL,
-        })
-
-        expect(error.shouldReport()).toBe(true)
-    })
-
     test('toJSON serializes error correctly', () => {
         const error = new AppError(
             'Network timed out',

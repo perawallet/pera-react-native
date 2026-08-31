@@ -71,6 +71,13 @@ export interface ErrorMetadata {
     params?: Record<string, unknown>
     recoverable: boolean
     retryable: boolean
+    /**
+     * Suppresses crash reporting for this error: it drops to a warning plus a
+     * breadcrumb instead of a non-fatal. Orthogonal to `severity`, which drives
+     * user-facing copy — a HIGH-severity Ledger disconnect still deserves a
+     * loud message on screen and still deserves nothing in Crashlytics.
+     */
+    expected?: boolean
 }
 
 /**
@@ -118,16 +125,6 @@ export class AppError extends Error {
      */
     isMinor(): boolean {
         return this.metadata.severity === ErrorSeverity.LOW
-    }
-
-    /**
-     * Check if error should be reported to Crashlytics
-     */
-    shouldReport(): boolean {
-        return (
-            this.metadata.severity === ErrorSeverity.HIGH ||
-            this.metadata.severity === ErrorSeverity.CRITICAL
-        )
     }
 
     /**
