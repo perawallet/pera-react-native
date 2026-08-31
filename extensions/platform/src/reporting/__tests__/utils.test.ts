@@ -92,4 +92,66 @@ describe('createCrashReportingErrorReporter', () => {
             reporter({ severity: 'error', error: new Error('boom') })
         }).not.toThrow()
     })
+
+    test('routes expected severity to logBreadcrumb, not recordNonFatalError', () => {
+        const logBreadcrumb = vi.fn()
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            logBreadcrumb,
+            recordNonFatalError,
+        })
+
+        reporter({
+            severity: 'expected',
+            error: new Error('offline'),
+            groupingKey: 'Request did not complete',
+        })
+
+        expect(logBreadcrumb).toHaveBeenCalledTimes(1)
+        expect(recordNonFatalError).not.toHaveBeenCalled()
+    })
+
+    test('includes the grouping key and message in the breadcrumb', () => {
+        const logBreadcrumb = vi.fn()
+        const reporter = createCrashReportingErrorReporter({ logBreadcrumb })
+
+        reporter({
+            severity: 'expected',
+            error: new Error('socket closed'),
+            groupingKey: 'WC transport',
+        })
+
+        expect(logBreadcrumb).toHaveBeenCalledWith(
+            expect.stringContaining('WC transport'),
+        )
+        expect(logBreadcrumb).toHaveBeenCalledWith(
+            expect.stringContaining('socket closed'),
+        )
+    })
+
+    test('error severity never reaches logBreadcrumb', () => {
+        const logBreadcrumb = vi.fn()
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            logBreadcrumb,
+            recordNonFatalError,
+        })
+
+        reporter({ severity: 'error', error: new Error('real') })
+
+        expect(recordNonFatalError).toHaveBeenCalledTimes(1)
+        expect(logBreadcrumb).not.toHaveBeenCalled()
+    })
+
+    test('a throwing logBreadcrumb never escapes', () => {
+        const reporter = createCrashReportingErrorReporter({
+            logBreadcrumb: () => {
+                throw new Error('native boom')
+            },
+        })
+
+        expect(() =>
+            reporter({ severity: 'expected', error: new Error('offline') }),
+        ).not.toThrow()
+    })
 })

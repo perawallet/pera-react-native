@@ -82,6 +82,7 @@ const buildServices = (): PlatformServices => {
     const crashReporting: CrashReportingService = {
         initializeCrashReporting() {},
         recordNonFatalError() {},
+        logBreadcrumb() {},
     }
 
     const remoteConfig: RemoteConfigService = {

@@ -12,7 +12,13 @@
 
 import type { CrashReportingService } from './models'
 
-type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical'
+type LogSeverity =
+    | 'debug'
+    | 'info'
+    | 'warn'
+    | 'error'
+    | 'critical'
+    | 'expected'
 
 export type ErrorReportPayload = {
     severity: LogSeverity
@@ -34,15 +40,30 @@ const isReportableSeverity = (
 ): severity is 'error' | 'critical' =>
     severity === 'error' || severity === 'critical'
 
+const describeForBreadcrumb = (
+    error: unknown,
+    groupingKey?: string,
+): string => {
+    const message = error instanceof Error ? error.message : String(error)
+    return groupingKey ? `${groupingKey}: ${message}` : message
+}
+
 export const createCrashReportingErrorReporter = (
     crashReporting?: CrashReportingAdapter | null,
 ) => {
     return ({ severity, error, groupingKey }: ErrorReportPayload) => {
-        if (!isReportableSeverity(severity)) {
-            return
-        }
-
         try {
+            if (severity === 'expected') {
+                crashReporting?.logBreadcrumb?.(
+                    describeForBreadcrumb(error, groupingKey),
+                )
+                return
+            }
+
+            if (!isReportableSeverity(severity)) {
+                return
+            }
+
             if (typeof crashReporting?.recordNonFatalError === 'function') {
                 crashReporting.recordNonFatalError(error, groupingKey)
 
