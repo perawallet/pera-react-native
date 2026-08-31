@@ -12,13 +12,7 @@
 
 import type { CrashReportingService } from './models'
 
-type LogSeverity =
-    | 'debug'
-    | 'info'
-    | 'warn'
-    | 'error'
-    | 'critical'
-    | 'expected'
+type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
     severity: LogSeverity
