@@ -6,6 +6,7 @@ import { defineConfig } from 'lanekeep'
 
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
+import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
@@ -39,5 +40,6 @@ export default defineConfig({
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,
+        noErrorToastInCatch,
     ],
 })
