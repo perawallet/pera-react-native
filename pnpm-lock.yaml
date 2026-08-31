@@ -180,6 +180,9 @@ catalogs:
     ky:
       specifier: ^2.0.2
       version: 2.0.2
+    lanekeep:
+      specifier: 0.8.1
+      version: 0.8.1
     msw:
       specifier: ^2.14.6
       version: 2.15.0
@@ -319,6 +322,9 @@ importers:
       fallow:
         specifier: 3.17.0
         version: 3.17.0
+      lanekeep:
+        specifier: 'catalog:'
+        version: 0.8.1
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -6457,6 +6463,26 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@lanekeep/darwin-arm64@0.8.1':
+    resolution: {integrity: sha512-FD/k8mo3T8AjH56jOQVYtDlnTYGIoTH52mb3lPRvYh/tDiWJ65q7U6F3NQY+EsEssvlCjv+oG72MtXZv9ltV1g==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@lanekeep/linux-arm64@0.8.1':
+    resolution: {integrity: sha512-7ZKd0w+vswLxAkPItKG4LT6GsYfQ61uDHax1snTXg141tyqxXAmOMAoxIWFzQuX0fmV/2n2htbfkrr0nGOTcxw==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@lanekeep/linux-x64@0.8.1':
+    resolution: {integrity: sha512-5YFxT5/WdNzneUsWTnibjI7R9AmL0RY2emp0c4U/Cc9M9rtOBa9oI7KKcnSbMy5iUvif7d5XIVs1rrweIRHvug==}
+    cpu: [x64]
+    os: [linux]
+
+  '@lanekeep/win32-x64@0.8.1':
+    resolution: {integrity: sha512-BUNUXGtIxwNxrl+kt8M1yYyABOZry60pIXVgw7cN23yP+rT338zub2ZTfoW+iR+u07CgK8xJ2CHa5OtxeJUT8g==}
+    cpu: [x64]
+    os: [win32]
+
   '@ledgerhq/devices@8.16.0':
     resolution: {integrity: sha512-brXLPzkvGM3D5YNsWQ25P5G4SmWdSNBed9W8wKoOIRLGdRfvE+bg9mzFty0iZ+aRLBkLoXwX7xKIL9zUi6LBKQ==}
 
@@ -9427,6 +9453,11 @@ packages:
 
   lan-network@0.2.1:
     resolution: {integrity: sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A==}
+    hasBin: true
+
+  lanekeep@0.8.1:
+    resolution: {integrity: sha512-2eRqaH4NHwbPxer3fJgblTk2eTEBoA5QLuTkup4XsSi2LW0N8gzkuSlXZykhtR2FJHGyRfzqAvVW5A16m7Vb0A==}
+    engines: {node: '>=18'}
     hasBin: true
 
   leven@3.1.0:
@@ -14002,6 +14033,18 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@lanekeep/darwin-arm64@0.8.1':
+    optional: true
+
+  '@lanekeep/linux-arm64@0.8.1':
+    optional: true
+
+  '@lanekeep/linux-x64@0.8.1':
+    optional: true
+
+  '@lanekeep/win32-x64@0.8.1':
+    optional: true
+
   '@ledgerhq/devices@8.16.0':
     dependencies:
       semver: 7.7.3
@@ -17038,6 +17081,13 @@ snapshots:
   ky@2.0.2: {}
 
   lan-network@0.2.1: {}
+
+  lanekeep@0.8.1:
+    optionalDependencies:
+      '@lanekeep/darwin-arm64': 0.8.1
+      '@lanekeep/linux-arm64': 0.8.1
+      '@lanekeep/linux-x64': 0.8.1
+      '@lanekeep/win32-x64': 0.8.1
 
   leven@3.1.0: {}
 

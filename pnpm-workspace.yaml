@@ -76,6 +76,7 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
   ky: ^2.0.2
+  lanekeep: 0.8.1
   msw: ^2.14.6
   oxfmt: ^0.64.0
   react: 19.2.3
@@ -149,6 +150,16 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
+  # TEMPORARY — delete these five entries and this comment after 2026-09-05
+  # 14:16 UTC, when 0.8.1 clears the 7-day window unaided. Verified before
+  # adding: no install scripts of any kind; the platform binaries arrive as
+  # optionalDependencies rather than a postinstall download; npm signature and
+  # SLSA provenance attestation both present.
+  - 'lanekeep'
+  - '@lanekeep/darwin-arm64'
+  - '@lanekeep/linux-arm64'
+  - '@lanekeep/linux-x64'
+  - '@lanekeep/win32-x64'
 
 onlyBuiltDependencies:
   - '@firebase/util'

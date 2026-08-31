@@ -56,6 +56,7 @@
     "eslint-plugin-unused-imports": "catalog:",
     "falcon-1024": "catalog:",
     "fallow": "3.17.0",
+    "lanekeep": "catalog:",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.79.0",
