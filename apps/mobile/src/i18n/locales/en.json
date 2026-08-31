@@ -1455,6 +1455,9 @@
         },
         "pending_signatures": {
             "title": "Pending signatures",
+            "title_submitting": "Submitting transaction",
+            "title_success": "Transaction complete",
+            "title_failure": "Transaction not completed",
             "x_of_y": "{{signed}} of {{total}} signed",
             "time_left": "≈ {{time}} left",
             "accounts_heading": "Accounts",

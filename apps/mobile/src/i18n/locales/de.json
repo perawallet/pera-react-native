@@ -1447,6 +1447,9 @@
         },
         "pending_signatures": {
             "title": "Ausstehende Signaturen",
+            "title_submitting": "Transaktion wird übermittelt",
+            "title_success": "Transaktion abgeschlossen",
+            "title_failure": "Transaktion nicht abgeschlossen",
             "x_of_y": "{{signed}} von {{total}} signiert",
             "time_left": "≈ {{time}} verbleibend",
             "accounts_heading": "Konten",

@@ -1455,6 +1455,9 @@
         },
         "pending_signatures": {
             "title": "Bekleyen imzalar",
+            "title_submitting": "İşlem gönderiliyor",
+            "title_success": "İşlem tamamlandı",
+            "title_failure": "İşlem tamamlanmadı",
             "x_of_y": "{{signed}} / {{total}} imzalandı",
             "time_left": "≈ {{time}} kaldı",
             "accounts_heading": "Hesaplar",

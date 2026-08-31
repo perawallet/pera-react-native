@@ -20,14 +20,13 @@ import {
     deleteImportInbox,
     checkIsMultisigAddress,
 } from '../endpoints'
-import { queryClient, getHttpStatus } from '@perawallet/wallet-core-shared'
+import { queryClient, PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => {
     const actual = await importOriginal()
     return {
         ...actual,
         queryClient: vi.fn(),
-        getHttpStatus: vi.fn(),
     }
 })
 
@@ -291,10 +290,14 @@ describe('checkIsMultisigAddress', () => {
         ).resolves.toBe(true)
     })
 
+    // A plain (non-multisig) address is the common case and the backend answers
+    // it with 404, so this must stay swallowed. Uses a real PeraNetworkError —
+    // the shape the request layer actually throws — rather than stubbing the
+    // status extraction, which is what let a rethrow ship unnoticed.
     test('returns false when the detail lookup 404s', async () => {
-        const notFound = new Error('not found')
-        ;(queryClient as Mock).mockRejectedValue(notFound)
-        vi.mocked(getHttpStatus).mockReturnValue(404)
+        ;(queryClient as Mock).mockRejectedValue(
+            new PeraNetworkError('client', { status: 404 }),
+        )
 
         await expect(
             checkIsMultisigAddress('mainnet', 'UNKNOWN'),
@@ -302,9 +305,8 @@ describe('checkIsMultisigAddress', () => {
     })
 
     test('rethrows non-404 errors', async () => {
-        const boom = new Error('server down')
+        const boom = new PeraNetworkError('server', { status: 500 })
         ;(queryClient as Mock).mockRejectedValue(boom)
-        vi.mocked(getHttpStatus).mockReturnValue(500)
 
         await expect(checkIsMultisigAddress('mainnet', 'ADDR')).rejects.toBe(
             boom,
