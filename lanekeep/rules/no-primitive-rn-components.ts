@@ -42,9 +42,8 @@ export default defineRule({
         if (spec === undefined) return
 
         const parts = ctx.children(spec)
-        // A type-only import erases at compile time, so it can never stand in for
-        // a runtime primitive — this rule exempts it even though the guardrails
-        // predecessor it replaces has no type-only handling and flags it.
+        // A type-only import erases at compile time, so it can never stand in for a
+        // runtime primitive.
         // `import { type Foo }` — the specifier carries its own `type` child.
         if (parts.some(p => ctx.kind(p) === 'type')) return
         // `import type { Foo }` — the `type` sits on the declaration instead.
