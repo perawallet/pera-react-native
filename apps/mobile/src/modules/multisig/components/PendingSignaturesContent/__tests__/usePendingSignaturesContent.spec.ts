@@ -1107,6 +1107,58 @@ describe('usePendingSignaturesContent', () => {
             })
         })
     })
+
+    describe('titleKey (header must never contradict the banner)', () => {
+        it.each<[SignRequestStatus, string]>([
+            ['pending', 'multisig.pending_signatures.title'],
+            ['submitting', 'multisig.pending_signatures.title_submitting'],
+            ['confirmed', 'multisig.pending_signatures.title_success'],
+            ['expired', 'multisig.pending_signatures.title_failure'],
+        ])('uses the %s title for a %s request', (status, expected) => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status }))
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.titleKey).toBe(expected)
+        })
+
+        it('keeps the submitting title while a failed request is still inside the recovery window', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'failed' }))
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.titleKey).toBe(
+                'multisig.pending_signatures.title_submitting',
+            )
+        })
+
+        it('commits to the failure title once the recovery window elapses', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'failed' }))
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            act(() => {
+                vi.advanceTimersByTime(FAILED_RECOVERY_WINDOW_MS)
+            })
+
+            expect(result.current.titleKey).toBe(
+                'multisig.pending_signatures.title_failure',
+            )
+        })
+
+        it('falls back to the waiting title before any request has loaded', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(undefined)
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.titleKey).toBe(
+                'multisig.pending_signatures.title',
+            )
+        })
+    })
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({

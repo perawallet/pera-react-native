@@ -1458,6 +1458,9 @@
         },
         "pending_signatures": {
             "title": "Assinaturas pendentes",
+            "title_submitting": "Enviando transação",
+            "title_success": "Transação concluída",
+            "title_failure": "Transação não concluída",
             "x_of_y": "{{signed}} de {{total}} assinaram",
             "time_left": "≈ {{time}} restante",
             "accounts_heading": "Contas",
