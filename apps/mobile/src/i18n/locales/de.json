@@ -1296,7 +1296,9 @@
     },
     "notifications": {
         "empty_title": "Keine aktuellen Benachrichtigungen",
-        "empty_body": "Deine letzten Transaktionen, Asset-Anfragen und andere Transaktionen werden hier angezeigt"
+        "empty_body": "Deine letzten Transaktionen, Asset-Anfragen und andere Transaktionen werden hier angezeigt",
+        "unavailable_title": "Benachrichtigungen nicht verfügbar",
+        "unavailable_body": "Benachrichtigungen konnten auf diesem Gerät nicht eingerichtet werden. Überprüfe deine Berechtigungen und Verbindung und versuche es erneut."
     },
     "messages": {
         "tabs": {

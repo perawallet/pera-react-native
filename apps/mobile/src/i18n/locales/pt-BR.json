@@ -1306,7 +1306,9 @@
     },
     "notifications": {
         "empty_title": "Nenhuma notificação no momento",
-        "empty_body": "Suas transações recentes, solicitações de ativos e outras transações aparecerão aqui"
+        "empty_body": "Suas transações recentes, solicitações de ativos e outras transações aparecerão aqui",
+        "unavailable_title": "Notificações indisponíveis",
+        "unavailable_body": "Não foi possível configurar as notificações neste dispositivo. Verifique suas permissões e sua conexão e tente novamente."
     },
     "messages": {
         "tabs": {
