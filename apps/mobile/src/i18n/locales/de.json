@@ -563,7 +563,6 @@
         "verify": {
             "title": "Passphrase überprüfen",
             "description": "Wähle die richtigen Wörter aus, um zu bestätigen, dass du deinen 12-Wort-Schlüssel sicher aufbewahrt hast.",
-            "select_word": "Wort Nr. {{number}} auswählen",
             "proceed": "Fortfahren",
             "error_message": "Falsche Auswahl. Bitte versuche es erneut."
         },

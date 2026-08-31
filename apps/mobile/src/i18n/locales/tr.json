@@ -571,7 +571,6 @@
         "verify": {
             "title": "Passphrase’i doğrula",
             "description": "12 kelimelik anahtarını güvenle sakladığını onaylamak için doğru kelimeleri seç.",
-            "select_word": "{{number}}. kelimeyi seç",
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
         },

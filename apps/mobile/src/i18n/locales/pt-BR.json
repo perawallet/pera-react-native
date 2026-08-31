@@ -571,7 +571,6 @@
         "verify": {
             "title": "Verificar a passphrase",
             "description": "Escolha as palavras corretas para confirmar que você guardou sua chave de 12 palavras com segurança.",
-            "select_word": "Selecione a palavra nº {{number}}",
             "proceed": "Continuar",
             "error_message": "Seleção incorreta. Tente novamente."
         },

@@ -12,7 +12,7 @@
 
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { PassphraseQuizItem } from './PassphraseQuizItem'
+import { BackupQuizItem } from '@modules/backup'
 import { useCloudBackupVerifyScreen } from './useCloudBackupVerifyScreen'
 import { useStyles } from './styles'
 
@@ -43,7 +43,7 @@ export const CloudBackupVerifyScreen = () => {
 
                 <PWView style={styles.quizList}>
                     {items.map((item, index) => (
-                        <PassphraseQuizItem
+                        <BackupQuizItem
                             key={`${item.position}-${index}`}
                             position={item.position}
                             options={item.options}

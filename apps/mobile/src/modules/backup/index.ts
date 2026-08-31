@@ -11,4 +11,5 @@
  */
 
 export * from './routes'
+export * from './components/BackupQuizItem'
 export * from './hooks'

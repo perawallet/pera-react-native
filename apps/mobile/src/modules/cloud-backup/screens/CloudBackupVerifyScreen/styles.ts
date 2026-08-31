@@ -19,32 +19,4 @@ export const useStyles = makeStyles(theme => ({
     quizList: {
         gap: theme.spacing.xxl,
     },
-    quizItem: {
-        gap: theme.spacing.sm,
-    },
-    quizLabel: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
-    },
-    optionGroup: {
-        padding: theme.spacing.sm,
-        borderRadius: theme.borderRadius.md,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        gap: theme.spacing.sm,
-    },
-    option: {
-        height: theme.spacing['3xl'],
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.borderRadius.xs,
-        backgroundColor: theme.colors.layerGrayLightest,
-    },
-    optionSelected: {
-        backgroundColor: theme.colors.buttonPrimaryBg,
-    },
-    optionTextSelected: {
-        color: theme.colors.buttonPrimaryText,
-    },
 }))

@@ -571,7 +571,6 @@
         "verify": {
             "title": "Verify Passphrase",
             "description": "Choose the correct words to confirm you’ve stored your 12-word key securely.",
-            "select_word": "Select word #{{number}}",
             "proceed": "Proceed",
             "error_message": "Incorrect selection. Please try again."
         },
