@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const deriveBackupKeys = vi.fn()
 const persistBackupKeys = vi.fn()
@@ -97,10 +98,9 @@ describe('useRestoreCloudBackup', () => {
     })
 
     it('maps a 404 to NOT_FOUND and cleans up keys', async () => {
-        pullBackupItems.mockRejectedValue({
-            status: 404,
-            data: { error: 'BACKUP_NOT_FOUND' },
-        })
+        pullBackupItems.mockRejectedValue(
+            new PeraNetworkError('client', { status: 404 }),
+        )
         const onError = vi.fn()
         const { result } = renderHook(() =>
             useRestoreCloudBackup({ onSuccess: vi.fn(), onError }),
@@ -114,10 +114,9 @@ describe('useRestoreCloudBackup', () => {
     })
 
     it('maps a 401 to INVALID_CREDENTIALS', async () => {
-        pullBackupItems.mockRejectedValue({
-            status: 401,
-            data: { error: 'AUTH_FAILED' },
-        })
+        pullBackupItems.mockRejectedValue(
+            new PeraNetworkError('client', { status: 401 }),
+        )
         const onError = vi.fn()
         const { result } = renderHook(() =>
             useRestoreCloudBackup({ onSuccess: vi.fn(), onError }),
@@ -128,6 +127,19 @@ describe('useRestoreCloudBackup', () => {
         expect(deleteBackupKeys).toHaveBeenCalled()
         expect(setConfigured).not.toHaveBeenCalled()
         expect(onError).toHaveBeenCalledWith('INVALID_CREDENTIALS')
+    })
+
+    it('does not read a status off an untyped rejection', async () => {
+        pullBackupItems.mockRejectedValue({ status: 404 })
+        const onError = vi.fn()
+        const { result } = renderHook(() =>
+            useRestoreCloudBackup({ onSuccess: vi.fn(), onError }),
+        )
+        await act(async () => {
+            await result.current.restore({ mnemonic: ['a'], salt: 'c2FsdA==' })
+        })
+        expect(deleteBackupKeys).toHaveBeenCalled()
+        expect(onError).toHaveBeenCalledWith('UNKNOWN')
     })
 
     it('reports a failed key derivation instead of rejecting', async () => {
