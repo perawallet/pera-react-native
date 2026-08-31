@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import * as Haptics from 'expo-haptics'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -53,18 +53,31 @@ const buildVerificationPairs = (
         }),
     )
 
-const useVerificationPairs = (): MnemonicWordAtPosition[] => {
+type VerificationPairs = {
+    correctPairs: MnemonicWordAtPosition[]
+    /** Re-samples which positions the quiz asks about. */
+    reroll: () => void
+}
+
+const useVerificationPairs = (): VerificationPairs => {
     const mnemonicIndices = useCloudBackupDraftStore(
         state => state.mnemonicIndices,
     )
+    const [round, setRound] = useState(0)
 
-    return useMemo(
+    const correctPairs = useMemo(
         () =>
             mnemonicIndices && mnemonicIndices.length > 0
                 ? buildVerificationPairs(mnemonicIndices)
                 : [],
-        [mnemonicIndices],
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- `round` is the re-roll trigger
+        [mnemonicIndices, round],
     )
+
+    return {
+        correctPairs,
+        reroll: useCallback(() => setRound(value => value + 1), []),
+    }
 }
 
 /**
@@ -124,9 +137,14 @@ type UseCloudBackupVerifyScreenResult = {
 export const useCloudBackupVerifyScreen =
     (): UseCloudBackupVerifyScreenResult => {
         const { enableBackup, isEnabling } = useEnableCloudBackup()
-        const correctPairs = useVerificationPairs()
+        const { correctPairs, reroll } = useVerificationPairs()
         const onSuccess = useEncryptionKeyConfirmation(enableBackup)
-        const onWrong = useWrongAnswerFeedback()
+        const showWrongAnswerFeedback = useWrongAnswerFeedback()
+
+        const onWrong = useCallback(() => {
+            reroll()
+            showWrongAnswerFeedback()
+        }, [reroll, showWrongAnswerFeedback])
 
         const { items, onSelect, onSubmit, isFilled } = useBackupQuiz(
             correctPairs,
