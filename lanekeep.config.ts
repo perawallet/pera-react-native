@@ -5,7 +5,10 @@
 import { defineConfig } from 'lanekeep'
 
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
+import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
+import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
+import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 
 export default defineConfig({
     // Mirrors packages/devtools/guardrails/utils/discovery.ts. Every workspace
@@ -30,5 +33,11 @@ export default defineConfig({
         'packages/devtools/**',
     ],
     namespaces: ['pera'],
-    rules: [noPrimitiveRnComponents, noChromeImportsOutsideWeb],
+    rules: [
+        noPrimitiveRnComponents,
+        noChromeImportsOutsideWeb,
+        noTypographyInStyles,
+        noEmptyStyleObjects,
+        noNumericSizes,
+    ],
 })
