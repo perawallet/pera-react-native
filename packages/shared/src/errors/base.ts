@@ -128,6 +128,16 @@ export class AppError extends Error {
     }
 
     /**
+     * Check if error should be reported to Crashlytics
+     */
+    shouldReport(): boolean {
+        return (
+            this.metadata.severity === ErrorSeverity.HIGH ||
+            this.metadata.severity === ErrorSeverity.CRITICAL
+        )
+    }
+
+    /**
      * Serialize error for logging
      */
     toJSON() {

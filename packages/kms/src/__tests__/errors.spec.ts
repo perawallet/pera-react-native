@@ -59,6 +59,11 @@ describe('KMS Error Classes', () => {
             expect(error.metadata.retryable).toBe(true)
             expect(error.metadata.category).toBe(ErrorCategory.KMS)
         })
+
+        test('shouldReport returns true for HIGH severity', () => {
+            const error = new KeyManagementError('Key access failed')
+            expect(error.shouldReport()).toBe(true)
+        })
     })
 
     describe('KeyAccessError', () => {
