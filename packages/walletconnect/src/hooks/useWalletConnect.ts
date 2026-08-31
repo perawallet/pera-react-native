@@ -165,10 +165,13 @@ export const useWalletConnect = (
             })
 
             // A missing/empty bridge makes the WC v1 Connector throw synchronously — skip it.
-            connect({ connection }).catch(error => {
+            connect({ connection }).catch((error: unknown) => {
                 logger.error(
-                    '[WC] Failed to establish stored session — skipping',
-                    { clientId: connection.clientId, error },
+                    new WalletConnectBridgeConnectionError(
+                        '[WC] Failed to establish stored session — skipping',
+                        error instanceof Error ? error : undefined,
+                    ),
+                    { clientId: connection.clientId },
                 )
             })
         })
@@ -493,7 +496,13 @@ export const useWalletConnect = (
         })
 
         connector.on('error', (error, payload) => {
-            logger.error('WC error received', { error, payload })
+            logger.error(
+                new WalletConnectBridgeConnectionError(
+                    'WC error received',
+                    error instanceof Error ? error : undefined,
+                ),
+                { payload },
+            )
             // The SDK's EventManager delivers internal events as
             // callback(null, event) — only JSON-RPC error responses populate
             // the first argument. Reading `error` alone made this binding
