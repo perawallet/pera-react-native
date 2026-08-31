@@ -4,6 +4,8 @@
 
 import { defineConfig } from 'lanekeep'
 
+import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
+
 export default defineConfig({
     // Mirrors packages/devtools/guardrails/utils/discovery.ts. Every workspace
     // member lives one level under apps/, packages/ or extensions/, matching
@@ -27,5 +29,5 @@ export default defineConfig({
         'packages/devtools/**',
     ],
     namespaces: ['pera'],
-    rules: [],
+    rules: [noPrimitiveRnComponents],
 })
