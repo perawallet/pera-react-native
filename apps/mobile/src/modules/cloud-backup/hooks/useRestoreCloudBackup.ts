@@ -23,13 +23,11 @@ import {
     useBackupSyncStateStore,
     useCloudBackupStore,
     type BackupKeys,
-    type PulledAccount,
+    type ImportSummary,
+    type SyncImportFn,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
-import {
-    useCloudBackupImport,
-    type ImportSummary,
-} from './useCloudBackupImport'
+import { useCloudBackupImport } from './useCloudBackupImport'
 
 export type RestoreErrorCategory =
     | 'NOT_FOUND'
@@ -108,7 +106,7 @@ const syncStateFromPull = (backupId: string, pull: PullResult) => ({
 type RestoreContext = {
     network: Network
     deviceId: string
-    importAccounts: (accounts: PulledAccount[]) => Promise<ImportSummary>
+    importAccounts: SyncImportFn
     commit: (backupId: string, salt: string, pull: PullResult) => void
 }
 
