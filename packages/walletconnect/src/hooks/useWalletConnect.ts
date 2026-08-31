@@ -505,7 +505,7 @@ export const useWalletConnect = (
             // a populated `error` is a genuine protocol error response and
             // stays reportable, logged unwrapped so its own type survives.
             if (error instanceof Error) {
-                logger.error(error, { payload, error })
+                logger.error(error, { payload })
             } else {
                 logger.error(
                     new WalletConnectBridgeConnectionError('WC error received'),
