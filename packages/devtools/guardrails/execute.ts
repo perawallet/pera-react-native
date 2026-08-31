@@ -116,7 +116,12 @@ export async function runChecksAgainstPaths(
     }
     const walkMs = performance.now() - walkStart
 
-    const violations = filterSuppressed(raw, sources)
+    // Set by the differential harness so both tools compare on the same
+    // unsuppressed corpus. Deleted with this package.
+    const violations =
+        process.env.GUARDRAILS_NO_SUPPRESS === '1'
+            ? raw
+            : filterSuppressed(raw, sources)
     return { violations, timings, parseMs, walkMs }
 }
 
