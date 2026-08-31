@@ -6,6 +6,7 @@ import { defineRule } from 'lanekeep'
 import {
     MAKE_STYLES_QUERY,
     isRneuiMakeStyles,
+    relativeBase,
     resolveRelative,
     styleEntries,
     webVariant,
@@ -108,12 +109,21 @@ export default defineRule({
 
             const resolved = resolveRelative(ctx, ctx.filePath, specifier)
             if (resolved === undefined) {
-                // Only a path this resolver understands yields a consumer whose
-                // uses are visible. An alias like `@modules/Foo/styles` does
-                // not, so the hook it names is unknowable rather than unused —
-                // record enough to silence it. Keying on the trailing path plus
-                // the imported name keeps the silence narrow, and it can only
-                // lose a finding, never invent one.
+                // A consumer this resolver cannot follow leaves the hook it
+                // names unknowable rather than unused, so record enough to
+                // silence it. Both forms below can only lose a finding, never
+                // invent one.
+                //
+                // A relative path that matched no candidate still names a known
+                // location: `./styles` beside a lone `styles.web.ts` is a real
+                // module the bundler resolves by platform suffix.
+                const base = relativeBase(ctx.filePath, specifier)
+                if (base !== undefined) {
+                    ctx.emitFact({ kind: 'opaque', base, name: imported })
+                    continue
+                }
+                // An alias such as `@modules/Foo/styles` has no computable
+                // path, so fall back to matching its trailing segments.
                 const tail = specifier
                     .split('/')
                     .filter(p => p !== '' && p !== '.' && p !== '..')
@@ -232,7 +242,9 @@ export default defineRule({
         const names = [...styleVars.keys()].map(n => `"${n}"`).join(' ')
         for (const match of ctx.querySubtree(
             prog,
-            `((identifier) @id (#any-of? @id ${names}))`,
+            // `{ styles }` parses the name as a shorthand property rather than
+            // an identifier, so omitting it would let the object escape unseen.
+            `([(identifier) (shorthand_property_identifier)] @id (#any-of? @id ${names}))`,
         )) {
             const id = match.id
             if (id === undefined || accounted.has(id)) continue
@@ -252,17 +264,21 @@ export default defineRule({
             else used.add(`${id}::${String(fact.key)}`)
         }
 
-        const opaque = ctx
-            .facts('opaque')
-            .map(f => ({ tail: String(f.tail), name: String(f.name) }))
+        const opaque = ctx.facts('opaque').map(f => ({
+            base: f.base === undefined ? undefined : String(f.base),
+            tail: f.tail === undefined ? undefined : String(f.tail),
+            name: String(f.name),
+        }))
+        // A base is an exact location, so any extension the bundler might have
+        // picked counts. A tail is a guess, so it is held to known extensions.
         const reachedOpaquely = (file: string, hook: string): boolean =>
-            opaque.some(
-                o =>
-                    o.name === hook &&
-                    ['.ts', '.tsx', '.web.ts', '.web.tsx'].some(ext =>
-                        file.endsWith(`/${o.tail}${ext}`),
-                    ),
-            )
+            opaque.some(o => {
+                if (o.name !== hook) return false
+                if (o.base !== undefined) return file.startsWith(`${o.base}.`)
+                return ['.ts', '.tsx', '.web.ts', '.web.tsx'].some(ext =>
+                    file.endsWith(`/${String(o.tail)}${ext}`),
+                )
+            })
 
         for (const fact of ctx.facts('keydef')) {
             const file = String(fact.file)

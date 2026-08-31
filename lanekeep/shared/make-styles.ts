@@ -87,16 +87,14 @@ export function styleEntries(ctx: RuleContext, call: Node): StyleEntry[] {
 }
 
 /**
- * Resolves a relative import to a repo-relative path, trying the candidates
- * the bundler tries.
+ * The extensionless repo-relative path a relative specifier points at, whether
+ * or not a file sits there.
  *
- * Returning a wrong answer is worse here than returning none: an unresolved
- * consumer makes its keys look unused, and the remediation then tells someone
- * to delete code that is in use. Callers must treat `undefined` as "unknown",
- * never as "not used".
+ * Useful on its own when nothing resolves: the location is still known, and a
+ * caller that must not mistake "no such module" for "nothing uses this" needs
+ * it.
  */
-export function resolveRelative(
-    ctx: RuleContext,
+export function relativeBase(
     fromFile: string,
     specifier: string,
 ): string | undefined {
@@ -111,7 +109,25 @@ export function resolveRelative(
         }
         segments.push(part)
     }
-    const base = segments.join('/')
+    return segments.join('/')
+}
+
+/**
+ * Resolves a relative import to a repo-relative path, trying the candidates
+ * the bundler tries.
+ *
+ * Returning a wrong answer is worse here than returning none: an unresolved
+ * consumer makes its keys look unused, and the remediation then tells someone
+ * to delete code that is in use. Callers must treat `undefined` as "unknown",
+ * never as "not used".
+ */
+export function resolveRelative(
+    ctx: RuleContext,
+    fromFile: string,
+    specifier: string,
+): string | undefined {
+    const base = relativeBase(fromFile, specifier)
+    if (base === undefined) return undefined
 
     for (const candidate of [
         `${base}.ts`,

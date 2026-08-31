@@ -60,6 +60,23 @@ describe('pera/no-unused-style-keys', () => {
         expect(locations(found)).toEqual([])
     })
 
+    it('reports nothing once the styles object escapes as object shorthand', async () => {
+        const found = await runRule(RULE, fixtures('unused-keys-shorthand'))
+
+        // `{ styles }` parses the name as a shorthand property, not an
+        // identifier, so it needs its own case: the escape fixture's forms are
+        // both plain identifiers and structurally cannot reach this.
+        expect(locations(found)).toEqual([])
+    })
+
+    it('reports nothing for a platform-suffixed file with no plain sibling', async () => {
+        const found = await runRule(RULE, fixtures('unused-keys-orphan'))
+
+        // `./orphan-styles` matches no candidate on disk, yet the bundler
+        // resolves it to the `.web` file, whose keys are therefore in use.
+        expect(locations(found)).toEqual([])
+    })
+
     it('reports nothing for a hook an unresolvable import names', async () => {
         const found = await runRule(RULE, fixtures('unused-keys-opaque'))
 
