@@ -7,6 +7,8 @@ import { locations, runRule } from './helpers.js'
 
 const FIXTURES = 'lanekeep/__tests__/fixtures/style-rules.*.ts'
 const good = (file: string): boolean => file.endsWith('style-rules.good.ts')
+const localFn = (file: string): boolean =>
+    file.endsWith('style-rules.local-fn.ts')
 
 describe('pera/no-typography-in-styles', () => {
     it('reports typography properties and allows getTypography', async () => {
@@ -22,6 +24,15 @@ describe('pera/no-typography-in-styles', () => {
         ])
         expect(found.filter(v => good(v.file))).toEqual([])
     })
+
+    it('ignores a local function that only shares the makeStyles name', async () => {
+        const found = await runRule(
+            'lanekeep/rules/no-typography-in-styles.ts',
+            FIXTURES,
+        )
+
+        expect(found.filter(v => localFn(v.file))).toEqual([])
+    })
 })
 
 describe('pera/no-empty-style-objects', () => {
@@ -33,6 +44,15 @@ describe('pera/no-empty-style-objects', () => {
 
         expect(locations(found)).toEqual(['style-rules.bad.ts:12'])
         expect(found[0]?.message).toContain('empty')
+    })
+
+    it('ignores a local function that only shares the makeStyles name', async () => {
+        const found = await runRule(
+            'lanekeep/rules/no-empty-style-objects.ts',
+            FIXTURES,
+        )
+
+        expect(found.filter(v => localFn(v.file))).toEqual([])
     })
 })
 
@@ -58,5 +78,14 @@ describe('pera/no-numeric-sizes', () => {
         // `marginTop: 0` is exempt and `shadowOffset`'s inner width/height are
         // not top-level entries, so the good fixture must be clean.
         expect(found.filter(v => good(v.file))).toEqual([])
+    })
+
+    it('ignores a local function that only shares the makeStyles name', async () => {
+        const found = await runRule(
+            'lanekeep/rules/no-numeric-sizes.ts',
+            FIXTURES,
+        )
+
+        expect(found.filter(v => localFn(v.file))).toEqual([])
     })
 })
