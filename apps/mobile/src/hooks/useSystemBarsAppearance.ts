@@ -28,15 +28,19 @@ import { setStatusBarStyle } from 'expo-status-bar'
  *
  * `'dark'` means dark icons for a light background, so the styles are inverted
  * relative to `isDarkMode`.
+ *
+ * Android-only on purpose. iOS already gets both bars from the root navigator's
+ * `statusBarStyle` option, and react-native-screens applies that through the
+ * view controller — which requires `UIViewControllerBasedStatusBarAppearance:
+ * true`, under which RN's imperative StatusBar API errors out. Android needs the
+ * imperative path because react-native-screens stops managing either bar once
+ * edge-to-edge is on.
  */
 export const useSystemBarsAppearance = (isDarkMode: boolean): void => {
     useEffect(() => {
-        setStatusBarStyle(isDarkMode ? 'light' : 'dark')
-
-        // Android-only; the iOS home indicator takes its contrast from the
-        // status bar style already set above.
         if (Platform.OS !== 'android') return
 
+        setStatusBarStyle(isDarkMode ? 'light' : 'dark')
         NavigationBar.setStyle(isDarkMode ? 'light' : 'dark')
     }, [isDarkMode])
 }
