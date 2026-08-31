@@ -4,6 +4,7 @@
 
 import { defineConfig } from 'lanekeep'
 
+import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 
 export default defineConfig({
@@ -29,5 +30,5 @@ export default defineConfig({
         'packages/devtools/**',
     ],
     namespaces: ['pera'],
-    rules: [noPrimitiveRnComponents],
+    rules: [noPrimitiveRnComponents, noChromeImportsOutsideWeb],
 })
