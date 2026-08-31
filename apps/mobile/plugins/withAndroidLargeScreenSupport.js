@@ -16,23 +16,25 @@ const { AndroidConfig, withAndroidManifest } = require('expo/config-plugins');
 /**
  * @type {import('expo/config-plugins').ConfigPlugin}
  *
- * Drops the Android portrait lock so the app resizes and rotates on large
- * screens (Play Console "Remove resizability and orientation
- * restrictions").
+ * Lets large screens rotate and resize (Play Console "Remove resizability and
+ * orientation restrictions") **without** unlocking rotation on phones, which
+ * are not laid out for landscape.
  *
- * From Android 16 the platform *ignores* `screenOrientation` and
- * `resizeableActivity` on large screens, so a tablet rotates whether or not we
- * ask it to. Keeping the lock therefore doesn't prevent landscape — it only
- * hides it from us in development while users still hit it. Removing it makes
- * the behaviour reproducible now, on the tablets and foldables Play is
- * flagging.
+ * A per-size manifest lock is impossible: `android:screenOrientation` is an
+ * `ActivityInfo` enum the package parser resolves once, at install time,
+ * through an AssetManager with every configuration axis zeroed. A
+ * `values-sw600dp` qualifier can therefore never win there — verified on an
+ * sw800dp API 30 tablet, which resolved the unqualified value and forced the
+ * display to portrait. Play's manifest analysis reads that same static value,
+ * so a lock declared here would keep the listing flagged too.
  *
- * Only Android is unlocked: the top-level `orientation: 'portrait'` in the app
- * config still pins iOS, where nothing equivalent is being enforced.
+ * So the manifest declares no restriction, and `useOrientationPolicy`
+ * (src/hooks) locks phones to portrait at runtime, where the live screen size
+ * is actually known.
  *
- * MainActivity already declares `orientation|screenSize|screenLayout` in
- * `configChanges`, so a rotation is delivered to the running activity instead
- * of recreating it — the phone layouts reflow rather than restart.
+ * Only Android needs this: iOS is per-idiom static — the top-level
+ * `orientation: 'portrait'` pins iPhones while `supportsTablet` writes an
+ * all-orientations `UISupportedInterfaceOrientations~ipad`, so iPads rotate.
  */
 const withAndroidLargeScreenSupport = (config) => {
   return withAndroidManifest(config, (config) => {
@@ -47,10 +49,9 @@ const withAndroidLargeScreenSupport = (config) => {
 };
 
 /**
- * `unspecified` hands the choice to the system rather than forcing landscape:
- * phones keep their sensor default, large screens get the free rotation Play
- * asks for. Explicit rather than deleting the attribute, so a later prebuild
- * that re-adds `portrait` is overwritten rather than silently winning.
+ * `unspecified` rather than deleting the attribute, so a later prebuild that
+ * re-adds `portrait` from the app config is overwritten rather than silently
+ * winning.
  */
 function allowRotationAndResize(attributes) {
   return {

@@ -16,7 +16,7 @@ import { allowRotationAndResize } from '../withAndroidLargeScreenSupport'
 type ActivityAttributes = Record<string, string>
 
 describe('allowRotationAndResize', () => {
-    it('replaces the portrait lock with the system default', () => {
+    it('declares no orientation restriction for the package parser to read', () => {
         const result: ActivityAttributes = allowRotationAndResize({
             'android:name': '.MainActivity',
             'android:screenOrientation': 'portrait',
