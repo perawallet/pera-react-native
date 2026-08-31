@@ -157,8 +157,7 @@ export const useQRScannerView = ({
             } catch (error) {
                 setIsHandling(false)
                 handlingRef.current = false
-                // Camera permission and hardware failures are the device's, not ours.
-                logger.warn('QRScannerView: QR scanner error:', { error })
+                logger.error('QRScannerView: QR scanner error:', { error })
             }
         },
         [

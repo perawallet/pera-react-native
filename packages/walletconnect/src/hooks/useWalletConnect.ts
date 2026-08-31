@@ -171,7 +171,7 @@ export const useWalletConnect = (
                         '[WC] Failed to establish stored session — skipping',
                         error instanceof Error ? error : undefined,
                     ),
-                    { clientId: connection.clientId },
+                    { clientId: connection.clientId, error },
                 )
             })
         })
@@ -496,17 +496,22 @@ export const useWalletConnect = (
         })
 
         connector.on('error', (error, payload) => {
-            logger.error(
-                new WalletConnectBridgeConnectionError(
-                    'WC error received',
-                    error instanceof Error ? error : undefined,
-                ),
-                { payload },
-            )
             // The SDK's EventManager delivers internal events as
             // callback(null, event) — only JSON-RPC error responses populate
             // the first argument. Reading `error` alone made this binding
             // decorative: every real 'error' event arrived in `payload`.
+            //
+            // So only the `payload` path is a transport event worth demoting;
+            // a populated `error` is a genuine protocol error response and
+            // stays reportable, logged unwrapped so its own type survives.
+            if (error instanceof Error) {
+                logger.error(error, { payload, error })
+            } else {
+                logger.error(
+                    new WalletConnectBridgeConnectionError('WC error received'),
+                    { payload, error },
+                )
+            }
             const detail = (
                 payload as { params?: { message?: string }[] } | undefined
             )?.params?.[0]
