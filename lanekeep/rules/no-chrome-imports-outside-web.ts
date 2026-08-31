@@ -25,10 +25,12 @@ export default defineRule({
     },
     gates: {
         fileContains: ['-chrome'],
-        // apps/browser is web-only by construction, extensions/* are barred
-        // from chrome by their own layering, and Metro resolves `.web.tsx`
-        // only for web builds, so those files are unreachable from a native
-        // bundle.
+        // apps/browser is web-only by construction, so chrome exists there.
+        // extensions/** holds the chrome packages themselves; without this the
+        // byte gate above would make them self-flag. .web.ts(x) resolves only
+        // for web builds. Everything else — packages/* included — is bundled
+        // into the native app just as directly as apps/mobile/src, so it stays
+        // in scope.
         pathNotMatches: [
             'apps/browser/**',
             'extensions/**',
