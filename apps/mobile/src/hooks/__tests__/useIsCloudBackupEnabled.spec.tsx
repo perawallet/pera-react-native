@@ -16,7 +16,7 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { useIsCloudBackupFeatureEnabled } from '../useIsCloudBackupFeatureEnabled'
+import { useIsCloudBackupEnabled } from '../useIsCloudBackupEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => {
     const actual =
@@ -40,11 +40,11 @@ beforeEach(() => {
     })
 })
 
-describe('useIsCloudBackupFeatureEnabled', () => {
+describe('useIsCloudBackupEnabled', () => {
     test('reads the enable_cloud_backup flag, defaulting to false', () => {
         mockGetBooleanValue.mockReturnValue(false)
 
-        const { result } = renderHook(() => useIsCloudBackupFeatureEnabled())
+        const { result } = renderHook(() => useIsCloudBackupEnabled())
 
         expect(result.current).toBe(false)
         expect(mockGetBooleanValue).toHaveBeenCalledWith(
@@ -56,7 +56,7 @@ describe('useIsCloudBackupFeatureEnabled', () => {
     test('returns true when the flag is enabled', () => {
         mockGetBooleanValue.mockReturnValue(true)
 
-        const { result } = renderHook(() => useIsCloudBackupFeatureEnabled())
+        const { result } = renderHook(() => useIsCloudBackupEnabled())
 
         expect(result.current).toBe(true)
     })

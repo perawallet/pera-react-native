@@ -20,7 +20,7 @@ import type { PWInputRef } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useMnemonicWordEntry } from '@modules/onboarding/hooks'
-import type { CloudBackupStackParamList } from '../../routes'
+import type { CloudBackupStackParamList } from '../../routes/types'
 
 const CLOUD_BACKUP_MNEMONIC_LENGTH = 12
 

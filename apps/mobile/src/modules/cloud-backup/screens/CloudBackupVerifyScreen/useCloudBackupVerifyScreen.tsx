@@ -30,7 +30,7 @@ import {
     type EncryptionKeyConfirmResult,
 } from '../../components/EncryptionKeyConfirmSheet'
 import { useEnableCloudBackup } from '../../hooks'
-import type { CloudBackupStackParamList } from '../../routes'
+import type { CloudBackupStackParamList } from '../../routes/types'
 
 const VERIFICATION_WORD_COUNT = 3
 
