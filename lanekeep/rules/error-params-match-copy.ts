@@ -18,9 +18,11 @@ function pairKey(ctx: RuleContext, pair: Node): string | undefined {
 }
 
 /**
- * `undefined` means the params are present but not statically readable, which
- * is not the same as "no params declared" — reporting it would flag code that
- * supplies the values at runtime.
+ * `undefined` means the params are present but not statically readable — a
+ * shorthand reference or a spread. That is a distinct violation from "no
+ * params declared": here a value might genuinely be supplied at runtime, but
+ * nothing can confirm it, so the caller reports it as unverified rather than
+ * as definitely missing.
  */
 function readParamNames(
     ctx: RuleContext,
@@ -73,7 +75,7 @@ export default defineRule({
     card: {
         message: 'copy placeholder has no matching param',
         remediation:
-            'Add a params entry for every {{placeholder}} in the copy, or remove the placeholder. Extra params without a placeholder are fine — they serve as log context.',
+            'Add a params entry for every {{placeholder}} in the copy, or remove the placeholder. When params is a shorthand reference or a spread, restructure it to a plain object literal so it can be checked, or suppress once with a reason. Extra params without a matching placeholder are fine — they serve as log context.',
         examples: {
             bad: "{ messageKey: 'greet', params: {} } // copy is 'Hi {{name}}'",
             good: "{ messageKey: 'greet', params: { name } }",
@@ -111,7 +113,13 @@ export default defineRule({
         if (placeholders.length === 0) return
 
         const declared = readParamNames(ctx, container)
-        if (declared === undefined) return // unverifiable
+        if (declared === undefined) {
+            ctx.report(
+                pair,
+                `params for "${messageKey}" can't be read statically here, so {{${placeholders.join('}}, {{')}}} can't be confirmed as supplied`,
+            )
+            return
+        }
 
         const missing = placeholders.filter(p => !declared.includes(p))
         if (missing.length === 0) return

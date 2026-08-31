@@ -12,17 +12,31 @@ describe('pera/error-params-match-copy', () => {
     it('reports a placeholder with no matching param, declared or absent', async () => {
         const found = await runRule(RULE, FIXTURES)
 
-        expect(locations(found)).toEqual([
-            'error-params.bad.ts:2',
-            'error-params.bad.ts:7',
+        const definitelyMissing = found.filter(v =>
+            v.message.includes('with no matching param'),
+        )
+        expect(locations(definitelyMissing)).toEqual([
+            'error-params.bad.ts:5',
+            'error-params.bad.ts:10',
         ])
     })
 
-    it('skips containers whose params cannot be read statically', async () => {
+    it('reports params it cannot read statically as unverified, not as missing', async () => {
         const found = await runRule(RULE, FIXTURES)
 
-        // Shorthand `params` and a container spread are unverifiable, not
-        // "no params declared" — reporting them would flag working code.
+        const unverified = found.filter(v =>
+            v.message.includes("can't be confirmed as supplied"),
+        )
+        expect(locations(unverified)).toEqual([
+            'error-params.bad.ts:14',
+            'error-params.bad.ts:20',
+            'error-params.bad.ts:24',
+        ])
+    })
+
+    it('stays silent when every placeholder has a matching param, extras included', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
         expect(found.filter(v => v.file.endsWith('.good.ts'))).toEqual([])
     })
 })
