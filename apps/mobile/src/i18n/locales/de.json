@@ -1852,13 +1852,15 @@
         },
         "to_standard": {
             "intro": {
-                "title": "Zu Standardkonto rekeyen",
-                "body": "Verwende den privaten Schlüssel eines anderen Kontos, um Transaktionen für dieses Konto zu signieren.",
+                "title": "Zu Standard-Konto rekeyen",
+                "title_with_quantum": "Zu Standard- oder Quantum-Konto rekeyen",
+                "body": "Beim Rekeyen wird ein neuer Schlüssel zum Signieren der künftigen Transaktionen dieses Kontos festgelegt, ohne Guthaben zu verschieben oder die Adresse zu ändern.",
                 "learn_more": "Mehr erfahren",
                 "expect_label": "Was dich erwartet",
-                "expect_1": "Zukünftige Transaktionen können nur noch vom delegierten Konto signiert werden.",
-                "expect_2": "Dieses Konto kann keine Transaktionen mehr signieren.",
-                "expect_3": "Der öffentliche Schlüssel, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_1": "Künftige Transaktionen dieses Kontos können nur noch mit dem Schlüssel des neuen Kontos signiert werden.",
+                "expect_2": "Sichere die Wiederherstellungsphrase dieses neuen Kontos, bevor du fortfährst. Verlierst du sie, verlierst du die Möglichkeit, für dieses Konto zu signieren, auch wenn sonst alles daran unverändert bleibt.",
+                "expect_3": "Die Adresse, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_4": "Wenn du dieses Konto später schließt, wird das Rekey entfernt. Sobald die Adresse wieder Guthaben erhält, liegt die Kontrolle beim ursprünglichen Schlüssel und nicht bei dem Konto, das du jetzt einrichtest.",
                 "cta": "Vorgang starten"
             },
             "select": {

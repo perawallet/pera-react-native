@@ -1861,12 +1861,14 @@
         "to_standard": {
             "intro": {
                 "title": "Hacer rekey a una cuenta estándar",
-                "body": "Usa la clave privada de otra cuenta para firmar las transacciones de esta cuenta.",
+                "title_with_quantum": "Hacer rekey a una cuenta estándar o cuántica",
+                "body": "El rekey asigna una nueva clave para firmar las futuras transacciones de esta cuenta, sin mover fondos ni cambiar su dirección.",
                 "learn_more": "Más información",
                 "expect_label": "Qué esperar",
-                "expect_1": "Las futuras transacciones solo podrán firmarse con la cuenta delegada.",
-                "expect_2": "Esta cuenta ya no podrá firmar transacciones.",
-                "expect_3": "La clave pública, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave de la nueva cuenta.",
+                "expect_2": "Haz una copia de seguridad de la frase de recuperación de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_4": "Si más adelante cierras esta cuenta, el rekey se elimina. Si vuelves a enviar fondos a la dirección, el control regresa a la clave original y no a la cuenta que estás configurando ahora.",
                 "cta": "Iniciar proceso"
             },
             "select": {
