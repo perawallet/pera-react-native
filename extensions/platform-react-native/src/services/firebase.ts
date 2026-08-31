@@ -13,6 +13,7 @@
 import {
     type Crashlytics,
     getCrashlytics,
+    log,
     recordError,
     setCrashlyticsCollectionEnabled,
 } from '@react-native-firebase/crashlytics'
@@ -472,6 +473,13 @@ export class RNFirebaseService
         const reportable =
             error instanceof Error ? error : new Error(String(error))
         recordError(this.crashlytics, reportable, groupingKey)
+    }
+
+    logBreadcrumb(message: string): void {
+        if (!this.crashlytics) {
+            return
+        }
+        log(this.crashlytics, message)
     }
 
     initializeAnalytics(): void {

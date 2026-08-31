@@ -18,6 +18,7 @@ import {
     messageKeysFor as keysFor,
     type ErrorMessageKeys,
 } from './base'
+import { isRawPlatformNetworkError } from './expected'
 import { NoConnectionError } from './network-validation'
 
 /**
@@ -32,37 +33,6 @@ export type PeraNetworkErrorKind =
     | 'unknown' // anything else (parse errors, non-ky throwables)
 
 /**
- * React Native's fetch rejects with a plain `Error` — name `"Error"`, not the
- * `TypeError` that every one of ky's runtime heuristics requires — and on
- * Android it appends the Java cause after a `fetch failed:` prefix rather than
- * using one of the exact messages ky matches. So ky never wraps these in its
- * `NetworkError` and `isNetworkError` returns false for a device that is simply
- * offline. ky documents the gap on `NetworkError`: "Unrecognized runtimes may
- * produce errors that are not wrapped in NetworkError."
- *
- * Matching on message text is unpleasant, but it's the only signal RN gives us,
- * and the cost of not doing it is high: an offline request classifies as
- * `unknown`, which is non-retryable and shows the user a generic error instead
- * of "no connection".
- */
-const RAW_NETWORK_ERROR_FRAGMENTS = [
-    'fetch failed', // RN Android — prefix, Java cause appended
-    'network request failed', // RN iOS
-    'unable to resolve host', // Android DNS
-    'unknownhostexception',
-]
-
-const isRawPlatformNetworkError = (error: unknown): boolean => {
-    if (!(error instanceof Error) || typeof error.message !== 'string') {
-        return false
-    }
-    const message = error.message.toLowerCase()
-    return RAW_NETWORK_ERROR_FRAGMENTS.some(fragment =>
-        message.includes(fragment),
-    )
-}
-
-/**
  * True for a transport-level failure where the request never got a response.
  * Prefer this over ky's `isNetworkError`, which under-reports on React Native —
  * see {@link isRawPlatformNetworkError}.
@@ -71,6 +41,17 @@ export const isNetworkTransportError = (error: unknown): boolean =>
     isNetworkError(error) || isRawPlatformNetworkError(error)
 
 const RETRYABLE_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
+    offline: true,
+    timeout: true,
+    server: true,
+    client: false,
+    unknown: false,
+}
+
+// Mirrors RETRYABLE_BY_KIND deliberately: a failure a retry might fix is one
+// the environment caused, not our code. `client` stays reportable because a 4xx
+// we sent is usually our bug.
+const EXPECTED_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
     offline: true,
     timeout: true,
     server: true,
@@ -116,6 +97,7 @@ export class PeraNetworkError extends AppError {
                 severity: SEVERITY_BY_KIND[kind],
                 category: ErrorCategory.NETWORK,
                 retryable: RETRYABLE_BY_KIND[kind],
+                expected: EXPECTED_BY_KIND[kind],
             },
             originalError,
         )

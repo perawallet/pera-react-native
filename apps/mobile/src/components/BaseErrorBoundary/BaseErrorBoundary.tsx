@@ -60,7 +60,10 @@ export class BaseErrorBoundary extends Component<
         // Convert to AppError if not already
         const appError = error instanceof AppError ? error : null
 
-        // Log error
+        // `shouldReport()` answers a different question from `metadata.expected`
+        // — it is a severity test, so a HIGH-severity error flagged expected
+        // (the Ledger connection classes) escalates to `critical` here instead
+        // of being downgraded. Left as is: it fails in the safe direction.
         if (appError?.shouldReport()) {
             logger.critical(error, {
                 category: this.props.category,

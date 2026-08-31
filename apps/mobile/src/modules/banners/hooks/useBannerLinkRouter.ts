@@ -31,16 +31,18 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
         ({ url, isExternal }: RouteInput) => {
             if (!url) return
             if (isExternal) {
+                // No OS handler for the URL is a device condition, not our bug.
                 Linking.openURL(url).catch(err =>
-                    logger.error('Failed to open banner URL', { url, err }),
+                    logger.warn('Failed to open banner URL', { url, err }),
                 )
                 return
             }
             if (isValidDeepLink(url)) {
                 void handleDeepLink(url, false, 'in-app')
             } else {
+                // No OS handler for the URL is a device condition, not our bug.
                 Linking.openURL(url).catch(err =>
-                    logger.error('Failed to open banner URL', { url, err }),
+                    logger.warn('Failed to open banner URL', { url, err }),
                 )
             }
         },

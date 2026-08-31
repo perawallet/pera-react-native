@@ -95,6 +95,7 @@ export const buildTestPlatform = (
     const defaultCrash: CrashReportingService = {
         initializeCrashReporting() {},
         recordNonFatalError(_: unknown) {},
+        logBreadcrumb() {},
     }
 
     const deviceInfo: DeviceInfoService = {
