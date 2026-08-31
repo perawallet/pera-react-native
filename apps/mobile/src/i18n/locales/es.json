@@ -1533,6 +1533,24 @@
             "title": "Elige la cuenta de la tarjeta",
             "subtitle": "Para empezar, conecta la wallet que quieras usar para configurar tu cuenta.",
             "change": "Cambiar"
+        },
+        "cashback": {
+            "navigation_title": "Cashback",
+            "withdraw_navigation_title": "Retirar cashback",
+            "balance_label": "Saldo de cashback",
+            "body": "Retira tus recompensas de cashback a tu saldo de tarjeta en cualquier momento.",
+            "not_withdrawable_body": "Tu cashback pronto estará disponible para retirar. Sigue usando tu tarjeta para ganar más.",
+            "withdraw_button": "Retirar",
+            "withdraw_subtitle": "¿Cuánto quieres retirar?",
+            "amount": "Cantidad",
+            "balance": "Saldo: {{amount}} USDC",
+            "confirm_title": "Confirmar retiro",
+            "confirm_body": "Estás retirando {{amount}} USDC de cashback.",
+            "confirm_button": "Confirmar",
+            "fee_label": "Comisión de red",
+            "fee_loading": "Estimando...",
+            "success_title": "Retiro enviado",
+            "success_body": "{{amount}} USDC de cashback están en camino."
         }
     },
     "notifications": {

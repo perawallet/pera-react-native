@@ -41,6 +41,10 @@ export const cardQueryKeys = {
         ] as const,
     internalWallets: (network: Network) =>
         [MODULE_PREFIX, 'internal-wallets', { network }] as const,
+    rewardWallet: (network: Network) =>
+        [MODULE_PREFIX, 'reward-wallet', { network }] as const,
+    rewardWithdrawEstimation: (network: Network) =>
+        [MODULE_PREFIX, 'reward-withdraw-estimation', { network }] as const,
     externalWallets: (network: Network) =>
         [MODULE_PREFIX, 'external-wallets', { network }] as const,
     // OS-wallet push provisioning state is device-local, so these two are

@@ -41,6 +41,8 @@ export type PeraCardFlowParamList = {
     CardAddFunds: undefined
     CardConfirmSwap: { sourceAssetId: string; amount: string }
     CardWithdraw: undefined
+    CardCashback: undefined
+    CardCashbackWithdraw: undefined
 }
 
 /**

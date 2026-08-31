@@ -79,6 +79,17 @@ export {
 export type { MockGetInternalWalletsParams } from './api/wallet/msw-handlers'
 
 export {
+    mockGetRewardWallet,
+    mockGetRewardWithdrawEstimation,
+    mockWithdrawReward,
+} from './api/reward/msw-handlers'
+export type {
+    MockGetRewardWalletParams,
+    MockGetRewardWithdrawEstimationParams,
+    MockWithdrawRewardParams,
+} from './api/reward/msw-handlers'
+
+export {
     mockGetDelegationToken,
     mockGetDelegationProgram,
     mockPostAlgorandDelegationApproval,

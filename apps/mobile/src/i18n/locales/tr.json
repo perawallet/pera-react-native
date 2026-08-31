@@ -1533,6 +1533,24 @@
             "title": "Kart hesabını seç",
             "subtitle": "Başlamak için hesabını kurmak üzere kullanmak istediğin cüzdanı bağla.",
             "change": "Değiştir"
+        },
+        "cashback": {
+            "navigation_title": "Cashback",
+            "withdraw_navigation_title": "Cashback Çek",
+            "balance_label": "Cashback bakiyesi",
+            "body": "Cashback ödüllerini istediğin zaman kart bakiyene çekebilirsin.",
+            "not_withdrawable_body": "Cashback'in yakında çekilebilir olacak. Daha fazla kazanmak için kartını kullanmaya devam et.",
+            "withdraw_button": "Çek",
+            "withdraw_subtitle": "Ne kadar çekmek istiyorsun?",
+            "amount": "Tutar",
+            "balance": "Bakiye: {{amount}} USDC",
+            "confirm_title": "Çekimi onayla",
+            "confirm_body": "{{amount}} USDC cashback çekiyorsun.",
+            "confirm_button": "Onayla",
+            "fee_label": "Ağ ücreti",
+            "fee_loading": "Tahmin ediliyor...",
+            "success_title": "Çekim gönderildi",
+            "success_body": "{{amount}} USDC cashback yolda."
         }
     },
     "notifications": {

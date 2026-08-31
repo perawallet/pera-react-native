@@ -45,6 +45,9 @@ export * from './useExportCardStatementMutation'
 
 // Internal wallet (balance / withdraw)
 export * from './useCardInternalWalletsQuery'
+export * from './useCardRewardWalletQuery'
+export * from './useRewardWithdrawEstimationQuery'
+export * from './useWithdrawRewardMutation'
 export * from './useWithdrawFromCardMutation'
 
 // Funding delegation (auto-funding LSig lifecycle)

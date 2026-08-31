@@ -1,0 +1,156 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { renderHook } from '@test-utils/render'
+import { act } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
+
+const mocks = vi.hoisted(() => ({
+    withdrawMutateAsync: vi.fn(),
+    withdrawPending: false,
+    rewardWallet: null as unknown,
+    estimation: null as unknown,
+    resolve: vi.fn(),
+    dismiss: vi.fn(),
+    errorToast: vi.fn(),
+}))
+
+const rewardWallet = {
+    id: 'rw_1',
+    balance: new Decimal('42.5'),
+    currency: 'usdc',
+    isWithdrawable: true,
+}
+
+vi.mock('@perawallet/wallet-core-card', async () => {
+    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
+    return {
+        ...actual,
+        useWithdrawRewardMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mocks.withdrawMutateAsync,
+            isPending: mocks.withdrawPending,
+            isError: false,
+            isSuccess: false,
+            isPaused: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
+        useCardRewardWalletQuery: () => ({
+            rewardWallet: mocks.rewardWallet,
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        }),
+        useRewardWithdrawEstimationQuery: () => ({
+            estimation: mocks.estimation,
+            isLoading: mocks.estimation === null,
+            isError: false,
+        }),
+    }
+})
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheetResult: () => ({
+        resolve: mocks.resolve,
+        dismiss: mocks.dismiss,
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        infoToast: vi.fn(),
+        errorToast: mocks.errorToast,
+        showToast: vi.fn(),
+        successToast: vi.fn(),
+    }),
+}))
+
+import { useCashbackWithdrawConfirmationSheet } from '../useCashbackWithdrawConfirmationSheet'
+
+describe('useCashbackWithdrawConfirmationSheet', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mocks.withdrawPending = false
+        mocks.rewardWallet = rewardWallet
+        mocks.estimation = { fee: new Decimal('0.000006219'), gas: '6219' }
+    })
+
+    it('withdraws the amount and resolves the sheet on confirm', async () => {
+        mocks.withdrawMutateAsync.mockResolvedValue({
+            txHash: '0xabc',
+            network: 'linea',
+            isConfirmed: true,
+        })
+
+        const { result } = renderHook(() =>
+            useCashbackWithdrawConfirmationSheet({
+                amount: new Decimal('25.5'),
+            }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.withdrawMutateAsync).toHaveBeenCalledWith({
+            amount: '25.50',
+        })
+        expect(mocks.resolve).toHaveBeenCalledWith('confirm')
+    })
+
+    it('renders the fee quote and a loading label before it arrives', () => {
+        const { result, rerender } = renderHook(() =>
+            useCashbackWithdrawConfirmationSheet({ amount: new Decimal('1') }),
+        )
+        expect(result.current.feeDisplay).toBe('0.000006219')
+
+        mocks.estimation = null
+        rerender()
+        expect(result.current.feeDisplay).toBeNull()
+        expect(result.current.isEstimating).toBe(true)
+    })
+
+    it('blocks the withdraw when the wallet is not withdrawable', async () => {
+        mocks.rewardWallet = { ...rewardWallet, isWithdrawable: false }
+
+        const { result } = renderHook(() =>
+            useCashbackWithdrawConfirmationSheet({
+                amount: new Decimal('1'),
+            }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
+        expect(mocks.errorToast).toHaveBeenCalled()
+    })
+
+    it('keeps the sheet open and surfaces the error on a failed withdraw', async () => {
+        mocks.withdrawMutateAsync.mockRejectedValue(new Error('boom'))
+
+        const { result } = renderHook(() =>
+            useCashbackWithdrawConfirmationSheet({
+                amount: new Decimal('10'),
+            }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.resolve).not.toHaveBeenCalled()
+        expect(mocks.errorToast).toHaveBeenCalled()
+    })
+})

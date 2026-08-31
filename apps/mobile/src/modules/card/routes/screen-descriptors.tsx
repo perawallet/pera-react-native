@@ -25,6 +25,8 @@ import { CardTransactionDetailScreen } from '../screens/CardTransactionDetailScr
 import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
 import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
 import { CardWithdrawScreen } from '../screens/CardWithdrawScreen'
+import { CardCashbackScreen } from '../screens/CardCashbackScreen'
+import { CardCashbackWithdrawScreen } from '../screens/CardCashbackWithdrawScreen'
 import type {
     PeraCardAccountStackParamList,
     PeraCardFlowParamList,
@@ -74,5 +76,17 @@ export const peraCardFlowScreens: CardScreenDescriptor<PeraCardFlowParamList>[] 
             name: 'CardWithdraw',
             options: headeredScreen('peraCard.withdraw.navigation_title'),
             component: CardWithdrawScreen as React.ComponentType,
+        },
+        {
+            name: 'CardCashback',
+            options: headeredScreen('peraCard.cashback.navigation_title'),
+            component: CardCashbackScreen as React.ComponentType,
+        },
+        {
+            name: 'CardCashbackWithdraw',
+            options: headeredScreen(
+                'peraCard.cashback.withdraw_navigation_title',
+            ),
+            component: CardCashbackWithdrawScreen as React.ComponentType,
         },
     ]

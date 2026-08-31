@@ -1525,6 +1525,24 @@
             "title": "Kartenkonto wählen",
             "subtitle": "Verbinde zunächst das Wallet, das du zur Einrichtung deines Kontos verwenden möchtest.",
             "change": "Ändern"
+        },
+        "cashback": {
+            "navigation_title": "Cashback",
+            "withdraw_navigation_title": "Cashback abheben",
+            "balance_label": "Cashback-Guthaben",
+            "body": "Hebe deine Cashback-Prämien jederzeit auf dein Kartenguthaben ab.",
+            "not_withdrawable_body": "Dein Cashback wird bald abhebbar. Nutze deine Karte weiter, um mehr zu verdienen.",
+            "withdraw_button": "Abheben",
+            "withdraw_subtitle": "Wie viel möchtest du abheben?",
+            "amount": "Betrag",
+            "balance": "Guthaben: {{amount}} USDC",
+            "confirm_title": "Abhebung bestätigen",
+            "confirm_body": "Du hebst {{amount}} USDC Cashback ab.",
+            "confirm_button": "Bestätigen",
+            "fee_label": "Netzwerkgebühr",
+            "fee_loading": "Wird geschätzt...",
+            "success_title": "Abhebung übermittelt",
+            "success_body": "{{amount}} USDC Cashback sind unterwegs."
         }
     },
     "notifications": {
