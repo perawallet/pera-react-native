@@ -110,6 +110,37 @@ const answerQuizCorrectly = async (): Promise<void> => {
     }
 }
 
+const positionAskedBy = (item: HTMLElement): number => {
+    // The position label is the only thing on screen saying *which* word is
+    // being asked for — the item testID is just the array index.
+    const label = within(item).getByText(/^Select word #\d+$/)
+    return Number(/#(\d+)/.exec(label.textContent ?? '')![1]) - 1
+}
+
+const quizItems = (): HTMLElement[] => {
+    const items: HTMLElement[] = []
+    for (let index = 0; ; index++) {
+        const item = screen.queryByTestId(`cloud_backup_verify_item_${index}`)
+        if (!item) break
+        items.push(item)
+    }
+    return items
+}
+
+const askedPositions = (): number[] => quizItems().map(positionAskedBy)
+
+const answerQuizIncorrectly = (): void => {
+    quizItems().forEach((item, index) => {
+        const correctWord = PHRASE[positionAskedBy(item)]
+        const wrongOption = within(item)
+            .getAllByTestId(
+                new RegExp(`^cloud_backup_verify_item_${index}_option_`),
+            )
+            .find(option => option.textContent !== correctWord)
+        fireEvent.click(wrongOption!)
+    })
+}
+
 const confirmEncryptionKey = async (): Promise<void> => {
     await waitFor(() =>
         expect(
@@ -271,6 +302,39 @@ describe('cloud backup verification and enable', () => {
             expect(
                 await withBackupMnemonicIndices(i => Array.from(i)),
             ).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        're-samples which words it asks for after a wrong answer',
+        async () => {
+            seedDraft()
+            renderVerifyFlow()
+
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('cloud_backup_verify_item_0'),
+                ).toBeTruthy(),
+            )
+            const before = askedPositions()
+
+            // Positions are drawn at random, so one re-roll can coincidentally
+            // land on the same three. A few wrong answers is enough to prove
+            // they aren't pinned, which is what makes the quiz grindable.
+            let changed = false
+            for (let attempt = 0; attempt < 3 && !changed; attempt++) {
+                answerQuizIncorrectly()
+                fireEvent.click(
+                    screen.getByTestId('cloud_backup_verify_proceed_button'),
+                )
+                await waitFor(() =>
+                    expect(askedPositions()).toHaveLength(before.length),
+                )
+                changed = askedPositions().join() !== before.join()
+            }
+
+            expect(changed).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
