@@ -21,7 +21,7 @@ import {
     pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
-import { useBackupQuiz, type BackupQuizItem } from '@modules/backup'
+import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -127,7 +127,7 @@ const useWrongAnswerFeedback = (): (() => void) => {
 }
 
 type UseCloudBackupVerifyScreenResult = {
-    items: BackupQuizItem[]
+    items: BackupQuizQuestion[]
     onSelect: (questionIndex: number, word: string) => void
     onSubmit: () => void
     isFilled: boolean
