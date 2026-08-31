@@ -26,7 +26,11 @@ import {
     type ImportSummary,
     type SyncImportFn,
 } from '@perawallet/wallet-core-backup'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isPeraNetworkError,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useCloudBackupImport } from './useCloudBackupImport'
 
 export type RestoreErrorCategory =
@@ -45,15 +49,12 @@ type UseRestoreCloudBackupResult = {
     restore: (params: RestoreParams) => Promise<void>
 }
 
-const statusOf = (error: unknown): number | undefined =>
-    typeof error === 'object' && error !== null && 'status' in error
-        ? (error as { status?: number }).status
-        : undefined
-
 const categorize = (error: unknown): RestoreErrorCategory => {
-    const status = statusOf(error)
-    if (status === 404) return 'NOT_FOUND'
-    if (status === 401 || status === 403) return 'INVALID_CREDENTIALS'
+    if (!isPeraNetworkError(error)) return 'UNKNOWN'
+    if (error.status === 404) return 'NOT_FOUND'
+    if (error.status === 401 || error.status === 403) {
+        return 'INVALID_CREDENTIALS'
+    }
     return 'UNKNOWN'
 }
 
