@@ -548,6 +548,112 @@
             "label": "1A"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Clave de cifrado",
+        "main": {
+            "title": "Copia de seguridad en la nube",
+            "subtitle": "Elige una opción para continuar",
+            "setup_title": "Configurar una nueva copia de seguridad en la nube",
+            "setup_description": "Protege tus cuentas y contactos con una sincronización segura en la nube. Así podrás sincronizarlos con tus otros dispositivos.",
+            "restore_title": "Restaurar/recuperar una copia de seguridad",
+            "restore_description": "Restaura tus cuentas y contactos en una app recién instalada o sincronízate con tus otros dispositivos."
+        },
+        "setup": {
+            "title": "Configurar una nueva copia de seguridad en la nube",
+            "description": "Guarda tu clave de 12 palabras y tus claves de cifrado en un lugar seguro para poder recuperar tu copia de seguridad en el futuro.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copiar al portapapeles",
+            "encryption_key_label": "Clave de cifrado",
+            "info_title": "Necesario para el cifrado local",
+            "info_body": "Estas credenciales no se pueden recuperar si las pierdes. Guárdalas en un lugar seguro para no perder el acceso a tu copia de seguridad.",
+            "proceed": "Continuar"
+        },
+        "verify": {
+            "title": "Verifica la passphrase",
+            "description": "Elige las palabras correctas para confirmar que has guardado tu clave de 12 palabras de forma segura.",
+            "select_word": "Selecciona la palabra n.º {{number}}",
+            "proceed": "Continuar",
+            "error_message": "Selección incorrecta. Vuelve a intentarlo."
+        },
+        "confirm": {
+            "title": "¿Has guardado tu clave de cifrado?",
+            "checkbox_label": "Sí, he guardado mi clave de cifrado",
+            "enable_button": "Activar la copia de seguridad en la nube",
+            "show_again_button": "Volver a mostrar mis credenciales"
+        },
+        "enable": {
+            "success": "Copia de seguridad en la nube activada",
+            "error": "No se pudo activar la copia de seguridad en la nube. Vuelve a intentarlo."
+        },
+        "credentials": {
+            "title": "Credenciales de la copia de seguridad",
+            "credential_address_label": "Dirección de credenciales",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copiar al portapapeles",
+            "passphrase_missing": "No hay ninguna Passphrase guardada en este dispositivo.",
+            "passphrase_unreadable": "No se ha podido leer tu Passphrase guardada. Restáurala desde tu copia de seguridad.",
+            "restore_button": "Restaurar copia de seguridad",
+            "done_button": "Guarda tus credenciales de forma segura"
+        },
+        "overview": {
+            "title": "Copia de seguridad en la nube",
+            "latest_sync": "Última sincronización",
+            "status_success": "CORRECTO",
+            "status_failed": "ERROR",
+            "status_syncing": "SINCRONIZANDO",
+            "protected_data": "Datos protegidos",
+            "accounts": "Cuentas",
+            "accounts_in_sync": "{{count}} cuentas sincronizadas",
+            "accounts_in_sync_one": "{{count}} cuenta sincronizada",
+            "accounts_not_backed_up": "Tienes {{count}} cuentas sin copia de seguridad",
+            "accounts_not_backed_up_one": "Tienes {{count}} cuenta sin copia de seguridad",
+            "contacts": "Contactos",
+            "contacts_in_sync": "{{count}} contactos sincronizados",
+            "contacts_in_sync_one": "{{count}} contacto sincronizado",
+            "backup_details": "Detalles de la copia de seguridad",
+            "credential_address": "Dirección de credenciales",
+            "sync_devices": "Sincronizar con otros dispositivos",
+            "sync_devices_description": "Accede a tus datos en todos tus dispositivos",
+            "turn_off": "Desactivar la copia de seguridad en la nube",
+            "turn_off_description": "Dejar de sincronizar datos en la nube"
+        },
+        "turn_off_sheet": {
+            "title": "Desactivar la copia de seguridad en la nube",
+            "description": "Tus datos dejarán de sincronizarse entre dispositivos y los datos que solo estén en este dispositivo pueden perderse si lo restableces.",
+            "keep_enabled": "Mantener activada",
+            "turn_off": "Desactivar la copia de seguridad",
+            "turn_off_and_remove": "Desactivar y eliminar la copia de seguridad"
+        },
+        "turn_off": {
+            "success": "Copia de seguridad en la nube desactivada",
+            "error": "No se pudo desactivar la copia de seguridad en la nube. Vuelve a intentarlo."
+        },
+        "turn_off_and_remove": {
+            "success": "Copia de seguridad en la nube desactivada y eliminada",
+            "partial": "Se desactivó, pero no se pudo eliminar la copia en la nube",
+            "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo."
+        },
+        "restore": {
+            "sheet_title": "Restaurar desde una copia de seguridad",
+            "sheet_description": "Introduce tu frase de copia de seguridad de 12 palabras y tu clave de cifrado para restaurar tus cuentas en este dispositivo.",
+            "sheet_continue": "Continuar",
+            "passphrase_title": "Introduce tu frase de copia de seguridad",
+            "passphrase_continue": "Continuar",
+            "too_many_words_title": "Frase de copia de seguridad no válida",
+            "too_many_words_body": "La frase que pegaste contiene demasiadas palabras.",
+            "insufficient_slots_title": "Frase de copia de seguridad no válida",
+            "insufficient_slots_body": "La frase que pegaste no cabe en los campos restantes.",
+            "encryption_key_title": "Introduce tu clave de cifrado",
+            "encryption_key_placeholder": "Pega tu clave de cifrado",
+            "encryption_key_restore": "Restaurar copia de seguridad",
+            "restoring": "Restaurando tu copia de seguridad…",
+            "error_not_found": "No se encontró ninguna copia de seguridad para estas credenciales.",
+            "error_invalid_credentials": "La frase de copia de seguridad o la clave de cifrado son incorrectas.",
+            "error_unknown": "Algo ha ido mal. Vuelve a intentarlo.",
+            "success": "Copia de seguridad restaurada",
+            "partial_success": "No se pudieron restaurar {{count}} cuentas."
+        }
+    },
     "common": {
         "offline_mode": "Modo sin conexión",
         "offline_mode_description": "Es posible que los saldos no estén actualizados y algunas acciones no estén disponibles hasta que vuelvas a conectarte.",

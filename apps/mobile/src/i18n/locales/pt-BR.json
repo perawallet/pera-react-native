@@ -548,6 +548,112 @@
             "label": "1A"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Chave de criptografia",
+        "main": {
+            "title": "Backup na nuvem",
+            "subtitle": "Escolha uma opção para continuar",
+            "setup_title": "Configurar um novo backup na nuvem",
+            "setup_description": "Proteja suas contas e contatos com sincronização segura na nuvem. Assim você poderá sincronizá-los com seus outros dispositivos.",
+            "restore_title": "Restaurar/recuperar um backup",
+            "restore_description": "Restaure suas contas e contatos em um app recém-instalado ou sincronize com seus outros dispositivos."
+        },
+        "setup": {
+            "title": "Configurar um novo backup na nuvem",
+            "description": "Guarde sua chave de 12 palavras e suas chaves de criptografia com segurança para recuperar seu backup no futuro.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copiar para a área de transferência",
+            "encryption_key_label": "Chave de criptografia",
+            "info_title": "Necessário para a criptografia local",
+            "info_body": "Essas credenciais não podem ser recuperadas se forem perdidas. Guarde-as com segurança para não perder o acesso ao seu backup.",
+            "proceed": "Continuar"
+        },
+        "verify": {
+            "title": "Verificar a passphrase",
+            "description": "Escolha as palavras corretas para confirmar que você guardou sua chave de 12 palavras com segurança.",
+            "select_word": "Selecione a palavra nº {{number}}",
+            "proceed": "Continuar",
+            "error_message": "Seleção incorreta. Tente novamente."
+        },
+        "confirm": {
+            "title": "Você guardou sua chave de criptografia?",
+            "checkbox_label": "Sim, guardei minha chave de criptografia",
+            "enable_button": "Ativar o backup na nuvem agora",
+            "show_again_button": "Mostrar minhas credenciais novamente"
+        },
+        "enable": {
+            "success": "Backup na nuvem ativado",
+            "error": "Não foi possível ativar o backup na nuvem. Tente novamente."
+        },
+        "credentials": {
+            "title": "Credenciais do backup",
+            "credential_address_label": "Endereço das credenciais",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copiar para a área de transferência",
+            "passphrase_missing": "Nenhuma Passphrase está armazenada neste dispositivo.",
+            "passphrase_unreadable": "Não foi possível ler sua Passphrase armazenada. Restaure-a a partir do seu backup.",
+            "restore_button": "Restaurar backup",
+            "done_button": "Guarde suas credenciais com segurança"
+        },
+        "overview": {
+            "title": "Backup na nuvem",
+            "latest_sync": "Última sincronização",
+            "status_success": "CONCLUÍDO",
+            "status_failed": "FALHA",
+            "status_syncing": "SINCRONIZANDO",
+            "protected_data": "Dados protegidos",
+            "accounts": "Contas",
+            "accounts_in_sync": "{{count}} contas sincronizadas",
+            "accounts_in_sync_one": "{{count}} conta sincronizada",
+            "accounts_not_backed_up": "Você tem {{count}} contas sem backup",
+            "accounts_not_backed_up_one": "Você tem {{count}} conta sem backup",
+            "contacts": "Contatos",
+            "contacts_in_sync": "{{count}} contatos sincronizados",
+            "contacts_in_sync_one": "{{count}} contato sincronizado",
+            "backup_details": "Detalhes do backup",
+            "credential_address": "Endereço das credenciais",
+            "sync_devices": "Sincronizar com outros dispositivos",
+            "sync_devices_description": "Acesse seus dados em todos os dispositivos",
+            "turn_off": "Desativar o backup na nuvem",
+            "turn_off_description": "Parar de sincronizar dados com a nuvem"
+        },
+        "turn_off_sheet": {
+            "title": "Desativar o backup na nuvem",
+            "description": "Seus dados não serão mais sincronizados entre dispositivos e os dados que existem apenas neste dispositivo podem ser perdidos se ele for redefinido.",
+            "keep_enabled": "Manter ativado",
+            "turn_off": "Desativar backup",
+            "turn_off_and_remove": "Desativar e excluir backup"
+        },
+        "turn_off": {
+            "success": "Backup na nuvem desativado",
+            "error": "Não foi possível desativar o backup na nuvem. Tente novamente."
+        },
+        "turn_off_and_remove": {
+            "success": "Backup na nuvem desativado e excluído",
+            "partial": "Desativado, mas não foi possível excluir a cópia na nuvem",
+            "error": "Não foi possível excluir o backup na nuvem. Tente novamente."
+        },
+        "restore": {
+            "sheet_title": "Restaurar de um backup",
+            "sheet_description": "Digite sua frase de backup de 12 palavras e sua chave de criptografia para restaurar suas contas neste dispositivo.",
+            "sheet_continue": "Continuar",
+            "passphrase_title": "Digite sua frase de backup",
+            "passphrase_continue": "Continuar",
+            "too_many_words_title": "Frase de backup inválida",
+            "too_many_words_body": "A frase que você colou contém palavras demais.",
+            "insufficient_slots_title": "Frase de backup inválida",
+            "insufficient_slots_body": "A frase que você colou não cabe nos campos restantes.",
+            "encryption_key_title": "Digite sua chave de criptografia",
+            "encryption_key_placeholder": "Cole sua chave de criptografia",
+            "encryption_key_restore": "Restaurar backup",
+            "restoring": "Restaurando seu backup…",
+            "error_not_found": "Nenhum backup encontrado para essas credenciais.",
+            "error_invalid_credentials": "Frase de backup ou chave de criptografia incorreta.",
+            "error_unknown": "Algo deu errado. Tente novamente.",
+            "success": "Backup restaurado",
+            "partial_success": "Não foi possível restaurar {{count}} contas."
+        }
+    },
     "common": {
         "offline_mode": "Modo offline",
         "offline_mode_description": "Os saldos podem estar desatualizados e algumas ações ficam indisponíveis até você se reconectar.",

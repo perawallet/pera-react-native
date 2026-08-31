@@ -691,6 +691,22 @@ export default defineConfig({
             },
             {
                 extends: true,
+                resolve: {
+                    alias: [
+                        {
+                            // Node < 24 has no `crypto.argon2`, and the app gets
+                            // it from react-native-quick-crypto. Flow tests that
+                            // reach the cloud-backup KDF would throw without a
+                            // stand-in; unit tests don't, so scope this to the
+                            // integration project.
+                            find: /^crypto$/,
+                            replacement: path.resolve(
+                                __dirname,
+                                './src/test-utils/node-crypto-with-argon2.ts',
+                            ),
+                        },
+                    ],
+                },
                 test: {
                     name: 'integration',
                     setupFiles: [

@@ -548,6 +548,112 @@
             "label": "1A"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Clé de chiffrement",
+        "main": {
+            "title": "Sauvegarde cloud",
+            "subtitle": "Choisissez une option pour continuer",
+            "setup_title": "Configurer une nouvelle sauvegarde cloud",
+            "setup_description": "Protégez vos comptes et vos contacts grâce à une synchronisation cloud sécurisée. Vous pourrez ainsi les synchroniser avec vos autres appareils.",
+            "restore_title": "Restaurer/récupérer une sauvegarde",
+            "restore_description": "Restaurez vos comptes et vos contacts sur une application fraîchement installée, ou synchronisez-vous avec vos autres appareils."
+        },
+        "setup": {
+            "title": "Configurer une nouvelle sauvegarde cloud",
+            "description": "Conservez votre clé de 12 mots et vos clés de chiffrement en lieu sûr afin de pouvoir récupérer votre sauvegarde plus tard.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copier dans le presse-papiers",
+            "encryption_key_label": "Clé de chiffrement",
+            "info_title": "Requis pour le chiffrement local",
+            "info_body": "Ces identifiants sont irrécupérables en cas de perte. Conservez-les en lieu sûr pour ne pas perdre l’accès à votre sauvegarde.",
+            "proceed": "Continuer"
+        },
+        "verify": {
+            "title": "Vérifier la passphrase",
+            "description": "Choisissez les bons mots pour confirmer que vous avez conservé votre clé de 12 mots en lieu sûr.",
+            "select_word": "Sélectionnez le mot n° {{number}}",
+            "proceed": "Continuer",
+            "error_message": "Sélection incorrecte. Veuillez réessayer."
+        },
+        "confirm": {
+            "title": "Avez-vous enregistré votre clé de chiffrement ?",
+            "checkbox_label": "Oui, j’ai enregistré ma clé de chiffrement",
+            "enable_button": "Activer la sauvegarde cloud maintenant",
+            "show_again_button": "Afficher à nouveau mes identifiants"
+        },
+        "enable": {
+            "success": "Sauvegarde cloud activée",
+            "error": "Impossible d’activer la sauvegarde cloud. Veuillez réessayer."
+        },
+        "credentials": {
+            "title": "Identifiants de sauvegarde",
+            "credential_address_label": "Adresse d’identification",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copier dans le presse-papiers",
+            "passphrase_missing": "Aucune Passphrase n’est enregistrée sur cet appareil.",
+            "passphrase_unreadable": "Votre Passphrase enregistrée n’a pas pu être lue. Restaurez-la depuis votre sauvegarde.",
+            "restore_button": "Restaurer la sauvegarde",
+            "done_button": "Conservez vos identifiants en lieu sûr"
+        },
+        "overview": {
+            "title": "Sauvegarde cloud",
+            "latest_sync": "Dernière synchronisation",
+            "status_success": "RÉUSSI",
+            "status_failed": "ÉCHEC",
+            "status_syncing": "SYNCHRONISATION",
+            "protected_data": "Données protégées",
+            "accounts": "Comptes",
+            "accounts_in_sync": "{{count}} comptes synchronisés",
+            "accounts_in_sync_one": "{{count}} compte synchronisé",
+            "accounts_not_backed_up": "Vous avez {{count}} comptes sans sauvegarde",
+            "accounts_not_backed_up_one": "Vous avez {{count}} compte sans sauvegarde",
+            "contacts": "Contacts",
+            "contacts_in_sync": "{{count}} contacts synchronisés",
+            "contacts_in_sync_one": "{{count}} contact synchronisé",
+            "backup_details": "Détails de la sauvegarde",
+            "credential_address": "Adresse d’identification",
+            "sync_devices": "Synchroniser avec d’autres appareils",
+            "sync_devices_description": "Accédez à vos données sur tous vos appareils",
+            "turn_off": "Désactiver la sauvegarde cloud",
+            "turn_off_description": "Arrêter de synchroniser les données vers le cloud"
+        },
+        "turn_off_sheet": {
+            "title": "Désactiver la sauvegarde cloud",
+            "description": "Vos données ne seront plus synchronisées entre vos appareils et les données présentes uniquement sur cet appareil pourraient être perdues s’il est réinitialisé.",
+            "keep_enabled": "Garder activée",
+            "turn_off": "Désactiver la sauvegarde",
+            "turn_off_and_remove": "Désactiver et supprimer la sauvegarde"
+        },
+        "turn_off": {
+            "success": "Sauvegarde cloud désactivée",
+            "error": "Impossible de désactiver la sauvegarde cloud. Veuillez réessayer."
+        },
+        "turn_off_and_remove": {
+            "success": "Sauvegarde cloud désactivée et supprimée",
+            "partial": "Désactivée, mais la copie dans le cloud n’a pas pu être supprimée",
+            "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer."
+        },
+        "restore": {
+            "sheet_title": "Restaurer depuis une sauvegarde",
+            "sheet_description": "Saisissez votre phrase de sauvegarde de 12 mots et votre clé de chiffrement pour restaurer vos comptes sur cet appareil.",
+            "sheet_continue": "Continuer",
+            "passphrase_title": "Saisissez votre phrase de sauvegarde",
+            "passphrase_continue": "Continuer",
+            "too_many_words_title": "Phrase de sauvegarde invalide",
+            "too_many_words_body": "La phrase que vous avez collée contient trop de mots.",
+            "insufficient_slots_title": "Phrase de sauvegarde invalide",
+            "insufficient_slots_body": "La phrase que vous avez collée ne tient pas dans les champs restants.",
+            "encryption_key_title": "Saisissez votre clé de chiffrement",
+            "encryption_key_placeholder": "Collez votre clé de chiffrement",
+            "encryption_key_restore": "Restaurer la sauvegarde",
+            "restoring": "Restauration de votre sauvegarde…",
+            "error_not_found": "Aucune sauvegarde trouvée pour ces identifiants.",
+            "error_invalid_credentials": "Phrase de sauvegarde ou clé de chiffrement incorrecte.",
+            "error_unknown": "Une erreur est survenue. Veuillez réessayer.",
+            "success": "Sauvegarde restaurée",
+            "partial_success": "{{count}} comptes n’ont pas pu être restaurés."
+        }
+    },
     "common": {
         "offline_mode": "Mode hors ligne",
         "offline_mode_description": "Les soldes peuvent ne pas être à jour et certaines actions sont indisponibles jusqu’à votre reconnexion.",

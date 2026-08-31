@@ -548,6 +548,112 @@
             "label": "1Y"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Encryption Key",
+        "main": {
+            "title": "Cloud Backup",
+            "subtitle": "Choose an option to proceed",
+            "setup_title": "Set Up a new Cloud Backup",
+            "setup_description": "Protect your accounts and contacts with secure cloud synchronization. This will allow you to sync them with your other devices.",
+            "restore_title": "Restore/Retrieve a Backup",
+            "restore_description": "Restore your accounts and contacts on a fresh app or get synched with your other devices."
+        },
+        "setup": {
+            "title": "Set Up a new Cloud Backup",
+            "description": "Store your 12-word key and encryption keys securely to retrieve your backup in the future.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copy to Clipboard",
+            "encryption_key_label": "Encryption Key",
+            "info_title": "Required for local encryption",
+            "info_body": "These credentials are unrecoverable if lost. Store them securely to avoid losing access to your backup.",
+            "proceed": "Proceed"
+        },
+        "verify": {
+            "title": "Verify Passphrase",
+            "description": "Choose the correct words to confirm you’ve stored your 12-word key securely.",
+            "select_word": "Select word #{{number}}",
+            "proceed": "Proceed",
+            "error_message": "Incorrect selection. Please try again."
+        },
+        "confirm": {
+            "title": "Have you stored your Encryption Key?",
+            "checkbox_label": "Yes, I stored my Encryption Key",
+            "enable_button": "Enable Cloud Backup now",
+            "show_again_button": "Show my credentials again"
+        },
+        "enable": {
+            "success": "Cloud Backup enabled",
+            "error": "Couldn’t enable Cloud Backup. Please try again."
+        },
+        "credentials": {
+            "title": "Backup Credentials",
+            "credential_address_label": "Credential Address",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copy to Clipboard",
+            "passphrase_missing": "No Passphrase is stored on this device.",
+            "passphrase_unreadable": "Your stored Passphrase couldn’t be read. Restore from your backup to set it up again.",
+            "restore_button": "Restore Backup",
+            "done_button": "Store your Credentials Securely"
+        },
+        "overview": {
+            "title": "Cloud Backup",
+            "latest_sync": "Latest Sync",
+            "status_success": "SUCCESS",
+            "status_failed": "FAILED",
+            "status_syncing": "SYNCING",
+            "protected_data": "Protected Data",
+            "accounts": "Accounts",
+            "accounts_in_sync": "{{count}} accounts in sync",
+            "accounts_in_sync_one": "{{count}} account in sync",
+            "accounts_not_backed_up": "You have {{count}} accounts not backed up",
+            "accounts_not_backed_up_one": "You have {{count}} account not backed up",
+            "contacts": "Contacts",
+            "contacts_in_sync": "{{count}} contacts in sync",
+            "contacts_in_sync_one": "{{count}} contact in sync",
+            "backup_details": "Backup Details",
+            "credential_address": "Credential Address",
+            "sync_devices": "Sync with other devices",
+            "sync_devices_description": "Access your data on all devices",
+            "turn_off": "Turn Off Cloud Backup",
+            "turn_off_description": "Stop syncing data to the cloud"
+        },
+        "turn_off_sheet": {
+            "title": "Turn Off Cloud Backup",
+            "description": "Your data will no longer be synced across devices and local-only data may be lost if this device is reset.",
+            "keep_enabled": "Keep Enabled",
+            "turn_off": "Turn Off Backup",
+            "turn_off_and_remove": "Turn Off & Remove Backup"
+        },
+        "turn_off": {
+            "success": "Cloud Backup turned off",
+            "error": "Couldn’t turn off Cloud Backup. Please try again."
+        },
+        "turn_off_and_remove": {
+            "success": "Cloud Backup turned off and removed",
+            "partial": "Turned off, but the cloud copy couldn’t be removed",
+            "error": "Couldn’t remove Cloud Backup. Please try again."
+        },
+        "restore": {
+            "sheet_title": "Restore from backup",
+            "sheet_description": "Enter your 12-word backup phrase and your encryption key to restore your accounts on this device.",
+            "sheet_continue": "Continue",
+            "passphrase_title": "Enter your backup phrase",
+            "passphrase_continue": "Continue",
+            "too_many_words_title": "Invalid backup phrase",
+            "too_many_words_body": "The phrase you pasted contains too many words.",
+            "insufficient_slots_title": "Invalid backup phrase",
+            "insufficient_slots_body": "The phrase you pasted does not fit in the remaining slots.",
+            "encryption_key_title": "Enter your encryption key",
+            "encryption_key_placeholder": "Paste your encryption key",
+            "encryption_key_restore": "Restore backup",
+            "restoring": "Restoring your backup…",
+            "error_not_found": "No backup found for these credentials.",
+            "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
+            "error_unknown": "Something went wrong. Please try again.",
+            "success": "Backup restored",
+            "partial_success": "{{count}} accounts couldn’t be restored."
+        }
+    },
     "common": {
         "offline_mode": "Offline Mode",
         "offline_mode_description": "Balances may be out of date and some actions are unavailable until you reconnect.",

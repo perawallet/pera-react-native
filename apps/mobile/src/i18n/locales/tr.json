@@ -548,6 +548,112 @@
             "label": "1Y"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Şifreleme anahtarı",
+        "main": {
+            "title": "Bulut yedekleme",
+            "subtitle": "Devam etmek için bir seçenek seç",
+            "setup_title": "Yeni bir bulut yedeklemesi oluştur",
+            "setup_description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru. Böylece onları diğer cihazlarınla eşitleyebilirsin.",
+            "restore_title": "Yedeklemeyi geri yükle/al",
+            "restore_description": "Hesaplarını ve kişilerini yeni kurulmuş bir uygulamada geri yükle ya da diğer cihazlarınla eşitle."
+        },
+        "setup": {
+            "title": "Yeni bir bulut yedeklemesi oluştur",
+            "description": "Yedeklemene gelecekte ulaşabilmek için 12 kelimelik anahtarını ve şifreleme anahtarlarını güvenli bir yerde sakla.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Panoya kopyala",
+            "encryption_key_label": "Şifreleme anahtarı",
+            "info_title": "Yerel şifreleme için gerekli",
+            "info_body": "Bu kimlik bilgileri kaybolursa geri alınamaz. Yedeklemene erişimini kaybetmemek için onları güvenli bir yerde sakla.",
+            "proceed": "Devam et"
+        },
+        "verify": {
+            "title": "Passphrase’i doğrula",
+            "description": "12 kelimelik anahtarını güvenle sakladığını onaylamak için doğru kelimeleri seç.",
+            "select_word": "{{number}}. kelimeyi seç",
+            "proceed": "Devam et",
+            "error_message": "Yanlış seçim. Lütfen tekrar dene."
+        },
+        "confirm": {
+            "title": "Şifreleme anahtarını sakladın mı?",
+            "checkbox_label": "Evet, şifreleme anahtarımı sakladım",
+            "enable_button": "Bulut yedeklemeyi şimdi etkinleştir",
+            "show_again_button": "Kimlik bilgilerimi tekrar göster"
+        },
+        "enable": {
+            "success": "Bulut yedekleme etkinleştirildi",
+            "error": "Bulut yedekleme etkinleştirilemedi. Lütfen tekrar dene."
+        },
+        "credentials": {
+            "title": "Yedekleme kimlik bilgileri",
+            "credential_address_label": "Kimlik bilgisi adresi",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Panoya kopyala",
+            "passphrase_missing": "Bu cihazda kayıtlı bir Passphrase yok.",
+            "passphrase_unreadable": "Kayıtlı Passphrase okunamadı. Yedeklemenden geri yükle.",
+            "restore_button": "Yedeklemeyi geri yükle",
+            "done_button": "Kimlik bilgilerini güvenle sakla"
+        },
+        "overview": {
+            "title": "Bulut yedekleme",
+            "latest_sync": "Son eşitleme",
+            "status_success": "BAŞARILI",
+            "status_failed": "BAŞARISIZ",
+            "status_syncing": "EŞİTLENİYOR",
+            "protected_data": "Korunan veriler",
+            "accounts": "Hesaplar",
+            "accounts_in_sync": "{{count}} hesap eşitlendi",
+            "accounts_in_sync_one": "{{count}} hesap eşitlendi",
+            "accounts_not_backed_up": "Yedeklenmemiş {{count}} hesabın var",
+            "accounts_not_backed_up_one": "Yedeklenmemiş {{count}} hesabın var",
+            "contacts": "Kişiler",
+            "contacts_in_sync": "{{count}} kişi eşitlendi",
+            "contacts_in_sync_one": "{{count}} kişi eşitlendi",
+            "backup_details": "Yedekleme detayları",
+            "credential_address": "Kimlik bilgisi adresi",
+            "sync_devices": "Diğer cihazlarla eşitle",
+            "sync_devices_description": "Verilerine tüm cihazlarından eriş",
+            "turn_off": "Bulut yedeklemeyi kapat",
+            "turn_off_description": "Verileri buluta eşitlemeyi durdur"
+        },
+        "turn_off_sheet": {
+            "title": "Bulut yedeklemeyi kapat",
+            "description": "Verilerin artık cihazlar arasında eşitlenmeyecek ve bu cihaz sıfırlanırsa yalnızca burada bulunan veriler kaybolabilir.",
+            "keep_enabled": "Açık bırak",
+            "turn_off": "Yedeklemeyi kapat",
+            "turn_off_and_remove": "Kapat ve yedeklemeyi sil"
+        },
+        "turn_off": {
+            "success": "Bulut yedekleme kapatıldı",
+            "error": "Bulut yedekleme kapatılamadı. Lütfen tekrar dene."
+        },
+        "turn_off_and_remove": {
+            "success": "Bulut yedekleme kapatıldı ve silindi",
+            "partial": "Kapatıldı ancak buluttaki kopya silinemedi",
+            "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene."
+        },
+        "restore": {
+            "sheet_title": "Yedeklemeden geri yükle",
+            "sheet_description": "Hesaplarını bu cihazda geri yüklemek için 12 kelimelik yedekleme ifadeni ve şifreleme anahtarını gir.",
+            "sheet_continue": "Devam et",
+            "passphrase_title": "Yedekleme ifadeni gir",
+            "passphrase_continue": "Devam et",
+            "too_many_words_title": "Geçersiz yedekleme ifadesi",
+            "too_many_words_body": "Yapıştırdığın ifade çok fazla kelime içeriyor.",
+            "insufficient_slots_title": "Geçersiz yedekleme ifadesi",
+            "insufficient_slots_body": "Yapıştırdığın ifade kalan alanlara sığmıyor.",
+            "encryption_key_title": "Şifreleme anahtarını gir",
+            "encryption_key_placeholder": "Şifreleme anahtarını yapıştır",
+            "encryption_key_restore": "Yedeklemeyi geri yükle",
+            "restoring": "Yedeklemen geri yükleniyor…",
+            "error_not_found": "Bu kimlik bilgileri için yedekleme bulunamadı.",
+            "error_invalid_credentials": "Yedekleme ifadesi veya şifreleme anahtarı yanlış.",
+            "error_unknown": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+            "success": "Yedekleme geri yüklendi",
+            "partial_success": "{{count}} hesap geri yüklenemedi."
+        }
+    },
     "common": {
         "offline_mode": "Çevrimdışı mod",
         "offline_mode_description": "Bakiyeler güncel olmayabilir ve yeniden bağlanana kadar bazı özellikler kullanılamaz.",

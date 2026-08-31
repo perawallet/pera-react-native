@@ -540,6 +540,112 @@
             "label": "1J"
         }
     },
+    "cloud_backup": {
+        "encryption_key_label": "Verschlüsselungsschlüssel",
+        "main": {
+            "title": "Cloud-Backup",
+            "subtitle": "Wähle eine Option, um fortzufahren",
+            "setup_title": "Neues Cloud-Backup einrichten",
+            "setup_description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung. So kannst du sie mit deinen anderen Geräten synchronisieren.",
+            "restore_title": "Backup wiederherstellen/abrufen",
+            "restore_description": "Stelle deine Konten und Kontakte in einer frisch installierten App wieder her oder synchronisiere sie mit deinen anderen Geräten."
+        },
+        "setup": {
+            "title": "Neues Cloud-Backup einrichten",
+            "description": "Bewahre deinen 12-Wort-Schlüssel und deine Verschlüsselungsschlüssel sicher auf, um dein Backup später abrufen zu können.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "In die Zwischenablage kopieren",
+            "encryption_key_label": "Verschlüsselungsschlüssel",
+            "info_title": "Für die lokale Verschlüsselung erforderlich",
+            "info_body": "Diese Zugangsdaten können nicht wiederhergestellt werden, wenn sie verloren gehen. Bewahre sie sicher auf, damit du den Zugriff auf dein Backup nicht verlierst.",
+            "proceed": "Fortfahren"
+        },
+        "verify": {
+            "title": "Passphrase überprüfen",
+            "description": "Wähle die richtigen Wörter aus, um zu bestätigen, dass du deinen 12-Wort-Schlüssel sicher aufbewahrt hast.",
+            "select_word": "Wort Nr. {{number}} auswählen",
+            "proceed": "Fortfahren",
+            "error_message": "Falsche Auswahl. Bitte versuche es erneut."
+        },
+        "confirm": {
+            "title": "Hast du deinen Verschlüsselungsschlüssel gespeichert?",
+            "checkbox_label": "Ja, ich habe meinen Verschlüsselungsschlüssel gespeichert",
+            "enable_button": "Cloud-Backup jetzt aktivieren",
+            "show_again_button": "Meine Zugangsdaten erneut anzeigen"
+        },
+        "enable": {
+            "success": "Cloud-Backup aktiviert",
+            "error": "Cloud-Backup konnte nicht aktiviert werden. Bitte versuche es erneut."
+        },
+        "credentials": {
+            "title": "Backup-Zugangsdaten",
+            "credential_address_label": "Zugangsdaten-Adresse",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "In die Zwischenablage kopieren",
+            "passphrase_missing": "Auf diesem Gerät ist keine Passphrase gespeichert.",
+            "passphrase_unreadable": "Deine gespeicherte Passphrase konnte nicht gelesen werden. Stelle sie aus deinem Backup wieder her.",
+            "restore_button": "Backup wiederherstellen",
+            "done_button": "Bewahre deine Zugangsdaten sicher auf"
+        },
+        "overview": {
+            "title": "Cloud-Backup",
+            "latest_sync": "Letzte Synchronisierung",
+            "status_success": "ERFOLGREICH",
+            "status_failed": "FEHLGESCHLAGEN",
+            "status_syncing": "SYNCHRONISIERUNG",
+            "protected_data": "Geschützte Daten",
+            "accounts": "Konten",
+            "accounts_in_sync": "{{count}} Konten synchronisiert",
+            "accounts_in_sync_one": "{{count}} Konto synchronisiert",
+            "accounts_not_backed_up": "Du hast {{count}} Konten ohne Backup",
+            "accounts_not_backed_up_one": "Du hast {{count}} Konto ohne Backup",
+            "contacts": "Kontakte",
+            "contacts_in_sync": "{{count}} Kontakte synchronisiert",
+            "contacts_in_sync_one": "{{count}} Kontakt synchronisiert",
+            "backup_details": "Backup-Details",
+            "credential_address": "Zugangsdaten-Adresse",
+            "sync_devices": "Mit anderen Geräten synchronisieren",
+            "sync_devices_description": "Greife auf all deinen Geräten auf deine Daten zu",
+            "turn_off": "Cloud-Backup deaktivieren",
+            "turn_off_description": "Keine Daten mehr in die Cloud synchronisieren"
+        },
+        "turn_off_sheet": {
+            "title": "Cloud-Backup deaktivieren",
+            "description": "Deine Daten werden nicht mehr zwischen Geräten synchronisiert und nur lokal gespeicherte Daten können verloren gehen, wenn dieses Gerät zurückgesetzt wird.",
+            "keep_enabled": "Aktiviert lassen",
+            "turn_off": "Backup deaktivieren",
+            "turn_off_and_remove": "Deaktivieren & Backup löschen"
+        },
+        "turn_off": {
+            "success": "Cloud-Backup deaktiviert",
+            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut."
+        },
+        "turn_off_and_remove": {
+            "success": "Cloud-Backup deaktiviert und gelöscht",
+            "partial": "Deaktiviert, aber die Kopie in der Cloud konnte nicht gelöscht werden",
+            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut."
+        },
+        "restore": {
+            "sheet_title": "Aus Backup wiederherstellen",
+            "sheet_description": "Gib deine 12-Wort-Backup-Phrase und deinen Verschlüsselungsschlüssel ein, um deine Konten auf diesem Gerät wiederherzustellen.",
+            "sheet_continue": "Weiter",
+            "passphrase_title": "Gib deine Backup-Phrase ein",
+            "passphrase_continue": "Weiter",
+            "too_many_words_title": "Ungültige Backup-Phrase",
+            "too_many_words_body": "Die eingefügte Phrase enthält zu viele Wörter.",
+            "insufficient_slots_title": "Ungültige Backup-Phrase",
+            "insufficient_slots_body": "Die eingefügte Phrase passt nicht in die verbleibenden Felder.",
+            "encryption_key_title": "Gib deinen Verschlüsselungsschlüssel ein",
+            "encryption_key_placeholder": "Verschlüsselungsschlüssel einfügen",
+            "encryption_key_restore": "Backup wiederherstellen",
+            "restoring": "Dein Backup wird wiederhergestellt …",
+            "error_not_found": "Kein Backup für diese Zugangsdaten gefunden.",
+            "error_invalid_credentials": "Falsche Backup-Phrase oder falscher Verschlüsselungsschlüssel.",
+            "error_unknown": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+            "success": "Backup wiederhergestellt",
+            "partial_success": "{{count}} Konten konnten nicht wiederhergestellt werden."
+        }
+    },
     "common": {
         "offline_mode": "Offline-Modus",
         "offline_mode_description": "Guthaben sind möglicherweise nicht aktuell und einige Aktionen sind nicht verfügbar, bis du wieder online bist.",

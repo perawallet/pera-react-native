@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { pbkdf2, createHash } from 'crypto'
+import { pbkdf2 } from 'crypto'
+import { sha256 } from '@noble/hashes/sha2.js'
 import {
     generateMnemonic,
     mnemonicToEntropy,
@@ -111,9 +112,10 @@ export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
         )
     }
     const checksumBitCount = entropyBits / ENTROPY_BITS_PER_CHECKSUM_BIT // 4..8
-    const checksum =
-        createHash('sha256').update(entropy).digest()[0] >>
-        (BITS_PER_BYTE - checksumBitCount)
+    // `@noble/hashes`, not Node's `createHash`: the built bundles stub the
+    // `crypto` module to `{}`, so a dist consumer without a host-level crypto
+    // alias (metro / the web shims) would get `undefined` here.
+    const checksum = sha256(entropy)[0] >> (BITS_PER_BYTE - checksumBitCount)
 
     const indices = new Uint16Array(
         (entropyBits + checksumBitCount) / BITS_PER_MNEMONIC_WORD,

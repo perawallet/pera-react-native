@@ -28,6 +28,7 @@ export {
     type PreparedHDMasterKey,
 } from './crypto/prepare-hd-master-key'
 export {
+    entropyToIndices,
     entropyToMnemonic,
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
