@@ -18,13 +18,12 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
         overflow: 'hidden',
-        marginTop: theme.spacing.lg,
+        marginTop: theme.spacing.sm,
     },
     header: {
         flexShrink: 0,
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
         gap: theme.spacing.lg,
     },
     headerRow: {
@@ -32,12 +31,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: theme.spacing.sm,
-        width: '100%',
-        minWidth: 0,
-    },
-    pager: {
-        flex: 1,
-        minHeight: 0,
         width: '100%',
         minWidth: 0,
     },
@@ -51,27 +44,5 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    selectHeader: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
-    },
-    selectTitle: {
-        minWidth: 0,
-    },
-    selectDescription: {
-        color: theme.colors.textGray,
-        minWidth: 0,
-    },
-    accountTrigger: {
-        flexGrow: 0,
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '100%',
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        paddingVertical: theme.spacing.xs,
     },
 }))

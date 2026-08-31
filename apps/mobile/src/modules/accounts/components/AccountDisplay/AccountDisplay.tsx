@@ -171,7 +171,7 @@ export const AccountDisplay = ({
             {showChevron && (
                 <PWIcon
                     variant='secondary'
-                    name='chevron-down'
+                    name='chevron-right'
                     {...chevronProps}
                 />
             )}
