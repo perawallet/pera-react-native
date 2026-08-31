@@ -48,6 +48,17 @@ const RETRYABLE_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
     unknown: false,
 }
 
+// Mirrors RETRYABLE_BY_KIND deliberately: a failure a retry might fix is one
+// the environment caused, not our code. `client` stays reportable because a 4xx
+// we sent is usually our bug.
+const EXPECTED_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
+    offline: true,
+    timeout: true,
+    server: true,
+    client: false,
+    unknown: false,
+}
+
 const SEVERITY_BY_KIND: Record<PeraNetworkErrorKind, ErrorSeverity> = {
     offline: ErrorSeverity.MEDIUM,
     timeout: ErrorSeverity.MEDIUM,
@@ -86,6 +97,7 @@ export class PeraNetworkError extends AppError {
                 severity: SEVERITY_BY_KIND[kind],
                 category: ErrorCategory.NETWORK,
                 retryable: RETRYABLE_BY_KIND[kind],
+                expected: EXPECTED_BY_KIND[kind],
             },
             originalError,
         )

@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { HTTPError, NetworkError, TimeoutError } from 'ky'
 import { AppError, ErrorCategory } from '../base'
+import { isExpectedError } from '../expected'
 import { NoConnectionError } from '../network-validation'
 import {
     PeraNetworkError,
@@ -299,5 +300,18 @@ describe('isNotFoundError', () => {
         expect(isNotFoundError({ response: { status: 404 } })).toBe(true)
         expect(isNotFoundError({ response: { status: 500 } })).toBe(false)
         expect(isNotFoundError(null)).toBe(false)
+    })
+})
+
+describe('expected-error classification', () => {
+    test.each(['offline', 'timeout', 'server'] as const)(
+        '%s is expected',
+        kind => {
+            expect(isExpectedError(new PeraNetworkError(kind))).toBe(true)
+        },
+    )
+
+    test.each(['client', 'unknown'] as const)('%s is not expected', kind => {
+        expect(isExpectedError(new PeraNetworkError(kind))).toBe(false)
     })
 })
