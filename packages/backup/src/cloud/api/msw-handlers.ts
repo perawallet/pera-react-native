@@ -13,6 +13,12 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import type { BackupId, BackupItemKey } from '../models'
+import { API_PREFIX, backupRoot } from './constants'
+
+/** Host-agnostic match for one backup's routes: the handlers are mounted against
+ *  whatever base URL the caller's client uses. */
+const backupRootPattern = (backupId: BackupId): string =>
+    `*${backupRoot(backupId)}`
 
 export type RestoreFixtureItem = {
     /** The backup item key (e.g. an account address). */
@@ -46,69 +52,63 @@ export const buildRestoreHandlers = ({
         seq: index + 1,
     }))
 
-    const encodedBackupId = encodeURIComponent(backupId)
+    const root = backupRootPattern(backupId)
 
-    const manifestHandler = http.get(
-        `*/api/v3/backup/${encodedBackupId}/manifest`,
-        () => {
-            const manifestItems: Record<
-                string,
-                {
-                    key: string
-                    type: 'ACCOUNT'
-                    ver: number
-                    status: 'ACTIVE'
-                    hash: string
-                    last_seq: number
-                }
-            > = {}
-
-            for (const item of resolvedItems) {
-                manifestItems[item.key] = {
-                    key: item.key,
-                    type: 'ACCOUNT',
-                    ver: item.ver,
-                    status: 'ACTIVE',
-                    hash: item.hash,
-                    last_seq: item.seq,
-                }
+    const manifestHandler = http.get(`${root}/manifest`, () => {
+        const manifestItems: Record<
+            string,
+            {
+                key: string
+                type: 'ACCOUNT'
+                ver: number
+                status: 'ACTIVE'
+                hash: string
+                last_seq: number
             }
+        > = {}
 
-            return HttpResponse.json({
-                backup_id: backupId,
-                backup_global_hash: 'sha256:global',
-                global_version: resolvedItems.length,
-                last_seq: resolvedItems.length,
-                generated_at: new Date().toISOString(),
-                items: manifestItems,
-            })
-        },
-    )
+        for (const item of resolvedItems) {
+            manifestItems[item.key] = {
+                key: item.key,
+                type: 'ACCOUNT',
+                ver: item.ver,
+                status: 'ACTIVE',
+                hash: item.hash,
+                last_seq: item.seq,
+            }
+        }
 
-    const deltaHandler = http.get(
-        `*/api/v3/backup/${encodedBackupId}/delta`,
-        ({ request }) => {
-            const url = new URL(request.url)
-            const fromSeq = Number(url.searchParams.get('from_seq') ?? '0')
+        return HttpResponse.json({
+            backup_id: backupId,
+            backup_global_hash: 'sha256:global',
+            global_version: resolvedItems.length,
+            last_seq: resolvedItems.length,
+            generated_at: new Date().toISOString(),
+            items: manifestItems,
+        })
+    })
 
-            const entries = resolvedItems
-                .filter(item => item.seq > fromSeq)
-                .map(item => ({
-                    seq: item.seq,
-                    key: item.key,
-                    type: 'ACCOUNT' as const,
-                    ver: item.ver,
-                    status: 'ACTIVE' as const,
-                    op: 'UPSERT' as const,
-                    hash: item.hash,
-                }))
+    const deltaHandler = http.get(`${root}/delta`, ({ request }) => {
+        const url = new URL(request.url)
+        const fromSeq = Number(url.searchParams.get('from_seq') ?? '0')
 
-            return HttpResponse.json({ entries })
-        },
-    )
+        const entries = resolvedItems
+            .filter(item => item.seq > fromSeq)
+            .map(item => ({
+                seq: item.seq,
+                key: item.key,
+                type: 'ACCOUNT' as const,
+                ver: item.ver,
+                status: 'ACTIVE' as const,
+                op: 'UPSERT' as const,
+                hash: item.hash,
+            }))
+
+        return HttpResponse.json({ entries })
+    })
 
     const itemsReadHandler = http.post(
-        `*/api/v3/backup/${encodedBackupId}/items/read`,
+        `${root}/items/read`,
         async ({ request }) => {
             const body = (await request.json()) as { keys: string[] }
             const requestedKeys: BackupItemKey[] = Array.isArray(body?.keys)
@@ -158,7 +158,7 @@ export const buildRegisterHandler = ({
     onRegister,
     status = 200,
 }: BuildRegisterHandlerParams = {}): HttpHandler =>
-    http.post('*/api/v3/backup/register', async ({ request }) => {
+    http.post(`*${API_PREFIX}/backup/register`, async ({ request }) => {
         onRegister?.(await request.json())
         return status >= 400
             ? new HttpResponse(null, { status })
@@ -195,7 +195,7 @@ export const buildSyncHandlers = ({
     backupId,
     initial = [],
 }: BuildSyncHandlersParams): SyncHandlerHandle => {
-    const encodedBackupId = encodeURIComponent(backupId)
+    const root = backupRootPattern(backupId)
     let seq = 0
     let globalVersion = 0
     const conflicts = new Set<string>()
@@ -216,75 +216,66 @@ export const buildSyncHandlers = ({
 
     const globalHash = () => `sha256:global:${globalVersion}`
 
-    const manifest = http.get(
-        `*/api/v3/backup/${encodedBackupId}/manifest`,
-        () => {
-            const out: Record<string, unknown> = {}
-            for (const it of items.values()) {
-                out[it.key] = {
-                    key: it.key,
-                    type: 'ACCOUNT',
+    const manifest = http.get(`${root}/manifest`, () => {
+        const out: Record<string, unknown> = {}
+        for (const it of items.values()) {
+            out[it.key] = {
+                key: it.key,
+                type: 'ACCOUNT',
+                ver: it.ver,
+                status: it.status,
+                hash: it.hash,
+                last_seq: it.seq,
+            }
+        }
+        return HttpResponse.json({
+            backup_id: backupId,
+            backup_global_hash: globalHash(),
+            global_version: globalVersion,
+            last_seq: seq,
+            generated_at: new Date().toISOString(),
+            items: out,
+        })
+    })
+
+    const delta = http.get(`${root}/delta`, ({ request }) => {
+        const fromSeq = Number(
+            new URL(request.url).searchParams.get('from_seq') ?? '0',
+        )
+        const entries = [...items.values()]
+            .filter(i => i.seq > fromSeq)
+            .map(i => ({
+                seq: i.seq,
+                key: i.key,
+                type: 'ACCOUNT' as const,
+                ver: i.ver,
+                status: i.status,
+                op: 'UPSERT' as const,
+                hash: i.hash,
+            }))
+        return HttpResponse.json({ entries })
+    })
+
+    const read = http.post(`${root}/items/read`, async ({ request }) => {
+        const body = (await request.json()) as { keys: string[] }
+        const responseItems = (body.keys ?? []).map(key => {
+            const it = items.get(key)
+            if (it) {
+                return {
+                    key,
+                    status: 'FOUND' as const,
                     ver: it.ver,
-                    status: it.status,
                     hash: it.hash,
-                    last_seq: it.seq,
+                    payload: it.payload,
                 }
             }
-            return HttpResponse.json({
-                backup_id: backupId,
-                backup_global_hash: globalHash(),
-                global_version: globalVersion,
-                last_seq: seq,
-                generated_at: new Date().toISOString(),
-                items: out,
-            })
-        },
-    )
-
-    const delta = http.get(
-        `*/api/v3/backup/${encodedBackupId}/delta`,
-        ({ request }) => {
-            const fromSeq = Number(
-                new URL(request.url).searchParams.get('from_seq') ?? '0',
-            )
-            const entries = [...items.values()]
-                .filter(i => i.seq > fromSeq)
-                .map(i => ({
-                    seq: i.seq,
-                    key: i.key,
-                    type: 'ACCOUNT' as const,
-                    ver: i.ver,
-                    status: i.status,
-                    op: 'UPSERT' as const,
-                    hash: i.hash,
-                }))
-            return HttpResponse.json({ entries })
-        },
-    )
-
-    const read = http.post(
-        `*/api/v3/backup/${encodedBackupId}/items/read`,
-        async ({ request }) => {
-            const body = (await request.json()) as { keys: string[] }
-            const responseItems = (body.keys ?? []).map(key => {
-                const it = items.get(key)
-                if (it) {
-                    return {
-                        key,
-                        status: 'FOUND' as const,
-                        ver: it.ver,
-                        hash: it.hash,
-                        payload: it.payload,
-                    }
-                }
-                return { key, status: 'NOT_FOUND' as const }
-            })
-            return HttpResponse.json({ items: responseItems })
-        },
-    )
+            return { key, status: 'NOT_FOUND' as const }
+        })
+        return HttpResponse.json({ items: responseItems })
+    })
 
     const batchUpsert = http.post(
-        `*/api/v3/backup/${encodedBackupId}/items/upsert`,
+        `${root}/items/upsert`,
         async ({ request }) => {
             const body = (await request.json()) as {
                 items: {
@@ -329,7 +320,7 @@ export const buildSyncHandlers = ({
     )
 
     const put = http.put(
-        `*/api/v3/backup/${encodedBackupId}/:prefix/:addr`,
+        `${root}/:prefix/:addr`,
         async ({ params, request }) => {
             const key = `${params.prefix}/${params.addr}`
             const body = (await request.json()) as {
@@ -351,16 +342,13 @@ export const buildSyncHandlers = ({
         },
     )
 
-    const del = http.delete(
-        `*/api/v3/backup/${encodedBackupId}/:prefix/:addr`,
-        ({ params }) => {
-            const key = `${params.prefix}/${params.addr}`
-            items.delete(key)
-            seq += 1
-            globalVersion += 1
-            return HttpResponse.json({ seq })
-        },
-    )
+    const del = http.delete(`${root}/:prefix/:addr`, ({ params }) => {
+        const key = `${params.prefix}/${params.addr}`
+        items.delete(key)
+        seq += 1
+        globalVersion += 1
+        return HttpResponse.json({ seq })
+    })
 
     return {
         handlers: [manifest, delta, read, batchUpsert, put, del],
