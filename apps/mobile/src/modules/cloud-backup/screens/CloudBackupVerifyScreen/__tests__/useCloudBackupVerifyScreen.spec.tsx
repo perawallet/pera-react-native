@@ -15,11 +15,14 @@ import { renderHook, act } from '@testing-library/react'
 import { useBackupQuiz } from '@modules/backup'
 import { useCloudBackupVerifyScreen } from '../useCloudBackupVerifyScreen'
 
-const { navigateMock, requestMock, enableBackupMock } = vi.hoisted(() => ({
-    navigateMock: vi.fn(),
-    requestMock: vi.fn(),
-    enableBackupMock: vi.fn(),
-}))
+const { navigateMock, popToMock, requestMock, enableBackupMock } = vi.hoisted(
+    () => ({
+        navigateMock: vi.fn(),
+        popToMock: vi.fn(),
+        requestMock: vi.fn(),
+        enableBackupMock: vi.fn(),
+    }),
+)
 
 const MNEMONIC = [
     'marble',
@@ -65,7 +68,7 @@ vi.mock('@modules/backup', () => ({
 }))
 
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: vi.fn(() => ({ navigate: navigateMock })),
+    useNavigation: vi.fn(() => ({ navigate: navigateMock, popTo: popToMock })),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -133,10 +136,12 @@ describe('useCloudBackupVerifyScreen', () => {
         })
 
         expect(enableBackupMock).toHaveBeenCalledTimes(1)
-        expect(navigateMock).not.toHaveBeenCalled()
+        expect(popToMock).not.toHaveBeenCalled()
     })
 
-    test("navigates to setup when the sheet resolves 'show-credentials'", async () => {
+    // `popTo`, not `navigate`: navigate would push a second Setup screen, which
+    // regenerates the credentials the user asked to see again.
+    test("pops back to setup when the sheet resolves 'show-credentials'", async () => {
         requestMock.mockResolvedValue('show-credentials')
         renderHook(() => useCloudBackupVerifyScreen())
         const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
@@ -145,7 +150,8 @@ describe('useCloudBackupVerifyScreen', () => {
             await onSuccess()
         })
 
-        expect(navigateMock).toHaveBeenCalledWith('CloudBackupSetup')
+        expect(popToMock).toHaveBeenCalledWith('CloudBackupSetup')
+        expect(navigateMock).not.toHaveBeenCalled()
         expect(enableBackupMock).not.toHaveBeenCalled()
     })
 })

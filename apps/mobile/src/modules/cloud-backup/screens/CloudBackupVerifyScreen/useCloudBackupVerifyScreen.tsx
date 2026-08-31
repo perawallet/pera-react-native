@@ -86,7 +86,7 @@ const useEncryptionKeyConfirmation = (
         })
 
         if (result === 'show-credentials') {
-            navigation.navigate('CloudBackupSetup')
+            navigation.popTo('CloudBackupSetup')
         } else if (result === 'enable') {
             enableBackup()
         }
