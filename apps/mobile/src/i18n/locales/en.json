@@ -651,7 +651,8 @@
             "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
             "error_unknown": "Something went wrong. Please try again.",
             "success": "Backup restored",
-            "partial_success": "{{count}} accounts couldn’t be restored."
+            "partial_success": "{{count}} accounts couldn’t be restored.",
+            "partial_success_one": "{{count}} account couldn’t be restored."
         }
     },
     "common": {

@@ -651,7 +651,8 @@
             "error_invalid_credentials": "Phrase de sauvegarde ou clé de chiffrement incorrecte.",
             "error_unknown": "Une erreur est survenue. Veuillez réessayer.",
             "success": "Sauvegarde restaurée",
-            "partial_success": "{{count}} comptes n’ont pas pu être restaurés."
+            "partial_success": "{{count}} comptes n’ont pas pu être restaurés.",
+            "partial_success_one": "{{count}} compte n’a pas pu être restauré."
         }
     },
     "common": {

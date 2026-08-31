@@ -651,7 +651,8 @@
             "error_invalid_credentials": "Yedekleme ifadesi veya şifreleme anahtarı yanlış.",
             "error_unknown": "Bir şeyler ters gitti. Lütfen tekrar dene.",
             "success": "Yedekleme geri yüklendi",
-            "partial_success": "{{count}} hesap geri yüklenemedi."
+            "partial_success": "{{count}} hesap geri yüklenemedi.",
+            "partial_success_one": "{{count}} hesap geri yüklenemedi."
         }
     },
     "common": {

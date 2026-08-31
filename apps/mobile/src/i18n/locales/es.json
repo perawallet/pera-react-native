@@ -651,7 +651,8 @@
             "error_invalid_credentials": "La frase de copia de seguridad o la clave de cifrado son incorrectas.",
             "error_unknown": "Algo ha ido mal. Vuelve a intentarlo.",
             "success": "Copia de seguridad restaurada",
-            "partial_success": "No se pudieron restaurar {{count}} cuentas."
+            "partial_success": "No se pudieron restaurar {{count}} cuentas.",
+            "partial_success_one": "No se pudo restaurar {{count}} cuenta."
         }
     },
     "common": {

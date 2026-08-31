@@ -643,7 +643,8 @@
             "error_invalid_credentials": "Falsche Backup-Phrase oder falscher Verschlüsselungsschlüssel.",
             "error_unknown": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
             "success": "Backup wiederhergestellt",
-            "partial_success": "{{count}} Konten konnten nicht wiederhergestellt werden."
+            "partial_success": "{{count}} Konten konnten nicht wiederhergestellt werden.",
+            "partial_success_one": "{{count}} Konto konnte nicht wiederhergestellt werden."
         }
     },
     "common": {

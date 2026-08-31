@@ -27,7 +27,6 @@ import {
 import {
     BackupAccountType,
     type Algo25AddressPayload,
-    type AddressBackupPayload,
     type HardwareAddressPayload,
     type HdWalletAddressPayload,
     type ImportSummary,
@@ -66,23 +65,6 @@ const XHD_ROOT_LENGTH = 96
 
 const toFailureReason = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
-
-const importRank = (type: AddressBackupPayload['type']): number => {
-    if (type === BackupAccountType.hdSeed) return 0
-    if (type === BackupAccountType.hdWallet) return 2
-    return 1
-}
-
-const sortForImport = (accounts: PulledAccount[]): PulledAccount[] =>
-    accounts
-        .map((account, index) => ({ account, index }))
-        .sort((a, b) => {
-            const rankDelta =
-                importRank(a.account.addressPayload.type) -
-                importRank(b.account.addressPayload.type)
-            return rankDelta !== 0 ? rankDelta : a.index - b.index
-        })
-        .map(({ account }) => account)
 
 const nameField = (
     customName: string | null | undefined,
@@ -468,7 +450,7 @@ const importBatch = async (
         failed: [...failures],
     }
 
-    for (const account of sortForImport(accounts)) {
+    for (const account of accounts) {
         try {
             summary.imported += await importOneAccount(
                 context,

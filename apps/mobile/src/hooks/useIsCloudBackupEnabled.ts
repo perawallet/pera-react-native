@@ -15,7 +15,9 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 
-export const useIsCloudBackupFeatureEnabled = (): boolean => {
+/** Defaults off in every environment: the flow is only half-wired until the
+ *  settings entry point lands, so it stays hidden unless Remote Config says otherwise. */
+export const useIsCloudBackupEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
 
     return remoteConfig.getBooleanValue(

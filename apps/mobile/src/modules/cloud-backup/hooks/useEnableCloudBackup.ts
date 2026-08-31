@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import type { CloudBackupStackParamList } from '../routes'
+import type { CloudBackupStackParamList } from '../routes/types'
 
 /** Words live only for the caller's turn; the retained form stays the zeroable
  *  index buffer in the draft store. */

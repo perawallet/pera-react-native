@@ -147,6 +147,24 @@ export const buildRestoreHandlers = ({
     return [manifestHandler, deltaHandler, itemsReadHandler]
 }
 
+export type BuildRegisterHandlerParams = {
+    /** Receives the parsed request body on every register attempt. */
+    onRegister?: (body: unknown) => void
+    /** Response status; >= 400 answers with an empty error body. */
+    status?: number
+}
+
+export const buildRegisterHandler = ({
+    onRegister,
+    status = 200,
+}: BuildRegisterHandlerParams = {}): HttpHandler =>
+    http.post('*/api/v3/backup/register', async ({ request }) => {
+        onRegister?.(await request.json())
+        return status >= 400
+            ? new HttpResponse(null, { status })
+            : HttpResponse.json({ ok: true }, { status })
+    })
+
 // ---------------------------------------------------------------------------
 // buildSyncHandlers — stateful MSW factory for sync engine tests
 // ---------------------------------------------------------------------------

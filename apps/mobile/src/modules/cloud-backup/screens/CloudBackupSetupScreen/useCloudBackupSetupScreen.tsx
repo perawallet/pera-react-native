@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
 import { useClipboard } from '@hooks/useClipboard'
-import type { CloudBackupStackParamList } from '../../routes'
+import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupSetupScreenResult = {
     mnemonicIndices: Uint16Array

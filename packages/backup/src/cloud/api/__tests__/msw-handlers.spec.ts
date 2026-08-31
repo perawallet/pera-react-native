@@ -12,8 +12,9 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { setupServer } from 'msw/node'
+import type { HttpHandler } from 'msw'
 import { buildRestoreHandlers } from '../msw-handlers'
 import { decryptItemPayload } from '../../crypto/itemPayload'
 
@@ -276,5 +277,70 @@ describe('buildSyncHandlers', () => {
         })
         expect(typeof res.results[0].current_ver).toBe('number')
         expect(typeof res.results[0].current_hash).toBe('string')
+    })
+})
+
+import { buildRegisterHandler } from '../msw-handlers'
+
+describe('buildRegisterHandler', () => {
+    const REGISTER_URL = `${BASE}/api/v3/backup/register`
+    const BODY = { backup_id: BACKUP_ID, device_id: 'device-1' }
+
+    const register = () =>
+        fetch(REGISTER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(BODY),
+        })
+
+    const serve = (handler: HttpHandler) => {
+        const registerServer = setupServer(handler)
+        registerServer.listen({ onUnhandledRequest: 'error' })
+        return registerServer
+    }
+
+    it('hands the parsed body to onRegister and answers 200 ok', async () => {
+        const onRegister = vi.fn()
+        const registerServer = serve(buildRegisterHandler({ onRegister }))
+
+        const res = await register()
+
+        expect(res.status).toBe(200)
+        expect(await res.json()).toEqual({ ok: true })
+        expect(onRegister).toHaveBeenCalledWith(BODY)
+        registerServer.close()
+    })
+
+    it('answers the requested error status with an empty body, having still reported the attempt', async () => {
+        const onRegister = vi.fn()
+        const registerServer = serve(
+            buildRegisterHandler({ onRegister, status: 500 }),
+        )
+
+        const res = await register()
+
+        expect(res.status).toBe(500)
+        expect(await res.text()).toBe('')
+        expect(onRegister).toHaveBeenCalledTimes(1)
+        registerServer.close()
+    })
+
+    it('passes a non-error status through rather than forcing 200', async () => {
+        const registerServer = serve(buildRegisterHandler({ status: 202 }))
+
+        const res = await register()
+
+        expect(res.status).toBe(202)
+        expect(await res.json()).toEqual({ ok: true })
+        registerServer.close()
+    })
+
+    it('needs no arguments', async () => {
+        const registerServer = serve(buildRegisterHandler())
+
+        const res = await register()
+
+        expect(res.status).toBe(200)
+        registerServer.close()
     })
 })

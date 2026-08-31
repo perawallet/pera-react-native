@@ -18,7 +18,7 @@ import {
     RestoreBackupSheet,
     type RestoreBackupSheetResult,
 } from '../../components/RestoreBackupSheet'
-import type { CloudBackupStackParamList } from '../../routes'
+import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupScreenResult = {
     handleSetUpBackup: () => void

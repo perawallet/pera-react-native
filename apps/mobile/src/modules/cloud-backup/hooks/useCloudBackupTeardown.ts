@@ -17,7 +17,7 @@ import {
     useBackupSyncStateStore,
     useCloudBackupStore,
 } from '@perawallet/wallet-core-backup'
-import type { CloudBackupStackParamList } from '../routes'
+import type { CloudBackupStackParamList } from '../routes/types'
 
 type UseCloudBackupTeardownResult = {
     resetLocalState: () => void

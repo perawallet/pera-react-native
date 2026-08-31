@@ -27,7 +27,6 @@ import {
     vi,
 } from 'vitest'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -39,20 +38,18 @@ import {
     useCloudBackupStore,
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
+import { buildRegisterHandler } from '@perawallet/wallet-core-backup/test-handlers'
 
 import { CloudBackupSetupScreen } from '@modules/cloud-backup/screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '@modules/cloud-backup/screens/CloudBackupVerifyScreen'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 
-// Enabling runs the real Argon2 KDF through `deriveBackupKeys`; under jsdom
-// that dominates the test. Give it headroom rather than mocking the crypto.
+// Enabling derives the backup keys for real. Where the runtime has
+// `crypto.argon2` (Node 24+) that is genuine Argon2 and dominates the test;
+// elsewhere `test-utils/node-crypto-with-argon2` stands in and it is fast.
+// Sized for the slow case rather than mocking the crypto.
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
-// Regex, not a glob: the backup client's ky prefix already ends in `/` and the
-// endpoint path starts with one, so the request URL carries a double slash that
-// a `*/api/v3/...` pattern misses — and an unmatched handler means MSW lets the
-// call reach the real staging host.
-const REGISTER_URL = /\/backup\/register$/
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 
 // Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
@@ -144,7 +141,7 @@ describe('cloud backup setup screen', () => {
     // pushed-from screen mounted, but the web navigator unmounts it, which
     // fires Setup's cleanup and wipes the draft before Verify can read it.
     // `useCloudBackupSetupScreen.spec.tsx` covers the draft write.
-    it('reveals a numbered twelve-word phrase and moves on to verification', async () => {
+    it('reveals a numbered twelve-word phrase, moves on to verification and leaves no draft behind', async () => {
         renderWithNavigation(CloudBackupSetupScreen, 'CloudBackupSetup', {
             additionalScreens: [
                 {
@@ -171,16 +168,13 @@ describe('cloud backup setup screen', () => {
                 screen.getByTestId('cloud_backup_verify_screen'),
             ).toBeTruthy(),
         )
-    })
-
-    it('zeroes the draft phrase when the flow is left', async () => {
-        seedDraft()
-        const draft = useCloudBackupDraftStore.getState().mnemonicIndices!
-
-        useCloudBackupDraftStore.getState().clearDraft()
-
-        expect(Array.from(draft)).toEqual(Array(12).fill(0))
-        expect(useCloudBackupDraftStore.getState().mnemonicIndices).toBeNull()
+        // Leaving Setup runs its unmount cleanup, so nothing readable is left
+        // in the draft store. `draftStore.test.ts` covers the buffer zeroing.
+        await waitFor(() =>
+            expect(
+                useCloudBackupDraftStore.getState().mnemonicIndices,
+            ).toBeNull(),
+        )
     })
 })
 
@@ -189,12 +183,7 @@ describe('cloud backup verification and enable', () => {
         'registers the backup and marks it configured',
         async () => {
             const registered = vi.fn()
-            server.use(
-                http.post(REGISTER_URL, async ({ request }) => {
-                    registered(await request.json())
-                    return HttpResponse.json({ ok: true })
-                }),
-            )
+            server.use(buildRegisterHandler({ onRegister: registered }))
             seedDraft()
             renderVerifyFlow()
 
@@ -234,6 +223,14 @@ describe('cloud backup verification and enable', () => {
             expect(
                 useCloudBackupDraftStore.getState().mnemonicIndices,
             ).toBeNull()
+
+            // The reset lands the user on Overview — the half of the success
+            // path no unit test can reach.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('cloud_backup_overview_screen'),
+                ).toBeTruthy(),
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -243,10 +240,7 @@ describe('cloud backup verification and enable', () => {
         async () => {
             const attempted = vi.fn()
             server.use(
-                http.post(REGISTER_URL, () => {
-                    attempted()
-                    return new HttpResponse(null, { status: 500 })
-                }),
+                buildRegisterHandler({ onRegister: attempted, status: 500 }),
             )
             seedDraft()
             renderVerifyFlow()

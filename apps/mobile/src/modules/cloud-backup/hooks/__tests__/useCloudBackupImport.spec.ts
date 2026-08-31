@@ -385,8 +385,8 @@ describe('useCloudBackupImport', () => {
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
-            // Provided hdWallet first to prove the hook reorders so the seed
-            // persists before the key derives.
+            // Provided hdWallet first: the seed pre-pass runs ahead of the
+            // main loop, so input order can't starve the child of its parent.
             {
                 address: 'HD_KEY_ADDR',
                 addressPayload: {

@@ -651,7 +651,8 @@
             "error_invalid_credentials": "Frase de backup ou chave de criptografia incorreta.",
             "error_unknown": "Algo deu errado. Tente novamente.",
             "success": "Backup restaurado",
-            "partial_success": "Não foi possível restaurar {{count}} contas."
+            "partial_success": "Não foi possível restaurar {{count}} contas.",
+            "partial_success_one": "Não foi possível restaurar {{count}} conta."
         }
     },
     "common": {

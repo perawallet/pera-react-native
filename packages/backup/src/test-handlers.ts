@@ -15,6 +15,8 @@
 // `@perawallet/wallet-core-backup/test-handlers` in test files.
 
 export {
+    buildRegisterHandler,
+    type BuildRegisterHandlerParams,
     buildRestoreHandlers,
     type RestoreFixtureItem,
     type BuildRestoreHandlersParams,

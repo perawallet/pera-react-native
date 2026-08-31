@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-export * from './useIsCloudBackupFeatureEnabled'
 export * from './useEnableCloudBackup'
 export * from './useDisableCloudBackup'
 export * from './useRemoveCloudBackup'

@@ -205,6 +205,10 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         }
     }, [requestBottomSheet, verifyPinIfEnabled, disableBackup, removeBackup])
 
+    const onPressSyncDevices = useCallback(() => {
+        void syncNow()
+    }, [syncNow])
+
     return {
         syncStatus: STATUS_TO_BADGE[status],
         lastSyncedLabel,
@@ -217,9 +221,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressContacts: noop,
         onPressCredentialAddress,
         onPressCredentialInfo: noop,
-        onPressSyncDevices: () => {
-            void syncNow()
-        },
+        onPressSyncDevices,
         onPressTurnOff,
     }
 }
