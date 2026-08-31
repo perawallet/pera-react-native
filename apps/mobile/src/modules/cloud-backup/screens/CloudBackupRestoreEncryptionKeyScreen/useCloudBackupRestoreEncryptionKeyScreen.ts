@@ -24,7 +24,7 @@ import {
     useRestoreCloudBackup,
     type RestoreErrorCategory,
 } from '../../hooks/useRestoreCloudBackup'
-import type { CloudBackupStackParamList } from '../../routes'
+import type { CloudBackupStackParamList } from '../../routes/types'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 type Restore = ReturnType<typeof useRestoreCloudBackup>['restore']
