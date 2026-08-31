@@ -280,11 +280,23 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await confirmControl.click()
     await confirmControl.click()
 
+    // Poll BOTH outcomes, not just the success one. The fixture writes a
+    // rejection to `#sign-error` and clears `#sign-result` (dapp-test-page.html),
+    // so waiting on `#sign-result` alone turns every decline — including a
+    // genuine signing failure in the wallet — into a bare 20s timeout with the
+    // actual reason sitting unread in the DOM. That is exactly what made this
+    // spec's intermittent failures undiagnosable.
     await expect
-        .poll(() => dappPage.locator('#sign-result').textContent(), {
-            timeout: 20_000,
-        })
+        .poll(
+            async () =>
+                (await dappPage.locator('#sign-result').textContent()) ||
+                (await dappPage.locator('#sign-error').textContent()) ||
+                '',
+            { timeout: 20_000 },
+        )
         .not.toBe('')
+    const signError = await dappPage.locator('#sign-error').textContent()
+    expect(signError, 'the wallet declined the sign request').toBe('')
     const signResult = JSON.parse(
         (await dappPage.locator('#sign-result').textContent()) ?? '{}',
     ) as { stxns?: string[] }

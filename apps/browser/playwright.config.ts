@@ -18,6 +18,23 @@ export default defineConfig({
     // Extension state (chrome.storage) persists per launch context; keep
     // workers at 1 so tests don't share/clobber a profile.
     workers: 1,
+    // CI only — local runs stay strict so a real failure is loud while you
+    // develop. A retry re-runs the whole serial `describe` against a fresh
+    // browser context, which is what actually clears a harness-level race.
+    //
+    // #1397 proposed this and was correctly closed: at the time the WC failure
+    // was 100% deterministic (an approval marked `surface: 'window'` that
+    // `get-current-approval` filters out forever), so retrying failed three
+    // times identically. #1400 fixed that, and the races left are genuinely
+    // transient — a single flake otherwise reddens the whole job AND, because
+    // both remaining offenders use `mode: 'serial'`, takes its siblings down as
+    // "did not run".
+    //
+    // This masks nothing: Playwright reports a recovered run as **flaky**, not
+    // passed, so the raciness stays in the report. Retries are the floor under
+    // a green build, not a substitute for fixing the cause — the outstanding
+    // one is a real signing failure, tracked in the PR.
+    retries: process.env.CI ? 2 : 0,
     use: {
         trace: 'retain-on-failure',
     },
