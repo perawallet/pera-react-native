@@ -4,6 +4,7 @@
 
 import { defineConfig } from 'lanekeep'
 
+import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
@@ -41,5 +42,6 @@ export default defineConfig({
         noEmptyStyleObjects,
         noNumericSizes,
         noErrorToastInCatch,
+        errorMessageKeyExists,
     ],
 })
