@@ -15,13 +15,18 @@ import { AppError } from './base'
 /**
  * React Native's fetch rejects with a plain `Error` whose message is the only
  * signal that the device is offline — ky's runtime heuristics all require a
- * `TypeError`, so they never fire here. Matching on text is unpleasant and is
- * confined to this one list.
+ * `TypeError`, so they never fire here — and on Android it appends the Java
+ * cause after a `fetch failed:` prefix rather than using one of the exact
+ * messages ky matches.
+ *
+ * Matching on text is unpleasant and is confined to this one list, but the cost
+ * of not doing it is high: an offline request classifies as `unknown`, which is
+ * non-retryable and shows the user a generic error instead of "no connection".
  */
 const RAW_NETWORK_ERROR_FRAGMENTS = [
-    'fetch failed',
-    'network request failed',
-    'unable to resolve host',
+    'fetch failed', // RN Android — prefix, Java cause appended
+    'network request failed', // RN iOS
+    'unable to resolve host', // Android DNS
     'unknownhostexception',
 ]
 

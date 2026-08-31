@@ -304,14 +304,14 @@ describe('isNotFoundError', () => {
 })
 
 describe('expected-error classification', () => {
-    test.each(['offline', 'timeout', 'server'] as const)(
+    it.each(['offline', 'timeout', 'server'] as const)(
         '%s is expected',
         kind => {
             expect(isExpectedError(new PeraNetworkError(kind))).toBe(true)
         },
     )
 
-    test.each(['client', 'unknown'] as const)('%s is not expected', kind => {
+    it.each(['client', 'unknown'] as const)('%s is not expected', kind => {
         expect(isExpectedError(new PeraNetworkError(kind))).toBe(false)
     })
 })

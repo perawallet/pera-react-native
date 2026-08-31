@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, test, expect } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { isExpectedError } from '@perawallet/wallet-core-shared'
 import {
     WalletConnectBridgeConnectionError,
@@ -78,23 +78,23 @@ describe('walletconnect error copy', () => {
 })
 
 describe('WalletConnect error classification', () => {
-    test('a bridge connection failure is expected', () => {
+    it('a bridge connection failure is expected', () => {
         expect(isExpectedError(new WalletConnectBridgeConnectionError())).toBe(
             true,
         )
     })
 
-    test('a connection timeout is expected', () => {
+    it('a connection timeout is expected', () => {
         expect(isExpectedError(new WalletConnectConnectionTimeoutError())).toBe(
             true,
         )
     })
 
-    test('a sign-request failure stays reportable', () => {
+    it('a sign-request failure stays reportable', () => {
         expect(isExpectedError(new WalletConnectSignRequestError())).toBe(false)
     })
 
-    test('an invalid session stays reportable', () => {
+    it('an invalid session stays reportable', () => {
         expect(isExpectedError(new WalletConnectInvalidSessionError())).toBe(
             false,
         )

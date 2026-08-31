@@ -111,6 +111,9 @@ describe('createCrashReportingErrorReporter', () => {
         expect(recordNonFatalError).not.toHaveBeenCalled()
     })
 
+    // The common downgraded shape, not a hypothetical: most sites log a
+    // constant string message, and the logger only sets `groupingKey` on that
+    // string path — so the breadcrumb is what names the site.
     test('includes the grouping key and message in the breadcrumb', () => {
         const logBreadcrumb = vi.fn()
         const reporter = createCrashReportingErrorReporter({ logBreadcrumb })
