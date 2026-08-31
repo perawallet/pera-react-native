@@ -13,6 +13,9 @@ export default defineConfig({
         'packages/*/src/**/*.{ts,tsx}',
         'extensions/*/src/**/*.{ts,tsx}',
     ],
+    // lanekeep also skips gitignored files on top of the excludes below, so a generated
+    // file like packages/config/src/generated-env.ts can match `include` and still never
+    // appear here — expected, not a glob bug.
     exclude: [
         '**/__tests__/**',
         '**/*.spec.{ts,tsx}',
