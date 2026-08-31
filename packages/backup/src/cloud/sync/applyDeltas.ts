@@ -24,9 +24,9 @@ import {
     type SyncItemState,
     type SyncState,
 } from '../models'
-import { buildPulledAccounts, type PulledAccount } from '../restore'
+import { buildPulledAccounts } from '../restore'
 import { canonicalJson, contentHash } from './canonicalize'
-import type { ImportSummary } from './types'
+import type { SyncImportFn } from './types'
 
 const ACCOUNTS_PREFIX = 'accounts/'
 const SECRETS_PREFIX = 'secrets/'
@@ -36,7 +36,7 @@ export type ApplyDeltasDeps = {
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
-    importAccounts: (accounts: PulledAccount[]) => Promise<ImportSummary>
+    importAccounts: SyncImportFn
     readItems: (
         network: Network,
         backupId: BackupId,

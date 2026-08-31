@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     readCloudBackupRestoreMnemonic,
     useCloudBackupRestoreDraftStore,
+    type ImportSummary,
 } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -23,7 +24,6 @@ import {
     useRestoreCloudBackup,
     type RestoreErrorCategory,
 } from '../../hooks/useRestoreCloudBackup'
-import type { ImportSummary } from '../../hooks/useCloudBackupImport'
 import type { CloudBackupStackParamList } from '../../routes'
 
 type Translate = ReturnType<typeof useLanguage>['t']
