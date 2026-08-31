@@ -28,6 +28,7 @@ import {
     getAccountHoldings,
     isAssetFrozen,
     getAccountPortfolioTotals,
+    getAccountFundedNetworks,
     getAccountHoldingsPage,
     getAccountCollectiblesLite,
     insertAssetHolding,
@@ -1135,6 +1136,55 @@ describe('account repository', () => {
             })
 
             expect(result).toEqual(['100', '200', '300'])
+        })
+    })
+
+    describe('getAccountFundedNetworks', () => {
+        it('reports every network holding ALGO, not just one', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [{ assetId: '0', amount: 0n }],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'testnet',
+                holdings: [{ assetId: '0', amount: 5_000_000n }],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(funded).toEqual(['testnet'])
+        })
+
+        it('ignores ASA holdings and other accounts', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: 0n },
+                    { assetId: '100', amount: 9_000_000n },
+                ],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+                holdings: [{ assetId: '0', amount: 1n }],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(funded).toEqual([])
         })
     })
 

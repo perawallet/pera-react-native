@@ -2256,6 +2256,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.17
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@5.9.3)

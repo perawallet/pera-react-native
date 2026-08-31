@@ -46,6 +46,14 @@ export const getAccountSummaryQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'summary', { address, network }]
 
+// Network-agnostic by design (see `getAccountFundedNetworks`), but keyed on the
+// active network so the entry refetches once a newly selected network syncs.
+// The `{ address }` payload keeps it inside the sync tick's scoped invalidation.
+export const getAccountFundedNetworksQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'funded-networks', { address, network }]
+
 export const getAccountHoldingsPageQueryKey = (
     address: string,
     network: Network,

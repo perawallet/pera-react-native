@@ -40,6 +40,7 @@
         "@perawallet/wallet-core-devtools": "workspace:*",
         "@testing-library/react": "catalog:",
         "@types/react": "catalog:",
+        "decimal.js": "catalog:",
         "msw": "catalog:",
         "typescript": "catalog:",
         "vite": "catalog:",
