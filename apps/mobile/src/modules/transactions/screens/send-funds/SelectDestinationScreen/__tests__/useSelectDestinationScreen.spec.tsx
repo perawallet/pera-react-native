@@ -23,6 +23,8 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 
 const mockNavigate = vi.fn()
+const mockCanGoBack = vi.fn()
+const mockOnFinished = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
 const mockShowToast = vi.fn()
@@ -36,7 +38,10 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
 )
 
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ navigate: mockNavigate }),
+    useNavigation: () => ({
+        navigate: mockNavigate,
+        canGoBack: mockCanGoBack,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -83,6 +88,9 @@ describe('useSelectDestinationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
+        // Default to a pushed screen so the default header back button applies;
+        // the close-control tests flip this to model the pure-NFT flow root.
+        mockCanGoBack.mockReturnValue(true)
         mockUseAllAccounts.mockReturnValue([])
         mockCanSignWith.mockReturnValue(false)
 
@@ -96,6 +104,7 @@ describe('useSelectDestinationScreen', () => {
 
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: ASA_ID,
+            onFinished: mockOnFinished,
             setDestination: mockSetDestination,
             setSendMode: mockSetSendMode,
         })
@@ -412,6 +421,34 @@ describe('useSelectDestinationScreen', () => {
             expect(result.current.isAutoAdvancing).toBe(true)
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(mockSetSendMode).not.toHaveBeenCalled()
+        })
+    })
+
+    // The send sheet disables swipe/backdrop dismissal, so when this screen is
+    // the flow's initial route (a pure-NFT transfer skips the amount step) it
+    // must offer its own close — otherwise the sheet strands the user with no
+    // back button and no way out.
+    describe('close control as the flow root', () => {
+        it('exposes a close that tears down the flow when it is the stack root', () => {
+            mockCanGoBack.mockReturnValue(false)
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.canClose).toBe(true)
+
+            act(() => {
+                result.current.onClose()
+            })
+
+            expect(mockOnFinished).toHaveBeenCalled()
+        })
+
+        it('defers to the header back button when it was pushed onto the stack', () => {
+            mockCanGoBack.mockReturnValue(true)
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.canClose).toBe(false)
         })
     })
 })

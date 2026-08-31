@@ -439,9 +439,12 @@ describe('useSigningActorLifecycle', () => {
         expect(errorCb.mock.calls[0][0].message).toBe('Signing failed')
     })
 
-    test('non-interactive failure drops both the actor and the request from the queue', () => {
+    test('non-interactive failure stops the actor and drops it from the queue', () => {
         // Internal/headless requests treat `failed` as terminal; the actor
-        // and the queued request both go away.
+        // and the queued request both go away. `failed` is a non-final state,
+        // so the lifecycle must stop the actor explicitly — otherwise it's
+        // orphaned (removed from the map, unreachable by stopActor, its
+        // subscription never torn down).
         const actor = makeMockActor('tx-headless-fail')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
 
@@ -464,6 +467,7 @@ describe('useSigningActorLifecycle', () => {
             })
         })
 
+        expect(actor.stop).toHaveBeenCalled()
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
     })
 

@@ -49,7 +49,7 @@ export const useSendFundsContent = (
     } = useSendFunds()
     const { dismiss } = useBottomSheetResult<void>()
 
-    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
+    const { data: assets, isFetched } = useAssetsQuery(assetId ? [assetId] : [])
     const asset = assetId ? assets.get(assetId) : undefined
 
     const [isReady, setIsReady] = useState(assetId == null)
@@ -63,32 +63,44 @@ export const useSendFundsContent = (
     const prefilledAssetIdRef = useRef<Optional<string>>(undefined)
 
     useLayoutEffect(() => {
-        if (assetId != null) {
-            if (canSelectAsset) {
-                setCanSelectAsset(false)
-            }
+        if (assetId == null) return
 
-            if (selectedAssetId !== assetId) {
-                setSelectedAssetId(assetId)
-            }
-
-            // Pure collectibles have a fixed quantity of 1, so prefill
-            // the amount and skip the input screen entirely.
-            if (
-                prefilledAssetIdRef.current !== assetId &&
-                asset &&
-                isCollectible(asset) &&
-                isPureNft(asset)
-            ) {
-                setAmount(new Decimal(1))
-                prefilledAssetIdRef.current = assetId
-            }
-
-            setIsReady(true)
+        if (canSelectAsset) {
+            setCanSelectAsset(false)
         }
+
+        if (selectedAssetId !== assetId) {
+            setSelectedAssetId(assetId)
+        }
+
+        // Hold the flow closed until the asset query settles. SendFundsRoutes
+        // derives its initial route from whether this is a pure NFT, and React
+        // Navigation reads that once at mount — so revealing the navigator
+        // before the asset resolves made the entry point depend on React Query
+        // cache warmth: the amount step on a cold cache, skipped straight to
+        // the receiver picker on a warm one, for the very same NFT. Waiting for
+        // `isFetched` settles it deterministically (a failed load leaves `asset`
+        // undefined → the non-collectible InputAmount route, which has its own
+        // ✕ close, so the sheet is never stranded).
+        if (!isFetched) return
+
+        // Pure collectibles have a fixed quantity of 1, so prefill
+        // the amount and skip the input screen entirely.
+        if (
+            prefilledAssetIdRef.current !== assetId &&
+            asset &&
+            isCollectible(asset) &&
+            isPureNft(asset)
+        ) {
+            setAmount(new Decimal(1))
+            prefilledAssetIdRef.current = assetId
+        }
+
+        setIsReady(true)
     }, [
         assetId,
         asset,
+        isFetched,
         setCanSelectAsset,
         setSelectedAssetId,
         setAmount,
