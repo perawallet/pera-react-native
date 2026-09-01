@@ -2943,6 +2943,8 @@
         "execution": {
             "error_title": "Échec du swap",
             "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
+            "insufficient_algo_title": "ALGO insuffisant",
+            "insufficient_algo_body": "Ce compte a besoin d’au moins {{amount}} ALGO supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez plus d’ALGO, puis réessayez.",
             "success_title": "Swap effectué",
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",
             "user_rejected": "Swap annulé",

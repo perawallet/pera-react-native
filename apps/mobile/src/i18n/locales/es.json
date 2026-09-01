@@ -2943,6 +2943,8 @@
         "execution": {
             "error_title": "Swap fallido",
             "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "insufficient_algo_title": "ALGO insuficiente",
+            "insufficient_algo_body": "Esta cuenta necesita al menos {{amount}} ALGO más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más ALGO y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
             "user_rejected": "Swap cancelado",

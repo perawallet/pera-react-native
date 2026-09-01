@@ -2935,6 +2935,8 @@
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
             "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "insufficient_algo_title": "Unzureichendes ALGO",
+            "insufficient_algo_body": "Dieses Konto benötigt mindestens {{amount}} ALGO mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr ALGO hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",

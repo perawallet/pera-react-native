@@ -2943,6 +2943,8 @@
         "execution": {
             "error_title": "Swap Failed",
             "error_body": "Something went wrong during the swap. Please try again.",
+            "insufficient_algo_title": "Insufficient ALGO",
+            "insufficient_algo_body": "This account needs at least {{amount}} more ALGO to cover this swap, its fees, and the minimum balance. Add more ALGO and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",
