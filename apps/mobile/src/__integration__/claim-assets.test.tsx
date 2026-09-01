@@ -66,7 +66,7 @@ import { TransactionSuccessScreen } from '@modules/transactions/screens/send-fun
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 import { modelsv2, encodeMsgpack, decodeMsgpack } from 'algosdk'
 
@@ -197,7 +197,7 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
     let keyResult: Algo25KeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })

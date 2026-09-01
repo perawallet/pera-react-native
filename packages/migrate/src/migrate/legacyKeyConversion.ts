@@ -11,18 +11,20 @@
  */
 
 import {
-    algo25SecretKeyToMnemonic,
-    entropyToMnemonic,
+    algo25SecretKeyToIndices,
+    entropyToIndices,
 } from '@perawallet/wallet-core-kms'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
 
-export { algo25SecretKeyToMnemonic }
+export { algo25SecretKeyToIndices }
 
-export const hdWalletEntropyToMnemonic = (parent: LegacyHDWallet): string => {
+export const hdWalletEntropyToIndices = (
+    parent: LegacyHDWallet,
+): Uint16Array => {
     if (parent.entropy && parent.entropy.length > 0) {
         const entropy = Uint8Array.from(parent.entropy)
         try {
-            return entropyToMnemonic(entropy)
+            return entropyToIndices(entropy)
         } finally {
             entropy.fill(0)
         }

@@ -23,7 +23,32 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWInputRef } from '@components/core'
 
 const MAX_SUGGESTIONS = 4
-const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
+const WORD_TO_INDEX: Map<string, number> = new Map(
+    MNEMONIC_WORDLIST.map((word, index) => [word, index]),
+)
+
+/**
+ * Retained slot state. A completed wordlist word is held as its index — the
+ * only string it ever renders through is the interned wordlist constant, so
+ * the ordered phrase is never retained as user-typed strings. `draft` exists
+ * only for what indices can't represent: empty, partial, or non-wordlist
+ * input (TextInputs are strings; that boundary is irreducible).
+ */
+type MnemonicSlot =
+    | { kind: 'index'; index: number }
+    | { kind: 'draft'; draft: string }
+
+const emptySlot = (): MnemonicSlot => ({ kind: 'draft', draft: '' })
+
+const toSlot = (token: string): MnemonicSlot => {
+    const index = WORD_TO_INDEX.get(token)
+    return index === undefined
+        ? { kind: 'draft', draft: token }
+        : { kind: 'index', index }
+}
+
+const slotText = (slot: MnemonicSlot): string =>
+    slot.kind === 'index' ? MNEMONIC_WORDLIST[slot.index] : slot.draft
 
 export type UseMnemonicWordEntryParams = {
     wordCount: number
@@ -34,6 +59,9 @@ export type UseMnemonicWordEntryParams = {
 }
 
 export type UseMnemonicWordEntryResult = {
+    /** Render-time projection of the slots. Valid words resolve to interned
+     * wordlist constants; this array is derived per render, never the
+     * retained representation. */
     words: string[]
     focused: number
     suggestions: string[]
@@ -48,6 +76,10 @@ export type UseMnemonicWordEntryResult = {
      * slots are absent — they are incomplete, not wrong. */
     invalidWordIndices: Set<number>
     areAllWordsValid: boolean
+    /** Fresh zeroable buffer built straight from the slot indices — no
+     * string pass. Null while any slot is not a wordlist word. Caller owns
+     * zeroing the returned buffer. */
+    getMnemonicIndices: () => Uint16Array | null
 }
 
 /**
@@ -62,34 +94,49 @@ export const useMnemonicWordEntry = ({
 }: UseMnemonicWordEntryParams): UseMnemonicWordEntryResult => {
     const { readText } = useClipboard()
 
-    const [words, setWords] = useState<string[]>(() =>
-        new Array(wordCount).fill(''),
+    const [slots, setSlots] = useState<MnemonicSlot[]>(() =>
+        Array.from({ length: wordCount }, emptySlot),
     )
-    const wordsRef = useRef(words)
-    wordsRef.current = words
+    const slotsRef = useRef(slots)
+    slotsRef.current = slots
 
     const [focused, setFocused] = useState(0)
 
+    const words = useMemo(() => slots.map(slotText), [slots])
+
     const suggestions = useMemo(() => {
-        const current = (words[focused] ?? '').trim().toLowerCase()
+        const slot = slots[focused]
+        const current = slot ? slotText(slot).trim().toLowerCase() : ''
         if (current.length < 2) return []
         return MNEMONIC_WORDLIST.filter(
             w => w !== current && w.startsWith(current),
         ).slice(0, MAX_SUGGESTIONS)
-    }, [words, focused])
+    }, [slots, focused])
 
     const invalidWordIndices = useMemo(() => {
         const invalid = new Set<number>()
-        words.forEach((word, index) => {
-            if (word.length > 0 && !WORDLIST_SET.has(word)) invalid.add(index)
+        slots.forEach((slot, index) => {
+            if (slot.kind === 'draft' && slot.draft.length > 0)
+                invalid.add(index)
         })
         return invalid
-    }, [words])
+    }, [slots])
 
     const areAllWordsValid = useMemo(
-        () => words.every(w => WORDLIST_SET.has(w)),
-        [words],
+        () => slots.every(slot => slot.kind === 'index'),
+        [slots],
     )
+
+    const getMnemonicIndices = useCallback((): Uint16Array | null => {
+        const current = slotsRef.current
+        const indices = new Uint16Array(current.length)
+        for (let i = 0; i < current.length; i++) {
+            const slot = current[i]
+            if (slot.kind !== 'index') return null
+            indices[i] = slot.index
+        }
+        return indices
+    }, [])
 
     const updateWord = useCallback(
         (value: string, index: number) => {
@@ -97,7 +144,7 @@ export const useMnemonicWordEntry = ({
 
             if (split.length > 1) {
                 if (split.length === wordCount) {
-                    setWords(split)
+                    setSlots(split.map(toSlot))
                     // Drop keyboard so the submit button is reachable.
                     Keyboard.dismiss()
                     return
@@ -110,10 +157,10 @@ export const useMnemonicWordEntry = ({
 
                 const remainingSlots = wordCount - index
                 if (split.length <= remainingSlots) {
-                    setWords(prev => {
+                    setSlots(prev => {
                         const next = [...prev]
                         split.forEach((w, i) => {
-                            next[index + i] = w
+                            next[index + i] = toSlot(w)
                         })
                         return next
                     })
@@ -126,9 +173,9 @@ export const useMnemonicWordEntry = ({
             // Use the split token, not value.trim(), so separators
             // splitMnemonic strips (commas, mixed whitespace) don't linger in
             // the slot and block the user.
-            setWords(prev => {
+            setSlots(prev => {
                 const next = [...prev]
-                next[index] = split[0] ?? ''
+                next[index] = toSlot(split[0] ?? '')
                 return next
             })
         },
@@ -137,7 +184,8 @@ export const useMnemonicWordEntry = ({
 
     const handleWordChange = useCallback(
         async (value: string, index: number) => {
-            const currentWord = wordsRef.current[index] ?? ''
+            const currentSlot = slotsRef.current[index]
+            const currentWord = currentSlot ? slotText(currentSlot) : ''
             const delta = value.length - currentWord.length
 
             // Android keyboards (Gboard, Samsung) mangle multi-word pastes by
@@ -149,7 +197,8 @@ export const useMnemonicWordEntry = ({
             // value.trim(), so trailing punctuation still reads as one token.
             const tokens = splitMnemonic(value)
             const looksLikeAutocomplete =
-                tokens.length === 1 && WORDLIST_SET.has(tokens[0].toLowerCase())
+                tokens.length === 1 &&
+                WORD_TO_INDEX.has(tokens[0].toLowerCase())
 
             if (delta > 1 && !looksLikeAutocomplete) {
                 try {
@@ -174,9 +223,9 @@ export const useMnemonicWordEntry = ({
 
     const handleSelectSuggestion = useCallback(
         (word: string) => {
-            setWords(prev => {
+            setSlots(prev => {
                 const next = [...prev]
-                next[focused] = word
+                next[focused] = toSlot(word)
                 return next
             })
             if (focused < wordCount - 1) {
@@ -211,11 +260,15 @@ export const useMnemonicWordEntry = ({
         inputRefs.current[focused]?.focus()
     }, [focused])
 
-    // Wipe the entered words from the heap on unmount. Best-effort — it clears
-    // the array we hold so a mnemonic doesn't outlive the entry screen.
+    // Scrub the retained slots on unmount. Index slots are mutable numbers and
+    // zero in place; draft strings are immutable JS strings, so dropping the
+    // reference is the best the platform allows.
     useEffect(
         () => () => {
-            wordsRef.current.fill('')
+            slotsRef.current.forEach(slot => {
+                if (slot.kind === 'index') slot.index = 0
+                else slot.draft = ''
+            })
         },
         [],
     )
@@ -241,5 +294,6 @@ export const useMnemonicWordEntry = ({
         handleSubmitEditing,
         invalidWordIndices,
         areAllWordsValid,
+        getMnemonicIndices,
     }
 }

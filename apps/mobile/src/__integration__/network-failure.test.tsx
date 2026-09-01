@@ -71,7 +71,7 @@ import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
@@ -83,7 +83,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     let keyResult: Algo25KeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
