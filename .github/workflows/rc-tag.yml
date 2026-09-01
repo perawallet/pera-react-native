@@ -1,4 +1,4 @@
-name: Release Candidate Tag
+name: Release / RC
 
 # Mints a vX.Y.Z-rc.N tag every Friday and pushes it. The pushed tag fires
 # Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,

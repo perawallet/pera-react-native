@@ -1,4 +1,4 @@
-name: Jira Release Sync
+name: Jira / Release Sync
 
 # The release half of the ticket lifecycle, driven entirely from GitHub:
 #

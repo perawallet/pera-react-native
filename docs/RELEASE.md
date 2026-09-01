@@ -14,7 +14,7 @@ The smoke gate only runs on staging builds: they are the only ones that bake `DI
 
 ### Cutting a golden release
 
-Run the Promote RC to Release workflow from the Actions tab. It tags the most recent rc's commit with the equivalent stable version (`v7.0.2-rc.3` → `v7.0.2`), publishes the GitHub Release, and fires the production builds. Leave the input blank to promote the highest rc, or name an older one explicitly.
+Run the `Release / Stable` workflow from the Actions tab. It tags the most recent rc's commit with the equivalent stable version (`v7.0.2-rc.3` → `v7.0.2`), publishes the GitHub Release, and fires the production builds. Leave the input blank to promote the highest rc, or name an older one explicitly.
 
 It tags the rc's _commit_, not `main`: that commit is what was built and put in front of QA. No version bump is needed afterwards: `create-nightly-tag.sh` sees the new stable tag and rolls subsequent prereleases to the next patch.
 

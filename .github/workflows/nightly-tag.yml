@@ -1,4 +1,4 @@
-name: Nightly Tag
+name: Release / Nightly
 
 # Mints a vX.Y.Z-alpha.N tag on main each night and pushes it. The pushed tag
 # fires Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,
