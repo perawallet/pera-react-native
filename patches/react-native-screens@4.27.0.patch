@@ -1,0 +1,19 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
+index 6fcabc3e92949f5e4f5c80696f6d2403596f2308..89408bea8908b38ba308f98015913e5b575609e0 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
+@@ -329,6 +329,14 @@ open class ScreenFragment :
+             }
+         }
+         childScreenContainers.clear()
++        // Fabric's tagToViewState keeps the Screen view alive after this fragment is
++        // destroyed; without clearing the back-reference the destroyed fragment (and its
++        // view tree) is retained for the surface's lifetime. Guarded because
++        // ScreenContainer reassigns fragmentWrapper when a screen is re-added.
++        // See software-mansion/react-native-screens#3755.
++        if (screen.fragmentWrapper === this) {
++            screen.fragmentWrapper = null
++        }
+     }
+ 
+     companion object {
