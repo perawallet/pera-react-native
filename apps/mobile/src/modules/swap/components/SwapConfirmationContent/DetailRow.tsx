@@ -19,6 +19,13 @@ type DetailRowProps = {
     value?: string
     valueStyle?: object
     info?: string
+    /**
+     * Applied to the value text, not the row: the label is already matchable by
+     * its text, while the value is what an assertion needs to read. Rows that
+     * pass `children` set the id on their own text node instead — a PWView
+     * wrapper is accessible:false, so on Android it exposes no content-desc.
+     */
+    testID?: string
     children?: React.ReactNode
 }
 
@@ -27,6 +34,7 @@ export const DetailRow = ({
     value,
     valueStyle,
     info,
+    testID,
     children,
 }: DetailRowProps) => {
     const styles = useStyles()
@@ -41,7 +49,14 @@ export const DetailRow = ({
                     </InfoButton>
                 )}
             </PWView>
-            {children ?? <PWText style={valueStyle}>{value}</PWText>}
+            {children ?? (
+                <PWText
+                    style={valueStyle}
+                    testID={testID}
+                >
+                    {value}
+                </PWText>
+            )}
         </PWView>
     )
 }
