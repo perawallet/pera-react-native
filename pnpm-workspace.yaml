@@ -204,6 +204,14 @@ patchedDependencies:
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
   # qualify to Swift.abs to disambiguate. Drop once Expo ships a toolchain-compatible release.
   "expo-modules-jsi@57.0.4": patches/expo-modules-jsi@57.0.4.patch
+  # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
+  # Fabric's tagToViewState keeps the Screen view alive for the surface's
+  # lifetime, so every destroyed navigation fragment (plus its view subtree) is
+  # retained — LeakCanary flags a handful per navigation session. Clears the
+  # back-reference on destroy, guarded because ScreenContainer reassigns it when
+  # a screen is re-added (software-mansion/react-native-screens#3755). Drop once
+  # upstream ships the fix.
+  "react-native-screens@4.27.0": patches/react-native-screens@4.27.0.patch
 
 overrides:
   # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
