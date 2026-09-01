@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
-import { mnemonicWordsToIndices, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
@@ -91,6 +91,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleSubmitEditing,
         invalidWordIndices,
         areAllWordsValid,
+        getMnemonicIndices,
     } = useMnemonicWordEntry({
         wordCount: mnemonicLength,
         onTooManyWords,
@@ -124,11 +125,11 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         void deferToNextCycle(async () => {
-            // Zeroable indices, never the space-joined phrase — no mnemonic
-            // string is assembled on the import path. `canImport` already
-            // gates on every word being a wordlist word, so null only means
-            // an out-of-band invocation.
-            const mnemonicIndices = mnemonicWordsToIndices(words)
+            // Zeroable indices straight from the slot state — no mnemonic
+            // string or word array is assembled on the import path.
+            // `canImport` already gates on every word being a wordlist word,
+            // so null only means an out-of-band invocation.
+            const mnemonicIndices = getMnemonicIndices()
             if (!mnemonicIndices) {
                 errorToast(
                     t('onboarding.import_account.invalid_mnemonic_title'),
@@ -193,7 +194,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [
         importAccount,
         markBackupComplete,
-        words,
+        getMnemonicIndices,
         accountType,
         navigation,
         showToast,

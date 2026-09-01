@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
     ASB_RECOVERY_MNEMONIC_WORD_COUNT,
     AsbErrorReason,
@@ -18,11 +18,7 @@ import {
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import {
-    MNEMONIC_WORDLIST,
-    mnemonicWordsToIndices,
-    zeroBytes,
-} from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -47,8 +43,6 @@ type UseAsbImportKeyScreenResult = {
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
     handleSubmitEditing: (index: number) => void
 }
-
-const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
 
 export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const navigation = useAppNavigation()
@@ -94,23 +88,15 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         handleSelectSuggestion,
         refCallbacks,
         handleSubmitEditing,
+        areAllWordsValid,
+        getMnemonicIndices,
     } = useMnemonicWordEntry({
         wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
         onTooManyWords,
         onInsufficientSlots,
     })
 
-    const trimmedWords = useMemo(
-        () => words.map(w => w.trim().toLowerCase()),
-        [words],
-    )
-
-    const canContinue = useMemo(
-        () =>
-            trimmedWords.every(w => w.length > 0 && WORDLIST_SET.has(w)) &&
-            !isProcessing,
-        [trimmedWords, isProcessing],
-    )
+    const canContinue = areAllWordsValid && !isProcessing
 
     const handleContinue = useCallback(async () => {
         if (!envelope || isProcessing) return
@@ -118,10 +104,11 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         setIsProcessing(true)
         let mnemonicIndices: Uint16Array | null = null
         try {
-            // Zeroable indices, never the space-joined phrase. `canContinue`
-            // gates on every word being a wordlist word, so null only means
-            // an out-of-band invocation — same user copy as a bad key.
-            mnemonicIndices = mnemonicWordsToIndices(trimmedWords)
+            // Zeroable indices straight from the slot state — no word array
+            // is assembled. `canContinue` gates on every word being a
+            // wordlist word, so null only means an out-of-band invocation —
+            // same user copy as a bad key.
+            mnemonicIndices = getMnemonicIndices()
             if (!mnemonicIndices) {
                 throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
             }
@@ -157,7 +144,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     }, [
         envelope,
         isProcessing,
-        trimmedWords,
+        getMnemonicIndices,
         setPayload,
         navigation,
         errorToast,
