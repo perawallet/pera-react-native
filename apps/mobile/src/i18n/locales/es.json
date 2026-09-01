@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "No se pudo iniciar la app",
             "body": "Se produjo un error al inicializar la app.  Prueba a reiniciarla. Si el problema continúa, contacta con soporte.\n\nTus fondos están seguros en la blockchain de Algorand.",
-            "retry": "Reintentar"
+            "retry": "Reintentar",
+            "keystore": {
+                "title": "Error en los datos de la wallet",
+                "body": "Pera no pudo leer parte de los datos de la wallet guardados en este dispositivo, por lo que no puede iniciarse de forma segura. Contacta con soporte antes de reinstalar la app: al reinstalarla podrían perderse las cuentas que solo existen en este dispositivo.\n\nTus fondos están seguros en la blockchain de Algorand."
+            }
         }
     },
     "asset_sort": {
