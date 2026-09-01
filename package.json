@@ -13,7 +13,7 @@
     "mobile:start": "turbo run start --filter=mobile",
     "pre-push": "./tools/pre-push",
     "lint": "turbo run lint && pnpm lint:lanekeep",
-    "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages extensions conformance",
+    "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages extensions conformance lanekeep",
     "lint:fix": "turbo run lint -- --fix",
     "lint:lanekeep": "lanekeep check",
     "lint:lanekeep:warn": "lanekeep check --warn-only",

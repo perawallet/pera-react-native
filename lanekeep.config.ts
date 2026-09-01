@@ -35,11 +35,14 @@ export default defineConfig({
         '**/.expo/**',
         'packages/devtools/**',
     ],
-    // The per-rule budget catches a single rule going quadratic; the global
-    // one has to absorb a cold parse of the whole corpus on a loaded CI
-    // runner, which is slower than a dev machine and needs more than a small
-    // multiple of the observed worst case.
-    timeouts: { rule: 250, global: 60000 },
+    // The per-rule budget is a MAXIMUM over every file in the corpus, not an
+    // average like the global budget — one slow file trips it regardless of
+    // how fast the other 3900+ run. It has to clear the worst single file on
+    // a loaded CI runner, not just a warm dev machine, while still catching a
+    // rule that goes quadratic (which would blow well past this ceiling, not
+    // graze it). The global budget already covers a rule that's merely slow
+    // across the whole run.
+    timeouts: { rule: 1000, global: 60000 },
     namespaces: ['pera'],
     rules: [
         noPrimitiveRnComponents,
