@@ -500,7 +500,12 @@ export const usePeraWebviewInterface = (
                             opts,
                         })
 
-                        enqueueSignRequest(resolved, {
+                        // Fire-and-forget despite `enqueueSignRequest` being
+                        // async: `requireSecure` wants a void callback,
+                        // `resolveArc0001`'s throw must reach the catch below
+                        // synchronously, and the enqueue handles its own
+                        // failures via respondWithError.
+                        void enqueueSignRequest(resolved, {
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
