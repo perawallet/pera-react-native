@@ -2966,6 +2966,8 @@
         "execution": {
             "error_title": "Falha na conversão",
             "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "insufficient_algo_title": "ALGO insuficiente",
+            "insufficient_algo_body": "Esta conta precisa de pelo menos {{amount}} ALGO a mais para cobrir esta conversão, as taxas e o saldo mínimo. Adicione mais ALGO e tente novamente.",
             "success_title": "Conversão concluída",
             "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
             "user_rejected": "Conversão cancelada",

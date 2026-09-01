@@ -2943,6 +2943,8 @@
         "execution": {
             "error_title": "Swap başarısız",
             "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "insufficient_algo_title": "Yetersiz ALGO",
+            "insufficient_algo_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} ALGO daha gerekiyor. Daha fazla ALGO ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
             "user_rejected": "Swap iptal edildi",
