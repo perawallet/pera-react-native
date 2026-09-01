@@ -111,6 +111,15 @@ auditConfig:
   ignoreGhsas:
     - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
     - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
+    # decode-uri-component's exponential-decode DoS is fixed here, not accepted:
+    # patches/decode-uri-component@0.2.2.patch ports the fix in place. `pnpm audit`
+    # matches by resolved name+version, so a patched 0.2.2 still reports — hence
+    # this entry. No version bump is available: the only patched release (0.5.0)
+    # is ESM-only, the sole consumer query-string@7.1.3 is CJS and requires() it,
+    # and @react-navigation/core's latest still pins query-string ^7.1.3. Drop
+    # this and the patch together once react-navigation drops query-string, or
+    # decode-uri-component ships a patched release with a CJS entry point.
+    - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-decode DoS, patched in place (see patches/)
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -186,6 +195,15 @@ patchedDependencies:
   # canary.26 shipped the derivedParentSecret fix upstream (parent.bytes), so
   # that hunk is dropped rather than carried forward.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.26.patch
+  # GHSA-vcc3-ghjq-m6fr: 0.2.2's recursive decodeComponents() re-decodes
+  # malformed percent-encoded input exponentially. Upstream's only fix
+  # (0.5.0) is ESM-only, but query-string@7.1.3 (the sole consumer, via
+  # @react-navigation/core) is CJS and requires this package, so the fix
+  # can't be taken by bumping. Transplants 0.5.0's O(n) decode() and its
+  # three helpers verbatim into the CJS file; everything else, including
+  # module.exports, is untouched. Drop once query-string ships a CJS
+  # release built on decode-uri-component >=0.5.0.
+  "decode-uri-component@0.2.2": patches/decode-uri-component@0.2.2.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
