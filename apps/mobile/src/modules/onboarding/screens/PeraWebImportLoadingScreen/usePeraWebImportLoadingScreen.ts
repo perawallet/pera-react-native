@@ -97,7 +97,6 @@ export const usePeraWebImportLoadingScreen = (): void => {
             } catch (error) {
                 if (cancelled) return
                 logger.error('Pera Web backup fetch failed', { error })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: surfaced as typed PeraWebImportError to user
                 errorToastRef.current(
                     tRef.current(
                         'onboarding.pera_web_import.loading.fetch_failed_title',
@@ -124,7 +123,6 @@ export const usePeraWebImportLoadingScreen = (): void => {
                     error instanceof PeraWebImportError
                         ? error.reason
                         : PeraWebImportErrorReason.DecryptionFailed
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: typed reason mapped to localized string
                 errorToastRef.current(
                     tRef.current(
                         'onboarding.pera_web_import.loading.decrypt_failed_title',

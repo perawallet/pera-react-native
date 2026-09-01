@@ -59,3 +59,6 @@ docs/audits/
 .superpowers/
 /apps/mobile/locale-shots-verify
 /apps/mobile/locale-shots-verify2
+
+# lanekeep result cache and precompiled rule components (~33 MiB)
+.lanekeep/

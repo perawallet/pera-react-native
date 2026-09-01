@@ -19,12 +19,7 @@
       "default": "./vitest/base.js"
     }
   },
-  "files": ["tsconfig", "vitest", "guardrails"],
-  "scripts": {
-    "guardrails": "tsx guardrails/index.ts",
-    "test": "vitest run",
-    "test:unit": "vitest run"
-  },
+  "files": ["tsconfig", "vitest"],
   "dependencies": {
     "typescript": "catalog:",
     "fast-glob": "catalog:"

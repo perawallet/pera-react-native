@@ -245,7 +245,7 @@ export const useStyles = makeStyles(theme => ({
     comparisonTag: {
         margin: 0,
         padding: 0,
-        // guardrails-ignore-next-line no-numeric-sizes reason: fixed column width chosen to align mono comparison labels in the dev viewer; no theme spacing token matches
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: fixed column width chosen to align mono comparison labels in the dev viewer; no theme spacing token matches
         width: 64,
         color: theme.colors.layerGray,
         ...getTypography(theme, 'mono'),
