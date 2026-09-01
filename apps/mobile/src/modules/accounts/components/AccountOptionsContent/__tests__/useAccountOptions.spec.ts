@@ -783,6 +783,17 @@ describe('useAccountOptions', () => {
             })
         })
 
+        it('navigates to RekeyToQuantum intro when the sheet resolves to quantum', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+
+            await pressRekey(algo25Account)
+
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
+                screen: 'RekeyToQuantumIntro',
+                params: { sourceAddress: algo25Account.address },
+            })
+        })
+
         it('does not navigate when the type sheet is dismissed', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
 

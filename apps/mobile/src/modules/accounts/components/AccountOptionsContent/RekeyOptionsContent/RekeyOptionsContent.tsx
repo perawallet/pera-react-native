@@ -14,18 +14,20 @@ import { PWSheetLayout, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useStyles } from './styles'
 
 /**
  * Shared accounts never reach this sheet — they have a single destination
  * type, so their menu row goes straight to the intro screen.
  */
-export type RekeyTargetType = 'ledger' | 'standard'
+export type RekeyTargetType = 'ledger' | 'standard' | 'quantum'
 
 export const RekeyOptionsContent = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<RekeyTargetType>()
+    const isQuantumEnabled = useIsQuantumAccountsEnabled()
 
     return (
         <PWSheetLayout
@@ -53,6 +55,24 @@ export const RekeyOptionsContent = () => {
                     leftIcon='wallet'
                     onPress={() => resolve('standard')}
                 />
+                {isQuantumEnabled && (
+                    <PanelButton
+                        testID='rekey_option_quantum'
+                        title={t('account_options.rekey_option_quantum_title')}
+                        description={t(
+                            'account_options.rekey_option_quantum_description',
+                        )}
+                        titleWeight='h3'
+                        leftIcon='quantum'
+                        badge={{
+                            label: t(
+                                'account_options.rekey_option_quantum_badge',
+                            ),
+                            variant: 'new',
+                        }}
+                        onPress={() => resolve('quantum')}
+                    />
+                )}
             </PWView>
         </PWSheetLayout>
     )

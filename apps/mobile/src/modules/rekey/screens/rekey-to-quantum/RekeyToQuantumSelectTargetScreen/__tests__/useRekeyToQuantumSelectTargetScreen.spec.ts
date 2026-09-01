@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useRekeyToStandardSelectTargetScreen } from '../useRekeyToStandardSelectTargetScreen'
+import { useRekeyToQuantumSelectTargetScreen } from '../useRekeyToQuantumSelectTargetScreen'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -33,51 +33,81 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockIsEligibleRekeyTarget = vi.fn(
-    (account: WalletAccount, _source: WalletAccount) =>
-        account.address !== 'SRC',
+let quantumEnabled = true
+vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
+    useIsQuantumAccountsEnabled: () => quantumEnabled,
+}))
+
+const mockIsEligibleQuantumRekeyTarget = vi.fn(
+    (
+        account: WalletAccount,
+        _source: WalletAccount,
+        _isQuantumTargetEnabled: boolean,
+    ) => account.address !== 'SRC',
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleRekeyTarget: (account: WalletAccount, source: WalletAccount) =>
-        mockIsEligibleRekeyTarget(account, source),
+    isEligibleQuantumRekeyTarget: (
+        account: WalletAccount,
+        source: WalletAccount,
+        isQuantumTargetEnabled: boolean,
+    ) =>
+        mockIsEligibleQuantumRekeyTarget(
+            account,
+            source,
+            isQuantumTargetEnabled,
+        ),
 }))
 
-describe('useRekeyToStandardSelectTargetScreen', () => {
+describe('useRekeyToQuantumSelectTargetScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        quantumEnabled = true
     })
 
-    it('filters out ineligible accounts via isEligibleRekeyTarget', () => {
+    it('filters out ineligible accounts via isEligibleQuantumRekeyTarget', () => {
         const { result } = renderHook(() =>
-            useRekeyToStandardSelectTargetScreen(),
+            useRekeyToQuantumSelectTargetScreen(),
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
     })
 
-    it('passes the resolved source account to isEligibleRekeyTarget', () => {
-        renderHook(() => useRekeyToStandardSelectTargetScreen())
+    it('passes the resolved source account and the quantum flag to isEligibleQuantumRekeyTarget', () => {
+        renderHook(() => useRekeyToQuantumSelectTargetScreen())
 
-        expect(mockIsEligibleRekeyTarget).toHaveBeenCalledWith(
+        expect(mockIsEligibleQuantumRekeyTarget).toHaveBeenCalledWith(
             targetA,
             sourceAccount,
+            true,
+        )
+    })
+
+    it('passes the quantum flag through when quantum accounts are disabled', () => {
+        quantumEnabled = false
+
+        renderHook(() => useRekeyToQuantumSelectTargetScreen())
+
+        expect(mockIsEligibleQuantumRekeyTarget).toHaveBeenCalledWith(
+            targetA,
+            sourceAccount,
+            false,
         )
     })
 
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
         const { result } = renderHook(() =>
-            useRekeyToStandardSelectTargetScreen(),
+            useRekeyToQuantumSelectTargetScreen(),
         )
 
         act(() => {
             result.current.handleSelect(targetA)
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
-            screen: 'RekeyToStandardConfirm',
+        expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
+            screen: 'RekeyToQuantumConfirm',
             params: {
                 sourceAddress: 'SRC',
                 targetAddress: 'A',

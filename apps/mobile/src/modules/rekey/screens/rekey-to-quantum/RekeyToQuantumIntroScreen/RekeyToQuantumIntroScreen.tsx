@@ -12,20 +12,20 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
-import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
+import { useRekeyToQuantumIntroScreen } from './useRekeyToQuantumIntroScreen'
 
-export const RekeyToStandardIntroScreen = () => {
-    const { i18nBaseKey, expectationCount } = useRekeyToStandardIntroScreen()
+export const RekeyToQuantumIntroScreen = () => {
+    const { i18nBaseKey, expectationCount } = useRekeyToQuantumIntroScreen()
 
     return (
         <RekeyIntroScreen
             i18nBaseKey={i18nBaseKey}
-            testIdPrefix='rekey-to-standard'
+            testIdPrefix='rekey-to-quantum'
             expectationCount={expectationCount}
             navConfig={{
-                parentRoute: 'RekeyToStandard',
-                selectTargetScreen: 'RekeyToStandardSelectTarget',
-                supportUrl: config.rekeyToStandardSupportUrl,
+                parentRoute: 'RekeyToQuantum',
+                selectTargetScreen: 'RekeyToQuantumSelectTarget',
+                supportUrl: config.quantumAccountSupportUrl,
             }}
         />
     )

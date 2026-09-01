@@ -31,6 +31,7 @@ import {
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { type SearchStackParamsList } from '@modules/search'
 import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
+import type { RekeyToQuantumStackParamList } from '@modules/rekey/routes/rekey-to-quantum'
 import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared'
 import type { RekeyToStandardStackParamList } from '@modules/rekey/routes/rekey-to-standard'
 import type { RescanRekeyedStackParamList } from '@modules/rekey/routes/rescan-rekeyed'
@@ -51,6 +52,7 @@ export type RootStackParamList = {
     BackupWallet: NavigatorScreenParams<BackupStackParamList>
     RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>
     RekeyToLedger: NavigatorScreenParams<RekeyToLedgerStackParamList>
+    RekeyToQuantum: NavigatorScreenParams<RekeyToQuantumStackParamList>
     RekeyToShared: NavigatorScreenParams<RekeyToSharedStackParamList>
     RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
     UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>

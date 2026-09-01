@@ -12,18 +12,18 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useRekeyToStandardIntroScreen } from '../useRekeyToStandardIntroScreen'
+import { useRekeyToQuantumIntroScreen } from '../useRekeyToQuantumIntroScreen'
 
 import en from '@i18n/locales/en.json'
 
-describe('useRekeyToStandardIntroScreen', () => {
+describe('useRekeyToQuantumIntroScreen', () => {
     // Neither half of this pairing is visible to `lint:i18n` — the keys are
     // built dynamically and its namespace claim covers anything under them — so
     // a mismatch renders the raw key string on screen with every check green.
     it('keeps expectationCount in sync with the expect_N keys in en.json', () => {
-        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
+        const { result } = renderHook(() => useRekeyToQuantumIntroScreen())
 
-        const copy: Record<string, string> = en.rekey.to_standard.intro
+        const copy: Record<string, string> = en.rekey.to_quantum.intro
         const { expectationCount } = result.current
 
         for (let n = 1; n <= expectationCount; n++) {
@@ -35,11 +35,11 @@ describe('useRekeyToStandardIntroScreen', () => {
     // A missing key renders as the raw key string on the screen, which no
     // integration test asserting testIDs would catch.
     it('resolves the title to a real en.json string', () => {
-        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
+        const { result } = renderHook(() => useRekeyToQuantumIntroScreen())
 
-        const copy: Record<string, string> = en.rekey.to_standard.intro
+        const copy: Record<string, string> = en.rekey.to_quantum.intro
 
-        expect(result.current.i18nBaseKey).toBe('rekey.to_standard.intro')
+        expect(result.current.i18nBaseKey).toBe('rekey.to_quantum.intro')
         expect(copy.title).toBeTruthy()
     })
 })

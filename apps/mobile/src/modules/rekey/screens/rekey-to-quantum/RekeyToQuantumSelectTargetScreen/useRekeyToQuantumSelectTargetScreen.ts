@@ -13,50 +13,53 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    isEligibleRekeyTarget,
+    isEligibleQuantumRekeyTarget,
     useAllAccounts,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
-import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
+import type { RekeyToQuantumStackParamList } from '../../../routes/rekey-to-quantum/types'
 
-export type UseRekeyToStandardSelectTargetScreenResult = {
+export type UseRekeyToQuantumSelectTargetScreenResult = {
     sourceAddress: string
     targets: WalletAccount[]
     handleSelect: (target: WalletAccount) => void
 }
 
-export const useRekeyToStandardSelectTargetScreen =
-    (): UseRekeyToStandardSelectTargetScreenResult => {
+export const useRekeyToQuantumSelectTargetScreen =
+    (): UseRekeyToQuantumSelectTargetScreenResult => {
         const navigation = useAppNavigation()
         const route =
             useRoute<
                 RouteProp<
-                    RekeyToStandardStackParamList,
-                    'RekeyToStandardSelectTarget'
+                    RekeyToQuantumStackParamList,
+                    'RekeyToQuantumSelectTarget'
                 >
             >()
         const sourceAddress = route.params.sourceAddress
         const accounts = useAllAccounts()
         const source = useFindAccountByAddress(sourceAddress)
+        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
 
         const targets = useMemo(
             () =>
                 accounts.filter(account =>
-                    isEligibleRekeyTarget(
+                    isEligibleQuantumRekeyTarget(
                         account,
                         source ?? { address: sourceAddress },
+                        isQuantumTargetEnabled,
                     ),
                 ),
-            [accounts, source, sourceAddress],
+            [accounts, source, sourceAddress, isQuantumTargetEnabled],
         )
 
         const handleSelect = useCallback(
             (target: WalletAccount) => {
-                navigation.navigate('RekeyToStandard', {
-                    screen: 'RekeyToStandardConfirm',
+                navigation.navigate('RekeyToQuantum', {
+                    screen: 'RekeyToQuantumConfirm',
                     params: {
                         sourceAddress,
                         targetAddress: target.address,

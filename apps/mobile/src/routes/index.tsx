@@ -44,6 +44,7 @@ import { MultisigStackNavigator } from '@modules/multisig'
 import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
+import { RekeyToQuantumStackNavigator } from '@modules/rekey/routes/rekey-to-quantum'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
 import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
@@ -152,6 +153,10 @@ export const MainRoutes = () => {
                         <RootStack.Screen
                             name='RekeyToStandard'
                             component={RekeyToStandardStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='RekeyToQuantum'
+                            component={RekeyToQuantumStackNavigator}
                         />
                         <RootStack.Screen
                             name='UndoRekey'

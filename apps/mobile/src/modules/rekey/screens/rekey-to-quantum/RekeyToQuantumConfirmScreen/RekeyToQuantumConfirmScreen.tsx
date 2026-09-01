@@ -11,22 +11,19 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
-import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
+import { RekeyConfirmView } from '../../../components/RekeyConfirmView'
+import { useRekeyToQuantumConfirmScreen } from './useRekeyToQuantumConfirmScreen'
 
-export const RekeyToStandardIntroScreen = () => {
-    const { i18nBaseKey, expectationCount } = useRekeyToStandardIntroScreen()
+export const RekeyToQuantumConfirmScreen = () => {
+    const { handleConfirmPress, ...rest } = useRekeyToQuantumConfirmScreen()
 
     return (
-        <RekeyIntroScreen
-            i18nBaseKey={i18nBaseKey}
-            testIdPrefix='rekey-to-standard'
-            expectationCount={expectationCount}
-            navConfig={{
-                parentRoute: 'RekeyToStandard',
-                selectTargetScreen: 'RekeyToStandardSelectTarget',
-                supportUrl: config.rekeyToStandardSupportUrl,
-            }}
+        <RekeyConfirmView
+            {...rest}
+            i18nPrefix='rekey.to_quantum.confirm'
+            testIDPrefix='rekey-to-quantum'
+            supportUrl={config.quantumAccountSupportUrl}
+            onConfirmPress={handleConfirmPress}
         />
     )
 }

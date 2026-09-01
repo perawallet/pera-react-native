@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
+import { RekeySuccessScreen } from '../../../components/RekeySuccessScreen'
 
-const I18N_BASE_KEY = 'rekey.to_standard.intro'
-
-export type UseRekeyToStandardIntroScreenResult = {
-    i18nBaseKey: string
-    /** Kept with the keys so the spec can hold the two in sync. */
-    expectationCount: RekeyIntroScreenProps['expectationCount']
-}
-
-export const useRekeyToStandardIntroScreen =
-    (): UseRekeyToStandardIntroScreenResult => ({
-        i18nBaseKey: I18N_BASE_KEY,
-        expectationCount: 4,
-    })
+export const RekeyToQuantumSuccessScreen = () => (
+    <RekeySuccessScreen
+        i18nPrefix='rekey.to_quantum.success'
+        testIdPrefix='rekey-to-quantum'
+    />
+)
