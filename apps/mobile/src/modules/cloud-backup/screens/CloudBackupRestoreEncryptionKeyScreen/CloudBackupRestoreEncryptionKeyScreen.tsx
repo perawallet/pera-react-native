@@ -41,7 +41,7 @@ export const CloudBackupRestoreEncryptionKeyScreen = () => {
                         testID='cloud_backup_restore_key_button'
                         variant='primary'
                         title={t('cloud_backup.restore.encryption_key_restore')}
-                        onPress={() => void handleRestore()}
+                        onPress={handleRestore}
                         isDisabled={!canRestore}
                     />
                 }

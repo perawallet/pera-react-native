@@ -17,7 +17,8 @@ const restore = vi.fn()
 const reset = vi.fn()
 const showToast = vi.fn()
 const clearDraft = vi.fn()
-let draftMnemonic: string[] | null = ['a', 'b']
+let hasMnemonic = true
+let isRestoring = false
 
 vi.mock('../../../hooks/useRestoreCloudBackup', () => ({
     useRestoreCloudBackup: (cbs: {
@@ -25,7 +26,7 @@ vi.mock('../../../hooks/useRestoreCloudBackup', () => ({
         onError: (c: string) => void
     }) => {
         ;(globalThis as Record<string, unknown>).__cbs = cbs
-        return { restore }
+        return { restore, isRestoring }
     },
 }))
 vi.mock('@react-navigation/native', () => ({
@@ -41,56 +42,50 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     ...(await importOriginal<object>()),
     useCloudBackupRestoreDraftStore: (sel: (s: unknown) => unknown) =>
         sel({
-            mnemonicIndices: draftMnemonic
-                ? new Uint16Array(draftMnemonic.length)
-                : null,
+            mnemonicIndices: hasMnemonic ? new Uint16Array(12) : null,
             mnemonicRawBytes: null,
             clearDraft,
         }),
-    readCloudBackupRestoreMnemonic: () => draftMnemonic,
 }))
 
 import { useCloudBackupRestoreEncryptionKeyScreen } from '../useCloudBackupRestoreEncryptionKeyScreen'
 
 describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     beforeEach(() => {
-        restore.mockReset()
-        reset.mockReset()
-        showToast.mockReset()
-        clearDraft.mockReset()
-        draftMnemonic = ['a', 'b']
+        vi.clearAllMocks()
+        hasMnemonic = true
+        isRestoring = false
     })
 
-    it('runs restore with the entered key and stored mnemonic', async () => {
+    it('runs restore with the entered key', () => {
         const { result } = renderHook(() =>
             useCloudBackupRestoreEncryptionKeyScreen(),
         )
         act(() => result.current.handleKeyChange('c2FsdA=='))
-        await act(async () => {
-            await result.current.handleRestore()
-        })
-        expect(restore).toHaveBeenCalledWith({
-            mnemonic: ['a', 'b'],
-            salt: 'c2FsdA==',
-        })
-        expect(result.current.isRestoring).toBe(false)
+        act(() => result.current.handleRestore())
+
+        expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
     })
 
-    it('clears the loading flag when restore rejects', async () => {
-        restore.mockRejectedValue(new Error('boom'))
+    it('does not run restore without a retained phrase', () => {
+        hasMnemonic = false
+        const { result } = renderHook(() =>
+            useCloudBackupRestoreEncryptionKeyScreen(),
+        )
+        act(() => result.current.handleKeyChange('c2FsdA=='))
+        act(() => result.current.handleRestore())
+
+        expect(restore).not.toHaveBeenCalled()
+    })
+
+    it('blocks a second press while the restore is in flight', () => {
+        isRestoring = true
         const { result } = renderHook(() =>
             useCloudBackupRestoreEncryptionKeyScreen(),
         )
         act(() => result.current.handleKeyChange('c2FsdA=='))
 
-        await act(async () => {
-            await expect(result.current.handleRestore()).rejects.toThrow('boom')
-        })
-
-        // `PWLoadingOverlay` is a modal — a stuck flag leaves the screen dead
-        // until the user force-quits.
-        expect(result.current.isRestoring).toBe(false)
-        expect(result.current.canRestore).toBe(true)
+        expect(result.current.canRestore).toBe(false)
     })
 
     it('navigates to overview and clears the draft on success', () => {
