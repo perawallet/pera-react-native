@@ -110,6 +110,18 @@ auditConfig:
   ignoreGhsas:
     - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
     - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
+    # decode-uri-component DoS via malformed percent-encoding. Reaches us only
+    # through @react-navigation/core → query-string@7 → getStateFromPath, and
+    # no NavigationContainer here has a `linking` config, so the vulnerable
+    # decode never executes (the app parses deeplinks with its own parser).
+    # Unfixable by override: the advisory's ">=0.4.3" names versions that were
+    # never published, and the only real patched release (0.5.0) is ESM-only —
+    # query-string@7's CJS require gets the module namespace instead of the
+    # function and throws at parse time (verified under Node 24; Metro's babel
+    # interop breaks the same way). Drop this entry when the react-navigation
+    # chain resolves a patched version itself — and revisit immediately if a
+    # `linking` config is ever added.
+    - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-time decoding
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
