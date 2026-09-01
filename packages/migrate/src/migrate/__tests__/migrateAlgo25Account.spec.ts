@@ -13,13 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../legacyKeyConversion', () => ({
-    algo25SecretKeyToMnemonic: vi.fn(() => 'word word word'),
+    algo25SecretKeyToIndices: vi.fn(() => new Uint16Array(25).fill(1)),
 }))
 
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { migrateAlgo25Account } from '../migrateAlgo25Account'
-import { algo25SecretKeyToMnemonic } from '../legacyKeyConversion'
+import { algo25SecretKeyToIndices } from '../legacyKeyConversion'
 import type { MigrateAccountArgs } from '../types'
 
 const buildLegacyAccount = (
@@ -62,8 +62,10 @@ const buildArgs = (
     }) as MigrateAccountArgs
 
 beforeEach(() => {
-    vi.mocked(algo25SecretKeyToMnemonic).mockClear()
-    vi.mocked(algo25SecretKeyToMnemonic).mockReturnValue('word word word')
+    vi.mocked(algo25SecretKeyToIndices).mockClear()
+    vi.mocked(algo25SecretKeyToIndices).mockReturnValue(
+        new Uint16Array(25).fill(1),
+    )
 })
 
 describe('migrateAlgo25Account', () => {
@@ -77,7 +79,7 @@ describe('migrateAlgo25Account', () => {
         )
     })
 
-    it('imports with the derived mnemonic and algo25 type', async () => {
+    it('imports with the derived indices and algo25 type', async () => {
         const importAccount = vi.fn().mockResolvedValue({
             id: 'i',
             type: AccountTypes.algo25,
@@ -88,11 +90,11 @@ describe('migrateAlgo25Account', () => {
 
         await migrateAlgo25Account(args)
 
-        expect(algo25SecretKeyToMnemonic).toHaveBeenCalledWith(
+        expect(algo25SecretKeyToIndices).toHaveBeenCalledWith(
             args.account.secretKey,
         )
         expect(importAccount).toHaveBeenCalledWith({
-            mnemonic: 'word word word',
+            mnemonicIndices: expect.objectContaining({ length: 25 }),
             type: 'algo25',
         })
     })

@@ -72,3 +72,27 @@ export const mnemonicIndexToWord = (index: number): string => {
     }
     return WORDLIST[index]
 }
+
+/**
+ * Encodes wordlist indices as the UTF-8 bytes of the space-joined phrase,
+ * without ever materializing the phrase as a string — for KDFs defined over
+ * the mnemonic's bytes (BIP39 PBKDF2). The wordlist is pure ASCII, so NFKD
+ * normalization is the identity and byte-building is a plain char-code copy.
+ * The returned buffer is zeroable; the caller owns wiping it after use.
+ */
+export const indicesToUtf8Bytes = (indices: Uint16Array): Uint8Array => {
+    let length = indices.length > 0 ? indices.length - 1 : 0
+    for (const index of indices) {
+        length += mnemonicIndexToWord(index).length
+    }
+    const bytes = new Uint8Array(length)
+    let offset = 0
+    for (let i = 0; i < indices.length; i++) {
+        if (i > 0) bytes[offset++] = 0x20 // ' '
+        const word = WORDLIST[indices[i]]
+        for (let j = 0; j < word.length; j++) {
+            bytes[offset++] = word.charCodeAt(j)
+        }
+    }
+    return bytes
+}

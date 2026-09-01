@@ -38,7 +38,18 @@ export const NotificationsScreen = () => {
         handleNotificationPress,
         listRef,
         isUnavailableOnNetwork,
+        isDeviceUnregistered,
     } = useNotificationsScreen()
+
+    const emptyCopy = isDeviceUnregistered
+        ? {
+              title: t('notifications.unavailable_title'),
+              body: t('notifications.unavailable_body'),
+          }
+        : {
+              title: t('notifications.empty_title'),
+              body: t('notifications.empty_body'),
+          }
 
     const renderItem = useCallback(
         ({ item }: { item: PeraNotification }) => (
@@ -77,8 +88,8 @@ export const NotificationsScreen = () => {
                             isLoading={isPending}
                             style={styles.emptyView}
                             icon='bell'
-                            title={t('notifications.empty_title')}
-                            body={t('notifications.empty_body')}
+                            title={emptyCopy.title}
+                            body={emptyCopy.body}
                         />
                     </OfflineTolerantView>
                 }

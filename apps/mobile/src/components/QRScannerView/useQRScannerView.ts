@@ -171,7 +171,8 @@ export const useQRScannerView = ({
     )
 
     const onError = useCallback((error: Error) => {
-        logger.error('QRScannerView: barcode scanner failed:', { error })
+        // Camera permission and hardware failures are the device's, not ours.
+        logger.warn('QRScannerView: barcode scanner failed:', { error })
     }, [])
 
     useEffect(() => {

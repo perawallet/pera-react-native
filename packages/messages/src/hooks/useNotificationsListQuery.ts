@@ -59,6 +59,13 @@ export type UseNotificationsListQueryResult = {
     refetch: () => void
     /** True when the active network has no Pera backend — this can never succeed here. */
     isUnavailableOnNetwork: boolean
+    /**
+     * On a Pera-backed network but with no device id yet (push registration
+     * hasn't landed — denied permission, FCM failure, first-run POST not yet
+     * succeeded). The query stays disabled, so the screen shows a terminal
+     * "unavailable" message instead of an empty inbox it can't distinguish from.
+     */
+    isDeviceUnregistered: boolean
 }
 
 export const useNotificationsListQuery =
@@ -66,6 +73,7 @@ export const useNotificationsListQuery =
         const { network } = useNetwork()
         const deviceID = useDeviceID(network)
         const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isEnabled = !!deviceID?.length && !isUnavailableOnNetwork
 
         const query = useInfiniteQuery({
             queryKey: getNotificationsListQueryKey(network, deviceID!),
@@ -79,7 +87,7 @@ export const useNotificationsListQuery =
             getNextPageParam: lastPage => extractCursor(lastPage.next),
             getPreviousPageParam: firstPage =>
                 extractCursor(firstPage.previous),
-            enabled: !!deviceID?.length && !isUnavailableOnNetwork,
+            enabled: isEnabled,
             select: useCallback(
                 (data: InfiniteData<NotificationsListResponse>) => {
                     return data.pages.flatMap((p: NotificationsListResponse) =>
@@ -94,7 +102,12 @@ export const useNotificationsListQuery =
 
         return {
             data: query.data ?? [],
-            isPending: isUnavailableOnNetwork ? false : query.isPending,
+            // A disabled query never leaves `status: 'pending'` in React Query
+            // v5, so `query.isPending` stays true forever while gated off. Only
+            // report loading when the query can actually run, otherwise the
+            // empty view spins indefinitely.
+            isPending: isEnabled ? query.isPending : false,
+            isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
             isFetchingNextPage: isUnavailableOnNetwork
                 ? false
                 : query.isFetchingNextPage,

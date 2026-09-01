@@ -22,6 +22,7 @@ import { useAccountScreenAnimation } from './useAccountScreenAnimation'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import { useAccountDrawerPickerKind } from '@modules/accounts/components/AccountDrawer'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,6 +56,9 @@ export const AccountScreen = () => {
     const hasHomeBanner = visibleBanners.length > 0
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
     const { request: requestBottomSheet } = useBottomSheet()
+
+    // Shapes the shared tab-shell drawer while this screen is focused.
+    useAccountDrawerPickerKind('portfolio')
 
     const openPasteLink = useCallback(() => {
         trackEvent(HomeEvent.PasteLink)

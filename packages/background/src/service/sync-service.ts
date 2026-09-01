@@ -110,7 +110,10 @@ export class SyncService {
     // repeatedly in quick succession (back-to-back phases, rapid ticks) stacks
     // up redundant full re-reads on the single DB connection. A short trailing
     // debounce collapses bursts into one refetch pass.
-    private invalidateTimers = new Map<string, ReturnType<typeof setTimeout>>()
+    private invalidateTimers = new Map<
+        string,
+        { timer: ReturnType<typeof setTimeout>; run: () => void }
+    >()
     // Guards against overlapping syncs. The poll loop self-reschedules (next
     // tick only after the current completes), but restart()/manual triggers
     // could otherwise start a second syncAll while a long fresh-import sync is
@@ -137,14 +140,14 @@ export class SyncService {
         delayMs = 250,
     ): void {
         const existing = this.invalidateTimers.get(key)
-        if (existing) clearTimeout(existing)
-        this.invalidateTimers.set(
-            key,
-            setTimeout(() => {
+        if (existing) clearTimeout(existing.timer)
+        this.invalidateTimers.set(key, {
+            run,
+            timer: setTimeout(() => {
                 this.invalidateTimers.delete(key)
                 run()
             }, delayMs),
-        )
+        })
     }
 
     start(): void {
@@ -170,7 +173,14 @@ export class SyncService {
             clearTimeout(this.timer)
             this.timer = null
         }
-        this.invalidateTimers.forEach(t => clearTimeout(t))
+        // Flush, don't drop: the writes these notify about are already in
+        // SQLite, and the next tick diffs against that persisted state — so a
+        // discarded notification leaves every mounted query stale until app
+        // restart (nothing ever re-flags the account as changed).
+        this.invalidateTimers.forEach(({ timer, run }) => {
+            clearTimeout(timer)
+            run()
+        })
         this.invalidateTimers.clear()
         // A pause does not survive the service it was holding off. Leaving the
         // count set would carry into the next start() and suppress its first

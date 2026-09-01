@@ -10,77 +10,59 @@
  limitations under the License
  */
 
-import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { useLanguage } from '@hooks/useLanguage'
+import { PWPagerTabBar, PWView } from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { trackEvent, AccountDetailsEvent } from '@analytics'
+import { AccountDrawerPager } from '@modules/accounts/components/AccountDrawer'
+
 import { AccountOverview } from '../AccountOverview'
 import { AccountNfts } from '../AccountNfts'
 import { AccountHistory } from '../AccountHistory'
+import { useStyles } from './styles'
+import { useAccountTabNavigator } from './useAccountTabNavigator'
 
 export type AccountTabNavigatorProps = {
     account: WalletAccount
     chartVisible: boolean
 }
 
-type AccountTabsParamsList = {
-    Overview: undefined
-    Nfts: undefined
-    History: undefined
-}
-
-const Tab = createPWTabNavigator<AccountTabsParamsList>()
-
+/**
+ * Overview / NFTs / History as a PWPager rather than a material-top-tabs
+ * navigator, so the account drawer and the tabs share one horizontal pan — see
+ * PWPager for why the two cannot otherwise coexist.
+ */
 export const AccountTabNavigator = ({
     account,
     chartVisible,
 }: AccountTabNavigatorProps) => {
-    const { t } = useLanguage()
+    const styles = useStyles()
+    const { index, offset, tabs, isPageVisited, handleIndexChange } =
+        useAccountTabNavigator()
+
     return (
-        <Tab.Navigator
-            screenOptions={{
-                // Without this, opening an account mounts the asset list, the
-                // NFT pipeline and the transaction list in the same frame.
-                lazy: true,
-            }}
-        >
-            <Tab.Screen
-                name='Overview'
-                options={{
-                    title: t('account_details.main_screen.overview_tab'),
-                }}
-                listeners={{
-                    tabPress: () => trackEvent(AccountDetailsEvent.Assets),
-                }}
+        <PWView style={styles.container}>
+            <PWPagerTabBar
+                tabs={tabs}
+                onIndexChange={handleIndexChange}
+                offset={offset}
+            />
+            <AccountDrawerPager
+                index={index}
+                onIndexChange={handleIndexChange}
+                offset={offset}
             >
-                {() => (
+                <PWView style={styles.page}>
                     <AccountOverview
                         account={account}
                         chartVisible={chartVisible}
                     />
-                )}
-            </Tab.Screen>
-
-            <Tab.Screen
-                name='Nfts'
-                options={{ title: t('account_details.main_screen.nfts_tab') }}
-                component={AccountNfts}
-                listeners={{
-                    tabPress: () =>
-                        trackEvent(AccountDetailsEvent.Collectibles),
-                }}
-            />
-
-            <Tab.Screen
-                name='History'
-                options={{
-                    title: t('account_details.main_screen.history_tab'),
-                }}
-                component={AccountHistory}
-                listeners={{
-                    tabPress: () => trackEvent(AccountDetailsEvent.History),
-                }}
-            />
-        </Tab.Navigator>
+                </PWView>
+                <PWView style={styles.page}>
+                    {isPageVisited(1) && <AccountNfts />}
+                </PWView>
+                <PWView style={styles.page}>
+                    {isPageVisited(2) && <AccountHistory />}
+                </PWView>
+            </AccountDrawerPager>
+        </PWView>
     )
 }

@@ -159,14 +159,18 @@ describe('useNotificationsListQuery', () => {
         expect(result.current.data?.[0].icon).toBeNull()
     })
 
-    it('does not fetch when deviceID is null', async () => {
+    it('reports a terminal, non-loading unregistered state when deviceID is null', () => {
         vi.mocked(useDeviceID).mockReturnValueOnce(null)
         vi.mocked(fetchNotificationList).mockClear()
 
-        renderHook(() => useNotificationsListQuery(), {
+        const { result } = renderHook(() => useNotificationsListQuery(), {
             wrapper: createWrapper(),
         })
 
+        // A disabled query keeps `status: 'pending'` in React Query v5, so
+        // surfacing `query.isPending` here would spin the empty view forever.
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.isDeviceUnregistered).toBe(true)
         expect(fetchNotificationList).not.toHaveBeenCalled()
     })
 
@@ -221,6 +225,9 @@ describe('useNotificationsListQuery', () => {
                 )
 
                 expect(result.current.isUnavailableOnNetwork).toBe(true)
+                // Network unavailability outranks the missing-device state:
+                // this can never succeed, so it must not read as "unregistered".
+                expect(result.current.isDeviceUnregistered).toBe(false)
                 expect(result.current.isPending).toBe(false)
                 expect(result.current.data).toEqual([])
                 expect(fetchNotificationList).not.toHaveBeenCalled()

@@ -15,16 +15,14 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { hasCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
     type AccountMenuContentResult,
 } from '@modules/accounts/components/AccountMenuContent'
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { trackEvent, HomeEvent } from '@analytics'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useAccountDrawerControls } from '@modules/accounts/components/AccountDrawer'
+import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
 import {
     type StyleProp,
     type TouchableOpacityProps,
@@ -74,8 +72,15 @@ export const AccountSelection = ({
 }: AccountSelectionProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
-    const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
+    const drawerControls = useAccountDrawerControls()
+    const {
+        goToAddAccount,
+        goToSearch,
+        goToPeraCardActivation,
+        openPeraCard,
+        openSort,
+    } = useAccountSwitcherActions()
 
     const openAccountMenu = useCallback(async () => {
         const result = await requestBottomSheet<AccountMenuContentResult>({
@@ -105,54 +110,23 @@ export const AccountSelection = ({
                 return
             }
             case 'add-account': {
-                trackEvent(HomeEvent.AccountAdd)
-                navigation.navigate('AddAccount', { screen: 'AddAccountHome' })
+                goToAddAccount()
                 return
             }
             case 'search': {
-                navigation.navigate('Search', { screen: 'SearchScreen' })
+                goToSearch()
                 return
             }
             case 'pera-card-activate': {
-                navigation.navigate('PeraCard', { screen: 'PeraCardIntro' })
+                goToPeraCardActivation()
                 return
             }
             case 'pera-card-open': {
-                // The connected row shows off the persisted auth flag, which can
-                // outlive the real session — require a live token, else log in.
-                if (!hasCardSession()) {
-                    navigation.navigate('PeraCard', { screen: 'CardSignIn' })
-                    return
-                }
-                // Baanx auth finishing doesn't mean the escrow card itself was
-                // ever created/approved — send an authenticated-but-incomplete
-                // user back into the setup checklist rather than the dashboard.
-                const { escrowCardAddress, escrowCardApproved } =
-                    useCardStore.getState()
-                if (!escrowCardAddress || !escrowCardApproved) {
-                    navigation.navigate('PeraCard', {
-                        screen: 'CardOnboarding',
-                        params: { screen: 'CardOnboardingStatus', params: {} },
-                    })
-                    return
-                }
-                navigation.navigate('TabBar', {
-                    screen: 'Home',
-                    params: { screen: 'PeraCardAccount' },
-                })
+                openPeraCard()
                 return
             }
             case 'sort': {
-                trackEvent(HomeEvent.Sort)
-                await requestBottomSheet<void>({
-                    contents: <AccountSortContent />,
-                    options: {
-                        size: 'modal',
-                        enablePanDownToClose: false,
-                        enableContentPanningGesture: false,
-                        autoCreateContainer: false,
-                    },
-                })
+                await openSort()
                 // After sorting, reopen the account menu so the user can pick.
                 void openAccountMenu()
                 return
@@ -166,14 +140,24 @@ export const AccountSelection = ({
         accountFilter,
         showPeraCardActivation,
         onSelected,
-        navigation,
+        goToAddAccount,
+        goToSearch,
+        goToPeraCardActivation,
+        openPeraCard,
+        openSort,
     ])
 
     const triggerProps = {
         ...props,
         style: [styles.trigger, props.style],
         activeOpacity: 0.8,
+        // Inside the drawer's subtree the trigger opens it instead; elsewhere
+        // (swap, onramp, card) there's no drawer and the sheet still opens.
         onPress: () => {
+            if (drawerControls) {
+                drawerControls.openDrawer()
+                return
+            }
             void openAccountMenu()
         },
         testID: 'account_selection_button',

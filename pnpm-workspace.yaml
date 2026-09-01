@@ -111,6 +111,18 @@ auditConfig:
   ignoreGhsas:
     - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
     - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
+    # decode-uri-component DoS via malformed percent-encoding. Reaches us only
+    # through @react-navigation/core → query-string@7 → getStateFromPath, and
+    # no NavigationContainer here has a `linking` config, so the vulnerable
+    # decode never executes (the app parses deeplinks with its own parser).
+    # Unfixable by override: the advisory's ">=0.4.3" names versions that were
+    # never published, and the only real patched release (0.5.0) is ESM-only —
+    # query-string@7's CJS require gets the module namespace instead of the
+    # function and throws at parse time (verified under Node 24; Metro's babel
+    # interop breaks the same way). Drop this entry when the react-navigation
+    # chain resolves a patched version itself — and revisit immediately if a
+    # `linking` config is ever added.
+    - GHSA-vcc3-ghjq-m6fr # decode-uri-component: exponential-time decoding
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -176,6 +188,18 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
+  # `getMasterKey` read-then-generates the vault master key with no locking, so
+  # every context that builds a driver (service worker, offscreen document,
+  # each extension page — all of which construct one within milliseconds at
+  # first run) can miss the read, generate its own AES-GCM key, and race the
+  # `put`. Last write wins the record while each context keeps the key IT made
+  # cached in the driver closure, so material sealed by one can never be opened
+  # by another. It surfaces as a bare `OperationError` with no message —
+  # "Pera couldn't read this request" on a legitimate dApp signing request, and
+  # the intermittent half of apps/browser/e2e/dapp-sign.spec.ts. Creation now
+  # happens under a Web Lock with a re-read once held, so the first caller
+  # creates and the rest read what it wrote. Drop once upstream takes it.
+  "@algorandfoundation/keystore-web@1.0.0-canary.3": patches/@algorandfoundation__keystore-web@1.0.0-canary.3.patch
   # Three unrelated reasons. The Android credential provider keeps the legacy
   # native app's service class name so Credential Manager carries the user's
   # enablement across the upgrade, relying-party scoping so the credential

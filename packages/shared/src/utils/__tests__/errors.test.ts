@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { PeraNetworkError } from '../../errors/network'
 import { getHttpStatus, toError, assertDefined } from '../errors'
 
 describe('getHttpStatus', () => {
@@ -28,6 +29,26 @@ describe('getHttpStatus', () => {
     test('returns undefined when the response lacks a numeric status', () => {
         expect(getHttpStatus({ response: {} })).toBeUndefined()
         expect(getHttpStatus({ response: { status: '200' } })).toBeUndefined()
+    })
+
+    // The query client throws PeraNetworkError, which carries the status flat
+    // and has no `response` at all — so reading only `response.status` made
+    // this helper blind to every error the app actually produces.
+    test('returns the status from a PeraNetworkError, which carries it flat', () => {
+        expect(
+            getHttpStatus(new PeraNetworkError('client', { status: 404 })),
+        ).toBe(404)
+        expect(
+            getHttpStatus(new PeraNetworkError('server', { status: 500 })),
+        ).toBe(500)
+    })
+
+    test('returns undefined for a PeraNetworkError with no status', () => {
+        expect(getHttpStatus(new PeraNetworkError('offline'))).toBeUndefined()
+    })
+
+    test('returns undefined when a flat status is not numeric', () => {
+        expect(getHttpStatus({ status: '404' })).toBeUndefined()
     })
 })
 

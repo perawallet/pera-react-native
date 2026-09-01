@@ -26,8 +26,16 @@ export const useStyles = makeStyles(theme => {
         // Gap between the pay and receive sections (the absolutely-positioned
         // controls row sits on top and is out of flow). Previously baked into
         // the receive card's marginTop, now part of the shared layout.
+        //
+        // Bleeds past the form's own `lg` inset so the cards sit `sm` from the
+        // screen edge, matching Fund — which pads its form by `sm` and adds `lg`
+        // back inside each row. Done here rather than by re-padding the whole
+        // container so only the amount cards move: the provider row, errors,
+        // button and widgets below keep their current alignment, and the
+        // controls that overlay the cards keep their inset relative to them.
         amountSections: {
             gap: theme.spacing.xl,
+            marginHorizontal: -theme.spacing.sm,
         },
         controlsRow: {
             position: 'absolute',

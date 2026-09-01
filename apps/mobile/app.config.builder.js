@@ -167,6 +167,11 @@ function buildAppConfig(env) {
         // browser's social-media handoff (PWWebView navigation guard).
         LSApplicationQueriesSchemes: ['itms-apps', 'twitter', 'tg', 'com.hammerandchisel.discord'],
         UIRequiredDeviceCapabilities: ['arm64'],
+        // Must stay YES: react-native-screens drives the iOS status bar per
+        // screen (the navigator's `statusBarStyle` option) and RNSScreenWindowTraits
+        // errors out without it. The cost is that RN's imperative StatusBar API
+        // — expo-status-bar's setStatusBarStyle — errors instead; the two are
+        // mutually exclusive, so nothing may call it on iOS.
         UIViewControllerBasedStatusBarAppearance: true,
         // Custom fonts
         UIAppFonts: [

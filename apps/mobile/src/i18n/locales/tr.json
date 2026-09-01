@@ -1304,7 +1304,9 @@
     },
     "notifications": {
         "empty_title": "Şu anda bildirim yok",
-        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek"
+        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek",
+        "unavailable_title": "Bildirimler kullanılamıyor",
+        "unavailable_body": "Bu cihazda bildirimler ayarlanamadı. İzinlerini ve bağlantını kontrol edip tekrar dene."
     },
     "messages": {
         "tabs": {
@@ -1455,6 +1457,9 @@
         },
         "pending_signatures": {
             "title": "Bekleyen imzalar",
+            "title_submitting": "İşlem gönderiliyor",
+            "title_success": "İşlem tamamlandı",
+            "title_failure": "İşlem tamamlanmadı",
             "x_of_y": "{{signed}} / {{total}} imzalandı",
             "time_left": "≈ {{time}} kaldı",
             "accounts_heading": "Hesaplar",
@@ -1861,12 +1866,14 @@
         "to_standard": {
             "intro": {
                 "title": "Standart hesaba rekey yap",
-                "body": "Bu hesap için işlemleri imzalamak üzere başka bir hesabın özel anahtarını kullan.",
+                "title_with_quantum": "Standart veya Quantum hesabına rekey yap",
+                "body": "Rekey, bu hesabın gelecekteki işlemlerini imzalamak için yeni bir anahtar atar; fonlar taşınmaz, adres değişmez.",
                 "learn_more": "Daha fazla bilgi",
                 "expect_label": "Ne olacak",
-                "expect_1": "Gelecekteki işlemler yalnızca yetki verilen hesap tarafından imzalanabilir.",
-                "expect_2": "Bu hesap artık işlem imzalayamayacak.",
-                "expect_3": "Hesabının açık anahtarı, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_1": "Bu hesabın gelecekteki işlemleri yalnızca yeni hesabın anahtarıyla imzalanabilir.",
+                "expect_2": "Devam etmeden önce o hesabın kurtarma ifadesini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
+                "expect_3": "Hesabının adresi, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_4": "Bu hesabı daha sonra kapatırsan rekey kaldırılır. Adrese yeniden fon gönderildiğinde kontrol, şimdi ayarladığın hesaba değil orijinal anahtara döner.",
                 "cta": "Süreci başlat"
             },
             "select": {

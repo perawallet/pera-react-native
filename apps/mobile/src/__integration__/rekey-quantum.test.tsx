@@ -68,12 +68,12 @@ import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-st
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
-    QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -119,7 +119,7 @@ const seedRekeyInAccounts = async (): Promise<{
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })
@@ -205,7 +205,7 @@ const seedSignableRekeyOutAccounts = async (): Promise<{
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })

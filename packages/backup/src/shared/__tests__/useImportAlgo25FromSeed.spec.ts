@@ -22,14 +22,9 @@ const mocks = vi.hoisted(() => ({
     importAlgo25: vi.fn(),
     updateAccount: vi.fn(),
     markBackupComplete: vi.fn(),
-    mnemonicFromSeed: vi.fn(),
+    algo25SeedToIndices: vi.fn(),
     isValidAlgorandAddress: vi.fn(),
     zeroBytes: vi.fn(),
-}))
-
-vi.mock('algosdk', async importOriginal => ({
-    ...(await importOriginal<typeof import('algosdk')>()),
-    mnemonicFromSeed: mocks.mnemonicFromSeed,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -43,6 +38,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     ALGO25_SEED_LENGTH: 32,
+    algo25SeedToIndices: mocks.algo25SeedToIndices,
     zeroBytes: mocks.zeroBytes,
 }))
 
@@ -80,14 +76,17 @@ const renderImport = () =>
 beforeEach(() => {
     vi.clearAllMocks()
     mocks.isValidAlgorandAddress.mockReturnValue(true)
-    mocks.mnemonicFromSeed.mockReturnValue('mock mnemonic phrase')
+    mocks.algo25SeedToIndices.mockReturnValue(new Uint16Array(25).fill(1))
     mocks.importAlgo25.mockResolvedValue(importedAccount)
     // Real-ish wipe so the defensive-copy assertion is meaningful.
-    mocks.zeroBytes.mockImplementation((buf: Uint8Array) => buf.fill(0))
+    mocks.zeroBytes.mockImplementation(
+        (...bufs: Array<Uint8Array | Uint16Array | null>) =>
+            bufs.forEach(buf => buf?.fill(0)),
+    )
 })
 
 describe('useImportAlgo25FromSeed', () => {
-    it('rebuilds the mnemonic from the seed and imports as algo25', async () => {
+    it('rebuilds the wordlist indices from the seed and imports as algo25', async () => {
         const importFromSeed = renderImport()
 
         const result = await importFromSeed({
@@ -95,11 +94,11 @@ describe('useImportAlgo25FromSeed', () => {
             privateKey: new Uint8Array(64).fill(7),
         })
 
-        expect(mocks.mnemonicFromSeed).toHaveBeenCalledWith(
+        expect(mocks.algo25SeedToIndices).toHaveBeenCalledWith(
             expect.objectContaining({ length: 32 }),
         )
         expect(mocks.importAlgo25).toHaveBeenCalledWith({
-            mnemonic: 'mock mnemonic phrase',
+            mnemonicIndices: expect.objectContaining({ length: 25 }),
             type: 'algo25',
         })
         expect(mocks.markBackupComplete).toHaveBeenCalledWith(importedAccount)

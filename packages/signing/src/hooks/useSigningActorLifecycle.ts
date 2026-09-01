@@ -374,6 +374,15 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
                 if (keepForInlineError) return
 
+                // `completed`/`rejected` are final states, so XState stops the
+                // actor (and tears down this subscription) on its own. `failed`
+                // is not final — it stays live for RETRY — so a terminal failure
+                // reaching here must be stopped explicitly, or the actor is
+                // orphaned: removed from the map below, unreachable by stopActor,
+                // its subscription never completed. stop() is idempotent, so
+                // it's a safe no-op for the already-done paths.
+                actor.stop()
+
                 actorRefsMap.delete(actor.id)
                 notifyActorRegistry()
                 signingEventBus.releaseRequest(actor.id)

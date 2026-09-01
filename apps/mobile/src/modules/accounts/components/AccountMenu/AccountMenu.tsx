@@ -107,7 +107,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     }
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
-                    inBottomSheet
                 />
             </PWView>
         </PWView>

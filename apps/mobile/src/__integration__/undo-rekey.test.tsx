@@ -70,7 +70,7 @@ import { UndoRekeySuccessScreen } from '@modules/rekey/screens/undo-rekey/UndoRe
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 
@@ -93,7 +93,7 @@ const seedRekeyedSource = async (): Promise<{
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })

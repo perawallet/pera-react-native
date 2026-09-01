@@ -212,6 +212,33 @@ describe('SyncService', () => {
         expect(service.isRunning()).toBe(false)
     })
 
+    // The tick persists to SQLite before its debounced invalidation fires. If
+    // stop() (app background, network switch) dropped the pending timer, the
+    // notification would be lost for good: the next tick diffs against the
+    // already-persisted state, sees "unchanged", and never re-invalidates —
+    // mounted staleTime-Infinity queries stay stale until app restart.
+    it('flushes pending debounced invalidations on stop instead of dropping them', async () => {
+        const { invalidateAccountQueriesForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+
+        // Let the first (force-sync) tick run to completion; its account
+        // invalidation is now sitting behind the debounce timer.
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
+
+        service.stop()
+
+        expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
+            queryClient,
+            mockAccounts.map(a => a.address),
+        )
+    })
+
     // A tick persists to SQLite per account, on the same JS thread a scroll is
     // being rendered on. Pausing trades a moment of staleness for a gesture that
     // does not hitch.
@@ -1124,11 +1151,13 @@ describe('SyncService', () => {
         vi.useFakeTimers()
         service.stop()
 
-        // No account fetch succeeded, so nothing changed in the DB — eagerly
-        // invalidating would force a wide re-read with no new data, so we skip
-        // it. (stop() also clears any pending debounced invalidation.)
+        // No account fetch succeeded, so no per-account invalidation: nothing
+        // account-scoped changed in the DB, and eagerly invalidating would
+        // force a wide re-read with no new data. The asset/price phase still
+        // ran and persisted, so its broad invalidation is owed — stop() flushes
+        // it rather than dropping it.
         expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
-        expect(invalidateAccountQueries).not.toHaveBeenCalled()
+        expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
     })
 
     it('does not invalidate asset queries when every asset and price batch fails', async () => {

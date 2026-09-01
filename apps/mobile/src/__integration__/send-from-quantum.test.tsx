@@ -74,7 +74,7 @@ import {
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
-    QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -98,7 +98,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })

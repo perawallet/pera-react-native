@@ -41,6 +41,7 @@ const mockList = (
         isRefetching?: boolean
         refetch?: () => void
         isUnavailableOnNetwork?: boolean
+        isDeviceUnregistered?: boolean
     } = {},
 ) =>
     vi.mocked(useNotificationsListQuery).mockReturnValue({
@@ -139,5 +140,13 @@ describe('useNotificationsScreen', () => {
         const { result } = renderHook(() => useNotificationsScreen())
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('forwards isDeviceUnregistered from the notifications list query', () => {
+        mockList([], { isDeviceUnregistered: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isDeviceUnregistered).toBe(true)
     })
 })

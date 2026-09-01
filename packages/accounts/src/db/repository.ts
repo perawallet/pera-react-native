@@ -33,7 +33,7 @@ import {
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
-import { partition } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, partition } from '@perawallet/wallet-core-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // Max rows per multi-row INSERT/DELETE statement. Each statement is one
@@ -499,6 +499,41 @@ export async function getAccountPortfolioTotals({
         holdingsCount: row?.count ?? 0,
         missingMetadataCount: row?.missingMetadata ?? 0,
     }
+}
+
+/**
+ * Networks on which the account holds a non-zero ALGO balance.
+ *
+ * Deliberately unfiltered by network: a warning about losing access to an
+ * account must not vanish because the user switched to a network where that
+ * account happens to be empty. Only networks a prior sync persisted rows for
+ * are visible — one never visited on this install contributes nothing.
+ */
+export async function getAccountFundedNetworks({
+    db = getDatabase(),
+    accountAddress,
+}: {
+    db?: Database
+    accountAddress: string
+}): Promise<string[]> {
+    const rows = await db
+        .select({ network: AccountAssetHoldingsSchema.network })
+        .from(AccountAssetHoldingsSchema)
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(
+                    AccountAssetHoldingsSchema.assetId,
+                    new Decimal(ALGO_ASSET_ID),
+                ),
+                // Amounts are stored as TEXT; compare numerically so '0' and a
+                // padded zero both read as unfunded.
+                sql`CAST(${AccountAssetHoldingsSchema.amount} AS REAL) > 0`,
+            ),
+        )
+        .all()
+
+    return rows.map(row => row.network)
 }
 
 export type AccountHoldingsPageRow = {

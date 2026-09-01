@@ -73,6 +73,23 @@ describe('PWTapToConfirm', () => {
         expect(onConfirm).toHaveBeenCalledTimes(1)
     })
 
+    // `fireEvent` flushes a render per call, so the test above only ever
+    // exercises the case where React has already handed the Pressable a
+    // handler closing over the armed state. A real double-tap does not wait
+    // for that render: both presses can land against the same committed
+    // handler, which is what the e2e signing flake turned out to be.
+    it('confirms when both taps land before React re-renders', () => {
+        const { onConfirm } = renderTapToConfirm()
+        const control = screen.getByTestId('tap-confirm')
+
+        act(() => {
+            fireEvent.click(control)
+            fireEvent.click(control)
+        })
+
+        expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
     it('disarms after the timeout so a later single tap does not confirm', () => {
         const { onConfirm } = renderTapToConfirm()
 

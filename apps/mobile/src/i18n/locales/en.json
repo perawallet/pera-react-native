@@ -1304,7 +1304,9 @@
     },
     "notifications": {
         "empty_title": "No current notifications",
-        "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
+        "empty_body": "Your recent transactions, asset requests and other transactions will appear here",
+        "unavailable_title": "Notifications unavailable",
+        "unavailable_body": "We couldn't set up notifications on this device. Check your permissions and connection, then try again."
     },
     "messages": {
         "tabs": {
@@ -1455,6 +1457,9 @@
         },
         "pending_signatures": {
             "title": "Pending signatures",
+            "title_submitting": "Submitting transaction",
+            "title_success": "Transaction complete",
+            "title_failure": "Transaction not completed",
             "x_of_y": "{{signed}} of {{total}} signed",
             "time_left": "≈ {{time}} left",
             "accounts_heading": "Accounts",
@@ -1860,13 +1865,15 @@
         },
         "to_standard": {
             "intro": {
-                "title": "Rekey to standard account",
-                "body": "Use another account's private key to sign transactions for this account.",
+                "title": "Rekey to Standard Account",
+                "title_with_quantum": "Rekey to Standard or Quantum Account",
+                "body": "Rekeying assigns a new key to sign this account's future transactions, without moving funds or changing its address.",
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
-                "expect_1": "Future transactions can only be signed by the delegated account.",
-                "expect_2": "This account will no longer be able to sign transactions.",
-                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "expect_1": "Future transactions for this account can only be signed by the new account's key.",
+                "expect_2": "Back up that account's recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_3": "Your account's address, balances, and configuration will not change.",
+                "expect_4": "If you close out this account later, the rekey is removed. Funding the address again restores control to the original key, not the account you're setting up now.",
                 "cta": "Start process"
             },
             "select": {

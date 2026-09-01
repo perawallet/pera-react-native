@@ -29,9 +29,15 @@ export {
 } from './crypto/prepare-hd-master-key'
 export {
     entropyToMnemonic,
+    entropyToIndices,
+    indicesToEntropy,
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
-export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
+export {
+    algo25SecretKeyToIndices,
+    algo25SeedToIndices,
+    indicesToAlgo25Seed,
+} from './crypto/algo25-utils'
 // Re-exported so consumers that need to derive a real Falcon keypair outside
 // the hook (e.g. quantum test fixtures) use the same PQ provider `useQuantum`
 // and `useKMS` do, rather than hand-rolling their own derivation.

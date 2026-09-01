@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
     ASB_RECOVERY_MNEMONIC_WORD_COUNT,
     AsbErrorReason,
@@ -18,7 +18,7 @@ import {
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -43,8 +43,6 @@ type UseAsbImportKeyScreenResult = {
     refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
     handleSubmitEditing: (index: number) => void
 }
-
-const WORDLIST_SET = new Set(MNEMONIC_WORDLIST)
 
 export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
     const navigation = useAppNavigation()
@@ -90,35 +88,35 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         handleSelectSuggestion,
         refCallbacks,
         handleSubmitEditing,
+        areAllWordsValid,
+        getMnemonicIndices,
     } = useMnemonicWordEntry({
         wordCount: ASB_RECOVERY_MNEMONIC_WORD_COUNT,
         onTooManyWords,
         onInsufficientSlots,
     })
 
-    const trimmedWords = useMemo(
-        () => words.map(w => w.trim().toLowerCase()),
-        [words],
-    )
-
-    const canContinue = useMemo(
-        () =>
-            trimmedWords.every(w => w.length > 0 && WORDLIST_SET.has(w)) &&
-            !isProcessing,
-        [trimmedWords, isProcessing],
-    )
+    const canContinue = areAllWordsValid && !isProcessing
 
     const handleContinue = useCallback(async () => {
         if (!envelope || isProcessing) return
 
         setIsProcessing(true)
+        let mnemonicIndices: Uint16Array | null = null
         try {
-            const mnemonic = trimmedWords.join(' ')
+            // Zeroable indices straight from the slot state — no word array
+            // is assembled. `canContinue` gates on every word being a
+            // wordlist word, so null only means an out-of-band invocation —
+            // same user copy as a bad key.
+            mnemonicIndices = getMnemonicIndices()
+            if (!mnemonicIndices) {
+                throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
+            }
             // The crypto stack is synchronous but `setIsProcessing` triggers a
             // re-render before the heavy work runs; without an await/microtask
             // boundary the loading indicator never paints.
             await Promise.resolve()
-            const payload = decryptBackupPayload(envelope, mnemonic)
+            const payload = decryptBackupPayload(envelope, mnemonicIndices)
             setPayload(payload)
             // `replace` (not `push`) so the Key screen unmounts on success: the
             // input hook wipes the typed words on unmount, and back-navigating
@@ -140,12 +138,13 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         } finally {
             // Don't wipe the words here: on error we keep them so the user can
             // fix a typo and retry; on success the unmount wipe handles it.
+            zeroBytes(mnemonicIndices)
             setIsProcessing(false)
         }
     }, [
         envelope,
         isProcessing,
-        trimmedWords,
+        getMnemonicIndices,
         setPayload,
         navigation,
         errorToast,

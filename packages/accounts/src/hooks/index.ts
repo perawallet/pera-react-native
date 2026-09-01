@@ -64,6 +64,7 @@ export {
     isAccountBalancesHistoryQuery,
     getRekeyedAddressesQueryKey,
 } from './querykeys'
+export * from './useAccountFundedNetworksQuery'
 export * from './useAccountSummaryQuery'
 export * from './useAccountValueTotalsQuery'
 export * from './useAccountAssetsQuery'

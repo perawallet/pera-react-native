@@ -20,6 +20,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 let mockNfdNames: { name: string }[] | undefined
 let mockAccountTypeLabel: string | undefined
+let mockShouldPromptBackup: boolean
 
 // The global setup stubs getAccountDisplayName as `name || ''`, which erases
 // the unnamed-account (truncated-address) behavior this hook branches on.
@@ -35,6 +36,10 @@ vi.mock('@modules/accounts/hooks/useAccountTypeLabel', () => ({
     useAccountTypeLabel: () => ({ label: mockAccountTypeLabel }),
 }))
 
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useShouldPromptMnemonicBackup: () => mockShouldPromptBackup,
+}))
+
 const ADDRESS = 'A'.repeat(58)
 
 const makeAccount = (name?: string): WalletAccount =>
@@ -44,6 +49,7 @@ describe('useAccountDisplay', () => {
     beforeEach(() => {
         mockNfdNames = undefined
         mockAccountTypeLabel = undefined
+        mockShouldPromptBackup = false
     })
 
     it('shows the truncated address as secondary for a named account', () => {
@@ -52,6 +58,7 @@ describe('useAccountDisplay', () => {
                 account: makeAccount('My Wallet'),
                 compact: false,
                 showAccountType: false,
+                iconSize: 'xl',
             }),
         )
 
@@ -70,6 +77,7 @@ describe('useAccountDisplay', () => {
                 account: makeAccount('pera.algo'),
                 compact: false,
                 showAccountType: false,
+                iconSize: 'xl',
             }),
         )
 
@@ -85,6 +93,7 @@ describe('useAccountDisplay', () => {
                 account: makeAccount('pera.algo'),
                 compact: true,
                 showAccountType: false,
+                iconSize: 'xl',
             }),
         )
 
@@ -102,6 +111,7 @@ describe('useAccountDisplay', () => {
                 account: makeAccount(legacyName),
                 compact: false,
                 showAccountType: false,
+                iconSize: 'xl',
             }),
         )
 
@@ -120,6 +130,7 @@ describe('useAccountDisplay', () => {
                 account: makeAccount(legacyName),
                 compact: false,
                 showAccountType: false,
+                iconSize: 'xl',
             }),
         )
 
@@ -138,10 +149,56 @@ describe('useAccountDisplay', () => {
                 account: makeAccount(),
                 compact: false,
                 showAccountType: true,
+                iconSize: 'xl',
             }),
         )
 
         expect(result.current.secondaryText).toBe('Ledger account')
         expect(result.current.showTypeAsSecondary).toBe(true)
+    })
+
+    it('shows the backup badge at the 40px icon formats when backup is required', () => {
+        mockShouldPromptBackup = true
+
+        for (const iconSize of ['md', 'lg', 'xl'] as const) {
+            const { result } = renderHook(() =>
+                useAccountDisplay({
+                    account: makeAccount('My Wallet'),
+                    compact: false,
+                    showAccountType: false,
+                    iconSize,
+                }),
+            )
+
+            expect(result.current.showBackupBadge).toBe(true)
+        }
+    })
+
+    it('hides the backup badge on the small icon format', () => {
+        mockShouldPromptBackup = true
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: makeAccount('My Wallet'),
+                compact: false,
+                showAccountType: false,
+                iconSize: 'sm',
+            }),
+        )
+
+        expect(result.current.showBackupBadge).toBe(false)
+    })
+
+    it('hides the backup badge when the account does not require backup', () => {
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: makeAccount('My Wallet'),
+                compact: false,
+                showAccountType: false,
+                iconSize: 'xl',
+            }),
+        )
+
+        expect(result.current.showBackupBadge).toBe(false)
     })
 })

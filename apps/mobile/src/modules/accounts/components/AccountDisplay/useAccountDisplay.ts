@@ -21,12 +21,16 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
+
+import { type AccountIconSize } from '../AccountIcon'
 
 type UseAccountDisplayParams = {
     account: Optional<WalletAccount>
     compact: boolean
     showAccountType: boolean
+    iconSize: AccountIconSize
 }
 
 type UseAccountDisplayResult = {
@@ -34,6 +38,7 @@ type UseAccountDisplayResult = {
     secondaryText: Optional<string>
     renderSecondary: boolean
     showTypeAsSecondary: boolean
+    showBackupBadge: boolean
 }
 
 /** Derives the primary/secondary labels an account renders with. */
@@ -41,6 +46,7 @@ export const useAccountDisplay = ({
     account,
     compact,
     showAccountType,
+    iconSize,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
     const displayName = useMemo(
         () => (account ? getAccountDisplayName(account) : 'No Account'),
@@ -72,5 +78,17 @@ export const useAccountDisplay = ({
     const secondaryText = compact ? rawSecondary : dedupedSecondary
     const renderSecondary = compact || Boolean(dedupedSecondary)
 
-    return { displayName, secondaryText, renderSecondary, showTypeAsSecondary }
+    const shouldPromptBackup = useShouldPromptMnemonicBackup(account)
+    // Every non-`sm` account-icon size renders the 40px round-icon format
+    // (the account-selector size); `sm` is the 24px format, too small for a
+    // legible badge.
+    const showBackupBadge = shouldPromptBackup && iconSize !== 'sm'
+
+    return {
+        displayName,
+        secondaryText,
+        renderSecondary,
+        showTypeAsSecondary,
+        showBackupBadge,
+    }
 }

@@ -16,7 +16,10 @@ import {
     deriveQuantumAddress,
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO25_TEST_MNEMONIC } from './onboarding'
+import {
+    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
+} from './onboarding'
 
 /**
  * Shared quantum-account test fixture. The quantum mnemonic format IS algo25
@@ -28,6 +31,7 @@ import { ALGO25_TEST_MNEMONIC } from './onboarding'
  * server.use(mockAlgodAccountInformation({ address: QUANTUM_TEST_ADDRESS, response: { amount: 5_000_000 } }))
  */
 export const QUANTUM_TEST_MNEMONIC = ALGO25_TEST_MNEMONIC
+export const QUANTUM_TEST_MNEMONIC_INDICES = ALGO25_TEST_MNEMONIC_INDICES
 
 // Canonical (algokey-compatible) address for QUANTUM_TEST_MNEMONIC, pinned
 // independently of this file's own derivation — same role as ALGO25_TEST_ADDRESS

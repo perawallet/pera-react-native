@@ -197,8 +197,29 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     await fillPasteInput(page, UNREACHABLE_BRIDGE_WC_URI)
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
-    // Bounded settle window for connect()'s async failure.
-    await page.waitForTimeout(3000)
+    // Wait for the re-arm, NOT a fixed window. This dispatch only fails once
+    // useWalletConnectPairing.web's `waitForPairOutcome` gives up after
+    // WC_SESSION_OUTCOME_TIMEOUT_MS (8s), so the 3s sleep this replaces
+    // returned with the pairing still in flight and let the rest of the file
+    // run on top of it. Two things then went wrong, both silently:
+    //
+    //   - QRScannerContent.web's `handlingRef` stays latched for the whole
+    //     dispatch, so the next test's paste hit `if (handlingRef.current)
+    //     return` and never reached the validity check it exists to prove.
+    //   - When the outcome finally landed, its failure callback ran
+    //     `onRestart()`, which bumps QRScannerView.web's `restartKey` and
+    //     REMOUNTS QRScannerContent, resetting `pastedValue`. Landing between
+    //     a later test's fill and its submit left `submitPasted` reading empty
+    //     state, where `if (!trimmed) return` drops it without a trace — so no
+    //     pairing was dispatched at all and that test died 20s later waiting
+    //     for an approval nothing had requested.
+    //
+    // That re-arm clears the paste field, so an empty input is the observable
+    // proof the dispatch is done. The timeout must clear the 8s outcome budget
+    // on a loaded runner.
+    await expect(page.getByTestId('qr-paste-input')).toHaveValue('', {
+        timeout: 20_000,
+    })
 
     await expect(scannerSheet).toBeVisible()
     await expect(

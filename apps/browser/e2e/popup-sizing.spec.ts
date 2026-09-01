@@ -64,7 +64,11 @@ const trackPageErrors = (page: Page): Error[] => {
 // instead of 360x600. Loading popup.html in a page at the *default*
 // (non-360x600) viewport reproduces the failure mode: if our fixed-size
 // rule doesn't win, body fills the ambient viewport instead of 360x600.
-test('popup.html body is fixed at 360x600 regardless of ambient viewport', async () => {
+//
+// Asserts the RENDERED box (getBoundingClientRect), not computed styles:
+// computed width/height ignore the html zoom, which is exactly how the popup
+// shipped at 324x540 physical while this test kept passing on "360x600".
+test('popup.html body renders 360x600 physical px regardless of ambient viewport', async () => {
     const page = await context.newPage()
     const pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/popup.html`)
@@ -73,12 +77,15 @@ test('popup.html body is fixed at 360x600 regardless of ambient viewport', async
     // unrelated size-mismatch assertion below.
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 
-    const size = await page.evaluate(() => ({
-        width: getComputedStyle(document.body).width,
-        height: getComputedStyle(document.body).height,
-    }))
+    const size = await page.evaluate(() => {
+        const rect = document.body.getBoundingClientRect()
+        return {
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+        }
+    })
 
-    expect(size).toEqual({ width: '360px', height: '600px' })
+    expect(size).toEqual({ width: 360, height: 600 })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 

@@ -29,6 +29,11 @@ import type {
 
 /**
  * Outcomes that are the user's own doing, not a fault to report.
+ *
+ * Overlaps the `metadata.expected` flag on the underlying error classes, which
+ * is the primary mechanism and already suppresses the crash report on its own.
+ * Kept because this list additionally drops the console level to `info`, which
+ * the metadata flag does not do — so the two must stay in agreement.
  */
 const EXPECTED_OUTCOME_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
     'user_rejected',
