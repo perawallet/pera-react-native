@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BackHandler } from 'react-native'
 import {
     useSharedValue,
@@ -18,7 +18,15 @@ import {
     type SharedValue,
 } from 'react-native-reanimated'
 import { PWDRAWER_SPRING_CONFIG } from '@components/core/PWDrawer/constants'
+import { SCREEN_ANIMATION_DURATION_MS } from '@constants/ui'
 import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
+
+/**
+ * When the panel is snapped away after a navigation, in ms. Keyed off the push
+ * transition so the cut lands once the incoming screen has settled rather than
+ * over its last frames; the margin covers the frame the timer can land between.
+ */
+const POST_NAVIGATE_RESET_DELAY = SCREEN_ANIMATION_DURATION_MS * 8
 
 export type UseAccountDrawerResult = {
     isOpen: boolean
@@ -58,10 +66,26 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
     const markOpen = useCallback(() => setIsOpen(true), [])
     const markClosed = useCallback(() => setIsOpen(false), [])
 
+    // A navigating close leaves this armed to snap the panel away once the
+    // pushed screen covers it — see closeThen.
+    const resetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+    const clearPendingReset = useCallback(() => {
+        if (!resetTimerRef.current) return
+
+        clearTimeout(resetTimerRef.current)
+        resetTimerRef.current = undefined
+    }, [])
+
+    useEffect(() => clearPendingReset, [clearPendingReset])
+
     const openDrawer = useCallback(() => {
+        // Reopening within the delay would otherwise be snapped shut by the
+        // reset still pending from the last navigation.
+        clearPendingReset()
         progress.value = withSpring(1, PWDRAWER_SPRING_CONFIG)
         setIsOpen(true)
-    }, [progress])
+    }, [progress, clearPendingReset])
 
     const closeDrawer = useCallback(() => {
         progress.value = withSpring(0, PWDRAWER_SPRING_CONFIG)
@@ -85,13 +109,24 @@ export const useAccountDrawer = (): UseAccountDrawerResult => {
     }, [isOpen, closeDrawer])
 
     // Pushing a screen over an open drawer leaves it open behind, and it's still
-    // there on the way back — so every navigating action closes first.
+    // there on the way back — so every navigating action has to close it. The
+    // panel is left up while the push runs and snapped away underneath it after:
+    // closing first puts the destination's mount cost between the close and the
+    // push, which reads as a stall no matter whether the close is sprung or cut.
+    // Navigating first spends that mount while the panel is still standing, so
+    // the push is the only motion ever seen.
     const closeThen = useCallback(
         (action: () => void) => {
-            closeDrawer()
+            setIsOpen(false)
             action()
+
+            clearPendingReset()
+            resetTimerRef.current = setTimeout(() => {
+                resetTimerRef.current = undefined
+                progress.value = 0
+            }, POST_NAVIGATE_RESET_DELAY)
         },
-        [closeDrawer],
+        [progress, clearPendingReset],
     )
 
     const handleAddAccount = useCallback(

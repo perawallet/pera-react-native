@@ -49,13 +49,14 @@ export const useStyles = makeStyles(
         },
         // Sits over the content, so once open it tints only the sliver still on
         // screen — reading as shading at the seam rather than a modal backdrop.
+        // The token carries its own alpha, and inverts between modes.
         scrim: {
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: theme.shadows.md.shadowColor,
+            backgroundColor: theme.colors.drawerScrim,
         },
         edgeStrip: {
             position: 'absolute',
