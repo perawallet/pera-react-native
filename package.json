@@ -16,8 +16,6 @@
     "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages extensions conformance lanekeep",
     "lint:fix": "turbo run lint -- --fix",
     "lint:lanekeep": "lanekeep check",
-    "lint:lanekeep:warn": "lanekeep check --warn-only",
-    "lint:lanekeep:json": "lanekeep check --format json",
     "lint:i18n": "node tools/i18n-lint.cjs",
     "lint:docs": "node tools/check-doc-hygiene.mjs",
     "lint:docs:warn": "node tools/check-doc-hygiene.mjs --warn-only",

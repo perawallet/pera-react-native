@@ -26,11 +26,12 @@ export default defineRule({
     gates: {
         fileContains: ['-chrome'],
         // apps/browser is web-only by construction, so chrome exists there.
-        // extensions/** holds the chrome packages themselves; without this the
-        // byte gate above would make them self-flag. .web.ts(x) resolves only
-        // for web builds. Everything else — packages/* included — is bundled
-        // into the native app just as directly as apps/mobile/src, so it stays
-        // in scope.
+        // extensions/** is mostly non-chrome platform/native packages, but it's
+        // also where the two chrome-only packages themselves live; excluding
+        // the whole directory avoids those two self-flagging without having to
+        // name them here. .web.ts(x) resolves only for web builds. Everything
+        // else — packages/* included — is bundled into the native app just as
+        // directly as apps/mobile/src, so it stays in scope.
         pathNotMatches: [
             'apps/browser/**',
             'extensions/**',

@@ -82,6 +82,9 @@ export default defineRule({
         if (!hasErrorType) return
         if (!insideCatchScope(ctx, call)) return
 
-        ctx.report(call)
+        ctx.report(
+            call,
+            'showToast raises an error toast from a catch — use showError(error, fallbackTitle) instead',
+        )
     },
 })

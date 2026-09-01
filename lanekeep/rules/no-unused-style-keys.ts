@@ -34,10 +34,15 @@ export default defineRule({
         remediation:
             'Remove the unused style key, or reference it as styles.<key>. If it is reached dynamically (styles[variant]), suppress it with a lanekeep-ignore-next-line directive and a reason.',
         examples: {
-            bad: 'useStyles declares `unused: { flex: 1 }` that nothing reads',
-            good: 'every declared key is read as styles.<key>',
+            bad: 'unused: { flex: 1 } // nothing reads styles.unused',
+            good: "row: { flexDirection: 'row' } // read as styles.row",
         },
     },
+    // Every other rule uses `gates` to skip files its query can't match; this
+    // one can't — the reduce pass below needs a keydef/usage fact from every
+    // file that might import a styles hook, not just files that declare one,
+    // so it deliberately reads the whole corpus and gates internally instead
+    // (see `mayDeclare` below). Do not "fix" this by adding a `gates` clause.
     query: '(program) @prog',
     check(ctx, m) {
         const prog = m.prog

@@ -88,6 +88,10 @@ export async function runRule(
     }
 }
 
-/** `file:line` pairs, the form assertions read most clearly. */
+/**
+ * `file:line` pairs, the form assertions read most clearly. Strips to the
+ * basename, so fixture filenames must stay unique across `__tests__/fixtures/`
+ * subdirectories or two unrelated violations will collide on the same key.
+ */
 export const locations = (violations: Violation[]): string[] =>
     violations.map(v => `${v.file.split('/').pop()}:${v.line}`)
