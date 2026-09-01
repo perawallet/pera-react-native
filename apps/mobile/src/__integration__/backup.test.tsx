@@ -73,7 +73,6 @@ import { BackupReminderSuccessScreen } from '@modules/backup/screens/BackupRemin
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,

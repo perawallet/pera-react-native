@@ -55,11 +55,9 @@ import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
     ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24,
     HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
