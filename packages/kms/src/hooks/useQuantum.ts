@@ -17,11 +17,11 @@ import {
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { seedFromMnemonic } from 'algosdk'
 import {
     deriveQuantumAddress,
     derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
+import { indicesToAlgo25Seed } from '../crypto/algo25-utils'
 import {
     FALCON_CHILD_KEY_TYPE,
     PQ_DERIVATION_CANONICAL,
@@ -48,7 +48,9 @@ export const useQuantum = () => {
 
     const createQuantumKey = async (params?: {
         id?: string
-        mnemonic?: string
+        /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
+         * itself, so no mnemonic string reaches the key path. */
+        mnemonicIndices?: Uint16Array
         derivation?: PQDerivation
         /** Attach a second child to an existing seed record instead of importing a new one. */
         reuseSeedId?: string
@@ -69,10 +71,10 @@ export const useQuantum = () => {
 
         try {
             // The quantum mnemonic format IS algo25 (24 data words + 1 checksum
-            // word over 32 bytes of entropy), so the mnemonic→seed path is
-            // algosdk's — no quantum-specific mnemonic code exists.
-            seed = params?.mnemonic
-                ? seedFromMnemonic(params.mnemonic)
+            // word over 32 bytes of entropy), so the indices→seed path is the
+            // algo25 codec — no quantum-specific mnemonic code exists.
+            seed = params?.mnemonicIndices
+                ? indicesToAlgo25Seed(params.mnemonicIndices)
                 : nacl.randomBytes(QUANTUM_SEED_LENGTH)
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Quantum })

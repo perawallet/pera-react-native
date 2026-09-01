@@ -138,7 +138,7 @@ import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFund
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 
 const FUNDING_ADDRESS = ALGO25_TEST_ADDRESS
@@ -161,7 +161,7 @@ const seedFundingSigner = async (): Promise<void> => {
     let keyResult: Algo25KeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })

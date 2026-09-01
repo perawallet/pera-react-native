@@ -79,7 +79,7 @@ import {
 } from './__fixtures__/assets'
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -185,7 +185,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         let key: Algo25KeyResult | null = null
         await waitFor(async () => {
             key = await kms.current.createAlgo25Key({
-                mnemonic: ALGO25_TEST_MNEMONIC,
+                mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })
             expect(key).not.toBeNull()
         })

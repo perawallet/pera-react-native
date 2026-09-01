@@ -18,7 +18,11 @@ import {
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+import {
+    MNEMONIC_WORDLIST,
+    mnemonicWordsToIndices,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -112,13 +116,20 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         if (!envelope || isProcessing) return
 
         setIsProcessing(true)
+        let mnemonicIndices: Uint16Array | null = null
         try {
-            const mnemonic = trimmedWords.join(' ')
+            // Zeroable indices, never the space-joined phrase. `canContinue`
+            // gates on every word being a wordlist word, so null only means
+            // an out-of-band invocation — same user copy as a bad key.
+            mnemonicIndices = mnemonicWordsToIndices(trimmedWords)
+            if (!mnemonicIndices) {
+                throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
+            }
             // The crypto stack is synchronous but `setIsProcessing` triggers a
             // re-render before the heavy work runs; without an await/microtask
             // boundary the loading indicator never paints.
             await Promise.resolve()
-            const payload = decryptBackupPayload(envelope, mnemonic)
+            const payload = decryptBackupPayload(envelope, mnemonicIndices)
             setPayload(payload)
             // `replace` (not `push`) so the Key screen unmounts on success: the
             // input hook wipes the typed words on unmount, and back-navigating
@@ -140,6 +151,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         } finally {
             // Don't wipe the words here: on error we keep them so the user can
             // fix a typo and retry; on success the unmount wipe handles it.
+            zeroBytes(mnemonicIndices)
             setIsProcessing(false)
         }
     }, [

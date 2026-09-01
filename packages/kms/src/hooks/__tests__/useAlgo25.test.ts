@@ -15,14 +15,17 @@ import { renderHook, act } from '@testing-library/react'
 import nacl from 'tweetnacl'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
-const mockSeedFromMnemonic = vi.fn()
+const mockIndicesToAlgo25Seed = vi.fn()
 const mockEncodeAddress = vi.fn()
 
 vi.mock('algosdk', async importOriginal => ({
     ...(await importOriginal<typeof import('algosdk')>()),
-    seedFromMnemonic: (...args: any[]) => mockSeedFromMnemonic(...args),
-    mnemonicFromSeed: vi.fn(),
     encodeAddress: (...args: any[]) => mockEncodeAddress(...args),
+}))
+
+vi.mock('../../crypto/algo25-utils', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../crypto/algo25-utils')>()),
+    indicesToAlgo25Seed: (...args: any[]) => mockIndicesToAlgo25Seed(...args),
 }))
 
 const mockKeyStoreImport = vi.fn()
@@ -57,6 +60,9 @@ import { useAlgo25, type Algo25KeyResult } from '../useAlgo25'
 import { algo25SignKeyId } from '../../models'
 import { SeedScheme } from '../../constants'
 
+// The codec is mocked, so any 25-entry buffer will do.
+const TEST_INDICES = new Uint16Array(25)
+
 describe('useAlgo25', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -67,7 +73,7 @@ describe('useAlgo25', () => {
     describe('createAlgo25Key', () => {
         test('imports the seed, generates an ed25519 child, and returns address + seedKey + signKeyId', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
-            mockSeedFromMnemonic.mockReturnValue(fakeSeed)
+            mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ALGO25ADDR')
 
             const { result } = renderHook(() => useAlgo25())
@@ -76,7 +82,7 @@ describe('useAlgo25', () => {
             await act(async () => {
                 keyResult = await result.current.createAlgo25Key({
                     id: 'my-key',
-                    mnemonic: 'test mnemonic',
+                    mnemonicIndices: TEST_INDICES,
                 })
             })
 
@@ -92,7 +98,7 @@ describe('useAlgo25', () => {
         test('persists the seed with scheme=algo25 metadata via keyStore.import', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             const expectedBytes = Array.from(fakeSeed)
-            mockSeedFromMnemonic.mockReturnValue(fakeSeed)
+            mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
 
             // Snapshot the privateKey contents synchronously when import
@@ -115,7 +121,7 @@ describe('useAlgo25', () => {
             await act(async () => {
                 await result.current.createAlgo25Key({
                     id: 'my-key',
-                    mnemonic: 'test mnemonic',
+                    mnemonicIndices: TEST_INDICES,
                 })
             })
 
@@ -139,7 +145,7 @@ describe('useAlgo25', () => {
 
         test('imports the ed25519 sign child keyed to the seed, not a fresh random key', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
-            mockSeedFromMnemonic.mockReturnValue(fakeSeed)
+            mockIndicesToAlgo25Seed.mockReturnValue(fakeSeed)
             mockEncodeAddress.mockReturnValue('ADDR')
             // Both the expectations and the recorded call have to be captured
             // before `createAlgo25Key` zeroes the seed buffer in its finally —
@@ -164,7 +170,7 @@ describe('useAlgo25', () => {
             await act(async () => {
                 await result.current.createAlgo25Key({
                     id: 'my-key',
-                    mnemonic: 'test mnemonic',
+                    mnemonicIndices: TEST_INDICES,
                 })
             })
 
@@ -182,14 +188,14 @@ describe('useAlgo25', () => {
         })
 
         test('does not mint the sign child through generate', async () => {
-            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
             mockEncodeAddress.mockReturnValue('ADDR')
 
             const { result } = renderHook(() => useAlgo25())
             await act(async () => {
                 await result.current.createAlgo25Key({
                     id: 'my-key',
-                    mnemonic: 'test mnemonic',
+                    mnemonicIndices: TEST_INDICES,
                 })
             })
 
@@ -199,20 +205,20 @@ describe('useAlgo25', () => {
         })
 
         test('generates a uuid id when not provided', async () => {
-            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32))
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32))
             mockEncodeAddress.mockReturnValue('ADDR')
             const { result } = renderHook(() => useAlgo25())
             let keyResult: Optional<Algo25KeyResult>
             await act(async () => {
                 keyResult = await result.current.createAlgo25Key({
-                    mnemonic: 'words',
+                    mnemonicIndices: TEST_INDICES,
                 })
             })
             expect(keyResult!.seedKey.id).toBe('mock-uuid-v7')
         })
 
         test('rolls back the seed if the ed25519 child fails to import', async () => {
-            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32))
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32))
             mockEncodeAddress.mockReturnValue('ADDR')
             // First import is the seed; the second is the signing child.
             mockKeyStoreImport
@@ -224,7 +230,7 @@ describe('useAlgo25', () => {
                 act(async () => {
                     await result.current.createAlgo25Key({
                         id: 'my-key',
-                        mnemonic: 'words',
+                        mnemonicIndices: TEST_INDICES,
                     })
                 }),
             ).rejects.toThrow('boom')
@@ -233,7 +239,7 @@ describe('useAlgo25', () => {
         })
 
         test('reports which step failed when the signing-child import throws', async () => {
-            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
             mockEncodeAddress.mockReturnValue('ADDR')
             mockKeyStoreImport
                 .mockResolvedValueOnce('my-key')
@@ -244,7 +250,7 @@ describe('useAlgo25', () => {
                 act(async () => {
                     await result.current.createAlgo25Key({
                         id: 'my-key',
-                        mnemonic: 'words',
+                        mnemonicIndices: TEST_INDICES,
                     })
                 }),
             ).rejects.toThrow('keystore rejected')
@@ -256,7 +262,7 @@ describe('useAlgo25', () => {
         })
 
         test('reports the seedImport stage when the seed import throws', async () => {
-            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
             mockEncodeAddress.mockReturnValue('ADDR')
             mockKeyStoreImport.mockRejectedValueOnce(
                 new Error('keystore rejected'),
@@ -267,7 +273,7 @@ describe('useAlgo25', () => {
                 act(async () => {
                     await result.current.createAlgo25Key({
                         id: 'my-key',
-                        mnemonic: 'words',
+                        mnemonicIndices: TEST_INDICES,
                     })
                 }),
             ).rejects.toThrow('keystore rejected')
@@ -279,7 +285,7 @@ describe('useAlgo25', () => {
         })
 
         test('reports the seed stage when the mnemonic is unusable', async () => {
-            mockSeedFromMnemonic.mockImplementation(() => {
+            mockIndicesToAlgo25Seed.mockImplementation(() => {
                 throw new Error('not a mnemonic')
             })
 
@@ -287,7 +293,7 @@ describe('useAlgo25', () => {
             await expect(
                 act(async () => {
                     await result.current.createAlgo25Key({
-                        mnemonic: 'not a mnemonic',
+                        mnemonicIndices: TEST_INDICES,
                     })
                 }),
             ).rejects.toThrow()

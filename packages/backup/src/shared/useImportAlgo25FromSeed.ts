@@ -11,14 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { mnemonicFromSeed } from 'algosdk'
 import {
     useImportAccount,
     useUpdateAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { ALGO25_SEED_LENGTH, zeroBytes } from '@perawallet/wallet-core-kms'
+import {
+    ALGO25_SEED_LENGTH,
+    algo25SeedToIndices,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '../mnemonic'
 
 /**
@@ -50,18 +53,17 @@ export type UseImportAlgo25FromSeedResult = {
  * Import a single algo25 account given its raw seed bytes. Used by both the
  * ASB and Pera Web import flows for `single`-kind accounts.
  *
- * Approach: rebuild a 25-word Algorand mnemonic from the seed via
- * `mnemonicFromSeed` and feed it through the standard `useImportAccount` so
- * duplicate detection, keystore commits, backend device-sync, and
+ * Approach: rebuild the 25 wordlist indices from the seed via
+ * `algo25SeedToIndices` and feed them through the standard `useImportAccount`
+ * so duplicate detection, keystore commits, backend device-sync, and
  * mark-as-backed-up all stay in one code path. Both legacy callers do the
  * same dance — `useAsbAccountImport` (Single kind) and
  * `usePeraWebAccountImport` — so the shared hook absorbs the round-trip,
  * the defensive seed copy, and the zeroize-in-finally lifecycle.
  *
- * Security: the seed bytes live in the local `seed` buffer for the duration
- * of the import and are wiped in `finally`. The 25-word mnemonic string is
- * unfortunately unwipable (immutable JS string), but its reference is
- * dropped immediately after the import call returns.
+ * Security: the seed bytes and the index buffer live only for the duration
+ * of the import and are wiped in `finally`; the phrase never exists as a
+ * string on this path.
  *
  * `DuplicateAccountError` from the underlying import path is re-thrown so
  * the caller (the loading / select-accounts screen) can bucket duplicates
@@ -83,10 +85,11 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
             }
 
             const seed = sliceSeed(params.privateKey)
+            let mnemonicIndices: Uint16Array | null = null
             try {
-                const mnemonic = mnemonicFromSeed(seed)
+                mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({
-                    mnemonic,
+                    mnemonicIndices,
                     type: 'algo25',
                 })
 
@@ -109,7 +112,7 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
                 markBackupComplete(renamed)
                 return renamed
             } finally {
-                zeroBytes(seed)
+                zeroBytes(seed, mnemonicIndices)
             }
         },
         [importAlgo25, updateAccount, markBackupComplete],

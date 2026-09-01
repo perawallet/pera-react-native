@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
+import { mnemonicWordsToIndices, zeroBytes } from '@perawallet/wallet-core-kms'
 
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
@@ -123,11 +124,23 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         void deferToNextCycle(async () => {
-            const mnemonic = words.join(' ')
+            // Zeroable indices, never the space-joined phrase — no mnemonic
+            // string is assembled on the import path. `canImport` already
+            // gates on every word being a wordlist word, so null only means
+            // an out-of-band invocation.
+            const mnemonicIndices = mnemonicWordsToIndices(words)
+            if (!mnemonicIndices) {
+                errorToast(
+                    t('onboarding.import_account.invalid_mnemonic_title'),
+                    t('onboarding.import_account.invalid_mnemonic_body'),
+                )
+                setProcessing(false)
+                return
+            }
 
             try {
                 const result = await importAccount({
-                    mnemonic,
+                    mnemonicIndices,
                     type: accountType,
                 })
 
@@ -173,6 +186,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: 'error',
                 })
             } finally {
+                zeroBytes(mnemonicIndices)
                 setProcessing(false)
             }
         })
@@ -183,6 +197,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         accountType,
         navigation,
         showToast,
+        errorToast,
         t,
     ])
 
