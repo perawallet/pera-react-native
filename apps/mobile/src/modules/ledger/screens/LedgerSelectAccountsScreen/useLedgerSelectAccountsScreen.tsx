@@ -130,12 +130,10 @@ export const useLedgerSelectAccountsScreen =
 
         const selectableAccounts = useMemo<LedgerSelectableAccount[]>(
             () => [
-                ...accounts.map(
-                    (account): LedgerSelectableAccount => ({
-                        kind: 'derived',
-                        account,
-                    }),
-                ),
+                ...accounts.map((account): LedgerSelectableAccount => ({
+                    kind: 'derived',
+                    account,
+                })),
                 ...rekeyed,
             ],
             [accounts, rekeyed],
