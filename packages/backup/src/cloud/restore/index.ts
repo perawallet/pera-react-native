@@ -11,3 +11,4 @@
  */
 
 export * from './pullBackupItems'
+export * from './restoreCloudBackup'

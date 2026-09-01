@@ -14,16 +14,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    readCloudBackupRestoreMnemonic,
     useCloudBackupRestoreDraftStore,
     type ImportSummary,
+    type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import {
-    useRestoreCloudBackup,
-    type RestoreErrorCategory,
-} from '../../hooks/useRestoreCloudBackup'
+import { useRestoreCloudBackup } from '../../hooks/useRestoreCloudBackup'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type Translate = ReturnType<typeof useLanguage>['t']
@@ -113,38 +110,15 @@ const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
     return { onSuccess, onError }
 }
 
-type RestoreRunner = {
-    isRestoring: boolean
-    handleRestore: () => Promise<void>
-}
-
 const useRestoreRunner = (
     restore: Restore,
     hasMnemonic: boolean,
     salt: string,
-): RestoreRunner => {
-    const [isRestoring, setIsRestoring] = useState(false)
-
-    const handleRestore = useCallback(async () => {
+): (() => void) =>
+    useCallback(() => {
         if (!hasMnemonic || salt.length === 0) return
-        // Words exist only for the length of this call; the retained form
-        // stays the zeroable buffer in the draft store.
-        const mnemonic = readCloudBackupRestoreMnemonic()
-        if (!mnemonic) return
-
-        setIsRestoring(true)
-        // Single owner of the flag: `restore` reports outcomes through its
-        // callbacks, so anything it throws would otherwise leave the loading
-        // overlay — a modal — up with no way to dismiss it.
-        try {
-            await restore({ mnemonic, salt })
-        } finally {
-            setIsRestoring(false)
-        }
+        restore({ salt })
     }, [hasMnemonic, salt, restore])
-
-    return { isRestoring, handleRestore }
-}
 
 type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     t: Translate
@@ -152,7 +126,7 @@ type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     isRestoring: boolean
     canRestore: boolean
     handleKeyChange: (value: string) => void
-    handleRestore: () => Promise<void>
+    handleRestore: () => void
 }
 
 export const useCloudBackupRestoreEncryptionKeyScreen =
@@ -161,8 +135,8 @@ export const useCloudBackupRestoreEncryptionKeyScreen =
         const [encryptionKey, setEncryptionKey] = useState('')
         const { hasMnemonic, clearDraft } = useRestoreDraft()
         const outcome = useRestoreOutcome(clearDraft)
-        const { restore } = useRestoreCloudBackup(outcome)
-        const { isRestoring, handleRestore } = useRestoreRunner(
+        const { restore, isRestoring } = useRestoreCloudBackup(outcome)
+        const handleRestore = useRestoreRunner(
             restore,
             hasMnemonic,
             encryptionKey,
