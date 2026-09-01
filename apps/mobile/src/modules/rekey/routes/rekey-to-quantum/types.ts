@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 
-const I18N_BASE_KEY = 'rekey.to_standard.intro'
-
-export type UseRekeyToStandardIntroScreenResult = {
-    i18nBaseKey: string
-    /** Kept with the keys so the spec can hold the two in sync. */
-    expectationCount: RekeyIntroScreenProps['expectationCount']
+export type RekeyToQuantumStackParamList = {
+    RekeyToQuantumIntro: { sourceAddress: string }
+    RekeyToQuantumSelectTarget: { sourceAddress: string }
+    RekeyToQuantumConfirm: {
+        sourceAddress: string
+        targetAddress: string
+    }
+    RekeyToQuantumSuccess: { sourceAddress: string }
 }
 
-export const useRekeyToStandardIntroScreen =
-    (): UseRekeyToStandardIntroScreenResult => ({
-        i18nBaseKey: I18N_BASE_KEY,
-        expectationCount: 4,
-    })
+export type RekeyToQuantumScreenProps<
+    T extends keyof RekeyToQuantumStackParamList,
+> = NativeStackScreenProps<RekeyToQuantumStackParamList, T>

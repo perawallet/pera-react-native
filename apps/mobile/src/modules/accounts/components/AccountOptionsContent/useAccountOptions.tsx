@@ -168,6 +168,14 @@ export const useAccountOptions = ({
                     })
                     return
                 }
+                case 'quantum': {
+                    trackEvent(AccountOptionsEvent.RekeyToQuantum)
+                    navigation.navigate('RekeyToQuantum', {
+                        screen: 'RekeyToQuantumIntro',
+                        params: { sourceAddress: account.address },
+                    })
+                    return
+                }
                 case 'shared': {
                     trackEvent(AccountDetailsEvent.JointAccountRekey)
                     navigation.navigate('RekeyToShared', {

@@ -12,16 +12,16 @@
 
 import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
 
-const I18N_BASE_KEY = 'rekey.to_standard.intro'
+const I18N_BASE_KEY = 'rekey.to_quantum.intro'
 
-export type UseRekeyToStandardIntroScreenResult = {
+export type UseRekeyToQuantumIntroScreenResult = {
     i18nBaseKey: string
     /** Kept with the keys so the spec can hold the two in sync. */
     expectationCount: RekeyIntroScreenProps['expectationCount']
 }
 
-export const useRekeyToStandardIntroScreen =
-    (): UseRekeyToStandardIntroScreenResult => ({
+export const useRekeyToQuantumIntroScreen =
+    (): UseRekeyToQuantumIntroScreenResult => ({
         i18nBaseKey: I18N_BASE_KEY,
         expectationCount: 4,
     })

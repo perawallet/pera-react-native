@@ -371,6 +371,9 @@
         "rekey_option_ledger_description": "Las transacciones se autorizarán en tu dispositivo Ledger.",
         "rekey_option_standard_title": "A una cuenta estándar",
         "rekey_option_standard_description": "Las transacciones se autorizarán por otra cuenta de tu wallet.",
+        "rekey_option_quantum_title": "A una cuenta cuántica",
+        "rekey_option_quantum_description": "Las transacciones se autorizarán por una cuenta cuántica de tu wallet.",
+        "rekey_option_quantum_badge": "NUEVO",
         "export_share_account": "Exportar/compartir cuenta",
         "scan_rekeyed": "Buscar cuentas con rekey",
         "rename_account": "Renombrar cuenta",
@@ -1866,7 +1869,6 @@
         "to_standard": {
             "intro": {
                 "title": "Hacer rekey a una cuenta estándar",
-                "title_with_quantum": "Hacer rekey a una cuenta estándar o cuántica",
                 "body": "El rekey asigna una nueva clave para firmar las futuras transacciones de esta cuenta, sin mover fondos ni cambiar su dirección.",
                 "learn_more": "Más información",
                 "expect_label": "Qué esperar",
@@ -1884,6 +1886,44 @@
             "confirm": {
                 "title": "Confirmar el rekey",
                 "body": "Estás a punto de hacer rekey de esta cuenta a otra dirección autorizada. La nueva dirección podrá firmar transacciones en su nombre.",
+                "learn_more": "Más información",
+                "summary_label": "Resumen del rekey",
+                "current_auth_label": "Actualmente con rekey a",
+                "fee_label": "Comisión de transacción",
+                "cta": "Confirmar",
+                "replace_warning": {
+                    "title": "Tu rekey anterior se reemplazará",
+                    "body": "<0>{{currentAuth}}</0> ya no estará autorizada para firmar transacciones de <1>{{source}}</1>. Asegúrate de entender las implicaciones antes de continuar. <2>Más información</2>",
+                    "confirm": "Confirmar",
+                    "cancel": "Cancelar"
+                }
+            },
+            "success": {
+                "title": "Rekey de la cuenta completado",
+                "body": "Se hizo rekey de la cuenta <0>{{source}}</0> correctamente.",
+                "cta": "Hecho"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Hacer rekey a una cuenta cuántica",
+                "body": "El rekey asigna una nueva clave para firmar las futuras transacciones de esta cuenta, sin mover fondos ni cambiar su dirección.",
+                "learn_more": "Más información",
+                "expect_label": "Qué esperar",
+                "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave post-cuántica de la cuenta cuántica.",
+                "expect_2": "Haz una copia de seguridad de la frase de recuperación de 25 palabras de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_4": "Las futuras transacciones pagarán una comisión de red mínima más alta, y volver a hacer rekey a una cuenta estándar requerirá a su vez una transacción firmada con la clave cuántica.",
+                "cta": "Iniciar proceso"
+            },
+            "select": {
+                "title": "Seleccionar cuenta cuántica",
+                "subtitle": "Elige la cuenta cuántica a la que quieres hacer rekey. La cuenta que selecciones aquí será la responsable de firmar todas las transacciones de la cuenta de origen.",
+                "empty": "No se encontraron cuentas cuánticas. Crea o importa primero una cuenta cuántica."
+            },
+            "confirm": {
+                "title": "Confirmar el rekey",
+                "body": "Estás a punto de hacer rekey de esta cuenta a una cuenta cuántica. La nueva dirección podrá firmar transacciones en su nombre.",
                 "learn_more": "Más información",
                 "summary_label": "Resumen del rekey",
                 "current_auth_label": "Actualmente con rekey a",

@@ -10,15 +10,17 @@
  limitations under the License
  */
 
-// Quantum accounts in the rekey-to-standard flow: rekey-IN lists a quantum
-// account as a selectable target (the migration path onto post-quantum keys),
-// and rekey-OUT opens the QuantumDowngradeWarningSheet before any signing.
+// Quantum accounts in the rekey flows: rekey-IN goes through the dedicated
+// rekey-to-quantum flow (options-sheet entry → intro → quantum-only target
+// list), the standard flow no longer lists quantum targets, and rekey-OUT
+// opens the QuantumDowngradeWarningSheet before any signing.
 //
 // Rekey-out CAN be signed, so the last test drives
 // past the sheet with a real Falcon key and a rejecting algod: no algod in
 // production accepts `pqsig`, which makes a failed submission the normal
 // rekey-out outcome there, and the CTA must recover from it.
 
+import { useEffect } from 'react'
 import {
     afterAll,
     afterEach,
@@ -65,6 +67,10 @@ import {
 import { RekeyToStandardSelectTargetScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSelectTargetScreen'
 import { RekeyToStandardConfirmScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardConfirmScreen'
 import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-standard/RekeyToStandardSuccessScreen'
+import { RekeyToQuantumIntroScreen } from '@modules/rekey/screens/rekey-to-quantum/RekeyToQuantumIntroScreen'
+import { RekeyToQuantumSelectTargetScreen } from '@modules/rekey/screens/rekey-to-quantum/RekeyToQuantumSelectTargetScreen'
+import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -106,11 +112,41 @@ const REKEY_SCREENS = [
     { name: 'RekeyToStandard', component: NestedNavigateRedirect },
 ]
 
+const QUANTUM_REKEY_SCREENS = [
+    { name: 'RekeyToQuantumIntro', component: RekeyToQuantumIntroScreen },
+    {
+        name: 'RekeyToQuantumSelectTarget',
+        component: RekeyToQuantumSelectTargetScreen,
+    },
+    { name: 'RekeyToQuantum', component: NestedNavigateRedirect },
+]
+
+// Production opens the account-options sheet through `requestBottomSheet`
+// (mirrors AccountOptionsHost in account-management.test.tsx) — the content
+// reads `useBottomSheetResult` from the host's context, so an inline render
+// would throw.
+const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request({
+            contents: (
+                <AccountOptionsContent
+                    account={account}
+                    onShowAddress={() => {}}
+                />
+            ),
+            options: { size: 'modal', enablePanDownToClose: true },
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
+}
+
 // Rekey-IN: a real algo25 source (its own signing keys matter for
-// `isEligibleRekeyTarget`'s "not the target" checks elsewhere), and a quantum
-// account as the candidate TARGET. A fake `keyPairId` is enough for the
-// target — `isEligibleRekeyTarget` only checks the field is non-empty, and
-// this test never signs with it.
+// `isEligibleQuantumRekeyTarget`'s "not the target" checks elsewhere), and a
+// quantum account as the candidate TARGET. A fake `keyPairId` is enough for
+// the target — `isEligibleQuantumRekeyTarget` only checks the field is
+// non-empty, and this test never signs with it.
 const seedRekeyInAccounts = async (): Promise<{
     source: WalletAccount
     quantumTarget: WalletAccount
@@ -266,7 +302,67 @@ describe('rekey quantum account', () => {
     })
 
     it(
-        'Given the quantum flag is on and a quantum account is held locally, when the user opens rekey-to-standard select-target, then the quantum account is listed as a selectable target',
+        'Given the quantum flag is on, when the user opens the rekey options sheet and taps the quantum entry, then the rekey-to-quantum flow lists the quantum account as a target',
+        async () => {
+            await enableQuantumFlag()
+            const { source, quantumTarget } = await seedRekeyInAccounts()
+
+            renderWithNavigation(
+                () => <AccountOptionsHost account={source} />,
+                'AccountOptionsHost',
+                { additionalScreens: QUANTUM_REKEY_SCREENS },
+            )
+
+            fireEvent.click(
+                await screen.findByTestId('account_option_rekey-account'),
+            )
+            fireEvent.click(await screen.findByTestId('rekey_option_quantum'))
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('rekey-to-quantum-intro-screen'),
+                ).toBeTruthy()
+            })
+            fireEvent.click(screen.getByTestId('rekey-to-quantum-intro-start'))
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(
+                        `rekey-target-row-${quantumTarget.address}`,
+                    ),
+                ).toBeTruthy()
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the quantum flag is off, when the user opens the rekey options sheet, then only the Ledger and standard entries are offered',
+        async () => {
+            await disableQuantumFlag()
+            const { source } = await seedRekeyInAccounts()
+
+            renderWithNavigation(
+                () => <AccountOptionsHost account={source} />,
+                'AccountOptionsHost',
+                { additionalScreens: QUANTUM_REKEY_SCREENS },
+            )
+
+            fireEvent.click(
+                await screen.findByTestId('account_option_rekey-account'),
+            )
+
+            await waitFor(() => {
+                expect(screen.getByTestId('rekey_option_ledger')).toBeTruthy()
+            })
+            expect(screen.getByTestId('rekey_option_standard')).toBeTruthy()
+            expect(screen.queryByTestId('rekey_option_quantum')).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the quantum flag is on, when the user opens rekey-to-standard select-target, then the quantum account is not listed (the dedicated flow owns quantum targets)',
         async () => {
             await enableQuantumFlag()
             const { source, quantumTarget } = await seedRekeyInAccounts()
@@ -287,37 +383,33 @@ describe('rekey quantum account', () => {
                     ),
                 ).toBeTruthy()
             })
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId(
-                        `rekey-target-row-${quantumTarget.address}`,
-                    ),
-                ).toBeTruthy()
-            })
+            expect(
+                screen.queryByTestId(
+                    `rekey-target-row-${quantumTarget.address}`,
+                ),
+            ).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
 
     it(
-        'Given the quantum flag is off, when the user opens rekey-to-standard select-target, then the quantum account is not listed as a target',
+        'Given the quantum flag is off, when the user opens rekey-to-quantum select-target directly, then no targets are listed',
         async () => {
             await disableQuantumFlag()
             const { source, quantumTarget } = await seedRekeyInAccounts()
 
             renderWithNavigation(
-                RekeyToStandardSelectTargetScreen,
-                'RekeyToStandardSelectTarget',
+                RekeyToQuantumSelectTargetScreen,
+                'RekeyToQuantumSelectTarget',
                 {
                     initialParams: { sourceAddress: source.address },
-                    additionalScreens: REKEY_SCREENS,
+                    additionalScreens: QUANTUM_REKEY_SCREENS,
                 },
             )
 
             await waitFor(() => {
                 expect(
-                    screen.getByTestId(
-                        'rekey-to-standard-select-target-screen',
-                    ),
+                    screen.getByTestId('rekey-to-quantum-select-target-screen'),
                 ).toBeTruthy()
             })
             expect(
