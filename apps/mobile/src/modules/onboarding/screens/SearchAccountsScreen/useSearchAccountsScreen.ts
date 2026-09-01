@@ -250,7 +250,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if ('mode' in params && params.mode === 'import') {
                 cancelImport()
             }
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
+            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: import_account.failed_* names this step; an unrecognized error would fall through showError to the generic errors.general.* copy
             showToast({
                 type: 'error',
                 title: t('onboarding.import_account.failed_title'),

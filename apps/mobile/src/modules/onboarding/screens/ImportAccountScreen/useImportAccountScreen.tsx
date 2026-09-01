@@ -158,7 +158,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 const isDuplicate = e instanceof DuplicateAccountError
-                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
+                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: on DuplicateAccountError showError resolves to the generic errors.account.generic copy, not the specific import_account.duplicate_account_* strings this needs
                 showToast({
                     title: t(
                         isDuplicate
