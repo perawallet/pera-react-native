@@ -36,6 +36,7 @@ export default defineConfig({
         '**/.expo/**',
         'packages/devtools/**',
     ],
+    timeouts: { rule: 250 },
     namespaces: ['pera'],
     rules: [
         noPrimitiveRnComponents,

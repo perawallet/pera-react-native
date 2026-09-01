@@ -47,7 +47,13 @@ export default defineRule({
         // without an import to follow.
         const declaredHooks: string[] = []
 
-        for (const match of ctx.querySubtree(prog, MAKE_STYLES_QUERY)) {
+        // The query matches the identifier literally, so a file whose text
+        // lacks it cannot produce a match — and this rule reads every file in
+        // the repo, where most declare no styles at all.
+        const mayDeclare = ctx.fileText.includes('makeStyles')
+        for (const match of mayDeclare
+            ? ctx.querySubtree(prog, MAKE_STYLES_QUERY)
+            : []) {
             const call = match.call
             const fn = match.fn
             if (call === undefined || fn === undefined) continue
@@ -264,16 +270,27 @@ export default defineRule({
             else used.add(`${id}::${String(fact.key)}`)
         }
 
-        const opaque = ctx.facts('opaque').map(f => ({
-            base: f.base === undefined ? undefined : String(f.base),
-            tail: f.tail === undefined ? undefined : String(f.tail),
-            name: String(f.name),
-        }))
+        // Keyed by imported name because every unresolvable named import in the
+        // corpus emits one of these — tens of thousands — and a scan per key
+        // definition would cost the product of the two.
+        const opaqueByName = new Map<
+            string,
+            { base?: string; tail?: string }[]
+        >()
+        for (const fact of ctx.facts('opaque')) {
+            const name = String(fact.name)
+            const entry = {
+                base: fact.base === undefined ? undefined : String(fact.base),
+                tail: fact.tail === undefined ? undefined : String(fact.tail),
+            }
+            const list = opaqueByName.get(name)
+            if (list === undefined) opaqueByName.set(name, [entry])
+            else list.push(entry)
+        }
         // A base is an exact location, so any extension the bundler might have
         // picked counts. A tail is a guess, so it is held to known extensions.
         const reachedOpaquely = (file: string, hook: string): boolean =>
-            opaque.some(o => {
-                if (o.name !== hook) return false
+            (opaqueByName.get(hook) ?? []).some(o => {
                 if (o.base !== undefined) return file.startsWith(`${o.base}.`)
                 return ['.ts', '.tsx', '.web.ts', '.web.tsx'].some(ext =>
                     file.endsWith(`/${String(o.tail)}${ext}`),
