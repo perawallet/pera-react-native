@@ -54,7 +54,6 @@ export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
             }
 
             if (error.reason === 'user_rejected') {
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: rejection is a user-facing cancellation, distinct from algod errors
                 showToast({
                     title: t('rekey.signing.user_rejected_title'),
                     body: t('rekey.signing.user_rejected_body'),

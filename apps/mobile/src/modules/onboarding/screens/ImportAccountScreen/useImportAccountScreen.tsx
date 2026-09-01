@@ -158,7 +158,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 const isDuplicate = e instanceof DuplicateAccountError
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
+                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
                 showToast({
                     title: t(
                         isDuplicate

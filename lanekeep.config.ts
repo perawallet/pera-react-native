@@ -15,9 +15,8 @@ import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 
 export default defineConfig({
-    // Mirrors packages/devtools/guardrails/utils/discovery.ts. Every workspace
-    // member lives one level under apps/, packages/ or extensions/, matching
-    // the pnpm-workspace.yaml globs.
+    // Every workspace member lives one level under apps/, packages/ or
+    // extensions/, matching the pnpm-workspace.yaml globs.
     include: [
         'apps/*/src/**/*.{ts,tsx}',
         'packages/*/src/**/*.{ts,tsx}',
@@ -36,7 +35,11 @@ export default defineConfig({
         '**/.expo/**',
         'packages/devtools/**',
     ],
-    timeouts: { rule: 250 },
+    // The per-rule budget catches a single rule going quadratic; the global
+    // one has to absorb a cold parse of the whole corpus on a loaded CI
+    // runner, which is slower than a dev machine and needs more than a small
+    // multiple of the observed worst case.
+    timeouts: { rule: 250, global: 60000 },
     namespaces: ['pera'],
     rules: [
         noPrimitiveRnComponents,

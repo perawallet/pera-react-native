@@ -7,10 +7,10 @@ import type { Node, RuleContext } from 'lanekeep'
 // Every `makeStyles(...)` call. Rules refine from the call node.
 //
 // The identifier is matched literally rather than resolved, so an aliased
-// `import { makeStyles as ms }` would be missed. The old runner resolved the
-// binding; nothing in the repo uses an alias, and `check` re-verifies the
-// origin below, so the literal match costs no real coverage and keeps every
-// non-makeStyles call from crossing the sandbox boundary.
+// `import { makeStyles as ms }` would be missed. Nothing in the repo uses an
+// alias, and `check` re-verifies the origin below, so the literal match costs
+// no real coverage and keeps every non-makeStyles call from crossing the
+// sandbox boundary.
 export const MAKE_STYLES_QUERY =
     '(call_expression function: (identifier) @fn (#eq? @fn "makeStyles")) @call'
 
