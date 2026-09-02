@@ -1597,7 +1597,7 @@ index 3ef9075b2d63b8a981ddcecf8bc73aceade36eb8..ac8506436b9d98a85994cd245bb6ac47
          getStoredCredentials: () => Promise.resolve([]),
          getDiagnostics: () => Promise.resolve([]),
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e51294d71f 100644
+index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1daaa727b 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 @@ -7,6 +7,7 @@ import UIKit
@@ -1608,29 +1608,48 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
    private var pendingRegistrationRequest: ASPasskeyCredentialRequest?
    private var pendingRegistrationIdentity: ASPasskeyCredentialIdentity?
    private var pendingAssertionCredential: StoredPasskeyCredential?
-@@ -20,6 +21,12 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -20,6 +21,15 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
    private var authContext: LAContext?
    private let activityIndicator = UIActivityIndicatorView(style: .large)
    private let statusLabel = UILabel()
-+  private var pendingPasswordLogin: StoredLogin?
++  /// The keystore id of the login being served, never the login itself: the
++  /// password is read only once `evaluatePolicy` has succeeded.
++  private var pendingPasswordRecordIdentifier: String?
 +  private var isCompletingPassword = false
-+  /// The logins offered by the in-extension picker (`prepareCredentialList`).
-+  private var offeredLogins: [StoredLogin] = []
++  /// The logins offered by the in-extension picker (`prepareCredentialList`),
++  /// as summaries — the picker never holds a password.
++  private var offeredLogins: [LoginSummary] = []
 +  private let loginTableView = UITableView(frame: .zero, style: .plain)
 +  private let loginCancelButton = UIButton(type: .system)
  
    override func viewDidLoad() {
      super.viewDidLoad()
-@@ -38,6 +45,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -38,6 +48,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
          self.authenticateAndCompleteRegistration()
        } else if self.pendingAssertionCredential != nil {
          self.authenticateAndCompleteAssertion()
-+      } else if self.pendingPasswordLogin != nil {
++      } else if self.pendingPasswordRecordIdentifier != nil {
 +        self.authenticateAndCompletePassword()
        }
      }
    }
-@@ -69,10 +78,33 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -57,7 +69,14 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+             relyingPartyIdentifier: relyingPartyIdentifier
+           ).first(where: { allowedCredentials.isEmpty || allowedCredentials.contains($0.credentialIdData.base64URLEncodedString()) })
+     else {
+-      cancel(code: .credentialIdentityNotFound, message: "No passkey is available.")
++      // This overload serves a list of passkey AND password credentials, and it
++      // is the only one a WebAuthn-capable sign-in form calls — so a site with
++      // no passkey must still reach the saved logins here, not be told nothing
++      // is available.
++      offerLogins(
++        serviceIdentifiers: serviceIdentifiers,
++        emptyMessage: "No passkey or saved login is available for this site."
++      )
+       return
+     }
+ 
+@@ -69,10 +88,31 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      )
    }
  
@@ -1638,12 +1657,10 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +  /// along: the password half of AutoFill, whose QuickType entries come from
 +  /// the identity store instead.
 +  override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
-+    let requested = serviceIdentifiers.map { $0.identifier }
-+    let logins = passwordStore?.logins(serviceIdentifiers: requested) ?? []
-+    store?.appendDiagnostic("prepareCredentialList passwords: \(logins.count)")
-+
-+    offeredLogins = logins
-+    showLoginPicker(emptyMessage: "No saved logins for this site.")
++    offerLogins(
++      serviceIdentifiers: serviceIdentifiers,
++      emptyMessage: "No saved logins for this site."
++    )
 +  }
 +
    override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
@@ -1667,7 +1684,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
        cancel(code: .failed, message: "Unsupported credential request.")
        return
      }
-@@ -86,9 +118,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -86,9 +126,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
    }
  
    override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
@@ -1689,7 +1706,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
        cancel(code: .failed, message: "Unsupported credential request.")
        return
      }
-@@ -149,7 +190,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -149,7 +198,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      do {
        guard let store else {
          self.store?.appendDiagnostic("missing wallet root-key state")
@@ -1698,7 +1715,21 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
          return
        }
  
-@@ -309,7 +350,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -203,10 +252,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+ 
+       Task {
+         do {
+-          try await store.replaceIdentityStore()
+-          store.appendDiagnostic("replaceIdentityStore after registration succeeded")
++          try await store.saveIdentityStore()
++          store.appendDiagnostic("saveIdentityStore after registration succeeded")
+         } catch {
+-          store.appendDiagnostic("replaceIdentityStore after registration failed: \(error.localizedDescription)")
++          store.appendDiagnostic("saveIdentityStore after registration failed: \(error.localizedDescription)")
+         }
+       }
+ 
+@@ -309,7 +358,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -1707,7 +1738,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -380,6 +421,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -380,6 +429,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      statusLabel.text = "checking passkeys..."
    }
  
@@ -1721,7 +1752,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
    private func showFailure(_ message: String) {
      store?.appendDiagnostic("showFailure: \(message)")
      activityIndicator.stopAnimating()
-@@ -407,7 +455,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -407,7 +463,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")
@@ -1730,25 +1761,24 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -456,6 +504,179 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -456,6 +512,197 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
    }
  }
  
 +// MARK: - Password credentials
 +
 +extension CredentialProviderViewController: UITableViewDataSource, UITableViewDelegate {
-+  /// Resolves the login the system asked for and holds it until the user has
-+  /// been verified.
++  /// Holds the id of the login the system asked for. The record is not opened
++  /// here: the password is read after `evaluatePolicy` succeeds and used
++  /// immediately, so no decrypted password waits on a prompt.
 +  func preparePassword(recordIdentifier: String?) {
-+    guard let recordIdentifier,
-+          let login = passwordStore?.login(recordIdentifier: recordIdentifier)
-+    else {
-+      store?.appendDiagnostic("password identity not resolvable")
++    guard let recordIdentifier else {
++      store?.appendDiagnostic("password request carried no record identifier")
 +      cancel(code: .credentialIdentityNotFound, message: "Credential identity not found.")
 +      return
 +    }
 +
-+    pendingPasswordLogin = login
++    pendingPasswordRecordIdentifier = recordIdentifier
 +    showCheckingLogins()
 +
 +    if hasPresentedInterface {
@@ -1756,6 +1786,15 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +        self?.authenticateAndCompletePassword()
 +      }
 +    }
++  }
++
++  /// Lists the logins matching the request. Summaries only — the picker shows a
++  /// username and a host, and neither it nor this controller holds a password.
++  func offerLogins(serviceIdentifiers: [ASCredentialServiceIdentifier], emptyMessage: String) {
++    let requested = serviceIdentifiers.map { $0.identifier }
++    offeredLogins = passwordStore?.loginSummaries(serviceIdentifiers: requested) ?? []
++    store?.appendDiagnostic("offering logins: \(offeredLogins.count)")
++    showLoginPicker(emptyMessage: emptyMessage)
 +  }
 +
 +  /// Mirrors `authenticateAndCompleteAssertion` instead of sharing a helper with
@@ -1767,7 +1806,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +    }
 +    isCompletingPassword = true
 +
-+    guard let login = pendingPasswordLogin else {
++    guard let recordIdentifier = pendingPasswordRecordIdentifier else {
 +      isCompletingPassword = false
 +      cancel(code: .credentialIdentityNotFound, message: "Credential identity not found.")
 +      return
@@ -1797,7 +1836,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +
 +        if success {
 +          self.store?.appendDiagnostic("evaluatePolicy password success")
-+          self.completePassword(login: login)
++          self.completePassword(recordIdentifier: recordIdentifier)
 +        } else {
 +          self.authContext = nil
 +          self.isCompletingPassword = false
@@ -1813,12 +1852,22 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +    }
 +  }
 +
-+  private func completePassword(login: StoredLogin) {
++  /// Unseals the record and hands it straight to the system. The `StoredLogin`
++  /// exists only inside this call, and only after the user was verified.
++  private func completePassword(recordIdentifier: String) {
++    guard let login = passwordStore?.login(recordIdentifier: recordIdentifier) else {
++      authContext = nil
++      isCompletingPassword = false
++      store?.appendDiagnostic("password record not resolvable after verification")
++      cancel(code: .credentialIdentityNotFound, message: "Credential identity not found.")
++      return
++    }
++
 +    let credential = ASPasswordCredential(user: login.username, password: login.password)
 +    extensionContext.completeRequest(withSelectedCredential: credential) { [weak self] _ in
 +      self?.authContext = nil
 +      self?.isCompletingPassword = false
-+      self?.pendingPasswordLogin = nil
++      self?.pendingPasswordRecordIdentifier = nil
 +      self?.offeredLogins = []
 +    }
 +  }
@@ -1892,7 +1941,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +      ?? UITableViewCell(style: .subtitle, reuseIdentifier: identifier)
 +    let login = offeredLogins[indexPath.row]
 +    cell.textLabel?.text = login.username
-+    cell.detailTextLabel?.text = login.domain
++    cell.detailTextLabel?.text = login.host
 +    return cell
 +  }
 +
@@ -1901,7 +1950,7 @@ index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e5
 +    guard indexPath.row < offeredLogins.count else {
 +      return
 +    }
-+    pendingPasswordLogin = offeredLogins[indexPath.row]
++    pendingPasswordRecordIdentifier = offeredLogins[indexPath.row].recordIdentifier
 +    showCheckingLogins()
 +    authenticateAndCompletePassword()
 +  }
@@ -2291,7 +2340,7 @@ index 0000000000000000000000000000000000000000..5063604fda0171a9a709a1a168931ca6
 +  }
 +}
 diff --git a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
-index 311007d2a90e810439f06362c6e7b2354ef05631..814e858e974fdcb9c90a646143108748e7bb2f66 100644
+index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9cd756ec8 100644
 --- a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 +++ b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 @@ -49,69 +49,11 @@ struct StoredPasskeyCredential: Codable {
@@ -2573,51 +2622,112 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..814e858e974fdcb9c90a646143108748
    }
  
    /// The raw parent secret for a new credential. Prefer ``parentSecret(scheme:)``,
-@@ -625,12 +429,26 @@ final class PasskeyCredentialStore {
+@@ -625,12 +429,11 @@ final class PasskeyCredentialStore {
      isCredentialDeleted(id: id.base64EncodedString()) || isCredentialDeleted(id: id.base64URLEncodedString())
    }
  
 -  func replaceIdentityStore() async throws {
-+  /// Publishes the whole OS credential index: this store's passkeys together
-+  /// with the wallet's password rows.
-+  ///
-+  /// `ASCredentialIdentityStore.replaceCredentialIdentities` replaces the index
-+  /// wholesale and has no per-kind channel, so a publisher that sends only its
-+  /// own kind silently deletes the other kind's rows. Every publisher therefore
-+  /// goes through here and sends the union, and whichever runs last still leaves
-+  /// a complete index.
-+  ///
-+  /// - Parameter passwordIdentities: the authoritative password rows, when the
-+  ///   caller already holds them (the wallet publishes the full set it just
-+  ///   listed). Omitted, they are enumerated from the shared keystore.
-+  func replaceIdentityStore(
-+    passwordIdentities: [ASPasswordCredentialIdentity]? = nil
-+  ) async throws {
-     guard #available(iOS 17.0, *) else {
-       return
-     }
- 
+-    guard #available(iOS 17.0, *) else {
+-      return
+-    }
+-
 -    let identities = allCredentials().map { credential in
-+    let passkeyIdentities: [ASCredentialIdentity] = allCredentials().map { credential in
++  /// The OS index rows this store's passkeys occupy. Built exactly as they
++  /// always were; nothing here reads a password record.
++  @available(iOS 17.0, *)
++  private func passkeyIdentities() -> [ASCredentialIdentity] {
++    allCredentials().map { credential in
        ASPasskeyCredentialIdentity(
          relyingPartyIdentifier: credential.relyingPartyIdentifier,
          userName: credential.userName,
-@@ -639,9 +457,13 @@ final class PasskeyCredentialStore {
+@@ -639,9 +442,85 @@ final class PasskeyCredentialStore {
          recordIdentifier: credential.credentialId
        )
      }
-+    // A keystore this process cannot read yet costs the password rows until the
-+    // next publish; it must not cost the passkey rows as well, so this degrades
-+    // to an empty set rather than failing the call.
-+    let passwords = passwordIdentities ?? PasswordCredentialStore()?.credentialIdentities() ?? []
++  }
  
++  /// Replaces the WHOLE OS credential index with this store's passkeys plus the
++  /// given password rows.
++  ///
++  /// `ASCredentialIdentityStore.replaceCredentialIdentities` has no per-kind
++  /// channel — it replaces everything — so only a caller holding the
++  /// authoritative password set may use it, and it must send the union or it
++  /// deletes the other kind's rows. The wallet's password publisher is that
++  /// caller; every passkey-only path uses ``saveIdentityStore()`` instead, which
++  /// leaves the password rows alone and reads no password record.
++  func replaceIdentityStore(passwordIdentities: [ASPasswordCredentialIdentity]) async throws {
++    guard #available(iOS 17.0, *) else {
++      return
++    }
++    try await publish { completion in
++      ASCredentialIdentityStore.shared.replaceCredentialIdentities(
++        passkeyIdentities() + passwordIdentities,
++        completion: completion
++      )
++    }
++  }
++
++  /// Upserts this store's passkey rows and touches nothing else, so the password
++  /// rows the wallet published survive a passkey-only refresh — and no password
++  /// is unsealed to keep them.
++  func saveIdentityStore() async throws {
++    guard #available(iOS 17.0, *) else {
++      return
++    }
++    try await publish { completion in
++      ASCredentialIdentityStore.shared.saveCredentialIdentities(passkeyIdentities(), completion: completion)
++    }
++  }
++
++  /// Deletes a credential and drops just its row from the index. The row is
++  /// built before the record goes away, since it cannot be described afterwards.
++  func removeCredentialAndIdentity(id: String) async throws {
++    guard #available(iOS 17.0, *) else {
++      try removeCredential(id: id)
++      return
++    }
++    let candidates = credentialIdCandidates(id)
++    let doomed = passkeyIdentities().filter { candidates.contains($0.recordIdentifier ?? "") }
++    try removeCredential(id: id)
++    if !doomed.isEmpty {
++      try await publish { completion in
++        ASCredentialIdentityStore.shared.removeCredentialIdentities(doomed, completion: completion)
++      }
++    }
++    try await saveIdentityStore()
++  }
++
++  /// Replaces the stored passkey list and brings the index's passkey rows in
++  /// line with it — dropping the rows of credentials that are gone — without
++  /// disturbing the password rows.
++  func replaceStoredCredentials(_ credentials: [StoredPasskeyCredential]) async throws {
++    guard #available(iOS 17.0, *) else {
++      try replace(credentials)
++      return
++    }
++    let kept = Set(credentials.map { $0.credentialId })
++    let doomed = passkeyIdentities().filter { !kept.contains($0.recordIdentifier ?? "") }
++    try replace(credentials)
++    if !doomed.isEmpty {
++      try await publish { completion in
++        ASCredentialIdentityStore.shared.removeCredentialIdentities(doomed, completion: completion)
++      }
++    }
++    try await saveIdentityStore()
++  }
++
++  /// Bridges one `ASCredentialIdentityStore` call to `async`. The store reports
++  /// `false` with no error when it simply refused the write.
++  private func publish(
++    _ operation: (@escaping @Sendable (Bool, Error?) -> Void) -> Void
++  ) async throws {
      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
 -      ASCredentialIdentityStore.shared.replaceCredentialIdentities(identities) { success, error in
-+      ASCredentialIdentityStore.shared.replaceCredentialIdentities(passkeyIdentities + passwords) { success, error in
++      operation { success, error in
          if let error {
            continuation.resume(throwing: error)
          } else if success {
-@@ -701,112 +523,19 @@ final class PasskeyCredentialStore {
+@@ -701,112 +580,19 @@ final class PasskeyCredentialStore {
    }
  
    private func encodeKeyData(_ keyData: [String: Any]) throws -> String {
@@ -2736,11 +2846,10 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..814e858e974fdcb9c90a646143108748
  
 diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac439ce28f
+index 0000000000000000000000000000000000000000..e548c16165e671ab8f024e9ea61371ffb56d34d0
 --- /dev/null
 +++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
-@@ -0,0 +1,192 @@
-+import AuthenticationServices
+@@ -0,0 +1,217 @@
 +import Foundation
 +
 +/// A login the wallet sealed into the shared keystore.
@@ -2759,6 +2868,19 @@ index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac
 +  /// Epoch **milliseconds**, as the wallet writes them.
 +  let createdAt: Double
 +  let updatedAt: Double
++}
++
++/// What a login can say about itself without its secret: enough to list it,
++/// match it against a request and publish it to the OS index.
++///
++/// Every bulk read returns these. `StoredLogin` — the only shape carrying the
++/// password — is reachable one record at a time, so nothing can hold a set of
++/// decrypted passwords.
++struct LoginSummary {
++  let recordIdentifier: String
++  /// The stored domain reduced to a comparable host, e.g. `example.com`.
++  let host: String
++  let username: String
 +}
 +
 +/// Reads the wallet's logins out of the keystore records shared through the App
@@ -2790,53 +2912,37 @@ index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac
 +    self.secrets = KeystoreSecretReader(defaults: defaults)
 +  }
 +
-+  func allLogins() -> [StoredLogin] {
++  /// Every login, as summaries. The sealed payload is decoded to read the
++  /// domain and username — they live inside it — but the password is never
++  /// bound, so none is retained past this call.
++  func loginSummaries() -> [LoginSummary] {
 +    guard let masterKey = secrets.masterKey() else {
 +      return []
 +    }
 +    return secrets.recordIds(appGroup: appGroup)
-+      .compactMap { login(recordIdentifier: $0, masterKey: masterKey) }
-+      .sorted { $0.domain.localizedCaseInsensitiveCompare($1.domain) == .orderedAscending }
++      .compactMap { summary(recordIdentifier: $0, masterKey: masterKey) }
++      .sorted { $0.host.localizedCaseInsensitiveCompare($1.host) == .orderedAscending }
 +  }
 +
 +  /// The logins offered for a request, matched on the domain.
 +  ///
 +  /// An empty `serviceIdentifiers` means the system named no site (the user
 +  /// opened the provider directly), so every login is a candidate.
-+  func logins(serviceIdentifiers: [String]) -> [StoredLogin] {
++  func loginSummaries(serviceIdentifiers: [String]) -> [LoginSummary] {
 +    guard !serviceIdentifiers.isEmpty else {
-+      return allLogins()
++      return loginSummaries()
 +    }
 +    let requested = serviceIdentifiers.map { Self.host(of: $0) }.filter { !$0.isEmpty }
 +    guard !requested.isEmpty else {
 +      return []
 +    }
-+    return allLogins().filter { login in
-+      requested.contains { Self.domain(login.domain, matches: $0) }
++    return loginSummaries().filter { login in
++      requested.contains { Self.domain(login.host, matches: $0) }
 +    }
 +  }
 +
-+  /// The OS credential-index rows for every login: the domain as the service
-+  /// identifier, the username as the label the picker shows, and the keystore id
-+  /// as the record identifier the provider resolves the sealed password from.
-+  ///
-+  /// Builds the rows here rather than handing out `StoredLogin`s so no password
-+  /// escapes this call.
-+  func credentialIdentities() -> [ASPasswordCredentialIdentity] {
-+    allLogins()
-+      .filter { !Self.host(of: $0.domain).isEmpty }
-+      .map { login in
-+        ASPasswordCredentialIdentity(
-+          serviceIdentifier: ASCredentialServiceIdentifier(
-+            identifier: Self.host(of: login.domain),
-+            type: .domain
-+          ),
-+          user: login.username,
-+          recordIdentifier: login.recordIdentifier
-+        )
-+      }
-+  }
-+
++  /// The one way to reach a password, one record at a time. Call it when
++  /// something is about to use the secret — never to build a list.
 +  func login(recordIdentifier: String) -> StoredLogin? {
 +    guard let masterKey = secrets.masterKey() else {
 +      return nil
@@ -2844,7 +2950,24 @@ index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac
 +    return login(recordIdentifier: recordIdentifier, masterKey: masterKey)
 +  }
 +
++  private func summary(recordIdentifier: String, masterKey: Data) -> LoginSummary? {
++    guard let payload = loginPayload(recordIdentifier: recordIdentifier, masterKey: masterKey) else {
++      return nil
++    }
++    return Self.decodeSummary(payload: payload, recordIdentifier: recordIdentifier)
++  }
++
 +  private func login(recordIdentifier: String, masterKey: Data) -> StoredLogin? {
++    guard let payload = loginPayload(recordIdentifier: recordIdentifier, masterKey: masterKey) else {
++      return nil
++    }
++    return Self.decode(payload: payload, recordIdentifier: recordIdentifier)
++  }
++
++  /// The sealed bytes of a login record, or `nil` when the record is not a login.
++  /// The `k/<id>` metadata is plaintext, so a non-login record is rejected
++  /// before anything is unsealed.
++  private func loginPayload(recordIdentifier: String, masterKey: Data) -> Data? {
 +    guard let record = secrets.metadata(
 +      of: recordIdentifier,
 +      masterKey: masterKey,
@@ -2857,14 +2980,7 @@ index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac
 +    guard kind == Self.loginKind else {
 +      return nil
 +    }
-+    guard let payload = secrets.material(
-+      of: recordIdentifier,
-+      masterKey: masterKey,
-+      appGroup: appGroup
-+    ) else {
-+      return nil
-+    }
-+    return Self.decode(payload: payload, recordIdentifier: recordIdentifier)
++    return secrets.material(of: recordIdentifier, masterKey: masterKey, appGroup: appGroup)
 +  }
 +
 +  /// Decodes the sealed payload the wallet's `encodeLoginPayload` writes: UTF-8
@@ -2890,6 +3006,25 @@ index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac
 +      createdAt: createdAt,
 +      updatedAt: updatedAt
 +    )
++  }
++
++  /// The summary half of the payload. Deliberately does not bind `password`:
++  /// listing logins must not put a decrypted password into a variable that
++  /// outlives the parse.
++  static func decodeSummary(payload: Data, recordIdentifier: String) -> LoginSummary? {
++    guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
++          let version = json["v"] as? Int,
++          version == payloadVersion,
++          let domain = json["domain"] as? String,
++          let username = json["username"] as? String
++    else {
++      return nil
++    }
++    let host = host(of: domain)
++    guard !host.isEmpty else {
++      return nil
++    }
++    return LoginSummary(recordIdentifier: recordIdentifier, host: host, username: username)
 +  }
 +
 +  /// A stored `example.com` answers a request for `example.com` and for any
@@ -2949,11 +3084,26 @@ index a37b6d9ce27def24fde9980e2e2e260c432192a0..34a09e1701428536a217b57d97f1ba06
      "AutofillCredentialProvider/PasskeyKeystoreMMKV.mm"
    ]
 diff --git a/ios/ReactNativePasskeyAutofillModule.swift b/ios/ReactNativePasskeyAutofillModule.swift
-index b66566006ebb26bb66cdd07168591b3d36d4621a..44ef9699daf6e4fa0872c5ff461b0973c74ed467 100644
+index b66566006ebb26bb66cdd07168591b3d36d4621a..e6874fe1fe079d618734331fb46f37bb4aa19a75 100644
 --- a/ios/ReactNativePasskeyAutofillModule.swift
 +++ b/ios/ReactNativePasskeyAutofillModule.swift
-@@ -147,6 +147,43 @@ public class ReactNativePasskeyAutofillModule: Module {
-       try await store.replaceIdentityStore()
+@@ -80,8 +80,7 @@ public class ReactNativePasskeyAutofillModule: Module {
+       guard let store = PasskeyCredentialStore() else {
+         return
+       }
+-      try store.removeCredential(id: credentialId)
+-      try await store.replaceIdentityStore()
++      try await store.removeCredentialAndIdentity(id: credentialId)
+     }
+ 
+     AsyncFunction("configureIntentActions") { (getPasskeyAction: String, createPasskeyAction: String) in
+@@ -143,10 +142,53 @@ public class ReactNativePasskeyAutofillModule: Module {
+         )
+       }
+ 
+-      try store.replace(storedCredentials)
+-      try await store.replaceIdentityStore()
++      try await store.replaceStoredCredentials(storedCredentials)
      }
  
 +    // Publishes the wallet's logins to the OS credential index so iOS offers
@@ -2974,17 +3124,22 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..44ef9699daf6e4fa0872c5ff461b0973
 +      let passwordIdentities: [ASPasswordCredentialIdentity] = identities.compactMap { identity in
 +        guard let recordIdentifier = identity["recordIdentifier"] as? String,
 +              let serviceIdentifier = identity["serviceIdentifier"] as? String,
-+              let user = identity["user"] as? String,
-+              !serviceIdentifier.isEmpty
++              let user = identity["user"] as? String
 +        else {
 +          return nil
 +        }
 +
++        // A `.domain` identifier must be a bare host or the OS matches it
++        // against nothing, and the wallet stores whatever the user typed
++        // ("https://example.com/login"). Reduced with the same function the
++        // provider matches requests with, so both sides agree on the identifier.
++        let host = PasswordCredentialStore.host(of: serviceIdentifier)
++        guard !host.isEmpty else {
++          return nil
++        }
++
 +        return ASPasswordCredentialIdentity(
-+          serviceIdentifier: ASCredentialServiceIdentifier(
-+            identifier: serviceIdentifier,
-+            type: .domain
-+          ),
++          serviceIdentifier: ASCredentialServiceIdentifier(identifier: host, type: .domain),
 +          user: user,
 +          recordIdentifier: recordIdentifier
 +        )
@@ -2993,9 +3148,20 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..44ef9699daf6e4fa0872c5ff461b0973
 +      try await store.replaceIdentityStore(passwordIdentities: passwordIdentities)
 +    }
 +
++    // Passkey-only: upserts the passkey rows and leaves the wallet's password
++    // rows in place. It must not read a password record to do that.
      AsyncFunction("refreshCredentialIdentities") {
        guard let store = PasskeyCredentialStore() else {
          throw NSError(
+@@ -156,7 +198,7 @@ public class ReactNativePasskeyAutofillModule: Module {
+         )
+       }
+ 
+-      try await store.replaceIdentityStore()
++      try await store.saveIdentityStore()
+     }
+ 
+     AsyncFunction("getStoredCredentials") { () -> [[String: Any]] in
 diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
 index 87f7dd44e3e8a4b21ae655599dead4af828567a9..1b2a594ebec09bd624f7994d2458c74fa54cabd7 100644
 --- a/src/ReactNativePasskeyAutofillModule.ts
