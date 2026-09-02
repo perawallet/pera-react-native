@@ -1,4 +1,4 @@
-name: CodeQL
+name: Security / CodeQL
 
 # Static analysis for JavaScript/TypeScript via GitHub's CodeQL engine.
 # Catches classes of bugs that ESLint/oxlint don't (taint tracking, XSS
