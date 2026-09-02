@@ -47,6 +47,7 @@ import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/Set
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
 import { SettingsDeveloperKeystoreMigrationsScreen } from '../screens/developer/SettingsDeveloperKeystoreMigrationsScreen'
+import { PasswordListScreen } from '@modules/passwords'
 
 import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
@@ -64,6 +65,10 @@ export type DeveloperSettingsStackParamsList = {
     MigrationInfo: undefined
     MigrationSimulator: undefined
     KeystoreMigrations: undefined
+    PasswordList: undefined
+    AddPassword: undefined
+    EditPassword: { id: string }
+    ViewPassword: { id: string }
 }
 
 const DeveloperSettingsStack =
@@ -170,6 +175,13 @@ const DeveloperSettingsStackNavigator = () => {
                 }}
                 component={SettingsDeveloperKeystoreMigrationsScreen}
             />
+            {routeCapabilities.passwordManager && (
+                <DeveloperSettingsStack.Screen
+                    name='PasswordList'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={PasswordListScreen}
+                />
+            )}
         </DeveloperSettingsStack.Navigator>
     )
 }
