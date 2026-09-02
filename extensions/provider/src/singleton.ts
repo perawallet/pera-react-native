@@ -93,29 +93,70 @@ export const clearKeystore = async (): Promise<void> => {
     await clearKeystoreStore({ store: keystoreStore })
 }
 
-/**
- * Decrypts a single keystore MMKV entry into its metadata-only {@link Key}.
- * The `privateKey` / `seed` bytes are zeroed before returning. Returns `null`
- * (and logs) when the entry is missing or fails to decode, so callers can skip
- * it rather than aborting a whole hydration/reconcile pass.
- */
-const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
-    const encrypted = keystoreStorage.getString(id)
-    if (!encrypted) return null
+type PersistedKeysResult = {
+    keys: Key[]
+    /** MMKV entry ids whose records were present but undecodable. */
+    failedIds: string[]
+    /**
+     * The first per-record decrypt/decode failure, kept as the `cause` when a
+     * strict caller ({@link hydrateKeystore}) refuses to proceed.
+     */
+    firstFailure: unknown
+}
 
-    try {
-        const decrypted = decryptData(masterKey, encrypted)
-        const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
-        if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
-        if (data.seed instanceof Uint8Array) data.seed.fill(0)
-        const { privateKey: _pk, seed: _seed, ...meta } = data
-        return meta as Key
-    } catch (err) {
-        console.error(
-            `[provider] keystore decode: failed to decode entry ${id}`,
-            err,
+/**
+ * Decrypts every given keystore MMKV entry into its metadata-only {@link Key}.
+ * The `privateKey` / `seed` bytes are zeroed before a key is returned. A
+ * record that is present but fails to decrypt or decode is skipped rather
+ * than aborting the whole pass, but reported in `failedIds` — the wallet key
+ * inventory is an integrity boundary, so callers must be able to surface a
+ * partial read instead of presenting the survivors as the healthy full set.
+ */
+const readPersistedKeys = (
+    ids: string[],
+    masterKey: Buffer,
+): PersistedKeysResult => {
+    const keys: Key[] = []
+    const failedIds: string[] = []
+    let firstFailure: unknown
+
+    for (const id of ids) {
+        const encrypted = keystoreStorage.getString(id)
+        if (!encrypted) continue
+
+        try {
+            const decrypted = decryptData(masterKey, encrypted)
+            const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
+            if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
+            if (data.seed instanceof Uint8Array) data.seed.fill(0)
+            const { privateKey: _pk, seed: _seed, ...meta } = data
+            keys.push(meta as Key)
+        } catch (err) {
+            failedIds.push(id)
+            firstFailure ??= err
+        }
+    }
+
+    return { keys, failedIds, firstFailure }
+}
+
+/**
+ * Hydration refused to seed the store because specific persisted records
+ * would not decrypt/decode. Distinguished from other bootstrap failures so
+ * the app can show a data-integrity message (and support gets record ids)
+ * instead of a generic "try again" that can never succeed.
+ */
+export class KeystoreHydrationError extends Error {
+    readonly failedIds: string[]
+    readonly cause: unknown
+
+    constructor(failedIds: string[], cause: unknown) {
+        super(
+            `keystore hydration failed: undecodable key record(s): ${failedIds.join(', ')}`,
         )
-        return null
+        this.name = 'KeystoreHydrationError'
+        this.failedIds = failedIds
+        this.cause = cause
     }
 }
 
@@ -134,8 +175,13 @@ const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
  * zeroed in `finally`.
  *
  * Idempotent: skips if the reactive store is already populated. Safe to call
- * even if the keystore is empty (no master key generated yet) — entries that
- * fail to decrypt are logged and skipped rather than aborting hydration.
+ * even if the keystore is empty (no master key generated yet).
+ *
+ * Strict: throws {@link KeystoreHydrationError} when any persisted record is
+ * present but undecodable, instead of hydrating the survivors as if they were
+ * the full set. A partial hydration would leave accounts visible without
+ * usable signing keys — and a wallet that looks emptier than the disk is what
+ * prompts users to wipe and re-onboard on top of keys still in storage.
  */
 export const hydrateKeystore = async (): Promise<void> => {
     if (keystoreStore.state.keys.length > 0) return
@@ -146,14 +192,22 @@ export const hydrateKeystore = async (): Promise<void> => {
     let masterKey: Buffer | null = null
     try {
         masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
+        const { keys, failedIds, firstFailure } = readPersistedKeys(
+            ids,
+            masterKey,
+        )
+        if (failedIds.length > 0) {
+            throw new KeystoreHydrationError(failedIds, firstFailure)
+        }
         initializeKeyStore({ store: keystoreStore, keys })
     } finally {
         if (masterKey) masterKey.fill(0)
     }
+}
+
+export type KeystoreReconcileResult = {
+    /** MMKV entry ids whose records were present but undecodable. */
+    failedIds: string[]
 }
 
 /**
@@ -170,19 +224,30 @@ export const hydrateKeystore = async (): Promise<void> => {
  * (rather than merging only the ids not yet present) is what surfaces metadata
  * updates on keys that are already in the store — merging new ids alone would
  * miss them. Skips fetching the master key only when MMKV is empty.
+ *
+ * Unlike {@link hydrateKeystore} it is also tolerant: an undecodable record is
+ * skipped so an out-of-process write can never take a running session down,
+ * but the skipped ids are returned — the strict hydration will refuse those
+ * same records at the next cold start, so callers must report them while the
+ * app is still up.
  */
-export const reconcileKeystore = async (): Promise<void> => {
+export const reconcileKeystore = async (): Promise<KeystoreReconcileResult> => {
     const ids = keystoreStorage.getAllKeys()
-    if (ids.length === 0) return
+
+    // Deliberately stale-over-empty: MMKV is multi-process, and replacing the
+    // reactive keys with [] here would render an empty wallet on a transient
+    // or spurious empty read — which is what prompts users to wipe and
+    // re-onboard on top of keys still on disk. In-process deletion flows
+    // update the store through the keystore package, so they never rely on
+    // this pass.
+    if (ids.length === 0) return { failedIds: [] }
 
     let masterKey: Buffer | null = null
     try {
         masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
+        const { keys, failedIds } = readPersistedKeys(ids, masterKey)
         initializeKeyStore({ store: keystoreStore, keys })
+        return { failedIds }
     } finally {
         if (masterKey) masterKey.fill(0)
     }

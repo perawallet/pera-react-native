@@ -40,7 +40,11 @@
         "initialization_failed": {
             "title": "App Launch Failed",
             "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
-            "retry": "Try again"
+            "retry": "Try again",
+            "keystore": {
+                "title": "Wallet Data Error",
+                "body": "Pera couldn't read some of the wallet data stored on this device, so it can't start safely. Please contact support before reinstalling the app: reinstalling can remove accounts that exist only on this device.\n\nYour funds are safe on the Algorand blockchain."
+            }
         }
     },
     "asset_sort": {

@@ -29,6 +29,9 @@ const EXCLUDED_KEYS = [
 // like t(`${prefix}.title`)), so the static literal-match scan below cannot see
 // them and would report false positives.
 const EXCLUDED_PREFIXES = [
+    // App bootstrap failure copy: App.tsx picks the namespace by error kind
+    // and builds t(`${errorKey}.title`) / `.body`.
+    'app.initialization_failed.',
     // Error framework keys, resolved via the error class hierarchy.
     'errors.account.',
     'errors.blockchain.',

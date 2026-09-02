@@ -16,6 +16,16 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useAppBootstrap } from '../useAppBootstrap'
 
 const mocks = vi.hoisted(() => {
+    // Mirrors the provider's class so `instanceof` works against the mocked
+    // module.
+    class KeystoreHydrationError extends Error {
+        readonly failedIds: string[]
+        constructor(failedIds: string[]) {
+            super('keystore hydration failed')
+            this.name = 'KeystoreHydrationError'
+            this.failedIds = failedIds
+        }
+    }
     const provider = {
         initialize: vi.fn(),
         database: {},
@@ -34,6 +44,7 @@ const mocks = vi.hoisted(() => {
     }
     return {
         provider,
+        KeystoreHydrationError,
         hydrateKeystore: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
@@ -51,6 +62,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
     hydrateKeystore: mocks.hydrateKeystore,
     getProvider: mocks.getProvider,
+    KeystoreHydrationError: mocks.KeystoreHydrationError,
 }))
 
 vi.mock('@perawallet/wallet-core-database', () => ({
@@ -130,7 +142,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
@@ -145,7 +157,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(false)
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -159,7 +171,26 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(false)
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
+        expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+    })
+
+    // A record hydration cannot decode fails it on every launch, so "try
+    // again" copy is a dead end — the UI needs to know this failure is a
+    // data-integrity one.
+    it('reports a keystore initError when hydration fails on undecodable records', async () => {
+        mocks.hydrateKeystore.mockRejectedValue(
+            new mocks.KeystoreHydrationError(['bad-record']),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(false)
+        expect(result.current.initError).toBe('keystore')
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -173,7 +204,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.fcmToken).toBeNull()
     })
 
@@ -188,7 +219,7 @@ describe('useAppBootstrap', () => {
             await vi.runAllTimersAsync()
         })
 
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
         expect(result.current.bootstrapped).toBe(false)
 
         await act(async () => {
@@ -198,7 +229,7 @@ describe('useAppBootstrap', () => {
             await vi.runAllTimersAsync()
         })
 
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.bootstrapped).toBe(true)
     })
 })

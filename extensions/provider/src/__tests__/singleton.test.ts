@@ -84,6 +84,7 @@ import {
     resetProvider,
     clearKeystore,
     hydrateKeystore,
+    KeystoreHydrationError,
     reconcileKeystore,
 } from '../singleton'
 import { PeraProvider } from '../pera-provider'
@@ -230,10 +231,98 @@ describe('provider singleton', () => {
             expect(Array.from(masterKey)).toEqual([0, 0, 0, 0, 0, 0, 0, 0])
         })
 
-        test('skips entries that fail to decode and continues with the rest', async () => {
-            const consoleError = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
+        // A record that is present but undecodable means the persisted key
+        // inventory cannot be trusted. Hydrating the survivors would present
+        // a partially-read wallet as healthy — accounts stay visible without
+        // usable signing keys — so hydration must refuse instead.
+        test('throws KeystoreHydrationError naming the failed ids instead of hydrating survivors', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['good', 'bad'])
+            keystoreMocks.storageGetString.mockReturnValue('cipher')
+            keystoreMocks.readMasterKey.mockResolvedValue(Buffer.from([0]))
+            keystoreMocks.decryptData.mockReturnValue('decrypted')
+            const decodeFailure = new Error('decode failed')
+            keystoreMocks.decode.mockImplementationOnce(() => ({
+                id: 'good',
+                type: 'algo25',
+                algorithm: 'EdDSA',
+            }))
+            keystoreMocks.decode.mockImplementationOnce(() => {
+                throw decodeFailure
+            })
+
+            const failure = await hydrateKeystore().catch(err => err)
+
+            expect(failure).toBeInstanceOf(KeystoreHydrationError)
+            expect((failure as KeystoreHydrationError).failedIds).toEqual([
+                'bad',
+            ])
+            expect((failure as KeystoreHydrationError).cause).toBe(
+                decodeFailure,
+            )
+            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
+        })
+
+        test('zeros the master key even when hydration throws on an undecodable entry', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['k'])
+            keystoreMocks.storageGetString.mockReturnValue('cipher')
+            const masterKey = Buffer.from([42, 42, 42])
+            keystoreMocks.readMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.decryptData.mockImplementation(() => {
+                throw new Error('decrypt failed')
+            })
+
+            await expect(hydrateKeystore()).rejects.toBeInstanceOf(
+                KeystoreHydrationError,
+            )
+            expect(Array.from(masterKey)).toEqual([0, 0, 0])
+        })
+
+        test('missing entries (empty reads) are skipped without failing hydration', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue(['gone', 'good'])
+            keystoreMocks.storageGetString.mockImplementation((id: string) =>
+                id === 'good' ? 'cipher' : undefined,
+            )
+            keystoreMocks.readMasterKey.mockResolvedValue(Buffer.from([0]))
+            keystoreMocks.decryptData.mockReturnValue('decrypted')
+            keystoreMocks.decode.mockReturnValue({
+                id: 'good',
+                type: 'algo25',
+                algorithm: 'EdDSA',
+            })
+
+            await hydrateKeystore()
+
+            const arg = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+            expect(arg.keys).toHaveLength(1)
+            expect(arg.keys[0].id).toBe('good')
+        })
+    })
+
+    describe('reconcileKeystore', () => {
+        const seedReactiveStore = (keys: { id: string }[]): void => {
+            const store = getKeystoreStore() as unknown as {
+                state: { keys: unknown[] }
+            }
+            store.state.keys = keys
+        }
+
+        // Stale-over-empty is deliberate: MMKV is multi-process, so an empty
+        // read here may be transient and must not blank a populated wallet.
+        test('keeps the in-memory keys (without fetching the master key) when MMKV has no entries', async () => {
+            seedReactiveStore([{ id: 'a' }])
+            keystoreMocks.storageGetAllKeys.mockReturnValue([])
+
+            const result = await reconcileKeystore()
+
+            expect(result.failedIds).toEqual([])
+            expect(keystoreMocks.readMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
+        })
+
+        // Unlike hydration, reconcile runs mid-session off out-of-process
+        // writes, so it must not take the app down — it skips the undecodable
+        // record but reports its id for the caller to surface.
+        test('seeds the surviving keys and reports undecodable ids in failedIds', async () => {
             keystoreMocks.storageGetAllKeys.mockReturnValue(['good', 'bad'])
             keystoreMocks.storageGetString.mockReturnValue('cipher')
             keystoreMocks.readMasterKey.mockResolvedValue(Buffer.from([0]))
@@ -247,50 +336,12 @@ describe('provider singleton', () => {
                 throw new Error('decode failed')
             })
 
-            await hydrateKeystore()
+            const result = await reconcileKeystore()
 
+            expect(result.failedIds).toEqual(['bad'])
             const arg = keystoreMocks.initializeKeyStore.mock.calls[0][0]
             expect(arg.keys).toHaveLength(1)
             expect(arg.keys[0].id).toBe('good')
-            expect(consoleError).toHaveBeenCalled()
-            consoleError.mockRestore()
-        })
-
-        test('zeros the master key even when an entry throws', async () => {
-            keystoreMocks.storageGetAllKeys.mockReturnValue(['k'])
-            keystoreMocks.storageGetString.mockReturnValue('cipher')
-            const masterKey = Buffer.from([42, 42, 42])
-            keystoreMocks.readMasterKey.mockResolvedValue(masterKey)
-            keystoreMocks.decryptData.mockImplementation(() => {
-                throw new Error('decrypt failed')
-            })
-            const consoleError = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
-
-            await hydrateKeystore()
-
-            expect(Array.from(masterKey)).toEqual([0, 0, 0])
-            consoleError.mockRestore()
-        })
-    })
-
-    describe('reconcileKeystore', () => {
-        const seedReactiveStore = (keys: { id: string }[]): void => {
-            const store = getKeystoreStore() as unknown as {
-                state: { keys: unknown[] }
-            }
-            store.state.keys = keys
-        }
-
-        test('no-ops (without fetching the master key) when MMKV has no entries', async () => {
-            seedReactiveStore([{ id: 'a' }])
-            keystoreMocks.storageGetAllKeys.mockReturnValue([])
-
-            await reconcileKeystore()
-
-            expect(keystoreMocks.readMasterKey).not.toHaveBeenCalled()
-            expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
         })
 
         test('re-seeds the store from MMKV, adding new keys and refreshing metadata on existing ones', async () => {

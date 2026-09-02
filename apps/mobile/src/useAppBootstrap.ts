@@ -31,6 +31,7 @@ import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import {
     getProvider,
     hydrateKeystore,
+    KeystoreHydrationError,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
@@ -38,11 +39,17 @@ import { type Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
 
+/**
+ * 'keystore' means hydration refused undecodable wallet records — retrying
+ * cannot succeed and the UI must say so instead of a generic "try again".
+ */
+export type AppInitError = 'keystore' | 'generic'
+
 export type UseAppBootstrapResult = {
     bootstrapped: boolean
     persister: Persister | undefined
     fcmToken: Nullable<string>
-    initError: boolean
+    initError: AppInitError | null
     retryBootstrap: () => void
 }
 
@@ -64,12 +71,12 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     const [persister, setPersister] = useState<Persister>()
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
-    const [initError, setInitError] = useState<boolean>(false)
+    const [initError, setInitError] = useState<AppInitError | null>(null)
     const [retryNonce, setRetryNonce] = useState(0)
     const provider = usePeraProvider()
 
     const retryBootstrap = () => {
-        setInitError(false)
+        setInitError(null)
         setRetryNonce(nonce => nonce + 1)
     }
 
@@ -125,7 +132,11 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 setBootstrapped(true)
             } catch (err) {
                 logger.error('App bootstrap failed', { error: err })
-                setInitError(true)
+                setInitError(
+                    err instanceof KeystoreHydrationError
+                        ? 'keystore'
+                        : 'generic',
+                )
             } finally {
                 // we defer the hiding so the initial layout can happen. Runs on
                 // both success and error paths so the native splash never sticks.
