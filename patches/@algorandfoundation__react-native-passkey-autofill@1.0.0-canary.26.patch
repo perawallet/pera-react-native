@@ -2291,7 +2291,7 @@ index 0000000000000000000000000000000000000000..5063604fda0171a9a709a1a168931ca6
 +  }
 +}
 diff --git a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
-index 311007d2a90e810439f06362c6e7b2354ef05631..cdbfcafa7572158cf64ec0411605ea5026243437 100644
+index 311007d2a90e810439f06362c6e7b2354ef05631..814e858e974fdcb9c90a646143108748e7bb2f66 100644
 --- a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 +++ b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 @@ -49,69 +49,11 @@ struct StoredPasskeyCredential: Codable {
@@ -2573,7 +2573,51 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..cdbfcafa7572158cf64ec0411605ea50
    }
  
    /// The raw parent secret for a new credential. Prefer ``parentSecret(scheme:)``,
-@@ -701,112 +505,19 @@ final class PasskeyCredentialStore {
+@@ -625,12 +429,26 @@ final class PasskeyCredentialStore {
+     isCredentialDeleted(id: id.base64EncodedString()) || isCredentialDeleted(id: id.base64URLEncodedString())
+   }
+ 
+-  func replaceIdentityStore() async throws {
++  /// Publishes the whole OS credential index: this store's passkeys together
++  /// with the wallet's password rows.
++  ///
++  /// `ASCredentialIdentityStore.replaceCredentialIdentities` replaces the index
++  /// wholesale and has no per-kind channel, so a publisher that sends only its
++  /// own kind silently deletes the other kind's rows. Every publisher therefore
++  /// goes through here and sends the union, and whichever runs last still leaves
++  /// a complete index.
++  ///
++  /// - Parameter passwordIdentities: the authoritative password rows, when the
++  ///   caller already holds them (the wallet publishes the full set it just
++  ///   listed). Omitted, they are enumerated from the shared keystore.
++  func replaceIdentityStore(
++    passwordIdentities: [ASPasswordCredentialIdentity]? = nil
++  ) async throws {
+     guard #available(iOS 17.0, *) else {
+       return
+     }
+ 
+-    let identities = allCredentials().map { credential in
++    let passkeyIdentities: [ASCredentialIdentity] = allCredentials().map { credential in
+       ASPasskeyCredentialIdentity(
+         relyingPartyIdentifier: credential.relyingPartyIdentifier,
+         userName: credential.userName,
+@@ -639,9 +457,13 @@ final class PasskeyCredentialStore {
+         recordIdentifier: credential.credentialId
+       )
+     }
++    // A keystore this process cannot read yet costs the password rows until the
++    // next publish; it must not cost the passkey rows as well, so this degrades
++    // to an empty set rather than failing the call.
++    let passwords = passwordIdentities ?? PasswordCredentialStore()?.credentialIdentities() ?? []
+ 
+     try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+-      ASCredentialIdentityStore.shared.replaceCredentialIdentities(identities) { success, error in
++      ASCredentialIdentityStore.shared.replaceCredentialIdentities(passkeyIdentities + passwords) { success, error in
+         if let error {
+           continuation.resume(throwing: error)
+         } else if success {
+@@ -701,112 +523,19 @@ final class PasskeyCredentialStore {
    }
  
    private func encodeKeyData(_ keyData: [String: Any]) throws -> String {
@@ -2692,10 +2736,11 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..cdbfcafa7572158cf64ec0411605ea50
  
 diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..b4b6cf840856243de721d5236836c74b42e12071
+index 0000000000000000000000000000000000000000..4e296374ebdb0e0a53412fe9eb3306ac439ce28f
 --- /dev/null
 +++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,192 @@
++import AuthenticationServices
 +import Foundation
 +
 +/// A login the wallet sealed into the shared keystore.
@@ -2769,6 +2814,27 @@ index 0000000000000000000000000000000000000000..b4b6cf840856243de721d5236836c74b
 +    return allLogins().filter { login in
 +      requested.contains { Self.domain(login.domain, matches: $0) }
 +    }
++  }
++
++  /// The OS credential-index rows for every login: the domain as the service
++  /// identifier, the username as the label the picker shows, and the keystore id
++  /// as the record identifier the provider resolves the sealed password from.
++  ///
++  /// Builds the rows here rather than handing out `StoredLogin`s so no password
++  /// escapes this call.
++  func credentialIdentities() -> [ASPasswordCredentialIdentity] {
++    allLogins()
++      .filter { !Self.host(of: $0.domain).isEmpty }
++      .map { login in
++        ASPasswordCredentialIdentity(
++          serviceIdentifier: ASCredentialServiceIdentifier(
++            identifier: Self.host(of: login.domain),
++            type: .domain
++          ),
++          user: login.username,
++          recordIdentifier: login.recordIdentifier
++        )
++      }
 +  }
 +
 +  func login(recordIdentifier: String) -> StoredLogin? {
@@ -2867,36 +2933,45 @@ index 0000000000000000000000000000000000000000..b4b6cf840856243de721d5236836c74b
 +  }
 +}
 diff --git a/ios/ReactNativePasskeyAutofill.podspec b/ios/ReactNativePasskeyAutofill.podspec
-index a37b6d9ce27def24fde9980e2e2e260c432192a0..6a668228c04e7fa8f869f92b25fb4f874648c781 100644
+index a37b6d9ce27def24fde9980e2e2e260c432192a0..34a09e1701428536a217b57d97f1ba0681ef02bf 100644
 --- a/ios/ReactNativePasskeyAutofill.podspec
 +++ b/ios/ReactNativePasskeyAutofill.podspec
-@@ -29,6 +29,9 @@ Pod::Spec.new do |s|
+@@ -29,6 +29,11 @@ Pod::Spec.new do |s|
      "*.{h,m,mm,swift,hpp,cpp}",
      "AutofillCredentialProvider/PasskeyAutofillCredentialProvider-Bridging-Header.h",
      "AutofillCredentialProvider/PasskeyCredentialStore.swift",
-+    # PasskeyCredentialStore's master-key and record decoding live here, so the
-+    # app-side pod target needs it as much as the extension target does.
++    # PasskeyCredentialStore's master-key and record decoding live in the reader,
++    # and it publishes password rows alongside its own, so the app-side pod target
++    # needs both files as much as the extension target does.
 +    "AutofillCredentialProvider/KeystoreSecretReader.swift",
++    "AutofillCredentialProvider/PasswordCredentialStore.swift",
      "AutofillCredentialProvider/PasskeyKeystoreMMKV.h",
      "AutofillCredentialProvider/PasskeyKeystoreMMKV.mm"
    ]
 diff --git a/ios/ReactNativePasskeyAutofillModule.swift b/ios/ReactNativePasskeyAutofillModule.swift
-index b66566006ebb26bb66cdd07168591b3d36d4621a..d36cbe782d9455976d74d60bbee7fd9a538dc8b4 100644
+index b66566006ebb26bb66cdd07168591b3d36d4621a..44ef9699daf6e4fa0872c5ff461b0973c74ed467 100644
 --- a/ios/ReactNativePasskeyAutofillModule.swift
 +++ b/ios/ReactNativePasskeyAutofillModule.swift
-@@ -147,6 +147,54 @@ public class ReactNativePasskeyAutofillModule: Module {
+@@ -147,6 +147,43 @@ public class ReactNativePasskeyAutofillModule: Module {
        try await store.replaceIdentityStore()
      }
  
 +    // Publishes the wallet's logins to the OS credential index so iOS offers
 +    // Pera on a sign-in form. Identities only: the password itself stays sealed
 +    // in the keystore and is read by the extension after user verification.
++    //
++    // The rows are handed to `replaceIdentityStore`, which sends them alongside
++    // the passkey rows, because the OS store is replaced whole.
 +    AsyncFunction("replacePasswordCredentialIdentities") { (identities: [[String: Any]]) in
-+      guard #available(iOS 17.0, *) else {
-+        return
++      guard let store = PasskeyCredentialStore() else {
++        throw NSError(
++          domain: "ReactNativePasskeyAutofill",
++          code: 1,
++          userInfo: [NSLocalizedDescriptionKey: "App Group is not configured for passkey autofill."]
++        )
 +      }
 +
-+      let credentialIdentities: [ASCredentialIdentity] = identities.compactMap { identity in
++      let passwordIdentities: [ASPasswordCredentialIdentity] = identities.compactMap { identity in
 +        guard let recordIdentifier = identity["recordIdentifier"] as? String,
 +              let serviceIdentifier = identity["serviceIdentifier"] as? String,
 +              let user = identity["user"] as? String,
@@ -2915,25 +2990,7 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..d36cbe782d9455976d74d60bbee7fd9a
 +        )
 +      }
 +
-+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-+        ASCredentialIdentityStore.shared.replaceCredentialIdentities(credentialIdentities) { success, error in
-+          if let error {
-+            continuation.resume(throwing: error)
-+          } else if success {
-+            continuation.resume()
-+          } else {
-+            continuation.resume(
-+              throwing: NSError(
-+                domain: "ReactNativePasskeyAutofill",
-+                code: 2,
-+                userInfo: [
-+                  NSLocalizedDescriptionKey: "The credential identity store rejected the password identities."
-+                ]
-+              )
-+            )
-+          }
-+        }
-+      }
++      try await store.replaceIdentityStore(passwordIdentities: passwordIdentities)
 +    }
 +
      AsyncFunction("refreshCredentialIdentities") {
