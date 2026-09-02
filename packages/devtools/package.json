@@ -6,6 +6,7 @@
   "exports": {
     "./tsconfig": "./tsconfig/vite.json",
     "./tsconfig/vite.json": "./tsconfig/vite.json",
+    "./tsconfig/emit.json": "./tsconfig/emit.json",
     "./vitest/coverage": {
       "types": "./vitest/coverage.d.ts",
       "default": "./vitest/coverage.js"

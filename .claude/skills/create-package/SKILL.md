@@ -36,6 +36,7 @@ mkdir -p packages/[package-name]/src/store/__tests__
 Copy from an existing package:
 
 - `tsconfig.json`
+- `tsconfig.build.json` (declaration emit — `pnpm run check:dts-emit` fails without it)
 - `vite.config.ts`
 - `vitest.config.ts`
 - `eslint.config.js`

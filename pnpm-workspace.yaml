@@ -88,11 +88,10 @@ catalog:
   react-native-ssl-public-key-pinning: ^1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
-  typescript: ^5.9.3
+  typescript: ^7.0.2
   util: ^0.12.5
   uuid: 14.0.2
   vite: ^8.2.1
-  vite-plugin-dts: ^5.0.0
   vitest: ^4.1.9
   xstate: ^5.28.0
   zod: ^4.4.3
