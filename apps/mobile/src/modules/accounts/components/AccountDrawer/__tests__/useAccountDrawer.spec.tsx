@@ -59,7 +59,7 @@ describe('useAccountDrawer', () => {
         ['handlePeraCardActivate', 'goToPeraCardActivation'],
         ['handlePeraCardOpen', 'openPeraCard'],
     ] as const)(
-        '%s closes the drawer before navigating',
+        '%s navigates without waiting on the drawer animation',
         (handler, expectedAction) => {
             const { result } = renderHook(() => useAccountDrawer())
             act(() => result.current.openDrawer())

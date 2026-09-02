@@ -62,6 +62,11 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layerGrayLighter: palette.gray[100],
             layerGrayLightest: palette.gray[50],
 
+            // Drawer overlay — shades the covered screen. An order of magnitude
+            // lighter than a modal backdrop: the content should read as sitting
+            // under the panel, not dimmed out of use.
+            drawerScrim: 'rgba(0, 0, 0, 0.3)',
+
             // Warning surface — gold #EDB21C tint for the attention callout
             warningSurface: 'rgba(237, 178, 28, 0.06)',
 
@@ -269,6 +274,11 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layerGray: palette.gray[700],
             layerGrayLighter: palette.gray[800],
             layerGrayLightest: palette.gray[800],
+
+            // Inverted, and far weaker: darkening gray[900] is invisible, so the
+            // covered screen is lifted instead. Alpha is the dial to turn if the
+            // two layers still read as one.
+            drawerScrim: 'rgba(255, 255, 255, 0.08)',
 
             // Warning surface — gold #EDB21C tint for the attention callout
             warningSurface: 'rgba(237, 178, 28, 0.1)',
