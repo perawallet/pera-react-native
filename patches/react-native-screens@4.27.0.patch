@@ -1,0 +1,31 @@
+diff --git a/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt b/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
+index 6fcabc3e92949f5e4f5c80696f6d2403596f2308..3de973e8c703686639871eaac47b7d568fb006d3 100644
+--- a/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
++++ b/android/src/main/java/com/swmansion/rnscreens/ScreenFragment.kt
+@@ -318,7 +318,8 @@ open class ScreenFragment :
+     override fun onDestroy() {
+         super.onDestroy()
+         val container = screen.container
+-        if (container == null || !container.hasScreen(this.screen.fragmentWrapper)) {
++        val isScreenRemoved = container == null || !container.hasScreen(this.screen.fragmentWrapper)
++        if (isScreenRemoved) {
+             // we only send dismissed even when the screen has been removed from its container
+             val screenContext = screen.context
+             if (screenContext is ReactContext) {
+@@ -329,6 +330,16 @@ open class ScreenFragment :
+             }
+         }
+         childScreenContainers.clear()
++        // Fabric's tagToViewState keeps the Screen view alive after this fragment is
++        // destroyed; without clearing the back-reference the destroyed fragment (and its
++        // view tree) is retained for the surface's lifetime. Only cleared when the screen
++        // is gone from its container: below-top fragments are destroyed on push and the
++        // SAME instance is re-attached on pop without addScreen re-running, so a null
++        // wrapper there would strand the reused screen (broken header/status-bar props,
++        // spurious dismissed events). See software-mansion/react-native-screens#3755.
++        if (isScreenRemoved && screen.fragmentWrapper === this) {
++            screen.fragmentWrapper = null
++        }
+     }
+ 
+     companion object {
