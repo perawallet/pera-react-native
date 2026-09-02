@@ -146,6 +146,19 @@ updates:
       # 57.0.17 bundles. These move when the SDK moves.
       - dependency-name: expo-asset
       - dependency-name: expo-file-system
+      # 7.x is the native Go port, and `typescript` now exports only
+      # { version, versionMajorMinor } — createProgram, createSourceFile and
+      # createCompilerHost are gone. unplugin-dts (under vite-plugin-dts) calls
+      # all three, and it is how every package emits its .d.ts, so 7.x breaks
+      # declaration output repo-wide. Nothing warns first: its peer range is
+      # `typescript: ">=4"`, so the resolver accepts 7.x happily and the failure
+      # only lands at build time. The speed-up is real but narrow — only the two
+      # apps run tsc at all, every package builds through vite. Revisit when
+      # unplugin-dts supports the 7.x API.
+      #
+      # The 5.9/7.x split in the tree is deliberate, not drift: the root
+      # `fallow` devDependency pulls fallow-type-aware, which runs 7.x as its
+      # checker. Collapsing it would break `pnpm fallow`.
       - dependency-name: typescript
         update-types: [version-update:semver-major]
       # Nothing here runs eslint — there is no eslint config in the repo and
