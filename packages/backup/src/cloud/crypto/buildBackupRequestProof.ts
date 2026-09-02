@@ -35,8 +35,11 @@ export type BackupRequestProof = {
     signature: string
 }
 
-const computeBodyHash = (body?: string): string =>
-    body ? bytesToHex(sha256(new TextEncoder().encode(body))) : ''
+// A bodyless request hashes the empty string, not the empty hash: the server
+// signs `sha256(body ?? '')` unconditionally, so skipping the digest here fails
+// auth on every GET and DELETE.
+const computeBodyHash = (body = ''): string =>
+    bytesToHex(sha256(new TextEncoder().encode(body)))
 
 export const buildBackupRequestMessage = ({
     method,
