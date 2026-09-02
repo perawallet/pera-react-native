@@ -46,6 +46,7 @@ export default defineConfig({
                 '@tanstack/react-query',
                 '@algorandfoundation/keystore-core',
                 '@perawallet/wallet-core-kms',
+                '@perawallet/wallet-core-passkeys',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-passkey-autofill',
                 '@perawallet/wallet-extension-provider',

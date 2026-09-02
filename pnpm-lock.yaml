@@ -3503,6 +3503,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-passkeys':
+        specifier: workspace:*
+        version: link:../passkeys
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
