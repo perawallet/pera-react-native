@@ -65,7 +65,11 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         }),
     useCloudBackupStore: (
         selector: (s: {
-            setConfigured: (params: { backupId: string; salt: string }) => void
+            setConfigured: (params: {
+                backupId: string
+                salt: string
+                deviceId: string
+            }) => void
         }) => unknown,
     ) => selector({ setConfigured: setConfiguredMock }),
 }))
@@ -127,6 +131,7 @@ describe('useEnableCloudBackup', () => {
             expect(setConfiguredMock).toHaveBeenCalledWith({
                 backupId: 'did:pera:abc',
                 salt: SALT,
+                deviceId: 'device-123',
             }),
         )
         expect(clearDraftMock).toHaveBeenCalled()
@@ -174,6 +179,7 @@ describe('useEnableCloudBackup', () => {
             expect(setConfiguredMock).toHaveBeenCalledWith({
                 backupId: 'did:pera:abc',
                 salt: SALT,
+                deviceId: 'device-123',
             }),
         )
         expect(showToastMock).toHaveBeenCalledWith(

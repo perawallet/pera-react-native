@@ -64,13 +64,22 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
                 deviceId,
                 network,
             })
-            // Pin the salt to this attempt: by the time onSuccess runs the
-            // draft may have been cleared (screen unmount, store reset), and
-            // the backup already exists server-side.
-            return { backupId, salt }
+            // Pin the salt and device id to this attempt: by the time onSuccess
+            // runs the draft may have been cleared (screen unmount, store
+            // reset), and the backup already exists server-side under this
+            // exact device id.
+            return { backupId, salt, deviceId }
         },
-        onSuccess: ({ backupId, salt: registeredSalt }) => {
-            setConfigured({ backupId, salt: registeredSalt })
+        onSuccess: ({
+            backupId,
+            salt: registeredSalt,
+            deviceId: registeredDeviceId,
+        }) => {
+            setConfigured({
+                backupId,
+                salt: registeredSalt,
+                deviceId: registeredDeviceId,
+            })
             clearDraft()
             showToast({
                 title: t('cloud_backup.enable.success'),

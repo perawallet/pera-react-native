@@ -75,9 +75,12 @@ export class BackupSyncManager {
         deviceId: string
     }> {
         const network = useNetworkStore.getState().network
-        const backupId = useCloudBackupStore.getState().backupId
+        const { backupId, deviceId: registeredDeviceId } =
+            useCloudBackupStore.getState()
         const deviceId =
-            useDeviceStore.getState().deviceIDs?.get(network) ?? null
+            registeredDeviceId ??
+            useDeviceStore.getState().deviceIDs?.get(network) ??
+            null
         if (!backupId || !deviceId) return null
         return { network, backupId, deviceId }
     }
@@ -109,7 +112,12 @@ export class BackupSyncManager {
         // No credentials = nothing to sync. This also covers the post-delete
         // state: a server-deleted backup wipes the on-device keys, so start()
         // becomes a no-op until the user sets up a fresh backup.
-        if (!hasBackupCredentials()) return
+        if (!hasBackupCredentials()) {
+            logger.warn(
+                'BackupSyncManager: start skipped, no backup credentials',
+            )
+            return
+        }
         this.running = true
         // Defensive: never leak a prior interval/socket if start races a stop.
         if (this.periodic != null) clearInterval(this.periodic)
@@ -148,7 +156,10 @@ export class BackupSyncManager {
     async syncNow(): Promise<void> {
         if (this.syncInProgress) return
         const ctx = this.context()
-        if (!ctx) return
+        if (!ctx) {
+            logger.warn('BackupSyncManager: sync skipped, no backup context')
+            return
+        }
         this.syncInProgress = true
         this.deps.onStateChange?.()
         try {
@@ -158,16 +169,26 @@ export class BackupSyncManager {
             const next = await this.withEngineDeps(ctx, deps =>
                 syncBackup(deps, state),
             )
-            if (next) useBackupSyncStateStore.getState().setSyncState(next)
+            if (next) {
+                useBackupSyncStateStore.getState().setSyncState(next)
+            } else {
+                logger.warn(
+                    'BackupSyncManager: sync produced no state, encryption key unavailable',
+                )
+            }
         } catch (error) {
             logger.warn('BackupSyncManager: sync failed', {
                 error: error instanceof Error ? error.message : String(error),
             })
-            const s = useBackupSyncStateStore.getState().syncState
-            if (s)
-                useBackupSyncStateStore
-                    .getState()
-                    .setSyncState({ ...s, lastSyncResult: 'FAILED' })
+            // Seed an empty state when the first-ever sync is the one that
+            // failed, so the overview reports FAILED instead of falling back
+            // to the never-synced badge.
+            const s =
+                useBackupSyncStateStore.getState().syncState ??
+                createEmptySyncState(ctx.backupId)
+            useBackupSyncStateStore
+                .getState()
+                .setSyncState({ ...s, lastSyncResult: 'FAILED' })
         } finally {
             this.syncInProgress = false
             this.deps.onStateChange?.()

@@ -61,16 +61,23 @@ export const useRestoreCloudBackup = ({
             if (!mnemonic) {
                 throw new Error('Cloud backup restore phrase is missing')
             }
-            return restoreCloudBackup({
+            const restored = await restoreCloudBackup({
                 mnemonic,
                 salt,
                 deviceId,
                 network,
                 importAccounts,
             })
+            // Pin the device id to this attempt: the backup is registered
+            // server-side under exactly this id, and every later signed
+            // request has to reuse it.
+            return { ...restored, deviceId }
         },
-        onSuccess: ({ backupId, syncState, summary }, { salt }) => {
-            setConfigured({ backupId, salt })
+        onSuccess: (
+            { backupId, syncState, summary, deviceId: registeredDeviceId },
+            { salt },
+        ) => {
+            setConfigured({ backupId, salt, deviceId: registeredDeviceId })
             setSyncState(syncState)
             onSuccess(summary)
         },
