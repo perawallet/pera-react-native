@@ -11,7 +11,7 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchManifest = vi.fn()
 const fetchDelta = vi.fn()
@@ -31,6 +31,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { UpsertResult } from '../../api'
 import {
     BackupItemStatus,
@@ -65,6 +66,10 @@ const deps = () => ({
 })
 
 describe('syncBackup', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     it('short-circuits to UpToDate when remote hash matches and nothing is dirty', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
@@ -118,6 +123,30 @@ describe('syncBackup', () => {
             knownVer: 1,
         })
         expect(next.lastKnownBackupHash).toBe('g2')
+        expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
+    it('pushes local items when the backup has no manifest yet', async () => {
+        fetchManifest.mockRejectedValue(
+            new PeraNetworkError('client', { status: 404 }),
+        )
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'accounts/W',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 1,
+                },
+            ],
+        })
+
+        const next = await syncBackup(deps(), createEmptySyncState('b'))
+
+        expect(batchUpsertItems).toHaveBeenCalledTimes(1)
+        expect(next.lastKnownBackupHash).toBeNull()
+        expect(next.lastSyncedSeq).toBe(1)
         expect(next.lastSyncResult).toBe('SUCCESS')
     })
 
