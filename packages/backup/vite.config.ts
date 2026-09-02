@@ -38,6 +38,7 @@ export default defineConfig({
                 '@noble/hashes/hkdf.js',
                 '@noble/hashes/hmac.js',
                 '@noble/hashes/sha2.js',
+                '@noble/hashes/utils.js',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',

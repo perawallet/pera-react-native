@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import {
     encodeCborBytes,

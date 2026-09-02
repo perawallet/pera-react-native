@@ -24,7 +24,7 @@ catalog:
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/ciphers": ^2.2.0
-  "@noble/hashes": ^1.8.0
+  "@noble/hashes": ^2.3.0
   "@notifee/react-native": ^9.1.8
   # 1.0.2 fixes duplicate topic subscription (pera-walletconnect-ts#8); bump
   # to the final release once it ships

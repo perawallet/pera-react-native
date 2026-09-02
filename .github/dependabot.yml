@@ -161,10 +161,6 @@ updates:
       - dependency-name: "@walletconnect/client"
       - dependency-name: "@walletconnect/types"
       - dependency-name: "@walletconnect/utils"
-      # @noble/hashes v2 is ESM-only and requires `.js` suffixes on subpath imports,
-      # which is a non-trivial migration for Metro + Vitest. Stay on v1 until we plan it.
-      - dependency-name: "@noble/hashes"
-        update-types: [version-update:semver-major]
       # @types/node must track the Node runtime pinned in .tool-versions (currently 22).
       # Auto-bumping past the runtime LTS just produces red builds.
       - dependency-name: "@types/node"
