@@ -15,7 +15,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.26
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.13
+  "@lottiefiles/dotlottie-react": 0.19.15
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
@@ -78,7 +78,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.8.1
   msw: ^2.14.6
-  oxfmt: ^0.64.0
+  oxfmt: ^0.65.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
