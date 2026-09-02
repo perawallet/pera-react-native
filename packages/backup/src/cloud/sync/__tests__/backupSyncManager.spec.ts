@@ -27,6 +27,8 @@ const {
     mockSetSyncState,
     mockResetCloudBackup,
     mockResetSyncState,
+    storedSyncState,
+    storedDeviceId,
 } = vi.hoisted(() => ({
     mockSyncBackup: vi.fn(),
     mockPullBackupDeltas: vi.fn(),
@@ -43,6 +45,8 @@ const {
     mockSetSyncState: vi.fn(),
     mockResetCloudBackup: vi.fn(),
     mockResetSyncState: vi.fn(),
+    storedSyncState: { current: null as unknown },
+    storedDeviceId: { current: null as string | null },
 }))
 
 vi.mock('../syncBackup', () => ({ syncBackup: mockSyncBackup }))
@@ -78,12 +82,13 @@ vi.mock('../../store', () => ({
     useCloudBackupStore: {
         getState: () => ({
             backupId: 'backup-123',
+            deviceId: storedDeviceId.current,
             resetState: mockResetCloudBackup,
         }),
     },
     useBackupSyncStateStore: {
         getState: () => ({
-            syncState: null,
+            syncState: storedSyncState.current,
             setSyncState: mockSetSyncState,
             resetState: mockResetSyncState,
         }),
@@ -148,6 +153,8 @@ describe('BackupSyncManager', () => {
             lastSyncResult: 'SUCCESS',
         })
         mockHasBackupCredentials.mockReturnValue(true)
+        storedSyncState.current = null
+        storedDeviceId.current = null
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -171,6 +178,40 @@ describe('BackupSyncManager', () => {
         await mgr.start()
         expect(mockSyncBackup).not.toHaveBeenCalled()
         expect(mockConnect).not.toHaveBeenCalled()
+    })
+
+    it('signs requests with the device id the backup was registered with', async () => {
+        storedDeviceId.current = 'registered-device'
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSyncBackup).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'registered-device' }),
+            expect.anything(),
+        )
+    })
+
+    it('falls back to the push device id for backups configured before one was stored', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSyncBackup).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'dev-id' }),
+            expect.anything(),
+        )
+    })
+
+    it('records FAILED when the first-ever sync throws', async () => {
+        mockSyncBackup.mockRejectedValue(new Error('network down'))
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSetSyncState).toHaveBeenCalledWith(
+            expect.objectContaining({ lastSyncResult: 'FAILED' }),
+        )
     })
 
     it('handleSocketEvent itemsUpdated calls pullBackupDeltas', async () => {

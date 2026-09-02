@@ -66,7 +66,9 @@ export const useRestoreCloudBackupMutation = (
                 network,
                 importAccounts,
             })
-            setConfigured({ backupId: result.backupId, salt })
+            // The backup is registered server-side under exactly this device
+            // id, and every later signed request has to reuse it.
+            setConfigured({ backupId: result.backupId, salt, deviceId })
             setSyncState(result.syncState)
             return result
         },

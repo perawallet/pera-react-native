@@ -62,7 +62,11 @@ vi.mock('../../store/draftStore', () => ({
 vi.mock('../../store/store', () => ({
     useCloudBackupStore: (
         selector: (s: {
-            setConfigured: (params: { backupId: string; salt: string }) => void
+            setConfigured: (params: {
+                backupId: string
+                salt: string
+                deviceId: string
+            }) => void
         }) => unknown,
     ) => selector({ setConfigured: setConfiguredMock }),
 }))
@@ -114,6 +118,7 @@ describe('useEnableCloudBackupMutation', () => {
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',
             salt: SALT,
+            deviceId: 'device-123',
         })
         expect(clearDraftMock).toHaveBeenCalled()
     })
@@ -141,12 +146,13 @@ describe('useEnableCloudBackupMutation', () => {
 
         await act(async () => resolveEnable({ backupId: 'did:pera:abc' }))
 
-        // The salt is pinned to the attempt: the backup exists server-side
-        // under it whatever the draft holds by now.
+        // The salt and device id are pinned to the attempt: the backup exists
+        // server-side under them whatever the draft holds by now.
         await waitFor(() =>
             expect(setConfiguredMock).toHaveBeenCalledWith({
                 backupId: 'did:pera:abc',
                 salt: SALT,
+                deviceId: 'device-123',
             }),
         )
     })

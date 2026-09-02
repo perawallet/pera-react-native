@@ -124,6 +124,7 @@ describe('useRestoreCloudBackupMutation', () => {
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',
             salt: SALT,
+            deviceId: 'device-123',
         })
         expect(setSyncStateMock).toHaveBeenCalledWith(SYNC_STATE)
     })
@@ -150,6 +151,7 @@ describe('useRestoreCloudBackupMutation', () => {
             expect(setConfiguredMock).toHaveBeenCalledWith({
                 backupId: 'did:pera:abc',
                 salt: SALT,
+                deviceId: 'device-123',
             }),
         )
         expect(setSyncStateMock).toHaveBeenCalledWith(SYNC_STATE)
