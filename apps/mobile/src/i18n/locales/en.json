@@ -557,6 +557,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Encryption Key",
+        "deleted_remotely": "Cloud backup was deleted on another device",
         "main": {
             "title": "Cloud Backup",
             "subtitle": "Choose an option to proceed",
@@ -2200,6 +2201,7 @@
         "edit_contact": "Edit Contact",
         "add_contact": "Add New Contact",
         "settings": "Settings",
+        "cloud_backup": "Cloud Backup",
         "launch_settings": "Launch Setting",
         "advanced_preferences": "Advanced Preferences",
         "confirmation_action": "Confirmation Action",
@@ -2405,6 +2407,9 @@
         },
         "main": {
             "account_section": "Account",
+            "cloud_backup_title": "Cloud Backup",
+            "cloud_backup_on": "On",
+            "cloud_backup_off": "Off",
             "security_title": "Security",
             "notifications_title": "Notifications",
             "scan_rekeyed_title": "Scan for Rekeyed Accounts",

@@ -15,8 +15,8 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 
-/** Defaults off in every environment: the flow is only half-wired until the
- *  settings entry point lands, so it stays hidden unless Remote Config says otherwise. */
+/** Gates both the Settings entry point and the background sync lifecycle.
+ *  Defaults off in every environment. */
 export const useIsCloudBackupEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
 
