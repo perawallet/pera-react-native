@@ -31,3 +31,17 @@ export interface PasskeyAutofillSubscription {
 export interface PasskeyAutofillExtension {
     passkeyAutofill: PasskeyAutofillService
 }
+
+/**
+ * A password row published to the OS credential index so the system offers Pera
+ * for a given service. Domain and user necessarily leave the sealed keystore
+ * record here — the OS cannot offer a credential it knows nothing about.
+ */
+export interface PasswordCredentialIdentity {
+    /** The keystore id of the login this row resolves to. */
+    recordIdentifier: string
+    /** Domain the credential applies to, e.g. `example.com`. */
+    serviceIdentifier: string
+    /** The username shown in the system picker. */
+    user: string
+}

@@ -181,4 +181,39 @@ describe('PasskeyAutofillService', () => {
             expect(() => sub.remove()).not.toThrow()
         })
     })
+
+    describe('replacePasswordCredentialIdentities', () => {
+        it('forwards the identities to the native module', async () => {
+            const replacePasswordCredentialIdentities = vi.fn(
+                async () => undefined,
+            )
+            const service = new PasskeyAutofillService(
+                makeNative({ replacePasswordCredentialIdentities }),
+            )
+
+            await service.replacePasswordCredentialIdentities([
+                {
+                    recordIdentifier: 'pera.login.abc',
+                    serviceIdentifier: 'example.com',
+                    user: 'ada@example.com',
+                },
+            ])
+
+            expect(replacePasswordCredentialIdentities).toHaveBeenCalledWith([
+                {
+                    recordIdentifier: 'pera.login.abc',
+                    serviceIdentifier: 'example.com',
+                    user: 'ada@example.com',
+                },
+            ])
+        })
+
+        it('resolves without throwing when the platform does not register it', async () => {
+            const service = new PasskeyAutofillService(makeNative())
+
+            await expect(
+                service.replacePasswordCredentialIdentities([]),
+            ).resolves.toBeUndefined()
+        })
+    })
 })

@@ -15,6 +15,7 @@ import type {
     NativeStoredCredential,
     PasskeyAutofillEventCallback,
     PasskeyAutofillSubscription,
+    PasswordCredentialIdentity,
 } from './types'
 
 /**
@@ -45,6 +46,9 @@ export interface PasskeyAutofillNativeAPI {
     refreshCredentialIdentities?(): Promise<void>
     replaceCredentialIdentities?(
         credentials: NativeStoredCredential[],
+    ): Promise<void>
+    replacePasswordCredentialIdentities?(
+        identities: PasswordCredentialIdentity[],
     ): Promise<void>
     isProviderActive(): Promise<boolean>
     openProviderSettings(): Promise<boolean>
@@ -150,6 +154,20 @@ export class PasskeyAutofillService {
     /** iOS-only — no-ops on Android, where the provider reads MMKV directly. */
     refreshCredentialIdentities(): Promise<void> {
         return this.invoke('refreshCredentialIdentities', [], undefined)
+    }
+
+    /**
+     * iOS-only. Android's credential provider enumerates MMKV on demand and
+     * keeps no OS-side index, so there is nothing to replace there.
+     */
+    replacePasswordCredentialIdentities(
+        identities: PasswordCredentialIdentity[],
+    ): Promise<void> {
+        return this.invoke(
+            'replacePasswordCredentialIdentities',
+            [identities],
+            undefined,
+        )
     }
 
     isProviderActive(): Promise<boolean> {
