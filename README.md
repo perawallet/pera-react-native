@@ -41,6 +41,11 @@ To regenerate native projects from scratch, `pnpm -C apps/mobile expo:prebuild:c
 Workspace packages in `packages/*` build to `dist/`. Turbo builds them before running the mobile app
 or tests, so most development needs no manual build step.
 
+Each package's `build` runs `vite build` for the JavaScript and then `tsc -p tsconfig.build.json` for
+the declarations. That config carries the `exclude` list keeping test-only modules out of the
+published type surface — and because tsconfig globs have no brace expansion, those patterns are
+written out one per line. `pnpm run check:dts-emit` guards both halves.
+
 > [!NOTE]
 > In local development Metro resolves packages directly from their `src/index.ts`,
 > so package changes show up in the app with no build.

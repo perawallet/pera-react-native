@@ -638,3 +638,8 @@ jobs:
       # the real pnpm-workspace.yaml for patch/catalog drift.
       - name: Check patch pins
         run: pnpm run check:patch-pins
+
+      # Same reasoning: the harness uses fixtures, this checks the real packages
+      # for a build config that publishes types it never emits.
+      - name: Check declaration emit wiring
+        run: pnpm run check:dts-emit

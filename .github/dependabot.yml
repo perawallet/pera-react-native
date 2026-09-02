@@ -146,8 +146,6 @@ updates:
       # 57.0.17 bundles. These move when the SDK moves.
       - dependency-name: expo-asset
       - dependency-name: expo-file-system
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
       # Nothing here runs eslint — there is no eslint config in the repo and
       # every workspace `lint` script is oxlint. `eslint` exists only to satisfy
       # the peer of the two plugins oxlint loads through `jsPlugins`, and

@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "test": "vitest run",
     "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
@@ -40,7 +40,6 @@
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -106,5 +106,6 @@ function hoistCrashlyticsApply(buildGradle) {
   return hoisted;
 }
 
-module.exports = withAndroidNativeSymbolUpload;
-module.exports.addNativeSymbolUpload = addNativeSymbolUpload;
+module.exports = Object.assign(withAndroidNativeSymbolUpload, {
+  addNativeSymbolUpload,
+});

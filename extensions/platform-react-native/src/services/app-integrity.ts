@@ -17,6 +17,7 @@ import type {
 import * as AppIntegrity from '@expo/app-integrity'
 import { config } from '@perawallet/wallet-core-config'
 import { Platform } from 'react-native'
+import { Buffer } from 'buffer'
 import { sha256 } from '@noble/hashes/sha256'
 
 /**

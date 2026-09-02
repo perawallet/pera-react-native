@@ -33,5 +33,4 @@ const injectPublicImports = (contents) =>
 const withPublicSwiftImports = (config) =>
   withAppDelegateSwiftMod(config, injectPublicImports);
 
-module.exports = withPublicSwiftImports;
-module.exports.injectPublicImports = injectPublicImports;
+module.exports = Object.assign(withPublicSwiftImports, { injectPublicImports });
