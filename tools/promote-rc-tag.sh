@@ -18,7 +18,7 @@ set -euo pipefail
 #   NO_PUSH  when "1": create the tag locally but do not push (used by tests).
 #
 # The caller publishes the GitHub Release itself rather than leaving it to
-# github-release.yml: a tag pushed with GITHUB_TOKEN does not trigger further
+# release-publish.yml: a tag pushed with GITHUB_TOKEN does not trigger further
 # workflows, so that workflow's `push: tags` trigger never sees this one.
 # create-nightly-tag.sh carries the same caveat.
 

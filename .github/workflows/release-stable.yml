@@ -6,7 +6,7 @@ name: Release / Stable
 #
 # Manual only, and deliberately so — this is the step that decides what ships.
 #
-# The GitHub Release is published here rather than left to github-release.yml:
+# The GitHub Release is published here rather than left to release-publish.yml:
 # a tag pushed with GITHUB_TOKEN does not trigger further workflows, so that
 # workflow's `push: tags` trigger never sees this tag. create-nightly-tag.sh
 # documents the same constraint.
