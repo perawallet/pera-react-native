@@ -376,8 +376,8 @@ jobs:
       # vitest/turbo directly, so run them here instead.
       - name: Prepare native modules and config
         run: |
-          bash tools/rebuild-native.sh
-          bash tools/generate-config.sh
+          bash tools/dev-rebuild-native.sh
+          bash tools/dev-config.sh
 
       - name: Test
         env:
@@ -617,14 +617,14 @@ jobs:
         run: actionlint
 
       # error severity only, for now. The five pre-existing warnings are real, but
-      # two are in tools/generate-config.sh on the production config path and want
+      # two are in tools/dev-config.sh on the production config path and want
       # their own change with a test rather than a drive-by fix.
       - name: Lint shell scripts
         run: |
           set -euo pipefail
           git ls-files -z '*.sh' | xargs -0 shellcheck --severity=error
 
-      # These cover tools/jira-sync.sh and tools/previous-release-tag.sh, which
+      # These cover tools/jira-sync.sh and tools/release-previous-tag.sh, which
       # only ever run unattended and write to a live tracker.
       - name: Shell script tests
         run: |

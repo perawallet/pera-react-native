@@ -5,7 +5,7 @@ set -uo pipefail
 # channel must diff against its own predecessor. Builds a throwaway repo with
 # interleaved tags rather than leaning on this repo's real tags, which move.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/previous-release-tag.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-previous-tag.sh"
 REPO=$(mktemp -d)
 trap 'rm -rf "$REPO"' EXIT
 
@@ -61,7 +61,7 @@ check "a non-release tag is ignored when picking the previous stable" \
 check "an unknown tag yields nothing" "" "$("$SCRIPT" not-a-tag)"
 
 if [ "$failures" -gt 0 ]; then
-    echo "previous-release-tag: ${failures} failure(s)"
+    echo "release-previous-tag: ${failures} failure(s)"
     exit 1
 fi
-echo "previous-release-tag: all checks passed"
+echo "release-previous-tag: all checks passed"

@@ -64,7 +64,7 @@ import { server } from '@test-utils/msw-server'
 const BETANET_ALGOD = 'https://betanet-api.algonode.cloud'
 const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 // Read, never hardcoded: `backendUrl` comes from TESTNET_BACKEND_URL, which
-// tools/setup-env-secrets.sh sets for every developer. Pinning its default here
+// tools/dev-env-secrets.sh sets for every developer. Pinning its default here
 // made this suite go false-red on any machine that had run that script.
 //
 // Still needed even though betanet/custom no longer borrow it: the history

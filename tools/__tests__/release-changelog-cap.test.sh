@@ -6,7 +6,7 @@ set -uo pipefail
 # rather than last night's nightly, which is what pushed real cards over:
 # v7.0.2-rc.1 composed to 3105. This pins the cap that prevents it.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/cap-changelog.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-changelog-cap.sh"
 
 failures=0
 check() { # $1 label  $2 expected  $3 actual
@@ -64,7 +64,7 @@ check "a budget larger than the input is a no-op" "$SHORT" \
     "$(printf '%s' "$SHORT" | "$SCRIPT" 99999)"
 
 if [ "$failures" -gt 0 ]; then
-    echo "changelog-cap: ${failures} failure(s)"
+    echo "release-changelog-cap: ${failures} failure(s)"
     exit 1
 fi
-echo "changelog-cap: all checks passed"
+echo "release-changelog-cap: all checks passed"

@@ -92,11 +92,11 @@ rmSync(dist, { recursive: true, force: true })
 // to already exist on disk (nothing, on a clean CI checkout — this job runs
 // on its own runner with no access to the separate "Build" job's output).
 const monorepoRoot = path.resolve(root, '../..')
-execSync('bash tools/generate-config.sh', {
+execSync('bash tools/dev-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
-// packages/config specifically must be rebuilt right after generate-config.sh
+// packages/config specifically must be rebuilt right after dev-config.sh
 // (not just picked up by the broader turbo build below) so the freshly
 // generated generated-env.ts is what's baked into its dist, not a stale
 // cache from a previous run with different secrets.
@@ -115,7 +115,7 @@ const generatedEnv = readFileSync(
     path.join(monorepoRoot, 'packages/config/src/generated-env.ts'),
     'utf8',
 )
-// generate-config.sh only emits a key's line when the source env var is
+// dev-config.sh only emits a key's line when the source env var is
 // non-empty (see its append_config helper), so a missing/blank
 // BACKEND_API_KEY leaves this line out entirely rather than writing "".
 if (!/backendAPIKey:\s*"[^"]+"/.test(generatedEnv)) {

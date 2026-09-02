@@ -5,7 +5,7 @@ name: Release / Nightly
 # production + staging). Pushing from here avoids giving Bitrise's checkout
 # token git-write access — GITHUB_TOKEN already has it.
 #
-# Idempotent: tools/create-nightly-tag.sh exits without tagging when there are
+# Idempotent: tools/release-prerelease-tag.sh exits without tagging when there are
 # no new commits since the last nightly tag.
 
 on:
@@ -39,4 +39,4 @@ jobs:
           persist-credentials: true
 
       - name: Mint and push nightly tag
-        run: ./tools/create-nightly-tag.sh
+        run: ./tools/release-prerelease-tag.sh

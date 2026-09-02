@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
 import { getConfig, overrideEnvironmentMap, type Config } from '../main'
 
-const SCRIPT = join(__dirname, '../../../../tools/generate-config.sh')
+const SCRIPT = join(__dirname, '../../../../tools/dev-config.sh')
 
 /**
  * Env var names the script's production guard refuses to leave unset, read out
@@ -31,7 +31,7 @@ const guardedEnvVars = (): string[] => {
     return loop ? loop[1].trim().split(/\s+/) : []
 }
 
-describe('tools/generate-config.sh', () => {
+describe('tools/dev-config.sh', () => {
     let dir: string
 
     beforeEach(() => {
@@ -125,7 +125,7 @@ describe('tools/generate-config.sh', () => {
                 expect(failure.status).not.toBe(0)
                 return failure.stderr?.toString() ?? ''
             }
-            throw new Error('expected generate-config.sh to exit non-zero')
+            throw new Error('expected dev-config.sh to exit non-zero')
         }
 
         test('fails a production build when a backend URL is unset', () => {

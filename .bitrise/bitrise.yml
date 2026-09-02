@@ -101,10 +101,10 @@ workflows:
         stack: ubuntu-noble-24.04-bitrise-2025-android
     envs:
     # Deliberately NOT production. This workflow runs `pnpm test` and nothing
-    # else — validate-env.sh's `test` profile requires no secrets, and the
-    # workflow never runs setup-env-secrets.sh, so the per-environment secrets
+    # else — dev-env-validate.sh's `test` profile requires no secrets, and the
+    # workflow never runs dev-env-secrets.sh, so the per-environment secrets
     # are unset here. With ENVIRONMENT=production the Generate Config step
-    # exported APP_ENV=production, and generate-config.sh then (correctly)
+    # exported APP_ENV=production, and dev-config.sh then (correctly)
     # refused to bake a production config that would fall back to the staging
     # backend URLs. Tests don't need production config — GitHub Actions runs the
     # same suite with APP_ENV unset — and handing a test job the production
@@ -120,7 +120,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev-env-validate.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -188,7 +188,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # APP_ENV must be set here so generate-config.sh bakes
+            # APP_ENV must be set here so dev-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
             pnpm run generate:config
@@ -228,11 +228,11 @@ workflows:
             LAST_TAG=$(./tools/release-range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release-changelog.sh "$LAST_TAG" || echo "")
               # Same range, unabridged and without Slack markup: the card only
               # ever shows a summary, so this file is the record of what
               # actually shipped and is what the card's link points at.
-              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/release-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -246,8 +246,8 @@ workflows:
             # Slack drops the whole payload with `invalid_attachments` once a
             # section block passes 3000 chars, which is what killed the RC
             # cards. Cap before the escape below — cutting escaped text can
-            # split a \n or \" in half. See tools/cap-changelog.sh.
-            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/cap-changelog.sh 2500)
+            # split a \n or \" in half. See tools/release-changelog-cap.sh.
+            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/release-changelog-cap.sh 2500)
 
             # JSON-escape (newlines -> \n, quotes) so the changelog embeds
             # cleanly in the Slack payload "text" field; without it the raw
@@ -340,7 +340,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev-env-validate.sh
     - script@1:
         title: Install Ruby via asdf
         inputs:
@@ -442,14 +442,14 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # APP_ENV must be set here so generate-config.sh bakes
+            # APP_ENV must be set here so dev-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
             pnpm run generate:config
@@ -459,7 +459,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # build:packages re-runs generate-config.sh, which bakes
+            # build:packages re-runs dev-config.sh, which bakes
             # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
             # (step shells don't inherit prior steps' exports) or the
             # bundled appEnvironment silently falls back to development.
@@ -650,7 +650,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev-env-validate.sh
     - script@1:
         title: Generate Changelog (if not from pipeline)
         inputs:
@@ -671,7 +671,7 @@ workflows:
             LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
-              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              CHANGELOG=$(./tools/release-changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
@@ -773,14 +773,14 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # APP_ENV must be set here so generate-config.sh bakes
+            # APP_ENV must be set here so dev-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
             pnpm run generate:config
@@ -790,7 +790,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # build:packages re-runs generate-config.sh, which bakes
+            # build:packages re-runs dev-config.sh, which bakes
             # appEnvironment from APP_ENV. Derive it from ENVIRONMENT here
             # (step shells don't inherit prior steps' exports) or the
             # bundled appEnvironment silently falls back to development.
@@ -885,9 +885,9 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # Channel logic lives in tools/resolve-distribution.sh so the
+            # Channel logic lives in tools/release-distribution.sh so the
             # validate step and this step can't drift (see that script).
-            envman add --key DISTRIBUTION --value "$(./tools/resolve-distribution.sh)"
+            envman add --key DISTRIBUTION --value "$(./tools/release-distribution.sh)"
     - script@1:
         title: Setup distribution credentials
         inputs:
@@ -1013,7 +1013,7 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/validate-env.sh
+            ./tools/dev-env-validate.sh
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -1080,14 +1080,14 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            ./tools/setup-env-secrets.sh
+            ./tools/dev-env-secrets.sh
     - script@1:
         title: Generate Config
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # APP_ENV must be set here so generate-config.sh bakes
+            # APP_ENV must be set here so dev-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
             pnpm run generate:config
@@ -1168,7 +1168,7 @@ workflows:
             # stderr and only the output path on stdout, so this captures the
             # path directly; pipefail is what makes a codesign failure fail the
             # step rather than assigning its last stdout line to SMOKE_ARTIFACT.
-            PATCHED="$(./tools/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
+            PATCHED="$(./tools/qa-patch-ipa-browserstack.sh "$BITRISE_IPA_PATH")"
             envman add --key SMOKE_ARTIFACT --value "$PATCHED"
     - script@1:
         title: Run smoke gate
@@ -1183,7 +1183,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh ios "$SMOKE_ARTIFACT"
+            ./tools/qa-smoke-test.sh ios "$SMOKE_ARTIFACT"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1228,7 +1228,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -eo pipefail
-            ./tools/smoke-test.sh android "$BITRISE_APK_PATH"
+            ./tools/qa-smoke-test.sh android "$BITRISE_APK_PATH"
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
@@ -1525,7 +1525,7 @@ workflows:
             if [ -n "${CHANGELOG_URL:-}" ]; then
               NOTES_LINK="\n\n<${CHANGELOG_URL}|Full changelog>"
             fi
-            # Only stable tags get a GitHub release — publish-github-release.sh
+            # Only stable tags get a GitHub release — release-publish.sh
             # is stable-only by design — so linking one unconditionally sent
             # every nightly and rc card to a 404.
             case "${BITRISE_GIT_TAG:-}" in

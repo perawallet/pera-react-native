@@ -2,7 +2,7 @@
 set -uo pipefail
 
 # Pins the fallback rule that tools/release-range-start.sh adds on top of
-# tools/previous-release-tag.sh, and that the delivered-ticket list and the Slack
+# tools/release-previous-tag.sh, and that the delivered-ticket list and the Slack
 # changelog both depend on:
 #
 #   - a prerelease with no predecessor on its channel falls back to the nearest

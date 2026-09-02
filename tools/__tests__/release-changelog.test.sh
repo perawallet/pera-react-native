@@ -6,7 +6,7 @@ set -uo pipefail
 # wants plain text and every entry. Builds a throwaway repo rather than
 # leaning on this repo's real history, which moves.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/generate_changelog.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-changelog.sh"
 REPO=$(mktemp -d)
 trap 'rm -rf "$REPO"' EXIT
 
@@ -70,7 +70,7 @@ check "uncapped emits no remainder line" "0" \
     "$(MAX_COUNT=0 "$SCRIPT" "$BASE" | grep -c 'and .* more')"
 
 if [ "$failures" -gt 0 ]; then
-    echo "generate-changelog: ${failures} failure(s)"
+    echo "release-changelog: ${failures} failure(s)"
     exit 1
 fi
-echo "generate-changelog: all checks passed"
+echo "release-changelog: all checks passed"
