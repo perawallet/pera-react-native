@@ -10,6 +10,7 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './storage'
-export * from './identities'
+export {
+    publishLoginIdentities,
+    toPasswordIdentities,
+} from './publishIdentities'
