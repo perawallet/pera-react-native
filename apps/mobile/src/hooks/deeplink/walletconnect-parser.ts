@@ -79,3 +79,26 @@ export const parseWalletConnectUri = (
         uri: wcUri,
     }
 }
+
+/**
+ * Log-safe identifiers for a WC v1 pairing URI. Never returns the URI
+ * itself: its `key=` param is the symmetric pairing secret, and error-level
+ * log context is shipped to the crash reporter. Topic and bridge origin are
+ * safe; both are visible in plaintext to the public bridge server.
+ */
+export const walletConnectLogContext = (
+    uri: string,
+): { topic: Nullable<string>; bridgeOrigin: Nullable<string> } => {
+    const topic = /^wc:([^@?#]+)@/.exec(uri)?.[1] ?? null
+    const bridgeValue = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
+    let bridgeOrigin: Nullable<string> = null
+    if (bridgeValue) {
+        try {
+            const origin = new URL(decodeURIComponent(bridgeValue)).origin
+            bridgeOrigin = origin === 'null' ? null : origin
+        } catch {
+            // A malformed bridge value only costs this diagnostic field.
+        }
+    }
+    return { topic, bridgeOrigin }
+}

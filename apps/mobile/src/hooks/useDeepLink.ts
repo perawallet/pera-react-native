@@ -15,6 +15,7 @@ import { useToast } from './useToast'
 import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
+import { walletConnectLogContext } from './deeplink/walletconnect-parser'
 import {
     AccountTypes,
     useAccountsStore,
@@ -237,9 +238,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             }),
                         )
                     } catch (error) {
+                        // Never log the URI itself: its `key=` param is the
+                        // pairing secret.
                         logger.error('[deeplink/wc] connect failed', {
                             error,
-                            uri: parsedData.uri,
+                            ...walletConnectLogContext(parsedData.uri),
                         })
                         showError({
                             variant: 'walletconnect',

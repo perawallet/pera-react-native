@@ -52,7 +52,9 @@ describe('logging', () => {
         })
 
         test('error logs with context', () => {
-            const context = { key: 'val' }
+            // Not named `key`: that is a sensitive exact key (WC handshake
+            // key param) and gets redacted by design.
+            const context = { detail: 'val' }
             logger.error('test error', context)
             expect(console.error).toHaveBeenCalledWith(
                 '[ERROR] test error',
@@ -335,6 +337,15 @@ describe('logging', () => {
             expect(
                 redactSensitiveUrl('foo://x?MNEMONIC=word1+word2'),
             ).toContain('[REDACTED]')
+        })
+
+        test('redacts the exact `key` param (WC v1 symmetric handshake key) but preserves key-suffixed params', () => {
+            const out = redactSensitiveUrl(
+                'wc:topic@1?bridge=https://bridge.example&key=deadbeef&keyregType=online',
+            )
+            expect(out).toContain('key=[REDACTED]')
+            expect(out).toContain('bridge=https://bridge.example')
+            expect(out).toContain('keyregType=online')
         })
 
         test('redacts exact `txn`/`stxn` query params but preserves `txnGroup`', () => {
