@@ -550,6 +550,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Chave de criptografia",
+        "deleted_remotely": "O backup na nuvem foi excluído em outro dispositivo",
         "main": {
             "title": "Backup na nuvem",
             "subtitle": "Escolha uma opção para continuar",
@@ -2169,6 +2170,7 @@
         "edit_contact": "Editar contato",
         "add_contact": "Novo contato",
         "settings": "Configurações",
+        "cloud_backup": "Backup na nuvem",
         "launch_settings": "Configuração de inicialização",
         "advanced_preferences": "Preferências avançadas",
         "confirmation_action": "Ação de confirmação",
@@ -2374,6 +2376,9 @@
         },
         "main": {
             "account_section": "Conta",
+            "cloud_backup_title": "Backup na nuvem",
+            "cloud_backup_on": "Ativado",
+            "cloud_backup_off": "Desativado",
             "security_title": "Segurança",
             "notifications_title": "Notificações",
             "scan_rekeyed_title": "Buscar contas com rekey",

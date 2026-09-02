@@ -33,6 +33,10 @@ import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import { type NavigatorScreenParams } from '@react-navigation/native'
 import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import {
+    CloudBackupStackNavigator,
+    type CloudBackupStackParamList,
+} from '@modules/cloud-backup'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
@@ -216,6 +220,7 @@ const WalletConnectSettingsStackNavigator = () => {
 
 export type SettingsStackParamsList = {
     SettingsHome: undefined
+    CloudBackupSettings: NavigatorScreenParams<CloudBackupStackParamList>
     SecuritySettings: undefined
     VaultSecuritySettings: undefined
     NotificationsSettings: undefined
@@ -254,6 +259,15 @@ export const SettingsStackNavigator = () => {
                     title: 'screens.settings',
                 }}
                 component={SettingsScreen}
+            />
+            <SettingsStack.Screen
+                name='CloudBackupSettings'
+                options={{
+                    title: 'screens.cloud_backup',
+                    // The nested navigator draws its own headers.
+                    headerShown: false,
+                }}
+                component={CloudBackupStackNavigator}
             />
             <SettingsStack.Screen
                 name='SecuritySettings'

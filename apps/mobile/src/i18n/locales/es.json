@@ -550,6 +550,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clave de cifrado",
+        "deleted_remotely": "La copia de seguridad en la nube se eliminó en otro dispositivo",
         "main": {
             "title": "Copia de seguridad en la nube",
             "subtitle": "Elige una opción para continuar",
@@ -2153,6 +2154,7 @@
         "edit_contact": "Editar contacto",
         "add_contact": "Nuevo contacto",
         "settings": "Ajustes",
+        "cloud_backup": "Copia de seguridad en la nube",
         "launch_settings": "Ajuste de inicio",
         "advanced_preferences": "Preferencias avanzadas",
         "confirmation_action": "Acción de confirmación",
@@ -2358,6 +2360,9 @@
         },
         "main": {
             "account_section": "Cuenta",
+            "cloud_backup_title": "Copia de seguridad en la nube",
+            "cloud_backup_on": "Activada",
+            "cloud_backup_off": "Desactivada",
             "security_title": "Seguridad",
             "notifications_title": "Notificaciones",
             "scan_rekeyed_title": "Buscar cuentas con rekey",

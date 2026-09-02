@@ -550,6 +550,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Şifreleme anahtarı",
+        "deleted_remotely": "Bulut yedeklemesi başka bir cihazda silindi",
         "main": {
             "title": "Bulut yedekleme",
             "subtitle": "Devam etmek için bir seçenek seç",
@@ -2153,6 +2154,7 @@
         "edit_contact": "Kişiyi düzenle",
         "add_contact": "Yeni kişi ekle",
         "settings": "Ayarlar",
+        "cloud_backup": "Bulut yedekleme",
         "launch_settings": "Başlangıç ayarı",
         "advanced_preferences": "Gelişmiş tercihler",
         "confirmation_action": "Onay yöntemi",
@@ -2358,6 +2360,9 @@
         },
         "main": {
             "account_section": "Hesap",
+            "cloud_backup_title": "Bulut yedekleme",
+            "cloud_backup_on": "Açık",
+            "cloud_backup_off": "Kapalı",
             "security_title": "Güvenlik",
             "notifications_title": "Bildirimler",
             "scan_rekeyed_title": "Rekey yapılan hesapları tara",

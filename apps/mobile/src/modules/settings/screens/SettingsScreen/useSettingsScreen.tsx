@@ -31,7 +31,10 @@ import {
 import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
-import { useSettingsOptions } from './useSettingsOptions'
+import {
+    useSettingsOptions,
+    type SettingsOptionItem,
+} from './useSettingsOptions'
 
 import type { SettingsStackParamsList } from '@modules/settings/routes'
 
@@ -75,13 +78,7 @@ export const useSettingsScreen = () => {
         })
     }
 
-    const handleTapEvent = (page: {
-        title: string
-        icon: string
-        url?: string
-        route?: keyof SettingsStackParamsList
-        action?: 'scanRekeyed'
-    }) => {
+    const handleTapEvent = (page: SettingsOptionItem) => {
         if (page.action === 'scanRekeyed') {
             // Root-level flow, not a settings sub-screen: no sourceAddress
             // sweeps every signable key.

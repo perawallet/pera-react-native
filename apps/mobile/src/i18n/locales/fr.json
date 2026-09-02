@@ -550,6 +550,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Clé de chiffrement",
+        "deleted_remotely": "La sauvegarde cloud a été supprimée sur un autre appareil",
         "main": {
             "title": "Sauvegarde cloud",
             "subtitle": "Choisissez une option pour continuer",
@@ -2153,6 +2154,7 @@
         "edit_contact": "Modifier le contact",
         "add_contact": "Nouveau contact",
         "settings": "Paramètres",
+        "cloud_backup": "Sauvegarde cloud",
         "launch_settings": "Paramètre de démarrage",
         "advanced_preferences": "Préférences avancées",
         "confirmation_action": "Action de confirmation",
@@ -2358,6 +2360,9 @@
         },
         "main": {
             "account_section": "Compte",
+            "cloud_backup_title": "Sauvegarde cloud",
+            "cloud_backup_on": "Activée",
+            "cloud_backup_off": "Désactivée",
             "security_title": "Sécurité",
             "notifications_title": "Notifications",
             "scan_rekeyed_title": "Rechercher les comptes rekeyés",

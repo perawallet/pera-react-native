@@ -56,6 +56,10 @@ vi.mock(
         useSyncMultisigAccountsOnNetworkSwitch: vi.fn(),
     }),
 )
+vi.mock('@modules/cloud-backup', () => ({
+    useBackupSyncLifecycle: () => undefined,
+}))
+
 vi.mock('@modules/network', () => ({
     useNetworkStatusListener: vi.fn(),
 }))

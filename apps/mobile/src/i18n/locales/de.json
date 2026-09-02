@@ -542,6 +542,7 @@
     },
     "cloud_backup": {
         "encryption_key_label": "Verschlüsselungsschlüssel",
+        "deleted_remotely": "Das Cloud-Backup wurde auf einem anderen Gerät gelöscht",
         "main": {
             "title": "Cloud-Backup",
             "subtitle": "Wähle eine Option, um fortzufahren",
@@ -2145,6 +2146,7 @@
         "edit_contact": "Kontakt bearbeiten",
         "add_contact": "Neuen Kontakt hinzufügen",
         "settings": "Einstellungen",
+        "cloud_backup": "Cloud-Backup",
         "launch_settings": "Starteinstellung",
         "advanced_preferences": "Erweiterte Einstellungen",
         "confirmation_action": "Bestätigungsaktion",
@@ -2350,6 +2352,9 @@
         },
         "main": {
             "account_section": "Konto",
+            "cloud_backup_title": "Cloud-Backup",
+            "cloud_backup_on": "An",
+            "cloud_backup_off": "Aus",
             "security_title": "Sicherheit",
             "notifications_title": "Benachrichtigungen",
             "scan_rekeyed_title": "Nach rekeyed Konten suchen",
