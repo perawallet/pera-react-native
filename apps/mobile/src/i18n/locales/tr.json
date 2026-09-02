@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "Uygulama başlatılamadı",
             "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
-            "retry": "Tekrar dene"
+            "retry": "Tekrar dene",
+            "keystore": {
+                "title": "Cüzdan verisi hatası",
+                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların Algorand blok zincirinde güvende."
+            }
         }
     },
     "asset_sort": {

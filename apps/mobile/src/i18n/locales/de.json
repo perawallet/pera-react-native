@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "App-Start fehlgeschlagen",
             "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher.",
-            "retry": "Erneut versuchen"
+            "retry": "Erneut versuchen",
+            "keystore": {
+                "title": "Wallet-Datenfehler",
+                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher."
+            }
         }
     },
     "asset_sort": {
