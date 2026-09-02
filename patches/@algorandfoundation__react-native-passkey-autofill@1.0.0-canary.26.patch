@@ -158,7 +158,7 @@ index ac8955cdec804b20e44eba44f6f1d702695045eb..2e8c3706056f6a92e0ae918da6874f7f
              // On registration we advertise `enabled = true` whenever the RP
              // asked for the extension, signalling that the credential can be
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
-index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..f6c5d9095ed1b1ad22a343ec0bf57efad5b51032 100644
+index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..fcd57d8b86e8d2a22112f80bed610618a5595965 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
 @@ -51,6 +51,14 @@ class GetPasskeyActivity : AppCompatActivity() {
@@ -1492,10 +1492,35 @@ index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee0
 +  ]
 +}
 diff --git a/app.plugin.js b/app.plugin.js
-index a4169e2e756f2bcd4ae298c027c186bed61420bd..e7f8c9408b30d0a6d2389628c41ca3c18b8ded89 100644
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0fdf8c0228 100644
 --- a/app.plugin.js
 +++ b/app.plugin.js
-@@ -160,7 +160,7 @@ const extensionInfoPlist = ({
+@@ -20,6 +20,8 @@ const IOS_EXTENSION_FILES = [
+   "PasskeyKeystoreMMKV.mm",
+   "PasskeyAutofillCredentialProvider-Bridging-Header.h",
+   "PasskeyCredentialStore.swift",
++  "KeystoreSecretReader.swift",
++  "PasswordCredentialStore.swift",
+   "WebAuthn.swift",
+   "BiometricRequirement.swift",
+   "Prf.swift",
+@@ -128,9 +130,14 @@ const writePlist = (filePath, body) => {
+   fs.writeFileSync(filePath, body);
+ };
+ 
++// `ASCredentialProviderExtensionSupportedDomains` is deliberately absent: while
++// the key is present iOS offers this provider ONLY on the domains it lists, so
++// a password saved for any other site is never offered and nothing reports an
++// error. Absent, the key means every domain — which is what a password manager
++// needs. It also widens the passkey provider from the single associated site to
++// every domain.
+ const extensionInfoPlist = ({
+   label,
+-  supportedDomains,
+   aaguid,
+   biometricRequirement,
+ }) => `<?xml version="1.0" encoding="UTF-8"?>
+@@ -160,13 +167,9 @@ const extensionInfoPlist = ({
  ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
    <string>${biometricRequirement}</string>
    <key>NSFaceIDUsageDescription</key>
@@ -1503,12 +1528,168 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e7f8c9408b30d0a6d2389628c41ca3c1
 +  <string>${label} uses Face ID to create and use passkeys.</string>
    <key>NSExtension</key>
    <dict>
-     <key>ASCredentialProviderExtensionSupportedDomains</key>
+-    <key>ASCredentialProviderExtensionSupportedDomains</key>
+-    <array>
+-${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n")}
+-    </array>
+     <key>CFBundleDisplayName</key>
+     <string>${label}</string>
+     <key>NSExtensionAttributes</key>
+@@ -178,7 +181,7 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
+         <key>ProvidesPasskeys</key>
+         <true/>
+         <key>ProvidesPasswords</key>
+-        <false/>
++        <true/>
+         <key>ProvidesTextToInsert</key>
+         <false/>
+         <key>ShowsConfigurationUI</key>
+@@ -219,7 +222,6 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+   const site = props.site || "https://debug.liquidauth.com";
+   const label = props.label || "My Credential Provider";
+   const associatedDomain = getAssociatedDomain(site);
+-  const supportedDomains = props.supportedDomains || [associatedDomain];
+   const appGroup = getAppGroup(config, props);
+   const keychainGroup = getKeychainGroup(config, props);
+   const aaguid = getAaguid(props);
+@@ -263,7 +265,7 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+ 
+       writePlist(
+         path.join(extensionRoot, `${IOS_EXTENSION_NAME}-Info.plist`),
+-        extensionInfoPlist({ label, supportedDomains, aaguid, biometricRequirement }),
++        extensionInfoPlist({ label, aaguid, biometricRequirement }),
+       );
+       writePlist(
+         path.join(extensionRoot, `${IOS_EXTENSION_NAME}.entitlements`),
+diff --git a/build/ReactNativePasskeyAutofillModule.d.ts b/build/ReactNativePasskeyAutofillModule.d.ts
+index 8626ca1d219eb5c34b81a1b99fa59f71ed57d960..63b9138f55d4eb1b013859f00df4f861600e0664 100644
+--- a/build/ReactNativePasskeyAutofillModule.d.ts
++++ b/build/ReactNativePasskeyAutofillModule.d.ts
+@@ -46,6 +46,18 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
+      * directly.
+      */
+     replaceCredentialIdentities(credentials: PasskeyAutofillCredentialIdentity[]): Promise<void>;
++    /**
++     * Replaces the iOS AutoFill *password* identity index so the system offers
++     * this app on a sign-in form. Identities only — `recordIdentifier` is the
++     * keystore id the credential provider extension resolves the sealed password
++     * from once the user has been verified. Android ignores this method (no-op)
++     * because the provider reads MMKV directly.
++     */
++    replacePasswordCredentialIdentities(identities: {
++        recordIdentifier: string;
++        serviceIdentifier: string;
++        user: string;
++    }[]): Promise<void>;
+     refreshCredentialIdentities(): Promise<void>;
+     /**
+      * Resolves to `true` when this app is registered as the active
+diff --git a/build/ReactNativePasskeyAutofillModule.js b/build/ReactNativePasskeyAutofillModule.js
+index 3ef9075b2d63b8a981ddcecf8bc73aceade36eb8..ac8506436b9d98a85994cd245bb6ac47f665536c 100644
+--- a/build/ReactNativePasskeyAutofillModule.js
++++ b/build/ReactNativePasskeyAutofillModule.js
+@@ -9,6 +9,7 @@ const nativeModule = requireNativeModule("ReactNativePasskeyAutofill");
+ if (Platform.OS === "android") {
+     const noops = {
+         replaceCredentialIdentities: () => Promise.resolve(),
++        replacePasswordCredentialIdentities: () => Promise.resolve(),
+         refreshCredentialIdentities: () => Promise.resolve(),
+         getStoredCredentials: () => Promise.resolve([]),
+         getDiagnostics: () => Promise.resolve([]),
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c28d90e4e1 100644
+index 0b0216714b471156251207420f110c632b9afae7..1d735529f67d1031dd58c77c11be77e51294d71f 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-@@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -7,6 +7,7 @@ import UIKit
+ 
+ final class CredentialProviderViewController: ASCredentialProviderViewController {
+   private let store = PasskeyCredentialStore()
++  private let passwordStore = PasswordCredentialStore()
+   private var pendingRegistrationRequest: ASPasskeyCredentialRequest?
+   private var pendingRegistrationIdentity: ASPasskeyCredentialIdentity?
+   private var pendingAssertionCredential: StoredPasskeyCredential?
+@@ -20,6 +21,12 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+   private var authContext: LAContext?
+   private let activityIndicator = UIActivityIndicatorView(style: .large)
+   private let statusLabel = UILabel()
++  private var pendingPasswordLogin: StoredLogin?
++  private var isCompletingPassword = false
++  /// The logins offered by the in-extension picker (`prepareCredentialList`).
++  private var offeredLogins: [StoredLogin] = []
++  private let loginTableView = UITableView(frame: .zero, style: .plain)
++  private let loginCancelButton = UIButton(type: .system)
+ 
+   override func viewDidLoad() {
+     super.viewDidLoad()
+@@ -38,6 +45,8 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+         self.authenticateAndCompleteRegistration()
+       } else if self.pendingAssertionCredential != nil {
+         self.authenticateAndCompleteAssertion()
++      } else if self.pendingPasswordLogin != nil {
++        self.authenticateAndCompletePassword()
+       }
+     }
+   }
+@@ -69,10 +78,33 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     )
+   }
+ 
++  /// Serves the picker Pera presents itself, when no passkey request rides
++  /// along: the password half of AutoFill, whose QuickType entries come from
++  /// the identity store instead.
++  override func prepareCredentialList(for serviceIdentifiers: [ASCredentialServiceIdentifier]) {
++    let requested = serviceIdentifiers.map { $0.identifier }
++    let logins = passwordStore?.logins(serviceIdentifiers: requested) ?? []
++    store?.appendDiagnostic("prepareCredentialList passwords: \(logins.count)")
++
++    offeredLogins = logins
++    showLoginPicker(emptyMessage: "No saved logins for this site.")
++  }
++
+   override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
+-    guard #available(iOSApplicationExtension 17.0, *),
+-          let request = credentialRequest as? ASPasskeyCredentialRequest
+-    else {
++    guard #available(iOSApplicationExtension 17.0, *) else {
++      cancel(code: .failed, message: "Unsupported credential request.")
++      return
++    }
++
++    // A password takes the same answer as a passkey assertion: nothing is
++    // released until the LAContext check in `prepareInterfaceToProvideCredential`
++    // passes.
++    if credentialRequest is ASPasswordCredentialRequest {
++      cancel(code: .userInteractionRequired, message: "User verification is required.")
++      return
++    }
++
++    guard let request = credentialRequest as? ASPasskeyCredentialRequest else {
+       cancel(code: .failed, message: "Unsupported credential request.")
+       return
+     }
+@@ -86,9 +118,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+   }
+ 
+   override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
+-    guard #available(iOSApplicationExtension 17.0, *),
+-          let request = credentialRequest as? ASPasskeyCredentialRequest
+-    else {
++    guard #available(iOSApplicationExtension 17.0, *) else {
++      cancel(code: .failed, message: "Unsupported credential request.")
++      return
++    }
++
++    if let passwordRequest = credentialRequest as? ASPasswordCredentialRequest {
++      let identity = passwordRequest.credentialIdentity as? ASPasswordCredentialIdentity
++      preparePassword(recordIdentifier: identity?.recordIdentifier)
++      return
++    }
++
++    guard let request = credentialRequest as? ASPasskeyCredentialRequest else {
+       cancel(code: .failed, message: "Unsupported credential request.")
+       return
+     }
+@@ -149,7 +190,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      do {
        guard let store else {
          self.store?.appendDiagnostic("missing wallet root-key state")
@@ -1517,7 +1698,7 @@ index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c2
          return
        }
  
-@@ -309,7 +315,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -309,7 +350,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -1526,7 +1707,21 @@ index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c2
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -407,7 +413,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -380,6 +421,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     statusLabel.text = "checking passkeys..."
+   }
+ 
++  private func showCheckingLogins() {
++    hideLoginPicker()
++    activityIndicator.startAnimating()
++    statusLabel.isHidden = false
++    statusLabel.text = "checking saved logins..."
++  }
++
+   private func showFailure(_ message: String) {
+     store?.appendDiagnostic("showFailure: \(message)")
+     activityIndicator.stopAnimating()
+@@ -407,7 +455,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")
@@ -1535,3 +1730,1241 @@ index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c2
        DispatchQueue.main.async {
          guard let self else {
            return
+@@ -456,6 +504,179 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+   }
+ }
+ 
++// MARK: - Password credentials
++
++extension CredentialProviderViewController: UITableViewDataSource, UITableViewDelegate {
++  /// Resolves the login the system asked for and holds it until the user has
++  /// been verified.
++  func preparePassword(recordIdentifier: String?) {
++    guard let recordIdentifier,
++          let login = passwordStore?.login(recordIdentifier: recordIdentifier)
++    else {
++      store?.appendDiagnostic("password identity not resolvable")
++      cancel(code: .credentialIdentityNotFound, message: "Credential identity not found.")
++      return
++    }
++
++    pendingPasswordLogin = login
++    showCheckingLogins()
++
++    if hasPresentedInterface {
++      DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
++        self?.authenticateAndCompletePassword()
++      }
++    }
++  }
++
++  /// Mirrors `authenticateAndCompleteAssertion` instead of sharing a helper with
++  /// it: the passkey path is shipping code whose ordering must not move, and a
++  /// password has to clear the very same policy before it is released.
++  func authenticateAndCompletePassword() {
++    guard !isCompletingPassword else {
++      return
++    }
++    isCompletingPassword = true
++
++    guard let login = pendingPasswordLogin else {
++      isCompletingPassword = false
++      cancel(code: .credentialIdentityNotFound, message: "Credential identity not found.")
++      return
++    }
++
++    let context = LAContext()
++    authContext = context
++    context.localizedCancelTitle = "Cancel"
++    context.localizedFallbackTitle = ""
++
++    let policy: LAPolicy = BiometricRequirement.current.laPolicy
++
++    var error: NSError?
++    guard context.canEvaluatePolicy(policy, error: &error) else {
++      authContext = nil
++      isCompletingPassword = false
++      showFailure(error?.localizedDescription ?? "Device authentication is not available.")
++      return
++    }
++
++    store?.appendDiagnostic("evaluatePolicy password start")
++    context.evaluatePolicy(policy, localizedReason: "Use saved logins with Pera Wallet") { [weak self] success, authenticationError in
++      DispatchQueue.main.async {
++        guard let self else {
++          return
++        }
++
++        if success {
++          self.store?.appendDiagnostic("evaluatePolicy password success")
++          self.completePassword(login: login)
++        } else {
++          self.authContext = nil
++          self.isCompletingPassword = false
++          self.store?.appendDiagnostic(
++            "evaluatePolicy password failed: \(authenticationError?.localizedDescription ?? "unknown")"
++          )
++          self.cancel(
++            code: .userCanceled,
++            message: authenticationError?.localizedDescription ?? "Biometric authentication was canceled."
++          )
++        }
++      }
++    }
++  }
++
++  private func completePassword(login: StoredLogin) {
++    let credential = ASPasswordCredential(user: login.username, password: login.password)
++    extensionContext.completeRequest(withSelectedCredential: credential) { [weak self] _ in
++      self?.authContext = nil
++      self?.isCompletingPassword = false
++      self?.pendingPasswordLogin = nil
++      self?.offeredLogins = []
++    }
++  }
++
++  // MARK: Picker
++
++  func showLoginPicker(emptyMessage: String) {
++    installLoginPickerIfNeeded()
++    activityIndicator.stopAnimating()
++    loginCancelButton.isHidden = false
++
++    if offeredLogins.isEmpty {
++      loginTableView.isHidden = true
++      statusLabel.isHidden = false
++      statusLabel.text = emptyMessage
++      return
++    }
++
++    statusLabel.isHidden = true
++    loginTableView.isHidden = false
++    loginTableView.reloadData()
++  }
++
++  private func hideLoginPicker() {
++    loginTableView.isHidden = true
++    loginCancelButton.isHidden = true
++  }
++
++  private func installLoginPickerIfNeeded() {
++    guard loginTableView.superview == nil else {
++      return
++    }
++
++    loginTableView.dataSource = self
++    loginTableView.delegate = self
++    loginTableView.translatesAutoresizingMaskIntoConstraints = false
++
++    loginCancelButton.setTitle("Cancel", for: .normal)
++    loginCancelButton.titleLabel?.font = .preferredFont(forTextStyle: .body)
++    loginCancelButton.addTarget(self, action: #selector(handleLoginPickerCancel), for: .touchUpInside)
++    loginCancelButton.translatesAutoresizingMaskIntoConstraints = false
++
++    view.addSubview(loginTableView)
++    view.addSubview(loginCancelButton)
++    NSLayoutConstraint.activate([
++      loginTableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
++      loginTableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
++      loginTableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
++      loginTableView.bottomAnchor.constraint(equalTo: loginCancelButton.topAnchor, constant: -8),
++      loginCancelButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
++      loginCancelButton.bottomAnchor.constraint(
++        equalTo: view.safeAreaLayoutGuide.bottomAnchor,
++        constant: -12
++      ),
++    ])
++  }
++
++  @objc
++  private func handleLoginPickerCancel() {
++    offeredLogins = []
++    cancel(code: .userCanceled, message: "The user canceled the request.")
++  }
++
++  func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
++    offeredLogins.count
++  }
++
++  func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
++    let identifier = "login"
++    let cell = tableView.dequeueReusableCell(withIdentifier: identifier)
++      ?? UITableViewCell(style: .subtitle, reuseIdentifier: identifier)
++    let login = offeredLogins[indexPath.row]
++    cell.textLabel?.text = login.username
++    cell.detailTextLabel?.text = login.domain
++    return cell
++  }
++
++  func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
++    tableView.deselectRow(at: indexPath, animated: true)
++    guard indexPath.row < offeredLogins.count else {
++      return
++    }
++    pendingPasswordLogin = offeredLogins[indexPath.row]
++    showCheckingLogins()
++    authenticateAndCompletePassword()
++  }
++}
++
+ private extension ASPasskeyCredentialIdentity {
+   var userHandleString: String {
+     String(data: userHandle, encoding: .utf8) ?? userHandle.base64URLEncodedString()
+diff --git a/ios/AutofillCredentialProvider/KeystoreSecretReader.swift b/ios/AutofillCredentialProvider/KeystoreSecretReader.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..5063604fda0171a9a709a1a168931ca6c2d51e4f
+--- /dev/null
++++ b/ios/AutofillCredentialProvider/KeystoreSecretReader.swift
+@@ -0,0 +1,374 @@
++import CryptoKit
++import Foundation
++import Security
++
++/// The on-disk record format shared with the wallet's
++/// `@algorandfoundation/react-native-keystore` MMKV instance.
++///
++/// The keystore splits every key into two entries: `k/<id>` holds PLAINTEXT
++/// `Key` metadata (no material) and `m/<id>` holds the sealed raw material,
++/// whose sealed plaintext is exactly `base64(bytes)` rather than a JSON
++/// document. Records written before the split are a single entry keyed by the
++/// bare id, sealing `base64url(JSON.stringify(KeyData))` — metadata and material
++/// together. Both layouts must stay readable.
++///
++/// Kept byte-for-byte in step with `credentials/KeystoreRecords.kt` on Android.
++enum PasskeyKeystoreRecords {
++  /// Prefix for plaintext `Key` metadata records.
++  static let metadataPrefix = "k/"
++
++  /// Prefix for sealed raw-material records.
++  static let materialPrefix = "m/"
++
++  /// The type shared by both roots of the wallet's hierarchy; only the scheme
++  /// tells them apart.
++  static let typeHdRootKey = "hd-root-key"
++
++  /// The deterministic-P256 main key (PBKDF2-HMAC-SHA512, 64 bytes): the root the
++  /// passkey hierarchy is defined against, and the preferred parent for new keys.
++  static let schemePbkdf2P256 = "pbkdf2-p256"
++
++  /// The BIP32-Ed25519 account root (96 bytes). Passkeys used to derive from it
++  /// because it was the only root a wallet exposed, so credentials created then
++  /// stay pinned to it.
++  static let schemeBip32Ed25519 = "bip32-ed25519"
++
++  static func metadataKey(_ id: String) -> String { metadataPrefix + id }
++
++  static func materialKey(_ id: String) -> String { materialPrefix + id }
++
++  /// The scheme a decoded root record roots. Records written before the flag
++  /// existed have none, and every one of those is a BIP32-Ed25519 root.
++  static func scheme(of record: [String: Any]) -> String {
++    let metadata = record["metadata"] as? [String: Any]
++    if let scheme = metadata?["scheme"] as? String, !scheme.isEmpty { return scheme }
++    if let scheme = record["scheme"] as? String, !scheme.isEmpty { return scheme }
++    return schemeBip32Ed25519
++  }
++
++  /// Picks the parent record to derive from: the one rooting `requestedScheme`,
++  /// or — for a new credential, which requests none — the main key if there is
++  /// one, falling back to the most authoritative candidate.
++  static func selectParentKey(
++    candidates: [(keyId: String, scheme: String)],
++    requestedScheme: String?
++  ) -> (keyId: String, scheme: String)? {
++    if let requestedScheme {
++      return candidates.first { $0.scheme == requestedScheme }
++    }
++    return candidates.first { $0.scheme == schemePbkdf2P256 } ?? candidates.first
++  }
++}
++
++/// Reads the wallet's shared keystore: the Keychain-held master key that seals
++/// every record, and the `k/<id>` / `m/<id>` pair each key is stored as.
++///
++/// Both credential stores hold one of these instead of a private copy of the
++/// crypto, so a password record and a passkey record are opened by the very
++/// same code.
++struct KeystoreSecretReader {
++  /// Keychain service/account of the shared master key, and the App Group
++  /// UserDefaults slot older builds kept it in as plaintext.
++  static let masterKeyKey = "ReactNativePasskeyAutofillMasterKey"
++
++  /// Info.plist key holding the keychain access-group *base* (without the team
++  /// prefix) shared by the app and the AutoFill extension. Injected by the
++  /// config plugin so the module stays team-agnostic.
++  static let keychainGroupInfoKey = "ReactNativePasskeyAutofillKeychainGroup"
++
++  /// Info.plist key holding the App Group both processes share. It names both
++  /// the UserDefaults suite and the MMKV root the keystore lives in.
++  static let appGroupInfoKey = "ReactNativePasskeyAutofillAppGroup"
++
++  static func appGroupFromInfoPlist() -> String? {
++    Bundle.main.object(forInfoDictionaryKey: appGroupInfoKey) as? String
++  }
++
++  private let defaults: UserDefaults
++
++  init(defaults: UserDefaults) {
++    self.defaults = defaults
++  }
++
++  // MARK: - Master key (Keychain-backed)
++  //
++  // The master key is the KEK for the credential store and is read by *both*
++  // the app and the AutoFill extension. It is stored in the Keychain (encrypted
++  // at rest, hardware-backed) in a shared access group so both processes can
++  // read it — never in plaintext UserDefaults. Accessibility is
++  // `AfterFirstUnlockThisDeviceOnly`, NOT biometric: the extension must read the
++  // key to *enumerate* credentials before the user authenticates, so a
++  // biometric-gated item would break the AutoFill list. Biometric checks stay at
++  // the assertion step (`LAContext` in `CredentialProviderViewController`).
++
++  func saveMasterKey(_ secret: Data) {
++    guard var query = masterKeyQuery() else { return }
++    // Upsert: drop any existing value, then add the new one.
++    _ = SecItemDelete(query as CFDictionary)
++    query[kSecValueData as String] = secret
++    query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
++    _ = SecItemAdd(query as CFDictionary, nil)
++    // Scrub any legacy plaintext copy now that the Keychain holds the key.
++    defaults.removeObject(forKey: Self.masterKeyKey)
++  }
++
++  func masterKey() -> Data? {
++    if var query = masterKeyQuery() {
++      query[kSecReturnData as String] = true
++      query[kSecMatchLimit as String] = kSecMatchLimitOne
++      var item: CFTypeRef?
++      if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
++         let data = item as? Data
++      {
++        return data
++      }
++    }
++    // Migration: older builds stored the key as plaintext in the App Group
++    // UserDefaults. Move it into the Keychain (and scrub the plaintext) once.
++    if let legacy = defaults.string(forKey: Self.masterKeyKey),
++       let data = Data(base64URLEncoded: legacy) ?? Data(base64Encoded: legacy)
++    {
++      saveMasterKey(data)
++      return data
++    }
++    return nil
++  }
++
++  func deleteMasterKey() {
++    if let query = masterKeyQuery() {
++      _ = SecItemDelete(query as CFDictionary)
++    }
++  }
++
++  /// Base Keychain query identifying the shared master-key item. Returns `nil`
++  /// when the access group can't be resolved (no Info.plist group or no team
++  /// prefix), in which case the caller falls back / no-ops rather than writing
++  /// to the wrong place.
++  private func masterKeyQuery() -> [String: Any]? {
++    guard let accessGroup = Self.masterKeyAccessGroup() else { return nil }
++    return [
++      kSecClass as String: kSecClassGenericPassword,
++      kSecAttrService as String: Self.masterKeyKey,
++      kSecAttrAccount as String: Self.masterKeyKey,
++      kSecAttrAccessGroup as String: accessGroup,
++    ]
++  }
++
++  /// The full keychain access group (`<TeamID>.<base>`). The base is injected by
++  /// the config plugin via Info.plist; the team prefix is resolved at runtime.
++  private static func masterKeyAccessGroup() -> String? {
++    guard
++      let base = Bundle.main.object(forInfoDictionaryKey: keychainGroupInfoKey) as? String,
++      let prefix = keychainTeamPrefix()
++    else {
++      return nil
++    }
++    return prefix + base
++  }
++
++  private static var cachedTeamPrefix: String?
++
++  /// Resolves the app's keychain access-group team prefix (`<TeamID>.`) at
++  /// runtime by probing a throwaway Keychain item and reading back the group the
++  /// system assigns. Avoids hardcoding a team ID in a module shared across teams.
++  private static func keychainTeamPrefix() -> String? {
++    if let cached = cachedTeamPrefix {
++      return cached
++    }
++    let probeAccount = "ReactNativePasskeyAutofillTeamPrefixProbe"
++    let cleanup: [String: Any] = [
++      kSecClass as String: kSecClassGenericPassword,
++      kSecAttrAccount as String: probeAccount,
++    ]
++    _ = SecItemDelete(cleanup as CFDictionary)
++
++    let query: [String: Any] = [
++      kSecClass as String: kSecClassGenericPassword,
++      kSecAttrAccount as String: probeAccount,
++      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
++      kSecValueData as String: Data(),
++      kSecReturnAttributes as String: true,
++    ]
++    var result: CFTypeRef?
++    let status = SecItemAdd(query as CFDictionary, &result)
++    defer { _ = SecItemDelete(cleanup as CFDictionary) }
++
++    guard
++      status == errSecSuccess,
++      let attributes = result as? [String: Any],
++      let accessGroup = attributes[kSecAttrAccessGroup as String] as? String,
++      let dotIndex = accessGroup.firstIndex(of: ".")
++    else {
++      return nil
++    }
++    // accessGroup is "<TeamID>.<something>"; keep through the first dot.
++    let prefix = String(accessGroup[...dotIndex])
++    cachedTeamPrefix = prefix
++    return prefix
++  }
++
++  // MARK: - Records
++
++  /// A record's metadata, from `k/<id>` (plaintext) or from the sealed legacy flat
++  /// record keyed by the bare id.
++  func metadata(of id: String, masterKey: Data, appGroup: String) -> [String: Any]? {
++    if let plaintext = try? PasskeyKeystoreMMKV.string(
++      forKey: PasskeyKeystoreRecords.metadataKey(id),
++      appGroup: appGroup
++    ),
++      let data = plaintext.data(using: .utf8),
++      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
++    {
++      return json
++    }
++    guard let payload = try? PasskeyKeystoreMMKV.string(forKey: id, appGroup: appGroup) else {
++      return nil
++    }
++    return try? decodeRecord(payload, masterKey: masterKey)
++  }
++
++  /// A record's raw secret bytes, from `m/<id>` (whose sealed plaintext is
++  /// `base64(bytes)`) or from the inline material of the legacy flat record.
++  func material(of id: String, masterKey: Data, appGroup: String) -> Data? {
++    if let sealed = try? PasskeyKeystoreMMKV.string(
++      forKey: PasskeyKeystoreRecords.materialKey(id),
++      appGroup: appGroup
++    ),
++      let encoded = try? unseal(masterKey, sealed),
++      let bytes = Data(base64Encoded: encoded) ?? Data(base64URLEncoded: encoded)
++    {
++      return bytes
++    }
++
++    guard let payload = try? PasskeyKeystoreMMKV.string(forKey: id, appGroup: appGroup),
++          let keyData = try? decodeRecord(payload, masterKey: masterKey)
++    else {
++      return nil
++    }
++    if let seed = Self.dataArray(keyData["seed"]) ?? Self.dataArray(keyData["privateKey"]) {
++      return seed
++    }
++    if let seed = keyData["seed"] as? String ?? keyData["privateKey"] as? String {
++      return Self.secretStringData(seed)
++    }
++    return nil
++  }
++
++  /// Every key id the shared keystore holds a metadata record for.
++  func recordIds(appGroup: String) -> [String] {
++    PasskeyKeystoreMMKV.allKeys(forAppGroup: appGroup, error: nil)
++      .filter { $0.hasPrefix(PasskeyKeystoreRecords.metadataPrefix) }
++      .map { String($0.dropFirst(PasskeyKeystoreRecords.metadataPrefix.count)) }
++  }
++
++  // MARK: - Sealing
++
++  func encodeKeyData(_ keyData: [String: Any]) throws -> String {
++    let jsonData = try JSONSerialization.data(withJSONObject: keyData, options: [])
++    return jsonData.base64URLEncodedString()
++  }
++
++  func decodeRecord(_ payload: String, masterKey: Data) throws -> [String: Any] {
++    let trimmed = payload.trimmingCharacters(in: .whitespacesAndNewlines)
++    // An envelope is `iv` + `content` (the tag either appended to the content or,
++    // in the legacy shape, in its own `tag` field). Anything else that is JSON is
++    // an already-decoded record.
++    if trimmed.hasPrefix("{"),
++       let payloadData = trimmed.data(using: .utf8),
++       let json = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any],
++       json["iv"] == nil || json["content"] == nil
++    {
++      return json
++    }
++
++    let encoded = trimmed.hasPrefix("{") ? try unseal(masterKey, trimmed) : trimmed
++    guard let jsonData = Data(base64URLEncoded: encoded) ?? encoded.data(using: .utf8),
++          let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
++    else {
++      throw PasskeyCredentialStoreError.credentialEncodingFailed
++    }
++    return json
++  }
++
++  func seal(_ key: Data, _ plaintext: String) throws -> String {
++    let symmetricKey = SymmetricKey(data: key)
++    let nonceData = Data((0..<12).map { _ in UInt8.random(in: 0...255) })
++    let nonce = try AES.GCM.Nonce(data: nonceData)
++    let sealedBox = try AES.GCM.seal(Data(plaintext.utf8), using: symmetricKey, nonce: nonce)
++
++    let payload: [String: String] = [
++      "iv": nonceData.base64EncodedString(),
++      "tag": sealedBox.tag.base64EncodedString(),
++      "content": sealedBox.ciphertext.base64EncodedString(),
++    ]
++    let data = try JSONSerialization.data(withJSONObject: payload, options: [])
++    guard let string = String(data: data, encoding: .utf8) else {
++      throw PasskeyCredentialStoreError.credentialEncodingFailed
++    }
++    return string
++  }
++
++  func unseal(_ key: Data, _ payload: String) throws -> String {
++    guard let payloadData = payload.data(using: .utf8),
++          let json = try JSONSerialization.jsonObject(with: payloadData) as? [String: String],
++          let ivString = json["iv"], let iv = Data(base64Encoded: ivString),
++          let contentString = json["content"], let content = Data(base64Encoded: contentString)
++    else {
++      throw PasskeyCredentialStoreError.credentialEncodingFailed
++    }
++
++    // The keystore's current `sealData` appends the 16-byte GCM tag to the
++    // ciphertext (the WebCrypto convention); the legacy envelope carried it in its
++    // own field. Both have to open, or existing records become unreadable.
++    let ciphertext: Data
++    let tag: Data
++    if let tagString = json["tag"], let separateTag = Data(base64Encoded: tagString),
++       !separateTag.isEmpty
++    {
++      ciphertext = content
++      tag = separateTag
++    } else {
++      guard content.count > 16 else {
++        throw PasskeyCredentialStoreError.credentialEncodingFailed
++      }
++      ciphertext = content.prefix(content.count - 16)
++      tag = content.suffix(16)
++    }
++
++    let sealedBox = try AES.GCM.SealedBox(
++      nonce: AES.GCM.Nonce(data: iv),
++      ciphertext: ciphertext,
++      tag: tag
++    )
++    let decrypted = try AES.GCM.open(sealedBox, using: SymmetricKey(data: key))
++    guard let string = String(data: decrypted, encoding: .utf8) else {
++      throw PasskeyCredentialStoreError.credentialEncodingFailed
++    }
++    return string
++  }
++
++  static func dataArray(_ value: Any?) -> Data? {
++    guard let array = value as? [Any] else {
++      return nil
++    }
++    var data = Data(capacity: array.count)
++    for item in array {
++      if let int = item as? Int {
++        data.append(UInt8(int & 0xff))
++      } else if let number = item as? NSNumber {
++        data.append(UInt8(truncating: number))
++      } else {
++        return nil
++      }
++    }
++    return data
++  }
++
++  static func secretStringData(_ secret: String) -> Data? {
++    let trimmed = secret.trimmingCharacters(in: .whitespacesAndNewlines)
++    if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
++      return Data(hex: String(trimmed.dropFirst(2)))
++    }
++    return Data(hex: trimmed) ?? Data(base64URLEncoded: trimmed) ?? Data(base64Encoded: trimmed)
++  }
++}
+diff --git a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
+index 311007d2a90e810439f06362c6e7b2354ef05631..cdbfcafa7572158cf64ec0411605ea5026243437 100644
+--- a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
++++ b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
+@@ -49,69 +49,11 @@ struct StoredPasskeyCredential: Codable {
+   var derivationScheme: String? = nil
+ }
+ 
+-/// The on-disk record format shared with the wallet's
+-/// `@algorandfoundation/react-native-keystore` MMKV instance.
+-///
+-/// The keystore splits every key into two entries: `k/<id>` holds PLAINTEXT
+-/// `Key` metadata (no material) and `m/<id>` holds the sealed raw material,
+-/// whose sealed plaintext is exactly `base64(bytes)` rather than a JSON
+-/// document. Records written before the split are a single entry keyed by the
+-/// bare id, sealing `base64url(JSON.stringify(KeyData))` — metadata and material
+-/// together. Both layouts must stay readable.
+-///
+-/// Kept byte-for-byte in step with `credentials/KeystoreRecords.kt` on Android.
+-enum PasskeyKeystoreRecords {
+-  /// Prefix for plaintext `Key` metadata records.
+-  static let metadataPrefix = "k/"
+-
+-  /// Prefix for sealed raw-material records.
+-  static let materialPrefix = "m/"
+-
+-  /// The type shared by both roots of the wallet's hierarchy; only the scheme
+-  /// tells them apart.
+-  static let typeHdRootKey = "hd-root-key"
+-
+-  /// The deterministic-P256 main key (PBKDF2-HMAC-SHA512, 64 bytes): the root the
+-  /// passkey hierarchy is defined against, and the preferred parent for new keys.
+-  static let schemePbkdf2P256 = "pbkdf2-p256"
+-
+-  /// The BIP32-Ed25519 account root (96 bytes). Passkeys used to derive from it
+-  /// because it was the only root a wallet exposed, so credentials created then
+-  /// stay pinned to it.
+-  static let schemeBip32Ed25519 = "bip32-ed25519"
+-
+-  static func metadataKey(_ id: String) -> String { metadataPrefix + id }
+-
+-  static func materialKey(_ id: String) -> String { materialPrefix + id }
+-
+-  /// The scheme a decoded root record roots. Records written before the flag
+-  /// existed have none, and every one of those is a BIP32-Ed25519 root.
+-  static func scheme(of record: [String: Any]) -> String {
+-    let metadata = record["metadata"] as? [String: Any]
+-    if let scheme = metadata?["scheme"] as? String, !scheme.isEmpty { return scheme }
+-    if let scheme = record["scheme"] as? String, !scheme.isEmpty { return scheme }
+-    return schemeBip32Ed25519
+-  }
+-
+-  /// Picks the parent record to derive from: the one rooting `requestedScheme`,
+-  /// or — for a new credential, which requests none — the main key if there is
+-  /// one, falling back to the most authoritative candidate.
+-  static func selectParentKey(
+-    candidates: [(keyId: String, scheme: String)],
+-    requestedScheme: String?
+-  ) -> (keyId: String, scheme: String)? {
+-    if let requestedScheme {
+-      return candidates.first { $0.scheme == requestedScheme }
+-    }
+-    return candidates.first { $0.scheme == schemePbkdf2P256 } ?? candidates.first
+-  }
+-}
+-
+ final class PasskeyCredentialStore {
+   static let defaultSuiteNameKey = "ReactNativePasskeyAutofillAppGroup"
+   static let legacyCredentialKey = "ReactNativePasskeyAutofillCredentials"
+   static let defaultCredentialKey = "ReactNativePasskeyAutofillCredentialsV2"
+-  static let defaultMasterKeyKey = "ReactNativePasskeyAutofillMasterKey"
++  static let defaultMasterKeyKey = KeystoreSecretReader.masterKeyKey
+   /// Points at the record whose material is the passkey parent secret. Its
+   /// predecessor `defaultHdRootKeyIdKey` named the wallet's BIP32-Ed25519 root;
+   /// the slot was renamed rather than reused so a wallet that still writes the
+@@ -122,13 +64,11 @@ final class PasskeyCredentialStore {
+   static let defaultCreatePasskeyActionKey = "ReactNativePasskeyAutofillCreatePasskeyAction"
+   static let defaultDiagnosticsKey = "ReactNativePasskeyAutofillDiagnostics"
+   static let defaultDeletedCredentialIdsKey = "ReactNativePasskeyAutofillDeletedCredentialIds"
+-  /// Info.plist key holding the keychain access-group *base* (without the team
+-  /// prefix) shared by the app and the AutoFill extension. Injected by the
+-  /// config plugin so the module stays team-agnostic.
+-  static let keychainGroupInfoKey = "ReactNativePasskeyAutofillKeychainGroup"
++  static let keychainGroupInfoKey = KeystoreSecretReader.keychainGroupInfoKey
+ 
+   private let defaults: UserDefaults
+   private let credentialKey: String
++  private let secrets: KeystoreSecretReader
+ 
+   init?(
+     suiteName: String? = Bundle.main.object(
+@@ -141,6 +81,7 @@ final class PasskeyCredentialStore {
+     }
+     self.defaults = defaults
+     self.credentialKey = credentialKey
++    self.secrets = KeystoreSecretReader(defaults: defaults)
+   }
+ 
+   func allCredentials() -> [StoredPasskeyCredential] {
+@@ -346,126 +287,26 @@ final class PasskeyCredentialStore {
+     defaults.removeObject(forKey: Self.defaultHdRootKeyIdKey)
+     defaults.removeObject(forKey: Self.defaultGetPasskeyActionKey)
+     defaults.removeObject(forKey: Self.defaultCreatePasskeyActionKey)
+-    if let query = masterKeyQuery() {
+-      _ = SecItemDelete(query as CFDictionary)
+-    }
++    secrets.deleteMasterKey()
+   }
+ 
+   // MARK: - Master key (Keychain-backed)
+   //
+-  // The master key is the KEK for the credential store and is read by *both*
+-  // the app and the AutoFill extension. It is stored in the Keychain (encrypted
+-  // at rest, hardware-backed) in a shared access group so both processes can
+-  // read it — never in plaintext UserDefaults. Accessibility is
+-  // `AfterFirstUnlockThisDeviceOnly`, NOT biometric: the extension must read the
+-  // key to *enumerate* credentials before the user authenticates, so a
+-  // biometric-gated item would break the AutoFill list. Biometric checks stay at
+-  // the assertion step (`LAContext` in `CredentialProviderViewController`).
++  // Held by `KeystoreSecretReader` so the password store reads the same key,
++  // through the same Keychain access group, as the passkey store.
+ 
+   func saveMasterKey(_ secret: Data) {
+-    guard var query = masterKeyQuery() else { return }
+-    // Upsert: drop any existing value, then add the new one.
+-    _ = SecItemDelete(query as CFDictionary)
+-    query[kSecValueData as String] = secret
+-    query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+-    _ = SecItemAdd(query as CFDictionary, nil)
+-    // Scrub any legacy plaintext copy now that the Keychain holds the key.
+-    defaults.removeObject(forKey: Self.defaultMasterKeyKey)
++    secrets.saveMasterKey(secret)
+   }
+ 
+   func masterKey() -> Data? {
+-    if var query = masterKeyQuery() {
+-      query[kSecReturnData as String] = true
+-      query[kSecMatchLimit as String] = kSecMatchLimitOne
+-      var item: CFTypeRef?
+-      if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+-         let data = item as? Data
+-      {
+-        return data
+-      }
+-    }
+-    // Migration: older builds stored the key as plaintext in the App Group
+-    // UserDefaults. Move it into the Keychain (and scrub the plaintext) once.
+-    if let legacy = defaults.string(forKey: Self.defaultMasterKeyKey),
+-       let data = Data(base64URLEncoded: legacy) ?? Data(base64Encoded: legacy)
+-    {
+-      saveMasterKey(data)
+-      return data
+-    }
+-    return nil
++    secrets.masterKey()
+   }
+ 
+   func isMasterKeyAvailable() -> Bool {
+     masterKey() != nil
+   }
+ 
+-  /// Base Keychain query identifying the shared master-key item. Returns `nil`
+-  /// when the access group can't be resolved (no Info.plist group or no team
+-  /// prefix), in which case the caller falls back / no-ops rather than writing
+-  /// to the wrong place.
+-  private func masterKeyQuery() -> [String: Any]? {
+-    guard let accessGroup = masterKeyAccessGroup() else { return nil }
+-    return [
+-      kSecClass as String: kSecClassGenericPassword,
+-      kSecAttrService as String: Self.defaultMasterKeyKey,
+-      kSecAttrAccount as String: Self.defaultMasterKeyKey,
+-      kSecAttrAccessGroup as String: accessGroup,
+-    ]
+-  }
+-
+-  /// The full keychain access group (`<TeamID>.<base>`). The base is injected by
+-  /// the config plugin via Info.plist; the team prefix is resolved at runtime.
+-  private func masterKeyAccessGroup() -> String? {
+-    guard
+-      let base = Bundle.main.object(forInfoDictionaryKey: Self.keychainGroupInfoKey) as? String,
+-      let prefix = Self.keychainTeamPrefix()
+-    else {
+-      return nil
+-    }
+-    return prefix + base
+-  }
+-
+-  private static var cachedTeamPrefix: String?
+-
+-  /// Resolves the app's keychain access-group team prefix (`<TeamID>.`) at
+-  /// runtime by probing a throwaway Keychain item and reading back the group the
+-  /// system assigns. Avoids hardcoding a team ID in a module shared across teams.
+-  private static func keychainTeamPrefix() -> String? {
+-    if let cached = cachedTeamPrefix {
+-      return cached
+-    }
+-    let probeAccount = "ReactNativePasskeyAutofillTeamPrefixProbe"
+-    let cleanup: [String: Any] = [
+-      kSecClass as String: kSecClassGenericPassword,
+-      kSecAttrAccount as String: probeAccount,
+-    ]
+-    _ = SecItemDelete(cleanup as CFDictionary)
+-
+-    let query: [String: Any] = [
+-      kSecClass as String: kSecClassGenericPassword,
+-      kSecAttrAccount as String: probeAccount,
+-      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+-      kSecValueData as String: Data(),
+-      kSecReturnAttributes as String: true,
+-    ]
+-    var result: CFTypeRef?
+-    let status = SecItemAdd(query as CFDictionary, &result)
+-    defer { _ = SecItemDelete(cleanup as CFDictionary) }
+-
+-    guard
+-      status == errSecSuccess,
+-      let attributes = result as? [String: Any],
+-      let accessGroup = attributes[kSecAttrAccessGroup as String] as? String,
+-      let dotIndex = accessGroup.firstIndex(of: ".")
+-    else {
+-      return nil
+-    }
+-    // accessGroup is "<TeamID>.<something>"; keep through the first dot.
+-    let prefix = String(accessGroup[...dotIndex])
+-    cachedTeamPrefix = prefix
+-    return prefix
+-  }
+-
+   /// Records which key store record the passkey hierarchy derives from — the
+   /// wallet's deterministic-P256 main key. The scheme is deliberately not part of
+   /// this call: it is read from the record's own metadata, so a wallet cannot
+@@ -554,49 +395,12 @@ final class PasskeyCredentialStore {
+     return candidates
+   }
+ 
+-  /// A record's metadata, from `k/<id>` (plaintext) or from the sealed legacy flat
+-  /// record keyed by the bare id.
+   private func metadata(of id: String, masterKey: Data, appGroup: String) -> [String: Any]? {
+-    if let plaintext = try? PasskeyKeystoreMMKV.string(
+-      forKey: PasskeyKeystoreRecords.metadataKey(id),
+-      appGroup: appGroup
+-    ),
+-      let data = plaintext.data(using: .utf8),
+-      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+-    {
+-      return json
+-    }
+-    guard let payload = try? PasskeyKeystoreMMKV.string(forKey: id, appGroup: appGroup) else {
+-      return nil
+-    }
+-    return try? decodeKeystorePayload(payload, masterKey: masterKey)
++    secrets.metadata(of: id, masterKey: masterKey, appGroup: appGroup)
+   }
+ 
+-  /// A record's raw secret bytes, from `m/<id>` (whose sealed plaintext is
+-  /// `base64(bytes)`) or from the inline material of the legacy flat record.
+   private func material(of id: String, masterKey: Data, appGroup: String) -> Data? {
+-    if let sealed = try? PasskeyKeystoreMMKV.string(
+-      forKey: PasskeyKeystoreRecords.materialKey(id),
+-      appGroup: appGroup
+-    ),
+-      let encoded = try? decryptData(masterKey, sealed),
+-      let bytes = Data(base64Encoded: encoded) ?? Data(base64URLEncoded: encoded)
+-    {
+-      return bytes
+-    }
+-
+-    guard let payload = try? PasskeyKeystoreMMKV.string(forKey: id, appGroup: appGroup),
+-          let keyData = try? decodeKeystorePayload(payload, masterKey: masterKey)
+-    else {
+-      return nil
+-    }
+-    if let seed = dataArray(keyData["seed"]) ?? dataArray(keyData["privateKey"]) {
+-      return seed
+-    }
+-    if let seed = keyData["seed"] as? String ?? keyData["privateKey"] as? String {
+-      return Self.secretStringData(seed)
+-    }
+-    return nil
++    secrets.material(of: id, masterKey: masterKey, appGroup: appGroup)
+   }
+ 
+   /// The raw parent secret for a new credential. Prefer ``parentSecret(scheme:)``,
+@@ -701,112 +505,19 @@ final class PasskeyCredentialStore {
+   }
+ 
+   private func encodeKeyData(_ keyData: [String: Any]) throws -> String {
+-    let jsonData = try JSONSerialization.data(withJSONObject: keyData, options: [])
+-    return jsonData.base64URLEncodedString()
++    try secrets.encodeKeyData(keyData)
+   }
+ 
+   private func decodeKeystorePayload(_ payload: String, masterKey: Data) throws -> [String: Any] {
+-    let trimmed = payload.trimmingCharacters(in: .whitespacesAndNewlines)
+-    // An envelope is `iv` + `content` (the tag either appended to the content or,
+-    // in the legacy shape, in its own `tag` field). Anything else that is JSON is
+-    // an already-decoded record.
+-    if trimmed.hasPrefix("{"),
+-       let payloadData = trimmed.data(using: .utf8),
+-       let json = try JSONSerialization.jsonObject(with: payloadData) as? [String: Any],
+-       json["iv"] == nil || json["content"] == nil
+-    {
+-      return json
+-    }
+-
+-    let encoded = trimmed.hasPrefix("{") ? try decryptData(masterKey, trimmed) : trimmed
+-    guard let jsonData = Data(base64URLEncoded: encoded) ?? encoded.data(using: .utf8),
+-          let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+-    else {
+-      throw PasskeyCredentialStoreError.credentialEncodingFailed
+-    }
+-    return json
++    try secrets.decodeRecord(payload, masterKey: masterKey)
+   }
+ 
+   private func encryptData(_ key: Data, _ plaintext: String) throws -> String {
+-    let symmetricKey = SymmetricKey(data: key)
+-    let nonceData = Data((0..<12).map { _ in UInt8.random(in: 0...255) })
+-    let nonce = try AES.GCM.Nonce(data: nonceData)
+-    let sealedBox = try AES.GCM.seal(Data(plaintext.utf8), using: symmetricKey, nonce: nonce)
+-
+-    let payload: [String: String] = [
+-      "iv": nonceData.base64EncodedString(),
+-      "tag": sealedBox.tag.base64EncodedString(),
+-      "content": sealedBox.ciphertext.base64EncodedString(),
+-    ]
+-    let data = try JSONSerialization.data(withJSONObject: payload, options: [])
+-    guard let string = String(data: data, encoding: .utf8) else {
+-      throw PasskeyCredentialStoreError.credentialEncodingFailed
+-    }
+-    return string
+-  }
+-
+-  private func decryptData(_ key: Data, _ payload: String) throws -> String {
+-    guard let payloadData = payload.data(using: .utf8),
+-          let json = try JSONSerialization.jsonObject(with: payloadData) as? [String: String],
+-          let ivString = json["iv"], let iv = Data(base64Encoded: ivString),
+-          let contentString = json["content"], let content = Data(base64Encoded: contentString)
+-    else {
+-      throw PasskeyCredentialStoreError.credentialEncodingFailed
+-    }
+-
+-    // The keystore's current `sealData` appends the 16-byte GCM tag to the
+-    // ciphertext (the WebCrypto convention); the legacy envelope carried it in its
+-    // own field. Both have to open, or existing records become unreadable.
+-    let ciphertext: Data
+-    let tag: Data
+-    if let tagString = json["tag"], let separateTag = Data(base64Encoded: tagString),
+-       !separateTag.isEmpty
+-    {
+-      ciphertext = content
+-      tag = separateTag
+-    } else {
+-      guard content.count > 16 else {
+-        throw PasskeyCredentialStoreError.credentialEncodingFailed
+-      }
+-      ciphertext = content.prefix(content.count - 16)
+-      tag = content.suffix(16)
+-    }
+-
+-    let sealedBox = try AES.GCM.SealedBox(
+-      nonce: AES.GCM.Nonce(data: iv),
+-      ciphertext: ciphertext,
+-      tag: tag
+-    )
+-    let decrypted = try AES.GCM.open(sealedBox, using: SymmetricKey(data: key))
+-    guard let string = String(data: decrypted, encoding: .utf8) else {
+-      throw PasskeyCredentialStoreError.credentialEncodingFailed
+-    }
+-    return string
++    try secrets.seal(key, plaintext)
+   }
+ 
+   private func dataArray(_ value: Any?) -> Data? {
+-    guard let array = value as? [Any] else {
+-      return nil
+-    }
+-    var data = Data(capacity: array.count)
+-    for item in array {
+-      if let int = item as? Int {
+-        data.append(UInt8(int & 0xff))
+-      } else if let number = item as? NSNumber {
+-        data.append(UInt8(truncating: number))
+-      } else {
+-        return nil
+-      }
+-    }
+-    return data
+-  }
+-
+-  private static func secretStringData(_ secret: String) -> Data? {
+-    let trimmed = secret.trimmingCharacters(in: .whitespacesAndNewlines)
+-    if trimmed.hasPrefix("0x") || trimmed.hasPrefix("0X") {
+-      return Data(hex: String(trimmed.dropFirst(2)))
+-    }
+-    return Data(hex: trimmed) ?? Data(base64URLEncoded: trimmed) ?? Data(base64Encoded: trimmed)
++    KeystoreSecretReader.dataArray(value)
+   }
+ }
+ 
+diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4b6cf840856243de721d5236836c74b42e12071
+--- /dev/null
++++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
+@@ -0,0 +1,170 @@
++import Foundation
++
++/// A login the wallet sealed into the shared keystore.
++///
++/// `password` is the reason this type exists, so treat an instance as secret:
++/// build one only to answer a request that has already been user-verified, and
++/// never write one into diagnostics or UserDefaults.
++struct StoredLogin {
++  /// The keystore record id (`pera.login.<uuid>`), which is also the
++  /// `recordIdentifier` published to the OS credential index.
++  let recordIdentifier: String
++  let domain: String
++  let username: String
++  let password: String
++  let note: String?
++  /// Epoch **milliseconds**, as the wallet writes them.
++  let createdAt: Double
++  let updatedAt: Double
++}
++
++/// Reads the wallet's logins out of the keystore records shared through the App
++/// Group, using the same master key and envelope handling as the passkey store.
++///
++/// Nothing here writes: the wallet owns the record lifecycle, and the extension
++/// is a reader that answers `ASPasswordCredentialRequest`.
++final class PasswordCredentialStore {
++  /// Plaintext discriminator the wallet writes into `k/<id>` metadata. Logins
++  /// share the canonical `secret-key` record type with the hashed PIN, the
++  /// mirrored biometric blob and the card session tokens, so the record type
++  /// cannot tell them apart — this is what does.
++  static let loginKind = "login"
++
++  /// The only sealed-payload version this build understands. A record from a
++  /// newer wallet is skipped rather than guessed at.
++  static let payloadVersion = 1
++
++  private let appGroup: String
++  private let secrets: KeystoreSecretReader
++
++  init?(
++    appGroup: String? = KeystoreSecretReader.appGroupFromInfoPlist()
++  ) {
++    guard let appGroup, let defaults = UserDefaults(suiteName: appGroup) else {
++      return nil
++    }
++    self.appGroup = appGroup
++    self.secrets = KeystoreSecretReader(defaults: defaults)
++  }
++
++  func allLogins() -> [StoredLogin] {
++    guard let masterKey = secrets.masterKey() else {
++      return []
++    }
++    return secrets.recordIds(appGroup: appGroup)
++      .compactMap { login(recordIdentifier: $0, masterKey: masterKey) }
++      .sorted { $0.domain.localizedCaseInsensitiveCompare($1.domain) == .orderedAscending }
++  }
++
++  /// The logins offered for a request, matched on the domain.
++  ///
++  /// An empty `serviceIdentifiers` means the system named no site (the user
++  /// opened the provider directly), so every login is a candidate.
++  func logins(serviceIdentifiers: [String]) -> [StoredLogin] {
++    guard !serviceIdentifiers.isEmpty else {
++      return allLogins()
++    }
++    let requested = serviceIdentifiers.map { Self.host(of: $0) }.filter { !$0.isEmpty }
++    guard !requested.isEmpty else {
++      return []
++    }
++    return allLogins().filter { login in
++      requested.contains { Self.domain(login.domain, matches: $0) }
++    }
++  }
++
++  func login(recordIdentifier: String) -> StoredLogin? {
++    guard let masterKey = secrets.masterKey() else {
++      return nil
++    }
++    return login(recordIdentifier: recordIdentifier, masterKey: masterKey)
++  }
++
++  private func login(recordIdentifier: String, masterKey: Data) -> StoredLogin? {
++    guard let record = secrets.metadata(
++      of: recordIdentifier,
++      masterKey: masterKey,
++      appGroup: appGroup
++    ) else {
++      return nil
++    }
++    let metadata = record["metadata"] as? [String: Any]
++    let kind = metadata?["kind"] as? String ?? record["kind"] as? String
++    guard kind == Self.loginKind else {
++      return nil
++    }
++    guard let payload = secrets.material(
++      of: recordIdentifier,
++      masterKey: masterKey,
++      appGroup: appGroup
++    ) else {
++      return nil
++    }
++    return Self.decode(payload: payload, recordIdentifier: recordIdentifier)
++  }
++
++  /// Decodes the sealed payload the wallet's `encodeLoginPayload` writes: UTF-8
++  /// JSON, no envelope of its own.
++  static func decode(payload: Data, recordIdentifier: String) -> StoredLogin? {
++    guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
++          let version = json["v"] as? Int,
++          version == payloadVersion,
++          let domain = json["domain"] as? String,
++          let username = json["username"] as? String,
++          let password = json["password"] as? String,
++          let createdAt = json["createdAt"] as? Double,
++          let updatedAt = json["updatedAt"] as? Double
++    else {
++      return nil
++    }
++    return StoredLogin(
++      recordIdentifier: recordIdentifier,
++      domain: domain,
++      username: username,
++      password: password,
++      note: json["note"] as? String,
++      createdAt: createdAt,
++      updatedAt: updatedAt
++    )
++  }
++
++  /// A stored `example.com` answers a request for `example.com` and for any
++  /// subdomain of it.
++  ///
++  /// The subdomain test requires the dot: a plain suffix check would hand
++  /// `example.com`'s password to `evil-example.com`, and matching anywhere in
++  /// the string would do it in both directions.
++  static func domain(_ stored: String, matches requestedHost: String) -> Bool {
++    let storedHost = host(of: stored)
++    guard !storedHost.isEmpty, !requestedHost.isEmpty else {
++      return false
++    }
++    return storedHost == requestedHost || requestedHost.hasSuffix("." + storedHost)
++  }
++
++  /// The comparable host of a stored domain or of an `ASCredentialServiceIdentifier`.
++  ///
++  /// Service identifiers arrive as a bare host for `.domain` and as a full URL
++  /// for `.URL`, and a stored domain is whatever the user typed, so both sides
++  /// are reduced the same way: scheme, credentials, port, path and the root
++  /// label's trailing dot all dropped, then case-folded.
++  static func host(of identifier: String) -> String {
++    var value = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
++    if let schemeEnd = value.range(of: "://") {
++      value = String(value[schemeEnd.upperBound...])
++    }
++    if let pathStart = value.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" }) {
++      value = String(value[..<pathStart])
++    }
++    if let credentialsEnd = value.lastIndex(of: "@") {
++      value = String(value[value.index(after: credentialsEnd)...])
++    }
++    if let portStart = value.lastIndex(of: ":"), !value.hasPrefix("[") {
++      value = String(value[..<portStart])
++    }
++    while value.hasSuffix(".") {
++      value.removeLast()
++    }
++    return value
++  }
++}
+diff --git a/ios/ReactNativePasskeyAutofill.podspec b/ios/ReactNativePasskeyAutofill.podspec
+index a37b6d9ce27def24fde9980e2e2e260c432192a0..6a668228c04e7fa8f869f92b25fb4f874648c781 100644
+--- a/ios/ReactNativePasskeyAutofill.podspec
++++ b/ios/ReactNativePasskeyAutofill.podspec
+@@ -29,6 +29,9 @@ Pod::Spec.new do |s|
+     "*.{h,m,mm,swift,hpp,cpp}",
+     "AutofillCredentialProvider/PasskeyAutofillCredentialProvider-Bridging-Header.h",
+     "AutofillCredentialProvider/PasskeyCredentialStore.swift",
++    # PasskeyCredentialStore's master-key and record decoding live here, so the
++    # app-side pod target needs it as much as the extension target does.
++    "AutofillCredentialProvider/KeystoreSecretReader.swift",
+     "AutofillCredentialProvider/PasskeyKeystoreMMKV.h",
+     "AutofillCredentialProvider/PasskeyKeystoreMMKV.mm"
+   ]
+diff --git a/ios/ReactNativePasskeyAutofillModule.swift b/ios/ReactNativePasskeyAutofillModule.swift
+index b66566006ebb26bb66cdd07168591b3d36d4621a..d36cbe782d9455976d74d60bbee7fd9a538dc8b4 100644
+--- a/ios/ReactNativePasskeyAutofillModule.swift
++++ b/ios/ReactNativePasskeyAutofillModule.swift
+@@ -147,6 +147,54 @@ public class ReactNativePasskeyAutofillModule: Module {
+       try await store.replaceIdentityStore()
+     }
+ 
++    // Publishes the wallet's logins to the OS credential index so iOS offers
++    // Pera on a sign-in form. Identities only: the password itself stays sealed
++    // in the keystore and is read by the extension after user verification.
++    AsyncFunction("replacePasswordCredentialIdentities") { (identities: [[String: Any]]) in
++      guard #available(iOS 17.0, *) else {
++        return
++      }
++
++      let credentialIdentities: [ASCredentialIdentity] = identities.compactMap { identity in
++        guard let recordIdentifier = identity["recordIdentifier"] as? String,
++              let serviceIdentifier = identity["serviceIdentifier"] as? String,
++              let user = identity["user"] as? String,
++              !serviceIdentifier.isEmpty
++        else {
++          return nil
++        }
++
++        return ASPasswordCredentialIdentity(
++          serviceIdentifier: ASCredentialServiceIdentifier(
++            identifier: serviceIdentifier,
++            type: .domain
++          ),
++          user: user,
++          recordIdentifier: recordIdentifier
++        )
++      }
++
++      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
++        ASCredentialIdentityStore.shared.replaceCredentialIdentities(credentialIdentities) { success, error in
++          if let error {
++            continuation.resume(throwing: error)
++          } else if success {
++            continuation.resume()
++          } else {
++            continuation.resume(
++              throwing: NSError(
++                domain: "ReactNativePasskeyAutofill",
++                code: 2,
++                userInfo: [
++                  NSLocalizedDescriptionKey: "The credential identity store rejected the password identities."
++                ]
++              )
++            )
++          }
++        }
++      }
++    }
++
+     AsyncFunction("refreshCredentialIdentities") {
+       guard let store = PasskeyCredentialStore() else {
+         throw NSError(
+diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
+index 87f7dd44e3e8a4b21ae655599dead4af828567a9..1b2a594ebec09bd624f7994d2458c74fa54cabd7 100644
+--- a/src/ReactNativePasskeyAutofillModule.ts
++++ b/src/ReactNativePasskeyAutofillModule.ts
+@@ -52,6 +52,16 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
+    * directly.
+    */
+   replaceCredentialIdentities(credentials: PasskeyAutofillCredentialIdentity[]): Promise<void>;
++  /**
++   * Replaces the iOS AutoFill *password* identity index so the system offers
++   * this app on a sign-in form. Identities only — `recordIdentifier` is the
++   * keystore id the credential provider extension resolves the sealed password
++   * from once the user has been verified. Android ignores this method (no-op)
++   * because the provider reads MMKV directly.
++   */
++  replacePasswordCredentialIdentities(
++    identities: { recordIdentifier: string; serviceIdentifier: string; user: string }[],
++  ): Promise<void>;
+   refreshCredentialIdentities(): Promise<void>;
+   /**
+    * Resolves to `true` when this app is registered as the active
+@@ -81,6 +91,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
+ if (Platform.OS === "android") {
+   const noops: Record<string, (...args: unknown[]) => Promise<unknown>> = {
+     replaceCredentialIdentities: () => Promise.resolve(),
++    replacePasswordCredentialIdentities: () => Promise.resolve(),
+     refreshCredentialIdentities: () => Promise.resolve(),
+     getStoredCredentials: () => Promise.resolve([]),
+     getDiagnostics: () => Promise.resolve([]),
