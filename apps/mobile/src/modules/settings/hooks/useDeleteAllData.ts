@@ -14,6 +14,7 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { isStoreDisabledError } from '@perawallet/wallet-core-passkeys'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import {
@@ -80,13 +81,26 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         // 4. Clear the native passkey-autofill mirror. The credential
         // providers keep their own copy of the master key, parent key id, and
         // stored credentials (iOS app-group UserDefaults + keychain, Android
-        // MMKV) — none of it dies with the keystore.
+        // MMKV) — none of it dies with the keystore. Trap: on Android,
+        // `clearCredentials` wipes the ENTIRE shared "keystore" MMKV
+        // (`PASSKEYS_MMKV_ID`), not just passkey records — only safe inside
+        // this full wipe, where step 3 already destroyed that data. Never
+        // call it from a selective flow.
         try {
             await getProvider().passkeyAutofill.clearCredentials()
         } catch (e) {
-            logger.error('Failed to clear native passkey autofill state', {
-                error: e,
-            })
+            // iOS ends the clear with an identity-store sync that rejects
+            // with `storeDisabled` when Pera isn't the enabled provider; the
+            // state clearing itself has completed by then.
+            if (isStoreDisabledError(e)) {
+                logger.warn(
+                    'AutoFill identity store disabled; native passkey state cleared without identity sync',
+                )
+            } else {
+                logger.error('Failed to clear native passkey autofill state', {
+                    error: e,
+                })
+            }
         }
 
         // 5. Disconnect WalletConnect peers before wiping store data

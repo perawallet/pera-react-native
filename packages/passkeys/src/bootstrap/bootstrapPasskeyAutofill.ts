@@ -60,8 +60,11 @@ const PASSKEY_MAIN_KEY_SCHEME = 'pbkdf2-p256'
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
  * their AutoFill provider, not a fault. The distinct `ReactNativePasskeyAutofill`
  * code 1 ("App Group is not configured") IS a real bug, so it must not match.
+ * Exported for every caller of an identity-store-writing native method
+ * (`refreshCredentialIdentities`, `clearCredentials`) that must not report
+ * the disabled state as an error.
  */
-const isStoreDisabledError = (err: unknown): boolean =>
+export const isStoreDisabledError = (err: unknown): boolean =>
     err instanceof Error &&
     err.message.includes('ASCredentialIdentityStoreErrorDomain error 1')
 
