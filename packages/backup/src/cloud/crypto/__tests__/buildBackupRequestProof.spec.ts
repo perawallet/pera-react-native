@@ -22,7 +22,8 @@ import {
 } from '../buildBackupRequestProof'
 
 describe('buildBackupRequestMessage', () => {
-    it('builds METHOD|PATH|BODY_HASH|NONCE with an empty body hash for GET', () => {
+    it('hashes an absent body as sha256 of the empty string', () => {
+        const emptyHash = bytesToHex(sha256(new TextEncoder().encode('')))
         const message = buildBackupRequestMessage({
             method: 'GET',
             path: '/api/v3/backup/did:pera:ADDR/manifest',
@@ -30,7 +31,7 @@ describe('buildBackupRequestMessage', () => {
             nonce: 'nonce-1',
         })
         expect(message).toBe(
-            'GET|/api/v3/backup/did:pera:ADDR/manifest||nonce-1',
+            `GET|/api/v3/backup/did:pera:ADDR/manifest|${emptyHash}|nonce-1`,
         )
     })
 
