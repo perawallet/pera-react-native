@@ -22,11 +22,9 @@ set -euo pipefail
 # workflows, so that workflow's `push: tags` trigger never sees this one.
 # create-nightly-tag.sh carries the same caveat.
 
-# Deletes every alpha/rc tag belonging to one stable version, locally and on
-# origin. Scoped twice over: the glob pins the version, so the bare stable tag
-# and neighbouring versions can never match, and the anchored shape check drops
-# hand-cut lookalikes like v7.2.0-rc.1-qa — the same shape the promotion path
-# refuses to promote, so it is not ours to delete either.
+# Deletes one stable version's alpha/rc tags, locally and on origin. The glob
+# pins the version; the anchored shape check then drops hand-cut lookalikes
+# like v7.2.0-rc.1-qa, which the promotion path also refuses to touch.
 retire_prereleases() {
   local stable="$1"
   local doomed keep tag main_ref=""
@@ -34,9 +32,7 @@ retire_prereleases() {
   doomed=$(git tag --list "${stable}-alpha.*" "${stable}-rc.*" |
     grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|rc)\.[0-9]+$' | sort -V || true)
 
-  # A prerelease cut from a branch that never merged is the only ref keeping its
-  # commit alive, so deleting the tag orphans the commit. The guard above proved
-  # reachability for the promoted rc alone; every other tag is checked here.
+  # A prerelease cut off main is the only ref holding its commit alive.
   if git rev-parse -q --verify refs/remotes/origin/main >/dev/null 2>&1; then
     main_ref=refs/remotes/origin/main
   fi
@@ -157,25 +153,13 @@ if [ "${NO_PUSH:-}" != "1" ]; then
 fi
 
 # --- Retire this version's prereleases ------------------------------------
-# The alpha/rc tags exist only to feed Bitrise during the cycle, and they
-# accumulate (7.1.2 collected thirteen before it was cleaned up by hand). Safe
-# to remove here and nowhere else:
-#   - prereleases never carry a GitHub Release (github-release.yml is
-#     stable-only), so deleting the tag leaves nothing dangling;
-#   - anything not reachable from origin/main is kept, so deleting a tag can
-#     never orphan the commit it was the last ref to;
-#   - create-nightly-tag.sh derives the next base from the newest *stable* tag,
-#     not from the prerelease counter, so removing them cannot make the next
-#     nightly reuse a name it has already built.
-# One consequence, accepted: that script's change gate asks "any new commits
-# since the last tag of this channel", so with this version's alphas gone the
-# first nightly after a release compares against the previous cycle's tag and
-# cuts one redundant tag for a commit it already built. It self-corrects the
-# next night. Gating on the stable tag instead does not fix it — nightlies keep
-# landing after an rc is cut, so the stable is behind the last alpha, which is
-# the very tag being deleted.
-# Runs after the stable push on purpose: if that failed we have not shipped,
-# and the prereleases are still the only record of the cycle.
+# They only ever fed Bitrise during the cycle and they pile up — 7.1.2 reached
+# thirteen. Nothing else points at them: prereleases never carry a GitHub
+# Release (github-release.yml is stable-only) and the next prerelease base
+# comes from the newest stable tag, not their counter. Accepted cost: the first
+# nightly after a release cuts one redundant tag, because create-nightly-tag.sh
+# gates on the last tag of the channel and that tag is now gone.
+# Runs after the stable push: if that failed, we have not shipped.
 retire_prereleases "$STABLE"
 
 # Hand the tag to the calling workflow so it can publish the GitHub Release.
