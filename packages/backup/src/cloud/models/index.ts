@@ -13,5 +13,7 @@
 export * from './types'
 export * from './syncState'
 export * from './syncStatus'
+export * from './syncCounts'
+export * from './itemKeys'
 export * from './store'
 export * from './payloads'

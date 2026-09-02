@@ -16,6 +16,8 @@ import { fetchDelta, fetchManifest, readItems } from '../api'
 import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
+    BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
     DeltaOperation,
@@ -28,8 +30,6 @@ import {
     type SecretsBackupPayload,
 } from '../models'
 
-const ACCOUNTS_PREFIX = 'accounts/'
-const SECRETS_PREFIX = 'secrets/'
 const READ_BATCH_SIZE = 50
 
 export type PulledAccount = {
@@ -58,9 +58,10 @@ type PullBackupItemsParams = {
 }
 
 const addressFromKey = (key: BackupItemKey): string | null => {
-    if (key.startsWith(ACCOUNTS_PREFIX))
-        return key.slice(ACCOUNTS_PREFIX.length)
-    if (key.startsWith(SECRETS_PREFIX)) return key.slice(SECRETS_PREFIX.length)
+    if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
+        return key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length)
+    if (key.startsWith(BACKUP_SECRETS_KEY_PREFIX))
+        return key.slice(BACKUP_SECRETS_KEY_PREFIX.length)
     return null
 }
 
@@ -79,8 +80,8 @@ const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
             d =>
                 d.op === DeltaOperation.UPSERT &&
                 d.status === BackupItemStatus.ACTIVE &&
-                (d.key.startsWith(ACCOUNTS_PREFIX) ||
-                    d.key.startsWith(SECRETS_PREFIX)),
+                (d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                    d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX)),
         )
         .map(d => d.key)
 
@@ -148,7 +149,7 @@ const collectItemPayloads = (
         }
 
         try {
-            if (item.key.startsWith(ACCOUNTS_PREFIX)) {
+            if (item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) {
                 addressPayloads.set(address, parseAddressPayload(plaintext))
             } else {
                 secretsPayloads.set(address, parseSecretsPayload(plaintext))
