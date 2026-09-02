@@ -15,6 +15,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { isStoreDisabledError } from '@perawallet/wallet-core-passkeys'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
@@ -79,7 +80,32 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to clear keystore', { error: e })
         }
 
-        // 4. Disconnect WalletConnect peers before wiping store data
+        // 4. Clear the native passkey-autofill mirror. The credential
+        // providers keep their own copy of the master key, parent key id, and
+        // stored credentials (iOS app-group UserDefaults + keychain, Android
+        // MMKV) — none of it dies with the keystore. Trap: on Android,
+        // `clearCredentials` wipes the ENTIRE shared "keystore" MMKV
+        // (`PASSKEYS_MMKV_ID`), not just passkey records — only safe inside
+        // this full wipe, where step 3 already destroyed that data. Never
+        // call it from a selective flow.
+        try {
+            await getProvider().passkeyAutofill.clearCredentials()
+        } catch (e) {
+            // iOS ends the clear with an identity-store sync that rejects
+            // with `storeDisabled` when Pera isn't the enabled provider; the
+            // state clearing itself has completed by then.
+            if (isStoreDisabledError(e)) {
+                logger.warn(
+                    'AutoFill identity store disabled; native passkey state cleared without identity sync',
+                )
+            } else {
+                logger.error('Failed to clear native passkey autofill state', {
+                    error: e,
+                })
+            }
+        }
+
+        // 5. Disconnect WalletConnect peers before wiping store data
         try {
             await deleteAllSessions()
         } catch (e) {
@@ -88,17 +114,17 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             })
         }
 
-        // 5. Unregister device from push notification backend
+        // 6. Unregister device from push notification backend
         try {
             await deleteDevices()
         } catch (e) {
             logger.error('Failed to delete devices', { error: e })
         }
 
-        // 6. Clear PIN and biometrics from secure storage
+        // 7. Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        // 7. Empty every table on the live connection. We deliberately do NOT
+        // 8. Empty every table on the live connection. We deliberately do NOT
         // close + delete + reopen the database: tearing the native connection
         // down while the sync service (or any other caller) still has a
         // statement in flight frees the sqlite3 handle out from under it and
@@ -110,17 +136,17 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to clear database', { error: e })
         }
 
-        // 8. Remove legacy (v6) migration data + sentinel so a re-upgrade starts clean
+        // 9. Remove legacy (v6) migration data + sentinel so a re-upgrade starts clean
         try {
             await getProvider().migration.resetLegacyData()
         } catch (e) {
             logger.error('Failed to reset legacy migration data', { error: e })
         }
 
-        // 9. Clear all registered stores (this will redirect to onboarding, then show the success popup)
+        // 10. Clear all registered stores (this will redirect to onboarding, then show the success popup)
         clearAllStores()
 
-        // 10. Drop the React Query cache last. With the active account gone,
+        // 11. Drop the React Query cache last. With the active account gone,
         // address-gated queries are disabled, so removing them can't make
         // React Query recreate and refetch against the now-deleted database.
         if (queryClient) {

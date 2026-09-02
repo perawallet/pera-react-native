@@ -93,6 +93,14 @@ export class PasskeyAutofillService {
     }
 
     /**
+     * Reads the same slot {@link setHdRootKeyId} writes — the one probe that
+     * can tell whether the native side still holds a parent id at all.
+     */
+    getHdRootKeyId(): Promise<string | null> {
+        return this.invoke<string | null>('getHdRootKeyId', [], null)
+    }
+
+    /**
      * Whether the underlying native module actually implements
      * `setDerivedMainKey`. Lets callers avoid even *building* the derived-key
      * hex string (a secret) when nothing on the native side would consume it —

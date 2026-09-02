@@ -46,12 +46,31 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
  * when the user hasn't enabled Pera as their AutoFill provider, not a fault.
  * Note the distinct `ReactNativePasskeyAutofill` domain code 1 ("App Group is
  * not configured") is a real bug and intentionally does NOT match here.
+ * Exported for every caller of an identity-store-writing native method
+ * (`refreshCredentialIdentities`, `clearCredentials`) that must not report
+ * the disabled state as an error.
  */
-const isStoreDisabledError = (err: unknown): boolean =>
+export const isStoreDisabledError = (err: unknown): boolean =>
     err instanceof Error &&
     err.message.includes('ASCredentialIdentityStoreErrorDomain error 1')
 
-let activeBootstrap: Promise<void> | null = null
+/**
+ * `failed`: a native step rejected and the remaining steps were NOT applied —
+ * the native side is at most a prefix of the intended configuration, never a
+ * mix of old and new.
+ */
+export type PasskeyBootstrapOutcome = 'ready' | 'failed'
+
+// Thrown by `abortStep` after the failing step has been logged with its own
+// `step` context; the outer catch recognises it and must not log twice.
+const BOOTSTRAP_ABORT = Symbol('passkey-bootstrap-abort')
+
+const abortStep = (step: string, err: unknown): never => {
+    logger.error(err as Error, { step })
+    throw BOOTSTRAP_ABORT
+}
+
+let activeBootstrap: Promise<PasskeyBootstrapOutcome> | null = null
 
 /**
  * Bootstraps the native passkey autofill subsystem.
@@ -76,7 +95,7 @@ let activeBootstrap: Promise<void> | null = null
  */
 export const bootstrapPasskeyAutofill = (
     options: BootstrapPasskeyAutofillOptions,
-): Promise<void> => {
+): Promise<PasskeyBootstrapOutcome> => {
     if (activeBootstrap) return activeBootstrap
 
     activeBootstrap = runBootstrap(options).finally(() => {
@@ -87,7 +106,7 @@ export const bootstrapPasskeyAutofill = (
 
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
-): Promise<void> => {
+): Promise<PasskeyBootstrapOutcome> => {
     const { service, intentActions } = options
 
     let masterKey: Buffer | null = null
@@ -103,9 +122,7 @@ const runBootstrap = async (
         try {
             await service
                 .setMasterKey(masterKeyBytes)
-                .catch(err =>
-                    logger.error(err as Error, { step: 'setMasterKey' }),
-                )
+                .catch(err => abortStep('setMasterKey', err))
         } finally {
             masterKeyBytes.fill(0)
         }
@@ -117,9 +134,7 @@ const runBootstrap = async (
                 intentActions.getPasskeyAction,
                 intentActions.createPasskeyAction,
             )
-            .catch(err =>
-                logger.error(err as Error, { step: 'configureIntentActions' }),
-            )
+            .catch(err => abortStep('configureIntentActions', err))
 
         // Refreshing the iOS AutoFill identity store only makes sense when
         // Pera is the active credential provider. When the user hasn't enabled
@@ -146,19 +161,48 @@ const runBootstrap = async (
                     )
                     return
                 }
-                logger.error(err as Error, {
-                    step: 'refreshCredentialIdentities',
-                })
+                abortStep('refreshCredentialIdentities', err)
             })
         }
+
+        return 'ready'
     } catch (err) {
-        // Surface the actual error object (with stack) instead of string-
-        // interpolating it — `${err}` discards the stack and leaves the
-        // caller staring at a bare "TypeError: undefined is not a function".
-        logger.error(err as Error, { step: 'bootstrapPasskeyAutofill' })
+        if (err !== BOOTSTRAP_ABORT) {
+            // Surface the actual error object (with stack) instead of string-
+            // interpolating it — `${err}` discards the stack and leaves the
+            // caller staring at a bare "TypeError: undefined is not a function".
+            logger.error(err as Error, { step: 'bootstrapPasskeyAutofill' })
+        }
+        return 'failed'
     } finally {
         if (masterKey) masterKey.fill(0)
     }
+}
+
+// Code-unit order, deliberately locale-independent: the pick must be the same
+// on every launch and every device.
+const byId = (a: KeyData, b: KeyData): number =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+
+/**
+ * The native side may still point at a root from a previous wallet. `''`
+ * never resolves to a key, so both providers fail closed instead of deriving
+ * from a parent this keystore no longer holds. Only the pointer is
+ * invalidated — stored credentials are not touched, so a transient scan miss
+ * cannot destroy them.
+ */
+const invalidateStaleParentKey = async (
+    service: PasskeyAutofillService,
+): Promise<void> => {
+    const staleId = await service.getHdRootKeyId().catch(() => null)
+    if (!staleId) return
+    logger.warn(
+        'Keystore has no HD root but native still holds a parent key id; invalidating it',
+        { step: 'configureHdRootKey' },
+    )
+    await service
+        .setHdRootKeyId('')
+        .catch(err => abortStep('setHdRootKeyId', err))
 }
 
 /**
@@ -176,6 +220,7 @@ const configureHdRootKey = async (
         logger.warn(
             'Keystore MMKV is empty; passkey autofill has no HD root key to derive from',
         )
+        await invalidateStaleParentKey(service)
         return
     }
 
@@ -191,11 +236,16 @@ const configureHdRootKey = async (
     )
 
     try {
-        const hdRootSecret = secrets.find(
-            (s): s is KeyData => s !== null && HD_ROOT_KEY_TYPES.has(s.type),
-        )
+        // Sorted by id because the MMKV scan order is arbitrary — without the
+        // sort, which root wins a tie would silently change between launches.
+        const hdRootSecrets = secrets
+            .filter(
+                (s): s is KeyData =>
+                    s !== null && HD_ROOT_KEY_TYPES.has(s.type),
+            )
+            .sort(byId)
 
-        if (!hdRootSecret) {
+        if (hdRootSecrets.length === 0) {
             logger.warn(
                 'No HD root key found in keystore; passkey autofill will not be able to derive credentials',
                 {
@@ -204,14 +254,24 @@ const configureHdRootKey = async (
                     lookingFor: Array.from(HD_ROOT_KEY_TYPES),
                 },
             )
+            await invalidateStaleParentKey(service)
             return
         }
 
+        if (hdRootSecrets.length > 1) {
+            // Legitimate for a multi-wallet user; the id-sorted pick is stable
+            // but still arbitrary.
+            logger.warn(
+                `Multiple HD roots; wiring ${hdRootSecrets[0].id} of ${hdRootSecrets.length} candidates`,
+                { step: 'configureHdRootKey' },
+            )
+        }
+
+        const hdRootSecret = hdRootSecrets[0]
+
         await service
             .setHdRootKeyId(hdRootSecret.id)
-            .catch(err =>
-                logger.error(err as Error, { step: 'setHdRootKeyId' }),
-            )
+            .catch(err => abortStep('setHdRootKeyId', err))
 
         // Only build the derived private-key hex string when the native side
         // actually implements setDerivedMainKey. On current iOS/Android builds
@@ -231,9 +291,7 @@ const configureHdRootKey = async (
                     : Buffer.from(pk)
             await service
                 .setDerivedMainKey(derived.toString('hex'))
-                .catch(err =>
-                    logger.error(err as Error, { step: 'setDerivedMainKey' }),
-                )
+                .catch(err => abortStep('setDerivedMainKey', err))
         }
     } finally {
         // Zero every decrypted private key we pulled into memory.

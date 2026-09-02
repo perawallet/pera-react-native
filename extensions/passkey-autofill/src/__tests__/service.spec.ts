@@ -85,6 +85,12 @@ describe('PasskeyAutofillService', () => {
             await expect(service.isProviderActive()).resolves.toBe(false)
         })
 
+        it('resolves getHdRootKeyId to null when the native module lacks it', async () => {
+            const service = new PasskeyAutofillService(makeNative())
+
+            await expect(service.getHdRootKeyId()).resolves.toBeNull()
+        })
+
         it('no-ops setDerivedMainKey on builds that do not expose it', async () => {
             const service = new PasskeyAutofillService(makeNative())
 
@@ -152,6 +158,15 @@ describe('PasskeyAutofillService', () => {
             await expect(service.isProviderActive()).resolves.toBe(true)
             await expect(service.openProviderSettings()).resolves.toBe(false)
         })
+    })
+
+    it('returns the natively stored HD root key id', async () => {
+        const getHdRootKeyId = vi.fn().mockResolvedValue('root-1')
+        const service = new PasskeyAutofillService(
+            makeNative({ getHdRootKeyId }),
+        )
+
+        await expect(service.getHdRootKeyId()).resolves.toBe('root-1')
     })
 
     it('converts a synchronous throw from the native bridge into a promise rejection', async () => {
