@@ -47,7 +47,12 @@ import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/Set
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
 import { SettingsDeveloperKeystoreMigrationsScreen } from '../screens/developer/SettingsDeveloperKeystoreMigrationsScreen'
-import { PasswordListScreen } from '@modules/passwords'
+import {
+    AddPasswordScreen,
+    EditPasswordScreen,
+    PasswordListScreen,
+    ViewPasswordScreen,
+} from '@modules/passwords'
 
 import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
@@ -180,6 +185,27 @@ const DeveloperSettingsStackNavigator = () => {
                     name='PasswordList'
                     options={{ title: 'settings.passwords.title' }}
                     component={PasswordListScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <DeveloperSettingsStack.Screen
+                    name='AddPassword'
+                    options={{ title: 'settings.passwords.add_action' }}
+                    component={AddPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <DeveloperSettingsStack.Screen
+                    name='EditPassword'
+                    options={{ title: 'settings.passwords.edit_action' }}
+                    component={EditPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <DeveloperSettingsStack.Screen
+                    name='ViewPassword'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={ViewPasswordScreen}
                 />
             )}
         </DeveloperSettingsStack.Navigator>

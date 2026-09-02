@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-export { PasswordListScreen } from './screens/PasswordListScreen'
-export { AddPasswordScreen } from './screens/AddPasswordScreen'
-export { EditPasswordScreen } from './screens/EditPasswordScreen'
-export { ViewPasswordScreen } from './screens/ViewPasswordScreen'
+export { AddPasswordScreen } from './AddPasswordScreen'
+export {
+    useAddPasswordScreen,
+    type UseAddPasswordScreenResult,
+} from './useAddPasswordScreen'

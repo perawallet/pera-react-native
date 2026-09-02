@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-export { PasswordListScreen } from './screens/PasswordListScreen'
-export { AddPasswordScreen } from './screens/AddPasswordScreen'
-export { EditPasswordScreen } from './screens/EditPasswordScreen'
-export { ViewPasswordScreen } from './screens/ViewPasswordScreen'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.lg,
+    },
+    errorText: {
+        color: theme.colors.error,
+    },
+}))
