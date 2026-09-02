@@ -271,7 +271,10 @@ overrides:
   expo-constants: 57.0.9
   expo-build-properties: 57.0.9
   '@grpc/grpc-js@<1.9.16': 1.9.16
-  '@xmldom/xmldom': 0.8.13
+  # Single copy across the expo config-plugin toolchain; 0.8.15 is the
+  # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
+  # Stay on the 0.8 line — 0.9 changed the package's API surface.
+  '@xmldom/xmldom': 0.8.15
   bn.js@4: 4.12.3
   # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
   # and 2.x consumers (minimatch@3/@9 via eslint, glob, @expo/cli) default-import
