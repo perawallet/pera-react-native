@@ -19,11 +19,13 @@ import { useStyles } from './styles'
 export type SwapProviderDisplayProps = {
     providerName: Optional<string>
     providerDisplayName: Optional<string>
+    testID?: string
 }
 
 export const SwapProviderDisplay = ({
     providerName,
     providerDisplayName,
+    testID,
 }: SwapProviderDisplayProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -42,7 +44,12 @@ export const SwapProviderDisplay = ({
                     containerStyle={styles.logo}
                 />
             )}
-            <PWText style={styles.label}>{label}</PWText>
+            <PWText
+                style={styles.label}
+                testID={testID}
+            >
+                {label}
+            </PWText>
         </PWView>
     )
 }
