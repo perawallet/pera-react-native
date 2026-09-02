@@ -13,6 +13,14 @@ name: Release / Stable
 #
 # No version bump is needed afterwards. create-nightly-tag.sh detects the new
 # stable tag and rolls subsequent prereleases to the next patch on its own.
+#
+# Promotion also retires that version's own alpha/rc tags, on origin and
+# locally. They only ever existed to feed Bitrise during the cycle, they never
+# carry a GitHub Release, and the next prerelease base comes from the newest
+# stable tag rather than their counter — so removing them cannot make a later
+# nightly reuse a name. Only tags this repo cut and that are reachable from
+# origin/main are removed; anything else is reported and kept. Cleanup failures
+# warn instead of failing the release.
 
 on:
   workflow_dispatch:
