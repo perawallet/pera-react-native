@@ -17,10 +17,8 @@ import {
     useCloudBackupStore,
     useBackupSyncStateStore,
     deriveBackupSyncStatus,
+    deriveBackupSyncCounts,
     backupIdToAddress,
-    BackupItemType,
-    BackupItemStatus,
-    type SyncState,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
@@ -64,35 +62,6 @@ type UseCloudBackupOverviewResult = {
     onPressTurnOff: () => Promise<void>
 }
 
-type SyncCounts = {
-    accountsInSync: number
-    contactsInSync: number
-}
-
-const deriveSyncCounts = (syncState: SyncState | null): SyncCounts => {
-    let accountsInSync = 0
-    let contactsInSync = 0
-
-    if (syncState != null) {
-        for (const item of Object.values(syncState.items)) {
-            if (item.status !== BackupItemStatus.ACTIVE) continue
-
-            switch (item.type) {
-                case BackupItemType.ACCOUNT: {
-                    accountsInSync += 1
-                    break
-                }
-                case BackupItemType.CONTACT: {
-                    contactsInSync += 1
-                    break
-                }
-            }
-        }
-    }
-
-    return { accountsInSync, contactsInSync }
-}
-
 const formatSyncedAt = (millis: number | null): string => {
     if (millis == null) return '—'
     return formatDatetime(new Date(millis), undefined, 'medium')
@@ -101,7 +70,8 @@ const formatSyncedAt = (millis: number | null): string => {
 type BackupSyncStatus = ReturnType<typeof deriveBackupSyncStatus>
 
 const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge> = {
-    idle: 'success',
+    idle: 'syncing',
+    pending: 'syncing',
     syncing: 'syncing',
     upToDate: 'success',
     destroyed: 'failed',
@@ -122,7 +92,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const contactsTotal = useContactsStore(state => state.contacts.length)
 
     const { accountsInSync, contactsInSync } = useMemo(
-        () => deriveSyncCounts(syncState),
+        () => deriveBackupSyncCounts(syncState),
         [syncState],
     )
 

@@ -14,6 +14,7 @@ import type { BackupSyncResult } from './syncState'
 
 export type BackupSyncStatus =
     | 'idle'
+    | 'pending'
     | 'syncing'
     | 'upToDate'
     | 'destroyed'
@@ -36,5 +37,6 @@ export const deriveBackupSyncStatus = ({
     if (isSyncing) return 'syncing'
     if (isDestroyed) return 'destroyed'
     if (lastSyncResult === 'FAILED') return 'error'
+    if (lastSyncResult === null) return 'pending'
     return 'upToDate'
 }
