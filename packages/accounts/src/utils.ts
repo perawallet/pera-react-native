@@ -372,27 +372,41 @@ type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
  * Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`.
  *
- * Quantum targets are gated on `isQuantumTargetEnabled`, and that gate is a
- * hard functional limit rather than a rollout toggle. Signing works locally,
- * but mainnet and testnet algod still reject the `pqsig` field, so on those
- * networks the rekey is a one-way door that strands the funds: every later
- * transaction needs a `pqsig`, *including the rekey-back that would undo it*.
+ * Quantum accounts are excluded here: the dedicated rekey-to-quantum flow
+ * lists them via {@link isEligibleQuantumRekeyTarget}.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,
     source: RekeySourceFields,
-    isQuantumTargetEnabled: boolean,
 ): boolean => {
     if (target.address === source.address) return false
     if (target.address === source.rekeyAddress) return false
     if (
         target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet &&
-        target.type !== AccountTypes.quantum
+        target.type !== AccountTypes.hdWallet
     )
         return false
-    if (target.type === AccountTypes.quantum && !isQuantumTargetEnabled)
-        return false
+    if (!hasSigningKeys(target)) return false
+    if (isRekeyedAccount(target)) return false
+    return true
+}
+
+/**
+ * `isQuantumTargetEnabled` is a hard functional limit rather than a rollout
+ * toggle. Signing works locally, but mainnet and testnet algod still reject
+ * the `pqsig` field, so on those networks the rekey is a one-way door that
+ * strands the funds: every later transaction needs a `pqsig`, *including the
+ * rekey-back that would undo it*.
+ */
+export const isEligibleQuantumRekeyTarget = (
+    target: WalletAccount,
+    source: RekeySourceFields,
+    isQuantumTargetEnabled: boolean,
+): boolean => {
+    if (!isQuantumTargetEnabled) return false
+    if (target.address === source.address) return false
+    if (target.address === source.rekeyAddress) return false
+    if (target.type !== AccountTypes.quantum) return false
     if (!hasSigningKeys(target)) return false
     if (isRekeyedAccount(target)) return false
     return true

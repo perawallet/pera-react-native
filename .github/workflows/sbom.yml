@@ -1,4 +1,4 @@
-name: SBOM
+name: Security / SBOM
 
 # Generates a CycloneDX Software Bill of Materials for the resolved
 # dependency tree. Runs on every push to main and weekly so there's

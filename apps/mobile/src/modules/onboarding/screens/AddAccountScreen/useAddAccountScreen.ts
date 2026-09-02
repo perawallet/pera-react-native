@@ -190,10 +190,8 @@ export const useAddAccountScreen = () => {
 
     const handleLearnMoreQuantum = useCallback(
         () =>
-            // TODO(PQ): point at the dedicated Quantum accounts support page
-            // once it exists; accountTypeSupportUrl is the closest placeholder.
             pushWebView({
-                url: config.accountTypeSupportUrl,
+                url: config.quantumAccountSupportUrl,
                 id: 'quantum-account-support',
             }),
         [pushWebView],

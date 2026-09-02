@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     useSwapExecution,
     type SwapExecutionOutcome,
@@ -29,10 +30,13 @@ import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     NoConnectionError,
+    PeraNetworkError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
 const mockAddSignRequest = vi.fn()
+const mockAccountInformation = vi.fn()
+const mockT = vi.fn((key: string) => key)
 const mockDecodeTransaction = vi.fn()
 const mockDecodeSignedTransaction = vi.fn()
 const mockEncodeSignedTransactions = vi.fn()
@@ -45,9 +49,12 @@ const mockUseSignerFor = vi.fn()
 const mockUseIsQuantumSwapEnabled = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 const mockIsAssetFrozen = vi.fn()
-// Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
-// runs during the package import.
-const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
+// Hoisted so they're initialized before the (hoisted) wallet-core-swaps mock
+// factory runs during the package import.
+const { mockValidate, mockComputeShortfall } = vi.hoisted(() => ({
+    mockValidate: vi.fn(),
+    mockComputeShortfall: vi.fn(),
+}))
 
 // We deliberately do NOT delegate to the real `submitAndAutoRefresh`
 // via `vi.importActual` here. Importing the signing package transitively
@@ -118,10 +125,20 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
             client: {
                 algod: {
                     sendRawTransaction: mockSendRawTransaction,
+                    accountInformation: (address: string) => ({
+                        do: () => mockAccountInformation(address),
+                    }),
                 },
             },
         }),
         useNetwork: () => ({ network: 'mainnet' }),
+        useMinimumFeeConfig: () => ({
+            minTxnFee: 1000n,
+            pqMultiplier: 40n,
+            assetMbr: 100_000n,
+        }),
+        microAlgosToAlgos: (microAlgos: { div: (n: number) => unknown }) =>
+            microAlgos.div(1_000_000),
         AlgodError: MockAlgodError,
         toAlgodError: (err: unknown) =>
             new MockAlgodError(
@@ -154,6 +171,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         mutateAsync: mockUpdateSwapStatus,
     }),
     validateSwapGroupAgainstQuote: mockValidate,
+    computeSwapAlgoShortfall: mockComputeShortfall,
     useSwapHandoffStore: (
         selector: (state: {
             handoffs: Record<string, unknown>
@@ -214,11 +232,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
         warn: vi.fn(),
         error: vi.fn(),
     },
-    getNetworkErrorMessageKeys: () => ({
-        titleKey: 'errors.network.no_connection.title',
-        bodyKey: 'errors.network.no_connection.body',
-    }),
-    isPeraNetworkError: () => false,
 }))
 
 vi.mock('@hooks/useIsQuantumSwapEnabled', () => ({
@@ -227,7 +240,7 @@ vi.mock('@hooks/useIsQuantumSwapEnabled', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string) => key,
+        t: mockT,
     }),
 }))
 
@@ -361,6 +374,14 @@ describe('useSwapExecution', () => {
         // Default: nothing held is frozen. The gate reads holdings on
         // every execute.
         freezeHoldings()
+
+        // Default: a healthy, funded account — the balance preflight passes.
+        mockAccountInformation.mockResolvedValue({
+            amount: 10_000_000n,
+            minBalance: 100_000n,
+            assets: [],
+        })
+        mockComputeShortfall.mockReturnValue(null)
     })
 
     it('starts with idle status', () => {
@@ -658,18 +679,227 @@ describe('useSwapExecution', () => {
             outcome = await result.current.execute(makeQuote('quote-789'))
         })
 
-        // Prepare maps the error through getMessage like the submission phase,
-        // so the toAlgodError mock yields the localized unknown_node_error body.
+        // Prepare maps the error through resolveErrorCopy like the submission
+        // phase. An unrecognized raw Error lands on the general copy — never
+        // the algod "network rejected" fallback, which would blame the node
+        // for a request that never reached it.
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'errors.algod.unknown_node_error.body',
+            message: 'errors.general.body',
+            title: 'errors.general.title',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error).toEqual({
             phase: 'prepare',
-            message: 'errors.algod.unknown_node_error.body',
+            message: 'errors.general.body',
         })
+    })
+
+    it('maps a backend prepare rejection to API copy, never the algod node fallback', async () => {
+        // The backend rejects prepare with a 400 (e.g. "Algo balance is
+        // insufficient."). That used to surface as the algod
+        // unknown_node_error copy — "the network rejected the transaction" —
+        // for a transaction that was never submitted.
+        mockPrepareTransactions.mockRejectedValue(
+            new PeraNetworkError('client', { status: 400 }),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-400'))
+        })
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'errors.api.generic.body',
+            title: 'errors.api.generic.title',
+        })
+    })
+
+    it('refuses a swap the account cannot fund before prepare, naming the shortfall', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockComputeShortfall.mockReturnValue(new Decimal(5000))
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-short'))
+        })
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'swap.execution.insufficient_algo_body',
+            title: 'swap.execution.insufficient_algo_title',
+        })
+        // The 5_000 µALGO shortfall reaches the copy in display units.
+        expect(mockT).toHaveBeenCalledWith(
+            'swap.execution.insufficient_algo_body',
+            { amount: '0.005' },
+        )
+        expect(result.current.status).toBe('error')
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        // No swap exists yet, so there is nothing to report to the backend.
+        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+    })
+
+    it('feeds fresh chain state to the shortfall check and reserves the opt-in MBR when the receive asset is not held', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockAccountInformation.mockResolvedValue({
+            amount: 700_000n,
+            minBalance: 200_000n,
+            assets: [{ assetId: 123n }],
+        })
+
+        const { result } = renderHook(() => useSwapExecution())
+        await act(async () => {
+            await result.current.execute(makeQuote('quote-optin-mbr'))
+        })
+
+        expect(mockAccountInformation).toHaveBeenCalledWith('SENDER_ADDR')
+        const input = mockComputeShortfall.mock.calls[0][0] as {
+            algoBalance: Decimal
+            minBalance: Decimal
+            optInMbr?: Decimal
+        }
+        expect(input.algoBalance.toString()).toBe('700000')
+        expect(input.minBalance.toString()).toBe('200000')
+        // assetOut '999' is not among the holdings, so the prepared group
+        // will opt in and raise the MBR by the configured asset MBR.
+        expect(input.optInMbr?.toString()).toBe('100000')
+    })
+
+    it('skips the opt-in reserve when the account already holds the receive asset', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockAccountInformation.mockResolvedValue({
+            amount: 700_000n,
+            minBalance: 200_000n,
+            assets: [{ assetId: 999n }],
+        })
+
+        const { result } = renderHook(() => useSwapExecution())
+        await act(async () => {
+            await result.current.execute(makeQuote('quote-opted-in'))
+        })
+
+        const input = mockComputeShortfall.mock.calls[0][0] as {
+            optInMbr?: Decimal
+        }
+        expect(input.optInMbr).toBeUndefined()
+    })
+
+    it('abandons a cancelled execution while the balance preflight is in flight', async () => {
+        // The preflight is the first network-length await after slide-confirm.
+        // Closing the sheet during it must abandon the attempt — otherwise
+        // execute() would resume into the signing sheet with nobody watching,
+        // the exact case the post-prepare cancel check exists for.
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        let releaseAccountInfo: (value: unknown) => void = () => {}
+        mockAccountInformation.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    releaseAccountInfo = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcomePromise: Promise<SwapExecutionOutcome> | undefined
+        act(() => {
+            outcomePromise = result.current.execute(
+                makeQuote('quote-cancel-preflight'),
+            )
+        })
+        // The frozen-holdings check awaits before the preflight; wait until
+        // the lookup is actually in flight before cancelling.
+        await act(async () => {
+            await vi.waitFor(() =>
+                expect(mockAccountInformation).toHaveBeenCalled(),
+            )
+        })
+
+        act(() => {
+            result.current.cancel()
+        })
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            releaseAccountInfo({
+                amount: 10_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            })
+            outcome = await outcomePromise
+        })
+
+        expect(outcome).toEqual({ kind: 'cancelled' })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(result.current.status).toBe('idle')
+    })
+
+    it('is cancellable (status preparing) while the balance preflight runs', async () => {
+        // `isCancellable` in the confirmation sheet is `status === 'preparing'`.
+        // If the preflight ran under 'idle', closing the sheet would dismiss
+        // instead of cancelling, leaving the execution running headless.
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        let releaseAccountInfo: (value: unknown) => void = () => {}
+        mockAccountInformation.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    releaseAccountInfo = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcomePromise: Promise<SwapExecutionOutcome> | undefined
+        act(() => {
+            outcomePromise = result.current.execute(
+                makeQuote('quote-preflight-status'),
+            )
+        })
+        await act(async () => {
+            await vi.waitFor(() =>
+                expect(mockAccountInformation).toHaveBeenCalled(),
+            )
+        })
+
+        expect(result.current.status).toBe('preparing')
+
+        await act(async () => {
+            releaseAccountInfo({
+                amount: 10_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            })
+            await outcomePromise
+        })
+    })
+
+    it('proceeds to prepare when the balance lookup fails (the check is advisory)', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockAccountInformation.mockRejectedValue(new Error('node hiccup'))
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-preflight-down'),
+            )
+        })
+
+        // Prepare and the node still validate the balance, so a lookup
+        // hiccup must never block a fundable swap.
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(mockComputeShortfall).not.toHaveBeenCalled()
+        expect(mockPrepareTransactions).toHaveBeenCalled()
     })
 
     it('surfaces a structured prepare error when offline (fail-fast, no signing)', async () => {
@@ -690,6 +920,9 @@ describe('useSwapExecution', () => {
         expect(outcome?.kind).toBe('error')
         if (outcome?.kind === 'error') {
             expect(outcome.phase).toBe('prepare')
+            // Offline gets the no-connection copy, not the algod fallback
+            // that blames the node for a request that never left the device.
+            expect(outcome.message).toBe('errors.network.no_connection.body')
         }
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('prepare')

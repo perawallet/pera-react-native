@@ -50,6 +50,7 @@ import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
 import { MultisigStackNavigator } from '@modules/multisig'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
+import { RekeyToQuantumStackNavigator } from '@modules/rekey/routes/rekey-to-quantum'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
 import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
@@ -255,6 +256,10 @@ export const WebMainRoutes = ({
                             <RootStack.Screen
                                 name='RekeyToStandard'
                                 component={RekeyToStandardStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToQuantum'
+                                component={RekeyToQuantumStackNavigator}
                             />
                             <RootStack.Screen
                                 name='RekeyToShared'

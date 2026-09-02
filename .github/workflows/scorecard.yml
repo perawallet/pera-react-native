@@ -1,4 +1,4 @@
-name: Scorecard
+name: Security / Scorecard
 
 # OpenSSF Scorecard — runs ~19 automated checks against the repo's
 # security posture (pinned deps, branch protection, token permissions,

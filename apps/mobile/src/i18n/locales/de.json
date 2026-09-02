@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "App-Start fehlgeschlagen",
             "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher.",
-            "retry": "Erneut versuchen"
+            "retry": "Erneut versuchen",
+            "keystore": {
+                "title": "Wallet-Datenfehler",
+                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher."
+            }
         }
     },
     "asset_sort": {
@@ -371,6 +375,9 @@
         "rekey_option_ledger_description": "Transaktionen werden auf deinem Ledger-Gerät autorisiert.",
         "rekey_option_standard_title": "Zu einem Standard-Konto",
         "rekey_option_standard_description": "Transaktionen werden von einem anderen Konto in deinem Wallet autorisiert.",
+        "rekey_option_quantum_title": "Zu einem Quantum-Konto",
+        "rekey_option_quantum_description": "Transaktionen werden von einem quantensicheren Konto in deinem Wallet autorisiert.",
+        "rekey_option_quantum_badge": "NEU",
         "export_share_account": "Konto exportieren/teilen",
         "scan_rekeyed": "Nach rekeyed Konten suchen",
         "rename_account": "Konto umbenennen",
@@ -1858,7 +1865,6 @@
         "to_standard": {
             "intro": {
                 "title": "Zu Standard-Konto rekeyen",
-                "title_with_quantum": "Zu Standard- oder Quantum-Konto rekeyen",
                 "body": "Beim Rekeyen wird ein neuer Schlüssel zum Signieren der künftigen Transaktionen dieses Kontos festgelegt, ohne Guthaben zu verschieben oder die Adresse zu ändern.",
                 "learn_more": "Mehr erfahren",
                 "expect_label": "Was dich erwartet",
@@ -1876,6 +1882,44 @@
             "confirm": {
                 "title": "Rekey bestätigen",
                 "body": "Du bist dabei, dieses Konto zu einer anderen autorisierten Adresse zu rekeyen. Die neue Adresse kann dann Transaktionen in seinem Namen signieren.",
+                "learn_more": "Mehr erfahren",
+                "summary_label": "Zusammenfassung des Rekeys",
+                "current_auth_label": "Derzeit rekeyed zu",
+                "fee_label": "Transaktionsgebühr",
+                "cta": "Bestätigen",
+                "replace_warning": {
+                    "title": "Dein vorheriger Rekey wird ersetzt",
+                    "body": "<0>{{currentAuth}}</0> ist nicht mehr berechtigt, Transaktionen für <1>{{source}}</1> zu signieren. Stelle sicher, dass du die Auswirkungen verstehst, bevor du fortfährst. <2>Mehr erfahren</2>",
+                    "confirm": "Bestätigen",
+                    "cancel": "Abbrechen"
+                }
+            },
+            "success": {
+                "title": "Konto erfolgreich rekeyed",
+                "body": "Das Konto <0>{{source}}</0> wurde erfolgreich rekeyed.",
+                "cta": "Fertig"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Zu Quantum-Konto rekeyen",
+                "body": "Beim Rekeyen wird ein neuer Schlüssel zum Signieren der künftigen Transaktionen dieses Kontos festgelegt, ohne Guthaben zu verschieben oder die Adresse zu ändern.",
+                "learn_more": "Mehr erfahren",
+                "expect_label": "Was dich erwartet",
+                "expect_1": "Künftige Transaktionen dieses Kontos können nur noch mit dem Post-Quanten-Schlüssel des Quantum-Kontos signiert werden.",
+                "expect_2": "Sichere die 25-Wort-Wiederherstellungsphrase dieses Kontos, bevor du fortfährst. Verlierst du sie, verlierst du die Möglichkeit, für dieses Konto zu signieren, auch wenn sonst alles daran unverändert bleibt.",
+                "expect_3": "Die Adresse, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_4": "Künftige Transaktionen zahlen eine höhere Mindest-Netzwerkgebühr, und ein späteres Rekey zurück zu einem Standard-Konto erfordert selbst eine quantensignierte Transaktion.",
+                "cta": "Vorgang starten"
+            },
+            "select": {
+                "title": "Quantum-Konto auswählen",
+                "subtitle": "Wähle das Quantum-Konto aus, zu dem du rekeyen möchtest. Das hier ausgewählte Konto ist für die Signierung aller Transaktionen des Quellkontos verantwortlich.",
+                "empty": "Keine Quantum-Konten gefunden. Erstelle oder importiere zuerst ein Quantum-Konto."
+            },
+            "confirm": {
+                "title": "Rekey bestätigen",
+                "body": "Du bist dabei, dieses Konto zu einem Quantum-Konto zu rekeyen. Die neue Adresse kann dann Transaktionen in seinem Namen signieren.",
                 "learn_more": "Mehr erfahren",
                 "summary_label": "Zusammenfassung des Rekeys",
                 "current_auth_label": "Derzeit rekeyed zu",
@@ -2895,6 +2939,8 @@
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
             "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "insufficient_algo_title": "Unzureichendes ALGO",
+            "insufficient_algo_body": "Dieses Konto benötigt mindestens {{amount}} ALGO mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr ALGO hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",

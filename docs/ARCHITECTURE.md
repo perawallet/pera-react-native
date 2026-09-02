@@ -77,9 +77,10 @@ file next to them, and colocation is what makes a drifting prop visible in revie
 `apps/browser/web-shims/` holds same-shaped stand-ins for native-only modules, mapped in by Metro
 when `platform === 'web'`.
 
-A guardrail (`pnpm lint:guardrails`) enforces the boundary in the direction that actually matters: a
-file that is not `.web.*` may not import `platform-chrome` or `keystore-chrome`, because such a file
-is reachable from the native bundle and would fail at runtime on the missing `chrome` global.
+A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
+boundary in the direction that actually matters: a file that is not `.web.*` may not import
+`platform-chrome` or `keystore-chrome`, because such a file is reachable from the native bundle and
+would fail at runtime on the missing `chrome` global.
 
 ### Turning features off per platform
 

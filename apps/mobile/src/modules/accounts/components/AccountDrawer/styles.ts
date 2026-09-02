@@ -14,28 +14,34 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
     topInset: number
+    bottomInset: number
 }
 
-export const useStyles = makeStyles((theme, { topInset }: StyleProps) => ({
-    // The drawer panel is drawn edge to edge, so unlike the bottom-sheet host
-    // this content owns the top inset itself. No bottom inset: PWFlatList
-    // already ends its vertical content with spacing.xl, and adding the
-    // safe-area on top of that left a visible band of dead space.
-    container: {
-        flex: 1,
-        paddingTop: topInset,
-        paddingHorizontal: theme.spacing.xl,
-        minWidth: 0,
-        overflow: 'hidden',
-    },
-    // Only rendered when there's a search trigger to hold.
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
-    },
-    searchTrigger: {
-        flex: 1,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { topInset, bottomInset }: StyleProps) => ({
+        // The drawer panel is drawn edge to edge, so unlike the bottom-sheet host
+        // this content owns its insets itself. The bottom one is Android-only:
+        // reserving it there puts the nav buttons on plain background instead of
+        // over account rows, whereas on iOS it only adds a band of dead space
+        // below PWFlatList's own trailing spacing.xl — the home indicator needs
+        // no room made for it.
+        container: {
+            flex: 1,
+            paddingTop: topInset,
+            paddingBottom: bottomInset,
+            paddingHorizontal: theme.spacing.xl,
+            minWidth: 0,
+            overflow: 'hidden',
+        },
+        // Only rendered when there's a search trigger to hold.
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+        },
+        searchTrigger: {
+            flex: 1,
+        },
+    }),
+)

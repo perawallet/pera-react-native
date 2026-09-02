@@ -23,8 +23,6 @@ import { useStyles } from './styles'
 
 export type RekeyIntroScreenProps = {
     i18nBaseKey: string
-    /** Defaults to `${i18nBaseKey}.title`. */
-    titleKey?: string
     testIdPrefix: string
     expectationCount: 3 | 4
     navConfig: RekeyIntroNavConfig
@@ -32,7 +30,6 @@ export type RekeyIntroScreenProps = {
 
 export const RekeyIntroScreen = ({
     i18nBaseKey,
-    titleKey = `${i18nBaseKey}.title`,
     testIdPrefix,
     expectationCount,
     navConfig,
@@ -72,7 +69,7 @@ export const RekeyIntroScreen = ({
             />
 
             <PWView style={styles.body}>
-                <PWText variant='h1'>{t(titleKey)}</PWText>
+                <PWText variant='h1'>{t(`${i18nBaseKey}.title`)}</PWText>
 
                 <PWText
                     variant='bodyLarge'

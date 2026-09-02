@@ -1,4 +1,4 @@
-name: LocalNet Conformance
+name: CI / LocalNet Conformance
 
 # Runs conformance/ (30 files, 117 tests) against a real LocalNet node instead
 # of mocks — see conformance/README.md. Nightly because it needs Docker

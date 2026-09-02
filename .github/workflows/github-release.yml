@@ -1,4 +1,4 @@
-name: GitHub Release
+name: Release / Publish
 
 # Publishes a GitHub Release for a stable vX.Y.Z tag, and only for those.
 # Nightly (-alpha.N) and rc (-rc.N) tags never get a release: their workflows

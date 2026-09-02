@@ -46,13 +46,6 @@ export const PWDRAWER_SPRING_CONFIG = {
 } as const
 
 /**
- * Peak tint over the content, at fully open, and the only cue separating the two
- * layers. An order of magnitude lighter than a modal backdrop (0.64): the
- * content should read as shaded by the layer above it, not dimmed out of use.
- */
-export const PWDRAWER_SCRIM_OPACITY = 0.3
-
-/**
  * Ramps the panel contents grow and fade in on, keyed off progress so a
  * finger-tracked drag passes through the same curve a flick does. Sampled
  * quadratic ease-out rather than composed from `Easing`, which keeps them a

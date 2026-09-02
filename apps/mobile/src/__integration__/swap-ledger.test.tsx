@@ -56,6 +56,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -247,6 +248,19 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        // execute() runs a balance preflight against algod before prepare;
+        // fund the senders so the 1-ALGO quote (plus fees and the receive
+        // asset's opt-in MBR) clears it.
+        server.use(
+            mockAlgodAccountInformation({
+                address: LEDGER_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodAccountInformation({
+                address: AUTH_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
     })
 
     it(

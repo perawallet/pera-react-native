@@ -10,38 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRekeyToStandardIntroScreen } from '../useRekeyToStandardIntroScreen'
 
 import en from '@i18n/locales/en.json'
 
-let quantumEnabled = true
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => quantumEnabled,
-}))
-
 describe('useRekeyToStandardIntroScreen', () => {
-    beforeEach(() => {
-        quantumEnabled = true
-    })
-
-    it('names the quantum destination in the title while quantum accounts are visible', () => {
-        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
-
-        expect(result.current.titleKey).toBe(
-            'rekey.to_standard.intro.title_with_quantum',
-        )
-    })
-
-    it('names only the standard destination while quantum accounts are hidden', () => {
-        quantumEnabled = false
-
-        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
-
-        expect(result.current.titleKey).toBe('rekey.to_standard.intro.title')
-    })
-
     // Neither half of this pairing is visible to `lint:i18n` — the keys are
     // built dynamically and its namespace claim covers anything under them — so
     // a mismatch renders the raw key string on screen with every check green.
@@ -59,19 +34,12 @@ describe('useRekeyToStandardIntroScreen', () => {
 
     // A missing key renders as the raw key string on the screen, which no
     // integration test asserting testIDs would catch.
-    it.each([true, false])(
-        'resolves to a real en.json string (quantum enabled: %s)',
-        enabled => {
-            quantumEnabled = enabled
-            const { result } = renderHook(() => useRekeyToStandardIntroScreen())
+    it('resolves the title to a real en.json string', () => {
+        const { result } = renderHook(() => useRekeyToStandardIntroScreen())
 
-            const copy: Record<string, string> = en.rekey.to_standard.intro
-            const leaf = result.current.titleKey.replace(
-                `${result.current.i18nBaseKey}.`,
-                '',
-            )
+        const copy: Record<string, string> = en.rekey.to_standard.intro
 
-            expect(copy[leaf]).toBeTruthy()
-        },
-    )
+        expect(result.current.i18nBaseKey).toBe('rekey.to_standard.intro')
+        expect(copy.title).toBeTruthy()
+    })
 })

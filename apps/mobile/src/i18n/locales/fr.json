@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "Échec du lancement de l’app",
             "body": "Une erreur s’est produite lors de l’initialisation de l’app. Essayez de la redémarrer. Si le problème persiste, contactez l’assistance.\n\nVos fonds sont en sécurité sur la blockchain Algorand.",
-            "retry": "Réessayer"
+            "retry": "Réessayer",
+            "keystore": {
+                "title": "Erreur de données du wallet",
+                "body": "Pera n’a pas pu lire une partie des données du wallet stockées sur cet appareil et ne peut donc pas démarrer en toute sécurité. Contactez l’assistance avant de réinstaller l’app : une réinstallation peut supprimer les comptes qui n’existent que sur cet appareil.\n\nVos fonds sont en sécurité sur la blockchain Algorand."
+            }
         }
     },
     "asset_sort": {
@@ -371,6 +375,9 @@
         "rekey_option_ledger_description": "Les transactions seront autorisées sur votre appareil Ledger.",
         "rekey_option_standard_title": "Vers un compte standard",
         "rekey_option_standard_description": "Les transactions seront autorisées par un autre compte de votre wallet.",
+        "rekey_option_quantum_title": "Vers un compte quantique",
+        "rekey_option_quantum_description": "Les transactions seront autorisées par un compte quantique de votre wallet.",
+        "rekey_option_quantum_badge": "NOUVEAU",
         "export_share_account": "Exporter/partager le compte",
         "scan_rekeyed": "Rechercher les comptes rekeyés",
         "rename_account": "Renommer le compte",
@@ -1866,7 +1873,6 @@
         "to_standard": {
             "intro": {
                 "title": "Rekey vers un compte standard",
-                "title_with_quantum": "Rekey vers un compte standard ou quantique",
                 "body": "Le rekey attribue une nouvelle clé pour signer les futures transactions de ce compte, sans déplacer de fonds ni changer son adresse.",
                 "learn_more": "En savoir plus",
                 "expect_label": "Ce qui va se passer",
@@ -1884,6 +1890,44 @@
             "confirm": {
                 "title": "Confirmer le rekey",
                 "body": "Vous êtes sur le point d’effectuer un rekey de ce compte vers une autre adresse autorisée. La nouvelle adresse pourra signer des transactions en son nom.",
+                "learn_more": "En savoir plus",
+                "summary_label": "Récapitulatif du rekey",
+                "current_auth_label": "Rekey actuel vers",
+                "fee_label": "Frais de transaction",
+                "cta": "Confirmer",
+                "replace_warning": {
+                    "title": "Votre rekey précédent sera remplacé",
+                    "body": "<0>{{currentAuth}}</0> ne sera plus autorisé à signer des transactions pour <1>{{source}}</1>. Assurez-vous de bien comprendre les implications de cette action avant de continuer. <2>En savoir plus</2>",
+                    "confirm": "Confirmer",
+                    "cancel": "Annuler"
+                }
+            },
+            "success": {
+                "title": "Rekey du compte effectué",
+                "body": "Le rekey du compte <0>{{source}}</0> a été effectué avec succès.",
+                "cta": "Terminé"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Rekey vers un compte quantique",
+                "body": "Le rekey attribue une nouvelle clé pour signer les futures transactions de ce compte, sans déplacer de fonds ni changer son adresse.",
+                "learn_more": "En savoir plus",
+                "expect_label": "Ce qui va se passer",
+                "expect_1": "Les futures transactions de ce compte ne pourront être signées qu’avec la clé post-quantique du compte quantique.",
+                "expect_2": "Sauvegardez la phrase de récupération de 25 mots de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
+                "expect_3": "L’adresse, les soldes et la configuration de votre compte ne changeront pas.",
+                "expect_4": "Les futures transactions seront soumises à des frais de réseau minimum plus élevés, et un rekey ultérieur vers un compte standard nécessitera lui-même une transaction signée avec la clé quantique.",
+                "cta": "Démarrer"
+            },
+            "select": {
+                "title": "Sélectionner un compte quantique",
+                "subtitle": "Choisissez le compte quantique vers lequel effectuer le rekey. Le compte que vous sélectionnez ici sera responsable de la signature de toutes les transactions du compte source.",
+                "empty": "Aucun compte quantique trouvé. Créez ou importez d’abord un compte quantique."
+            },
+            "confirm": {
+                "title": "Confirmer le rekey",
+                "body": "Vous êtes sur le point d’effectuer un rekey de ce compte vers un compte quantique. La nouvelle adresse pourra signer des transactions en son nom.",
                 "learn_more": "En savoir plus",
                 "summary_label": "Récapitulatif du rekey",
                 "current_auth_label": "Rekey actuel vers",
@@ -2903,6 +2947,8 @@
         "execution": {
             "error_title": "Échec du swap",
             "error_body": "Une erreur est survenue pendant le swap. Veuillez réessayer.",
+            "insufficient_algo_title": "ALGO insuffisant",
+            "insufficient_algo_body": "Ce compte a besoin d’au moins {{amount}} ALGO supplémentaires pour couvrir ce swap, ses frais et le solde minimum. Ajoutez plus d’ALGO, puis réessayez.",
             "success_title": "Swap effectué",
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",
             "user_rejected": "Swap annulé",

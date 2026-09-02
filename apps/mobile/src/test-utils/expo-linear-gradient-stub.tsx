@@ -17,7 +17,7 @@
 // vitest environment doesn't set up for every test.
 
 import React from 'react'
-// guardrails-ignore-next-line no-primitive-rn-components
+// lanekeep-ignore-next-line pera/no-primitive-rn-components reason: stub standing in for a third-party component must render the primitive it replaces
 import { View, ViewProps } from 'react-native'
 
 export const LinearGradient = (props: ViewProps) => <View {...props} />

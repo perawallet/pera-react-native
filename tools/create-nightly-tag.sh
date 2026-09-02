@@ -45,11 +45,25 @@ esac
 # so the first prerelease is v7.0.0-alpha.1, not v7.0.1-alpha.1. alpha and rc
 # share this base, so an rc is always a candidate for the same version the
 # nightlies are building toward.
+#
+# Anchored on the NEWEST shipped stable, not on whether package.json's own
+# version happens to be tagged. package.json is not bumped as part of releasing,
+# so it drifts several releases behind, and the stable tags are not contiguous —
+# a deleted or never-cut vX.Y.Z leaves a hole. Asking "is this exact tag taken?"
+# and stepping one patch at a time stops in that hole and cuts every prerelease
+# against a base BELOW what is already in users' hands. Take max(stable) + 1.
+#
+# The exact-shape grep is load-bearing twice over: it keeps prereleases of a
+# higher version out of the maximum, and it drops anything that is not vX.Y.Z,
+# which would otherwise sort above every real tag under -v:refname.
+NEWEST_STABLE=$(git tag --list 'v*' --sort=-v:refname |
+  grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
 BASE="$VERSION"
-if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null 2>&1; then
-  IFS='.' read -r _maj _min _pat <<<"$VERSION"
+if [ -n "$NEWEST_STABLE" ] &&
+  [ "$(printf '%s\n%s\n' "${NEWEST_STABLE#v}" "$VERSION" | sort -V | tail -n 1)" = "${NEWEST_STABLE#v}" ]; then
+  IFS='.' read -r _maj _min _pat <<<"${NEWEST_STABLE#v}"
   BASE="${_maj}.${_min}.$((_pat + 1))"
-  echo "Stable tag v${VERSION} exists — prereleases target next patch v${BASE}."
+  echo "Newest shipped stable is ${NEWEST_STABLE} — prereleases target v${BASE}."
 fi
 
 # --- Change gate: any new commits since the last tag of this channel? ---

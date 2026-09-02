@@ -10,33 +10,18 @@
  limitations under the License
  */
 
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
-
 import type { RekeyIntroScreenProps } from '../../../components/RekeyIntroScreen'
 
 const I18N_BASE_KEY = 'rekey.to_standard.intro'
 
 export type UseRekeyToStandardIntroScreenResult = {
     i18nBaseKey: string
-    titleKey: string
     /** Kept with the keys so the spec can hold the two in sync. */
     expectationCount: RekeyIntroScreenProps['expectationCount']
 }
 
-/**
- * The destination is picked on the next screen, so the title has to cover every
- * account type this flow can rekey to. Quantum accounts are only among them
- * while they are visible, hence the flag.
- */
 export const useRekeyToStandardIntroScreen =
-    (): UseRekeyToStandardIntroScreenResult => {
-        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
-
-        return {
-            i18nBaseKey: I18N_BASE_KEY,
-            titleKey: isQuantumTargetEnabled
-                ? `${I18N_BASE_KEY}.title_with_quantum`
-                : `${I18N_BASE_KEY}.title`,
-            expectationCount: 4,
-        }
-    }
+    (): UseRekeyToStandardIntroScreenResult => ({
+        i18nBaseKey: I18N_BASE_KEY,
+        expectationCount: 4,
+    })

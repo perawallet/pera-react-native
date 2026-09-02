@@ -1,4 +1,4 @@
-name: Promote RC to Release
+name: Release / Stable
 
 # Cuts a golden release from a release candidate: tags the rc's commit with the
 # equivalent stable version (v7.0.2-rc.3 -> v7.0.2) and pushes it, which fires

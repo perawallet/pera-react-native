@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "App Launch Failed",
             "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
-            "retry": "Try again"
+            "retry": "Try again",
+            "keystore": {
+                "title": "Wallet Data Error",
+                "body": "Pera couldn't read some of the wallet data stored on this device, so it can't start safely. Please contact support before reinstalling the app: reinstalling can remove accounts that exist only on this device.\n\nYour funds are safe on the Algorand blockchain."
+            }
         }
     },
     "asset_sort": {
@@ -371,6 +375,9 @@
         "rekey_option_ledger_description": "Transactions will be authorized on your Ledger device.",
         "rekey_option_standard_title": "To a standard account",
         "rekey_option_standard_description": "Transactions will be authorized by another account in your wallet.",
+        "rekey_option_quantum_title": "To a quantum account",
+        "rekey_option_quantum_description": "Transactions will be authorized by a quantum-secure account in your wallet.",
+        "rekey_option_quantum_badge": "NEW",
         "export_share_account": "Export/Share Account",
         "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",
@@ -1866,7 +1873,6 @@
         "to_standard": {
             "intro": {
                 "title": "Rekey to Standard Account",
-                "title_with_quantum": "Rekey to Standard or Quantum Account",
                 "body": "Rekeying assigns a new key to sign this account's future transactions, without moving funds or changing its address.",
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
@@ -1884,6 +1890,44 @@
             "confirm": {
                 "title": "Confirm rekeying",
                 "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf.",
+                "learn_more": "Learn more",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Rekey to Quantum Account",
+                "body": "Rekeying assigns a new key to sign this account's future transactions, without moving funds or changing its address.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions for this account can only be signed by the quantum account's post-quantum key.",
+                "expect_2": "Back up that account's 25-word recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_3": "Your account's address, balances, and configuration will not change.",
+                "expect_4": "Future transactions will pay a higher minimum network fee, and rekeying back to a standard account will itself require a quantum-signed transaction.",
+                "cta": "Start process"
+            },
+            "select": {
+                "title": "Select quantum account",
+                "subtitle": "Choose the quantum account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No quantum accounts found. Create or import a quantum account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this account to a quantum account. The new address will be able to sign transactions on its behalf.",
                 "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
@@ -2903,6 +2947,8 @@
         "execution": {
             "error_title": "Swap Failed",
             "error_body": "Something went wrong during the swap. Please try again.",
+            "insufficient_algo_title": "Insufficient ALGO",
+            "insufficient_algo_body": "This account needs at least {{amount}} more ALGO to cover this swap, its fees, and the minimum balance. Add more ALGO and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",

@@ -48,6 +48,9 @@ const routesByCapability = {
         'RekeyToShared',
         'RescanRekeyed',
     ],
+    // Its menu entry is gated on the quantum capability rather than
+    // rekeyFlows, so it only has to be registered where quantum is on.
+    quantum: ['RekeyToQuantum'],
     sharedAccounts: ['Multisig'],
     peraCard: ['PeraCard'],
     staking: ['Staking'],

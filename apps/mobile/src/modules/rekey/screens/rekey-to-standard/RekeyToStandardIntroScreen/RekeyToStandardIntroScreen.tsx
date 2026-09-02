@@ -15,13 +15,11 @@ import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
 import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
 
 export const RekeyToStandardIntroScreen = () => {
-    const { i18nBaseKey, titleKey, expectationCount } =
-        useRekeyToStandardIntroScreen()
+    const { i18nBaseKey, expectationCount } = useRekeyToStandardIntroScreen()
 
     return (
         <RekeyIntroScreen
             i18nBaseKey={i18nBaseKey}
-            titleKey={titleKey}
             testIdPrefix='rekey-to-standard'
             expectationCount={expectationCount}
             navConfig={{

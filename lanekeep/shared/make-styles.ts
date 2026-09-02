@@ -1,0 +1,159 @@
+/*
+ * Copyright (c) Pera Wallet. All rights reserved.
+ */
+
+import type { Node, RuleContext } from 'lanekeep'
+
+// Every `makeStyles(...)` call. Rules refine from the call node.
+//
+// The identifier is matched literally rather than resolved, so an aliased
+// `import { makeStyles as ms }` would be missed. Nothing in the repo uses an
+// alias, and `check` re-verifies the origin below, so the literal match costs
+// no real coverage and keeps every non-makeStyles call from crossing the
+// sandbox boundary.
+export const MAKE_STYLES_QUERY =
+    '(call_expression function: (identifier) @fn (#eq? @fn "makeStyles")) @call'
+
+export interface StyleEntry {
+    key: string
+    keyNode: Node
+    /** The object literal the key maps to. */
+    value: Node
+}
+
+const named = (ctx: RuleContext, node: Node, kind: string): Node | undefined =>
+    ctx.namedChildren(node).find(c => ctx.kind(c) === kind)
+
+/** Rejects a local function that merely shares the name. */
+export function isRneuiMakeStyles(ctx: RuleContext, fn: Node): boolean {
+    return ctx.resolvesToImport(fn, '@rneui/themed', 'makeStyles')
+}
+
+/**
+ * The object literal the callback returns, for both forms the codebase uses:
+ * a concise `theme => ({...})` body, and a block body with a `return`.
+ */
+function returnedObject(ctx: RuleContext, call: Node): Node | undefined {
+    const args = named(ctx, call, 'arguments')
+    if (args === undefined) return undefined
+    const fn = ctx
+        .namedChildren(args)
+        .find(
+            c =>
+                ctx.kind(c) === 'arrow_function' ||
+                ctx.kind(c) === 'function_expression',
+        )
+    if (fn === undefined) return undefined
+
+    const paren = named(ctx, fn, 'parenthesized_expression')
+    if (paren !== undefined) return named(ctx, paren, 'object')
+
+    const block = named(ctx, fn, 'statement_block')
+    if (block === undefined) return undefined
+    for (const stmt of ctx.namedChildren(block)) {
+        if (ctx.kind(stmt) !== 'return_statement') continue
+        const direct = named(ctx, stmt, 'object')
+        if (direct !== undefined) return direct
+        const wrapped = named(ctx, stmt, 'parenthesized_expression')
+        if (wrapped !== undefined) return named(ctx, wrapped, 'object')
+    }
+    return undefined
+}
+
+/**
+ * Top-level style entries only. A nested object such as `shadowOffset` is a
+ * value, not an entry, and walking it as one would report its inner keys.
+ */
+export function styleEntries(ctx: RuleContext, call: Node): StyleEntry[] {
+    const obj = returnedObject(ctx, call)
+    if (obj === undefined) return []
+    const out: StyleEntry[] = []
+    for (const pair of ctx.namedChildren(obj)) {
+        if (ctx.kind(pair) !== 'pair') continue
+        const [keyNode, value] = ctx.namedChildren(pair)
+        if (keyNode === undefined || value === undefined) continue
+        const kind = ctx.kind(keyNode)
+        if (kind !== 'property_identifier' && kind !== 'string') continue
+        if (ctx.kind(value) !== 'object') continue
+        const raw = ctx.text(keyNode)
+        if (raw === undefined) continue
+        out.push({
+            key: kind === 'string' ? raw.slice(1, -1) : raw,
+            keyNode,
+            value,
+        })
+    }
+    return out
+}
+
+/**
+ * The extensionless repo-relative path a relative specifier points at, whether
+ * or not a file sits there.
+ *
+ * Useful on its own when nothing resolves: the location is still known, and a
+ * caller that must not mistake "no such module" for "nothing uses this" needs
+ * it.
+ */
+export function relativeBase(
+    fromFile: string,
+    specifier: string,
+): string | undefined {
+    if (!specifier.startsWith('.')) return undefined
+
+    const segments = fromFile.split('/').slice(0, -1)
+    for (const part of specifier.split('/')) {
+        if (part === '.' || part === '') continue
+        if (part === '..') {
+            if (segments.pop() === undefined) return undefined
+            continue
+        }
+        segments.push(part)
+    }
+    return segments.join('/')
+}
+
+/**
+ * Resolves a relative import to a repo-relative path, trying the candidates
+ * the bundler tries.
+ *
+ * Returning a wrong answer is worse here than returning none: an unresolved
+ * consumer makes its keys look unused, and the remediation then tells someone
+ * to delete code that is in use. Callers must treat `undefined` as "unknown",
+ * never as "not used".
+ */
+export function resolveRelative(
+    ctx: RuleContext,
+    fromFile: string,
+    specifier: string,
+): string | undefined {
+    const base = relativeBase(fromFile, specifier)
+    if (base === undefined) return undefined
+
+    for (const candidate of [
+        `${base}.ts`,
+        `${base}.tsx`,
+        `${base}/index.ts`,
+        `${base}/index.tsx`,
+    ]) {
+        if (ctx.fileExists(candidate)) return candidate
+    }
+    return undefined
+}
+
+/**
+ * Metro resolves a plain `./styles` to `styles.web.ts` for web builds, so a key
+ * referenced through the platform-agnostic import is equally used in the `.web`
+ * sibling.
+ */
+export function webVariant(
+    ctx: RuleContext,
+    resolved: string,
+): string | undefined {
+    const dot = resolved.lastIndexOf('.')
+    if (dot < 0) return undefined
+    const stem = resolved.slice(0, dot)
+    const ext = resolved.slice(dot)
+    if (stem.endsWith('.web')) return undefined
+    const variant = `${stem}.web${ext}`
+    return ctx.fileExists(variant) ? variant : undefined
+}

@@ -77,11 +77,21 @@ export const usePasskeyAutofillLifecycle = (): void => {
             // (e.g. a passkey just registered via the system UI) into the
             // reactive store so the Settings list reflects them without a
             // cold-start re-hydration.
-            reconcileKeystore().catch(err =>
-                logger.error(err as Error, {
-                    step: 'passkeyAutofillReconcile',
-                }),
-            )
+            reconcileKeystore()
+                .then(({ failedIds }) => {
+                    if (failedIds.length > 0) {
+                        // Skipped this session, but the strict hydration will
+                        // fail on these exact records at the next cold start.
+                        logger.error(
+                            `Keystore reconcile skipped undecodable records: ${failedIds.join(', ')}`,
+                        )
+                    }
+                })
+                .catch(err =>
+                    logger.error(err as Error, {
+                        step: 'passkeyAutofillReconcile',
+                    }),
+                )
             runPasskeyAutofillBootstrap().catch(err =>
                 logger.error(err as Error, {
                     step: 'passkeyAutofillRefresh',
