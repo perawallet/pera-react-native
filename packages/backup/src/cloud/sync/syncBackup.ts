@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import {
     batchUpsertItems,
     deleteItem,
@@ -19,7 +19,7 @@ import {
     readItems,
 } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import { type SyncState } from '../models'
+import { type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'
@@ -28,6 +28,20 @@ import type { SyncEngineDeps } from './types'
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
+
+/** A registered backup has no manifest until its first item lands, so the very
+ *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
+ *  a wiped backup fails with 401 instead — a 404 can only mean "still empty". */
+const fetchManifestOrNull = async (
+    deps: SyncEngineDeps,
+): Promise<Manifest | null> => {
+    try {
+        return await fetchManifest(deps.network, deps.backupId, deps.deviceId)
+    } catch (error) {
+        if (isPeraNetworkError(error) && error.status === 404) return null
+        throw error
+    }
+}
 
 /** Full pull + push. `now` is injected for deterministic tests. Throws on a hard
  *  network/transport failure (caller records FAILED + backs off); on success the
@@ -50,12 +64,9 @@ export const syncBackup = async (
     let next = reconcile(state, local, now)
 
     // 2. Manifest short-circuit.
-    const manifest = await fetchManifest(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-    )
+    const manifest = await fetchManifestOrNull(deps)
     if (
+        manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
         !hasPendingWork(next)
     ) {
@@ -100,8 +111,9 @@ export const syncBackup = async (
     // 6. Advance pointers + mark success.
     return {
         ...next,
-        lastKnownBackupHash: manifest.backupGlobalHash,
-        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest.lastSeq),
+        lastKnownBackupHash:
+            manifest?.backupGlobalHash ?? next.lastKnownBackupHash,
+        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest?.lastSeq ?? 0),
         lastSyncedAt: now,
         lastSyncResult: 'SUCCESS',
     }
