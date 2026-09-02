@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
+import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -33,7 +34,8 @@ export type AssetWealthChartProps = {
 }
 
 const getPreferredValue = (item: AccountAssetBalanceHistoryItem): number =>
-    item.preferredValue.toNumber()
+    // Non-null by construction: `plottablePoints` drops unpriced points below.
+    (item.preferredValue as Decimal).toNumber()
 
 // Memoised like WealthChart: the history query rebuilds its results in an
 // inline `select`, so an unmemoised re-render hands the chart a new data
@@ -56,9 +58,16 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         isUnavailableOnNetwork,
     } = useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
 
+    // See WealthChart: an unpriced point has no rate behind it and must not be
+    // plotted as 0.
+    const plottablePoints = useMemo(
+        () => data.filter(point => point.preferredValue !== null),
+        [data],
+    )
+
     return (
         <BalanceLineChart
-            series={data}
+            series={plottablePoints}
             getValue={getPreferredValue}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}

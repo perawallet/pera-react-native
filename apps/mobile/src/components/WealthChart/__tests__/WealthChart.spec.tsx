@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 describe('WealthChart', () => {
     it('renders loading state when isPending is true', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: undefined,
+            data: [],
             isPending: true,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
@@ -130,7 +130,7 @@ describe('WealthChart', () => {
 
     it('renders the offline state instead of the spinner when the history query is paused', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: undefined,
+            data: [],
             isPending: true,
             isError: false,
             isPaused: true,
@@ -149,7 +149,7 @@ describe('WealthChart', () => {
 
     it('renders the network-unavailable state instead of the spinner on a network with no Pera backend', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: undefined,
+            data: [],
             isPending: true,
             isError: false,
             isPaused: false,

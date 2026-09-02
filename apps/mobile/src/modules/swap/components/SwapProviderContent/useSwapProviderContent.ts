@@ -87,12 +87,13 @@ export const useSwapProviderContent = ({
                 const amountDisplay = quote.amountOut
                     ? formatAssetAmount(quote.amountOut, quote.assetOut)
                     : '-'
-                const fiatDisplay = quote.amountOutUsdValue
-                    ? formatCurrency(
-                          usdToPreferred(new Decimal(quote.amountOutUsdValue)),
-                          2,
-                          preferredCurrency,
-                      )
+                // A null conversion means the rate hasn't resolved; omit the
+                // fiat line rather than showing every provider as worth 0.
+                const fiatValue = quote.amountOutUsdValue
+                    ? usdToPreferred(new Decimal(quote.amountOutUsdValue))
+                    : null
+                const fiatDisplay = fiatValue
+                    ? formatCurrency(fiatValue, 2, preferredCurrency)
                     : undefined
                 return {
                     quote,

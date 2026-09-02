@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
@@ -64,8 +64,11 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
             const isSourceAlgo = isAlgoAssetId(assetId)
             const needsFallback = isPreferredAlgo && isSourceAlgo
             const usdValue = amountDisplayUnits.mul(usdPrice)
+            // An unresolved fallback rate yields no value, not a zero one —
+            // the row renders a placeholder instead of claiming the holding
+            // is worth nothing.
             const value = needsFallback
-                ? usdValue.mul(fallbackRate?.usdPrice ?? new Decimal(0))
+                ? (fallbackRate?.usdPrice?.mul(usdValue) ?? null)
                 : usdToPreferred(usdValue)
 
             return {
