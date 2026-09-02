@@ -86,9 +86,10 @@ export const EditPasswordScreen = () => {
                     onChangeText={setDomain}
                     autoCapitalize='none'
                     autoCorrect={false}
-                    errorMessage={t('settings.passwords.domain_required_error')}
-                    renderErrorMessage={
+                    errorMessage={
                         hasAttemptedSave && domain.trim() === ''
+                            ? t('settings.passwords.domain_required_error')
+                            : undefined
                     }
                 />
                 <PWInput
@@ -109,10 +110,11 @@ export const EditPasswordScreen = () => {
                     showVisibilityToggle
                     autoCapitalize='none'
                     autoComplete='new-password'
-                    errorMessage={t(
-                        'settings.passwords.password_required_error',
-                    )}
-                    renderErrorMessage={hasAttemptedSave && password === ''}
+                    errorMessage={
+                        hasAttemptedSave && password === ''
+                            ? t('settings.passwords.password_required_error')
+                            : undefined
+                    }
                 />
                 <PWInput
                     testID='edit_password_note_input'

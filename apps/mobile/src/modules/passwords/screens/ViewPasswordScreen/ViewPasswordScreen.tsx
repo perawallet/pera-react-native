@@ -15,8 +15,10 @@ import { ActivityIndicator } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     PWButton,
+    PWIcon,
     PWText,
     PWTouchableIcon,
+    PWTouchableOpacity,
     PWView,
     PWScreen,
 } from '@components/core'
@@ -139,8 +141,10 @@ export const ViewPasswordScreen = () => {
                             {isRevealed ? password : '••••••••'}
                         </PWText>
                         <PWView style={styles.passwordActions}>
-                            <PWTouchableIcon
-                                name='eye'
+                            {/* The accessible name belongs on the touchable
+                                control, not the decorative icon it wraps —
+                                see PWIcon's isDecorative comment. */}
+                            <PWTouchableOpacity
                                 accessibilityLabel={t(
                                     isRevealed
                                         ? 'settings.passwords.hide_action'
@@ -148,15 +152,24 @@ export const ViewPasswordScreen = () => {
                                 )}
                                 onPress={() => void handleToggleReveal()}
                                 testID='view_password_reveal_button'
-                            />
-                            <PWTouchableIcon
-                                name='copy'
+                            >
+                                <PWIcon
+                                    name='eye'
+                                    variant='primary'
+                                />
+                            </PWTouchableOpacity>
+                            <PWTouchableOpacity
                                 accessibilityLabel={t(
                                     'settings.passwords.copy_action',
                                 )}
                                 onPress={() => void handleCopy()}
                                 testID='view_password_copy_button'
-                            />
+                            >
+                                <PWIcon
+                                    name='copy'
+                                    variant='primary'
+                                />
+                            </PWTouchableOpacity>
                         </PWView>
                     </PWView>
                 </PWView>

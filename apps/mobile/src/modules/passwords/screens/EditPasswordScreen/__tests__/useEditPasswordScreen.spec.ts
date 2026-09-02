@@ -11,7 +11,9 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import React from 'react'
 
 // vi.mock factories run before the rest of this module is evaluated, so
 // each mocked fn can only be shared via vi.hoisted.
@@ -36,6 +38,15 @@ vi.mock('@perawallet/wallet-core-passwords', () => ({
 
 import { useEditPasswordScreen } from '../useEditPasswordScreen'
 
+// useEditPasswordScreen reads through useQuery, which throws without a
+// QueryClient in the tree.
+const wrapper = ({ children }: { children: React.ReactNode }) => {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    return React.createElement(QueryClientProvider, { client }, children)
+}
+
 describe('useEditPasswordScreen', () => {
     it('prefills every field from the stored login', async () => {
         readLogin.mockResolvedValue({
@@ -48,8 +59,9 @@ describe('useEditPasswordScreen', () => {
             updatedAt: 1,
         })
 
-        const { result } = renderHook(() =>
-            useEditPasswordScreen('pera.login.abc'),
+        const { result } = renderHook(
+            () => useEditPasswordScreen('pera.login.abc'),
+            { wrapper },
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -70,8 +82,9 @@ describe('useEditPasswordScreen', () => {
             updatedAt: 1,
         })
 
-        const { result } = renderHook(() =>
-            useEditPasswordScreen('pera.login.abc'),
+        const { result } = renderHook(
+            () => useEditPasswordScreen('pera.login.abc'),
+            { wrapper },
         )
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         act(() => result.current.setPassword('rotated'))
