@@ -21,6 +21,7 @@ import {
     getProvider,
     reconcileKeystore,
 } from '@perawallet/wallet-extension-provider'
+import { publishLoginIdentities } from '@perawallet/wallet-core-passwords'
 import { logger } from '@perawallet/wallet-core-shared'
 
 const PASSKEY_INTENT_ACTIONS = {
@@ -97,6 +98,10 @@ export const usePasskeyAutofillLifecycle = (): void => {
                     step: 'passkeyAutofillRefresh',
                 }),
             )
+            // publishLoginIdentities swallows its own failures; the OS index is
+            // a cache of the keystore, so a missed publish costs autofill
+            // availability rather than data.
+            void publishLoginIdentities(service)
         }
 
         // Re-run whenever the number of keystore keys changes — covers the
