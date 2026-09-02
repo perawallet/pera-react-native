@@ -14,6 +14,8 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import {
+    BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     DeltaOperation,
     type BackupId,
@@ -27,9 +29,6 @@ import {
 import { buildPulledAccounts } from '../restore'
 import { canonicalJson, contentHash } from './canonicalize'
 import type { SyncImportFn } from './types'
-
-const ACCOUNTS_PREFIX = 'accounts/'
-const SECRETS_PREFIX = 'secrets/'
 
 export type ApplyDeltasDeps = {
     network: Network
@@ -54,10 +53,10 @@ export type ApplyDeltasDeps = {
 }
 
 const addressOf = (key: BackupItemKey): string | null =>
-    key.startsWith(ACCOUNTS_PREFIX)
-        ? key.slice(ACCOUNTS_PREFIX.length)
-        : key.startsWith(SECRETS_PREFIX)
-          ? key.slice(SECRETS_PREFIX.length)
+    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
+        ? key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length)
+        : key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+          ? key.slice(BACKUP_SECRETS_KEY_PREFIX.length)
           : null
 
 const remoteUpdatedAt = (plaintext: string): number => {
@@ -136,8 +135,8 @@ export const applyDeltas = async ({
         if (d.status !== BackupItemStatus.ACTIVE) continue
         if (
             !(
-                d.key.startsWith(ACCOUNTS_PREFIX) ||
-                d.key.startsWith(SECRETS_PREFIX)
+                d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
             )
         )
             continue
@@ -182,7 +181,7 @@ export const applyDeltas = async ({
         }
 
         const existing = items[item.key]
-        const isAddress = item.key.startsWith(ACCOUNTS_PREFIX)
+        const isAddress = item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
         // Last-write-wins: keep local only if the local edit is STRICTLY newer.
         // On a tie (equal timestamps) remote wins (spec §8) — hence `>`, not `>=`.
         if (

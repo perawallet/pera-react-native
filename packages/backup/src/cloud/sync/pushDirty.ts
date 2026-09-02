@@ -20,6 +20,7 @@ import {
 } from '../api'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
+    isAccountItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -55,7 +56,7 @@ const withUpdatedAt = (
     updatedAt: number | null | undefined,
 ): string => {
     const payload =
-        item.key.startsWith('accounts/') && updatedAt != null
+        isAccountItemKey(item.key) && updatedAt != null
             ? { ...(item.payload as Record<string, unknown>), updatedAt }
             : item.payload
     return canonicalJson(payload)

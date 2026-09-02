@@ -15,6 +15,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    accountItemKey,
+    secretsItemKey,
     BackupAccountType,
     BackupItemType,
     type AddressBackupPayload,
@@ -31,9 +33,6 @@ type SerializeParams = {
      *  carries neither its derived public key nor the seed's first address). */
     hd?: { seedFirstDerivedAddress: string; publicKeyHex: string }
 }
-
-const accountsKey = (address: string): string => `accounts/${address}`
-const secretsKey = (address: string): string => `secrets/${address}`
 
 const nameValue = (a: WalletAccount): string | null => a.name ?? null
 
@@ -122,13 +121,13 @@ export const serializeAccountItems = (
     if (addressPayload === null || !account.address) return null
 
     const address = {
-        key: accountsKey(account.address),
+        key: accountItemKey(account.address),
         type: BackupItemType.ACCOUNT,
         payload: addressPayload,
     }
     const secretsItem = secrets
         ? {
-              key: secretsKey(account.address),
+              key: secretsItemKey(account.address),
               type: BackupItemType.ACCOUNT,
               payload: secrets,
           }
