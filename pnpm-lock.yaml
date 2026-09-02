@@ -3492,6 +3492,58 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
+  packages/passwords:
+    dependencies:
+      '@algorandfoundation/keystore-core':
+        specifier: 1.0.0-canary.3
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-extension-passkey-autofill':
+        specifier: workspace:*
+        version: link:../../extensions/passkey-autofill
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      uuid:
+        specifier: 'catalog:'
+        version: 14.0.2
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.17
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
+      vite-plugin-dts:
+        specifier: 'catalog:'
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+
   packages/polling:
     dependencies:
       '@babel/runtime':
