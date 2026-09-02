@@ -10,5 +10,10 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './storage'
+export {
+    deleteLogin,
+    listLogins,
+    readLogin,
+    saveLogin,
+    type SaveLoginInput,
+} from './loginStore'
