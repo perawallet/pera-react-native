@@ -44,6 +44,11 @@ describe('deriveBackupSyncStatus', () => {
             deriveBackupSyncStatus({ ...base, lastSyncResult: 'FAILED' }),
         ).toBe('error')
     })
+    test('not upToDate before the first sync has ever completed', () => {
+        expect(deriveBackupSyncStatus({ ...base, lastSyncResult: null })).toBe(
+            'pending',
+        )
+    })
     test('upToDate when configured, clean, last result success', () => {
         expect(
             deriveBackupSyncStatus({ ...base, lastSyncResult: 'SUCCESS' }),

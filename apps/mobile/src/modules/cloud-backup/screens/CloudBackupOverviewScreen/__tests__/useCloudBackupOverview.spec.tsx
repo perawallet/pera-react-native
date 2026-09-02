@@ -23,17 +23,16 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupOverview } from '../useCloudBackupOverview'
 
-vi.mock('@perawallet/wallet-core-backup', () => ({
+// The counting rules live in the package; import the real one so this spec
+// exercises what the screen actually renders.
+vi.mock('@perawallet/wallet-core-backup', async () => ({
     useCloudBackupStore: vi.fn(),
     useBackupSyncStateStore: vi.fn(),
     deriveBackupSyncStatus: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
-    BackupItemType: {
-        ACCOUNT: 'ACCOUNT',
-        CONTACT: 'CONTACT',
-        PASSKEY: 'PASSKEY',
-    },
-    BackupItemStatus: { ACTIVE: 'ACTIVE', IGNORED: 'IGNORED' },
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/syncCounts')
+    >('../../../../../../../../packages/backup/src/cloud/models/syncCounts')),
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: vi.fn(),
@@ -210,6 +209,23 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(2)
         expect(result.current.accountsNotBackedUp).toBe(1)
+    })
+
+    test('a single backed-up account reads as one, not one per stored item', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            'accounts/A': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: false },
+            'secrets/A': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: false },
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: 1,
+            contacts: 0,
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(1)
+        expect(result.current.accountsNotBackedUp).toBe(0)
     })
 
     test('strips the did:pera: prefix and truncates for the credential address label', () => {
