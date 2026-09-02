@@ -209,7 +209,7 @@ a `--baseline` so only new findings fail. Do removals in reviewed PRs, not via `
 | [Architecture](docs/ARCHITECTURE.md)                       | Layering, platform drivers, per-platform features            |
 | [Style Guide](docs/STYLE_GUIDE.md)                         | Decisions behind the enforced rules                          |
 | [Testing](docs/TESTING.md)                                 | Unit, integration harness, locale tour                       |
-| [Security](docs/SECURITY.md)                               | Key custody, vault limits, supply chain                      |
+| [Security](docs/SECURITY.md)                               | Reporting a flaw, key custody, vault limits, supply chain    |
 | [Offline & Paused State](docs/OFFLINE_PAUSED_STATE.md)     | DB-first reads, the paused render contract                   |
 | [Translation Guide](docs/I18N_TRANSLATION_GUIDE.md)        | Locale bundles, plural traps, per-language rules             |
 | [WebView Architecture](docs/WEBVIEW_ARCHITECTURE.md)       | The in-app webview bridge, its trust model and v3 method set |
