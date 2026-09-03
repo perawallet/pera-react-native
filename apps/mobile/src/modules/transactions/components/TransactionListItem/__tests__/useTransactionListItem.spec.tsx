@@ -12,6 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    QueryClient,
+    QueryClientProvider,
+    type UseQueryResult,
+} from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useTransactionListItem } from '../useTransactionListItem'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -20,7 +25,6 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type { UseQueryResult } from '@tanstack/react-query'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
@@ -193,6 +197,13 @@ const createStateProofTx = (
         ...overrides,
     }) as TransactionHistoryItem
 
+// The hook now reads the open-submission badge set via React Query.
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={new QueryClient()}>
+        {children}
+    </QueryClientProvider>
+)
+
 describe('useTransactionListItem', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
@@ -206,32 +217,36 @@ describe('useTransactionListItem', () => {
     describe('title', () => {
         it('returns send key for outgoing payment', () => {
             const tx = createPaymentTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.send')
         })
 
         it('returns receive key for incoming payment', () => {
             const tx = createPaymentTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.receive')
         })
 
         it('returns send key for outgoing asset transfer', () => {
             const tx = createAssetTransferTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.send')
         })
 
         it('returns receive key for incoming asset transfer', () => {
             const tx = createAssetTransferTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.receive')
         })
@@ -242,8 +257,9 @@ describe('useTransactionListItem', () => {
                 receiver: USER_ADDRESS,
                 amount: new Decimal(0),
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.opt_in')
         })
@@ -254,15 +270,20 @@ describe('useTransactionListItem', () => {
                 receiver: OTHER_ADDRESS,
                 closeTo: OTHER_ADDRESS,
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.opt_out')
         })
 
         it('returns heartbeat key for a heartbeat', () => {
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: createHeartbeatTx() }),
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createHeartbeatTx(),
+                    }),
+                { wrapper },
             )
             expect(result.current.title).toBe(
                 'transactions.list_item.heartbeat',
@@ -270,8 +291,12 @@ describe('useTransactionListItem', () => {
         })
 
         it('returns state-proof key for a state proof', () => {
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: createStateProofTx() }),
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createStateProofTx(),
+                    }),
+                { wrapper },
             )
             expect(result.current.title).toBe(
                 'transactions.list_item.state_proof',
@@ -285,8 +310,9 @@ describe('useTransactionListItem', () => {
                     description: '',
                 },
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.title).toBe('Custom Title')
         })
@@ -295,32 +321,36 @@ describe('useTransactionListItem', () => {
     describe('iconType', () => {
         it('returns "send" for outgoing payment', () => {
             const tx = createPaymentTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('send')
         })
 
         it('returns "receive" for incoming payment', () => {
             const tx = createPaymentTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('receive')
         })
 
         it('returns "send" for outgoing asset transfer', () => {
             const tx = createAssetTransferTx({ sender: USER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('send')
         })
 
         it('returns "receive" for incoming asset transfer', () => {
             const tx = createAssetTransferTx({ sender: OTHER_ADDRESS })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('receive')
         })
@@ -336,8 +366,9 @@ describe('useTransactionListItem', () => {
                     amountOut: new Decimal('500000'),
                 },
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('swap')
         })
@@ -349,8 +380,9 @@ describe('useTransactionListItem', () => {
                 amount: new Decimal(0),
                 closeTo: null,
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('asset-opt-in')
         })
@@ -361,15 +393,20 @@ describe('useTransactionListItem', () => {
                 receiver: OTHER_ADDRESS,
                 closeTo: OTHER_ADDRESS,
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('asset-opt-out')
         })
 
         it('returns "heartbeat" for a heartbeat', () => {
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: createHeartbeatTx() }),
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createHeartbeatTx(),
+                    }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('heartbeat')
         })
@@ -379,8 +416,9 @@ describe('useTransactionListItem', () => {
                 txType: 'appl',
                 applicationId: '123',
             } as Partial<TransactionHistoryItem>)
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.iconType).toBe('app-call')
         })
@@ -405,8 +443,9 @@ describe('useTransactionListItem', () => {
                     decimals: 0,
                 },
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts[0].value.toNumber()).toBe(1)
@@ -426,8 +465,9 @@ describe('useTransactionListItem', () => {
                     decimals: 6,
                 },
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts[0].value.toNumber()).toBe(1)
@@ -438,8 +478,9 @@ describe('useTransactionListItem', () => {
                 sender: USER_ADDRESS,
                 amount: new Decimal('500000'),
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.amounts[0].prefix).toBe('-')
         })
@@ -449,8 +490,9 @@ describe('useTransactionListItem', () => {
                 sender: OTHER_ADDRESS,
                 amount: new Decimal('500000'),
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
             expect(result.current.amounts[0].prefix).toBe('+')
         })
@@ -460,8 +502,9 @@ describe('useTransactionListItem', () => {
         it('copies the transaction id', () => {
             mockCopyToClipboard.mockClear()
             const tx = createPaymentTx({ id: 'TXID123' })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             result.current.handleLongPress()
@@ -488,8 +531,9 @@ describe('useTransactionListItem', () => {
                     },
                 ],
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts).toHaveLength(2)
@@ -517,8 +561,9 @@ describe('useTransactionListItem', () => {
                     },
                 ],
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts).toHaveLength(1)
@@ -558,8 +603,9 @@ describe('useTransactionListItem', () => {
                     },
                 ],
             })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts).toHaveLength(2)
@@ -568,8 +614,9 @@ describe('useTransactionListItem', () => {
 
         it('shows no amounts when an app call has no balance impacts', () => {
             const tx = createAppCallTx({ balanceImpacts: [] })
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
             expect(result.current.amounts).toEqual([])

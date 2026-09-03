@@ -104,6 +104,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                                 algokit,
                                 encodeSignedTransactions,
                                 signedTxns,
+                                { flow: 'sign-and-submit' },
                             )
                             resolve({ txIds })
                         } catch (err) {

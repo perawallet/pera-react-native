@@ -39,6 +39,7 @@ const TransactionListItemView = ({
         subtitle,
         amounts,
         amountsOverflowCount,
+        isPendingVerifying,
         handlePress,
         handleLongPress,
     } = useTransactionListItem({
@@ -105,6 +106,14 @@ const TransactionListItemView = ({
                         ellipsizeMode='middle'
                     >
                         {subtitle}
+                    </PWText>
+                )}
+                {isPendingVerifying && (
+                    <PWText
+                        variant='caption'
+                        style={styles.pendingVerifying}
+                    >
+                        {t('transactions.common.pending_verifying')}
                     </PWText>
                 )}
             </PWView>

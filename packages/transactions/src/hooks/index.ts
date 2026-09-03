@@ -11,6 +11,7 @@
  */
 
 export * from './useTransactionHistoryQuery'
+export * from './useOpenSubmissionTxIdsQuery'
 export * from './useCsvExportMutation'
 export * from './useTransactionSendFlow'
 export * from './useAssetOptInMutation'

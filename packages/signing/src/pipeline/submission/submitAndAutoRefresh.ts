@@ -16,10 +16,18 @@ import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
+import type { Database } from '@perawallet/wallet-core-database'
 import { SubmissionError } from '../errors'
 import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
+import {
+    markSubmissionUnknown,
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+} from '../../db'
+import { toRound } from '../../ledger'
+import type { IntentKey, SubmissionFlow } from '../../ledger'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
@@ -71,6 +79,29 @@ export interface SubmitAndAutoRefreshCoreInput {
         network: Network,
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTransaction[]
+    /**
+     * Submission-ledger metadata. The ledger row is written
+     * before the POST and resolved on the definitive outcome; with no
+     * metadata the row is written with the generic flow (best-effort txid
+     * match only). `db` defaults to the app singleton — injectable for tests.
+     */
+    ledger?: {
+        flow: SubmissionFlow
+        intentKey?: IntentKey
+        sender?: string
+    }
+    db?: Database
+}
+
+/**
+ * Optional submission-ledger metadata for {@link submitAndAutoRefresh} —
+ * the flow's identity so a rebuild/retry can be matched against an earlier
+ * unresolved attempt. Defaults to the generic flow.
+ */
+export type SubmitAndAutoRefreshOptions = {
+    flow?: SubmissionFlow
+    intentKey?: IntentKey
+    sender?: string
 }
 
 /**
@@ -97,6 +128,7 @@ export const submitAndAutoRefreshCore = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<{ txIds: string[] }> => {
     let txIds: string[]
+    const attemptId = await recordLedgerRow(input)
     try {
         txIds = await submitSignedTransactionGroup(
             input.algokit,
@@ -113,16 +145,92 @@ export const submitAndAutoRefreshCore = async (
             error.classification !== 'unknown-outcome' ||
             error.txIds.length === 0
         ) {
+            // A node rejection is definitive — the bytes are not on chain.
+            // Any other failure keeps the row open for the reconciler.
+            if (
+                attemptId !== null &&
+                error instanceof SubmissionError &&
+                error.classification === 'rejected-by-node'
+            ) {
+                await runLedgerBestEffort(() =>
+                    resolveSubmissionAttempt({
+                        db: input.db,
+                        id: attemptId,
+                        status: 'failed',
+                    }),
+                )
+            }
             throw error
+        }
+        // Unknown outcome: the group may still land — leave the row open so
+        // a reconnect can settle it without a rebuild-induced double spend.
+        if (attemptId !== null) {
+            await runLedgerBestEffort(() =>
+                markSubmissionUnknown({ db: input.db, id: attemptId }),
+            )
         }
         const landed = await verifyLandedWithRetries(input, error.txIds[0]!)
         if (!landed) throw error
+        if (attemptId !== null) {
+            await runLedgerBestEffort(() =>
+                resolveSubmissionAttempt({
+                    db: input.db,
+                    id: attemptId,
+                    status: 'confirmed',
+                }),
+            )
+        }
         txIds = error.txIds
     }
 
-    void backgroundConfirmAndRefresh(input, txIds)
+    void backgroundConfirmAndRefresh(input, txIds, attemptId)
 
     return { txIds }
+}
+
+/**
+ * Writes the durable submission-attempt row before the POST.
+ * Txids and the validity window come from the decoded signed txns — no chain
+ * round-trip — and the row is skipped only when no txid can be derived.
+ */
+const recordLedgerRow = async (
+    input: SubmitAndAutoRefreshCoreInput,
+): Promise<string | null> => {
+    const txIds = input.signedTxns
+        .map(signed => signed.txn.txID?.())
+        .filter(Boolean)
+    if (txIds.length === 0) return null
+
+    const firstTxn = input.signedTxns[0]?.txn
+    let attemptId: string | null = null
+    await runLedgerBestEffort(async () => {
+        attemptId = await recordSubmissionAttempt({
+            db: input.db,
+            network: input.network,
+            txIds,
+            flow: input.ledger?.flow ?? 'generic',
+            intentKey: input.ledger?.intentKey,
+            // Fall back to the group's first sender so generic flows still
+            // scope their pending history row to the right account.
+            sender: input.ledger?.sender ?? firstTxn?.sender?.toString(),
+            lastValid: toRound(firstTxn?.lastValid),
+        })
+    })
+    return attemptId
+}
+
+/**
+ * The ledger is a safety net: a local-write failure must never block the
+ * submit itself (the same best-effort discipline as markConfirmed).
+ */
+const runLedgerBestEffort = async (run: () => Promise<void>): Promise<void> => {
+    try {
+        await run()
+    } catch (error) {
+        logger.warn('submission ledger operation failed (non-fatal)', {
+            error,
+        })
+    }
 }
 
 const verifyLandedWithRetries = async (
@@ -154,6 +262,7 @@ const verifyLandedWithRetries = async (
 const backgroundConfirmAndRefresh = async (
     input: SubmitAndAutoRefreshCoreInput,
     txIds: string[],
+    attemptId: string | null,
 ): Promise<void> => {
     if (txIds.length === 0) return
 
@@ -164,7 +273,18 @@ const backgroundConfirmAndRefresh = async (
             'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
             { error, txIds },
         )
+        // The ledger row stays open — the reconciler owns settlement.
         return
+    }
+
+    if (attemptId !== null) {
+        await runLedgerBestEffort(() =>
+            resolveSubmissionAttempt({
+                db: input.db,
+                id: attemptId,
+                status: 'confirmed',
+            }),
+        )
     }
 
     const transactions = input.signedTxns.map(s => s.txn)
@@ -203,6 +323,7 @@ export const submitAndAutoRefresh = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
     signedTxns: PeraSignedTransaction[],
+    options?: SubmitAndAutoRefreshOptions,
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
     const accounts = useAccountsStore.getState().accounts
@@ -234,6 +355,11 @@ export const submitAndAutoRefresh = async (
             return handler?.(addresses, networkAtSubmission)
         },
         signedTxns,
+        ledger: {
+            flow: options?.flow ?? 'generic',
+            intentKey: options?.intentKey,
+            sender: options?.sender,
+        },
     })
 
     return txIds

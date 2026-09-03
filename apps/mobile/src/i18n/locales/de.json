@@ -1857,6 +1857,9 @@
             },
             "submission_failed": {
                 "title": "Rekey konnte nicht übermittelt werden"
+            },
+            "submission_pending": {
+                "title": "Vorheriger Versuch wird überprüft"
             }
         },
         "confirm": {
@@ -2627,6 +2630,7 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
+            "pending_verifying": "Ausstehend — wird überprüft",
             "raw_transaction": "Rohtransaktion"
         },
         "list_item": {
@@ -2947,7 +2951,9 @@
             "pending_cosign_title": "Tauschanfrage gesendet",
             "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
             "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
-            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
+            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen.",
+            "verifying_previous_title": "Vorheriger Versuch wird überprüft",
+            "verifying_previous_body": "Dein vorheriger Tauschversuch wird noch überprüft. Versuche es erneut, sobald er abgeschlossen ist."
         },
         "signing": {
             "source_name": "Tausch",

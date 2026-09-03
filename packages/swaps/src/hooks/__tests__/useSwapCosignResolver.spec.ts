@@ -13,13 +13,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { SwapHandoffRecord } from '../../models'
-import { useSwapCosignResolver } from '../useSwapCosignResolver'
+import {
+    settleCosignAttempt,
+    useSwapCosignResolver,
+} from '../useSwapCosignResolver'
 
 const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
     useAlgorandClient: vi.fn(),
     useDeviceID: vi.fn(),
     decodeFromBase64: vi.fn(),
+    loggerWarn: vi.fn(),
     addSignature: vi.fn(),
     getSignRequestsWithSignatures: vi.fn(),
     getSignRequestsWithSignaturesQueryKey: vi.fn(),
@@ -29,8 +33,14 @@ const mocks = vi.hoisted(() => ({
     useHandoffResolver: vi.fn(),
     resolveSwapHandoffOutcome: vi.fn(),
     useUpdateSwapStatusMutation: vi.fn(),
+    recordSubmissionAttempt: vi.fn(),
+    markSubmissionUnknown: vi.fn(),
+    resolveSubmissionAttempt: vi.fn(),
+    setSubmissionSettledHandler: vi.fn(),
     markHandoffSubmitted: vi.fn(),
     removeHandoff: vi.fn(),
+    markConfirmed: vi.fn(),
+    updateSwapStatus: vi.fn(),
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
 
@@ -43,6 +53,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: mocks.decodeFromBase64,
+    logger: { warn: mocks.loggerWarn },
 }))
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     addSignature: mocks.addSignature,
@@ -56,18 +67,28 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     classifyHandoffPoll: mocks.classifyHandoffPoll,
     submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
     useHandoffResolver: mocks.useHandoffResolver,
+    recordSubmissionAttempt: mocks.recordSubmissionAttempt,
+    markSubmissionUnknown: mocks.markSubmissionUnknown,
+    resolveSubmissionAttempt: mocks.resolveSubmissionAttempt,
+    setSubmissionSettledHandler: mocks.setSubmissionSettledHandler,
 }))
 vi.mock('../../utils', () => ({
     resolveSwapHandoffOutcome: mocks.resolveSwapHandoffOutcome,
 }))
-vi.mock('../../store', () => ({
-    useSwapHandoffStore: (selector: (s: unknown) => unknown) =>
+vi.mock('../../store', () => {
+    const store = (selector: (s: unknown) => unknown) =>
         selector({
             handoffs: mocks.handoffs,
             markHandoffSubmitted: mocks.markHandoffSubmitted,
             removeHandoff: mocks.removeHandoff,
-        }),
-}))
+        })
+    store.getState = () => ({
+        handoffs: mocks.handoffs,
+        markHandoffSubmitted: mocks.markHandoffSubmitted,
+        removeHandoff: mocks.removeHandoff,
+    })
+    return { useSwapHandoffStore: store }
+})
 vi.mock('../useUpdateSwapStatusMutation', () => ({
     useUpdateSwapStatusMutation: mocks.useUpdateSwapStatusMutation,
 }))
@@ -110,9 +131,11 @@ beforeEach(() => {
         (network: string, id: string) => ['msig', network, id],
     )
     mocks.useMarkSignRequestsConfirmedMutation.mockReturnValue({
-        markConfirmed: vi.fn(),
+        markConfirmed: mocks.markConfirmed,
     })
-    mocks.useUpdateSwapStatusMutation.mockReturnValue({ mutateAsync: vi.fn() })
+    mocks.useUpdateSwapStatusMutation.mockReturnValue({
+        mutateAsync: mocks.updateSwapStatus,
+    })
     mocks.resolveSwapHandoffOutcome.mockResolvedValue(undefined)
 })
 
@@ -301,5 +324,222 @@ describe('swaps/useSwapCosignResolver', () => {
 
         await deps.declineSignRequest('req-1')
         expect(mocks.addSignature).not.toHaveBeenCalled()
+    })
+
+    it('wires the submission-ledger deps through to the signing package', async () => {
+        const handoff = makeRecord()
+        mocks.handoffs = { 'req-1': handoff }
+
+        render()
+
+        config().resolve({ kind: 'ready', assembledBytes: [] }, handoff, {
+            proposer_address: 'PROPOSER',
+        })
+        const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
+
+        await deps.recordSubmissionAttempt({
+            network: 'mainnet',
+            txIds: ['t'],
+            flow: 'cosign',
+            intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+        })
+        expect(mocks.recordSubmissionAttempt).toHaveBeenCalledWith({
+            network: 'mainnet',
+            txIds: ['t'],
+            flow: 'cosign',
+            intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+        })
+
+        await deps.markSubmissionUnknown('row-1')
+        expect(mocks.markSubmissionUnknown).toHaveBeenCalledWith({
+            id: 'row-1',
+        })
+
+        await deps.markSubmissionFailed('row-1')
+        expect(mocks.resolveSubmissionAttempt).toHaveBeenCalledWith({
+            id: 'row-1',
+            status: 'failed',
+        })
+    })
+
+    it('registers a cosign settle handler that replays the tail on confirmation', async () => {
+        mocks.handoffs = {
+            'req-1': makeRecord({
+                submission: { txIds: ['txid-1'], submittedAt: 2 },
+            }),
+        }
+
+        render()
+
+        expect(mocks.setSubmissionSettledHandler).toHaveBeenCalledWith(
+            'cosign',
+            expect.any(Function),
+        )
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+
+        await handler(['txid-1'], 'mainnet', 'confirmed')
+
+        expect(mocks.markConfirmed).toHaveBeenCalledWith({
+            network: 'mainnet',
+            deviceId: 'device-1',
+            signRequestIds: ['req-1'],
+        })
+        expect(mocks.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['txid-1'],
+                swap_version: 'v2',
+            },
+        })
+        expect(mocks.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    it('fails and removes the retained handoff without declining on a definitive failure', async () => {
+        mocks.handoffs = {
+            'req-1': makeRecord({
+                submission: { txIds: ['txid-1'], submittedAt: 2 },
+            }),
+        }
+
+        render()
+
+        const handler = mocks.setSubmissionSettledHandler.mock.calls[0][1]
+        await handler(['txid-1'], 'mainnet', 'failed')
+
+        expect(mocks.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'failed',
+                reason: 'blockchain_error',
+                swap_version: 'v2',
+            },
+        })
+        expect(mocks.addSignature).not.toHaveBeenCalled()
+        expect(mocks.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    it('clears the cosign settle handler on unmount', () => {
+        const view = render()
+
+        view.unmount()
+
+        expect(mocks.setSubmissionSettledHandler).toHaveBeenLastCalledWith(
+            'cosign',
+            null,
+        )
+    })
+})
+
+describe('settleCosignAttempt', () => {
+    const settleDeps = () => ({
+        markConfirmed: vi.fn().mockResolvedValue(undefined),
+        updateSwapStatus: vi.fn().mockResolvedValue(undefined),
+        removeHandoff: vi.fn(),
+    })
+
+    it('confirmed: replays the post-submit tail for each matching handoff', async () => {
+        const handoff = makeRecord({
+            submission: { txIds: ['txid-1', 'txid-2'], submittedAt: 2 },
+        })
+        const deps = settleDeps()
+
+        await settleCosignAttempt(
+            { 'req-1': handoff },
+            ['txid-2'],
+            'mainnet',
+            'confirmed',
+            deps,
+        )
+
+        expect(deps.markConfirmed).toHaveBeenCalledWith({
+            network: 'mainnet',
+            deviceId: 'device-1',
+            signRequestIds: ['req-1'],
+        })
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['txid-2'],
+                swap_version: 'v2',
+            },
+        })
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    it('failed: marks the swap failed and removes the handoff', async () => {
+        const handoff = makeRecord({
+            submission: { txIds: ['txid-1'], submittedAt: 2 },
+        })
+        const deps = settleDeps()
+
+        await settleCosignAttempt(
+            { 'req-1': handoff },
+            ['txid-1'],
+            'mainnet',
+            'failed',
+            deps,
+        )
+
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'failed',
+                reason: 'blockchain_error',
+                swap_version: 'v2',
+            },
+        })
+        expect(deps.markConfirmed).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    it('confirmed: a throwing markConfirmed is best-effort — status and cleanup still run', async () => {
+        const handoff = makeRecord({
+            submission: { txIds: ['txid-1'], submittedAt: 2 },
+        })
+        const deps = settleDeps()
+        deps.markConfirmed.mockRejectedValueOnce(new Error('network'))
+
+        await settleCosignAttempt(
+            { 'req-1': handoff },
+            ['txid-1'],
+            'mainnet',
+            'confirmed',
+            deps,
+        )
+
+        expect(deps.updateSwapStatus).toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    it('ignores handoffs on other networks or without an intersecting submission', async () => {
+        const otherNetwork = makeRecord({
+            signRequestId: 'other-net',
+            network: 'testnet',
+            submission: { txIds: ['txid-1'], submittedAt: 2 },
+        })
+        const noSubmission = makeRecord({ signRequestId: 'no-sub' })
+        const noIntersection = makeRecord({
+            signRequestId: 'other-txids',
+            submission: { txIds: ['txid-other'], submittedAt: 2 },
+        })
+        const deps = settleDeps()
+
+        await settleCosignAttempt(
+            {
+                'other-net': otherNetwork,
+                'no-sub': noSubmission,
+                'other-txids': noIntersection,
+            },
+            ['txid-1'],
+            'mainnet',
+            'confirmed',
+            deps,
+        )
+
+        expect(deps.markConfirmed).not.toHaveBeenCalled()
+        expect(deps.updateSwapStatus).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).not.toHaveBeenCalled()
     })
 })
