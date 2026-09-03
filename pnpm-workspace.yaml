@@ -74,7 +74,7 @@ catalog:
   expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0
   fast-glob: ^3.3.2
-  jsdom: ^27.4.0
+  jsdom: ^30.0.1
   ky: ^2.0.2
   lanekeep: 0.8.1
   msw: ^2.14.6
@@ -142,15 +142,6 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
-  # TEMPORARY — delete this entry (and this comment) after 2026-08-26 17:13 UTC,
-  # when 3.7.0 clears the 7-day window on its own. Present only so the PQ floor
-  # above could land the day the release shipped. Verified before adding:
-  # published by the same github-actions[bot] CI path as 3.6.0, npm signature
-  # present, no pre/postinstall scripts, and the maintainer set gained exactly
-  # one name — joe-p (Joe Polny), an Algorand Foundation engineer who also
-  # maintains @algorandfoundation/algokit-utils and authored the PQ PR this
-  # bump is for.
-  - algosdk
   - falcon-1024
   - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
@@ -268,6 +259,20 @@ overrides:
   # prebuilt Constants.manifest" archive phase. A direct spec can't hold these
   # down (the float is inside the dependents' ranges), so pin them here.
   expo-constants: 57.0.9
+  # One copy only, for the same reason as algosdk and wallet-provider: two
+  # @types/react mean two ref/JSX type universes, and
+  # `React.ComponentRef<typeof PWFlatList>` collapses to `never` the moment a
+  # second one appears — apps/mobile's FlashList refs stop type-checking and
+  # `mobile#build` fails.
+  # It splits on its own: @types/react-native 0.70.x (reached through
+  # @gorhom/bottom-sheet) asks for @types/react over a much wider range than
+  # the catalog, so it only takes a few more peer contexts in the graph — the
+  # ones @rneui/base 5.0.0 adds by declaring @testing-library/jest-native and
+  # @testing-library/react-native as non-optional peers — for pnpm to stop
+  # collapsing the two ranges into one resolution. Mirroring the catalog range
+  # here gives every consumer the same spec, so it resolves once. Move this
+  # with the catalog entry, not on its own.
+  '@types/react': ~19.2.14
   expo-build-properties: 57.0.9
   '@grpc/grpc-js@<1.9.16': 1.9.16
   # Single copy across the expo config-plugin toolchain; 0.8.15 is the

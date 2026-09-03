@@ -118,7 +118,7 @@
     "unused-enum-members": "off",
     // Disabled: every finding is a test-only false positive. fallow resolves
     // modules via tsconfig, but vitest adds aliases (@test-utils, @/...), .svg
-    // transforms, and mocks of native libs (react-native-tab-view, vector-icons)
+    // transforms, and mocks of native libs (react-native-tab-view)
     // it cannot see — producing phantom unresolved/unlisted findings in test files.
     "unresolved-imports": "off",
     "unlisted-dependencies": "off"
