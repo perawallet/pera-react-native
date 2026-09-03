@@ -1927,14 +1927,15 @@ index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc43795
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5cc39026b33e10666f8e798a4a832e3be1c1c76a
+index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752f115ab69
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,118 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.os.Build
 +import android.os.Bundle
++import android.util.Log
 +import android.view.autofill.AutofillId
 +import android.widget.ArrayAdapter
 +import android.widget.ListView
@@ -1977,7 +1978,11 @@ index 0000000000000000000000000000000000000000..5cc39026b33e10666f8e798a4a832e3b
 +        val callerPackageName = intent.getStringExtra(PeraAutofillService.EXTRA_PACKAGE_NAME)
 +        val passwordId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_PASSWORD_ID)
 +        val usernameId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_USERNAME_ID)
-+        if (callerPackageName == null || passwordId == null) { cancel(); return }
++        if (callerPackageName == null || passwordId == null) {
++            Log.e(TAG, "Missing required extras on the picker intent")
++            cancel()
++            return
++        }
 +
 +        // The user is the only thing standing between this app and a login, so
 +        // they must be able to see which app is asking before they choose.
@@ -2008,11 +2013,21 @@ index 0000000000000000000000000000000000000000..5cc39026b33e10666f8e798a4a832e3b
 +    ) {
 +        if (!biometrics()) { cancel(); return }
 +
-+        val login = store.login(this, chosen.recordIdentifier)
++        val login = try {
++            store.login(this, chosen.recordIdentifier)
++        } catch (e: Exception) {
++            Log.e(TAG, "Unseal failed", e)
++            null
++        }
++        if (login == null) { cancel(); return }
 +        // Mirrors FillAuthActivity's guard: an empty password would otherwise
 +        // fill a real username alongside nothing, which is the partial fill
 +        // this feature must never produce.
-+        if (login == null || login.password.isEmpty()) { cancel(); return }
++        if (login.password.isEmpty()) {
++            Log.e(TAG, "The selected login has no password to release")
++            cancel()
++            return
++        }
 +
 +        // Only after the prompt succeeds: a cancelled prompt must leave no
 +        // association behind.
@@ -2028,6 +2043,10 @@ index 0000000000000000000000000000000000000000..5cc39026b33e10666f8e798a4a832e3b
 +        packageManager.getApplicationLabel(info).toString()
 +    } catch (e: Exception) {
 +        packageName
++    }
++
++    companion object {
++        private const val TAG = "PeraPickerActivity"
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
@@ -2409,14 +2428,14 @@ index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f70
 +class PasskeyProviderService : PasskeyAutofillCredentialProviderService()
 diff --git a/android/src/main/res/layout/pera_autofill_picker.xml b/android/src/main/res/layout/pera_autofill_picker.xml
 new file mode 100644
-index 0000000000000000000000000000000000000000..21113fd415c4581d4c2d32947634c3dce029d929
+index 0000000000000000000000000000000000000000..12e4aa079d5c5e4fb48e0db6a638723ef9313e81
 --- /dev/null
 +++ b/android/src/main/res/layout/pera_autofill_picker.xml
-@@ -0,0 +1,22 @@
+@@ -0,0 +1,23 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 +    android:layout_width="match_parent"
-+    android:layout_height="wrap_content"
++    android:layout_height="400dp"
 +    android:orientation="vertical"
 +    android:background="@android:color/white"
 +    android:padding="16dp">
@@ -2432,7 +2451,8 @@ index 0000000000000000000000000000000000000000..21113fd415c4581d4c2d32947634c3dc
 +    <ListView
 +        android:id="@+id/pera_autofill_picker_list"
 +        android:layout_width="match_parent"
-+        android:layout_height="wrap_content" />
++        android:layout_height="0dp"
++        android:layout_weight="1" />
 +
 +</LinearLayout>
 diff --git a/android/src/main/res/raw/passkey_privileged_browsers.json b/android/src/main/res/raw/passkey_privileged_browsers.json
