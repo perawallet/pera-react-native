@@ -181,10 +181,10 @@ const isPossiblyLanded = (
 
 /**
  * Common terminal-failure path: notify the user, cancel the still-live
- * sign-request (best-effort, skipped when the submission's outcome is
- * unknown), then record the failure. Does NOT remove the handoff — the
- * caller owns that so the `ready` path keeps its outcome-conditional
- * `finally` cleanup.
+ * sign-request (best-effort), then record the failure. Reached only for
+ * definitive failures — the caller filters out a possibly-landed submission
+ * before this point. Does NOT remove the handoff — the caller owns that so
+ * the `ready` path keeps its outcome-conditional `finally` cleanup.
  */
 const failHandoff = async (
     deps: MultisigHandoffCompletionDeps,
@@ -194,9 +194,7 @@ const failHandoff = async (
         error: error instanceof Error ? error.message : String(error),
     })
     deps.reportError(error)
-    if (!isPossiblyLanded(error)) {
-        await runBestEffort(() => deps.decline(), 'decline')
-    }
+    await runBestEffort(() => deps.decline(), 'decline')
     await runBestEffort(() => deps.onFailed(), 'status update')
 }
 
