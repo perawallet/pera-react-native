@@ -11,25 +11,16 @@
  */
 
 import { useRemoveCloudBackupMutation } from '@perawallet/wallet-core-backup'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useGoToCloudBackupHome } from './useGoToCloudBackupHome'
 
-type Translate = ReturnType<typeof useLanguage>['t']
-
-const removalToast = (t: Translate, remoteOk: boolean) => ({
-    title: remoteOk
-        ? t('cloud_backup.turn_off_and_remove.success')
-        : t('cloud_backup.turn_off_and_remove.partial'),
-    body: '',
-    type: remoteOk ? ('success' as const) : ('error' as const),
-})
-
 type UseRemoveCloudBackupResult = {
     /**
-     * Local teardown runs even when the remote destroy fails, so the user is
-     * always freed from the backup on this device. The remote backup may be
-     * briefly orphaned in that case.
+     * The remote destroy runs first and the local teardown only follows a
+     * confirmed one, so a failure leaves the device able to retry rather than
+     * dropping the keys that reach a backup the server still holds.
      */
     removeBackup: () => void
     isRemoving: boolean
@@ -41,12 +32,18 @@ export const useRemoveCloudBackup = (): UseRemoveCloudBackupResult => {
     const goHome = useGoToCloudBackupHome()
 
     const mutation = useRemoveCloudBackupMutation({
-        onSuccess: ({ remoteOk }) => {
-            showToast(removalToast(t, remoteOk))
+        onSuccess: () => {
+            showToast({
+                title: t('cloud_backup.turn_off_and_remove.success'),
+                body: '',
+                type: 'success',
+            })
             goHome()
         },
-        onError: () => {
-            // Local teardown failed, so state may be inconsistent — no navigation.
+        onError: error => {
+            logger.warn('useRemoveCloudBackup: remove failed', {
+                error: error.message,
+            })
             showToast({
                 title: t('cloud_backup.turn_off_and_remove.error'),
                 body: '',

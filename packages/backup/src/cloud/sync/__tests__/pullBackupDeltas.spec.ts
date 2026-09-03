@@ -73,4 +73,15 @@ describe('pullBackupDeltas', () => {
         expect(next.lastSyncedSeq).toBe(0)
         expect(readItems).not.toHaveBeenCalled()
     })
+
+    it('records the pull as a successful sync', async () => {
+        fetchDelta.mockResolvedValue([])
+        const next = await pullBackupDeltas(
+            deps(),
+            createEmptySyncState('b'),
+            1_700_000_000_000,
+        )
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(next.lastSyncedAt).toBe(1_700_000_000_000)
+    })
 })

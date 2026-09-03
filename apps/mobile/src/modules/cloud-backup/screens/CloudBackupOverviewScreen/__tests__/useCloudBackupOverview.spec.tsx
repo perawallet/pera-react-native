@@ -149,28 +149,25 @@ beforeEach(() => {
 })
 
 describe('useCloudBackupOverview', () => {
-    test('maps upToDate to the success badge', () => {
-        mockStores({
-            backupId: 'did:pera:abc',
-            syncState: emptySync(),
-            accounts: 0,
-            contacts: 0,
-            derivedStatus: 'upToDate',
-        })
-        const { result } = renderHook(() => useCloudBackupOverview())
-        expect(result.current.syncStatus).toBe('success')
-    })
+    const badgeCases: [string, string | null][] = [
+        ['idle', null],
+        ['pending', null],
+        ['syncing', 'syncing'],
+        ['upToDate', 'success'],
+        ['destroyed', 'failed'],
+        ['error', 'failed'],
+    ]
 
-    test('maps error to the failed badge', () => {
+    test.each(badgeCases)('maps the %s status to %s', (status, badge) => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: emptySync(),
             accounts: 1,
             contacts: 0,
-            derivedStatus: 'error',
+            derivedStatus: status,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
-        expect(result.current.syncStatus).toBe('failed')
+        expect(result.current.syncStatus).toBe(badge)
     })
 
     test('counts: 0 in sync, all local accounts not backed up (empty sync state)', () => {

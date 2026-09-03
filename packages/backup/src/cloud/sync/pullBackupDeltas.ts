@@ -18,13 +18,15 @@ import type { SyncEngineDeps } from './types'
 
 /** WebSocket-triggered lightweight pull: fetch deltas from the local cursor and
  *  apply them (download/decrypt/import remote changes). No reconcile, no push —
- *  that's `syncBackup`'s job on the periodic/foreground cycle. */
+ *  that's `syncBackup`'s job on the periodic/foreground cycle. `now` is injected
+ *  for deterministic tests. */
 export const pullBackupDeltas = async (
     deps: Pick<
         SyncEngineDeps,
         'network' | 'backupId' | 'deviceId' | 'encryptionKey' | 'importAccounts'
     >,
     state: SyncState,
+    now: number = Date.now(),
 ): Promise<SyncState> => {
     const deltas = await fetchDelta(
         deps.network,
@@ -32,7 +34,7 @@ export const pullBackupDeltas = async (
         deps.deviceId,
         state.lastSyncedSeq,
     )
-    return applyDeltas({
+    const next = await applyDeltas({
         state,
         deltas,
         deps: {
@@ -45,4 +47,8 @@ export const pullBackupDeltas = async (
             decrypt: decryptItemPayload,
         },
     })
+
+    // A device that only ever receives over the socket never runs `syncBackup`,
+    // so without this it reads as never-synced with a full account list.
+    return { ...next, lastSyncedAt: now, lastSyncResult: 'SUCCESS' }
 }

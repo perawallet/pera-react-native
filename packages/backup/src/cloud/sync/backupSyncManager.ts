@@ -12,14 +12,17 @@
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
     logger,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useCloudBackupStore, useBackupSyncStateStore } from '../store'
+import {
+    useCloudBackupStore,
+    useBackupSyncStateStore,
+    resolveBackupDeviceId,
+} from '../store'
 import {
     withBackupAuthSecretKey,
     withBackupEncryptionKey,
@@ -75,12 +78,8 @@ export class BackupSyncManager {
         deviceId: string
     }> {
         const network = useNetworkStore.getState().network
-        const { backupId, deviceId: registeredDeviceId } =
-            useCloudBackupStore.getState()
-        const deviceId =
-            registeredDeviceId ??
-            useDeviceStore.getState().deviceIDs?.get(network) ??
-            null
+        const { backupId } = useCloudBackupStore.getState()
+        const deviceId = resolveBackupDeviceId(network)
         if (!backupId || !deviceId) return null
         return { network, backupId, deviceId }
     }

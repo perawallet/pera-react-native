@@ -25,7 +25,7 @@ const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
         resetMock: vi.fn(),
         mutateMock: vi.fn(),
         capturedOptions: {
-            value: null as MutationCallbacks<{ remoteOk: boolean }> | null,
+            value: null as MutationCallbacks<void> | null,
         },
     }),
 )
@@ -51,8 +51,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 import { useRemoveCloudBackup } from '../useRemoveCloudBackup'
 
-const succeed = (remoteOk: boolean) =>
-    act(() => capturedOptions.value?.onSuccess?.({ remoteOk }))
+const succeed = () => act(() => capturedOptions.value?.onSuccess?.())
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -60,10 +59,10 @@ beforeEach(() => {
 })
 
 describe('useRemoveCloudBackup', () => {
-    test('confirms and navigates home when the remote backup is gone', () => {
+    test('confirms and navigates home once the remote backup is gone', () => {
         renderHook(() => useRemoveCloudBackup())
 
-        succeed(true)
+        succeed()
 
         expect(showToastMock).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -77,27 +76,10 @@ describe('useRemoveCloudBackup', () => {
         })
     })
 
-    test('still navigates home but flags the orphaned remote backup', () => {
+    test('stays put and keeps the local backup when the remove fails', () => {
         renderHook(() => useRemoveCloudBackup())
 
-        succeed(false)
-
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.turn_off_and_remove.partial',
-                type: 'error',
-            }),
-        )
-        expect(resetMock).toHaveBeenCalledWith({
-            index: 0,
-            routes: [{ name: 'CloudBackupHome' }],
-        })
-    })
-
-    test('stays put when the local teardown itself fails', () => {
-        renderHook(() => useRemoveCloudBackup())
-
-        act(() => capturedOptions.value?.onError?.(new Error('keystore down')))
+        act(() => capturedOptions.value?.onError?.(new Error('offline')))
 
         expect(showToastMock).toHaveBeenCalledWith(
             expect.objectContaining({

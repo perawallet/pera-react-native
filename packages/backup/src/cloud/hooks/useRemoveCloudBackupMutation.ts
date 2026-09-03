@@ -12,11 +12,10 @@
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { destroyBackup } from '../api'
 import { deleteBackupKeys } from '../credentials/keyStorage'
-import type { BackupId, DeviceId } from '../models'
+import { resolveBackupDeviceId } from '../store/resolveBackupDeviceId'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
 import { getBackupSyncManager } from '../sync/backupSyncManager'
@@ -27,22 +26,6 @@ const warn = (message: string, error: unknown): void => {
     })
 }
 
-/** False when the server still holds the backup, which is not fatal locally. */
-const destroyRemoteBackup = async (
-    network: Network,
-    backupId: BackupId | null,
-    deviceId: DeviceId | null,
-): Promise<boolean> => {
-    if (!backupId || !deviceId) return true
-    try {
-        await destroyBackup(network, backupId, deviceId)
-        return true
-    } catch (error) {
-        warn('useRemoveCloudBackupMutation: remote destroy failed', error)
-        return false
-    }
-}
-
 const stopSyncManager = (): void => {
     try {
         getBackupSyncManager().stop()
@@ -51,37 +34,35 @@ const stopSyncManager = (): void => {
     }
 }
 
-export type RemoveCloudBackupMutationResult = {
-    /** False when the remote backup survived the attempt and is now orphaned. */
-    remoteOk: boolean
-}
-
 /**
- * Local teardown runs even when the remote destroy fails, so the user is always
- * freed from the backup on this device (mirrors Android's `DeleteBackup`).
+ * The remote destroy runs first and the local teardown only follows a confirmed
+ * one, so a failure leaves the device able to retry rather than dropping the
+ * keys that reach a backup the server still holds.
  */
 export const useRemoveCloudBackupMutation = (
-    options?: UseMutationOptions<RemoveCloudBackupMutationResult, Error, void>,
+    options?: UseMutationOptions<void, Error, void>,
 ) => {
     const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
     const backupId = useCloudBackupStore(state => state.backupId)
     const resetCloudBackup = useCloudBackupStore(state => state.resetState)
     const resetSyncState = useBackupSyncStateStore(state => state.resetState)
 
     return useMutation({
         throwOnError: false,
-        mutationFn: async (): Promise<RemoveCloudBackupMutationResult> => {
-            const remoteOk = await destroyRemoteBackup(
-                network,
-                backupId,
-                deviceId,
-            )
+        mutationFn: async (): Promise<void> => {
+            const deviceId = resolveBackupDeviceId(network)
+            if (!backupId || !deviceId) {
+                throw new Error(
+                    'useRemoveCloudBackupMutation: no backup configured on this device',
+                )
+            }
+
+            await destroyBackup(network, backupId, deviceId)
+
             stopSyncManager()
             await deleteBackupKeys()
             resetCloudBackup()
             resetSyncState()
-            return { remoteOk }
         },
         ...options,
     })

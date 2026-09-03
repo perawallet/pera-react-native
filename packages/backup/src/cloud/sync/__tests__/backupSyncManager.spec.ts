@@ -79,6 +79,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('../../store', () => ({
+    // Mirrors the real rule against the two fixtures above; the rule itself is
+    // covered in the resolver's own spec.
+    resolveBackupDeviceId: () => storedDeviceId.current ?? 'dev-id',
     useCloudBackupStore: {
         getState: () => ({
             backupId: 'backup-123',
