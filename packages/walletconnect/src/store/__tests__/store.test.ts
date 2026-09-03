@@ -13,6 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+// Every case re-imports the module after vi.resetModules(); eleven cold imports
+// under a parallel full-suite run overrun the 5s default.
+vi.setConfig({ testTimeout: 15_000 })
+
 const mockStorage = new Map<string, string>()
 const registerStoreMock = vi.hoisted(() => vi.fn())
 

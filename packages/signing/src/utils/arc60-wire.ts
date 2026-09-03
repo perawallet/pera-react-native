@@ -45,6 +45,17 @@ export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
 }
 
 /**
+ * Standard base64 (RFC 4648 §4): alphabet-restricted, length a multiple of
+ * 4, at most two trailing `=` padding characters in the final group.
+ * `decodeFromBase64` (base64-js's `toByteArray`) only rejects a length that
+ * isn't a multiple of 4 — `'!!!!'`, `'@@@@'`, and `''` all "successfully"
+ * decode to garbage or empty bytes otherwise, so the alphabet and shape are
+ * enforced here instead, at the boundary.
+ */
+const BASE64_PATTERN =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{4})$/
+
+/**
  * Zod schema for the wire shape of an ARC-60 `algo_signData` request.
  *
  * Mirrors ARC-60's `StdSigData` + `Metadata`. `data`, `signer`, `domain`,
@@ -55,7 +66,13 @@ export const arc60WireSchema = z.object({
     data: z.string().max(16 * 1024), // base64-encoded SIWA blob
     signer: z.string().min(1).max(128),
     domain: z.string().min(1).max(256),
-    authenticatorData: z.string().min(1).max(512),
+    /**
+     * Per ARC-60, the first 32 decoded bytes MUST be `sha256(domain)` (checked
+     * downstream by `validateArc60AuthRequest`), so a valid payload can never
+     * decode to fewer than 32 bytes. 44 is the minimum base64 length that
+     * encodes 32 bytes (`ceil(32/3)*4`, RFC 4648 §4).
+     */
+    authenticatorData: z.string().min(44).max(512).regex(BASE64_PATTERN),
     requestId: z.string().max(256).optional(),
     hdPath: z.string().max(256).optional(),
     metadata: z.object({

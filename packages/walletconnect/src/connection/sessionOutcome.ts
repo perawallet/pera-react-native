@@ -11,7 +11,7 @@
  */
 
 import { useWalletConnectStore } from '../store'
-import { getConnectionErrorClientId } from '../errors'
+import { getConnectionErrorClientId } from '../shared/errors'
 
 export type WalletConnectSessionOutcome =
     | { type: 'session' }

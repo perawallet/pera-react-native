@@ -108,7 +108,8 @@ export type PeraArbitraryDataMessage = {
     signer: string
     data: string
     message?: string
-    chainId: number
+    /** WalletConnect v1 wire concept; absent on transports that have no chain id. */
+    chainId?: number
 }
 
 export type PeraArbitraryDataSignResult = {

@@ -1,0 +1,48 @@
+{
+  "name": "@perawallet/wallet-core-connections",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/handler-contract.d.ts",
+      "default": "./dist/testing/handler-contract.js"
+    },
+    "./pairingOutcome": {
+      "types": "./dist/pairingOutcome.d.ts",
+      "default": "./dist/pairingOutcome.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
+    "@perawallet/wallet-extension-connections": "workspace:*",
+    "react": "catalog:",
+    "zod": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

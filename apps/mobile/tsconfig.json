@@ -53,6 +53,10 @@
       "@utils/*": [
         "./src/utils/*"
       ],
+      // Test-only: vitest resolves this; Metro/Babel have no matching resolver, so production code must not use it.
+      "@packages/*": [
+        "../../packages/*"
+      ],
       "@perawallet/wallet-core-card/test-handlers": [
         "../../packages/card/src/test-handlers.ts"
       ],

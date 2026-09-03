@@ -28,6 +28,26 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            // packages/shared's dist is stale and its build currently fails
+            // on main (unrelated to this package), so it can't be
+            // regenerated. Alias straight to source so tests exercise real
+            // behavior instead of a silently outdated build artifact.
+            // `Networks` (betanet/custom) is defined in packages/config and
+            // only re-exported by shared/src/models/base-types.ts, so
+            // aliasing shared alone still resolves that re-export through
+            // config's own stale dist — wallet-core-config needs the same
+            // source alias for the chain to be genuinely fresh end to end.
+            // Do not remove either alias as "redundant" once these packages
+            // build again without first confirming both dists are back in
+            // sync with their src.
+            '@perawallet/wallet-core-shared': path.resolve(
+                __dirname,
+                '../shared/src/index.ts',
+            ),
+            '@perawallet/wallet-core-config': path.resolve(
+                __dirname,
+                '../config/src/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
@@ -59,6 +79,28 @@ export default defineConfig({
             '@perawallet/wallet-core-device': path.resolve(
                 __dirname,
                 '../device/src/index.ts',
+            ),
+            // The `/testing` subpath needs its own entry — aliasing the
+            // package root does not cover it, and the v1 handler spec runs
+            // the shared handler contract suite from there.
+            '@perawallet/wallet-core-connections/testing': path.resolve(
+                __dirname,
+                '../connections/src/testing/handler-contract.ts',
+            ),
+            // Same reason as `/testing`, plus: the pairing-outcome module is
+            // a leaf, so a spec can read its budgets without the barrel
+            // dragging in the signing adapter and react-native-mmkv.
+            '@perawallet/wallet-core-connections/pairingOutcome': path.resolve(
+                __dirname,
+                '../connections/src/pairingOutcome.ts',
+            ),
+            '@perawallet/wallet-core-connections': path.resolve(
+                __dirname,
+                '../connections/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-connections': path.resolve(
+                __dirname,
+                '../../extensions/connections/src/index.ts',
             ),
         },
     },

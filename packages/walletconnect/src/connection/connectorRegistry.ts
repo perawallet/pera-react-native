@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import WalletConnect from '@perawallet/walletconnect'
+import type WalletConnect from '@perawallet/walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
-import { PERA_CLIENT_META, WC_DELIVERY_TIMEOUT_MS } from '../constants'
+import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
-} from '../errors'
+} from '../shared/errors'
 import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
-import { useWalletConnectStore } from '../store'
+import { createWalletConnectConnector } from './createConnector'
 
 /**
  * Registry of live WalletConnect v1 connectors, one bridge WebSocket each.
@@ -38,6 +38,16 @@ import { useWalletConnectStore } from '../store'
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
 type HandlerBinder = (connector: WalletConnect) => void
+
+/** The connector events the v1 handler binds; teardown unbinds exactly these. */
+export const BOUND_EVENTS = [
+    'session_request',
+    'algo_signTxn',
+    'algo_signData',
+    'disconnect',
+    'error',
+    'transport_error',
+] as const
 
 /** Poll cadence while waiting for a recreated socket to report open. */
 const POLL_INTERVAL_MS = 50
@@ -75,8 +85,9 @@ const isSocketOpen = (connector: WalletConnect): boolean =>
 
 /**
  * Register how dApp request handlers get (re)bound onto a connector. Reserved
- * for a single long-lived owner per realm: `useWalletConnect`'s
- * `ownsRequestHandlers` opt-in on native, the offscreen host on web.
+ * for a single long-lived owner per realm: the v1 handler's `initialize` on
+ * native, the offscreen host on web. (`useWalletConnect`'s
+ * `ownsRequestHandlers` opt-in is the legacy owner `apps/browser` still runs.)
  */
 export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
     handlerBinder = binder
@@ -135,21 +146,16 @@ export const registerConnector = (
 }
 
 /**
- * Stops a superseded connector's dead socket running its own background
- * reconnect loop instead of leaking.
+ * Unbinds and closes a connector so a dead or superseded socket cannot run its
+ * own reconnect loop or fire a late `session_request`. Best-effort: the
+ * connector is being discarded, so a failure here has nothing left to break.
  */
-const teardownConnector = (connector: WalletConnect): void => {
+export const teardownConnector = (connector: WalletConnect): void => {
     try {
-        connector.off('algo_signData')
-        connector.off('algo_signTxn')
-        connector.off('disconnect')
-        connector.off('session_request')
-        connector.off('error')
-        connector.off('transport_error')
+        for (const event of BOUND_EVENTS) connector.off(event)
         connector.transportClose()
     } catch {
-        // Teardown of a superseded connector is best-effort; a failure
-        // here is non-fatal and intentionally swallowed.
+        // Discarding the connector anyway.
     }
 }
 
@@ -168,19 +174,15 @@ export const forgetConnector = (clientId: string): void => {
  * request TTL, so a slow dApp response can pop a "ghost" approval sheet
  * minutes after the user was told pairing failed — unbinding the handlers and
  * closing the transport is the only way to prevent that (`forgetConnector`
- * alone leaves them bound). Refuses to touch a connector that connected or
- * has a persisted session: abandonment is strictly for failed pairings.
+ * alone leaves them bound). Refuses to touch a connected connector: `connected`
+ * flips inside `approveSession`, so it alone says whether a session exists.
+ * Reading the legacy store here would instantiate it on the migration launch
+ * and re-persist the plaintext session keys the importer just deleted.
  */
 export const abandonPairing = (clientId: string): void => {
     const connector = useConnectorRegistryStore.getState().connectors[clientId]
     if (!connector) return
     if (connector.connected) return
-    const hasStoredConnection = useWalletConnectStore
-        .getState()
-        .walletConnectConnections.some(
-            connection => connection.clientId === clientId,
-        )
-    if (hasStoredConnection) return
     teardownConnector(connector)
     forgetConnector(clientId)
 }
@@ -254,7 +256,7 @@ const recreateConnector = async (
 
     teardownConnector(staleConnector)
 
-    const fresh = new WalletConnect({ session, clientMeta: PERA_CLIENT_META })
+    const fresh = createWalletConnectConnector({ session })
     registerConnector(clientId, fresh)
 
     bindConnectorHandlers(fresh)

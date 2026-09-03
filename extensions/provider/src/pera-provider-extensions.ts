@@ -28,6 +28,10 @@ import type {
     WithPasskeyAutofill,
     PasskeyAutofillExtension,
 } from '@perawallet/wallet-extension-passkey-autofill'
+import type {
+    WithConnections,
+    ConnectionsExtension,
+} from '@perawallet/wallet-extension-connections'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
@@ -69,6 +73,7 @@ export type PeraExtensions = readonly [
     typeof WithKeyStore,
     typeof WithPeraKeystoreRepairs,
     typeof WithPasskeyAutofill,
+    typeof WithConnections,
 ]
 
 /**
@@ -84,4 +89,5 @@ export type PeraProvider = Provider<PeraExtensions> &
     MigrationsExtension &
     PlatformExtension &
     KeyStoreExtension &
-    PasskeyAutofillExtension
+    PasskeyAutofillExtension &
+    ConnectionsExtension

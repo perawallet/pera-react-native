@@ -35,6 +35,7 @@ export enum ErrorCategory {
     UNKNOWN = 'unknown',
     KMS = 'kms',
     WALLETCONNECT = 'walletconnect',
+    CONNECTIONS = 'connections',
     STAKING = 'staking',
     TRANSACTIONS = 'transactions',
 }

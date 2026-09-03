@@ -52,6 +52,7 @@ export const TITLE_KEY_BY_CATEGORY: Record<ErrorCategory, string> = {
     [ErrorCategory.UNKNOWN]: 'errors.general.title',
     [ErrorCategory.VALIDATION]: 'errors.general.title',
     [ErrorCategory.WALLETCONNECT]: 'errors.general.title',
+    [ErrorCategory.CONNECTIONS]: 'errors.general.title',
 }
 
 // An offline or timed-out request has no bespoke copy by design; the request

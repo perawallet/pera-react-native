@@ -1,0 +1,324 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { hasSecret } from '@perawallet/wallet-core-kms'
+import { logger } from '@perawallet/wallet-core-shared'
+import type {
+    ConnectionOrigin,
+    ConnectionOriginSource,
+    ConnectionPeer,
+    ConnectionPersistence,
+    ConnectionStoreAPI,
+} from '@perawallet/wallet-extension-connections'
+import { isAlgorandPermission } from '../models'
+import { toPeer } from '../shared/peer'
+import { readString } from '../shared/read'
+import {
+    WALLET_CONNECT_V1_KIND,
+    type WalletConnectV1Connection,
+} from '../v1/connection'
+import { commitSessionKey } from '../v1/secrets'
+
+export const LEGACY_STORE_KEY = 'wallet-connect-store'
+
+// The v1 client derives its AES key from this hex; anything else can never
+// decrypt a frame, so committing it would only preserve an unrevivable session.
+const SESSION_KEY_PATTERN = /^[0-9a-f]{64}$/i
+
+/** A record reconstructed from the legacy blob, ready to become a `Connection`. */
+type ReconstructedLegacySession = {
+    clientId: string
+    sessionKey: string
+    bridge: string
+    peerId: string
+    handshakeTopic: string
+    chainId: number
+    accounts: string[]
+    handshakeId?: number
+    permissions?: string[]
+    peer: ConnectionPeer
+    createdAt: number
+    lastActiveAt: number
+}
+
+// `null`, never a throw, for anything unrecoverable: one malformed row must not abort the run.
+const reconstructRecord = (
+    record: unknown,
+): ReconstructedLegacySession | null => {
+    if (typeof record !== 'object' || record === null) return null
+    const top = record as Record<string, unknown>
+
+    const clientId = readString(top, 'clientId')
+    if (!clientId) return null
+
+    const sessionValue = top.session
+    if (typeof sessionValue !== 'object' || sessionValue === null) return null
+    const session = sessionValue as Record<string, unknown>
+
+    const sessionKey = readString(session, 'key')
+    if (!sessionKey || !SESSION_KEY_PATTERN.test(sessionKey)) return null
+
+    const bridge = readString(session, 'bridge') ?? readString(top, 'bridge')
+    if (!bridge) return null
+
+    const peerId = readString(session, 'peerId')
+    if (!peerId) return null
+
+    const handshakeTopic = readString(session, 'handshakeTopic')
+    if (!handshakeTopic) return null
+
+    const chainId = session.chainId
+    if (typeof chainId !== 'number') return null
+
+    const accountsValue = session.accounts
+    if (!Array.isArray(accountsValue)) return null
+    const accounts = accountsValue.filter(
+        (value): value is string => typeof value === 'string',
+    )
+    if (accounts.length === 0) return null
+
+    const handshakeIdValue = session.handshakeId
+    const handshakeId =
+        typeof handshakeIdValue === 'number' ? handshakeIdValue : undefined
+
+    // The legacy record stamps approved permissions onto `session`; carrying
+    // them keeps the settings permissions panel from going blank.
+    const permissionsValue = session.permissions
+    const permissions = Array.isArray(permissionsValue)
+        ? permissionsValue
+              .filter((value): value is string => typeof value === 'string')
+              .filter(isAlgorandPermission)
+        : undefined
+
+    const createdAtValue = top.createdAt
+    const parsedCreatedAt =
+        typeof createdAtValue === 'string' ? Date.parse(createdAtValue) : NaN
+    const createdAt = Number.isFinite(parsedCreatedAt)
+        ? parsedCreatedAt
+        : Date.now()
+
+    // Settings sorts on `lastActiveAt`; defaulting it would re-sort the whole
+    // list. Both timestamps are ISO strings on the blob: `createJSONStorage`
+    // has no `Date` reviver, so the model's `Date` is a runtime string here.
+    const lastActiveAtValue = top.lastActiveAt
+    const parsedLastActiveAt =
+        typeof lastActiveAtValue === 'string'
+            ? Date.parse(lastActiveAtValue)
+            : NaN
+    const lastActiveAt = Number.isFinite(parsedLastActiveAt)
+        ? parsedLastActiveAt
+        : createdAt
+
+    return {
+        clientId,
+        sessionKey,
+        bridge,
+        peerId,
+        handshakeTopic,
+        chainId,
+        accounts,
+        handshakeId,
+        permissions,
+        peer: toPeer(session.peerMeta),
+        createdAt,
+        lastActiveAt,
+    }
+}
+
+type LegacyState = {
+    records: unknown[]
+    /** Raw `state.dappOrigins`; validated per-entry by `reconstructOrigin`. */
+    dappOrigins: unknown
+}
+
+// `null` means "shape not understood", which the caller must treat like
+// unparseable JSON: keep the blob. An empty records array is understood.
+const readLegacyState = (parsed: unknown): LegacyState | null => {
+    if (typeof parsed !== 'object' || parsed === null) return null
+    const state = (parsed as { state?: unknown }).state
+    if (typeof state !== 'object' || state === null) return null
+    const records = (state as { walletConnectConnections?: unknown })
+        .walletConnectConnections
+    if (!Array.isArray(records)) return null
+    const dappOrigins = (state as { dappOrigins?: unknown }).dappOrigins
+    return { records, dappOrigins }
+}
+
+const ORIGIN_SOURCES: readonly ConnectionOriginSource[] = [
+    'external-browser',
+    'in-app',
+    'qr',
+]
+
+// Missing or malformed is `undefined`, not a reason to skip the record: the
+// connection just loses the "Return to the dApp" hand-off.
+const reconstructOrigin = (value: unknown): ConnectionOrigin | undefined => {
+    if (typeof value !== 'object' || value === null) return undefined
+    const raw = value as Record<string, unknown>
+    const source = raw.source
+    if (
+        typeof source !== 'string' ||
+        !ORIGIN_SOURCES.includes(source as ConnectionOriginSource)
+    ) {
+        return undefined
+    }
+    const browserName = readString(raw, 'browserName')
+
+    return {
+        source: source as ConnectionOriginSource,
+        ...(browserName ? { browserName } : {}),
+    }
+}
+
+const originFor = (
+    dappOrigins: unknown,
+    clientId: string,
+): ConnectionOrigin | undefined => {
+    if (typeof dappOrigins !== 'object' || dappOrigins === null) {
+        return undefined
+    }
+    return reconstructOrigin((dappOrigins as Record<string, unknown>)[clientId])
+}
+
+/**
+ * Imports v1 sessions from the legacy `wallet-connect-store` blob, moving each
+ * session key into the keystore. The blob is the sole copy of every key, so
+ * deleting it is the last step and every step before it is idempotent; a
+ * re-run after a crash converges. Must run after keystore hydration:
+ * `hasSecret` answers `false`, not "wait", before it.
+ */
+export const importLegacyConnections = async (options: {
+    storage: ConnectionPersistence
+    store: ConnectionStoreAPI
+}): Promise<{ imported: number; skipped: number }> => {
+    const { storage, store } = options
+
+    // Read raw: instantiating the legacy zustand store would re-persist the plaintext keys.
+    const raw = storage.getItem(LEGACY_STORE_KEY)
+    if (raw === null) return { imported: 0, skipped: 0 }
+
+    let parsed: unknown
+    try {
+        parsed = JSON.parse(raw)
+    } catch (error) {
+        logger.warn(
+            '[WC migration] legacy connect-store blob is not valid JSON; leaving it in place',
+            { error },
+        )
+        return { imported: 0, skipped: 0 }
+    }
+
+    const legacyState = readLegacyState(parsed)
+    if (!legacyState) {
+        logger.warn(
+            '[WC migration] legacy connect-store blob has an unrecognized shape; leaving it in place',
+        )
+        return { imported: 0, skipped: 0 }
+    }
+    const { records, dappOrigins } = legacyState
+
+    let imported = 0
+    let skipped = 0
+    // A record that throws is unattempted, not skipped; caught so one
+    // permanently failing record cannot strand every record after it.
+    let unattempted = 0
+    let firstFailure: Error | null = null
+    const importedSecretRefs: string[] = []
+    const presentIds = new Set((await store.list()).map(({ id }) => id))
+
+    for (const record of records) {
+        const reconstructed = reconstructRecord(record)
+        if (!reconstructed) {
+            skipped += 1
+            continue
+        }
+
+        try {
+            const secretRef = await commitSessionKey(
+                reconstructed.clientId,
+                reconstructed.sessionKey,
+            )
+
+            // The app may have updated a record an earlier pass wrote (status,
+            // origin, lastActiveAt); the blob's copy is stale. Its key is still
+            // verified below before the blob may go.
+            if (presentIds.has(reconstructed.clientId)) {
+                skipped += 1
+                importedSecretRefs.push(secretRef)
+                continue
+            }
+
+            const origin = originFor(dappOrigins, reconstructed.clientId)
+            const connection: WalletConnectV1Connection = {
+                id: reconstructed.clientId,
+                kind: WALLET_CONNECT_V1_KIND,
+                name: reconstructed.peer.name,
+                peer: reconstructed.peer,
+                accounts: reconstructed.accounts,
+                secretRef,
+                status: 'active',
+                createdAt: reconstructed.createdAt,
+                lastActiveAt: reconstructed.lastActiveAt,
+                metadata: {
+                    bridge: reconstructed.bridge,
+                    handshakeTopic: reconstructed.handshakeTopic,
+                    peerId: reconstructed.peerId,
+                    chainId: reconstructed.chainId,
+                    ...(reconstructed.handshakeId !== undefined
+                        ? { handshakeId: reconstructed.handshakeId }
+                        : {}),
+                    ...(reconstructed.permissions
+                        ? { permissions: reconstructed.permissions }
+                        : {}),
+                },
+                ...(origin ? { origin } : {}),
+            }
+            await store.upsert(connection)
+            presentIds.add(connection.id)
+
+            imported += 1
+            importedSecretRefs.push(secretRef)
+        } catch (error) {
+            unattempted += 1
+            firstFailure ??=
+                error instanceof Error ? error : new Error(String(error))
+            logger.warn(
+                '[WC migration] failed to import a legacy session; it and its key remain for the next run',
+                { clientId: reconstructed.clientId, error },
+            )
+        }
+    }
+
+    // Deletion is gated on every committed key being readable back, not on
+    // zero skips: a permanently malformed row must not keep the plaintext
+    // blob on disk forever, but a lost key must.
+    const unverified = importedSecretRefs.filter(
+        secretRef => !hasSecret(secretRef),
+    )
+    if (unverified.length > 0) {
+        logger.warn(
+            '[WC migration] some migrated session keys failed verification; keeping the legacy blob',
+            { unverified },
+        )
+    }
+
+    if (unattempted > 0 || unverified.length > 0) {
+        // Rethrown only after every record got its attempt this pass.
+        if (firstFailure) throw firstFailure
+        return { imported, skipped }
+    }
+
+    storage.removeItem(LEGACY_STORE_KEY)
+    storage.trim?.()
+
+    return { imported, skipped }
+}

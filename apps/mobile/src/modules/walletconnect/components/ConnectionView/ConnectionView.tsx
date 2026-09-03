@@ -23,7 +23,7 @@ import {
     WalletConnectSessionRequestExpiredError,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { useStyles } from './styles'
+import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'

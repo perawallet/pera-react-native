@@ -161,6 +161,7 @@
             "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
             "title_walletconnect": "WalletConnect başarısız oldu",
             "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
+            "body_walletconnect_timeout": "dApp’ten yanıt alınamadı. Oturumun süresi dolmuş ya da WalletConnect köprüsüne ulaşılamıyor olabilir.",
             "title_wc_unsupported": "Bağlantı linki desteklenmiyor",
             "body_wc_unsupported": "Bu WalletConnect linki Pera tarafından kullanılamıyor. Lütfen dApp üzerinden yeniden bağlanmayı dene.",
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
@@ -807,6 +808,15 @@
             "key_access_error": "İmza anahtarına erişilemedi.",
             "invalid_key": "Bu hesabın imza anahtarı geçersiz.",
             "generic": "İmza anahtarına erişilirken bir şeyler ters gitti."
+        },
+        "connections": {
+            "invalid_payload": "Bir uygulama, Pera'nın anlayamadığı bir istek gönderdi. Uygulamayı kontrol et ve tekrar dene.",
+            "no_handler": "Pera bu bağlantı isteğini işleyemedi. Uygulamayı kontrol et ve tekrar dene.",
+            "unknown_connection": "Pera bu bağlantıyı bulamadı. Bağlantı zaten kesilmiş olabilir.",
+            "duplicate_kind": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
+            "already_initialized": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
+            "already_answered": "Bu istek zaten yanıtlandı.",
+            "no_subscriber": "Pera bu isteği işlemeye hazır değildi. Lütfen tekrar dene."
         },
         "walletconnect": {
             "title": "Bir uygulama isteği işlenirken bir hata oluştu",

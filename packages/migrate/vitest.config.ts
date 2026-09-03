@@ -32,6 +32,10 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/provider/src/index.ts',
             ),
+            '@perawallet/wallet-extension-connections': path.resolve(
+                __dirname,
+                '../../extensions/connections/src/index.ts',
+            ),
             '@perawallet/wallet-extension-platform-driver': path.resolve(
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
@@ -39,6 +43,17 @@ export default defineConfig({
             '@perawallet/wallet-extension-platform': path.resolve(
                 __dirname,
                 '../../extensions/platform/src/index.ts',
+            ),
+            // The walletconnect barrel drags in RN-only deps that do not
+            // resolve here, so the two pure helpers this package's migrator
+            // shares with the blob importer are aliased to source.
+            '@perawallet/wallet-core-walletconnect/shared/peer': path.resolve(
+                __dirname,
+                '../walletconnect/src/shared/peer.ts',
+            ),
+            '@perawallet/wallet-core-walletconnect/v1/connection': path.resolve(
+                __dirname,
+                '../walletconnect/src/v1/connection.ts',
             ),
             '@perawallet/wallet-core-accounts': path.resolve(
                 __dirname,

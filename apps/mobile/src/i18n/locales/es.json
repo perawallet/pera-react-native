@@ -161,6 +161,7 @@
             "body_generic": "No pudimos procesar el enlace. Vuelve a intentarlo.",
             "title_walletconnect": "Error de WalletConnect",
             "body_walletconnect": "No pudimos conectar con la dApp. La sesión puede haber caducado o el bridge puede estar inaccesible.",
+            "body_walletconnect_timeout": "La dApp no respondió. La sesión puede haber caducado o el bridge de WalletConnect puede estar inaccesible.",
             "title_wc_unsupported": "Enlace de conexión no compatible",
             "body_wc_unsupported": "Pera no puede usar este enlace de WalletConnect. Vuelve a conectar desde la dApp e inténtalo de nuevo.",
             "title_keyreg": "No se pudo preparar el registro de clave",
@@ -807,6 +808,15 @@
             "key_access_error": "No se pudo acceder a la clave de firma.",
             "invalid_key": "La clave de firma de esta cuenta no es válida.",
             "generic": "Algo salió mal al acceder a tu clave de firma."
+        },
+        "connections": {
+            "invalid_payload": "Una app envió una solicitud que Pera no pudo entender. Revisa la app y vuelve a intentarlo.",
+            "no_handler": "Pera no pudo procesar esta solicitud de conexión. Revisa la app y vuelve a intentarlo.",
+            "unknown_connection": "Pera no encontró esa conexión. Es posible que ya se haya desconectado.",
+            "duplicate_kind": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
+            "already_initialized": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
+            "already_answered": "Esta solicitud ya fue respondida.",
+            "no_subscriber": "Pera no estaba listo para procesar esta solicitud. Vuelve a intentarlo."
         },
         "walletconnect": {
             "title": "Error al procesar una solicitud de una app",

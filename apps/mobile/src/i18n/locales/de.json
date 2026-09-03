@@ -161,6 +161,7 @@
             "body_generic": "Der Link konnte nicht verarbeitet werden. Bitte versuche es erneut.",
             "title_walletconnect": "WalletConnect fehlgeschlagen",
             "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die Bridge ist nicht erreichbar.",
+            "body_walletconnect_timeout": "Keine Antwort von der dApp. Möglicherweise ist die Sitzung abgelaufen oder die WalletConnect-Bridge ist nicht erreichbar.",
             "title_wc_unsupported": "Verbindungslink nicht unterstützt",
             "body_wc_unsupported": "Dieser WalletConnect-Link kann von Pera nicht verwendet werden. Bitte stelle die Verbindung in der dApp erneut her und versuche es noch einmal.",
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
@@ -799,6 +800,15 @@
             "key_access_error": "Auf den Signaturschlüssel konnte nicht zugegriffen werden.",
             "invalid_key": "Der Signaturschlüssel für dieses Konto ist ungültig.",
             "generic": "Beim Zugriff auf deinen Signaturschlüssel ist ein Fehler aufgetreten."
+        },
+        "connections": {
+            "invalid_payload": "Eine App hat eine Anfrage gesendet, die Pera nicht verstehen konnte. Bitte überprüfe die App und versuche es erneut.",
+            "no_handler": "Pera konnte diese Verbindungsanfrage nicht verarbeiten. Bitte überprüfe die App und versuche es erneut.",
+            "unknown_connection": "Pera konnte diese Verbindung nicht finden. Möglicherweise wurde sie bereits getrennt.",
+            "duplicate_kind": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",
+            "already_initialized": "Beim Einrichten der App-Verbindungen ist etwas schiefgelaufen. Bitte starte Pera neu und versuche es erneut.",
+            "already_answered": "Diese Anfrage wurde bereits beantwortet.",
+            "no_subscriber": "Pera war noch nicht bereit, diese Anfrage zu verarbeiten. Bitte versuche es erneut."
         },
         "walletconnect": {
             "title": "Bei der Verarbeitung einer App-Anfrage ist ein Fehler aufgetreten",

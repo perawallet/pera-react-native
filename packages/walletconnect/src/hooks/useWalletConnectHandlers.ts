@@ -23,7 +23,7 @@ import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
-} from '../errors'
+} from '../shared/errors'
 import { ensureConnectorReady } from '../connection'
 import { useWalletConnectStore } from '../store'
 import {
@@ -46,9 +46,15 @@ import {
     type WalletConnectConnection,
     type WalletConnectTransactionPayload,
 } from '../models'
-import { getExpectedChainId } from '../utils/expectedChainId'
-import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
-import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
+import { getExpectedChainId } from '../shared/expectedChainId'
+import {
+    MAX_DATA_SIGN_REQUESTS,
+    WC_DELIVERY_TIMEOUT_MS,
+} from '../shared/constants'
+import {
+    arc60PayloadSchema,
+    assertArc60RequestWithinLimits,
+} from '../shared/schema'
 import {
     canSignArbitraryData,
     canSignArc60,

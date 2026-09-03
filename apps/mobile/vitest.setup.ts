@@ -217,12 +217,37 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
                 sign: vi.fn(),
             },
         },
+        // Real (not mocked) store, backed by the same in-memory `store` map
+        // as `keyValueStorage` above — matches production, where
+        // `WithConnections` persists through `provider.keyValueStorage`.
+        // First real consumer is `ConnectionsProvider`
+        // (apps/mobile/src/modules/connections).
+        connections: {
+            store: require('@perawallet/wallet-extension-connections').createConnectionStore(
+                {
+                    storage: {
+                        getItem: (key: string) => store.get(key) ?? null,
+                        setItem: (key: string, value: string) =>
+                            store.set(key, value),
+                        removeItem: (key: string) => {
+                            store.delete(key)
+                        },
+                    },
+                },
+            ),
+        },
     }
     return {
         getProvider: () => providerValue,
         PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
             children,
         usePeraProvider: () => providerValue,
+        // Keystore hydration always completes before `RootComponent` (and
+        // therefore `ConnectionsProvider`) ever mounts — see
+        // `useAppBootstrap.ts`'s `keystoreBranch` and `App.tsx`'s
+        // `bootstrapped` gate — so an already-resolved promise is the
+        // faithful stand-in here.
+        getKeystore: () => ({ ready: Promise.resolve() }),
     }
 })
 
@@ -3379,8 +3404,15 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     } = await vi.importActual<
         typeof import('../../packages/blockchain/src/store/custom-network-store')
     >('../../packages/blockchain/src/store/custom-network-store')
+    // Real ARC-0001 module: `packages/connections` composes its request
+    // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
+    // stand-in would silently disarm the resolver's own refusals.
+    const arc0001 = await vi.importActual<
+        typeof import('../../packages/blockchain/src/arc0001')
+    >('../../packages/blockchain/src/arc0001')
 
     return {
+        ...arc0001,
         useAlgorandClient: vi.fn(),
         useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
         useTransactionEncoder: vi.fn(() => ({

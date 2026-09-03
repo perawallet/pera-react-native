@@ -21,9 +21,13 @@ import {
     getProvider,
     clearKeystore,
 } from '@perawallet/wallet-extension-provider'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import {
+    getActiveConnectionRegistry,
+    useOptionalConnectionRegistry,
+} from '@modules/connections'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { useLegacySessionsWipe } from './useLegacySessionsWipe'
 
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
@@ -48,7 +52,12 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
     const { savePin } = usePinCode()
-    const { deleteAllSessions } = useWalletConnectSessionsControl()
+    const { deleteAllSessions } = useLegacySessionsWipe()
+    // Non-throwing on purpose: this hook runs from `AutoLockGuard`'s duress
+    // path, which sits above `ConnectionsProvider`, and from the browser
+    // extension, which mounts no provider at all. Step 5's `store.clear()` is
+    // what keeps the wipe complete when there is no registry to sweep with.
+    const contextRegistry = useOptionalConnectionRegistry()
 
     const wipeAllUserData = useCallback(async () => {
         // 1. Abort in-flight queries before we destroy their data sources.
@@ -103,13 +112,46 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             }
         }
 
-        // 5. Disconnect WalletConnect peers before wiping store data
+        // 5. Disconnect peers before wiping store data. Every sweep runs and
+        // is independently guarded, so one failing (an unreachable peer, a
+        // registry not mounted above this call site) can never skip the rest:
+        //   - Legacy WalletConnect: `deleteAllSessions` serves the browser
+        //     extension, whose sessions live in the legacy store. Its native
+        //     twin is a no-op — see `useLegacySessionsWipe`.
+        //   - The connection registry: `disconnectAll()` notifies each peer
+        //     and removes its record. `useDeleteAllData` is also called from
+        //     `AutoLockGuard`, which sits ABOVE `ConnectionsProvider` in
+        //     `RootComponent`, so the duress wipe sees no context and falls
+        //     back to the module-level accessor the provider publishes to.
+        //     Read at wipe time, not at render: the provider may not have
+        //     mounted when `AutoLockGuard` first rendered.
+        //   - The connections store itself: `clear()` is the backstop for
+        //     when there is genuinely no registry (the browser extension) —
+        //     and unlike the legacy store, these records are not in the
+        //     `clearAllStores` registry, so nothing else would remove them.
         try {
             await deleteAllSessions()
         } catch (e) {
             logger.error('Failed to disconnect WalletConnect sessions', {
                 error: e,
             })
+        }
+
+        const registry = contextRegistry ?? getActiveConnectionRegistry()
+        if (registry) {
+            try {
+                await registry.disconnectAll()
+            } catch (e) {
+                logger.error('Failed to disconnect registry connections', {
+                    error: e,
+                })
+            }
+        }
+
+        try {
+            await getProvider().connections.store.clear()
+        } catch (e) {
+            logger.error('Failed to clear stored connections', { error: e })
         }
 
         // 6. Unregister device from push notification backend
@@ -158,6 +200,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         savePin,
         deleteDevices,
         deleteAllSessions,
+        contextRegistry,
     ])
 
     return { deleteAllData: wipeAllUserData, wipeAllUserData }

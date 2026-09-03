@@ -14,7 +14,7 @@ import WalletConnect, {
     type ISessionStorage,
     type IWalletConnectSession,
 } from '@perawallet/walletconnect'
-import { PERA_CLIENT_META } from '../constants'
+import { PERA_CLIENT_META } from '../shared/constants'
 
 export type CreateWalletConnectConnectorOptions = {
     /** A `wc:` pairing URI for a brand-new session (fresh pair). */

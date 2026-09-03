@@ -18,6 +18,7 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
+import type { ConnectionRegistry } from '@perawallet/wallet-core-connections'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -32,6 +33,7 @@ const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
 const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
+const mockClearConnections = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         database: {},
         migration: { resetLegacyData: mockResetLegacyData },
         passkeyAutofill: { clearCredentials: mockClearPasskeyCredentials },
+        connections: { store: { clear: mockClearConnections } },
     }),
     clearKeystore: (...args: unknown[]) => mockClearKeystore(...args),
 }))
@@ -61,14 +64,33 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 
+// The platform-split legacy sweep: a no-op on native, the browser's real
+// session teardown on web (see `useLegacySessionsWipe`). Mocked here so the
+// wipe's ordering and its independent guards are asserted whichever twin the
+// platform resolves.
 const mockDeleteAllSessions = vi.fn().mockResolvedValue(undefined)
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({
+vi.mock('../useLegacySessionsWipe', () => ({
+    useLegacySessionsWipe: () => ({
         deleteAllSessions: mockDeleteAllSessions,
     }),
+}))
+
+// `useOptionalConnectionRegistry` returns `null` when `ConnectionsProvider`
+// isn't mounted above the caller — the duress wipe's real situation, since
+// `AutoLockGuard` sits above it. Tests that need a live registry override
+// this per-test with `mockReturnValue`.
+const mockDisconnectAll = vi.fn().mockResolvedValue(undefined)
+const mockUseOptionalConnectionRegistry = vi.fn<
+    () => Pick<ConnectionRegistry, 'disconnectAll'> | null
+>(() => null)
+// The module-level accessor the provider publishes to, which is how the
+// duress path reaches a registry it cannot see through context.
+const mockGetActiveConnectionRegistry = vi.fn<
+    () => Pick<ConnectionRegistry, 'disconnectAll'> | null
+>(() => null)
+vi.mock('@modules/connections', () => ({
+    useOptionalConnectionRegistry: () => mockUseOptionalConnectionRegistry(),
+    getActiveConnectionRegistry: () => mockGetActiveConnectionRegistry(),
 }))
 
 const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
@@ -91,6 +113,14 @@ describe('useDeleteAllData', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        // `clearAllMocks` clears call history but not a prior test's
+        // `mockReturnValue` — reset explicitly so "no provider mounted" is
+        // this file's default and each test that needs a live registry opts
+        // in for itself.
+        mockUseOptionalConnectionRegistry.mockReturnValue(null)
+        mockGetActiveConnectionRegistry.mockReturnValue(null)
+        mockDisconnectAll.mockResolvedValue(undefined)
+        mockClearConnections.mockResolvedValue(undefined)
         ;(useKMS as Mock).mockReturnValue({
             keys: new Map([
                 ['key-1', { id: 'key-1' }],
@@ -318,6 +348,165 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    // The duress wipe runs from `AutoLockGuard`, which sits ABOVE
+    // `ConnectionsProvider`, so this is a real production path. The registry
+    // sweep must be skipped without throwing, and the rest of the wipe
+    // (including the legacy WalletConnect sweep) must still run.
+    it('skips the registry sweep and still completes the wipe when no connection registry is mounted', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDisconnectAll).not.toHaveBeenCalled()
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    // The duress wipe's real shape: no provider above the call site, but the
+    // app has one mounted elsewhere in the tree, so the v1 sockets and their
+    // session keys are live and only `disconnectAll` says goodbye to the peer
+    // — `store.clear()` alone leaves the dApp with a dead session it still
+    // believes in.
+    it('sweeps the active registry when no provider is mounted above the caller', async () => {
+        mockGetActiveConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
+        expect(mockClearConnections).toHaveBeenCalledTimes(1)
+    })
+
+    it('prefers the context registry over the module-level one', async () => {
+        const contextDisconnectAll = vi.fn().mockResolvedValue(undefined)
+        mockUseOptionalConnectionRegistry.mockReturnValue({
+            disconnectAll: contextDisconnectAll,
+        })
+        mockGetActiveConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(contextDisconnectAll).toHaveBeenCalledTimes(1)
+        expect(mockDisconnectAll).not.toHaveBeenCalled()
+    })
+
+    // The backstop for exactly the path above. Connection records are NOT in
+    // the `clearAllStores` registry the legacy WalletConnect blob was in, so
+    // without this clear a duress wipe — which never has a registry to sweep
+    // with — would leave every paired dApp on disk.
+    it('clears the connections store even when no registry is mounted', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDisconnectAll).not.toHaveBeenCalled()
+        expect(mockClearConnections).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the connections store after sweeping a mounted registry', async () => {
+        mockUseOptionalConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        // Peers are notified first, then the records go — a clear that ran
+        // first would leave `disconnectAll` with nothing to enumerate.
+        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
+        expect(mockClearConnections).toHaveBeenCalledTimes(1)
+        expect(mockDisconnectAll.mock.invocationCallOrder[0]).toBeLessThan(
+            mockClearConnections.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('continues the wipe when clearing the connections store fails', async () => {
+        mockClearConnections.mockRejectedValueOnce(new Error('store locked'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearConnections).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls registry.disconnectAll when a connection registry is mounted', async () => {
+        mockUseOptionalConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+    })
+
+    // Mirrors "should continue if WalletConnect disconnect fails": the two
+    // sweeps are independently guarded, so a failure in either must not skip
+    // the rest of the wipe — nor the OTHER sweep.
+    it('continues the wipe when the connection registry sweep fails', async () => {
+        mockUseOptionalConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+        mockDisconnectAll.mockRejectedValueOnce(new Error('peer unreachable'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    // The inverse of the above: a failing legacy sweep must not skip the
+    // registry sweep either — each guard is independent of the other.
+    it('still runs the registry sweep when the legacy WalletConnect sweep fails', async () => {
+        mockUseOptionalConnectionRegistry.mockReturnValue({
+            disconnectAll: mockDisconnectAll,
+        })
+        mockDeleteAllSessions.mockRejectedValueOnce(
+            new Error('WC disconnect error'),
+        )
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 

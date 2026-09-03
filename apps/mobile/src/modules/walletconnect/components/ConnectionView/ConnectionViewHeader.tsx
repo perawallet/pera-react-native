@@ -18,7 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useStyles } from './styles'
+import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
 import {
     AlgorandChain,
     AlgorandChainId,

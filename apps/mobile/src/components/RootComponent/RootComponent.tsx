@@ -40,7 +40,7 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { ConnectionsProvider } from '@modules/connections'
 import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
@@ -218,9 +218,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             <BottomSheetModalProvider>
                 {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>
-                    <WalletConnectProvider>
+                    {/* The app's single connection registry: it owns every
+                        handler's lifecycle, so exactly one may be mounted.
+                        Replaces WalletConnectProvider, which owned the v1
+                        connectors directly — mounting both would give two
+                        owners to the same sockets. */}
+                    <ConnectionsProvider>
                         <RootContentContainer fcmToken={fcmToken} />
-                    </WalletConnectProvider>
+                    </ConnectionsProvider>
                     <ErrorBoundary
                         onError={handleOverlayError}
                         FallbackComponent={OverlayErrorFallback}

@@ -81,7 +81,9 @@ describe('algo_signData: gate <-> approval-surface shape parity', () => {
         data: 'ZGF0YQ==',
         signer: 'SIGNER_ADDR',
         domain: 'example.com',
-        authenticatorData: 'ZGF0YQ==',
+        // 32 bytes, the wire schema's floor: ARC-60 pins the first 32 decoded
+        // bytes to sha256(domain).
+        authenticatorData: 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=',
         metadata: { scope: 1, encoding: 'base64' },
     }
 

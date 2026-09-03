@@ -12,9 +12,9 @@
 
 // ONLY the verified-requester row lives here. Everything this screen shares
 // with mobile's ConnectionView — header, permissions panel, account rows,
-// footer buttons — comes from that component's own stylesheet
-// (@modules/walletconnect/components/ConnectionView/styles), imported rather
-// than copied, so the two cannot drift on spacing or colour.
+// footer buttons — comes from the shared approval stylesheet
+// (@modules/walletconnect/components/connection-approval/styles), imported
+// rather than copied, so the two cannot drift on spacing or colour.
 //
 // The requester row has no counterpart there: mobile pairs by QR or deeplink,
 // so it has no browser-verified requesting tab to attribute. These values match

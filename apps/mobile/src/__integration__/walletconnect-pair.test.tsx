@@ -13,6 +13,10 @@
 // WalletConnect v1 pairing: connect() -> session_request handler -> store ->
 // ConnectionView -> the user picks accounts -> approveSession.
 //
+// This is the LEGACY `WalletConnectProvider` path, which `apps/browser` still
+// mounts and native no longer does; `connections-flow.test.tsx` covers the
+// same ground through the registry.
+//
 // Only the bottom-level `@perawallet/walletconnect` transport is replaced (via
 // vitest resolve.alias, so even the real wallet-core-walletconnect hooks build
 // against the stub). The store, provider, ConnectionView and network gate are

@@ -10,8 +10,42 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { toComparableTime } from '../connectionsSettingsHelpers'
+import { describe, it, expect, vi } from 'vitest'
+import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import {
+    toComparableTime,
+    toUnifiedConnection,
+} from '../connectionsSettingsHelpers'
+
+const row: ConnectionSettingsRow = {
+    id: 'conn-1',
+    kind: 'walletconnect-v1',
+    title: 'Dapp',
+    subtitle: 'https://d.app',
+    accounts: [],
+    isConnected: true,
+    createdAt: 1000,
+    lastActiveAt: 2000,
+    peer: { name: 'Dapp' },
+    permissions: [],
+    networks: ['mainnet'],
+}
+
+describe('toUnifiedConnection', () => {
+    // The unified list is kind-agnostic; the badge and copy branch on the
+    // record's own kind, not on a label the mapper invents.
+    it('carries the row kind through instead of relabelling it', () => {
+        expect(toUnifiedConnection(row, vi.fn()).kind).toBe('walletconnect-v1')
+    })
+
+    it('revokes by the connection id', () => {
+        const revoke = vi.fn()
+
+        toUnifiedConnection(row, revoke).onRevoke()
+
+        expect(revoke).toHaveBeenCalledWith('conn-1')
+    })
+})
 
 describe('toComparableTime', () => {
     it('returns the same epoch ms for a Date and its ISO string equivalent', () => {

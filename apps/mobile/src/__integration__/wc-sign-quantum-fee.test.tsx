@@ -633,9 +633,10 @@ describe('Flow: WalletConnect rekey after the pairing surface unmounts', () => {
 
     /**
      * The app's single long-lived owner of WC request handlers, standing in
-     * for `useWalletConnectProvider` (mounted once from `RootComponent`)
-     * without dragging its bottom sheets and navigation into the harness.
-     * Stays mounted for the whole test, exactly as the provider does.
+     * for the legacy `useWalletConnectProvider` — which `apps/browser` still
+     * mounts and `RootComponent` no longer does — without dragging its bottom
+     * sheets and navigation into the harness. Stays mounted for the whole
+     * test, exactly as that provider does.
      */
     const mountHandlerOwner = () =>
         renderHook(

@@ -161,6 +161,7 @@
             "body_generic": "Nous n’avons pas pu traiter le lien. Veuillez réessayer.",
             "title_walletconnect": "Échec de WalletConnect",
             "body_walletconnect": "Nous n’avons pas pu nous connecter à la dApp. La session a peut-être expiré ou le bridge est inaccessible.",
+            "body_walletconnect_timeout": "Aucune réponse de la dApp. La session a peut-être expiré ou le bridge WalletConnect est inaccessible.",
             "title_wc_unsupported": "Lien de connexion non pris en charge",
             "body_wc_unsupported": "Pera ne peut pas utiliser ce lien WalletConnect. Veuillez rétablir la connexion depuis la dApp et réessayer.",
             "title_keyreg": "Impossible de préparer l’enregistrement de clé",
@@ -807,6 +808,15 @@
             "key_access_error": "Impossible d’accéder à la clé de signature.",
             "invalid_key": "La clé de signature de ce compte est invalide.",
             "generic": "Un problème est survenu lors de l’accès à votre clé de signature."
+        },
+        "connections": {
+            "invalid_payload": "Une application a envoyé une demande que Pera n’a pas pu comprendre. Veuillez vérifier l’application, puis réessayer.",
+            "no_handler": "Pera n’a pas pu traiter cette demande de connexion. Veuillez vérifier l’application, puis réessayer.",
+            "unknown_connection": "Pera n’a pas trouvé cette connexion. Elle a peut-être déjà été déconnectée.",
+            "duplicate_kind": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
+            "already_initialized": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
+            "already_answered": "Cette demande a déjà reçu une réponse.",
+            "no_subscriber": "Pera n’était pas prêt à traiter cette demande. Veuillez réessayer."
         },
         "walletconnect": {
             "title": "Une erreur est survenue lors du traitement d’une demande d’application",

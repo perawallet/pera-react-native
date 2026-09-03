@@ -10,27 +10,40 @@
  limitations under the License
  */
 
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import { useWebView } from '@modules/webview'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
-import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { useMemo, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import {
+    generateOrderedUniqueId,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
     WalletConnectEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
-import { useNavigation } from '@react-navigation/native'
-import { useMemo, useState } from 'react'
+import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
+import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
+import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+
+export type UseSettingsWalletConnectDetailsScreenResult = {
+    preferredIcon: Optional<string>
+    connectedAccounts: ReturnType<typeof useAllAccounts>
+    isLoading: boolean
+    deleteModalState: ReturnType<typeof useModalState>
+    handleDelete: () => void
+    handleOpenLink: () => void
+}
 
 export const useSettingsWalletConnectDetailsScreen = (
-    session: WalletConnectConnection,
-) => {
-    const { disconnect } = useWalletConnectSessionsControl()
+    connection: ConnectionSettingsRow,
+): UseSettingsWalletConnectDetailsScreenResult => {
+    const { revoke } = useConnectionSettingsList()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
     const deleteModalState = useModalState()
@@ -39,46 +52,31 @@ export const useSettingsWalletConnectDetailsScreen = (
     const navigation = useNavigation()
     const accounts = useAllAccounts()
 
-    const connectedAccounts = useMemo(() => {
-        return session?.session?.accounts?.map(address =>
-            accounts.find(account => account.address === address),
-        )
-    }, [session, accounts])
+    const connectedAccounts = useMemo(
+        () =>
+            connection.accounts
+                .map(address =>
+                    accounts.find(account => account.address === address),
+                )
+                .filter(account => account !== undefined),
+        [connection.accounts, accounts],
+    )
 
-    const preferredIcon =
-        session?.session?.peerMeta?.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg') ||
-                icon.endsWith('.gif'),
-        ) ?? session?.session?.peerMeta?.icons?.[0]
+    const preferredIcon = getPreferredDappIcon(connection.peer.icons)
 
     const handleDelete = () => {
-        if (!session.clientId) {
-            deleteModalState.close()
-            return
-        }
         setIsLoading(true)
         trackEvent(WalletConnectEvent.SessionDisconnected, {
-            [AnalyticsMetadataKey.DappName]:
-                session.session?.peerMeta?.name ?? '',
-            [AnalyticsMetadataKey.DappUrl]:
-                session.session?.peerMeta?.url ?? '',
+            [AnalyticsMetadataKey.DappName]: connection.peer.name,
+            [AnalyticsMetadataKey.DappUrl]: connection.peer.url ?? '',
         })
-        void disconnect(session.clientId)
+        void revoke(connection.id)
             .then(() => {
                 // Only leave the screen once the session is genuinely gone —
                 // otherwise the user returns to a list that still shows it.
                 navigation.goBack()
             })
             .catch((error: unknown) => {
-                // A rejected send (e.g. no offscreen document to receive the
-                // disconnect control message on web) would otherwise be an
-                // unhandled rejection with no user-visible signal. The user
-                // stays on this screen — `goBack` lives in the `.then` above
-                // precisely so a failure doesn't return them to a list that
-                // still shows the session.
                 showError(
                     error,
                     t('walletconnect.settings.disconnect_failed_title'),
@@ -91,11 +89,9 @@ export const useSettingsWalletConnectDetailsScreen = (
     }
 
     const handleOpenLink = () => {
-        // peerMeta.url is dApp-asserted, never validated upstream; gate it to
+        // The peer url is dApp-asserted, never validated upstream; gate it to
         // https:// before it reaches the WebView.
-        const validatedUrl = toValidatedBrowserUrl(
-            session.session?.peerMeta?.url,
-        )
+        const validatedUrl = toValidatedBrowserUrl(connection.peer.url)
         if (!validatedUrl) return
         pushWebView({
             id: generateOrderedUniqueId(),
@@ -103,10 +99,7 @@ export const useSettingsWalletConnectDetailsScreen = (
         })
     }
 
-    const peerMeta = session.session?.peerMeta
-
     return {
-        peerMeta,
         preferredIcon,
         connectedAccounts,
         isLoading,

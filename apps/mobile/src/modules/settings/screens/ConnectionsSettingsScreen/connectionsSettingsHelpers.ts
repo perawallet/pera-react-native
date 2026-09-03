@@ -11,8 +11,9 @@
  */
 
 import type { ModalState } from '@hooks/useModalState'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
+import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
+import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
 
 /**
  * Platform-independent pieces of `useConnectionsSettingsScreen`, shared by
@@ -21,11 +22,10 @@ import type { DappPermission } from '@perawallet/wallet-extension-platform-chrom
  */
 
 /**
- * Extensible by design — a `'liquidauth'` member is expected once Liquid
- * Auth lands as a third adapter (design doc). A plain string-literal union
- * is deliberately as far as this goes for now.
+ * A registry record's own kind, or `'dapp'` for an ARC-0027 site permission,
+ * which is not a `Connection` record yet.
  */
-export type ConnectionKind = 'walletconnect' | 'dapp'
+export type ConnectionKind = RegistryConnectionKind | 'dapp'
 
 /** Screen-only presentation type. Neither underlying store is touched or
  * reshaped — this just unions their read models for one flat list.
@@ -43,7 +43,7 @@ export type UnifiedConnection = {
     title: string
     subtitle: string
     iconUrl?: string
-    connectedAt?: Date | string
+    connectedAt?: Date | string | number
     onRevoke: () => void
 }
 
@@ -66,6 +66,8 @@ export const toComparableTime = (
 export type UseConnectionsSettingsScreenResult = {
     connections: UnifiedConnection[]
     isLoading: boolean
+    /** False while the registry mirror is still filling; hold the empty state until then. */
+    isHydrated: boolean
     handleRevoke: (connection: UnifiedConnection) => void
     keyExtractor: (item: UnifiedConnection) => string
     /** Drives the QR-paste flow for pairing a new WalletConnect session —
@@ -74,36 +76,27 @@ export type UseConnectionsSettingsScreenResult = {
     scannerState: ModalState
 }
 
-export const toUnifiedWalletConnectConnection = (
-    connection: WalletConnectConnection,
-    disconnect: (clientId: string) => Promise<void>,
-    /**
-     * `disconnect` sends a control message to the offscreen host on web
-     * (see `useWalletConnectSessionsControl.web.ts`) — a rejected send
-     * (e.g. no offscreen document to receive it) must not fail silently:
-     * without this, the row simply stays on screen with no signal to the
-     * user and an unhandled promise rejection. Native's `disconnect` can
-     * fail too (a revival timeout inside `useWalletConnect.disconnect`),
-     * so this is wired on both platforms, not just web.
-     */
-    onError: (error: unknown) => void,
-    unknownPeerLabel: string,
-): UnifiedConnection => {
-    const peerMeta = connection.session?.peerMeta
-    const clientId = connection.clientId ?? ''
-
-    return {
-        id: `walletconnect-${clientId}`,
-        kind: 'walletconnect',
-        title: peerMeta?.name ?? unknownPeerLabel,
-        subtitle: peerMeta?.url ?? connection.bridge ?? '',
-        iconUrl: peerMeta?.icons?.[0],
-        connectedAt: connection.createdAt,
-        onRevoke: () => {
-            disconnect(clientId).catch(onError)
-        },
-    }
-}
+/**
+ * The transport-agnostic half of the unified list: one `Connection` record,
+ * already reduced to a settings row, as a `UnifiedConnection`.
+ *
+ * `connectedAt` is a plain epoch-ms number here — `Connection`'s timestamps
+ * carry none of `WalletConnectConnection.createdAt`'s Date-vs-rehydrated-string
+ * hazard — and `onRevoke` is the list hook's own fire-and-forget revoke, which
+ * surfaces its own failure toast.
+ */
+export const toUnifiedConnection = (
+    row: ConnectionSettingsRow,
+    revoke: (id: string) => void,
+): UnifiedConnection => ({
+    id: `connection-${row.id}`,
+    kind: row.kind,
+    title: row.title,
+    subtitle: row.subtitle,
+    iconUrl: row.iconUrl,
+    connectedAt: row.lastActiveAt || row.createdAt,
+    onRevoke: () => revoke(row.id),
+})
 
 export const toUnifiedDappPermission = (
     site: DappPermission,

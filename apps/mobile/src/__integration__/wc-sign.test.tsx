@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-// `algo_signTxn` dispatch and validation, picking up where
-// `walletconnect-pair.test.tsx` leaves off: a fired request runs
+// `algo_signTxn` dispatch and validation through the LEGACY
+// `WalletConnectProvider` path, which `apps/browser` still mounts and native
+// no longer does; the registry's equivalent lives in
+// `connections-flow.test.tsx`.
+//
+// Picks up where `walletconnect-pair.test.tsx` leaves off: a fired request runs
 // `handleSignTransaction`'s session / payload / ARC-0001 checks, and a throw
 // lands as `connector.rejectRequest` plus a store connectionError.
 //

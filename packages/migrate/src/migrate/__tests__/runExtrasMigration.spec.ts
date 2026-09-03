@@ -62,7 +62,7 @@ vi.mock('../migrateSwaps', () => ({
 }))
 
 vi.mock('../migrateWalletConnect', () => ({
-    migrateWalletConnect: vi.fn(() => ({ imported: 0, skipped: 0 })),
+    migrateWalletConnect: vi.fn(async () => ({ imported: 0, skipped: 0 })),
 }))
 
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
@@ -122,7 +122,10 @@ beforeEach(() => {
     vi.mocked(migrateStashed).mockReturnValue({
         walletConnectHistoryBlobStashed: true,
     })
-    vi.mocked(migrateWalletConnect).mockReturnValue({ imported: 0, skipped: 0 })
+    vi.mocked(migrateWalletConnect).mockResolvedValue({
+        imported: 0,
+        skipped: 0,
+    })
 })
 
 describe('runExtrasMigration > happy path', () => {
@@ -247,7 +250,7 @@ describe('runExtrasMigration > step failures', () => {
 
 describe('runExtrasMigration > walletConnect step', () => {
     it('runs the walletConnect step and propagates counts', async () => {
-        vi.mocked(migrateWalletConnect).mockReturnValue({
+        vi.mocked(migrateWalletConnect).mockResolvedValue({
             imported: 2,
             skipped: 1,
         })

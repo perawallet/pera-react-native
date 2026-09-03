@@ -17,11 +17,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import {
     toComparableTime,
+    toUnifiedConnection,
     toUnifiedDappPermission,
-    toUnifiedWalletConnectConnection,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
 } from './connectionsSettingsHelpers'
@@ -35,8 +35,15 @@ export type {
 export const useConnectionsSettingsScreen =
     (): UseConnectionsSettingsScreenResult => {
         const { t } = useLanguage()
-        const { connections: walletConnectConnections, disconnect } =
-            useWalletConnectSessionsControl()
+        // The registry-backed half. Its `handleRevoke` is fire-and-forget with
+        // its own failure toast, so this screen wraps it in the confirmation
+        // sheet below rather than handing it to the row directly — a straight
+        // swap would turn revoke into a single unguarded tap.
+        const {
+            connections: connectionRows,
+            isHydrated,
+            handleRevoke: revokeConnection,
+        } = useConnectionSettingsList()
         const { sites, isLoading, revoke } = useDappConnectionsStore()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
@@ -49,25 +56,13 @@ export const useConnectionsSettingsScreen =
             [showError, t],
         )
 
-        const handleDisconnectError = useCallback(
-            (error: unknown) => {
-                showError(
-                    error,
-                    t('walletconnect.settings.disconnect_failed_title'),
-                )
-            },
-            [showError, t],
-        )
-
         const connections = useMemo(() => {
+            // ARC-0027 dapp permissions are not `Connection` records — they
+            // keep their own store until that migration lands — so the two
+            // sources are unioned here rather than merged upstream.
             const unified: UnifiedConnection[] = [
-                ...walletConnectConnections.map(connection =>
-                    toUnifiedWalletConnectConnection(
-                        connection,
-                        disconnect,
-                        handleDisconnectError,
-                        t('walletconnect.settings.unknown_peer'),
-                    ),
+                ...connectionRows.map(row =>
+                    toUnifiedConnection(row, revokeConnection),
                 ),
                 ...sites.map(site =>
                     toUnifiedDappPermission(site, revoke, handleRevokeError),
@@ -78,19 +73,11 @@ export const useConnectionsSettingsScreen =
                     toComparableTime(b.connectedAt) -
                     toComparableTime(a.connectedAt),
             )
-        }, [
-            walletConnectConnections,
-            disconnect,
-            sites,
-            revoke,
-            handleRevokeError,
-            handleDisconnectError,
-            t,
-        ])
+        }, [connectionRows, revokeConnection, sites, revoke, handleRevokeError])
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {
-                const isWalletConnect = connection.kind === 'walletconnect'
+                const isWalletConnect = connection.kind !== 'dapp'
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
                         <ConfirmActionContent
@@ -146,6 +133,7 @@ export const useConnectionsSettingsScreen =
         return {
             connections,
             isLoading,
+            isHydrated,
             handleRevoke,
             keyExtractor,
             scannerState,

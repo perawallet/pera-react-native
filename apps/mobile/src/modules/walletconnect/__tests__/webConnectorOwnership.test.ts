@@ -34,6 +34,13 @@
 // assert the offender set EQUALS an explicit allowlist. A new file that
 // constructs/registers/binds a connector is now a failure by default,
 // not invisible by default.
+//
+// The scan is textual, and textual cuts both ways: it can miss an aliased
+// import (acknowledged above), and it can also fire on prose that merely
+// *names* one of the four patterns — a doc comment explaining why a session
+// key can't be zeroed, for instance, mentions `new WalletConnect(` without
+// constructing one. `stripComments` removes line and block comments before
+// matching so documenting the API doesn't fail the guard.
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -65,6 +72,58 @@ const CONNECTOR_OWNERSHIP_PATTERNS = [
     /\bsetConnectorHandlerBinder\(/,
     /\buseWalletConnect\(/,
 ]
+
+// Removes line and block comments while leaving string/template contents
+// alone, so a doc comment that merely names one of the four patterns above
+// (e.g. explaining what `new WalletConnect(...)` retains) doesn't read as
+// constructing one. A hand-rolled scanner rather than a regex: a regex can't
+// track "am I inside a string" state, and a `//` or `/*` inside a URL or
+// string literal would otherwise truncate real code. Doesn't special-case
+// regex literals (a `/…/ ` containing `//` would still get clipped) — no
+// call site in this codebase's connector-ownership files has one today.
+const stripComments = (source: string): string => {
+    let out = ''
+    let i = 0
+    while (i < source.length) {
+        const two = source.slice(i, i + 2)
+        if (two === '//') {
+            while (i < source.length && source[i] !== '\n') i++
+            continue
+        }
+        if (two === '/*') {
+            const end = source.indexOf('*/', i + 2)
+            i = end === -1 ? source.length : end + 2
+            continue
+        }
+        const ch = source[i]
+        if (ch === '"' || ch === "'" || ch === '`') {
+            out += ch
+            i++
+            while (i < source.length && source[i] !== ch) {
+                if (source[i] === '\\') {
+                    out += source.slice(i, i + 2)
+                    i += 2
+                    continue
+                }
+                out += source[i]
+                i++
+            }
+            if (i < source.length) {
+                out += source[i]
+                i++
+            }
+            continue
+        }
+        out += ch
+        i++
+    }
+    return out
+}
+
+const isConnectorOwnershipOffender = (fileContent: string): boolean =>
+    CONNECTOR_OWNERSHIP_PATTERNS.some(pattern =>
+        pattern.test(stripComments(fileContent)),
+    )
 
 // Test/test-infrastructure files are exempt: they exercise ownership code
 // (fixtures, stubs, mocks) without themselves being a module the web bundle
@@ -122,8 +181,18 @@ const toRepoRelativePosixPath = (path: string): string =>
 //     with (their web halves deliberately do NOT appear here);
 //   - the offscreen host, the sole owner on web;
 //   - packages/walletconnect's own internals — the hook the native halves
-//     above delegate to, and the two connection-layer modules that
-//     construct/register the real SDK class.
+//     above delegate to, the two connection-layer modules that
+//     construct/register the real SDK class, and the v1 connection handler
+//     itself, which is the connector owner under this architecture (it calls
+//     `registerConnector`/`setConnectorHandlerBinder` to hand a connector to
+//     the registry). On web it may only ever be instantiated from the
+//     offscreen document, never the service worker or a content script —
+//     that's this allowlist's whole claim for `wcHost.ts` above. Today
+//     nothing on web instantiates it at all (the offscreen host still talks
+//     to the v1 SDK directly, not through this handler), so that constraint
+//     is unenforced rather than honored; a follow-up plan that wires this
+//     handler into apps/browser must instantiate it only from the offscreen
+//     document, or add a guard here that catches otherwise.
 const ALLOWED_CONNECTOR_OWNERS = [
     'apps/mobile/src/modules/walletconnect/providers/useWalletConnectProvider.tsx',
     'apps/mobile/src/modules/walletconnect/components/ConnectionView/ConnectionView.tsx',
@@ -133,6 +202,7 @@ const ALLOWED_CONNECTOR_OWNERS = [
     'packages/walletconnect/src/hooks/useWalletConnect.ts',
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
+    'packages/walletconnect/src/v1/handler.ts',
 ].sort()
 
 describe('web connector ownership', () => {
@@ -156,13 +226,46 @@ describe('web connector ownership', () => {
             .flatMap(root => listFilesRecursively(root))
             .filter(path => !isTestFile(path))
             .filter(path =>
-                CONNECTOR_OWNERSHIP_PATTERNS.some(pattern =>
-                    pattern.test(readFileSync(path, 'utf8')),
-                ),
+                isConnectorOwnershipOffender(readFileSync(path, 'utf8')),
             )
             .map(toRepoRelativePosixPath)
             .sort()
 
         expect(offenders).toEqual(ALLOWED_CONNECTOR_OWNERS)
+    })
+})
+
+describe('isConnectorOwnershipOffender', () => {
+    it('does not flag a file that only mentions the API in comments', () => {
+        const source = `
+            // A doc comment describing new WalletConnect(options) retention.
+            /*
+             * Also explains registerConnector( and setConnectorHandlerBinder(
+             * without calling either.
+             */
+            export const explainsWithoutCalling = (): void => {}
+        `
+        expect(isConnectorOwnershipOffender(source)).toBe(false)
+    })
+
+    it('still flags a real call sitting next to a comment mentioning the same API', () => {
+        const source = `
+            // comment mentioning new WalletConnect(
+            export const build = () => new WalletConnect({})
+        `
+        expect(isConnectorOwnershipOffender(source)).toBe(true)
+    })
+
+    it('does not let a comment mask real code that follows on the same line', () => {
+        const source = `export const build = () => new WalletConnect({}) // not a comment-only mention`
+        expect(isConnectorOwnershipOffender(source)).toBe(true)
+    })
+
+    it('leaves string contents intact so a URL is not mistaken for a comment', () => {
+        const source = `
+            const bridgeUrl = 'https://example.com/registerConnector(real)'
+            export const build = () => new WalletConnect({})
+        `
+        expect(isConnectorOwnershipOffender(source)).toBe(true)
     })
 })

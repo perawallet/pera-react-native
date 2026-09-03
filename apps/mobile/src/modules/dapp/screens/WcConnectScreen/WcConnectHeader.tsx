@@ -22,8 +22,8 @@
 //   - Its `request` comes from the WC session-request store, which no
 //     extension surface may read (offscreen owns connectors).
 //
-// VISUAL FIDELITY is held by importing ConnectionView's own stylesheet rather
-// than copying values out of it, and by keeping this element tree and its i18n
+// VISUAL FIDELITY is held by importing the approval stylesheet ConnectionView
+// itself uses rather than copying values out of it, and by keeping this element tree and its i18n
 // keys aligned with that component. Nothing here re-declares a spacing, colour
 // or radius. See __tests__/visualFidelity.spec.ts, which fails if the two
 // element trees drift apart.
@@ -41,7 +41,7 @@ import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVer
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 // Shared verbatim with ConnectionView/ConnectionViewHeader — the single source
 // of these visuals.
-import { useStyles } from '@modules/walletconnect/components/ConnectionView/styles'
+import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
 import { useStyles as useRequesterStyles } from './styles'
 
 export type WcConnectHeaderProps = {

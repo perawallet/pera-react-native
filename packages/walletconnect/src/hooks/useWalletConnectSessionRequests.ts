@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import type { WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
-import { SESSION_REQUEST_TTL_MS } from '../constants'
+import { SESSION_REQUEST_TTL_MS } from '../shared/constants'
 
 /**
  * A queued session request is only approvable while the dApp's side of

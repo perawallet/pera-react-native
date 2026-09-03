@@ -35,6 +35,12 @@ export const useNeedsMigration = (): UseNeedsMigrationResult => {
     )
 
     const isChecking = useMigrationGateStore(state => state.isChecking)
+    // A dep, not just a read: `clearAllStores()` resets this store back to
+    // `hasStarted: false` under still-mounted subscribers, and without a
+    // re-run the gate stays `isChecking` for the rest of the session — every
+    // consumer waiting on it (the connections boot among them) never starts.
+    // The `hasStarted` guard below is what keeps this from double-firing.
+    const hasStarted = useMigrationGateStore(state => state.hasStarted)
     const needsMigration = useMigrationGateStore(state => state.needsMigration)
     const dismissed = useMigrationGateStore(state => state.dismissed)
     const dismiss = useMigrationGateStore(state => state.dismiss)
@@ -76,7 +82,7 @@ export const useNeedsMigration = (): UseNeedsMigrationResult => {
                     .getState()
                     .setStatus({ needsMigration: false })
             })
-    }, [isMigrationFeatureEnabled])
+    }, [isMigrationFeatureEnabled, hasStarted])
 
     return {
         isChecking,

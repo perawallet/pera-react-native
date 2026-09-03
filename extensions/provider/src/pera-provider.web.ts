@@ -17,6 +17,7 @@ import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-dri
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 import type {
@@ -35,8 +36,8 @@ export type PeraProvider = PeraProviderShape
  * Bluetooth/WebHID counterparts, and the keystore extension for
  * keystore-web's (the singleton injects a concrete engine through
  * `options.api.keystore`, so this only decides which package's Provider
- * wrapper reads it). Platform services and passkey autofill are composed
- * identically to the native file.
+ * wrapper reads it). Platform services, passkey autofill, and the
+ * connection store are composed identically to the native file.
  */
 export const PeraProvider: {
     new (
@@ -60,4 +61,8 @@ export const PeraProvider: {
     // slot as the native file so the two arrays can't drift out of order.
     WithPeraKeystoreRepairs,
     WithPasskeyAutofill,
+    // Last, and load-bearing: reads `provider.keyValueStorage`, which
+    // WithPlatformExtension supplies. Kept in the same slot as the native
+    // file so the two arrays can't drift out of order.
+    WithConnections,
 ] as const)

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import WalletConnect from '@perawallet/walletconnect'
-import { PERA_CLIENT_META } from '../../constants'
+import { PERA_CLIENT_META } from '../../shared/constants'
 import { createWalletConnectConnector } from '../createConnector'
 
 // The real WC v1 client opens a relay socket jsdom can't service — this

@@ -107,6 +107,28 @@ describe('parseArc60WireRequest', () => {
             }),
         ).toThrow(Arc60BadRequestError)
     })
+
+    it('throws Arc60BadRequestError when authenticatorData cannot hold the domain hash', () => {
+        // 40 base64 characters decode to 30 bytes — short of the 32 ARC-60
+        // reserves for sha256(domain).
+        expect(() =>
+            parseArc60WireRequest({
+                ...validWireRequest,
+                authenticatorData: 'A'.repeat(40),
+            }),
+        ).toThrow(Arc60BadRequestError)
+    })
+
+    it('throws Arc60BadRequestError when authenticatorData is outside the base64 alphabet', () => {
+        // base64-js only rejects a length that isn't a multiple of 4, so this
+        // would otherwise decode to garbage bytes instead of failing.
+        expect(() =>
+            parseArc60WireRequest({
+                ...validWireRequest,
+                authenticatorData: '!'.repeat(48),
+            }),
+        ).toThrow(Arc60BadRequestError)
+    })
 })
 
 describe('isArc60OriginMismatch', () => {

@@ -14,14 +14,14 @@ import {
     ALL_PERMISSIONS,
     PERA_CLIENT_META,
     WC_DELIVERY_TIMEOUT_MS,
-} from '../constants'
+} from '../shared/constants'
 import {
     WalletConnectBridgeConnectionError,
     WalletConnectError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSessionRequestExpiredError,
-} from '../errors'
+} from '../shared/errors'
 import type {
     WalletConnectConnection,
     WalletConnectSessionRequest,
@@ -37,7 +37,7 @@ import {
     setConnectorHandlerBinder,
 } from '../connection'
 import { isSessionRequestFresh } from './useWalletConnectSessionRequests'
-import { isChainIdAcceptable } from '../utils/chain'
+import { isChainIdAcceptable } from '../shared/chain'
 import WalletConnect from '@perawallet/walletconnect'
 import { useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'

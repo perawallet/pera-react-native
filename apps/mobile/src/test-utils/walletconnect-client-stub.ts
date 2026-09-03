@@ -42,6 +42,13 @@ export const walletConnectClientStub = {
 
 class StubWalletConnect {
     clientId: string
+    // The v1 handler snapshots these onto the persisted `Connection` at
+    // approval time, and `isWalletConnectV1Connection` refuses a record
+    // missing any of them — so a stub without them cannot answer a single
+    // follow-up request.
+    bridge = 'https://relay.example.test'
+    peerId: string
+    handshakeTopic: string
     connected = false
     // Mirrors the subset of WC v1's `session` object that production
     // code reads — chainId is checked by `validateRequest` in the sign
@@ -52,7 +59,8 @@ class StubWalletConnect {
         chainId?: number
         accounts?: string[]
         peerMeta?: unknown
-    } = {}
+        key?: string
+    } = { key: 'stub-session-key' }
     // The real WC v1 client opens its SocketTransport in the constructor;
     // `ensureConnectorReady` fast-paths on `_transport.connected`, so the
     // stub models an immediately-open socket. Tests that need a dead
@@ -62,12 +70,16 @@ class StubWalletConnect {
 
     approveSessionCalls: { chainId: number; accounts: string[] }[] = []
     rejectSessionCalls = 0
+    transportCloseCalls = 0
     killSessionCalls: { message?: string }[] = []
     rejectRequestCalls: { id?: number; error?: Error }[] = []
     approveRequestCalls: { id?: number; result?: unknown }[] = []
 
     constructor() {
-        this.clientId = `stub-client-${walletConnectClientStub.nextClientId++}`
+        const index = walletConnectClientStub.nextClientId++
+        this.clientId = `stub-client-${index}`
+        this.peerId = `stub-peer-${index}`
+        this.handshakeTopic = `stub-topic-${index}`
         walletConnectClientStub.instances.push(this)
     }
 
@@ -113,6 +125,17 @@ class StubWalletConnect {
     }
     rejectSession(): void {
         this.rejectSessionCalls += 1
+        // The real SDK fires 'disconnect' synchronously from here and leaves
+        // the socket open — the shape that made a declined pairing leak a
+        // live connector, so the stub has to reproduce it.
+        this.handlers.get('disconnect')?.(null, {
+            event: 'disconnect',
+            params: [{ message: 'Session Rejected' }],
+        })
+    }
+    transportClose(): void {
+        this.transportCloseCalls += 1
+        this._transport.connected = false
     }
     async killSession(args?: { message?: string }): Promise<void> {
         this.killSessionCalls.push(args ?? {})

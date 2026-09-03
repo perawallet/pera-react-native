@@ -17,18 +17,29 @@ import {
     useSigningEvent,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { useConnectionsStore } from '@perawallet/wallet-core-connections'
+import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import type { SigningReturnToDapp } from '../SigningCompletedContent/useSigningCompletedContent'
 
 /**
- * How this request's session was paired — undefined for non-WC requests
- * and for sessions with no recorded origin (pre-existing sessions).
+ * How this request's session was paired — undefined for non-connection
+ * requests and for connections with no recorded origin.
+ *
+ * `transportId` is the `Connection.id` the handler stamped on the request, so
+ * this reads the origin off the connection record itself rather than the
+ * legacy `dappOrigins` side-table, which nothing writes to once pairing runs
+ * through the registry.
  */
-const resolveSessionOrigin = (req: SignRequest) =>
+const resolveSessionOrigin = (
+    req: SignRequest,
+): ConnectionOrigin | undefined =>
     req.sourceType === 'walletconnect' && req.transportId
-        ? useWalletConnectStore.getState().dappOrigins[req.transportId]
+        ? useConnectionsStore
+              .getState()
+              .connections.find(connection => connection.id === req.transportId)
+              ?.origin
         : undefined
 
 /** Only external-browser sessions get the "Return to the dApp" hand-off. */

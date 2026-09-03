@@ -24,8 +24,8 @@
 // comment would flag this file). Approve/reject here travel back over the
 // approval bridge instead.
 //
-// VISUAL FIDELITY comes from importing ConnectionView's own stylesheet — not
-// from copied values — and from keeping this element tree aligned with it. The
+// VISUAL FIDELITY comes from importing the approval stylesheet ConnectionView
+// itself uses — not from copied values — and from keeping this element tree aligned with it. The
 // two differences are deliberate: no `inBottomSheet` on the list (this is a
 // top-level approval document, not a sheet) and the verified-requester row in
 // the header. __tests__/visualFidelity.spec.ts fails if the trees drift.
@@ -43,7 +43,7 @@ import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from '@modules/walletconnect/components/ConnectionView/styles'
+import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
 // Same split as WcConnectHeader: shared visuals come from ConnectionView's
 // stylesheet, and only what mobile has no counterpart for lives locally.
 import { useStyles as useLocalStyles } from './styles'

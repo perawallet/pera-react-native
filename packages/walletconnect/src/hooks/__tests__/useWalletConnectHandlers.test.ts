@@ -25,14 +25,14 @@ import {
     canSignArbitraryData,
     isHardwareWalletAccount,
     useAllAccounts,
-    useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { type WalletConnectTransactionPayload } from '../../models'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
-} from '../../errors'
+} from '../../shared/errors'
 
 // Resolver spec is covered by packages/blockchain/.../resolve.spec.ts —
 // these tests cover WC plumbing with a stub that avoids real msgpack.
@@ -49,7 +49,6 @@ vi.mock('../../connection', () => ({
 // and `signingAccountsState` are shared so tests can drive both the
 // fake resolver and the accounts mock from one place.
 const {
-    MockArc0001Error,
     fakeArc0001Resolve,
     mockAddSignRequest,
     txnSenderMap,
@@ -191,7 +190,6 @@ const {
     }
 
     return {
-        MockArc0001Error,
         fakeArc0001Resolve,
         mockAddSignRequest,
         txnSenderMap,

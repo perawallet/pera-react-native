@@ -35,8 +35,22 @@ import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLoc
 vi.mock('@routes/index', () => ({ MainRoutes: () => null }))
 vi.mock('@modules/webview', () => ({ WebViewOverlay: () => null }))
 vi.mock('@components/OfflineBanner', () => ({ OfflineBanner: () => null }))
+// Marker wrappers, not passthroughs: the mount point is what the second
+// describe block below asserts, so the tree has to say which provider wrapped
+// the app content — the same reason PromptContainer is stubbed as a marker.
+vi.mock('@modules/connections', () => ({
+    ConnectionsProvider: ({ children }: React.PropsWithChildren) => (
+        <div data-testid='connections-provider'>{children}</div>
+    ),
+}))
+// Not imported by RootComponent any more. Kept mocked so that if the mount is
+// ever reverted, the legacy provider shows up in the tree and the
+// "exactly one provider" assertion below fails loudly instead of silently
+// passing on a passthrough.
 vi.mock('@modules/walletconnect/providers/WalletConnectProvider', () => ({
-    WalletConnectProvider: ({ children }: React.PropsWithChildren) => children,
+    WalletConnectProvider: ({ children }: React.PropsWithChildren) => (
+        <div data-testid='legacy-walletconnect-provider'>{children}</div>
+    ),
 }))
 vi.mock('@modules/walletconnect/components/PairingProgressOverlay', () => ({
     PairingProgressOverlay: () => null,
@@ -213,5 +227,47 @@ describe('RootComponent PromptContainer mount point', () => {
         })
 
         expect(screen.queryByTestId('terms-acceptance-prompt')).toBeNull()
+    })
+})
+
+// The registry provider owns every connection handler's lifecycle: pairing,
+// the approval and success sheets, the reconnect sweep, and the legacy-session
+// migration all hang off this one mount. Nothing else in the app asserts it,
+// so reverting `RootComponent` to the legacy provider — or moving the mount
+// out from around the app content — has to fail here or it fails nowhere.
+describe('RootComponent connections provider mount point', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+        mockUseTermsAcceptance.mockReturnValue({
+            needsAcceptance: true,
+            currentVersion: '2',
+            acceptCurrentTerms: vi.fn(),
+        })
+        setGuardActive(false)
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.clearAllMocks()
+    })
+
+    it('wraps the app content in ConnectionsProvider', () => {
+        render(<RootComponent fcmToken={null} />)
+
+        const provider = screen.getByTestId('connections-provider')
+        // Containment, not mere presence: every consumer of
+        // `useConnectionRegistry` renders inside the app content, so a
+        // provider mounted as a sibling would type-check and still throw.
+        expect(
+            provider.contains(screen.getByTestId('terms-acceptance-prompt')),
+        ).toBe(true)
+    })
+
+    it('does not also mount the legacy WalletConnectProvider', () => {
+        render(<RootComponent fcmToken={null} />)
+
+        // Both own the v1 connectors' handler binder; whichever registered
+        // last wins and the other's sessions go deaf to dApp requests.
+        expect(screen.queryByTestId('legacy-walletconnect-provider')).toBeNull()
     })
 })

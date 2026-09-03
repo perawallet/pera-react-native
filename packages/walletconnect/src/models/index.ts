@@ -41,6 +41,12 @@ export const AlgorandPermission = {
 export type AlgorandPermission =
     (typeof AlgorandPermission)[keyof typeof AlgorandPermission]
 
+/** Whitelist for peer-supplied method names; anything else is never persisted. */
+export const isAlgorandPermission = (
+    value: string,
+): value is AlgorandPermission =>
+    (Object.values(AlgorandPermission) as readonly string[]).includes(value)
+
 export type WalletConnectConnection = {
     clientId?: string
     version?: number

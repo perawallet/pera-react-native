@@ -22,12 +22,15 @@ import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import WalletConnect from '@perawallet/walletconnect'
-import { PERA_CLIENT_META, SESSION_REQUEST_TTL_MS } from '../../constants'
+import {
+    PERA_CLIENT_META,
+    SESSION_REQUEST_TTL_MS,
+} from '../../shared/constants'
 import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSessionRequestExpiredError,
-} from '../../errors'
+} from '../../shared/errors'
 import { AlgorandChainId } from '../../models'
 import { Networks, logger } from '@perawallet/wallet-core-shared'
 

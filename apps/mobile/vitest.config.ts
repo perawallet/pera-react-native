@@ -161,6 +161,13 @@ export default defineConfig({
                 find: '@utils',
                 replacement: path.resolve(__dirname, './src/utils'),
             },
+            {
+                // Test-only: a spec that has to reach a package module by
+                // path (because the barrel is hand-mocked) should not have to
+                // count how deep it sits to do it.
+                find: '@packages',
+                replacement: path.resolve(__dirname, '../../packages'),
+            },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
                 // The `/test-utils` sub-export is consumed by msw-handlers
@@ -258,6 +265,17 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../extensions/platform/src/index.ts',
+                ),
+            },
+            {
+                // `vitest.setup.ts` builds the provider's connection store from
+                // this package, so EVERY mobile unit test loads it. Left on
+                // `dist` that is a global stale-build hazard, the same one the
+                // core connections alias above avoids.
+                find: '@perawallet/wallet-extension-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/connections/src/index.ts',
                 ),
             },
             {
@@ -379,6 +397,16 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/walletconnect/src/index.ts',
+                ),
+            },
+            {
+                // Actively developed alongside the rest of this plan —
+                // aliased to source rather than `dist` to avoid the stale-
+                // build hazard this project has already hit repeatedly.
+                find: '@perawallet/wallet-core-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/connections/src/index.ts',
                 ),
             },
             {

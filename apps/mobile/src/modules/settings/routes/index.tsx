@@ -32,7 +32,7 @@ import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/Set
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import type { NavigatorScreenParams } from '@react-navigation/native'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
@@ -176,7 +176,7 @@ const DeveloperSettingsStackNavigator = () => {
 
 export type WalletConnectSettingsStackParamsList = {
     WalletConnectSettingsHome: undefined
-    WalletConnectSettingsDetails: { session: WalletConnectConnection }
+    WalletConnectSettingsDetails: { connection: ConnectionSettingsRow }
 }
 
 const WalletConnectSettingsStack =

@@ -12,8 +12,11 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
-import { isChainIdAcceptable } from '../utils/chain'
-import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
+import { isChainIdAcceptable } from '../shared/chain'
+import {
+    arc60PayloadSchema,
+    assertArc60RequestWithinLimits,
+} from '../shared/schema'
 
 export type GateResult = { ok: true } | { ok: false; reason: string }
 
