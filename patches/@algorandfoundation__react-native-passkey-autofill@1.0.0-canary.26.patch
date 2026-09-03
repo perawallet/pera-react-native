@@ -800,16 +800,17 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb901090e1
+index 0000000000000000000000000000000000000000..87de8929a6160247f56f5a6c95c69517f4680446
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
-@@ -0,0 +1,175 @@
+@@ -0,0 +1,220 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
 +import android.content.pm.PackageManager
 +import android.os.Build
 +import android.util.Log
++import androidx.annotation.VisibleForTesting
 +import androidx.credentials.provider.CallingAppInfo
 +import java.security.MessageDigest
 +import org.json.JSONObject
@@ -892,23 +893,51 @@ index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb
 +     * install an app named `com.android.chrome`, but not one signed by Google.
 +     */
 +    fun isAllowlistedBrowser(context: Context, packageName: String): Boolean = try {
++        // Checked before touching PackageManager: this runs for every fill
++        // request, and the allowlist lookup rejects ordinary apps without one.
 +        val allowed = allowlistFingerprints(context, packageName)
-+        allowed.isNotEmpty() && installedFingerprints(context, packageName).any { it in allowed }
++        if (allowed.isEmpty()) {
++            false
++        } else {
++            val installed = installedSigners(context, packageName)
++            installed.fingerprints.isNotEmpty() &&
++                if (installed.hasMultipleSigners) {
++                    // AndroidX requires *every* signer of a multi-signed package
++                    // to be allowlisted. Accepting on any one of them would let a
++                    // co-signed build carry an allowlisted signer alongside an
++                    // arbitrary one and still pass.
++                    allowed.containsAll(installed.fingerprints)
++                } else {
++                    installed.fingerprints.any { it in allowed }
++                }
++        }
 +    } catch (e: Exception) {
 +        Log.w(TAG, "Could not verify $packageName against the browser allowlist", e)
 +        false
 +    }
 +
-+    /**
-+     * The allowlist's fingerprints for [packageName].
-+     *
-+     * `userdebug` entries are skipped off a `userdebug` build, matching what
-+     * AndroidX does with this same file: those certificates sign engineering
-+     * builds, so honouring them on a user build would extend trust to keys that
-+     * were never meant to carry it.
-+     */
 +    private fun allowlistFingerprints(context: Context, packageName: String): Set<String> {
 +        val raw = allowlist(context) ?: return emptySet()
++        return parseAllowlistFingerprints(raw, packageName, Build.TYPE == BUILD_USERDEBUG)
++    }
++
++    /**
++     * The fingerprints [raw] lists for [packageName].
++     *
++     * `userdebug` entries are honoured only when [acceptUserdebugSignatures],
++     * matching what AndroidX does with this same file: those certificates sign
++     * engineering builds, so trusting them on a user build would extend trust to
++     * keys that were never meant to carry it.
++     *
++     * Takes the build decision as an argument rather than reading [Build.TYPE]
++     * itself so the parse can be tested without a device.
++     */
++    @VisibleForTesting
++    internal fun parseAllowlistFingerprints(
++        raw: String,
++        packageName: String,
++        acceptUserdebugSignatures: Boolean,
++    ): Set<String> {
 +        val apps = JSONObject(raw).optJSONArray("apps") ?: return emptySet()
 +        val fingerprints = mutableSetOf<String>()
 +        for (i in 0 until apps.length()) {
@@ -918,7 +947,7 @@ index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb
 +            for (j in 0 until signatures.length()) {
 +                val signature = signatures.optJSONObject(j) ?: continue
 +                if (signature.optString("build") == BUILD_USERDEBUG &&
-+                    Build.TYPE != BUILD_USERDEBUG
++                    !acceptUserdebugSignatures
 +                ) {
 +                    continue
 +                }
@@ -930,16 +959,24 @@ index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb
 +        return fingerprints
 +    }
 +
-+    private fun installedFingerprints(context: Context, packageName: String): Set<String> {
++    private class InstalledSigners(
++        val hasMultipleSigners: Boolean,
++        val fingerprints: Set<String>,
++    )
++
++    private fun installedSigners(context: Context, packageName: String): InstalledSigners {
++        val empty = InstalledSigners(hasMultipleSigners = false, fingerprints = emptySet())
 +        val packageManager = context.packageManager
++        var multipleSigners = false
 +        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
 +            val signingInfo = packageManager
 +                .getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
-+                .signingInfo ?: return emptySet()
++                .signingInfo ?: return empty
++            multipleSigners = signingInfo.hasMultipleSigners()
 +            // A browser that has rotated its signing key still answers for the
 +            // package under its older certificate, and the published allowlist
 +            // may name either, so a lone signer is compared against its history.
-+            if (signingInfo.hasMultipleSigners()) {
++            if (multipleSigners) {
 +                signingInfo.apkContentsSigners
 +            } else {
 +                signingInfo.signingCertificateHistory
@@ -947,11 +984,17 @@ index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb
 +        } else {
 +            @Suppress("DEPRECATION")
 +            packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
-+        } ?: return emptySet()
++                ?.also { multipleSigners = it.size > 1 }
++        } ?: return empty
 +
 +        // digest() resets the instance, so one is enough for every signature.
 +        val digest = MessageDigest.getInstance("SHA-256")
-+        return signatures.mapTo(mutableSetOf()) { digest.digest(it.toByteArray()).toHex() }
++        return InstalledSigners(
++            hasMultipleSigners = multipleSigners,
++            fingerprints = signatures.mapTo(mutableSetOf()) {
++                toHex(digest.digest(it.toByteArray()))
++            },
++        )
 +    }
 +
 +    /**
@@ -963,16 +1006,18 @@ index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb
 +     * false, `Web` scope would be unreachable, and the feature would look
 +     * healthy while never filling anything in a browser.
 +     */
-+    private fun normalize(fingerprint: String): String =
++    @VisibleForTesting
++    internal fun normalize(fingerprint: String): String =
 +        fingerprint.replace(":", "").lowercase()
 +
 +    /**
 +     * Deliberately not `"%02x".format(...)`, which formats in the default
 +     * locale and would emit non-ASCII digits under one that shapes them.
 +     */
-+    private fun ByteArray.toHex(): String {
-+        val out = StringBuilder(size * 2)
-+        for (byte in this) {
++    @VisibleForTesting
++    internal fun toHex(bytes: ByteArray): String {
++        val out = StringBuilder(bytes.size * 2)
++        for (byte in bytes) {
 +            val value = byte.toInt() and 0xFF
 +            out.append(HEX_DIGITS[value ushr 4]).append(HEX_DIGITS[value and 0x0F])
 +        }
@@ -1196,10 +1241,10 @@ index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..8fa22c24626d9210346e62ed69cc8a2b130019f8
+index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6433f3cc3
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,88 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.content.Context
@@ -1236,12 +1281,24 @@ index 0000000000000000000000000000000000000000..8fa22c24626d9210346e62ed69cc8a2b
 +     */
 +    data class UnlinkedApp(val packageName: String) : AutofillScope()
 +
++    /**
++     * An allowlisted browser whose request carried no host we could resolve.
++     * **Matches nothing, and must never be offered the linking picker.**
++     *
++     * A link is keyed by package, so linking a login to a browser would attach
++     * it to *every* page that browser ever renders — the exact domain-blind
++     * offer [Web] exists to prevent. The caller is verified but the page is
++     * unknown, and an unknown page earns nothing.
++     */
++    data class UnscopedBrowser(val packageName: String) : AutofillScope()
++
 +    /** Whether a login may be offered to this caller without being picked first. */
 +    fun matches(storedDomain: String, recordIdentifier: String, links: Set<String>): Boolean =
 +        when (this) {
 +            is Web -> PasswordCredentialStore.domainMatches(storedDomain, host)
 +            is LinkedApp -> links.contains(recordIdentifier)
 +            is UnlinkedApp -> false
++            is UnscopedBrowser -> false
 +        }
 +
 +    companion object {
@@ -1249,18 +1306,18 @@ index 0000000000000000000000000000000000000000..8fa22c24626d9210346e62ed69cc8a2b
 +
 +        @RequiresApi(Build.VERSION_CODES.O)
 +        fun resolve(context: Context, target: FillTarget): AutofillScope {
-+            val domain = target.webDomain
-+            if (domain != null &&
-+                PrivilegedBrowsers.isAllowlistedBrowser(context, target.packageName)
-+            ) {
-+                val host = PasswordCredentialStore.host(domain)
-+                if (host.isNotEmpty()) return Web(host)
++            // Browser identity is settled before the domain is looked at, so a
++            // verified browser can never fall into app scope: `LinkedApp` has no
++            // domain test, and a package-keyed link would then answer on every
++            // page that browser renders.
++            if (PrivilegedBrowsers.isAllowlistedBrowser(context, target.packageName)) {
++                val host = target.webDomain?.let { PasswordCredentialStore.host(it) }.orEmpty()
++                return if (host.isEmpty()) UnscopedBrowser(target.packageName) else Web(host)
 +            }
-+            // A domain claimed by a caller we cannot identify as a browser falls
-+            // through to app scope rather than being denied outright: the app
-+            // may well be honest, and the picker puts the choice to the user
-+            // instead of to the claim. It is never silently trusted, because
-+            // reaching here means nothing has verified who the caller is.
++            // An unverified caller falls through to app scope rather than being
++            // denied outright — it may well be honest, and the picker puts the
++            // choice to the user instead of to the claim. Any domain it claimed
++            // is dropped here: nothing has verified who it is.
 +            val links: Set<String> = try {
 +                AppLinkStore.linksFor(context, target.packageName)
 +            } catch (e: Exception) {
@@ -1278,15 +1335,16 @@ index 0000000000000000000000000000000000000000..8fa22c24626d9210346e62ed69cc8a2b
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..63e3ef7e10e9d818195bdba722734a8dce67732e
+index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a934e9c8d
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,177 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.app.assist.AssistStructure
 +import android.os.Build
 +import android.text.InputType
++import android.util.Log
 +import android.view.View
 +import android.view.autofill.AutofillId
 +import androidx.annotation.RequiresApi
@@ -1322,6 +1380,20 @@ index 0000000000000000000000000000000000000000..63e3ef7e10e9d818195bdba722734a8d
 + */
 +@RequiresApi(Build.VERSION_CODES.O)
 +object FillStructureParser {
++    private const val TAG = "FillStructureParser"
++
++    /**
++     * Bounds on an untrusted structure. A client controls the hierarchy it
++     * reports, so an unbounded walk is a `StackOverflowError` it can trigger at
++     * will — and an `Error` escapes the `catch (e: Exception)` on every caller.
++     * Real login forms sit orders of magnitude inside both numbers; exceeding
++     * either means the structure is not one, so the walk is abandoned rather
++     * than truncated. A truncated walk could drop the field that carried the
++     * domain and mis-attribute the rest.
++     */
++    private const val MAX_DEPTH = 128
++    private const val MAX_NODES = 4096
++
 +    /**
 +     * Browsers forward a field's `autocomplete` token as its autofill hint, so
 +     * the web spellings sit alongside the platform constants. Missing one costs
@@ -1339,10 +1411,28 @@ index 0000000000000000000000000000000000000000..63e3ef7e10e9d818195bdba722734a8d
 +        "email",
 +    )
 +
-+    fun parse(structure: AssistStructure, packageName: String): FillTarget? {
++    /**
++     * The fillable pair in [structure], or null when there is nothing to fill.
++     *
++     * Catches [Throwable] rather than [Exception] on purpose: the input is
++     * client-supplied, [MAX_DEPTH] is a guess about it, and a
++     * `StackOverflowError` getting past this would take down the fill request
++     * instead of declining it. Every other path in this change fails closed;
++     * so does this one.
++     */
++    fun parse(structure: AssistStructure, packageName: String): FillTarget? = try {
++        parseStructure(structure, packageName)
++    } catch (e: Throwable) {
++        Log.w(TAG, "Could not read the assist structure from $packageName", e)
++        null
++    }
++
++    private fun parseStructure(structure: AssistStructure, packageName: String): FillTarget? {
 +        val fields = mutableListOf<Field>()
++        val budget = Budget()
 +        for (i in 0 until structure.windowNodeCount) {
-+            collect(structure.getWindowNodeAt(i).rootViewNode, null, fields)
++            val root = structure.getWindowNodeAt(i).rootViewNode ?: continue
++            if (!collect(root, null, fields, budget, depth = 0)) return null
 +        }
 +
 +        val password = fields.firstOrNull { isPassword(it.node) } ?: return null
@@ -1380,18 +1470,28 @@ index 0000000000000000000000000000000000000000..63e3ef7e10e9d818195bdba722734a8d
 +     * a cross-origin iframe name the domain for a password field that does not
 +     * belong to it.
 +     */
++    private class Budget(var remainingNodes: Int = MAX_NODES)
++
++    /** False when the structure outran [MAX_DEPTH] or [MAX_NODES]. */
 +    private fun collect(
 +        node: AssistStructure.ViewNode,
 +        inherited: String?,
 +        into: MutableList<Field>,
-+    ) {
++        budget: Budget,
++        depth: Int,
++    ): Boolean {
++        if (depth > MAX_DEPTH || budget.remainingNodes <= 0) return false
++        budget.remainingNodes--
++
 +        val domain = node.webDomain?.takeIf { it.isNotEmpty() } ?: inherited
 +        if (node.autofillId != null && node.autofillType == View.AUTOFILL_TYPE_TEXT) {
 +            into += Field(node, domain)
 +        }
 +        for (i in 0 until node.childCount) {
-+            collect(node.getChildAt(i), domain, into)
++            val child = node.getChildAt(i) ?: continue
++            if (!collect(child, domain, into, budget, depth + 1)) return false
 +        }
++        return true
 +    }
 +
 +    private fun isPassword(node: AssistStructure.ViewNode): Boolean {
@@ -2767,6 +2867,267 @@ index 045847c91531aa36bb41aad811425f313077d3b1..9bf24fdd65bf79803bf65d015a0a0935
      </capabilities>
  </credential-provider>
 \ No newline at end of file
+diff --git a/android/src/test/java/co/algorand/passkeyautofill/PasswordDomainMatchingTest.kt b/android/src/test/java/co/algorand/passkeyautofill/PasswordDomainMatchingTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b5d9eba657da43d60c174c5904cd9bc979aff0bd
+--- /dev/null
++++ b/android/src/test/java/co/algorand/passkeyautofill/PasswordDomainMatchingTest.kt
+@@ -0,0 +1,50 @@
++package co.algorand.passkeyautofill
++
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * `AutofillScope.Web` decides what a browser is offered entirely through these
++ * two, so their edges are the feature's disclosure boundary.
++ */
++class PasswordDomainMatchingTest {
++    @Test
++    fun `a stored domain matches itself and its subdomains`() {
++        assertTrue(PasswordCredentialStore.domainMatches("example.com", "example.com"))
++        assertTrue(PasswordCredentialStore.domainMatches("example.com", "login.example.com"))
++        assertTrue(PasswordCredentialStore.domainMatches("example.com", "a.b.example.com"))
++    }
++
++    @Test
++    fun `a suffix that is not a subdomain does not match`() {
++        // The dot is what separates a subdomain from a lookalike registration.
++        assertFalse(PasswordCredentialStore.domainMatches("example.com", "evil-example.com"))
++        assertFalse(PasswordCredentialStore.domainMatches("example.com", "notexample.com"))
++    }
++
++    @Test
++    fun `matching does not run in the other direction`() {
++        assertFalse(PasswordCredentialStore.domainMatches("login.example.com", "example.com"))
++    }
++
++    @Test
++    fun `a bare public suffix does not answer for every site under it`() {
++        assertFalse(PasswordCredentialStore.domainMatches("com", "example.com"))
++    }
++
++    @Test
++    fun `an empty host on either side matches nothing`() {
++        assertFalse(PasswordCredentialStore.domainMatches("", "example.com"))
++        assertFalse(PasswordCredentialStore.domainMatches("example.com", ""))
++    }
++
++    @Test
++    fun `host reduces a url to a comparable host`() {
++        assertEquals("example.com", PasswordCredentialStore.host("https://example.com/login?a=b"))
++        assertEquals("example.com", PasswordCredentialStore.host("https://user@example.com:8443/"))
++        assertEquals("example.com", PasswordCredentialStore.host("EXAMPLE.COM."))
++        assertEquals("example.com", PasswordCredentialStore.host("  example.com  "))
++    }
++}
+diff --git a/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt b/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..605f3537a55aaabcfe4f36333b20d96083444f91
+--- /dev/null
++++ b/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt
+@@ -0,0 +1,138 @@
++package co.algorand.passkeyautofill
++
++import java.io.File
++import java.security.MessageDigest
++import java.util.Locale
++import org.json.JSONObject
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Guards the fingerprint comparison, which fails closed and silently: a spelling
++ * mismatch between the two sides makes every browser check return false, so no
++ * browser is ever offered a login while nothing anywhere reports an error.
++ */
++class PrivilegedBrowsersTest {
++    private val allowlistJson: String by lazy(::readShippedAllowlist)
++
++    private val chromeRelease =
++        "f0fd6c5b410f25cb25c3b53346c8972fae30f8ee7411df910480ad6b2d60db83"
++    private val chromeUserdebug =
++        "1975b2f17177bc89a5dff31f9e64a6cae281a53dc1d1d59b1d147fe1c82afa00"
++
++    @Test
++    fun `every shipped fingerprint normalizes to 64 lowercase hex characters`() {
++        val apps = JSONObject(allowlistJson).getJSONArray("apps")
++        var checked = 0
++        for (i in 0 until apps.length()) {
++            val info = apps.getJSONObject(i).getJSONObject("info")
++            val signatures = info.getJSONArray("signatures")
++            for (j in 0 until signatures.length()) {
++                val raw = signatures.getJSONObject(j).getString("cert_fingerprint_sha256")
++                val normalized = PrivilegedBrowsers.normalize(raw)
++                val where = "${info.getString("package_name")} signature $j"
++                assertEquals("$where is not 32 bytes", 64, normalized.length)
++                assertTrue(
++                    "$where is not lowercase hex: $normalized",
++                    normalized.all { it in '0'..'9' || it in 'a'..'f' },
++                )
++                checked++
++            }
++        }
++        // The allowlist is a shipped asset; an empty walk would pass vacuously.
++        assertTrue("no fingerprints found in the shipped allowlist", checked > 0)
++    }
++
++    @Test
++    fun `toHex renders bytes as lowercase hex without sign extension`() {
++        // Kotlin's Byte is signed, so the high-bit values are the ones that
++        // break a naive conversion.
++        val bytes = byteArrayOf(0x00, 0x0F, 0x10, 0x7F, 0x80.toByte(), 0xF0.toByte(), 0xFF.toByte())
++        assertEquals("000f107f80f0ff", PrivilegedBrowsers.toHex(bytes))
++    }
++
++    @Test
++    fun `toHex of a DER digest matches the allowlist spelling of the same value`() {
++        // Both sides of the real comparison, met on a real allowlist entry: the
++        // allowlist value stripped and lowercased, against the digest-side
++        // rendering of the very same bytes.
++        val der = "MIIDATCCAemgAwIBAgIEXAMPLE".toByteArray()
++        val digest = MessageDigest.getInstance("SHA-256").digest(der)
++        val computed = PrivilegedBrowsers.toHex(digest)
++        assertEquals(64, computed.length)
++
++        // Locale.ROOT for the same reason production builds hex by hand: a
++        // digit-shaping default locale would otherwise rewrite the expectation.
++        val asAllowlistWouldWrite = digest.joinToString(":") { "%02X".format(Locale.ROOT, it) }
++        assertEquals(computed, PrivilegedBrowsers.normalize(asAllowlistWouldWrite))
++    }
++
++    @Test
++    fun `chrome resolves to its release fingerprint off a userdebug build`() {
++        val fingerprints = PrivilegedBrowsers.parseAllowlistFingerprints(
++            allowlistJson,
++            "com.android.chrome",
++            acceptUserdebugSignatures = false,
++        )
++        assertEquals(setOf(chromeRelease), fingerprints)
++    }
++
++    @Test
++    fun `chrome gains its userdebug fingerprint on a userdebug build`() {
++        val fingerprints = PrivilegedBrowsers.parseAllowlistFingerprints(
++            allowlistJson,
++            "com.android.chrome",
++            acceptUserdebugSignatures = true,
++        )
++        assertEquals(setOf(chromeRelease, chromeUserdebug), fingerprints)
++    }
++
++    @Test
++    fun `a package absent from the allowlist gets no fingerprints`() {
++        // isAllowlistedBrowser treats an empty set as "not a browser", so this
++        // is what stops an arbitrary app from passing the check vacuously.
++        val fingerprints = PrivilegedBrowsers.parseAllowlistFingerprints(
++            allowlistJson,
++            "com.example.not.a.browser",
++            acceptUserdebugSignatures = true,
++        )
++        assertTrue(fingerprints.isEmpty())
++    }
++
++    @Test
++    fun `a debug-only browser is unreachable off a userdebug build`() {
++        // Firefox's webauthndebug build ships userdebug signatures only.
++        val fingerprints = PrivilegedBrowsers.parseAllowlistFingerprints(
++            allowlistJson,
++            "org.mozilla.fennec_webauthndebug",
++            acceptUserdebugSignatures = false,
++        )
++        assertTrue(fingerprints.isEmpty())
++    }
++
++    @Test
++    fun `malformed allowlist json yields no fingerprints rather than throwing`() {
++        assertTrue(
++            PrivilegedBrowsers.parseAllowlistFingerprints(
++                """{"unexpected": true}""",
++                "com.android.chrome",
++                acceptUserdebugSignatures = false,
++            ).isEmpty(),
++        )
++    }
++
++    private fun readShippedAllowlist(): String {
++        var directory: File? = File(System.getProperty("user.dir") ?: ".").absoluteFile
++        while (directory != null) {
++            val candidate = File(directory, RESOURCE_PATH)
++            if (candidate.isFile) return candidate.readText()
++            directory = directory.parentFile
++        }
++        throw AssertionError("could not find $RESOURCE_PATH from ${System.getProperty("user.dir")}")
++    }
++
++    private companion object {
++        const val RESOURCE_PATH = "src/main/res/raw/passkey_privileged_browsers.json"
++    }
++}
+diff --git a/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d442b35840e760df077ac259fa1b499c29c1e87a
+--- /dev/null
++++ b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt
+@@ -0,0 +1,55 @@
++package co.algorand.passkeyautofill.autofill
++
++import org.junit.Assert.assertFalse
++import org.junit.Assert.assertTrue
++import org.junit.Test
++
++/**
++ * Locks the offer rules. `resolve` needs a `Context` and a real
++ * `AssistStructure`, so it belongs to the on-device checks; what a resolved
++ * scope will *hand out* is pure, and that is the half that leaks logins.
++ */
++class AutofillScopeTest {
++    private val record = "pera.login.abc"
++
++    @Test
++    fun `a verified browser is offered a login stored for its host`() {
++        val scope = AutofillScope.Web("example.com")
++        assertTrue(scope.matches("example.com", record, emptySet()))
++    }
++
++    @Test
++    fun `a verified browser is not offered a login stored for another host`() {
++        val scope = AutofillScope.Web("evil.com")
++        assertFalse(scope.matches("example.com", record, emptySet()))
++    }
++
++    @Test
++    fun `a browser with no resolvable host is offered nothing`() {
++        // The scope exists so a verified browser can never land in LinkedApp,
++        // whose match is package-keyed and would answer on every page.
++        val scope = AutofillScope.UnscopedBrowser("com.android.chrome")
++        assertFalse(scope.matches("example.com", record, setOf(record)))
++    }
++
++    @Test
++    fun `a linked app is offered only the logins it was linked to`() {
++        val scope = AutofillScope.LinkedApp("com.example.app")
++        assertTrue(scope.matches("example.com", record, setOf(record)))
++        assertFalse(scope.matches("example.com", record, setOf("pera.login.other")))
++    }
++
++    @Test
++    fun `an unlinked app is offered nothing`() {
++        val scope = AutofillScope.UnlinkedApp("com.example.app")
++        assertFalse(scope.matches("example.com", record, setOf(record)))
++    }
++
++    @Test
++    fun `an app scope ignores the domain entirely`() {
++        // A caller that claimed a domain but failed the browser check reaches
++        // app scope; the claim must buy it nothing.
++        val scope = AutofillScope.UnlinkedApp("com.example.app")
++        assertFalse(scope.matches("example.com", record, emptySet()))
++    }
++}
 diff --git a/app.plugin.js b/app.plugin.js
 index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b283684369c 100644
 --- a/app.plugin.js
