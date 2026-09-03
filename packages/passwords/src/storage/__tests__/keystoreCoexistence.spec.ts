@@ -12,23 +12,33 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { isLoginKey } from '../../models/login'
-
 // vi.mock factories run before the rest of this module is evaluated, so
-// the shared record map can only be threaded in via vi.hoisted.
-const { records } = vi.hoisted(() => ({
+// the shared record/byte maps can only be threaded in via vi.hoisted.
+const { records, sealed } = vi.hoisted(() => ({
     records: new Map<string, Record<string, unknown>>(),
+    sealed: new Map<string, Uint8Array>(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: vi.fn(
-        async (params: { id: string; metadata?: Record<string, unknown> }) => {
+        async (params: {
+            id: string
+            bytes: Uint8Array
+            metadata?: Record<string, unknown>
+        }) => {
             records.set(params.id, params.metadata ?? {})
+            sealed.set(params.id, params.bytes)
         },
     ),
-    withSecret: vi.fn(async () => null),
+    withSecret: vi.fn(
+        async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+            const bytes = sealed.get(id)
+            return bytes === undefined ? null : handler(bytes)
+        },
+    ),
     removeSecret: vi.fn(async (id: string) => {
         records.delete(id)
+        sealed.delete(id)
     }),
 }))
 
@@ -44,34 +54,40 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { saveLogin } from '../loginStore'
+import { readLogin, saveLogin } from '../loginStore'
 
 describe('login records coexisting with key material', () => {
     beforeEach(() => {
         records.clear()
+        sealed.clear()
     })
 
-    it('is not counted as a signing key by an isLoginKey-unaware consumer', async () => {
-        records.set('pera.pinCode', {})
-        records.set('hd-root', { scheme: 'bip32-ed25519' })
+    it('keeps the service and account identifiers out of plaintext metadata', async () => {
+        const domain = 'distinctive-bank.example'
+        const username = 'ada.lovelace+distinctive@example.com'
 
-        await saveLogin(
+        const created = await saveLogin(
             {
-                domain: 'example.com',
-                username: 'ada@example.com',
+                domain,
+                username,
                 password: 'secret',
                 note: null,
             },
             1,
         )
 
-        const keys = [...records.entries()].map(([id, metadata]) => ({
-            id,
-            type: 'secret-key',
-            metadata,
-        }))
+        const metadata = records.get(created.id)
+        const metadataJson = JSON.stringify(metadata ?? {})
 
-        expect(keys.filter(key => !isLoginKey(key))).toHaveLength(2)
+        // The record set is walked in the clear by key counting, hydration
+        // and reconciliation, so any string here is effectively an index of
+        // which services the user holds logins for.
+        expect(metadataJson).not.toContain(domain)
+        expect(metadataJson).not.toContain(username)
+
+        const roundTripped = await readLogin(created.id)
+        expect(roundTripped?.domain).toBe(domain)
+        expect(roundTripped?.username).toBe(username)
     })
 
     it('carries no field a key consumer could mistake for material', async () => {
