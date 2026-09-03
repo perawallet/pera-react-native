@@ -183,7 +183,7 @@
     "sharp": "^0.35.2",
     "tweetnacl": "catalog:",
     "util": "catalog:",
-    "victory-native": "^41.26.0",
+    "victory-native": "^42.0.0",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
