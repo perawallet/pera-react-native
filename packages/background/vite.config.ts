@@ -56,6 +56,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-database',
                 '@perawallet/wallet-core-polling',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-core-signing',
                 '@perawallet/wallet-core-transactions',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-provider',

@@ -105,12 +105,16 @@ export class AssetFrozenError extends TransactionError {
  *                          transport failure, device error).
  *  - `submission_failed` — algod rejected or could not receive the signed
  *                          group (fee too low, network, node error).
+ *  - `submission_pending` — an earlier attempt of the same rekey is still
+ *                          open in the submission ledger; rebuilding now
+ *                          would mint a new txid algod cannot dedupe.
  */
 export type RekeyErrorReason =
     | 'user_rejected'
     | 'build_failed'
     | 'signing_failed'
     | 'submission_failed'
+    | 'submission_pending'
 
 /**
  * Typed error for every rekey failure. The {@link RekeyErrorReason} lets

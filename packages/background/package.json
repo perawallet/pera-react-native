@@ -28,6 +28,7 @@
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",

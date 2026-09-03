@@ -13,10 +13,21 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
+    runMigrations,
+    migrations,
+    type Database,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import {
     submitAndAutoRefresh,
     submitAndAutoRefreshCore,
 } from '../submitAndAutoRefresh'
 import { setOnConfirmedHandler } from '../onConfirmedRegistry'
+import {
+    getOpenSubmissionAttempts,
+    getSubmissionAttemptsByTxIds,
+    SubmissionAttemptsSchema,
+} from '../../../db'
 import {
     AccountTypes,
     useAccountsStore,
@@ -259,7 +270,6 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
-            verifyTxnLanded: vi.fn(),
             verifyTxnLanded,
             walletAddresses: [WALLET],
             network: 'mainnet',
@@ -380,6 +390,240 @@ describe('submitAndAutoRefreshCore', () => {
 
         expect(waitForConfirmation).not.toHaveBeenCalled()
         expect(onConfirmed).not.toHaveBeenCalled()
+    })
+})
+
+describe('submitAndAutoRefreshCore ledger (PERA-4588)', () => {
+    let db: Database
+    let teardown: () => void
+
+    beforeEach(async () => {
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        await runMigrations(db, migrations)
+    })
+
+    afterEach(() => {
+        teardown()
+    })
+
+    const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
+        client: {
+            algod: {
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
+            },
+        },
+    })
+    const encodeSignedTransactions = vi
+        .fn()
+        .mockReturnValue([new Uint8Array([1])])
+
+    const signedWithTxId = {
+        txn: {
+            sender: addr(WALLET),
+            payment: { receiver: addr(EXTERNAL), amount: 0n },
+            txID: () => 'LOCAL_TX',
+            firstValid: 1000n,
+            lastValid: 2000n,
+        },
+        sig: new Uint8Array(),
+    } as unknown as PeraSignedTransaction
+
+    const baseInput = (overrides: Record<string, unknown> = {}) => ({
+        algokit: makeAlgokit(),
+        encodeSignedTransactions,
+        waitForConfirmation: vi.fn().mockResolvedValue(undefined),
+        verifyTxnLanded: vi.fn(),
+        walletAddresses: [WALLET],
+        network: 'mainnet',
+        onConfirmed: vi.fn(),
+        signedTxns: [signedWithTxId],
+        db,
+        ...overrides,
+    })
+
+    test('writes a ledger row before the POST with derived txids, validity and intent', async () => {
+        const rowCountAtPost: number[] = []
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn(async () => {
+                            const rows = await db
+                                .select()
+                                .from(SubmissionAttemptsSchema)
+                                .all()
+                            rowCountAtPost.push(rows.length)
+                            return { txid: 'TX1' }
+                        }),
+                    }),
+                },
+            },
+        }
+        await submitAndAutoRefreshCore(
+            baseInput({
+                algokit,
+                ledger: {
+                    flow: 'rekey',
+                    intentKey: { kind: 'rekey', address: WALLET },
+                    sender: WALLET,
+                },
+            }),
+        )
+        await flushMicrotasks()
+
+        // The ledger row exists while the POST is in flight — the write
+        // strictly precedes the broadcast.
+        expect(rowCountAtPost).toEqual([1])
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+
+        // The background confirmation then resolves the row to confirmed.
+        const all = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(all).toHaveLength(1)
+        expect(all[0]).toMatchObject({
+            network: 'mainnet',
+            flow: 'rekey',
+            sender: WALLET,
+            intentKeyJson: JSON.stringify({ kind: 'rekey', address: WALLET }),
+            lastValid: 2000,
+            status: 'confirmed',
+        })
+    })
+
+    test('resolves the row to confirmed once the background confirmation settles', async () => {
+        await submitAndAutoRefreshCore(baseInput())
+        await flushMicrotasks()
+
+        const all = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(all).toHaveLength(1)
+        expect(all[0]).toMatchObject({ status: 'confirmed' })
+    })
+
+    test('leaves the row open when the background confirmation wait fails', async () => {
+        const waitForConfirmation = vi
+            .fn()
+            .mockRejectedValue(new Error('timeout'))
+        await submitAndAutoRefreshCore(baseInput({ waitForConfirmation }))
+        await flushMicrotasks()
+
+        const rows = await getOpenSubmissionAttempts({ db })
+        expect(rows).toHaveLength(1)
+        expect(rows[0]!.status).toBe('submitted')
+        expect(rows[0]!.resolvedAt).toBeNull()
+    })
+
+    test('resolves the row to failed on a definitive node rejection', async () => {
+        const rejection = new Error(
+            `overspend (account ${'B'.repeat(58)}, data {MicroAlgos:{Raw:100}}, tried to spend {5000})`,
+        )
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(rejection),
+                    }),
+                },
+            },
+        }
+
+        await expect(
+            submitAndAutoRefreshCore(baseInput({ algokit })),
+        ).rejects.toThrow('overspend')
+
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows).toHaveLength(1)
+        expect(rows[0]).toMatchObject({ status: 'failed' })
+    })
+
+    test('leaves the row open (unknown) when an unknown-outcome submit cannot be verified', async () => {
+        const timeout = new Error('The operation timed out')
+        timeout.name = 'TimeoutError'
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(timeout),
+                    }),
+                },
+            },
+        }
+        const verifyTxnLanded = vi
+            .fn()
+            .mockRejectedValue(new Error('not found'))
+
+        await expect(
+            submitAndAutoRefreshCore(baseInput({ algokit, verifyTxnLanded })),
+        ).rejects.toThrow('unknown-outcome')
+
+        const rows = await getOpenSubmissionAttempts({ db })
+        expect(rows).toHaveLength(1)
+        expect(rows[0]!.status).toBe('unknown')
+        expect(rows[0]!.resolvedAt).toBeNull()
+    })
+
+    test('resolves the row to confirmed when an unknown-outcome submit verifies as landed', async () => {
+        const timeout = new Error('The operation timed out')
+        timeout.name = 'TimeoutError'
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(timeout),
+                    }),
+                },
+            },
+        }
+        const verifyTxnLanded = vi.fn().mockResolvedValue(undefined)
+
+        const result = await submitAndAutoRefreshCore(
+            baseInput({ algokit, verifyTxnLanded }),
+        )
+        await flushMicrotasks()
+
+        expect(result).toEqual({ txIds: ['LOCAL_TX'] })
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows).toHaveLength(1)
+        expect(rows[0]).toMatchObject({ status: 'confirmed' })
+    })
+
+    test('writes no row when no txid can be derived', async () => {
+        const signedWithoutTxId = {
+            txn: { sender: addr(WALLET) },
+            sig: new Uint8Array(),
+        } as unknown as PeraSignedTransaction
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockResolvedValue({ txid: 'TX1' }),
+                    }),
+                },
+            },
+        }
+
+        await submitAndAutoRefreshCore(
+            baseInput({ signedTxns: [signedWithoutTxId], algokit }),
+        )
+        await flushMicrotasks()
+
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows).toHaveLength(0)
+    })
+
+    test('a ledger write failure never blocks the submit (best-effort)', async () => {
+        // No db passed → getDatabase() throws inside the ledger write; the
+        // submit must still succeed.
+        const algokit = makeAlgokit('TX1')
+        const result = await submitAndAutoRefreshCore(
+            baseInput({ db: undefined, algokit }),
+        )
+        await flushMicrotasks()
+
+        expect(result).toEqual({ txIds: ['TX1'] })
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
     })
 })
 

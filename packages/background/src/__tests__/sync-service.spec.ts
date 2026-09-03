@@ -36,6 +36,12 @@ const MAX_BACKOFF_INTERVAL = 30_000
 
 const mockSendShouldRefreshRequest = vi.fn()
 const mockSetLastRefreshedRound = vi.fn()
+const mockReconcileOpenSubmissions = vi.fn()
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    reconcileOpenSubmissions: (...args: unknown[]) =>
+        mockReconcileOpenSubmissions(...args),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: {
@@ -186,6 +192,13 @@ describe('SyncService', () => {
         vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
             Promise.resolve(),
         )
+        // Every tick calls the reconciler; a real summary keeps the badge
+        // invalidation branch deterministic regardless of test order.
+        mockReconcileOpenSubmissions.mockResolvedValue({
+            probed: 0,
+            confirmed: 0,
+            failed: 0,
+        })
     })
 
     afterEach(() => {
@@ -210,6 +223,88 @@ describe('SyncService', () => {
 
         service.stop()
         expect(service.isRunning()).toBe(false)
+    })
+
+    it('reconciles open submission attempts on each online tick', async () => {
+        mockReconcileOpenSubmissions.mockResolvedValue({
+            probed: 1,
+            confirmed: 1,
+            failed: 0,
+        })
+
+        service.start()
+        await flushMicrotasks()
+
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        // The next scheduled tick reconciles again.
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(2)
+
+        service.stop()
+    })
+
+    it('skips reconciliation while offline (shares the online gate)', async () => {
+        const wasOnline = onlineManager.isOnline()
+        onlineManager.setOnline(false)
+
+        service.start()
+        await flushMicrotasks()
+
+        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
+
+        service.stop()
+        onlineManager.setOnline(wasOnline)
+    })
+
+    it('reconciles immediately on reconnect', async () => {
+        const wasOnline = onlineManager.isOnline()
+        onlineManager.setOnline(false)
+
+        service.start()
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
+
+        // Offline → online fires the subscription → an immediate tick that
+        // reconciles without waiting out the poll interval.
+        onlineManager.setOnline(true)
+        await flushMicrotasks()
+
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        service.stop()
+        onlineManager.setOnline(wasOnline)
+    })
+
+    it('does not start a second tick while a reconcile pass is in flight', async () => {
+        const wasOnline = onlineManager.isOnline()
+        let releaseReconcile = (): void => {}
+        const inFlight = new Promise<void>(resolve => {
+            releaseReconcile = resolve
+        })
+        mockReconcileOpenSubmissions.mockImplementationOnce(async () => {
+            await inFlight
+            return { probed: 0, confirmed: 0, failed: 0 }
+        })
+
+        service.start()
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        // A reconnect arriving mid-pass must find the tick already marked in
+        // progress — otherwise two passes probe the same rows and two syncAll
+        // runs overlap.
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        releaseReconcile()
+        await flushMicrotasks()
+
+        service.stop()
+        onlineManager.setOnline(wasOnline)
     })
 
     // The tick persists to SQLite before its debounced invalidation fires. If
