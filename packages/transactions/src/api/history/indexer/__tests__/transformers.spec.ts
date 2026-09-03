@@ -118,7 +118,7 @@ describe('transformIndexerTransactions', () => {
             asset_id: '31566704',
             name: 'USDC',
             unit_name: 'USDC',
-            decimals: 6,
+            fraction_decimals: 6,
         })
         expect(second.balance_impacts).toEqual([
             {

@@ -153,13 +153,17 @@ export const useTransactionListItem = ({
     const subtitle = useMemo(() => {
         // For swaps, show the exchange details
         if (transaction.swapGroupDetail) {
-            const { amountIn, assetInUnitName, amountOut, assetOutUnitName } =
-                transaction.swapGroupDetail
-            const inDecimals = 6 // Default for ALGO or parsed from asset
-            const outDecimals = 6
+            const {
+                amountIn,
+                assetInDecimals,
+                assetInUnitName,
+                amountOut,
+                assetOutDecimals,
+                assetOutUnitName,
+            } = transaction.swapGroupDetail
 
-            const inAmount = formatAmount(amountIn, inDecimals)
-            const outAmount = formatAmount(amountOut, outDecimals)
+            const inAmount = formatAmount(amountIn, assetInDecimals)
+            const outAmount = formatAmount(amountOut, assetOutDecimals)
 
             return `${inAmount} ${assetInUnitName} for ${outAmount} ${assetOutUnitName}`
         }

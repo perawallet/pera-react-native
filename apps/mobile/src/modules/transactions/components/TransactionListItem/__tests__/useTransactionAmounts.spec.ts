@@ -180,4 +180,45 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts[0].currency).toBe('USDC')
         expect(result.current.amounts[0].prefix).toBe('-')
     })
+
+    it('scales a swap output by the out-asset decimals', () => {
+        const tx = createPaymentTx({
+            swapGroupDetail: {
+                assetInId: '0',
+                assetInUnitName: 'ALGO',
+                assetInDecimals: 6,
+                assetOutId: '2726252423',
+                assetOutUnitName: 'ALPHA',
+                assetOutDecimals: 2,
+                amountIn: new Decimal('500000'),
+                amountOut: new Decimal('6638534'),
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts).toHaveLength(1)
+        expect(result.current.amounts[0].value.toString()).toBe('66385.34')
+        expect(result.current.amounts[0].currency).toBe('ALPHA')
+        expect(result.current.amounts[0].prefix).toBe('+')
+    })
+
+    it('clamps a swap output decimals value outside the valid range', () => {
+        const tx = createPaymentTx({
+            swapGroupDetail: {
+                assetInId: '0',
+                assetInUnitName: 'ALGO',
+                assetInDecimals: 6,
+                assetOutId: '2726252423',
+                assetOutUnitName: 'ALPHA',
+                assetOutDecimals: -2,
+                amountIn: new Decimal('500000'),
+                amountOut: new Decimal('6638534'),
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].value.toString()).toBe('6638534')
+    })
 })

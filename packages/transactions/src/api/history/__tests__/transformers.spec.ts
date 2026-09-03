@@ -16,7 +16,10 @@ import {
     transformTransactionItem,
     transformTransactionHistoryResponse,
 } from '../transformers'
-import type { TransactionHistoryItemApiResponse } from '../schema'
+import {
+    parseTransactionHistoryResponse,
+    type TransactionHistoryItemApiResponse,
+} from '../schema'
 
 const makeApiItem = (
     overrides: Partial<TransactionHistoryItemApiResponse> = {},
@@ -137,7 +140,7 @@ describe('transformTransactionItem', () => {
                     asset_id: '31566704',
                     name: 'USD Coin',
                     unit_name: 'USDC',
-                    decimals: 6,
+                    fraction_decimals: 6,
                 },
                 balance_impacts: [
                     {
@@ -239,13 +242,19 @@ describe('transformTransactionItem', () => {
         expect(result.receiver).toBeNull()
     })
 
-    it('transforms swap group detail when present', () => {
+    it('flattens the nested per-side asset facts of a swap group detail', () => {
         const apiItem = makeApiItem({
             swap_group_detail: {
-                asset_in_id: '31566704',
-                asset_in_unit_name: 'USDC',
-                asset_out_id: '0',
-                asset_out_unit_name: 'ALGO',
+                asset_in: {
+                    asset_id: '31566704',
+                    unit_name: 'USDC',
+                    fraction_decimals: 6,
+                },
+                asset_out: {
+                    asset_id: '2726252423',
+                    unit_name: 'ALPHA',
+                    fraction_decimals: 8,
+                },
                 amount_in: '1000000',
                 amount_out: '5000000',
             },
@@ -255,8 +264,10 @@ describe('transformTransactionItem', () => {
         expect(result.swapGroupDetail).toEqual({
             assetInId: '31566704',
             assetInUnitName: 'USDC',
-            assetOutId: '0',
-            assetOutUnitName: 'ALGO',
+            assetInDecimals: 6,
+            assetOutId: '2726252423',
+            assetOutUnitName: 'ALPHA',
+            assetOutDecimals: 8,
             amountIn: new Decimal('1000000'),
             amountOut: new Decimal('5000000'),
         })
@@ -265,10 +276,8 @@ describe('transformTransactionItem', () => {
     it('handles swap group detail with missing optional fields', () => {
         const apiItem = makeApiItem({
             swap_group_detail: {
-                asset_in_id: undefined,
-                asset_in_unit_name: undefined,
-                asset_out_id: undefined,
-                asset_out_unit_name: undefined,
+                asset_in: undefined,
+                asset_out: undefined,
                 amount_in: undefined,
                 amount_out: undefined,
             },
@@ -278,8 +287,10 @@ describe('transformTransactionItem', () => {
         expect(result.swapGroupDetail).toEqual({
             assetInId: null,
             assetInUnitName: '',
+            assetInDecimals: 6,
             assetOutId: null,
             assetOutUnitName: '',
+            assetOutDecimals: 6,
             amountIn: new Decimal('0'),
             amountOut: new Decimal('0'),
         })
@@ -291,7 +302,7 @@ describe('transformTransactionItem', () => {
                 asset_id: '31566704',
                 name: 'USD Coin',
                 unit_name: 'USDC',
-                decimals: 6,
+                fraction_decimals: 6,
             },
         })
         const result = transformTransactionItem(apiItem)
@@ -310,7 +321,7 @@ describe('transformTransactionItem', () => {
                 asset_id: '123',
                 name: undefined,
                 unit_name: undefined,
-                decimals: undefined,
+                fraction_decimals: undefined,
             },
         })
         const result = transformTransactionItem(apiItem)
@@ -501,5 +512,170 @@ describe('transformTransactionHistoryResponse', () => {
         const result = transformTransactionHistoryResponse(apiResponse)
 
         expect(result.currentRound).toBe(40000001)
+    })
+})
+
+describe('ALGO asset facts', () => {
+    // The backend substitutes `asset(<id>)` with 0 decimals whenever its asset
+    // enrichment can't resolve an asset. For id 0 the real facts are a chain
+    // invariant, so the placeholder is always safe to override.
+    const PLACEHOLDER = 'asset(0)'
+
+    it('overrides the placeholder on an ALGO balance impact', () => {
+        const apiItem = makeApiItem({
+            tx_type: 'appl',
+            balance_impacts: [
+                {
+                    asset_id: '0',
+                    unit_name: PLACEHOLDER,
+                    fraction_decimals: 0,
+                    amount: '-3000',
+                },
+            ],
+        })
+
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.balanceImpacts[0]).toEqual({
+            assetId: '0',
+            unitName: 'ALGO',
+            fractionDecimals: 6,
+            amount: new Decimal('-3000'),
+        })
+    })
+
+    it('leaves a non-ALGO balance impact untouched', () => {
+        const apiItem = makeApiItem({
+            tx_type: 'appl',
+            balance_impacts: [
+                {
+                    asset_id: '31566704',
+                    unit_name: 'asset(31566704)',
+                    fraction_decimals: 0,
+                    amount: '-3000',
+                },
+            ],
+        })
+
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.balanceImpacts[0]?.unitName).toBe('asset(31566704)')
+        expect(result.balanceImpacts[0]?.fractionDecimals).toBe(0)
+    })
+
+    it('overrides the placeholder on an ALGO asset summary', () => {
+        const apiItem = makeApiItem({
+            asset: {
+                asset_id: '0',
+                name: '',
+                unit_name: PLACEHOLDER,
+                fraction_decimals: 0,
+            },
+        })
+
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.asset?.unitName).toBe('ALGO')
+        expect(result.asset?.decimals).toBe(6)
+    })
+
+    it('overrides the placeholder on the ALGO side of a swap', () => {
+        const apiItem = makeApiItem({
+            swap_group_detail: {
+                asset_in: {
+                    asset_id: '0',
+                    unit_name: PLACEHOLDER,
+                    fraction_decimals: 0,
+                },
+                asset_out: {
+                    asset_id: '2726252423',
+                    unit_name: 'ALPHA',
+                    fraction_decimals: 6,
+                },
+                amount_in: '500000',
+                amount_out: '6638534',
+            },
+        })
+
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.swapGroupDetail?.assetInUnitName).toBe('ALGO')
+        expect(result.swapGroupDetail?.assetInDecimals).toBe(6)
+    })
+})
+
+describe('Pera backend wire contract', () => {
+    // Verbatim from a mainnet `/v1/accounts/{address}/transactions/` row for a
+    // Folks-router swap of 0.5 ALGO into ALPHA. Two things this pins down that
+    // the field names alone do not: decimals arrive as `fraction_decimals`,
+    // and the amounts are base units — 500000 is 0.5 ALGO, not 500000 ALGO.
+    // The sibling `packages/swaps` history endpoint sends display units for
+    // identically named fields, so the two are easy to conflate.
+    const MAINNET_SWAP_ROW = {
+        id: 'TGPRD6UIKWDZZLDNJZ2KUVAULOOGA2ETS7EC2GKLOVLHLPE7MYOQ',
+        tx_type: 'pay',
+        sender: 'OECESM7F',
+        receiver: 'V73GWLED',
+        confirmed_round: '64655460',
+        round_time: '1788344501',
+        fee: '11000',
+        group_id: 'iMt2B0L9rkzCC9tnkdF0HPeeUsi7h/a2pfiFut8dOxY=',
+        amount: '5000',
+        close_to: null,
+        application_id: null,
+        inner_transaction_count: 0,
+        asset: { asset_id: '0', unit_name: 'ALGO', fraction_decimals: 6 },
+        swap_group_detail: {
+            swap_id: '3750430246201302705',
+            provider: 'folks-router',
+            status: 'completed',
+            asset_in: {
+                asset_id: '0',
+                unit_name: 'ALGO',
+                fraction_decimals: 6,
+            },
+            asset_out: {
+                asset_id: '2726252423',
+                unit_name: 'ALPHA',
+                fraction_decimals: 6,
+            },
+            amount_in: '500000',
+            amount_out: '6638534',
+            transaction_count: null,
+            confirmed_round: null,
+            round_time: null,
+        },
+        interpreted_meaning: { type: 'swap' },
+        balance_impacts: [
+            {
+                asset_id: 0,
+                unit_name: 'ALGO',
+                fraction_decimals: 6,
+                amount: '-16000',
+            },
+        ],
+    }
+
+    it('maps a real swap row onto the domain model', () => {
+        const { results } = parseTransactionHistoryResponse({
+            results: [MAINNET_SWAP_ROW],
+        })
+        expect(results).toHaveLength(1)
+
+        const item = transformTransactionItem(results[0])
+
+        expect(item.swapGroupDetail).toEqual({
+            assetInId: '0',
+            assetInUnitName: 'ALGO',
+            assetInDecimals: 6,
+            assetOutId: '2726252423',
+            assetOutUnitName: 'ALPHA',
+            assetOutDecimals: 6,
+            amountIn: new Decimal('500000'),
+            amountOut: new Decimal('6638534'),
+        })
+        expect(item.asset?.unitName).toBe('ALGO')
+        expect(item.asset?.decimals).toBe(6)
+        expect(item.balanceImpacts[0]?.fractionDecimals).toBe(6)
     })
 })

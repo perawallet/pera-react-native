@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useTransactionListItem } from '../useTransactionListItem'
@@ -20,6 +20,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { formatNumber } from '@perawallet/wallet-core-shared'
 import type { UseQueryResult } from '@tanstack/react-query'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -330,8 +331,10 @@ describe('useTransactionListItem', () => {
                 swapGroupDetail: {
                     assetInId: '0',
                     assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
                     assetOutId: '31566704',
                     assetOutUnitName: 'USDC',
+                    assetOutDecimals: 6,
                     amountIn: new Decimal('1000000'),
                     amountOut: new Decimal('500000'),
                 },
@@ -574,6 +577,45 @@ describe('useTransactionListItem', () => {
 
             expect(result.current.amounts).toEqual([])
             expect(result.current.amountsOverflowCount).toBe(0)
+        })
+    })
+
+    describe('swap subtitle', () => {
+        beforeEach(() => {
+            // The global setup mocks formatNumber down to String(value), which
+            // erases the very digits under test here. Echo the scaled Decimal
+            // instead, so the assertion reads the scaling and not the
+            // formatting (covered in wallet-core-shared).
+            vi.mocked(formatNumber).mockImplementation(amount => ({
+                sign: '',
+                integer: amount.toString(),
+                fraction: '',
+            }))
+        })
+
+        afterEach(() => {
+            vi.mocked(formatNumber).mockReset()
+        })
+
+        it('scales each side by its own asset decimals', () => {
+            const tx = createPaymentTx({
+                swapGroupDetail: {
+                    assetInId: '0',
+                    assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
+                    assetOutId: '31566704',
+                    assetOutUnitName: 'USDC',
+                    assetOutDecimals: 2,
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('500000'),
+                },
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            expect(result.current.subtitle).toBe('1 ALGO for 5000 USDC')
         })
     })
 })
