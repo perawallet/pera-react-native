@@ -630,7 +630,6 @@
         },
         "turn_off_and_remove": {
             "success": "Sauvegarde cloud désactivée et supprimée",
-            "partial": "Désactivée, mais la copie dans le cloud n’a pas pu être supprimée",
             "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer."
         },
         "restore": {

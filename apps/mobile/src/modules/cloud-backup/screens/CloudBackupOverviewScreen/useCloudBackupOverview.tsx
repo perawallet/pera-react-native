@@ -47,7 +47,7 @@ import type { CloudBackupStackParamList } from '../../routes/types'
 export type SyncBadge = 'success' | 'failed' | 'syncing'
 
 type UseCloudBackupOverviewResult = {
-    syncStatus: SyncBadge
+    syncStatus: SyncBadge | null
     lastSyncedLabel: string
     credentialAddressLabel: string
     accountsInSync: number
@@ -69,9 +69,11 @@ const formatSyncedAt = (millis: number | null): string => {
 
 type BackupSyncStatus = ReturnType<typeof deriveBackupSyncStatus>
 
-const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge> = {
-    idle: 'syncing',
-    pending: 'syncing',
+/** `null` renders no badge: a backup that has never synced is neither in sync
+ *  nor syncing, and there is no fourth badge to say so. */
+const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge | null> = {
+    idle: null,
+    pending: null,
     syncing: 'syncing',
     upToDate: 'success',
     destroyed: 'failed',

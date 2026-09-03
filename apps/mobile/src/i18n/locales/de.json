@@ -622,7 +622,6 @@
         },
         "turn_off_and_remove": {
             "success": "Cloud-Backup deaktiviert und gelöscht",
-            "partial": "Deaktiviert, aber die Kopie in der Cloud konnte nicht gelöscht werden",
             "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut."
         },
         "restore": {

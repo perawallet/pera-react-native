@@ -630,7 +630,6 @@
         },
         "turn_off_and_remove": {
             "success": "Copia de seguridad en la nube desactivada y eliminada",
-            "partial": "Se desactivó, pero no se pudo eliminar la copia en la nube",
             "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo."
         },
         "restore": {

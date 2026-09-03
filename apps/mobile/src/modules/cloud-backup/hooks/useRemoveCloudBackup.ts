@@ -12,14 +12,14 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     deleteBackupKeys,
     destroyBackup,
     getBackupSyncManager,
+    resolveBackupDeviceId,
     useCloudBackupStore,
 } from '@perawallet/wallet-core-backup'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCloudBackupTeardown } from './useCloudBackupTeardown'
@@ -29,32 +29,6 @@ const warn = (message: string, error: unknown): void => {
         error: error instanceof Error ? error.message : String(error),
     })
 }
-
-/** False when the server still holds the backup, which is not fatal locally. */
-const destroyRemoteBackup = async (
-    network: Network,
-    backupId: string | null,
-    deviceId: string | null,
-): Promise<boolean> => {
-    if (!backupId || !deviceId) return true
-    try {
-        await destroyBackup(network, backupId, deviceId)
-        return true
-    } catch (error) {
-        warn('useRemoveCloudBackup: remote destroy failed', error)
-        return false
-    }
-}
-
-type Translate = ReturnType<typeof useLanguage>['t']
-
-const removalToast = (t: Translate, remoteOk: boolean) => ({
-    title: remoteOk
-        ? t('cloud_backup.turn_off_and_remove.success')
-        : t('cloud_backup.turn_off_and_remove.partial'),
-    body: '',
-    type: remoteOk ? ('success' as const) : ('error' as const),
-})
 
 const stopSyncManager = (): void => {
     try {
@@ -66,9 +40,9 @@ const stopSyncManager = (): void => {
 
 type UseRemoveCloudBackupResult = {
     /**
-     * Local teardown runs even when the remote destroy fails, so the user is
-     * always freed from the backup on this device (mirrors Android's
-     * `DeleteBackup`). The remote backup may be briefly orphaned in that case.
+     * The remote destroy runs first and the local teardown only follows a
+     * confirmed one, so a failure leaves the device able to retry rather than
+     * dropping the keys that reach a backup the server still holds.
      */
     removeBackup: () => void
     isRemoving: boolean
@@ -78,29 +52,35 @@ export const useRemoveCloudBackup = (): UseRemoveCloudBackupResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
     const backupId = useCloudBackupStore(state => state.backupId)
     const { resetLocalState, goHome } = useCloudBackupTeardown()
 
     const mutation = useMutation({
         throwOnError: false,
-        mutationFn: async (): Promise<{ remoteOk: boolean }> => {
-            const remoteOk = await destroyRemoteBackup(
-                network,
-                backupId,
-                deviceId,
-            )
+        mutationFn: async (): Promise<void> => {
+            const deviceId = resolveBackupDeviceId(network)
+            if (!backupId || !deviceId) {
+                throw new Error(
+                    'useRemoveCloudBackup: no backup configured on this device',
+                )
+            }
+
+            await destroyBackup(network, backupId, deviceId)
+
             stopSyncManager()
             await deleteBackupKeys()
             resetLocalState()
-            return { remoteOk }
         },
-        onSuccess: ({ remoteOk }) => {
-            showToast(removalToast(t, remoteOk))
+        onSuccess: () => {
+            showToast({
+                title: t('cloud_backup.turn_off_and_remove.success'),
+                body: '',
+                type: 'success',
+            })
             goHome()
         },
-        onError: () => {
-            // Local teardown failed, so state may be inconsistent — no navigation.
+        onError: error => {
+            warn('useRemoveCloudBackup: remove failed', error)
             showToast({
                 title: t('cloud_backup.turn_off_and_remove.error'),
                 body: '',

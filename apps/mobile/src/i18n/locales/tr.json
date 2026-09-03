@@ -630,7 +630,6 @@
         },
         "turn_off_and_remove": {
             "success": "Bulut yedekleme kapatıldı ve silindi",
-            "partial": "Kapatıldı ancak buluttaki kopya silinemedi",
             "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene."
         },
         "restore": {

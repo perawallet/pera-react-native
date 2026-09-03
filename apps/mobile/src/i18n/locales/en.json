@@ -630,7 +630,6 @@
         },
         "turn_off_and_remove": {
             "success": "Cloud Backup turned off and removed",
-            "partial": "Turned off, but the cloud copy couldn’t be removed",
             "error": "Couldn’t remove Cloud Backup. Please try again."
         },
         "restore": {

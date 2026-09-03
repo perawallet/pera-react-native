@@ -630,7 +630,6 @@
         },
         "turn_off_and_remove": {
             "success": "Backup na nuvem desativado e excluído",
-            "partial": "Desativado, mas não foi possível excluir a cópia na nuvem",
             "error": "Não foi possível excluir o backup na nuvem. Tente novamente."
         },
         "restore": {

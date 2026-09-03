@@ -44,12 +44,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'dev-1',
-}))
-
 vi.mock('@perawallet/wallet-core-backup', () => ({
     destroyBackup: destroyBackupMock,
+    resolveBackupDeviceId: () => 'dev-1',
     deleteBackupKeys: deleteBackupKeysMock,
     getBackupSyncManager: getBackupSyncManagerMock,
     useCloudBackupStore: (
@@ -121,7 +118,7 @@ describe('useRemoveCloudBackup', () => {
         })
     })
 
-    test('still tears down local state and navigates when the remote destroy fails', async () => {
+    test('keeps the local backup intact when the remote destroy fails', async () => {
         destroyBackupMock.mockRejectedValue(new Error('offline'))
         deleteBackupKeysMock.mockResolvedValue(undefined)
 
@@ -133,13 +130,19 @@ describe('useRemoveCloudBackup', () => {
             result.current.removeBackup()
         })
 
-        await waitFor(() => expect(deleteBackupKeysMock).toHaveBeenCalled())
-        expect(stopMock).toHaveBeenCalled()
-        expect(resetCloudBackupMock).toHaveBeenCalled()
-        expect(resetSyncStateMock).toHaveBeenCalled()
-        expect(resetMock).toHaveBeenCalledWith({
-            index: 0,
-            routes: [{ name: 'CloudBackupHome' }],
-        })
+        await waitFor(() =>
+            expect(showToastMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'cloud_backup.turn_off_and_remove.error',
+                    type: 'error',
+                }),
+            ),
+        )
+        // The keys are the only way back to a backup the server still holds.
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+        expect(stopMock).not.toHaveBeenCalled()
+        expect(resetCloudBackupMock).not.toHaveBeenCalled()
+        expect(resetSyncStateMock).not.toHaveBeenCalled()
+        expect(resetMock).not.toHaveBeenCalled()
     })
 })

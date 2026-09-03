@@ -14,16 +14,24 @@
 
 import { describe, expect, it } from 'vitest'
 import nacl from 'tweetnacl'
-import { decodeFromBase64, bytesToHex } from '@perawallet/wallet-core-shared'
-import { sha256 } from '@noble/hashes/sha2.js'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
     buildBackupRequestMessage,
     buildBackupRequestProof,
 } from '../buildBackupRequestProof'
 
+// Literals, not re-derived: the server hashes with
+// `createHash('sha256').update(body ?? '').digest('hex')`, and only a value it
+// would produce pins us to that. Deriving them here would pass under any pair
+// of matching-but-wrong encodings.
+const EMPTY_BODY_HASH =
+    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+const READ_BODY = '{"keys":["accounts/ADDR"]}'
+const READ_BODY_HASH =
+    'a4ecf624b7ed264e7e69aa0d289520c96d9ac0eceb3405b562e19da883103223'
+
 describe('buildBackupRequestMessage', () => {
     it('hashes an absent body as sha256 of the empty string', () => {
-        const emptyHash = bytesToHex(sha256(new TextEncoder().encode('')))
         const message = buildBackupRequestMessage({
             method: 'GET',
             path: '/api/v3/backup/did:pera:ADDR/manifest',
@@ -31,21 +39,19 @@ describe('buildBackupRequestMessage', () => {
             nonce: 'nonce-1',
         })
         expect(message).toBe(
-            `GET|/api/v3/backup/did:pera:ADDR/manifest|${emptyHash}|nonce-1`,
+            `GET|/api/v3/backup/did:pera:ADDR/manifest|${EMPTY_BODY_HASH}|nonce-1`,
         )
     })
 
     it('hashes the body to hex for POST', () => {
-        const body = '{"keys":["accounts/ADDR"]}'
-        const expectedHash = bytesToHex(sha256(new TextEncoder().encode(body)))
         const message = buildBackupRequestMessage({
             method: 'POST',
             path: '/api/v3/backup/did:pera:ADDR/items/read',
-            body,
+            body: READ_BODY,
             nonce: 'nonce-2',
         })
         expect(message).toBe(
-            `POST|/api/v3/backup/did:pera:ADDR/items/read|${expectedHash}|nonce-2`,
+            `POST|/api/v3/backup/did:pera:ADDR/items/read|${READ_BODY_HASH}|nonce-2`,
         )
     })
 })
@@ -59,12 +65,7 @@ describe('buildBackupRequestProof', () => {
             path: '/api/v3/backup/did:pera:ADDR/manifest',
             authSecretKey: keypair.secretKey,
         })
-        const message = buildBackupRequestMessage({
-            method: 'GET',
-            path: '/api/v3/backup/did:pera:ADDR/manifest',
-            body: undefined,
-            nonce,
-        })
+        const message = `GET|/api/v3/backup/did:pera:ADDR/manifest|${EMPTY_BODY_HASH}|${nonce}`
         const ok = nacl.sign.detached.verify(
             new TextEncoder().encode(message),
             decodeFromBase64(signature),
