@@ -6,7 +6,7 @@ This is a non-custodial wallet. Users trust us with keys we cannot recover for t
 
 A flaw that exposes key material, forges a signature, or makes a transaction display as something
 other than what it does has no remedy after the fact. Report it privately to
-**legal@perawallet.app** rather than opening an issue, pull request or discussion, and please don't
+**security@perawallet.app** rather than opening an issue, pull request or discussion, and please don't
 publish it before a fix ships.
 
 Send whatever you have: affected version and platform, the steps or payload that reproduce it, and
