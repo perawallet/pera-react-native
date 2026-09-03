@@ -36,6 +36,7 @@ const handlers = buildRestoreHandlers({
     backupId: BACKUP_ID,
     encryptionKey: ENCRYPTION_KEY,
     items: FIXTURE_ITEMS,
+    verifySignatures: false,
 })
 
 const server = setupServer(...handlers)
@@ -170,7 +171,10 @@ import { buildSyncHandlers } from '../msw-handlers'
 describe('buildSyncHandlers', () => {
     const SYNC_BACKUP_ID = 'did:pera:sync-test'
 
-    const handle = buildSyncHandlers({ backupId: SYNC_BACKUP_ID })
+    const handle = buildSyncHandlers({
+        backupId: SYNC_BACKUP_ID,
+        verifySignatures: false,
+    })
     const syncServer = setupServer(...handle.handlers)
 
     beforeAll(() => syncServer.listen({ onUnhandledRequest: 'error' }))

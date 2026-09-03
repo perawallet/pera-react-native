@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import React from 'react'
 import {
     afterAll,
     afterEach,
@@ -21,18 +20,14 @@ import {
     it,
     vi,
 } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { waitFor } from '@testing-library/react'
 
-import { createTestQueryClient } from '@test-utils/render'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     AccountTypes,
     useAccountsStore,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     deriveBackupKeys,
@@ -41,10 +36,14 @@ import {
     useCloudBackupStore,
     useBackupSyncStateStore,
     initializeBackupSyncManager,
-    getBackupSyncManager,
+    BackupAccountType,
+    type BackupSyncManager,
     type WebSocketLike,
 } from '@perawallet/wallet-core-backup'
-import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
+import {
+    buildSyncHandlers,
+    encryptItemPayload,
+} from '@perawallet/wallet-core-backup/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
     useCloudBackupImport,
@@ -52,67 +51,33 @@ import {
 } from '@modules/cloud-backup'
 
 import {
-    ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
-} from './__fixtures__/onboarding'
+    BACKUP_MNEMONIC,
+    BACKUP_SALT,
+    SLOW_TEST_TIMEOUT_MS,
+    renderQueryHook,
+    seedAlgo25Account,
+} from './__fixtures__/cloudBackup'
+import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-// The full sync round-trip runs argon2 → HKDF → keystore reveal →
-// AES-256-GCM encrypt → upsert. Comfortably past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
+// Any valid address this wallet doesn't hold. Watch is the cheapest type to
+// pull — an address record with no secrets item behind it.
+const REMOTE_WATCH_ADDRESS = HD_TEST_ADDRESS
 
-// Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
-// checks a BIP39 checksum, so these don't need to form a valid mnemonic.
-const BACKUP_MNEMONIC = [
-    'abandon',
-    'ability',
-    'able',
-    'about',
-    'above',
-    'absent',
-    'absorb',
-    'abstract',
-    'absurd',
-    'abuse',
-    'access',
-    'accident',
-]
-
-const BACKUP_SALT = Buffer.from(new Uint8Array(16).fill(7)).toString('base64')
-
-const seedAlgo25Account = async (): Promise<WalletAccount> => {
-    const { result: kms } = renderHook(() => useKMS())
-    let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
-        key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
-        })
-        expect(key).not.toBeNull()
-    })
-    const account: WalletAccount = {
-        id: 'algo25-1',
-        type: AccountTypes.algo25,
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
-        name: 'Algo25 Test',
-    }
-    useAccountsStore.getState().setAccounts([account])
-    return account
-}
-
-const renderQueryHook = <T,>(hook: () => T) => {
-    const queryClient: QueryClient = createTestQueryClient()
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-    return renderHook(hook, { wrapper }).result
-}
+const NORMAL_SOCKET_CLOSE = 1000
 
 describe('Flow: Cloud backup → real-time manager', () => {
+    let manager: BackupSyncManager | null = null
+
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
+
+    // Unconditional: a failed assertion must not leave start()'s poll interval
+    // and socket running into the next test.
+    afterEach(() => {
+        manager?.stop()
+        manager = null
+        server.resetHandlers()
+    })
 
     beforeEach(async () => {
         resetTestKeystore()
@@ -137,8 +102,6 @@ describe('Flow: Cloud backup → real-time manager', () => {
                     salt: BACKUP_SALT,
                 })
 
-            // `withBackupEncryptionKey` / `withBackupAuthSecretKey` inside the
-            // manager read these back out of the keystore.
             await persistBackupKeys({
                 encryptionKey,
                 authSecretKey,
@@ -150,11 +113,15 @@ describe('Flow: Cloud backup → real-time manager', () => {
                 deviceId: 'test-device-id',
             })
 
-            const { handlers, getItem } = buildSyncHandlers({ backupId })
+            const { handlers, getItem, pushFromOtherDevice } =
+                buildSyncHandlers({
+                    backupId,
+                })
             server.use(...handlers)
 
             let socket: WebSocketLike | null = null
             let socketUrl = ''
+            const close = vi.fn()
             const fakeSocketFactory = (url: string): WebSocketLike => {
                 socketUrl = url
                 socket = {
@@ -162,7 +129,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
                     onmessage: null,
                     onerror: null,
                     onclose: null,
-                    close: () => undefined,
+                    close,
                 }
                 return socket
             }
@@ -172,7 +139,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
                 useResolveMnemonicForBackup(),
             )
 
-            const manager = initializeBackupSyncManager({
+            manager = initializeBackupSyncManager({
                 importAccounts: importHook.current.importAccounts,
                 resolveMnemonic: mnemonicHook.current,
                 resolveHd: async () => null,
@@ -194,32 +161,64 @@ describe('Flow: Cloud backup → real-time manager', () => {
             ).toBe('SUCCESS')
 
             await waitFor(() => expect(socket).not.toBeNull())
-            // Scheme follows the configured backup base URL, so a local
-            // http backend is ws:// while staging is wss://.
+            // Scheme follows the configured backup base URL: a local http
+            // backend is ws://, staging is wss://.
             expect(socketUrl).toMatch(/^wss?:\/\//)
+            // backupId stays raw in the path — the server route and the Android
+            // client both expect it unencoded.
+            expect(socketUrl).toContain(`/backup/${backupId}?`)
+            expect(socketUrl).toContain('device_id=test-device-id')
             expect(socketUrl).toContain('signature=')
 
-            // ITEMS_UPDATED drives handleSocketEvent → runPull, which must
-            // complete without knocking the sync state off SUCCESS.
+            const seqBeforePull =
+                useBackupSyncStateStore.getState().syncState?.lastSyncedSeq ?? 0
+
+            const remoteKey = `accounts/${REMOTE_WATCH_ADDRESS}`
+            pushFromOtherDevice(
+                remoteKey,
+                encryptItemPayload(
+                    JSON.stringify({
+                        type: BackupAccountType.watch,
+                        address: REMOTE_WATCH_ADDRESS,
+                        customName: 'Pulled Over Socket',
+                        updatedAt: 1,
+                    }),
+                    { encryptionKey, backupId, key: remoteKey },
+                ),
+            )
+            expect(
+                useAccountsStore
+                    .getState()
+                    .accounts.some(a => a.address === REMOTE_WATCH_ADDRESS),
+            ).toBe(false)
+
             socket!.onmessage?.({
                 data: JSON.stringify({
                     type: 'ITEMS_UPDATED',
-                    from_seq: 99,
-                    to_seq: 99,
+                    from_seq: seqBeforePull,
+                    to_seq: getItem(remoteKey)!.seq,
                 }),
             })
             await waitFor(
                 () =>
                     expect(
-                        useBackupSyncStateStore.getState().syncState
-                            ?.lastSyncResult,
-                    ).toBe('SUCCESS'),
+                        useAccountsStore
+                            .getState()
+                            .accounts.find(
+                                a => a.address === REMOTE_WATCH_ADDRESS,
+                            ),
+                    ).toMatchObject({
+                        type: AccountTypes.watch,
+                        name: 'Pulled Over Socket',
+                    }),
                 { timeout: 10_000 },
             )
+            expect(
+                useBackupSyncStateStore.getState().syncState?.lastSyncedSeq,
+            ).toBeGreaterThan(seqBeforePull)
 
-            manager.stop()
-            // stop() tears the socket down but keeps the singleton addressable.
-            expect(() => getBackupSyncManager()).not.toThrow()
+            manager!.stop()
+            expect(close).toHaveBeenCalledWith(NORMAL_SOCKET_CLOSE)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
