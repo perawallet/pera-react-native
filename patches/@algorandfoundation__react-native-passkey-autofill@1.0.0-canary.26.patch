@@ -4231,7 +4231,7 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..e6874fe1fe079d618734331fb46f37bb
  
      AsyncFunction("getStoredCredentials") { () -> [[String: Any]] in
 diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
-index 87f7dd44e3e8a4b21ae655599dead4af828567a9..24adab6c54cf32fdbf4519fd2533fc8912fb26f8 100644
+index 87f7dd44e3e8a4b21ae655599dead4af828567a9..9902bd03fee10fe2cefb94704474e9d0349f3950 100644
 --- a/src/ReactNativePasskeyAutofillModule.ts
 +++ b/src/ReactNativePasskeyAutofillModule.ts
 @@ -52,6 +52,16 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
@@ -4261,13 +4261,13 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..24adab6c54cf32fdbf4519fd2533fc89
 +   * `AutofillManager`) rather than resolving `false`, so callers can tell
 +   * "no autofill service" apart from "autofill exists but is off".
 +   */
-+  isAutofillServiceActive(): Promise<boolean>;
++  isAutofillServiceActive?(): Promise<boolean>;
 +  /**
 +   * Opens the OS Autofill settings screen. Resolves to `false` rather than
 +   * rejecting when it cannot act (unsupported API level, no launchable
 +   * settings screen).
 +   */
-+  openAutofillSettings(): Promise<boolean>;
++  openAutofillSettings?(): Promise<boolean>;
  }
  
  // This call loads the native module object from the JSI.
