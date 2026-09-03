@@ -44,7 +44,6 @@ export default defineConfig({
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js',
                 '@noble/ciphers',
-                '@noble/hashes/sha2',
                 '@noble/hashes/sha2.js',
                 '@scure/base',
                 '@scure/bip39',

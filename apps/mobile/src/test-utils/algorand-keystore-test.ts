@@ -22,7 +22,7 @@
 
 import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
-import { sha512 } from '@noble/hashes/sha2'
+import { sha512 } from '@noble/hashes/sha2.js'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,

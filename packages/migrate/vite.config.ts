@@ -47,7 +47,7 @@ export default defineConfig({
                 'react-native-quick-crypto',
                 'zustand',
                 'zustand/middleware',
-                '@noble/hashes/sha2',
+                '@noble/hashes/sha2.js',
                 '@algorandfoundation/dp256',
                 '@algorandfoundation/react-native-keystore',
                 '@scure/bip39',

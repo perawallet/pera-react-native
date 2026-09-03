@@ -52,7 +52,7 @@ export default defineConfig({
                 '@react-native-firebase/remote-config',
                 '@notifee/react-native',
                 '@expo/app-integrity',
-                '@noble/hashes/sha256',
+                '@noble/hashes/sha2.js',
                 'expo',
                 'expo-application',
                 'expo-device',

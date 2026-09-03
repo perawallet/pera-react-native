@@ -11,7 +11,7 @@
  */
 
 import { DeterministicP256 } from '@algorandfoundation/dp256'
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { deriveLiquidAuthMainKey } from '@perawallet/wallet-core-kms'
 import {
     decodeFromBase64,
