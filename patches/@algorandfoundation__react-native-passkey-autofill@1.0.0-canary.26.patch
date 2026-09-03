@@ -800,15 +800,19 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec10897a786b8b
+index 0000000000000000000000000000000000000000..7c3ce5607e58adc6de03ef12361cb3bb901090e1
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,175 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
++import android.content.pm.PackageManager
++import android.os.Build
 +import android.util.Log
 +import androidx.credentials.provider.CallingAppInfo
++import java.security.MessageDigest
++import org.json.JSONObject
 +
 +/**
 + * PERA LOCAL PATCH — resolves the *web* origin a privileged browser is acting on
@@ -836,6 +840,8 @@ index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec1089
 + */
 +object PrivilegedBrowsers {
 +    private const val TAG = "PrivilegedBrowsers"
++    private const val BUILD_USERDEBUG = "userdebug"
++    private const val HEX_DIGITS = "0123456789abcdef"
 +
 +    @Volatile
 +    private var cachedAllowlist: String? = null
@@ -873,6 +879,104 @@ index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec1089
 +            Log.e(TAG, "Could not read the privileged browser allowlist", e)
 +            null
 +        }
++    }
++
++    /**
++     * Whether [packageName] is an allowlisted browser whose *installed* signing
++     * certificate matches the allowlist entry.
++     *
++     * The autofill path cannot use [webOrigin]: it never sees a
++     * [CallingAppInfo], only an `AssistStructure` whose `webDomain` the client
++     * app wrote itself. Matching the certificate is what turns that claim into
++     * an identity. A package name on its own proves nothing — anyone can
++     * install an app named `com.android.chrome`, but not one signed by Google.
++     */
++    fun isAllowlistedBrowser(context: Context, packageName: String): Boolean = try {
++        val allowed = allowlistFingerprints(context, packageName)
++        allowed.isNotEmpty() && installedFingerprints(context, packageName).any { it in allowed }
++    } catch (e: Exception) {
++        Log.w(TAG, "Could not verify $packageName against the browser allowlist", e)
++        false
++    }
++
++    /**
++     * The allowlist's fingerprints for [packageName].
++     *
++     * `userdebug` entries are skipped off a `userdebug` build, matching what
++     * AndroidX does with this same file: those certificates sign engineering
++     * builds, so honouring them on a user build would extend trust to keys that
++     * were never meant to carry it.
++     */
++    private fun allowlistFingerprints(context: Context, packageName: String): Set<String> {
++        val raw = allowlist(context) ?: return emptySet()
++        val apps = JSONObject(raw).optJSONArray("apps") ?: return emptySet()
++        val fingerprints = mutableSetOf<String>()
++        for (i in 0 until apps.length()) {
++            val info = apps.optJSONObject(i)?.optJSONObject("info") ?: continue
++            if (info.optString("package_name") != packageName) continue
++            val signatures = info.optJSONArray("signatures") ?: continue
++            for (j in 0 until signatures.length()) {
++                val signature = signatures.optJSONObject(j) ?: continue
++                if (signature.optString("build") == BUILD_USERDEBUG &&
++                    Build.TYPE != BUILD_USERDEBUG
++                ) {
++                    continue
++                }
++                signature.optString("cert_fingerprint_sha256")
++                    .takeIf { it.isNotEmpty() }
++                    ?.let { fingerprints += normalize(it) }
++            }
++        }
++        return fingerprints
++    }
++
++    private fun installedFingerprints(context: Context, packageName: String): Set<String> {
++        val packageManager = context.packageManager
++        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
++            val signingInfo = packageManager
++                .getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
++                .signingInfo ?: return emptySet()
++            // A browser that has rotated its signing key still answers for the
++            // package under its older certificate, and the published allowlist
++            // may name either, so a lone signer is compared against its history.
++            if (signingInfo.hasMultipleSigners()) {
++                signingInfo.apkContentsSigners
++            } else {
++                signingInfo.signingCertificateHistory
++            }
++        } else {
++            @Suppress("DEPRECATION")
++            packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
++        } ?: return emptySet()
++
++        // digest() resets the instance, so one is enough for every signature.
++        val digest = MessageDigest.getInstance("SHA-256")
++        return signatures.mapTo(mutableSetOf()) { digest.digest(it.toByteArray()).toHex() }
++    }
++
++    /**
++     * Allowlist fingerprints are colon-separated uppercase hex
++     * (`F0:FD:6C:...`) while computed ones are bare lowercase, so both sides are
++     * reduced to the same spelling before they are compared.
++     *
++     * Getting this wrong fails closed and silently: every check would return
++     * false, `Web` scope would be unreachable, and the feature would look
++     * healthy while never filling anything in a browser.
++     */
++    private fun normalize(fingerprint: String): String =
++        fingerprint.replace(":", "").lowercase()
++
++    /**
++     * Deliberately not `"%02x".format(...)`, which formats in the default
++     * locale and would emit non-ASCII digits under one that shapes them.
++     */
++    private fun ByteArray.toHex(): String {
++        val out = StringBuilder(size * 2)
++        for (byte in this) {
++            val value = byte.toInt() and 0xFF
++            out.append(HEX_DIGITS[value ushr 4]).append(HEX_DIGITS[value and 0x0F])
++        }
++        return out.toString()
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
@@ -1089,6 +1193,228 @@ index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0
 +    fun clear(context: Context) {
 +        store(context).clearAll()
 +    }
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..8fa22c24626d9210346e62ed69cc8a2b130019f8
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
+@@ -0,0 +1,76 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.content.Context
++import android.os.Build
++import android.util.Log
++import androidx.annotation.RequiresApi
++import co.algorand.passkeyautofill.PasswordCredentialStore
++import co.algorand.passkeyautofill.PrivilegedBrowsers
++
++/**
++ * PERA LOCAL PATCH — who an `AutofillService` request is really for.
++ *
++ * The autofill counterpart to `PasswordCallerScope`, which answers the same
++ * question for a Credential Manager request. They stay separate because the two
++ * paths are given different evidence: Credential Manager supplies a
++ * `CallingAppInfo` carrying an origin the platform populated, while autofill
++ * supplies a view structure the client app filled in itself. The verification
++ * therefore differs even though the conclusion has the same shape.
++ */
++sealed class AutofillScope {
++    /**
++     * A caller whose signing certificate matched the browser allowlist, acting
++     * for a page on [host]. The only scope that may be handed login entries
++     * without the user first naming them.
++     */
++    data class Web(val host: String) : AutofillScope()
++
++    /** An app the user has already chosen logins for. */
++    data class LinkedApp(val packageName: String) : AutofillScope()
++
++    /**
++     * An app with no links yet, including any caller that claimed a domain but
++     * could not be identified as a browser. Offered a picker, never entries.
++     */
++    data class UnlinkedApp(val packageName: String) : AutofillScope()
++
++    /** Whether a login may be offered to this caller without being picked first. */
++    fun matches(storedDomain: String, recordIdentifier: String, links: Set<String>): Boolean =
++        when (this) {
++            is Web -> PasswordCredentialStore.domainMatches(storedDomain, host)
++            is LinkedApp -> links.contains(recordIdentifier)
++            is UnlinkedApp -> false
++        }
++
++    companion object {
++        private const val TAG = "AutofillScope"
++
++        @RequiresApi(Build.VERSION_CODES.O)
++        fun resolve(context: Context, target: FillTarget): AutofillScope {
++            val domain = target.webDomain
++            if (domain != null &&
++                PrivilegedBrowsers.isAllowlistedBrowser(context, target.packageName)
++            ) {
++                val host = PasswordCredentialStore.host(domain)
++                if (host.isNotEmpty()) return Web(host)
++            }
++            // A domain claimed by a caller we cannot identify as a browser falls
++            // through to app scope rather than being denied outright: the app
++            // may well be honest, and the picker puts the choice to the user
++            // instead of to the claim. It is never silently trusted, because
++            // reaching here means nothing has verified who the caller is.
++            val links: Set<String> = try {
++                AppLinkStore.linksFor(context, target.packageName)
++            } catch (e: Exception) {
++                // Fail to the picker, not to a match.
++                Log.w(TAG, "Could not read app links for ${target.packageName}", e)
++                emptySet()
++            }
++            return if (links.isEmpty()) {
++                UnlinkedApp(target.packageName)
++            } else {
++                LinkedApp(target.packageName)
++            }
++        }
++    }
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..63e3ef7e10e9d818195bdba722734a8dce67732e
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
+@@ -0,0 +1,134 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.app.assist.AssistStructure
++import android.os.Build
++import android.text.InputType
++import android.view.View
++import android.view.autofill.AutofillId
++import androidx.annotation.RequiresApi
++
++/**
++ * PERA LOCAL PATCH — the login field pair found in a client's view structure.
++ */
++@RequiresApi(Build.VERSION_CODES.O)
++data class FillTarget(
++    val usernameId: AutofillId?,
++    val passwordId: AutofillId,
++    /**
++     * The domain in effect at the password field, or null.
++     *
++     * **A claim, not an identity.** `ViewStructure.setWebDomain` is written by
++     * the client app, so any app can draw a text field and assert any domain on
++     * it. Nothing may act on this without [AutofillScope.resolve] first deciding
++     * what the caller is.
++     */
++    val webDomain: String?,
++    val packageName: String,
++)
++
++/**
++ * PERA LOCAL PATCH — finds the password field, and the username field that goes
++ * with it, in the structure the platform hands an `AutofillService`.
++ *
++ * The shape is a heuristic because the input is: apps and pages label fields as
++ * they please. It is allowed to be wrong about *which* fields to offer, because
++ * the user still confirms; it is not allowed to be wrong about *whose* they are,
++ * which is why the domain travels with the field rather than being read off the
++ * structure as a whole.
++ */
++@RequiresApi(Build.VERSION_CODES.O)
++object FillStructureParser {
++    /**
++     * Browsers forward a field's `autocomplete` token as its autofill hint, so
++     * the web spellings sit alongside the platform constants. Missing one costs
++     * a silent non-fill on exactly the pages this feature exists for.
++     */
++    private val PASSWORD_HINTS = setOf(
++        View.AUTOFILL_HINT_PASSWORD,
++        "current-password",
++        "new-password",
++    )
++
++    private val USERNAME_HINTS = setOf(
++        View.AUTOFILL_HINT_USERNAME,
++        View.AUTOFILL_HINT_EMAIL_ADDRESS,
++        "email",
++    )
++
++    fun parse(structure: AssistStructure, packageName: String): FillTarget? {
++        val fields = mutableListOf<Field>()
++        for (i in 0 until structure.windowNodeCount) {
++            collect(structure.getWindowNodeAt(i).rootViewNode, null, fields)
++        }
++
++        val password = fields.firstOrNull { isPassword(it.node) } ?: return null
++        val passwordId = password.node.autofillId ?: return null
++
++        // Only fields from the same frame are part of the same form. Pairing
++        // across that boundary would put a username from one origin's page into
++        // a request carrying another's domain.
++        val preceding = fields
++            .takeWhile { it !== password }
++            .filter { it.webDomain == password.webDomain }
++        // An explicit hint beats position; otherwise the field immediately above
++        // the password is the conventional guess.
++        val username = preceding.lastOrNull { isUsername(it.node) } ?: preceding.lastOrNull()
++
++        return FillTarget(
++            usernameId = username?.node?.autofillId,
++            passwordId = passwordId,
++            webDomain = password.webDomain,
++            packageName = packageName,
++        )
++    }
++
++    /** A fillable text field, with the domain that was in effect where it sat. */
++    private data class Field(
++        val node: AssistStructure.ViewNode,
++        val webDomain: String?,
++    )
++
++    /**
++     * Flattens the fillable text fields in document order, carrying each one's
++     * nearest ancestor `webDomain` down to it.
++     *
++     * Taking the first domain found anywhere in the structure instead would let
++     * a cross-origin iframe name the domain for a password field that does not
++     * belong to it.
++     */
++    private fun collect(
++        node: AssistStructure.ViewNode,
++        inherited: String?,
++        into: MutableList<Field>,
++    ) {
++        val domain = node.webDomain?.takeIf { it.isNotEmpty() } ?: inherited
++        if (node.autofillId != null && node.autofillType == View.AUTOFILL_TYPE_TEXT) {
++            into += Field(node, domain)
++        }
++        for (i in 0 until node.childCount) {
++            collect(node.getChildAt(i), domain, into)
++        }
++    }
++
++    private fun isPassword(node: AssistStructure.ViewNode): Boolean {
++        if (node.hasHint(PASSWORD_HINTS)) return true
++        val inputType = node.inputType
++        if (inputType and InputType.TYPE_MASK_CLASS != InputType.TYPE_CLASS_TEXT) return false
++        return when (inputType and InputType.TYPE_MASK_VARIATION) {
++            InputType.TYPE_TEXT_VARIATION_PASSWORD,
++            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
++            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
++            -> true
++
++            else -> false
++        }
++    }
++
++    private fun isUsername(node: AssistStructure.ViewNode): Boolean =
++        node.hasHint(USERNAME_HINTS)
++
++    private fun AssistStructure.ViewNode.hasHint(hints: Set<String>): Boolean =
++        autofillHints?.any { candidate ->
++            hints.any { it.equals(candidate, ignoreCase = true) }
++        } == true
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 index 35a27a63aa27cfd25d09dfb65472407be4303fb8..fea7a9744c7e995f8dc478be093651025235fa30 100644
