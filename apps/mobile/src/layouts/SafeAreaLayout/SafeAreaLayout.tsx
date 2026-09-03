@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ViewProps } from 'react-native'
+import type { ViewProps } from 'react-native'
 import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDeeplinkListener } from '@hooks/useDeeplinkListener'

@@ -12,10 +12,7 @@
 
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import { fetchAccountsBalanceHistory } from './endpoints'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AccountAddress,
     AccountBalanceHistoryItem,

@@ -19,7 +19,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { trackEvent, OnboardingEvent } from '@analytics'
-import { type IconName } from '@components/core'
+import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useModalState } from '@hooks/useModalState'
@@ -27,7 +27,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
-import { type AccountOption } from '@modules/onboarding/types'
+import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     ImportOptionsContent,

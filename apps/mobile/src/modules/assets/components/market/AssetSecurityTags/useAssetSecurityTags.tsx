@@ -12,11 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAssetAuthoritiesQuery } from '@perawallet/wallet-core-assets'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { type IconName } from '@components/core/PWIcon/constants'
-import { type AssetSecurityTagVariant } from '../AssetSecurityTag'
+import type { IconName } from '@components/core/PWIcon/constants'
+import type { AssetSecurityTagVariant } from '../AssetSecurityTag'
 import {
     AssetSecurityInfoContent,
     type AssetSecurityAuthority,

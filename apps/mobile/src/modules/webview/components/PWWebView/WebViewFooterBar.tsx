@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { type RefObject } from 'react'
+import type { RefObject } from 'react'
 import { PWView } from '@components/core/PWView'
 import { PWIcon } from '@components/core/PWIcon'
 import type WebView from 'react-native-webview'
-import { type WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
+import type { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WebViewFavorite } from '@modules/webview/hooks'
 import { useStyles } from './styles'

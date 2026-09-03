@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    type IconName,
-    type PWButtonProps,
-    type PWIconVariant,
-} from '@components/core'
+import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { ConfirmActionLayout } from './ConfirmActionLayout'
 

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useWindowDimensions } from 'react-native'
-import { type SharedValue } from 'react-native-reanimated'
+import type { SharedValue } from 'react-native-reanimated'
 import { PWPager } from '@components/core'
 // From the constants module rather than the barrel: it's a plain number, and
 // the barrel carries every core component with it.

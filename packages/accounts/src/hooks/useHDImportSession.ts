@@ -15,7 +15,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { prepareHDMasterKey, useKMS } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
-import { type HDWalletAccount } from '../models/accounts'
+import type { HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
 

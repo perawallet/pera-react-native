@@ -22,7 +22,7 @@ import {
     useState,
 } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
-import { type PromptViewProps } from '@modules/prompts/models'
+import type { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useTermsAcceptance } from '@modules/onboarding/hooks/useTermsAcceptance'

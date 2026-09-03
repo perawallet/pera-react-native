@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_WIDTH = 137
 const HEADER_IMAGE_HEIGHT = 217

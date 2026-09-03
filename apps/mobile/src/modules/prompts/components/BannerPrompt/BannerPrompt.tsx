@@ -23,7 +23,7 @@ import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // surface genuinely renders banners, so it takes the carousel knowingly.
 import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
 import { useBannerLinkRouter } from '@modules/banners/hooks/useBannerLinkRouter'
-import { type PromptViewProps } from '@modules/prompts/models'
+import type { PromptViewProps } from '@modules/prompts/models'
 import { useStyles } from './styles'
 
 export const BANNER_PROMPT_ID = 'banner_prompt'

@@ -11,7 +11,7 @@
  */
 
 import React, { useMemo } from 'react'
-import { type ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 
 import {

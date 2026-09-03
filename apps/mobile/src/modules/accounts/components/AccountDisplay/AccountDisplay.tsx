@@ -11,7 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     PWIcon,
     type PWIconProps,

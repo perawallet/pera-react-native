@@ -20,7 +20,7 @@ import {
     useCardInternalWalletsQuery,
     useWithdrawFromCardMutation,
 } from '@perawallet/wallet-core-card'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useCardErrorToast } from '../../hooks'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'

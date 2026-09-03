@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { bottomSheetNotifier } from '@components/core'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useToast } from '@hooks/useToast'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Query } from '@tanstack/react-query'
+import type { Query } from '@tanstack/react-query'
 import type { Network, Optional } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'swaps'

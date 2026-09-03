@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type GestureResponderEvent } from 'react-native'
+import type { GestureResponderEvent } from 'react-native'
 import {
     PWTouchableOpacity,
     type PWTouchableOpacityProps,

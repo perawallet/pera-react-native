@@ -29,9 +29,9 @@ import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
-import { type IconName } from '@components/core'
+import type { IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
-import { type AccountOption } from '@modules/onboarding/types'
+import type { AccountOption } from '@modules/onboarding/types'
 import { trackEvent, OnboardingEvent } from '@analytics'
 
 // Default loading-overlay title shown while an account is being created.

@@ -21,7 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { type SignerRow } from '../../utils/buildSignerRows'
+import type { SignerRow } from '../../utils/buildSignerRows'
 import {
     SignerStatusListItem,
     type SignerAction,

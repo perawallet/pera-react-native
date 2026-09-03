@@ -11,11 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Decimal } from 'decimal.js'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
-import { type SwapQuote } from '@perawallet/wallet-core-swaps'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapExecution, useSwapQuotes } from '@modules/swap/hooks'
 import {
     formatSwapRate,

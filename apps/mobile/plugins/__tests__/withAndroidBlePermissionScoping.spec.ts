@@ -31,7 +31,7 @@ describe('scopeBlePermissions', () => {
             ]),
         )
         const byName = (n: string) =>
-            result.manifest['uses-permission'].find(
+            result.manifest['uses-permission']?.find(
                 (p: { $: Record<string, string> }) => p.$['android:name'] === n,
             )?.$
 
@@ -55,7 +55,7 @@ describe('scopeBlePermissions', () => {
             manifestWith(['android.permission.BLUETOOTH_SCAN']),
         )
         expect(
-            result.manifest['uses-permission'][0].$[
+            result.manifest['uses-permission']?.[0].$[
                 'android:usesPermissionFlags'
             ],
         ).toBe('neverForLocation')
@@ -65,7 +65,7 @@ describe('scopeBlePermissions', () => {
         const result = scopeBlePermissions(
             manifestWith(['android.permission.CAMERA']),
         )
-        expect(result.manifest['uses-permission'][0].$).toEqual({
+        expect(result.manifest['uses-permission']?.[0].$).toEqual({
             'android:name': 'android.permission.CAMERA',
         })
     })

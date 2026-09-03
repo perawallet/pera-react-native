@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SwapQuote } from '../models'
 

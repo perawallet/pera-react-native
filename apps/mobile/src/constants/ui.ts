@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
+import type { NativeStackNavigationOptions } from '@react-navigation/native-stack'
 import { Easing } from 'react-native-reanimated'
 
 export const CHART_FOCUS_DEBOUNCE_TIME = 200

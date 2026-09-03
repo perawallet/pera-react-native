@@ -15,10 +15,10 @@ import {
     getInitials,
     isAlgoAssetId,
 } from '@perawallet/wallet-core-shared'
-import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { type SvgProps } from 'react-native-svg'
+import type { SvgProps } from 'react-native-svg'
 import {
     getIconPixelSize,
     type PWIconSize,

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isCollectible, isPureNft } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'

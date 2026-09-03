@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     baseUnitsToDisplayUnits,
@@ -26,7 +26,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
-import { type AmountDisplay } from './amounts'
+import type { AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'

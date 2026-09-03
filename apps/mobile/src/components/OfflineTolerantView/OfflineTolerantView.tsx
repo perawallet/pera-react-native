@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'

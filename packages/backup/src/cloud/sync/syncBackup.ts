@@ -19,7 +19,7 @@ import {
     readItems,
 } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import { type SyncState } from '../models'
+import type { SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'

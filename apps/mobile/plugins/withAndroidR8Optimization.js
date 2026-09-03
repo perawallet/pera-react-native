@@ -92,6 +92,7 @@ function useOptimizedProguardFile(buildGradle) {
   return patched;
 }
 
-module.exports = withAndroidR8Optimization;
-module.exports.useOptimizedProguardFile = useOptimizedProguardFile;
-module.exports.PRECISE_SHRINKING_KEY = PRECISE_SHRINKING_KEY;
+module.exports = Object.assign(withAndroidR8Optimization, {
+  useOptimizedProguardFile,
+  PRECISE_SHRINKING_KEY,
+});

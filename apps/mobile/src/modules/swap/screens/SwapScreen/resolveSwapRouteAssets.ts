@@ -17,7 +17,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { type SwapScreenParams } from '@modules/swap/routes/types'
+import type { SwapScreenParams } from '@modules/swap/routes/types'
 
 export type ResolvedSwapRouteAssets = {
     assetInId: string

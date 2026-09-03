@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react'
-import { type LayoutChangeEvent } from 'react-native'
+import type { LayoutChangeEvent } from 'react-native'
 import Animated, {
     useAnimatedStyle,
     type SharedValue,

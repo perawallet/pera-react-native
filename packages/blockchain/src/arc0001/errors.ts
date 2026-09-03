@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Arc0001ErrorCode } from './types'
+import type { Arc0001ErrorCode } from './types'
 
 // Carries ARC-0001's numeric code + { index, field }. Transports relay the
 // message and data to the dApp; note the WalletConnect v1 bridge collapses any

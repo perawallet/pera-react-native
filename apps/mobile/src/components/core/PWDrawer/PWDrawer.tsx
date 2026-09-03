@@ -16,7 +16,7 @@ import { PWView } from '../PWView'
 
 import { PWDRAWER_WIDTH_RATIO } from './constants'
 import { PWDrawerGestureSurface } from './PWDrawerGestureSurface'
-import { type PWDrawerProps } from './types'
+import type { PWDrawerProps } from './types'
 import { usePWDrawer } from './usePWDrawer'
 
 /**

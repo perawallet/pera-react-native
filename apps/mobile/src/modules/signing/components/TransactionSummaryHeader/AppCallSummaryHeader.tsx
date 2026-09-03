@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'

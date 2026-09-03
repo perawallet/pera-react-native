@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    type BaseStoreState,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Why biometric unlock stopped working without the user asking for it.

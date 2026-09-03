@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import React, { ReactElement } from 'react'
+import React, { type ReactElement } from 'react'
 // Use @testing-library/react instead of @testing-library/react-native
 // since we're testing with react-native-web in Vitest
-import { render, RenderOptions, RenderResult } from '@testing-library/react'
+import {
+    render,
+    type RenderOptions,
+    type RenderResult,
+} from '@testing-library/react'
 import { ThemeProvider, createTheme } from '@rneui/themed'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavigationContainer } from '@react-navigation/native'

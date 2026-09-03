@@ -13,7 +13,7 @@
 import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'

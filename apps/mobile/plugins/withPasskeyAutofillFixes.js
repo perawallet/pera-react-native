@@ -251,5 +251,4 @@ function dedupeSourcesBuildPhases(project) {
   }
 }
 
-module.exports = withPasskeyAutofillFixes;
-module.exports.applyIosFixes = applyIosFixes;
+module.exports = Object.assign(withPasskeyAutofillFixes, { applyIosFixes });

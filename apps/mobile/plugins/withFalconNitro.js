@@ -87,6 +87,7 @@ const withAndroidNewArch = config =>
  */
 const withFalconNitro = config => withAndroidNewArch(withIosNewArch(config))
 
-module.exports = withFalconNitro
-module.exports.withIosNewArch = withIosNewArch
-module.exports.withAndroidNewArch = withAndroidNewArch
+module.exports = Object.assign(withFalconNitro, {
+  withIosNewArch,
+  withAndroidNewArch,
+})

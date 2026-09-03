@@ -28,7 +28,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { type PeraCardStackParamList } from '../../routes/types'
+import type { PeraCardStackParamList } from '../../routes/types'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 

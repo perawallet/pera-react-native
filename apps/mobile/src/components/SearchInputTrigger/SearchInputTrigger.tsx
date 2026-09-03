@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ComponentType } from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { ComponentType } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWTouchableOpacity, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import type { SearchableListSearchProps } from '@components/SearchableList'
