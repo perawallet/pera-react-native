@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -203,6 +204,95 @@ describe('useNotificationsListQuery', () => {
             'test-device-id',
             nextCursor,
         )
+    })
+
+    it('returns referentially stable refetch and fetchNextPage across renders', async () => {
+        vi.mocked(fetchNotificationList).mockResolvedValue({
+            count: 0,
+            next: null,
+            previous: null,
+            results: [],
+        })
+
+        const { result, rerender } = renderHook(
+            () => useNotificationsListQuery(),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        const { refetch, fetchNextPage } = result.current
+
+        rerender()
+
+        // NotificationsScreen refetches on focus with `refetch` in the effect
+        // deps: a per-render identity re-runs the effect after every render
+        // the refetch itself causes — an infinite request loop (~1/s) with the
+        // refresh spinner pinned.
+        expect(result.current.refetch).toBe(refetch)
+        expect(result.current.fetchNextPage).toBe(fetchNextPage)
+    })
+
+    it('treats a next URL with an empty cursor as the last page instead of refetching page one forever', async () => {
+        vi.mocked(fetchNotificationList).mockClear()
+        // Staging returns `next` with `?cursor=` (empty) on the last page;
+        // an empty-string page param must read as "no next page", or the
+        // list loops the same request once per onEndReached tick.
+        vi.mocked(fetchNotificationList).mockResolvedValue({
+            count: 0,
+            next: 'https://mobile-api.perawallet.app/v2/devices/test-device-id/notifications/?cursor=',
+            previous: null,
+            results: [],
+        })
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(fetchNotificationList).toHaveBeenCalledTimes(1)
+
+        await result.current.fetchNextPage()
+
+        expect(fetchNotificationList).toHaveBeenCalledTimes(1)
+    })
+
+    describe('offline and error states', () => {
+        beforeEach(() => {
+            vi.mocked(fetchNotificationList).mockClear()
+        })
+
+        afterEach(() => {
+            onlineManager.setOnline(true)
+        })
+
+        it('reports isPaused — not isPending — when offline pauses an uncached query', async () => {
+            onlineManager.setOnline(false)
+
+            const { result } = renderHook(() => useNotificationsListQuery(), {
+                wrapper: createWrapper(),
+            })
+
+            await waitFor(() => expect(result.current.isPaused).toBe(true))
+            // A paused query keeps `status: 'pending'`; surfacing that as
+            // isPending would spin the empty view for as long as the device
+            // (or Android's connectivity validation) reports no internet.
+            expect(result.current.isPending).toBe(false)
+            expect(fetchNotificationList).not.toHaveBeenCalled()
+        })
+
+        it('reports isError when the fetch fails', async () => {
+            vi.mocked(fetchNotificationList).mockRejectedValueOnce(
+                new Error('boom'),
+            )
+
+            const { result } = renderHook(() => useNotificationsListQuery(), {
+                wrapper: createWrapper(),
+            })
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.isPending).toBe(false)
+            expect(result.current.isPaused).toBe(false)
+        })
     })
 
     describe('non-Pera-backed networks', () => {
