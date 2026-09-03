@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import {
     batchUpsertItems,
     deleteItem,
@@ -31,15 +31,19 @@ const hasPendingWork = (state: SyncState): boolean =>
 
 /** A registered backup has no manifest until its first item lands, so the very
  *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
- *  a wiped backup fails with 401 instead — a 404 can only mean "still empty". */
+ *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
+ *  Warns because that is only true once: a 404 that keeps coming back leaves
+ *  `lastKnownBackupHash` pinned, which silently disables the short-circuit
+ *  below and makes every sync a full delta + read + push. */
 const fetchManifestOrNull = async (
     deps: SyncEngineDeps,
 ): Promise<Manifest | null> => {
     try {
         return await fetchManifest(deps.network, deps.backupId, deps.deviceId)
     } catch (error) {
-        if (isPeraNetworkError(error) && error.status === 404) return null
-        throw error
+        if (!isNotFoundError(error)) throw error
+        logger.warn('syncBackup: no manifest, treating backup as empty')
+        return null
     }
 }
 

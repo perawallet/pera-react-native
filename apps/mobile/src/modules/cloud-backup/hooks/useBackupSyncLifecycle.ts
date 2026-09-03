@@ -26,6 +26,7 @@ import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,
+    isActiveAppState,
 } from '@utils/app-state'
 import { useCloudBackupImport } from './useCloudBackupImport'
 import { useResolveHdSeedForBackup } from './useResolveHdSeedForBackup'
@@ -115,7 +116,12 @@ const useForegroundBackupSync = (isActive: boolean) => {
     useEffect(() => {
         if (!isActive) return
 
-        startBackupSync()
+        // Cold starts can begin in the background (push-launched, iOS
+        // prewarming), and syncing reads every account's key material — so the
+        // initial run is gated on the same "foregrounded" condition the
+        // transitions below apply, not just on `isActive`.
+        appState.current = AppState.currentState
+        if (isActiveAppState(appState.current)) startBackupSync()
 
         const subscription = AppState.addEventListener(
             'change',

@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { AppState } from 'react-native'
 
 const {
     initializeMock,
@@ -70,11 +71,22 @@ vi.mock('../useResolveMnemonicForBackup', () => ({
 
 import { useBackupSyncLifecycle } from '../useBackupSyncLifecycle'
 
+const setAppState = (state: string) => {
+    ;(AppState as { currentState: string }).currentState = state
+}
+
+/** Fires the listener the hook registered with AppState. */
+const emitAppState = (state: string) => {
+    const listener = (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1]
+    listener?.(state)
+}
+
 describe('useBackupSyncLifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         isEnabledMock.mockReturnValue(true)
         backupIdRef.current = 'did:pera:abc'
+        setAppState('active')
     })
 
     it('leaves the manager stopped while the feature flag is off', () => {
@@ -107,6 +119,18 @@ describe('useBackupSyncLifecycle', () => {
 
         unmount()
         expect(managerMock.stop).toHaveBeenCalled()
+    })
+
+    it('waits for the foreground when the app cold-starts in the background', () => {
+        // Push-launched and iOS-prewarmed starts run with no UI on screen, and
+        // syncing reads every account's key material.
+        setAppState('background')
+
+        renderHook(() => useBackupSyncLifecycle())
+        expect(managerMock.start).not.toHaveBeenCalled()
+
+        emitAppState('active')
+        expect(managerMock.start).toHaveBeenCalledTimes(1)
     })
 
     it('initializes once across re-renders so the live socket survives', () => {
