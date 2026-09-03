@@ -111,6 +111,7 @@ const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setMainKeyId: vi.fn().mockResolvedValue(undefined),
+    getHdRootKeyId: vi.fn().mockResolvedValue(null),
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
     refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
@@ -194,10 +195,12 @@ describe('bootstrapPasskeyAutofill', () => {
             Uint8Array.from([1, 2, 3]),
         )
 
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-        })
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBe('ready')
 
         expect(receivedMasterKey).toEqual(Buffer.from(MASTER_KEY))
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
@@ -251,10 +254,12 @@ describe('bootstrapPasskeyAutofill', () => {
             ),
         )
 
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-        })
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBe('ready')
 
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
         expect(mocks.error).not.toHaveBeenCalled()
@@ -264,7 +269,7 @@ describe('bootstrapPasskeyAutofill', () => {
         )
     })
 
-    it('logs an error when refresh fails for a non-store-disabled reason', async () => {
+    it('logs an error and reports failure when refresh fails for a non-store-disabled reason', async () => {
         const service = makeService()
         // App Group misconfiguration shares code 1 but a different domain — a
         // real fault that must still surface.
@@ -272,10 +277,12 @@ describe('bootstrapPasskeyAutofill', () => {
             new Error('App Group is not configured for passkey autofill.'),
         )
 
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-        })
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBe('failed')
 
         expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
             step: 'refreshCredentialIdentities',
@@ -410,45 +417,32 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setHdRootKeyId).not.toHaveBeenCalled()
     })
 
-    it('logs every failing native step but still completes when each call rejects', async () => {
-        const service = {
-            setMasterKey: vi.fn().mockRejectedValue(new Error('setMasterKey')),
-            setHdRootKeyId: vi
-                .fn()
-                .mockRejectedValue(new Error('setHdRootKeyId')),
-            setMainKeyId: vi.fn().mockRejectedValue(new Error('setMainKeyId')),
-            configureIntentActions: vi
-                .fn()
-                .mockRejectedValue(new Error('configureIntentActions')),
-            isProviderActive: vi.fn().mockResolvedValue(true),
-            refreshCredentialIdentities: vi
-                .fn()
-                .mockRejectedValue(new Error('refreshCredentialIdentities')),
-        }
-        await seedKeystore(
-            { id: 'root-id', type: 'hd-root-key', algorithm: 'raw' },
-            Uint8Array.from([1, 2, 3]),
-        )
+    // A failed step must not be followed by further writes: continuing after a
+    // rejected `setMasterKey` would push a fresh parent id against whatever
+    // master key the native side still holds — the mixed state this bootstrap
+    // exists to prevent.
+    it('aborts at the first failing native step instead of applying later ones', async () => {
+        const service = makeService()
+        service.setMasterKey.mockRejectedValue(new Error('setMasterKey'))
+        await seedHdRoot()
 
         await expect(
             bootstrapPasskeyAutofill({
                 service: service as never,
                 intentActions,
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toBe('failed')
 
-        const loggedSteps = mocks.error.mock.calls.map(call => call[1]?.step)
-        expect(loggedSteps).toEqual(
-            expect.arrayContaining([
-                'setMasterKey',
-                'setHdRootKeyId',
-                'configureIntentActions',
-                'refreshCredentialIdentities',
-            ]),
-        )
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'setMasterKey',
+        })
+        expect(mocks.error).toHaveBeenCalledOnce()
+        expect(service.setHdRootKeyId).not.toHaveBeenCalled()
+        expect(service.configureIntentActions).not.toHaveBeenCalled()
+        expect(service.refreshCredentialIdentities).not.toHaveBeenCalled()
     })
 
-    it('logs a rejecting setMainKeyId without failing the bootstrap', async () => {
+    it('aborts on a rejecting setMainKeyId and reports failure', async () => {
         const service = makeService()
         service.setMainKeyId.mockRejectedValue(new Error('setMainKeyId'))
         await seedPasskeyMainKey()
@@ -458,13 +452,79 @@ describe('bootstrapPasskeyAutofill', () => {
                 service: service as never,
                 intentActions,
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toBe('failed')
 
         expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
             step: 'setMainKeyId',
         })
-        // The rest of the bootstrap still ran.
-        expect(service.configureIntentActions).toHaveBeenCalled()
+        expect(service.configureIntentActions).not.toHaveBeenCalled()
+    })
+
+    it('picks the same fallback root regardless of MMKV storage order and warns about the ambiguity', async () => {
+        const service = makeService()
+        // Seeded in reverse id order: a scan that takes the first record MMKV
+        // returns would pick `root-b`.
+        await seedHdRoot('root-b')
+        await seedHdRoot('root-a')
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-a')
+        expect(mocks.warn).toHaveBeenCalledWith(
+            expect.stringContaining('Multiple HD roots'),
+            expect.objectContaining({ step: 'configureParentKey' }),
+        )
+    })
+
+    it('reports duplicate main keys as an error but still wires one deterministically', async () => {
+        const service = makeService()
+        await seedPasskeyMainKey('main-b')
+        await seedPasskeyMainKey('main-a')
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBe('ready')
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-a')
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'configureParentKey',
+        })
+    })
+
+    it('invalidates a stale native parent key id when the keystore has no root', async () => {
+        const service = makeService()
+        service.getHdRootKeyId.mockResolvedValue('gone-root')
+        await seedKeystore({ id: 'k1', type: 'algo25' })
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBe('ready')
+
+        // `''` never resolves to a key, so the providers fail closed instead
+        // of deriving from a root the wallet no longer holds.
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('')
+    })
+
+    it('does not touch the native parent key id when neither side has a root', async () => {
+        const service = makeService()
+        await seedKeystore({ id: 'k1', type: 'algo25' })
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setHdRootKeyId).not.toHaveBeenCalled()
+        expect(service.setMainKeyId).not.toHaveBeenCalled()
     })
 
     it('logs through the outer catch when fetching the master key throws', async () => {
@@ -476,7 +536,7 @@ describe('bootstrapPasskeyAutofill', () => {
                 service: service as never,
                 intentActions,
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toBe('failed')
 
         expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
             step: 'bootstrapPasskeyAutofill',
@@ -495,7 +555,7 @@ describe('bootstrapPasskeyAutofill', () => {
                 service: service as never,
                 intentActions,
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toBe('skipped')
 
         expect(mocks.error).not.toHaveBeenCalled()
         expect(mocks.warn).toHaveBeenCalled()
@@ -517,7 +577,7 @@ describe('bootstrapPasskeyAutofill', () => {
                 service: service as never,
                 intentActions,
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toBe('skipped')
 
         expect(foreignError instanceof mocks.MasterKeyNotFoundError).toBe(false)
         expect(mocks.error).not.toHaveBeenCalled()

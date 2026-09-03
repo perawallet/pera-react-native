@@ -16,10 +16,18 @@ import { PWTabView } from '../PWTabView'
 import { Text } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
 
+const { navigatorProps } = vi.hoisted(() => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    navigatorProps: { current: null as any },
+}))
+
 vi.mock('@react-navigation/material-top-tabs', () => ({
     createMaterialTopTabNavigator: vi.fn(() => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Navigator: ({ children }: any) => <div>{children}</div>,
+        Navigator: ({ children, ...props }: any) => {
+            navigatorProps.current = props
+            return <div>{children}</div>
+        },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         Screen: ({ component: Component }: any) => (
             <div>{Component ? <Component /> : null}</div>
@@ -52,5 +60,37 @@ describe('PWTabView', () => {
         )
 
         expect(getByText('Content 1')).toBeTruthy()
+    })
+
+    it('defaults backBehavior to none so Android back dismisses the screen instead of switching tabs', () => {
+        const Tab = PWTabView.createNavigator()
+        render(
+            <NavigationContainer>
+                <Tab.Navigator>
+                    <Tab.Screen
+                        name='Tab1'
+                        component={() => <Text>Content 1</Text>}
+                    />
+                </Tab.Navigator>
+            </NavigationContainer>,
+        )
+
+        expect(navigatorProps.current.backBehavior).toBe('none')
+    })
+
+    it('lets a caller override backBehavior', () => {
+        const Tab = PWTabView.createNavigator()
+        render(
+            <NavigationContainer>
+                <Tab.Navigator backBehavior='history'>
+                    <Tab.Screen
+                        name='Tab1'
+                        component={() => <Text>Content 1</Text>}
+                    />
+                </Tab.Navigator>
+            </NavigationContainer>,
+        )
+
+        expect(navigatorProps.current.backBehavior).toBe('history')
     })
 })

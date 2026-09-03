@@ -27,7 +27,6 @@ import {
     PWDRAWER_CONTENT_OPACITY_VALUES,
     PWDRAWER_CONTENT_SCALE_PROGRESS,
     PWDRAWER_CONTENT_SCALE_VALUES,
-    PWDRAWER_SCRIM_OPACITY,
     PWDRAWER_SPRING_CONFIG,
 } from './constants'
 import { useStyles } from './styles'
@@ -111,7 +110,7 @@ export const usePWDrawer = ({
     }, [isBack, panelWidth])
 
     const scrimAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: progress.value * PWDRAWER_SCRIM_OPACITY,
+        opacity: progress.value,
     }))
 
     const panelContentAnimatedStyle = useAnimatedStyle(() => {

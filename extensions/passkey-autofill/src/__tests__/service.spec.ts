@@ -93,6 +93,21 @@ describe('PasskeyAutofillService', () => {
 
             await expect(service.getMainKeyId()).resolves.toBeNull()
         })
+
+        it('resolves getHdRootKeyId to null when the native module lacks it', async () => {
+            const service = new PasskeyAutofillService(makeNative())
+
+            await expect(service.getHdRootKeyId()).resolves.toBeNull()
+        })
+    })
+
+    it('returns the natively stored HD root key id', async () => {
+        const getHdRootKeyId = vi.fn().mockResolvedValue('root-1')
+        const service = new PasskeyAutofillService(
+            makeNative({ getHdRootKeyId }),
+        )
+
+        await expect(service.getHdRootKeyId()).resolves.toBe('root-1')
     })
 
     describe('configureIntentActions platform gating', () => {

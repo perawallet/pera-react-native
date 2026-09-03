@@ -11,6 +11,7 @@
  */
 
 import { type ReactNode } from 'react'
+import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
@@ -55,7 +56,12 @@ export const AccountDrawerContent = ({
     isWithinSafeArea = false,
 }: AccountDrawerContentProps) => {
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ topInset: isWithinSafeArea ? 0 : insets.top })
+    const ownsInsets = !isWithinSafeArea
+    const styles = useStyles({
+        topInset: ownsInsets ? insets.top : 0,
+        bottomInset:
+            ownsInsets && Platform.OS === 'android' ? insets.bottom : 0,
+    })
     const { t } = useLanguage()
 
     return (
