@@ -29,7 +29,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
-import { type AccountOption } from '@modules/onboarding/types'
+import type { AccountOption } from '@modules/onboarding/types'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 

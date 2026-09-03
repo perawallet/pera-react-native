@@ -11,11 +11,11 @@
  */
 
 import { getMessaging, getToken } from 'firebase/messaging'
-import {
-    type NotificationOpenListener,
-    type PushNotificationInitResult,
-    type PushNotificationService,
-    type PushTokenRefreshListener,
+import type {
+    NotificationOpenListener,
+    PushNotificationInitResult,
+    PushNotificationService,
+    PushTokenRefreshListener,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 import { getFirebaseApp } from './firebase-app'

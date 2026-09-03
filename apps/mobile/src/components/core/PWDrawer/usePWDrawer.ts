@@ -30,7 +30,7 @@ import {
     PWDRAWER_SPRING_CONFIG,
 } from './constants'
 import { useStyles } from './styles'
-import { type PWDrawerProps } from './types'
+import type { PWDrawerProps } from './types'
 import { usePWDrawerDrag } from './usePWDrawerDrag'
 
 export type UsePWDrawerParams = Required<

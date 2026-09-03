@@ -12,7 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { type CardTransaction } from '@perawallet/wallet-core-card'
+import type { CardTransaction } from '@perawallet/wallet-core-card'
 
 const mockQuery = vi.hoisted(() => ({
     transactions: [] as CardTransaction[],

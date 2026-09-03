@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import type {
     LegacyHDKey,

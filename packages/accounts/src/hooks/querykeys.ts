@@ -10,16 +10,9 @@
  limitations under the License
  */
 
-import {
-    type HistoryPeriod,
-    type Network,
-} from '@perawallet/wallet-core-shared'
-import { type AccountAddress } from '../models'
-import {
-    type Query,
-    type QueryClient,
-    type QueryKey,
-} from '@tanstack/react-query'
+import type { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
+import type { AccountAddress } from '../models'
+import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'accounts'
 

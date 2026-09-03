@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type TransactionWarning } from '@perawallet/wallet-core-signing'
+import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'

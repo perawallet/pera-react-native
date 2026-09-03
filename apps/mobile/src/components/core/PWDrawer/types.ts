@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
-import { type SharedValue } from 'react-native-reanimated'
+import type { ReactNode } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
+import type { SharedValue } from 'react-native-reanimated'
 
 /**
  * `back` leaves the panel stationary underneath and slides the content off it,

@@ -11,11 +11,7 @@
  */
 
 import React, { useMemo } from 'react'
-import {
-    type GestureResponderEvent,
-    type StyleProp,
-    type ViewStyle,
-} from 'react-native'
+import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'

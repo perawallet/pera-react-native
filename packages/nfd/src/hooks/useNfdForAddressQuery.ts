@@ -18,7 +18,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
-import { type NfdName } from '../models'
+import type { NfdName } from '../models'
 
 /**
  * The batch queue coalesces enqueues that land in the same microtask.

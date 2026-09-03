@@ -14,10 +14,7 @@ import { memo, useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,

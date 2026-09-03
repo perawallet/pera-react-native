@@ -14,16 +14,13 @@ import { memo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AccountAssetBalanceHistoryItem,
     useAccountsAssetsBalanceHistoryQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetWealthChartProps = {
     account: WalletAccount

@@ -11,7 +11,7 @@
  */
 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
-import { type ParamListBase } from '@react-navigation/native'
+import type { ParamListBase } from '@react-navigation/native'
 import { makeStyles } from '@rneui/themed'
 import { PWTabBar } from './PWTabBar'
 

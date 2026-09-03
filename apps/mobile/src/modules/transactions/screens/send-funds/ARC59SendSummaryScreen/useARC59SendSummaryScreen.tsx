@@ -43,8 +43,8 @@ import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
-import { type SvgProps } from 'react-native-svg'
-import { type Decimal } from 'decimal.js'
+import type { SvgProps } from 'react-native-svg'
+import type { Decimal } from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse

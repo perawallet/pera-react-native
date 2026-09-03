@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type CardTransaction } from '@perawallet/wallet-core-card'
+import type { CardTransaction } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { type AccountStackParamsList } from '@modules/accounts/routes/types'
-import { type SwapScreenParams } from '@modules/swap/routes/types'
-import { type OnrampScreenParams } from '@modules/onramp/routes/types'
-import { type NavigatorScreenParams } from '@react-navigation/native'
+import type { AccountStackParamsList } from '@modules/accounts/routes/types'
+import type { SwapScreenParams } from '@modules/swap/routes/types'
+import type { OnrampScreenParams } from '@modules/onramp/routes/types'
+import type { NavigatorScreenParams } from '@react-navigation/native'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type TabBarStackParamList = {

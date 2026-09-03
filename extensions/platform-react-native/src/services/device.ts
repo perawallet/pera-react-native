@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import {
-    type DeviceInfoService,
-    type DevicePlatform,
-    type AppEnvironment,
+import type {
+    DeviceInfoService,
+    DevicePlatform,
+    AppEnvironment,
 } from '@perawallet/wallet-extension-platform'
 import * as Application from 'expo-application'
 import * as Device from 'expo-device'

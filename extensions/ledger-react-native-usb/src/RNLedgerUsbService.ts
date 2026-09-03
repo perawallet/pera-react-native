@@ -11,7 +11,7 @@
  */
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,

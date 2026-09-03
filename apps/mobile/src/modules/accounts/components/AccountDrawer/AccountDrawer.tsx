@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PWDrawer } from '@components/core'
 import { routeCapabilities } from '@routes/capabilities'
 

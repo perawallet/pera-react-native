@@ -21,10 +21,10 @@ import ky, {
     isTimeoutError,
 } from 'ky'
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
-import {
-    type RequestConfiguration,
-    type RequestRetryOverrides,
-    type ResponseConfiguration,
+import type {
+    RequestConfiguration,
+    RequestRetryOverrides,
+    ResponseConfiguration,
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'

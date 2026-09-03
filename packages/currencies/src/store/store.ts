@@ -13,7 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
-import { type CurrenciesStore } from '../models'
+import type { CurrenciesStore } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { USD_CURRENCY_ID } from '../constants'
 

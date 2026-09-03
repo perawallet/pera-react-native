@@ -24,7 +24,7 @@ import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'
-import { type UseAccountOverviewModalResult } from './AccountOverviewModalContext'
+import type { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewParams = {
     account: WalletAccount

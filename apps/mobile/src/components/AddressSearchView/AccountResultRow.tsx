@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 import { useStyles } from './styles'

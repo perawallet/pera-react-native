@@ -41,7 +41,7 @@ import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
-import { type IconName } from '@components/core'
+import type { IconName } from '@components/core'
 import {
     trackEvent,
     AccountDetailsEvent,

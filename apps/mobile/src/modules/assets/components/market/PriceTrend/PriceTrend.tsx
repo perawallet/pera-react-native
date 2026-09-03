@@ -17,7 +17,7 @@ import {
     type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { type AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
+import type { AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { TrendIndicator } from '@components/TrendIndicator'
 import { usePriceTrend } from './usePriceTrend'
