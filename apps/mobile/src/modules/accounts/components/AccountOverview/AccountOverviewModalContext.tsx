@@ -11,7 +11,7 @@
  */
 
 import { createContext, useContext } from 'react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewModalResult = {

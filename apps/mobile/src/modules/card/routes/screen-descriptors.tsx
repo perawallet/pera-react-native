@@ -17,7 +17,7 @@
 // `routes/tab-screens.tsx`.
 
 import type React from 'react'
-import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
+import type { NativeStackNavigationOptions } from '@react-navigation/native-stack'
 import { headeredScreen } from '@routes/screen-options'
 import { PeraCardAccountScreen } from '../screens/PeraCardAccountScreen'
 import { CardTransactionsScreen } from '../screens/CardTransactionsScreen'
@@ -25,9 +25,9 @@ import { CardTransactionDetailScreen } from '../screens/CardTransactionDetailScr
 import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
 import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
 import { CardWithdrawScreen } from '../screens/CardWithdrawScreen'
-import {
-    type PeraCardAccountStackParamList,
-    type PeraCardFlowParamList,
+import type {
+    PeraCardAccountStackParamList,
+    PeraCardFlowParamList,
 } from './types'
 
 export type CardScreenDescriptor<ParamList> = {

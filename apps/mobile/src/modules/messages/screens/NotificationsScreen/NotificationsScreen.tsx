@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type PeraNotification } from '@perawallet/wallet-core-messages'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'

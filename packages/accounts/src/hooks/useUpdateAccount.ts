@@ -11,7 +11,7 @@
  */
 
 import { useAccountsStore } from '../store'
-import { type WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 
 export const useUpdateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)

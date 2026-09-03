@@ -20,7 +20,7 @@ import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
-import { type SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useWebView } from '@modules/webview/hooks'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 

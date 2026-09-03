@@ -68,7 +68,7 @@ import { createExpandedRedirect } from './createExpandedRedirect.web'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
-import { type RootStackParamList } from './types'
+import type { RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
 

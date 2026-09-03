@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { type BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
 

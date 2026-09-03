@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
+import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'

@@ -18,7 +18,7 @@ import {
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-messages'
-import { type PWFlatListRef } from '@components/core'
+import type { PWFlatListRef } from '@components/core'
 import { useNotificationPress } from '@modules/messages/hooks'
 
 export type UseNotificationsScreenResult = {

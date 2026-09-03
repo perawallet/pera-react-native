@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import {
@@ -19,7 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'

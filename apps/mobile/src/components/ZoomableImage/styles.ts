@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type ScaledSize } from 'react-native'
+import type { ScaledSize } from 'react-native'
 
 export const useStyles = makeStyles(
     (_theme, { width, height }: Pick<ScaledSize, 'width' | 'height'>) => ({

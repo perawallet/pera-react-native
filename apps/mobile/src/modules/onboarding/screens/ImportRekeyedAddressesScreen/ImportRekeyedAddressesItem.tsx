@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { PWRoundIcon } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'

@@ -23,7 +23,7 @@ import {
     sql,
     type SQL,
 } from 'drizzle-orm'
-import { type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {

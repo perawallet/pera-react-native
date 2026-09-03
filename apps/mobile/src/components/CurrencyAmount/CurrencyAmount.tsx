@@ -20,10 +20,10 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useLanguage } from '@hooks/useLanguage'
-import { type StyleProp, type TextStyle } from 'react-native'
+import type { StyleProp, TextStyle } from 'react-native'
 import {
     getVariantFontWeight,
     type FontWeight,

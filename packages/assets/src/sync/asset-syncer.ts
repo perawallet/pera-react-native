@@ -38,7 +38,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { type PeraAsset } from '../models'
+import type { PeraAsset } from '../models'
 
 const ASSET_FETCH_CONCURRENCY = 5
 

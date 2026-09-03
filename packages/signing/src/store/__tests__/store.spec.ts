@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningStore } from '../index'
 import { isResumableRehydratedRequest } from '../store'
-import { SignRequest } from '../../models'
+import type { SignRequest } from '../../models'
 
 const { mockStorage } = vi.hoisted(() => ({
     mockStorage: {

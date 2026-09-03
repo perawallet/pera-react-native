@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PeraProject, type VerificationTier } from '../models/types'
+import type { PeraProject, VerificationTier } from '../models/types'
 
 /** Lowercased host of a URL, tolerant of a missing scheme; undefined if unparseable. */
 const hostOf = (url: string | null | undefined): string | undefined => {

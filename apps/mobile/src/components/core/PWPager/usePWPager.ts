@@ -45,7 +45,7 @@ import {
     PWPAGER_VERTICAL_CANCEL_OFFSET,
 } from './constants'
 import { useStyles } from './styles'
-import { type PWPagerProps } from './types'
+import type { PWPagerProps } from './types'
 
 export type UsePWPagerParams = Required<
     Pick<

@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, afterEach, Mock } from 'vitest'
+import {
+    describe,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type Mock,
+} from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import {
     QueryClient,

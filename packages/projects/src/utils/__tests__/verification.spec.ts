@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { resolveDisplayableVerificationTier } from '../verification'
-import { type PeraProject } from '../../models/types'
+import type { PeraProject } from '../../models/types'
 
 const project = (overrides: Partial<PeraProject> = {}): PeraProject => ({
     name: 'Tinyman',

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type Network } from '@perawallet/wallet-core-shared'
-import { type Query } from '@tanstack/react-query'
+import type { Network } from '@perawallet/wallet-core-shared'
+import type { Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'notifications'
 

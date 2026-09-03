@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import {
-    type OnboardingStackParamList,
-    type AddAccountStackParamList,
+import type { NavigatorScreenParams } from '@react-navigation/native'
+import type {
+    OnboardingStackParamList,
+    AddAccountStackParamList,
 } from '@modules/onboarding/routes/types'
-import { type TabBarStackParamList } from '@routes/tabbar'
-import { type SettingsStackParamsList } from '@modules/settings/routes'
-import { type ContactsStackParamsList } from '@modules/contacts/routes'
-import { type AccountStackParamsList } from '@modules/accounts/routes/types'
+import type { TabBarStackParamList } from '@routes/tabbar'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
+import type { ContactsStackParamsList } from '@modules/contacts/routes'
+import type { AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import { type MessagesStackParamList } from '@modules/messages/routes'
-import { type MultisigStackParamList } from '@modules/multisig'
-import {
-    type PeraCardStackParamList,
-    type CardOnboardingStackParamList,
-    type PeraCardFlowParamList,
+import type { MessagesStackParamList } from '@modules/messages/routes'
+import type { MultisigStackParamList } from '@modules/multisig'
+import type {
+    PeraCardStackParamList,
+    CardOnboardingStackParamList,
+    PeraCardFlowParamList,
 } from '@modules/card'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
-import { type SearchStackParamsList } from '@modules/search'
+import type { SearchStackParamsList } from '@modules/search'
 import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
 import type { RekeyToQuantumStackParamList } from '@modules/rekey/routes/rekey-to-quantum'
 import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared'

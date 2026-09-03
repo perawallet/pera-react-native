@@ -12,10 +12,10 @@
 
 import { createContext, useContext, useEffect } from 'react'
 import { useIsFocused } from '@react-navigation/native'
-import { type SharedValue } from 'react-native-reanimated'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { SharedValue } from 'react-native-reanimated'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { type AccountPickerKind } from './useAccountPickers'
+import type { AccountPickerKind } from './useAccountPickers'
 
 export type AccountDrawerContextValue = {
     isOpen: boolean

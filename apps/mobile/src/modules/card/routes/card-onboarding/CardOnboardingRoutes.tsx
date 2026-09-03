@@ -28,7 +28,7 @@ import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVe
 import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
 import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
-import { type CardOnboardingStackParamList } from './types'
+import type { CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
 

@@ -11,8 +11,8 @@
  */
 
 import { createContext, useContext } from 'react'
-import { type PanGesture } from 'react-native-gesture-handler'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { PanGesture } from 'react-native-gesture-handler'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * The pager's *trailing* (leftward) pan. Consumers pass it to their own

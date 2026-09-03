@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import {
-    type SerializedCreateOptions,
-    type SerializedGetOptions,
-    type SerializedCredential,
+import type {
+    SerializedCreateOptions,
+    SerializedGetOptions,
+    SerializedCredential,
 } from '@perawallet/wallet-core-passkeys/webauthn'
 
 // Settled by resolve-passkey (a minted/asserted credential), reject-passkey

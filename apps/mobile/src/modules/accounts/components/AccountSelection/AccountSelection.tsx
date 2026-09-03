@@ -23,13 +23,9 @@ import {
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAccountDrawerControls } from '@modules/accounts/components/AccountDrawer'
 import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
-import {
-    type StyleProp,
-    type TouchableOpacityProps,
-    type ViewStyle,
-} from 'react-native'
+import type { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
 import { AccountDisplay, type AccountDisplayCard } from '../AccountDisplay'
-import { type AccountIconProps } from '../AccountIcon'
+import type { AccountIconProps } from '../AccountIcon'
 import {
     type PWIconProps,
     type PWTextProps,

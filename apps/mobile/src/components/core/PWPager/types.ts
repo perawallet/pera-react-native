@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { type SharedValue } from 'react-native-reanimated'
+import type { ReactNode } from 'react'
+import type { SharedValue } from 'react-native-reanimated'
 
 export type PWPagerProps = {
     /** One element per page. Order defines the index. */

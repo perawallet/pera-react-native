@@ -13,12 +13,12 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback } from 'react'
-import { type RefreshControlProps } from 'react-native'
+import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import {
-    type WalletAccount,
-    type AccountHoldingsLiteRow,
+import type {
+    WalletAccount,
+    AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 
 import { EmptyView } from '@components/EmptyView'

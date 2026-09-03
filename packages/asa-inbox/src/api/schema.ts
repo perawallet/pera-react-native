@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import {
-    type PeraAsset,
-    type PeraAssetVerificationTier,
+import type {
+    PeraAsset,
+    PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'

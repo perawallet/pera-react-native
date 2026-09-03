@@ -11,10 +11,10 @@
  */
 
 import { sql } from 'drizzle-orm'
-import { type QueryClient, type QueryKey } from '@tanstack/react-query'
+import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { Networks } from '@perawallet/wallet-core-config'
-import { type CustomNetworkConfig } from '../store'
+import type { CustomNetworkConfig } from '../store'
 
 /**
  * Keyed on genesis hash, NOT URL: the same chain behind a new host (LAN address

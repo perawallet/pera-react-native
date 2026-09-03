@@ -12,11 +12,7 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import React, { type PropsWithChildren, useState } from 'react'
-import {
-    type StyleProp,
-    type ViewStyle,
-    type GestureResponderEvent,
-} from 'react-native'
+import type { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native'
 import Animated, { withTiming, useAnimatedStyle } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'

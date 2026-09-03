@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ViewProps } from 'react-native'
+import type { ViewProps } from 'react-native'
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useDeeplinkListener } from '@hooks/useDeeplinkListener'

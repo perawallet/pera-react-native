@@ -19,7 +19,7 @@
 // A bad RP ID collapses to a decline: the content script falls through to the
 // page's real `navigator.credentials`, which rejects with its own SecurityError.
 import { resolveRpId } from '@perawallet/wallet-core-passkeys/webauthn'
-import { type PasskeyApprovalOpener } from './passkey-opener'
+import type { PasskeyApprovalOpener } from './passkey-opener'
 import { isSecureDappOrigin } from './secure-origin'
 import {
     isWebauthnRelayMessage,

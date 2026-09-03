@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useAccountBalancesQuery,
     useSelectedAccount,

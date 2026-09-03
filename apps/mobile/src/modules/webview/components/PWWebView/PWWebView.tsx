@@ -19,11 +19,11 @@ import {
     type WebViewProps,
 } from 'react-native-webview'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-    type WebViewErrorEvent,
-    type WebViewHttpErrorEvent,
-    type WebViewNativeEvent,
-    type WebViewNavigationEvent,
+import type {
+    WebViewErrorEvent,
+    WebViewHttpErrorEvent,
+    WebViewNativeEvent,
+    WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {
     baseJS,

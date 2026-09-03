@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type Contact } from '@perawallet/wallet-core-contacts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 
 import {
     PWButton,

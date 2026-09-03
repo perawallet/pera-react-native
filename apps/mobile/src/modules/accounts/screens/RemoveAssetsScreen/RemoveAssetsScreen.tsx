@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { ConfirmAction } from '@components/ConfirmAction'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useRemoveAssetsScreen } from './useRemoveAssetsScreen'

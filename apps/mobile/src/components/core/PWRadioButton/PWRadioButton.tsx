@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { ReactNode } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWText } from '../PWText'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
