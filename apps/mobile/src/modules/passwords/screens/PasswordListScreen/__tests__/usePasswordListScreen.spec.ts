@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { Platform } from 'react-native'
 
 // vi.mock factories run before the rest of this module is evaluated, so
 // each mocked fn can only be shared via vi.hoisted.
@@ -77,6 +78,7 @@ describe('usePasswordListScreen', () => {
             refresh: vi.fn(),
             openAutofillSettings: vi.fn(async () => true),
         })
+        Platform.OS = 'android'
     })
 
     it('exposes the stored logins and the provider state', () => {
@@ -135,7 +137,7 @@ describe('usePasswordListScreen', () => {
         )
     })
 
-    it('exposes the autofill status alongside the provider status', async () => {
+    it('asks for the autofill banner when the service is off on Android', () => {
         mockAutofillServiceStatus.mockReturnValue({
             isLoading: false,
             status: 'inactive',
@@ -145,7 +147,52 @@ describe('usePasswordListScreen', () => {
 
         const { result } = renderHook(() => usePasswordListScreen())
 
-        expect(result.current.autofillStatus).toBe('inactive')
+        expect(result.current.autofillBanner).toBe('inactive')
+    })
+
+    it('hides the autofill banner on iOS, where there is no autofill service to enable', () => {
+        // The native methods are Android-only, so the query rejects and reports
+        // 'unsupported' — which as a banner would tell an iOS user their OS
+        // cannot fill passwords while its credential provider is doing so.
+        Platform.OS = 'ios'
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'unsupported',
+            refresh: vi.fn(),
+            openAutofillSettings: vi.fn(async () => true),
+        })
+
+        const { result } = renderHook(() => usePasswordListScreen())
+
+        expect(result.current.autofillBanner).toBe('hidden')
+    })
+
+    it('hides the autofill banner until the status check resolves', () => {
+        // status defaults to 'inactive' before the query settles, so rendering
+        // on it would flash an enable action at a device that is already on.
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: true,
+            status: 'inactive',
+            refresh: vi.fn(),
+            openAutofillSettings: vi.fn(async () => true),
+        })
+
+        const { result } = renderHook(() => usePasswordListScreen())
+
+        expect(result.current.autofillBanner).toBe('hidden')
+    })
+
+    it('reports an unsupported Android version as a dead end, not an action', () => {
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'unsupported',
+            refresh: vi.fn(),
+            openAutofillSettings: vi.fn(async () => true),
+        })
+
+        const { result } = renderHook(() => usePasswordListScreen())
+
+        expect(result.current.autofillBanner).toBe('unsupported')
     })
 
     it('opens autofill settings through the native fallback', async () => {

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { Platform } from 'react-native'
 import {
     type ParamListBase,
     useFocusEffect,
@@ -20,16 +21,21 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     usePasskeyAutofillStatus,
     useAutofillServiceStatus,
-    type AutofillServiceStatus,
 } from '@perawallet/wallet-core-passkeys'
 import { useLoginsQuery, type Login } from '@perawallet/wallet-core-passwords'
 import { openCredentialProviderSettings } from '@modules/settings/screens/SettingsPasskeysScreen/openCredentialProviderSettings'
+
+/**
+ * Which autofill banner the screen should show, if any. 'unsupported' is a
+ * dead end with no action; 'inactive' is actionable.
+ */
+export type AutofillBannerState = 'hidden' | 'inactive' | 'unsupported'
 
 export type UsePasswordListScreenResult = {
     logins: Login[]
     isLoading: boolean
     isProviderActive: boolean
-    autofillStatus: AutofillServiceStatus
+    autofillBanner: AutofillBannerState
     handleAdd: () => void
     handleSelect: (id: string) => void
     handleEnableProvider: () => void
@@ -46,9 +52,23 @@ export const usePasswordListScreen = (): UsePasswordListScreenResult => {
     } = usePasskeyAutofillStatus()
     const {
         status: autofillStatus,
+        isLoading: isAutofillStatusLoading,
         refresh: refreshAutofillStatus,
         openAutofillSettings,
     } = useAutofillServiceStatus()
+
+    // The autofill service is an Android concept. On iOS the native methods are
+    // absent, the query rejects and reports 'unsupported', which would tell an
+    // iOS user their OS cannot fill passwords while the credential provider is
+    // doing exactly that. Status also defaults to 'inactive' before the first
+    // check resolves, so the banner waits rather than accusing a device that
+    // has autofill switched on.
+    const autofillBanner: AutofillBannerState =
+        Platform.OS !== 'android' ||
+        isAutofillStatusLoading ||
+        autofillStatus === 'active'
+            ? 'hidden'
+            : autofillStatus
 
     // Both statuses are system settings the user changes outside the app, so
     // the query cache is stale the moment they leave. Refetch on focus or the
@@ -83,7 +103,7 @@ export const usePasswordListScreen = (): UsePasswordListScreenResult => {
         logins,
         isLoading,
         isProviderActive,
-        autofillStatus,
+        autofillBanner,
         handleAdd,
         handleSelect,
         handleEnableProvider,

@@ -36,7 +36,7 @@ export const PasswordListScreen = () => {
         logins,
         isLoading,
         isProviderActive,
-        autofillStatus,
+        autofillBanner,
         handleAdd,
         handleSelect,
         handleEnableProvider,
@@ -110,25 +110,29 @@ export const PasswordListScreen = () => {
                     />
                 </PWView>
             )}
-            {autofillStatus !== 'active' && (
+            {autofillBanner !== 'hidden' && (
                 <PWView
                     style={styles.disabledContainer}
                     testID='password_list_autofill_disabled'
                 >
                     <PWText variant='h3'>
-                        {t('settings.passwords.autofill_disabled_title')}
+                        {t(
+                            autofillBanner === 'unsupported'
+                                ? 'settings.passwords.autofill_unsupported_title'
+                                : 'settings.passwords.autofill_disabled_title',
+                        )}
                     </PWText>
                     <PWText
                         variant='caption'
                         style={styles.disabledBody}
                     >
                         {t(
-                            autofillStatus === 'unsupported'
+                            autofillBanner === 'unsupported'
                                 ? 'settings.passwords.autofill_unsupported_body'
                                 : 'settings.passwords.autofill_disabled_body',
                         )}
                     </PWText>
-                    {autofillStatus === 'inactive' && (
+                    {autofillBanner === 'inactive' && (
                         <PWButton
                             variant='primary'
                             title={t(
