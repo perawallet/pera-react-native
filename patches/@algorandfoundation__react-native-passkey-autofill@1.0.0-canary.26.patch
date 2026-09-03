@@ -2340,7 +2340,7 @@ index 0000000000000000000000000000000000000000..5063604fda0171a9a709a1a168931ca6
 +  }
 +}
 diff --git a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
-index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9cd756ec8 100644
+index 311007d2a90e810439f06362c6e7b2354ef05631..a4024e1493d110d888cc62a9dba3bf519bd367f4 100644
 --- a/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 +++ b/ios/AutofillCredentialProvider/PasskeyCredentialStore.swift
 @@ -49,69 +49,11 @@ struct StoredPasskeyCredential: Codable {
@@ -2414,7 +2414,7 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
    /// Points at the record whose material is the passkey parent secret. Its
    /// predecessor `defaultHdRootKeyIdKey` named the wallet's BIP32-Ed25519 root;
    /// the slot was renamed rather than reused so a wallet that still writes the
-@@ -122,13 +64,11 @@ final class PasskeyCredentialStore {
+@@ -122,13 +64,14 @@ final class PasskeyCredentialStore {
    static let defaultCreatePasskeyActionKey = "ReactNativePasskeyAutofillCreatePasskeyAction"
    static let defaultDiagnosticsKey = "ReactNativePasskeyAutofillDiagnostics"
    static let defaultDeletedCredentialIdsKey = "ReactNativePasskeyAutofillDeletedCredentialIds"
@@ -2422,6 +2422,9 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
 -  /// prefix) shared by the app and the AutoFill extension. Injected by the
 -  /// config plugin so the module stays team-agnostic.
 -  static let keychainGroupInfoKey = "ReactNativePasskeyAutofillKeychainGroup"
++  /// The passkey rows this app last published to the OS index. The index cannot
++  /// be read back, so this is the only way to name a row whose credential is gone.
++  static let defaultPublishedPasskeyIdentitiesKey = "ReactNativePasskeyAutofillPublishedPasskeyIdentities"
 +  static let keychainGroupInfoKey = KeystoreSecretReader.keychainGroupInfoKey
  
    private let defaults: UserDefaults
@@ -2430,7 +2433,7 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
  
    init?(
      suiteName: String? = Bundle.main.object(
-@@ -141,6 +81,7 @@ final class PasskeyCredentialStore {
+@@ -141,6 +84,7 @@ final class PasskeyCredentialStore {
      }
      self.defaults = defaults
      self.credentialKey = credentialKey
@@ -2438,7 +2441,13 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
    }
  
    func allCredentials() -> [StoredPasskeyCredential] {
-@@ -346,126 +287,26 @@ final class PasskeyCredentialStore {
+@@ -341,131 +285,32 @@ final class PasskeyCredentialStore {
+     defaults.removeObject(forKey: credentialKey)
+     defaults.removeObject(forKey: Self.legacyCredentialKey)
+     defaults.removeObject(forKey: Self.defaultDeletedCredentialIdsKey)
++    defaults.removeObject(forKey: Self.defaultPublishedPasskeyIdentitiesKey)
+     defaults.removeObject(forKey: Self.defaultMasterKeyKey)
+     defaults.removeObject(forKey: Self.defaultMainKeyIdKey)
      defaults.removeObject(forKey: Self.defaultHdRootKeyIdKey)
      defaults.removeObject(forKey: Self.defaultGetPasskeyActionKey)
      defaults.removeObject(forKey: Self.defaultCreatePasskeyActionKey)
@@ -2570,7 +2579,7 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
    /// Records which key store record the passkey hierarchy derives from — the
    /// wallet's deterministic-P256 main key. The scheme is deliberately not part of
    /// this call: it is read from the record's own metadata, so a wallet cannot
-@@ -554,49 +395,12 @@ final class PasskeyCredentialStore {
+@@ -554,49 +399,12 @@ final class PasskeyCredentialStore {
      return candidates
    }
  
@@ -2622,30 +2631,58 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
    }
  
    /// The raw parent secret for a new credential. Prefer ``parentSecret(scheme:)``,
-@@ -625,12 +429,11 @@ final class PasskeyCredentialStore {
+@@ -625,23 +433,191 @@ final class PasskeyCredentialStore {
      isCredentialDeleted(id: id.base64EncodedString()) || isCredentialDeleted(id: id.base64URLEncodedString())
    }
  
 -  func replaceIdentityStore() async throws {
--    guard #available(iOS 17.0, *) else {
--      return
--    }
--
--    let identities = allCredentials().map { credential in
++  /// A passkey row this app has published, remembered so the row can still be
++  /// named once its keystore record is gone. Holds only what the identity needs
++  /// — never key material.
++  private struct PublishedPasskeyIdentity: Codable {
++    let credentialId: String
++    let relyingPartyIdentifier: String
++    let userName: String
++    let userHandle: String
++  }
++
 +  /// The OS index rows this store's passkeys occupy. Built exactly as they
 +  /// always were; nothing here reads a password record.
 +  @available(iOS 17.0, *)
 +  private func passkeyIdentities() -> [ASCredentialIdentity] {
-+    allCredentials().map { credential in
-       ASPasskeyCredentialIdentity(
-         relyingPartyIdentifier: credential.relyingPartyIdentifier,
-         userName: credential.userName,
-@@ -639,9 +442,85 @@ final class PasskeyCredentialStore {
-         recordIdentifier: credential.credentialId
-       )
-     }
++    passkeyIdentities(for: allCredentials())
 +  }
- 
++
++  @available(iOS 17.0, *)
++  private func passkeyIdentities(for credentials: [StoredPasskeyCredential]) -> [ASCredentialIdentity] {
++    credentials.map { credential in
++      Self.passkeyIdentity(
++        relyingPartyIdentifier: credential.relyingPartyIdentifier,
++        userName: credential.userName,
++        credentialId: credential.credentialId,
++        userHandle: credential.userHandle
++      )
++    }
++  }
++
++  /// The one place a passkey row is built, so a row rebuilt from the remembered
++  /// set is byte-for-byte the row that was published.
++  @available(iOS 17.0, *)
++  private static func passkeyIdentity(
++    relyingPartyIdentifier: String,
++    userName: String,
++    credentialId: String,
++    userHandle: String
++  ) -> ASPasskeyCredentialIdentity {
++    ASPasskeyCredentialIdentity(
++      relyingPartyIdentifier: relyingPartyIdentifier,
++      userName: userName,
++      credentialID: Data(base64URLEncoded: credentialId) ?? Data(),
++      userHandle: Data(base64URLEncoded: userHandle) ?? Data(userHandle.utf8),
++      recordIdentifier: credentialId
++    )
++  }
++
 +  /// Replaces the WHOLE OS credential index with this store's passkeys plus the
 +  /// given password rows.
 +  ///
@@ -2659,24 +2696,90 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
 +    guard #available(iOS 17.0, *) else {
 +      return
 +    }
++    let credentials = allCredentials()
 +    try await publish { completion in
 +      ASCredentialIdentityStore.shared.replaceCredentialIdentities(
-+        passkeyIdentities() + passwordIdentities,
++        passkeyIdentities(for: credentials) + passwordIdentities,
 +        completion: completion
 +      )
 +    }
++    rememberPublishedPasskeys(credentials)
 +  }
 +
-+  /// Upserts this store's passkey rows and touches nothing else, so the password
-+  /// rows the wallet published survive a passkey-only refresh — and no password
-+  /// is unsealed to keep them.
++  /// Brings the index's passkey rows in line with this store — pruning the rows
++  /// of passkeys that are gone, then upserting the ones that remain — and
++  /// touches no password row, so the wallet's passwords survive a passkey-only
++  /// refresh and none is unsealed to keep them.
++  ///
++  /// The prune is what makes the launch-time refresh self-healing. A record can
++  /// vanish without going through ``removeCredentialAndIdentity(id:)`` — a
++  /// keystore reset, a migration, a PIN reset — and its row would then sit in
++  /// the index forever, offering a passkey this provider can no longer resolve.
++  /// The orphan cannot be discovered by asking the OS (the index is write-only)
++  /// and cannot be cleared by a whole-index replace (that would delete the
++  /// password rows), so the rows this app published are remembered and diffed
++  /// against the store.
 +  func saveIdentityStore() async throws {
-+    guard #available(iOS 17.0, *) else {
+     guard #available(iOS 17.0, *) else {
+       return
+     }
+ 
+-    let identities = allCredentials().map { credential in
+-      ASPasskeyCredentialIdentity(
++    let credentials = allCredentials()
++    let live = Set(credentials.flatMap { credentialIdCandidates($0.credentialId) })
++    let orphans = publishedPasskeys()
++      .filter { !live.contains($0.credentialId) }
++      .map {
++        Self.passkeyIdentity(
++          relyingPartyIdentifier: $0.relyingPartyIdentifier,
++          userName: $0.userName,
++          credentialId: $0.credentialId,
++          userHandle: $0.userHandle
++        )
++      }
++
++    if !orphans.isEmpty {
++      appendDiagnostic("pruning orphan passkey identities: \(orphans.count)")
++      try await publish { completion in
++        ASCredentialIdentityStore.shared.removeCredentialIdentities(orphans, completion: completion)
++      }
++    }
++
++    try await publish { completion in
++      ASCredentialIdentityStore.shared.saveCredentialIdentities(
++        passkeyIdentities(for: credentials),
++        completion: completion
++      )
++    }
++    rememberPublishedPasskeys(credentials)
++  }
++
++  private func publishedPasskeys() -> [PublishedPasskeyIdentity] {
++    guard let data = defaults.data(forKey: Self.defaultPublishedPasskeyIdentitiesKey),
++          let rows = try? JSONDecoder().decode([PublishedPasskeyIdentity].self, from: data)
++    else {
++      return []
++    }
++    return rows
++  }
++
++  private func rememberPublishedPasskeys(_ credentials: [StoredPasskeyCredential]) {
++    let rows = credentials.map { credential in
++      PublishedPasskeyIdentity(
++        credentialId: credential.credentialId,
+         relyingPartyIdentifier: credential.relyingPartyIdentifier,
+         userName: credential.userName,
+-        credentialID: Data(base64URLEncoded: credential.credentialId) ?? Data(),
+-        userHandle: Data(base64URLEncoded: credential.userHandle) ?? Data(credential.userHandle.utf8),
+-        recordIdentifier: credential.credentialId
++        userHandle: credential.userHandle
+       )
+     }
++    guard let data = try? JSONEncoder().encode(rows) else {
 +      return
 +    }
-+    try await publish { completion in
-+      ASCredentialIdentityStore.shared.saveCredentialIdentities(passkeyIdentities(), completion: completion)
-+    }
++    defaults.set(data, forKey: Self.defaultPublishedPasskeyIdentitiesKey)
 +  }
 +
 +  /// Deletes a credential and drops just its row from the index. The row is
@@ -2715,7 +2818,7 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
 +    }
 +    try await saveIdentityStore()
 +  }
-+
+ 
 +  /// Bridges one `ASCredentialIdentityStore` call to `async`. The store reports
 +  /// `false` with no error when it simply refused the write.
 +  private func publish(
@@ -2727,7 +2830,7 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..2d1172fbd7cb55ba3c25bbbe9cb771f9
          if let error {
            continuation.resume(throwing: error)
          } else if success {
-@@ -701,112 +580,19 @@ final class PasskeyCredentialStore {
+@@ -701,112 +677,19 @@ final class PasskeyCredentialStore {
    }
  
    private func encodeKeyData(_ keyData: [String: Any]) throws -> String {
@@ -3068,16 +3171,16 @@ index 0000000000000000000000000000000000000000..e548c16165e671ab8f024e9ea61371ff
 +  }
 +}
 diff --git a/ios/ReactNativePasskeyAutofill.podspec b/ios/ReactNativePasskeyAutofill.podspec
-index a37b6d9ce27def24fde9980e2e2e260c432192a0..34a09e1701428536a217b57d97f1ba0681ef02bf 100644
+index a37b6d9ce27def24fde9980e2e2e260c432192a0..e431b0889cbd4e9256a2b44a8240945c6b57537e 100644
 --- a/ios/ReactNativePasskeyAutofill.podspec
 +++ b/ios/ReactNativePasskeyAutofill.podspec
 @@ -29,6 +29,11 @@ Pod::Spec.new do |s|
      "*.{h,m,mm,swift,hpp,cpp}",
      "AutofillCredentialProvider/PasskeyAutofillCredentialProvider-Bridging-Header.h",
      "AutofillCredentialProvider/PasskeyCredentialStore.swift",
-+    # PasskeyCredentialStore's master-key and record decoding live in the reader,
-+    # and it publishes password rows alongside its own, so the app-side pod target
-+    # needs both files as much as the extension target does.
++    # The app-side pod target needs both: PasskeyCredentialStore's master-key and
++    # record decoding live in the reader, and the module reduces the domains it
++    # publishes with PasswordCredentialStore's `host(of:)`.
 +    "AutofillCredentialProvider/KeystoreSecretReader.swift",
 +    "AutofillCredentialProvider/PasswordCredentialStore.swift",
      "AutofillCredentialProvider/PasskeyKeystoreMMKV.h",
