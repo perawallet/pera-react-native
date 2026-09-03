@@ -37,6 +37,9 @@ type CardAddFundsSwapOutcome =
     // title is only set for a resolved submission-phase failure; other
     // phases fall back to the caller's default title.
     | { kind: 'error'; message: string; title?: string }
+    // An earlier attempt for this swap is still being verified — nothing was
+    // re-signed or broadcast, and the user needs to be told why.
+    | { kind: 'verifying' }
 
 type UseCardAddFundsSwapParams = {
     account: Nullable<WalletAccount>
@@ -113,6 +116,9 @@ export const useCardAddFundsSwap = ({
                 // just means this attempt raced the TTL — treat as cancelled
                 // so the user re-taps with the already-refreshed rate.
                 return { kind: 'cancelled' }
+            }
+            if (outcome.kind === 'verifying-previous') {
+                return { kind: 'verifying' }
             }
             return {
                 kind: 'error',

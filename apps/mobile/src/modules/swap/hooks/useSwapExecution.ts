@@ -30,6 +30,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
+    getOpenSubmissionAttempts,
+    STALE_OPEN_ATTEMPT_MS,
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -79,6 +81,9 @@ export type SwapExecutionStatus =
     // Shared-account swap: proposed to the backend, waiting for the co-signer.
     // The cosign resolver finishes submission asynchronously.
     | 'pending-cosign'
+    // A rebuild was refused while an earlier attempt for the same swap is
+    // still being verified.
+    | 'verifying'
     | 'error'
 
 export type SwapExecutionErrorPhase =
@@ -103,6 +108,9 @@ export type SwapExecutionOutcome =
     // The quote outlived its client TTL (e.g. the app sat offline between
     // quote and confirm) — never executed; the caller re-quotes.
     | { kind: 'stale-quote' }
+    // An earlier attempt for this swap is still open — nothing was signed or
+    // broadcast; the user should retry once it resolves.
+    | { kind: 'verifying-previous' }
     | {
           kind: 'error'
           phase: SwapExecutionErrorPhase
@@ -309,6 +317,47 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 return { kind: 'cancelled' }
             }
 
+            // A rebuild after a possibly-false failure would produce a new
+            // txid algod can't dedupe — refuse while an earlier attempt is
+            // still open. The sender must match the one the ledger row was
+            // recorded with, so when no sender is known the guard is skipped
+            // rather than matched against a blank.
+            //
+            // Deliberately sender-wide rather than keyed on the swapId: a
+            // refused retry goes stale within SWAP_QUOTE_TTL_MS, the form
+            // re-quotes, and the backend hands back a NEW swap_id — an
+            // intent lookup would miss the very row it was meant to catch.
+            // Both flows, because a shared-account swap records its row
+            // under 'cosign' and a swap-only filter would miss a re-proposed
+            // multisig retry.
+            const swapSender =
+                account?.address ?? quote.swapperAddress ?? undefined
+            if (swapSender) {
+                const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
+                let blocked: boolean
+                try {
+                    const openAttempts = await getOpenSubmissionAttempts({
+                        network,
+                        sender: swapSender,
+                        flows: ['swap', 'cosign'],
+                        unevaluatableBefore,
+                    })
+                    blocked = openAttempts.length > 0
+                } catch (error) {
+                    // Fail closed. This block sits outside any try, and the
+                    // confirmation sheet has no catch — an escaping SQLite
+                    // error would hang it on the spinner forever.
+                    logger.warn('swap: rebuild guard lookup failed, refusing', {
+                        error,
+                    })
+                    blocked = true
+                }
+                if (blocked) {
+                    setStatus('verifying')
+                    return { kind: 'verifying-previous' }
+                }
+            }
+
             const groups = prepareResult.transactionGroups ?? []
             if (groups.length === 0) {
                 const message = 'No transaction groups returned'
@@ -496,6 +545,19 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         algorandClient,
                         encodeSignedTransactions,
                         signedGroup,
+                        {
+                            flow: 'swap',
+                            // No swapId means no stable identity — a blank key
+                            // would collide unrelated swaps, and the rebuild
+                            // guard skips them anyway.
+                            intentKey: prepareResult.swapIdStr
+                                ? {
+                                      kind: 'swap',
+                                      swapId: prepareResult.swapIdStr,
+                                  }
+                                : undefined,
+                            sender: account?.address ?? quote.swapperAddress,
+                        },
                     )
                     collectedTxIds.push(...ids)
                 }

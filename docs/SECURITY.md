@@ -69,7 +69,7 @@ pnpm audit --prod --audit-level=high  # What CI runs to block PRs
 
 ### CI-enforced
 
-See `.github/workflows/pre-merge.yml`.
+See `.github/workflows/ci-pre-merge.yml`.
 
 - `pnpm audit`: moderate+ advisories in prod deps block merge.
 - Lockfile drift: `pnpm-lock.yaml` must be in sync with every `package.json`.
@@ -82,11 +82,11 @@ See `.github/workflows/pre-merge.yml`.
 
 ### Scheduled
 
-- [CodeQL](../.github/workflows/codeql.yml) runs JS/TS static analysis weekly and on PR; findings go
+- [CodeQL](../.github/workflows/security-codeql.yml) runs JS/TS static analysis weekly and on PR; findings go
   to the Security tab.
-- [OpenSSF Scorecard](../.github/workflows/scorecard.yml) publishes a weekly posture score to the
+- [OpenSSF Scorecard](../.github/workflows/security-scorecard.yml) publishes a weekly posture score to the
   public Scorecard API.
-- [SBOM](../.github/workflows/sbom.yml) generates a CycloneDX SBOM on every push to `main` and
+- [SBOM](../.github/workflows/security-sbom.yml) generates a CycloneDX SBOM on every push to `main` and
   weekly, retained 90 days.
 - [Dependabot](../.github/dependabot.yml) opens weekly grouped updates for npm and github-actions.
   Framework-tier majors (React, React Native, Expo, TypeScript, ESLint) are ignored and bumped by

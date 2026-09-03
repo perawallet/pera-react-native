@@ -1865,6 +1865,9 @@
             },
             "submission_failed": {
                 "title": "Couldn't submit the rekey"
+            },
+            "submission_pending": {
+                "title": "Verifying previous attempt"
             }
         },
         "confirm": {
@@ -2635,6 +2638,7 @@
             "completed": "Completed",
             "failed": "Failed",
             "pending": "Pending",
+            "pending_verifying": "Pending — verifying",
             "raw_transaction": "Raw Transaction"
         },
         "list_item": {
@@ -2955,7 +2959,9 @@
             "pending_cosign_title": "Swap request sent",
             "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox.",
             "quantum_fee_unsupported": "Quantum accounts can't swap yet. The swap fee is set by our servers and doesn't cover the higher fee a quantum signature needs.",
-            "quantum_multisig_unsupported": "Quantum accounts can't swap from a shared account. Quantum keys can't take part in multisignature signing."
+            "quantum_multisig_unsupported": "Quantum accounts can't swap from a shared account. Quantum keys can't take part in multisignature signing.",
+            "verifying_previous_title": "Verifying previous attempt",
+            "verifying_previous_body": "Your previous swap attempt is still being verified. Try again once it resolves."
         },
         "signing": {
             "source_name": "Swap",

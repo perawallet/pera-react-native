@@ -64,7 +64,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { network } = useNetwork()
     const { t } = useLanguage()
-    const { successToast, errorToast } = useToast()
+    const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
 
     // Same account the Add Funds screen anchors to (the active account until the
@@ -196,6 +196,13 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                     t('swap.execution.pending_cosign_body'),
                 )
                 navigation.goBack()
+            } else if (outcome.kind === 'verifying') {
+                // Nothing was signed or broadcast — say so rather than leaving
+                // the Confirm tap looking like a no-op.
+                infoToast(
+                    t('swap.execution.verifying_previous_title'),
+                    t('swap.execution.verifying_previous_body'),
+                )
             } else if (outcome.kind === 'error') {
                 errorToast(
                     outcome.title ?? t('peraCard.add_funds.swap_error_title'),
@@ -207,6 +214,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         executeSwap,
         successToast,
         errorToast,
+        infoToast,
         t,
         invalidateBalances,
         navigation,

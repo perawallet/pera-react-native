@@ -10,12 +10,29 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
+    deriveSubmissionAttemptFromBytes,
+    SubmissionError,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
+
+export type CosignSubmissionAttemptParams = {
+    network: string
+    txIds: string[]
+    flow: 'cosign'
+    intentKey: { kind: 'cosign'; signRequestId: string; swapId?: string }
+    /**
+     * The multisig account the group spends from. Without it no sender-scoped
+     * guard can match a cosign row, which is what let a re-proposed
+     * shared-account swap past the rebuild guard entirely.
+     */
+    sender?: string
+    lastValid?: number
+}
 
 /**
  * Side-effecting collaborators the swap-handoff resolution needs. Injected so
@@ -25,6 +42,17 @@ import type { SwapHandoffRecord } from '../models'
 export type SwapHandoffResolutionDeps = {
     /** Submit one atomic group's ordered raw signed bytes to algod → txIds. */
     submitGroup: (rawSignedTransactions: Uint8Array[]) => Promise<string[]>
+    /**
+     * Durable pre-POST ledger row for one cosign group. Returns the row id so
+     * the group's outcome (unknown / failed) can be marked against it.
+     */
+    recordSubmissionAttempt: (
+        params: CosignSubmissionAttemptParams,
+    ) => Promise<string>
+    /** Mark the group's ledger row open (no node verdict) for reconciliation. */
+    markSubmissionUnknown: (id: string) => Promise<void>
+    /** Mark the group's ledger row definitively failed. */
+    markSubmissionFailed: (id: string) => Promise<void>
     /** base64 → raw bytes (for the persisted pre-signed slot transactions). */
     decodeBase64: (base64: string) => Uint8Array
     /**
@@ -86,15 +114,46 @@ const buildGroupBytes = (
     })
 
 /**
+ * Marks a group's ledger row open on an unknown-outcome throw and failed on
+ * any definitive throw. Best-effort — the reconciler settles open rows
+ * regardless of status, so a marker write must not mask the submit error.
+ */
+const markAttemptOutcome = async (
+    attemptId: string | null,
+    error: unknown,
+    deps: SwapHandoffResolutionDeps,
+): Promise<void> => {
+    if (attemptId === null) return
+    try {
+        if (
+            error instanceof SubmissionError &&
+            error.classification === 'unknown-outcome'
+        ) {
+            await deps.markSubmissionUnknown(attemptId)
+        } else {
+            await deps.markSubmissionFailed(attemptId)
+        }
+    } catch (markError) {
+        logger.warn('resolveSwapHandoffOutcome: attempt marker write failed', {
+            error:
+                markError instanceof Error
+                    ? markError.message
+                    : String(markError),
+        })
+    }
+}
+
+/**
  * Completes a shared-account swap once the co-signer's signatures have been
  * collected (or fails it cleanly on decline / expiry / error).
  *
  * A swap adapter over the shared {@link completeMultisigHandoff}: that owns the
  * completion sequence and its error-handling discipline (submit → record →
- * mark-confirmed, decline-on-failure, single cleanup, best-effort side effects);
- * this supplies only the swap-specific bits — interleaving the persisted
- * pre-signed slots with the assembled composite-multisig bytes and submitting
- * each group to algod, and mapping outcomes to the swap's backend status
+ * mark-confirmed, decline-on-failure, cleanup, best-effort side effects); this
+ * supplies only the swap-specific bits — interleaving the persisted pre-signed
+ * slots with the assembled composite-multisig bytes, writing a submission-ledger
+ * row per group before each algod POST (so the reconciler can settle an
+ * unknown-outcome group), and mapping outcomes to the swap's backend status
  * (`in_progress` with txIds / `cancelled` / `failed`).
  */
 export const resolveSwapHandoffOutcome = async ({
@@ -128,8 +187,43 @@ export const resolveSwapHandoffOutcome = async ({
                         deps.decodeBase64,
                     )
                     if (groupBytes.length === 0) continue
-                    const ids = await deps.submitGroup(groupBytes)
-                    txIds.push(...ids)
+                    const derived = deriveSubmissionAttemptFromBytes(groupBytes)
+                    let attemptId: string | null = null
+                    if (derived.txIds.length > 0) {
+                        attemptId = await deps.recordSubmissionAttempt({
+                            network,
+                            txIds: derived.txIds,
+                            flow: 'cosign',
+                            intentKey: {
+                                kind: 'cosign',
+                                signRequestId,
+                                swapId: swapIdStr,
+                            },
+                            sender: record.multisigAddress,
+                            lastValid: derived.lastValid,
+                        })
+                    }
+                    try {
+                        const ids = await deps.submitGroup(groupBytes)
+                        txIds.push(...ids)
+                    } catch (error) {
+                        await markAttemptOutcome(attemptId, error, deps)
+                        // An unknown-outcome failure on a later group must
+                        // carry the earlier groups' txids too — the retained
+                        // handoff records the union so reconciliation matches
+                        // every group that may have landed.
+                        if (
+                            error instanceof SubmissionError &&
+                            error.classification === 'unknown-outcome'
+                        ) {
+                            throw new SubmissionError(
+                                [...new Set([...txIds, ...error.txIds])],
+                                error.classification,
+                                error.algodError,
+                            )
+                        }
+                        throw error
+                    }
                 }
                 return txIds
             },

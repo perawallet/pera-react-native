@@ -18,9 +18,62 @@ set -euo pipefail
 #   NO_PUSH  when "1": create the tag locally but do not push (used by tests).
 #
 # The caller publishes the GitHub Release itself rather than leaving it to
-# github-release.yml: a tag pushed with GITHUB_TOKEN does not trigger further
+# release-publish.yml: a tag pushed with GITHUB_TOKEN does not trigger further
 # workflows, so that workflow's `push: tags` trigger never sees this one.
 # create-nightly-tag.sh carries the same caveat.
+
+# Deletes one stable version's alpha/rc tags, locally and on origin. The glob
+# pins the version; the anchored shape check then drops hand-cut lookalikes
+# like v7.2.0-rc.1-qa, which the promotion path also refuses to touch.
+retire_prereleases() {
+  local stable="$1"
+  local doomed keep tag main_ref=""
+
+  doomed=$(git tag --list "${stable}-alpha.*" "${stable}-rc.*" |
+    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|rc)\.[0-9]+$' | sort -V || true)
+
+  # A prerelease cut off main is the only ref holding its commit alive.
+  if git rev-parse -q --verify refs/remotes/origin/main >/dev/null 2>&1; then
+    main_ref=refs/remotes/origin/main
+  fi
+
+  keep=""
+  while IFS= read -r tag; do
+    [ -n "$tag" ] || continue
+    if [ -n "$main_ref" ] && ! git merge-base --is-ancestor "$tag" "$main_ref"; then
+      echo "Keeping ${tag} — not reachable from origin/main."
+      continue
+    fi
+    keep="${keep}${tag}
+"
+  done <<EOF
+${doomed}
+EOF
+  doomed=$(printf '%s' "$keep")
+
+  if [ -z "$doomed" ]; then
+    echo "No ${stable} prerelease tags to retire."
+    return 0
+  fi
+
+  echo "Retiring $(printf '%s\n' "$doomed" | grep -c .) prerelease tag(s) for ${stable}:"
+  printf '%s\n' "$doomed" | sed 's/^/  /'
+
+  if [ "${NO_PUSH:-}" = "1" ]; then
+    echo "NO_PUSH=1 — not deleting them on origin."
+    return 0
+  fi
+
+  # Never fatal. The stable tag is pushed by now and the release still has to
+  # be published; a leftover prerelease tag is cosmetic, a failed release job
+  # is not.
+  if ! printf '%s\n' "$doomed" | xargs git push origin --delete; then
+    echo "WARNING: could not delete some ${stable} prerelease tags on origin — remove them by hand." >&2
+    return 0
+  fi
+
+  printf '%s\n' "$doomed" | xargs -n 1 git tag -d >/dev/null 2>&1 || true
+}
 
 RC_TAG="${RC_TAG:-}"
 if [ -z "$RC_TAG" ]; then
@@ -98,6 +151,16 @@ git tag -a "$STABLE" -m "$STABLE" "$RC_SHA"
 if [ "${NO_PUSH:-}" != "1" ]; then
   git push origin "$STABLE"
 fi
+
+# --- Retire this version's prereleases ------------------------------------
+# They only ever fed Bitrise during the cycle and they pile up — 7.1.2 reached
+# thirteen. Nothing else points at them: prereleases never carry a GitHub
+# Release (github-release.yml is stable-only) and the next prerelease base
+# comes from the newest stable tag, not their counter. Accepted cost: the first
+# nightly after a release cuts one redundant tag, because create-nightly-tag.sh
+# gates on the last tag of the channel and that tag is now gone.
+# Runs after the stable push: if that failed, we have not shipped.
+retire_prereleases "$STABLE"
 
 # Hand the tag to the calling workflow so it can publish the GitHub Release.
 if [ -n "${GITHUB_OUTPUT:-}" ]; then

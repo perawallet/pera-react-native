@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -26,13 +26,18 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import {
     classifyHandoffPoll,
+    markSubmissionUnknown,
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+    setSubmissionSettledHandler,
     submitRawSignedTransactionGroup,
     useHandoffResolver,
     type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
-import { resolveSwapHandoffOutcome } from '../utils'
-import { useSwapHandoffStore } from '../store'
+import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
+import { useSwapHandoffStore } from '../store'
+import { resolveSwapHandoffOutcome } from '../utils'
 import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
 
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
@@ -48,6 +53,100 @@ const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
 
 const handoffRegisteredAt = (handoff: SwapHandoffRecord): number =>
     handoff.registeredAt
+
+export type SettleCosignAttemptDeps = {
+    markConfirmed: (input: {
+        network: SwapHandoffRecord['network']
+        deviceId: string
+        signRequestIds: string[]
+    }) => Promise<void>
+    updateSwapStatus: (input: {
+        swapId: string
+        data: SwapStatusUpdateRequest
+    }) => Promise<unknown>
+    removeHandoff: (signRequestId: string) => void
+}
+
+/**
+ * Replays the post-submit tail for retained cosign handoffs once the
+ * reconciler settles a submission attempt. Matching is by the handoff's
+ * recorded tx ids intersecting the settled group — the handoff is retained
+ * after an unknown-outcome submit precisely so this path can finish it.
+ */
+export const settleCosignAttempt = async (
+    handoffs: Record<string, SwapHandoffRecord>,
+    txIds: string[],
+    network: string,
+    status: 'confirmed' | 'failed',
+    deps: SettleCosignAttemptDeps,
+): Promise<void> => {
+    const settled = new Set(txIds)
+    const matching = Object.values(handoffs).filter(
+        handoff =>
+            handoff.network === network &&
+            (handoff.submission?.txIds.some(id => settled.has(id)) ?? false),
+    )
+
+    for (const record of matching) {
+        if (status === 'confirmed') {
+            await runBestEffort(
+                () =>
+                    deps.markConfirmed({
+                        network: record.network,
+                        deviceId: record.deviceId,
+                        signRequestIds: [record.signRequestId],
+                    }),
+                'mark-confirmed',
+            )
+            await runBestEffort(
+                () =>
+                    deps.updateSwapStatus({
+                        swapId: record.swapIdStr,
+                        data: {
+                            status: 'in_progress',
+                            submitted_transaction_ids: txIds,
+                            swap_version: 'v2',
+                        },
+                    }),
+                'status update',
+            )
+        } else {
+            // The poll detail isn't available at settle time, so the proposer
+            // address needed to decline can't be derived — skip the decline
+            // rather than cancelling with an incomplete payload.
+            logger.warn(
+                'swap cosign settle: skipping decline (no proposer address at settle time)',
+                { signRequestId: record.signRequestId },
+            )
+            await runBestEffort(
+                () =>
+                    deps.updateSwapStatus({
+                        swapId: record.swapIdStr,
+                        data: {
+                            status: 'failed',
+                            reason: 'blockchain_error',
+                            swap_version: 'v2',
+                        },
+                    }),
+                'status update',
+            )
+        }
+        deps.removeHandoff(record.signRequestId)
+    }
+}
+
+const runBestEffort = async (
+    run: () => Promise<unknown>,
+    label: string,
+): Promise<void> => {
+    try {
+        await run()
+    } catch (error) {
+        logger.warn(`swap cosign settle: ${label} failed (non-fatal)`, {
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}
 
 export type UseSwapCosignResolverArgs = {
     /** Polling pauses when false (e.g. app backgrounded — iOS suspends timers). */
@@ -174,6 +273,11 @@ export const useSwapCosignResolver = ({
                             },
                         ])
                     },
+                    recordSubmissionAttempt: params =>
+                        recordSubmissionAttempt(params),
+                    markSubmissionUnknown: id => markSubmissionUnknown({ id }),
+                    markSubmissionFailed: id =>
+                        resolveSubmissionAttempt({ id, status: 'failed' }),
                 },
             })
         },
@@ -187,6 +291,19 @@ export const useSwapCosignResolver = ({
             reportError,
         ],
     )
+
+    useEffect(() => {
+        setSubmissionSettledHandler('cosign', (txIds, network, status) =>
+            settleCosignAttempt(
+                useSwapHandoffStore.getState().handoffs,
+                txIds,
+                network,
+                status,
+                { markConfirmed, updateSwapStatus, removeHandoff },
+            ),
+        )
+        return () => setSubmissionSettledHandler('cosign', null)
+    }, [markConfirmed, updateSwapStatus, removeHandoff])
 
     useHandoffResolver<
         SwapHandoffRecord,

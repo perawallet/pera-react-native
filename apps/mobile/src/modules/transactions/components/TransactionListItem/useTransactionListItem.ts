@@ -13,7 +13,14 @@
 import { useCallback, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import {
+    baseUnitsToDisplayUnits,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    useOpenSubmissionTxIdsQuery,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
@@ -22,7 +29,6 @@ import { getTransactionIconType } from './utils'
 import { type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
@@ -39,6 +45,11 @@ export type UseTransactionListItemResult = {
     amounts: AmountDisplay[]
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
+    /**
+     * The transaction's id has an open submission-ledger row —
+     * broadcast but not yet definitively resolved.
+     */
+    isPendingVerifying: boolean
     handlePress: () => void
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
@@ -120,7 +131,10 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
+    const { network } = useNetwork()
+    const { openTxIds } = useOpenSubmissionTxIdsQuery({ network })
     const userAddress = account?.address ?? ''
+    const isPendingVerifying = openTxIds.has(transaction.id)
 
     const isOutgoing = useMemo(
         () => transaction.sender === userAddress,
@@ -201,6 +215,7 @@ export const useTransactionListItem = ({
         subtitle,
         amounts,
         amountsOverflowCount,
+        isPendingVerifying,
         handlePress,
         handleLongPress,
     }

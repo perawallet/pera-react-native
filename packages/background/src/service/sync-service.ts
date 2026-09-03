@@ -42,6 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
 import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
 
@@ -297,9 +298,26 @@ export class SyncService {
             return
         }
 
+        // Claimed before the first await below: the reconcile pass issues
+        // network probes, and a reconnect landing mid-pass would otherwise
+        // pass handleReconnect's guard and start a second overlapping tick.
         this.syncInProgress = true
 
         try {
+            // Settle open submission-attempt rows before the sync
+            // phases. Piggybacks the tick's online gate and cadence — the pass
+            // is bounded, a no-op when nothing is open, and never throws.
+            const reconcileSummary = await reconcileOpenSubmissions()
+            if (reconcileSummary.confirmed + reconcileSummary.failed > 0) {
+                // A settled row changes the "pending — verifying" badge set and
+                // must drop the pending history entry (history queries are
+                // DB-cached with staleTime: Infinity, so a settle on a no-work
+                // tick would otherwise leave a resolved row showing).
+                // Covers the badge set too — its key sits under the same
+                // module prefix.
+                invalidateTransactionQueries(this.deps.queryClient)
+            }
+
             const activeNetwork = useNetworkStore.getState().network
             let networksToSync: Network[]
             let shouldRefreshRound: Nullable<number> = null

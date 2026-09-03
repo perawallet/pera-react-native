@@ -18,6 +18,7 @@ import m0002 from './0002_add_close_amount.sql?raw'
 import m0003 from './0003_add_is_frozen.sql?raw'
 import m0004 from './0004_add_asset_price_misses.sql?raw'
 import m0005 from './0005_add_assets_pera_first_seen_at.sql?raw'
+import m0006 from './0006_add_submission_attempts.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -34,6 +35,9 @@ const migrations: MigrationConfig = {
     // Nullable on purpose: rows cached before this column stay NULL, which
     // reads as "not newly seen" and keeps them on the long asset TTL.
     '0005_add_assets_pera_first_seen_at': m0005,
+    // Submission ledger: one row per broadcast attempt, written
+    // before the POST and resolved by confirmation / rejection / reconciler.
+    '0006_add_submission_attempts': m0006,
 }
 
 export default migrations

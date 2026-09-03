@@ -65,8 +65,8 @@ export const submitRawSignedTransactionGroup = async (
 }
 
 /**
- * Read-only decode so the thrown `SubmissionError` can carry txids for a
- * future reconciler — nothing on this path reads them today.
+ * Read-only decode so the thrown `SubmissionError` can carry txids the
+ * caller records against the submission ledger before reconciliation.
  * The submitted bytes stay the caller's originals — re-encoding assembled
  * multisig bytes could change them canonically and invalidate the
  * per-participant signatures, which is why this function never round-trips.
