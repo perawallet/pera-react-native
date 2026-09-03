@@ -44,6 +44,7 @@ export const useEditPasswordScreen = (
     const [password, setPassword] = useState('')
     const [note, setNote] = useState('')
     const [isLoading, setIsLoading] = useState(true)
+    const [readError, setReadError] = useState<string | null>(null)
 
     // Read the sealed record through a plain effect rather than useQuery: the
     // query cache is disk-persisted (apps/mobile/src/providers/query-persistence.ts),
@@ -53,6 +54,7 @@ export const useEditPasswordScreen = (
     useEffect(() => {
         let cancelled = false
         setIsLoading(true)
+        setReadError(null)
         void readLogin(id)
             .then(login => {
                 if (cancelled || !login) return
@@ -60,6 +62,10 @@ export const useEditPasswordScreen = (
                 setUsername(login.username)
                 setPassword(login.password)
                 setNote(login.note ?? '')
+            })
+            .catch((err: unknown) => {
+                if (cancelled) return
+                setReadError(err instanceof Error ? err.message : String(err))
             })
             .finally(() => {
                 if (!cancelled) setIsLoading(false)
@@ -98,7 +104,7 @@ export const useEditPasswordScreen = (
         canSave,
         isLoading,
         isSaving: isPending,
-        error: error?.message ?? null,
+        error: error?.message ?? readError,
         handleSave,
     }
 }

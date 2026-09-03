@@ -497,7 +497,7 @@ index 0000000000000000000000000000000000000000..452ead69fc9c4ab167c1e642d4c3838b
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..86c3564871197cd2bee269ae1a5a1b449a01a10b
+index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e63c6a36f
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
 @@ -0,0 +1,297 @@
@@ -635,7 +635,7 @@ index 0000000000000000000000000000000000000000..86c3564871197cd2bee269ae1a5a1b44
 +        fun decodeSummary(payload: ByteArray, recordIdentifier: String): LoginSummary? {
 +            val json = parse(payload) ?: return null
 +            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
-+            if (json.isNull("username")) return null
++            if (json.isNull("username") || json.isNull("password")) return null
 +            // Mirror decode()'s shape check so a malformed record is rejected
 +            // the same way in both readers instead of surfacing here and only
 +            // failing later, at release, when decode() is the one called.
@@ -3837,10 +3837,10 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..a4024e1493d110d888cc62a9dba3bf51
  
 diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..6d1bce66b06d4c449be4d3bb2b64c15b1da6bed0
+index 0000000000000000000000000000000000000000..f05ed731ac4ab07703691d778c22953d28c33692
 --- /dev/null
 +++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
-@@ -0,0 +1,226 @@
+@@ -0,0 +1,234 @@
 +import Foundation
 +
 +/// A login the wallet sealed into the shared keystore.
@@ -4002,12 +4002,20 @@ index 0000000000000000000000000000000000000000..6d1bce66b06d4c449be4d3bb2b64c15b
 +  /// The summary half of the payload. Deliberately does not bind `password`:
 +  /// listing logins must not put a decrypted password into a variable that
 +  /// outlives the parse.
++  ///
++  /// Mirrors `decode`'s shape check (password presence, `createdAt`/`updatedAt`)
++  /// so a malformed record is rejected the same way in both readers instead of
++  /// surfacing here and only failing later, at release, when `decode` is the
++  /// one called.
 +  static func decodeSummary(payload: Data, recordIdentifier: String) -> LoginSummary? {
 +    guard let json = try? JSONSerialization.jsonObject(with: payload) as? [String: Any],
 +          let version = json["v"] as? Int,
 +          version == payloadVersion,
 +          let domain = json["domain"] as? String,
-+          let username = json["username"] as? String
++          let username = json["username"] as? String,
++          json["password"] is String,
++          json["createdAt"] is Double,
++          json["updatedAt"] is Double
 +    else {
 +      return nil
 +    }
