@@ -36,9 +36,11 @@ export const PasswordListScreen = () => {
         logins,
         isLoading,
         isProviderActive,
+        autofillStatus,
         handleAdd,
         handleSelect,
         handleEnableProvider,
+        handleEnableAutofill,
     } = usePasswordListScreen()
 
     useNavigationHeader({
@@ -106,6 +108,36 @@ export const PasswordListScreen = () => {
                         onPress={handleEnableProvider}
                         testID='password_list_enable_provider_button'
                     />
+                </PWView>
+            )}
+            {autofillStatus !== 'active' && (
+                <PWView
+                    style={styles.disabledContainer}
+                    testID='password_list_autofill_disabled'
+                >
+                    <PWText variant='h3'>
+                        {t('settings.passwords.autofill_disabled_title')}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.disabledBody}
+                    >
+                        {t(
+                            autofillStatus === 'unsupported'
+                                ? 'settings.passwords.autofill_unsupported_body'
+                                : 'settings.passwords.autofill_disabled_body',
+                        )}
+                    </PWText>
+                    {autofillStatus === 'inactive' && (
+                        <PWButton
+                            variant='primary'
+                            title={t(
+                                'settings.passwords.enable_autofill_action',
+                            )}
+                            onPress={handleEnableAutofill}
+                            testID='password_list_enable_autofill_button'
+                        />
+                    )}
                 </PWView>
             )}
             {isLoading ? (

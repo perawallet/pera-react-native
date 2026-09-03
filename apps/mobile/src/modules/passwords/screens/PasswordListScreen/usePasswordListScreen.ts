@@ -11,9 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import {
+    type ParamListBase,
+    useFocusEffect,
+    useNavigation,
+} from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { usePasskeyAutofillStatus } from '@perawallet/wallet-core-passkeys'
+import {
+    usePasskeyAutofillStatus,
+    useAutofillServiceStatus,
+    type AutofillServiceStatus,
+} from '@perawallet/wallet-core-passkeys'
 import { useLoginsQuery, type Login } from '@perawallet/wallet-core-passwords'
 import { openCredentialProviderSettings } from '@modules/settings/screens/SettingsPasskeysScreen/openCredentialProviderSettings'
 
@@ -21,16 +29,36 @@ export type UsePasswordListScreenResult = {
     logins: Login[]
     isLoading: boolean
     isProviderActive: boolean
+    autofillStatus: AutofillServiceStatus
     handleAdd: () => void
     handleSelect: (id: string) => void
     handleEnableProvider: () => void
+    handleEnableAutofill: () => void
 }
 
 export const usePasswordListScreen = (): UsePasswordListScreenResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { logins, isLoading } = useLoginsQuery()
-    const { isProviderActive, openProviderSettings } =
-        usePasskeyAutofillStatus()
+    const {
+        isProviderActive,
+        openProviderSettings,
+        refresh: refreshProviderStatus,
+    } = usePasskeyAutofillStatus()
+    const {
+        status: autofillStatus,
+        refresh: refreshAutofillStatus,
+        openAutofillSettings,
+    } = useAutofillServiceStatus()
+
+    // Both statuses are system settings the user changes outside the app, so
+    // the query cache is stale the moment they leave. Refetch on focus or the
+    // banner keeps offering an action the user has already taken.
+    useFocusEffect(
+        useCallback(() => {
+            refreshProviderStatus()
+            refreshAutofillStatus()
+        }, [refreshProviderStatus, refreshAutofillStatus]),
+    )
 
     const handleAdd = useCallback(() => {
         navigation.navigate('AddPassword')
@@ -47,12 +75,18 @@ export const usePasswordListScreen = (): UsePasswordListScreenResult => {
         void openCredentialProviderSettings(openProviderSettings)
     }, [openProviderSettings])
 
+    const handleEnableAutofill = useCallback(() => {
+        void openAutofillSettings()
+    }, [openAutofillSettings])
+
     return {
         logins,
         isLoading,
         isProviderActive,
+        autofillStatus,
         handleAdd,
         handleSelect,
         handleEnableProvider,
+        handleEnableAutofill,
     }
 }

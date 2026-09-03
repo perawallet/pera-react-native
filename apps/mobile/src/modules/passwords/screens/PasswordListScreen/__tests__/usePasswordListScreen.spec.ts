@@ -10,24 +10,37 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
 
 // vi.mock factories run before the rest of this module is evaluated, so
 // each mocked fn can only be shared via vi.hoisted.
 const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }))
+
+// Captured so a test can trigger the refresh React Navigation would run on
+// focus, independent of the initial mount call.
+let focusEffectCallback: (() => void) | null = null
+const triggerFocus = () => focusEffectCallback?.()
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate }),
+    useFocusEffect: (callback: () => void) => {
+        focusEffectCallback = callback
+    },
 }))
 
 const { useLoginsQuery } = vi.hoisted(() => ({ useLoginsQuery: vi.fn() }))
 vi.mock('@perawallet/wallet-core-passwords', () => ({ useLoginsQuery }))
 
-const { usePasskeyAutofillStatus } = vi.hoisted(() => ({
-    usePasskeyAutofillStatus: vi.fn(),
-}))
+const { usePasskeyAutofillStatus, mockAutofillServiceStatus } = vi.hoisted(
+    () => ({
+        usePasskeyAutofillStatus: vi.fn(),
+        mockAutofillServiceStatus: vi.fn(),
+    }),
+)
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
     usePasskeyAutofillStatus,
+    useAutofillServiceStatus: mockAutofillServiceStatus,
 }))
 
 const { openCredentialProviderSettings } = vi.hoisted(() => ({
@@ -52,6 +65,20 @@ const login = {
 const openProviderSettings = vi.fn()
 
 describe('usePasswordListScreen', () => {
+    beforeEach(() => {
+        usePasskeyAutofillStatus.mockReturnValue({
+            isProviderActive: true,
+            openProviderSettings,
+            refresh: vi.fn(),
+        })
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'active',
+            refresh: vi.fn(),
+            openAutofillSettings: vi.fn(async () => true),
+        })
+    })
+
     it('exposes the stored logins and the provider state', () => {
         useLoginsQuery.mockReturnValue({ logins: [login], isLoading: false })
         usePasskeyAutofillStatus.mockReturnValue({
@@ -106,5 +133,48 @@ describe('usePasswordListScreen', () => {
         expect(openCredentialProviderSettings).toHaveBeenCalledWith(
             openProviderSettings,
         )
+    })
+
+    it('exposes the autofill status alongside the provider status', async () => {
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'inactive',
+            refresh: vi.fn(),
+            openAutofillSettings: vi.fn(async () => true),
+        })
+
+        const { result } = renderHook(() => usePasswordListScreen())
+
+        expect(result.current.autofillStatus).toBe('inactive')
+    })
+
+    it('opens autofill settings through the native fallback', async () => {
+        const openAutofillSettings = vi.fn(async () => true)
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'inactive',
+            refresh: vi.fn(),
+            openAutofillSettings,
+        })
+
+        const { result } = renderHook(() => usePasswordListScreen())
+        result.current.handleEnableAutofill()
+
+        await waitFor(() => expect(openAutofillSettings).toHaveBeenCalled())
+    })
+
+    it('refreshes both statuses when the screen regains focus', () => {
+        const refresh = vi.fn()
+        mockAutofillServiceStatus.mockReturnValue({
+            isLoading: false,
+            status: 'inactive',
+            refresh,
+            openAutofillSettings: vi.fn(async () => true),
+        })
+
+        renderHook(() => usePasswordListScreen())
+        triggerFocus()
+
+        expect(refresh).toHaveBeenCalled()
     })
 })
