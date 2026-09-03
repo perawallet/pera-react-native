@@ -13,6 +13,11 @@ name: Release / Stable
 #
 # No version bump is needed afterwards. create-nightly-tag.sh detects the new
 # stable tag and rolls subsequent prereleases to the next patch on its own.
+#
+# Promotion also retires that version's own alpha/rc tags, on origin and
+# locally — only ones this repo cut that are reachable from origin/main;
+# anything else is reported and kept. A cleanup failure warns rather than
+# failing the release.
 
 on:
   workflow_dispatch:

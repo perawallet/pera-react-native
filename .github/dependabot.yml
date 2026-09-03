@@ -237,6 +237,19 @@ updates:
       # didStartListening, didStopListening, willDestroy) that core gained in
       # 57.0.9. Still pinned exactly, and still moves only when the SDK does.
       - dependency-name: expo-image
+      # Same lockstep class as expo-image: 57.0.2's iOS source calls
+      # `SceneGeometry.keyWindow()`, a helper expo-modules-core only gained in
+      # 57.0.11. This tree is aligned on 57.0.10 — verified: the installed core
+      # has no ios/Utilities/SceneGeometry.swift at all — so the Swift compile
+      # fails outright. Nothing declares the coupling (expo-screen-capture peers
+      # `expo: "*"` and depends on nothing), so taking it means moving core,
+      # which means moving the SDK. Revisit when the SDK moves.
+      - dependency-name: expo-screen-capture
+      # Inert while the `expo-build-properties: 57.0.9` override stands — pnpm
+      # resolves the direct spec through the override, so Dependabot has been
+      # reopening a bump that cannot change what installs. Move it with the
+      # override, or not at all.
+      - dependency-name: expo-build-properties
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

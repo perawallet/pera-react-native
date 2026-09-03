@@ -20,7 +20,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    getQueryRenderState,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'
@@ -87,6 +90,8 @@ export const useInboxQueryOptions = () => {
 export type UseInboxQueryResult = {
     data: InboxItem[]
     isPending: boolean
+    /** Paused by offline `networkMode: 'online'` gating with nothing cached — render the offline surface, not a spinner (docs/OFFLINE_PAUSED_STATE.md). */
+    isPaused: boolean
     isRefetching: boolean
     isError: boolean
     error: Nullable<Error>
@@ -126,19 +131,29 @@ export const useInboxQuery = (): UseInboxQueryResult => {
         ),
     })
 
+    const { isPaused } = getQueryRenderState(query)
+
+    // The observer's refetch() ignores `enabled` and would still fire the
+    // doomed Pera request on a non-backed network. Referentially stable so a
+    // consumer effect with `refetch` in its deps can't turn into a refetch
+    // loop (the notifications focus-refetch did exactly that).
+    const refetch = useCallback(async () => {
+        if (isUnavailableOnNetwork) return []
+        const { data } = await query.refetch()
+        return data ?? []
+    }, [isUnavailableOnNetwork, query.refetch])
+
     return {
         data: query.data ?? [],
-        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        // A paused query (offline, nothing cached) never leaves `status:
+        // 'pending'`, so raw `isPending` would spin the empty view for as long
+        // as the device reports no internet.
+        isPending: isUnavailableOnNetwork || isPaused ? false : query.isPending,
+        isPaused,
         isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
         isError: query.isError,
         error: query.error,
         isUnavailableOnNetwork,
-        // The observer's refetch() ignores `enabled` and would still fire the
-        // doomed Pera request on a non-backed network.
-        refetch: async () => {
-            if (isUnavailableOnNetwork) return []
-            const { data } = await query.refetch()
-            return data ?? []
-        },
+        refetch,
     }
 }
