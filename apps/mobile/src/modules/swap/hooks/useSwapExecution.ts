@@ -31,7 +31,6 @@ import {
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     getOpenSubmissionAttempts,
-    getOpenSubmissionAttemptsForIntent,
     STALE_OPEN_ATTEMPT_MS,
     submitAndAutoRefresh,
     useSigningRequest,
@@ -324,40 +323,26 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             // recorded with, so when no sender is known the guard is skipped
             // rather than matched against a blank.
             //
-            // The swapId intent key alone is not enough: a refused retry
-            // goes stale within SWAP_QUOTE_TTL_MS, the form re-quotes, and
-            // the backend hands back a NEW swap_id — so the intent lookup
-            // would miss the very row it was meant to catch. The sender-wide
-            // check over both swap flows is what closes that path.
+            // Deliberately sender-wide rather than keyed on the swapId: a
+            // refused retry goes stale within SWAP_QUOTE_TTL_MS, the form
+            // re-quotes, and the backend hands back a NEW swap_id — an
+            // intent lookup would miss the very row it was meant to catch.
+            // Both flows, because a shared-account swap records its row
+            // under 'cosign' and a swap-only filter would miss a re-proposed
+            // multisig retry.
             const swapSender =
                 account?.address ?? quote.swapperAddress ?? undefined
             if (swapSender) {
                 const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
                 let blocked: boolean
                 try {
-                    const [byIntent, bySender] = await Promise.all([
-                        prepareResult.swapIdStr
-                            ? getOpenSubmissionAttemptsForIntent({
-                                  network,
-                                  sender: swapSender,
-                                  intentKey: {
-                                      kind: 'swap',
-                                      swapId: prepareResult.swapIdStr,
-                                  },
-                                  unevaluatableBefore,
-                              })
-                            : Promise.resolve([]),
-                        // Both flows: a shared-account swap records its row
-                        // under 'cosign', so a swap-only filter would miss a
-                        // re-proposed multisig retry.
-                        getOpenSubmissionAttempts({
-                            network,
-                            sender: swapSender,
-                            flows: ['swap', 'cosign'],
-                            unevaluatableBefore,
-                        }),
-                    ])
-                    blocked = byIntent.length > 0 || bySender.length > 0
+                    const openAttempts = await getOpenSubmissionAttempts({
+                        network,
+                        sender: swapSender,
+                        flows: ['swap', 'cosign'],
+                        unevaluatableBefore,
+                    })
+                    blocked = openAttempts.length > 0
                 } catch (error) {
                     // Fail closed. This block sits outside any try, and the
                     // confirmation sheet has no catch — an escaping SQLite

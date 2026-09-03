@@ -57,13 +57,9 @@ const { mockValidate, mockComputeShortfall } = vi.hoisted(() => ({
     mockComputeShortfall: vi.fn(),
 }))
 // Same reason as mockValidate: the wallet-core-signing factory references
-// `getOpenSubmissionAttemptsForIntent` as an eager property, not inside a
-// function body, so a plain const would still be in TDZ when it runs.
-const {
-    mockGetOpenSubmissionAttemptsForIntent,
-    mockGetOpenSubmissionAttempts,
-} = vi.hoisted(() => ({
-    mockGetOpenSubmissionAttemptsForIntent: vi.fn(),
+// `getOpenSubmissionAttempts` as an eager property, not inside a function
+// body, so a plain const would still be in TDZ when it runs.
+const { mockGetOpenSubmissionAttempts } = vi.hoisted(() => ({
     mockGetOpenSubmissionAttempts: vi.fn(),
 }))
 
@@ -115,7 +111,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         }
         return ids
     },
-    getOpenSubmissionAttemptsForIntent: mockGetOpenSubmissionAttemptsForIntent,
     getOpenSubmissionAttempts: mockGetOpenSubmissionAttempts,
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
@@ -372,9 +367,8 @@ describe('useSwapExecution', () => {
         // Default: prepare returns valid result
         mockPrepareTransactions.mockResolvedValue(makePrepareResult())
 
-        // Default: no open ledger row for the intent or the sender — the
-        // retry guard passes and execution proceeds.
-        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+        // Default: no open ledger row for this sender — the retry guard
+        // passes and execution proceeds.
         mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         // Default: status update succeeds
@@ -655,7 +649,7 @@ describe('useSwapExecution', () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: 'SWAP1' }),
         )
-        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([{}])
+        mockGetOpenSubmissionAttempts.mockResolvedValue([{}])
         const { result } = renderHook(() => useSwapExecution())
 
         let outcome: Optional<SwapExecutionOutcome>
@@ -665,10 +659,12 @@ describe('useSwapExecution', () => {
 
         expect(outcome).toEqual({ kind: 'verifying-previous' })
         expect(result.current.status).toBe('verifying')
-        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
+        // Age-bounded: a row the reconciler can never settle must not block
+        // every future swap for this sender.
+        expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
             sender: 'SWAPPER',
-            intentKey: { kind: 'swap', swapId: 'SWAP1' },
+            flows: ['swap', 'cosign'],
             unevaluatableBefore: expect.any(Number),
         })
         // The rebuilt attempt must not sign, broadcast, or report anything.
@@ -682,7 +678,7 @@ describe('useSwapExecution', () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: 'SWAP1' }),
         )
-        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+        mockGetOpenSubmissionAttempts.mockResolvedValue([])
 
         const { result } = renderHook(() => useSwapExecution())
 
@@ -693,12 +689,6 @@ describe('useSwapExecution', () => {
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(result.current.status).toBe('success')
-        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
-            network: 'mainnet',
-            sender: 'SWAPPER',
-            intentKey: { kind: 'swap', swapId: 'SWAP1' },
-            unevaluatableBefore: expect.any(Number),
-        })
         // The submit call carries the ledger metadata for this intent.
         expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith({
             flow: 'swap',
@@ -713,12 +703,11 @@ describe('useSwapExecution', () => {
     it('refuses a re-quoted retry whose swapId no longer matches the open row', async () => {
         // The refusal path itself creates this case: the quote goes stale
         // within SWAP_QUOTE_TTL_MS, the form re-quotes, and prepare returns
-        // a NEW backend swap_id — so the intent lookup misses the row it was
-        // meant to catch. Only the sender-wide swap-flow check sees it.
+        // a NEW backend swap_id. This is why the guard is sender-wide rather
+        // than keyed on the swapId — a swapId lookup would miss this row.
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: 'SWAP2' }),
         )
-        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
         mockGetOpenSubmissionAttempts.mockResolvedValue([
             { intentKey: { kind: 'swap', swapId: 'SWAP1' } },
         ])
@@ -731,14 +720,6 @@ describe('useSwapExecution', () => {
         })
 
         expect(outcome).toEqual({ kind: 'verifying-previous' })
-        // Age-bounded: a row the reconciler can never settle must not block
-        // every future swap for this sender.
-        expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
-            network: 'mainnet',
-            sender: 'SWAPPER',
-            flows: ['swap', 'cosign'],
-            unevaluatableBefore: expect.any(Number),
-        })
         // Nothing signed or broadcast — otherwise this is the double spend
         // the ledger exists to prevent.
         expect(mockAddSignRequest).not.toHaveBeenCalled()
@@ -766,7 +747,7 @@ describe('useSwapExecution', () => {
         expect(mockSendRawTransaction).not.toHaveBeenCalled()
     })
 
-    it('skips the retry guard when prepareResult carries no swapId', async () => {
+    it('still runs the retry guard when prepareResult carries no swapId', async () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: '' }),
         )
@@ -780,9 +761,7 @@ describe('useSwapExecution', () => {
         })
 
         expect(outcome).toEqual({ kind: 'success' })
-        expect(mockGetOpenSubmissionAttemptsForIntent).not.toHaveBeenCalled()
-        // The sender-wide check still runs: it needs no swapId, and it is
-        // the half of the guard that catches a re-quoted retry.
+        // The guard needs no swapId — it matches on the sender.
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
             sender: 'SWAPPER',
