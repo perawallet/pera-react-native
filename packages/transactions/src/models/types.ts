@@ -39,9 +39,13 @@ export interface TransactionSwapGroupDetail {
     /** Decimal string — uint64 ids must never live in a JS number. */
     assetInId: Nullable<string>
     assetInUnitName: string
+    /** 0-19. */
+    assetInDecimals: number
     /** Decimal string. */
     assetOutId: Nullable<string>
     assetOutUnitName: string
+    /** 0-19. */
+    assetOutDecimals: number
     /** Base units. */
     amountIn: Decimal
     /** Base units. */

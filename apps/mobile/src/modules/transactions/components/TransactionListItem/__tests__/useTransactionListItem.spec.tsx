@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
     QueryClient,
@@ -25,6 +25,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { formatNumber } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
@@ -360,8 +361,10 @@ describe('useTransactionListItem', () => {
                 swapGroupDetail: {
                     assetInId: '0',
                     assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
                     assetOutId: '31566704',
                     assetOutUnitName: 'USDC',
+                    assetOutDecimals: 6,
                     amountIn: new Decimal('1000000'),
                     amountOut: new Decimal('500000'),
                 },
@@ -621,6 +624,68 @@ describe('useTransactionListItem', () => {
 
             expect(result.current.amounts).toEqual([])
             expect(result.current.amountsOverflowCount).toBe(0)
+        })
+    })
+
+    describe('swap subtitle', () => {
+        beforeEach(async () => {
+            // The global setup mocks formatNumber down to String(value), which
+            // erases the very digits under test here. Restore the real one so
+            // the assertions read what a user actually sees.
+            const actual = await vi.importActual<
+                typeof import('@perawallet/wallet-core-shared')
+            >('@perawallet/wallet-core-shared')
+            vi.mocked(formatNumber).mockImplementation(actual.formatNumber)
+        })
+
+        afterEach(() => {
+            vi.mocked(formatNumber).mockReset()
+        })
+
+        it('scales each side by its own asset decimals', () => {
+            const tx = createPaymentTx({
+                swapGroupDetail: {
+                    assetInId: '0',
+                    assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
+                    assetOutId: '31566704',
+                    assetOutUnitName: 'USDC',
+                    assetOutDecimals: 2,
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('500000'),
+                },
+            })
+
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+
+            expect(result.current.subtitle).toBe('1.00 ALGO for 5,000.00 USDC')
+        })
+
+        it('keeps enough digits for a sub-cent leg of a high-precision asset', () => {
+            const tx = createPaymentTx({
+                swapGroupDetail: {
+                    assetInId: '0',
+                    assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
+                    assetOutId: '31566704',
+                    assetOutUnitName: 'GEMS',
+                    assetOutDecimals: 8,
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('123456'),
+                },
+            })
+
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+
+            expect(result.current.subtitle).toBe(
+                '1.00 ALGO for 0.00123456 GEMS',
+            )
         })
     })
 })

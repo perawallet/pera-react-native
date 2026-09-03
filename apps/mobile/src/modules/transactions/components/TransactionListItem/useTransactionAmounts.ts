@@ -79,8 +79,11 @@ export const useTransactionAmounts = (
 
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
-            const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
-            result.push(createSwapAmount(amountOut, assetOutUnitName))
+            const { amountOut, assetOutDecimals, assetOutUnitName } =
+                transaction.swapGroupDetail
+            result.push(
+                createSwapAmount(amountOut, assetOutDecimals, assetOutUnitName),
+            )
             return result
         }
 
