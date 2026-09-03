@@ -12,6 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { usePasskeyAutofillService } from '@perawallet/wallet-core-passkeys'
+import { logger } from '@perawallet/wallet-core-shared'
 import { publishLoginIdentities } from '../identities/publishIdentities'
 import { deleteLogin } from '../storage/loginStore'
 import { loginsQueryKeyRoot } from './useLoginsQuery'
@@ -28,7 +29,17 @@ export const useDeleteLoginMutation = (): UseDeleteLoginMutationResult => {
     const queryClient = useQueryClient()
 
     const mutation = useMutation({
-        mutationFn: (id: string) => deleteLogin(id),
+        mutationFn: async (id: string) => {
+            await deleteLogin(id)
+            try {
+                await service.pruneAppLinks(id)
+            } catch (err) {
+                // A stale link only widens what an app is offered, and the
+                // entry it points at is already gone, so a failed prune must
+                // not fail the delete the user asked for.
+                logger.warn('pruneAppLinks failed', { error: err })
+            }
+        },
         onSuccess: async () => {
             await publishLoginIdentities(service)
             void queryClient.invalidateQueries({

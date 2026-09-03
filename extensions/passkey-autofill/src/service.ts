@@ -54,6 +54,7 @@ export interface PasskeyAutofillNativeAPI {
     openProviderSettings(): Promise<boolean>
     isAutofillServiceActive?(): Promise<boolean>
     openAutofillSettings?(): Promise<boolean>
+    pruneAppLinks?(recordIdentifier: string): Promise<void>
     getDiagnostics?(): Promise<string[]>
     addListener(
         eventName: string,
@@ -209,6 +210,10 @@ export class PasskeyAutofillService {
 
     openAutofillSettings(): Promise<boolean> {
         return this.invoke('openAutofillSettings', [], false)
+    }
+
+    pruneAppLinks(recordIdentifier: string): Promise<void> {
+        return this.invoke('pruneAppLinks', [recordIdentifier], undefined)
     }
 
     onPasskeyAdded(

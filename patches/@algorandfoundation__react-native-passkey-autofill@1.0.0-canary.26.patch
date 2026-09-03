@@ -876,14 +876,15 @@ index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec1089
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f3434b379 100644
+index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd70fe21e8 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-@@ -3,7 +3,11 @@ package co.algorand.passkeyautofill
+@@ -3,7 +3,12 @@ package co.algorand.passkeyautofill
  import expo.modules.kotlin.modules.Module
  import expo.modules.kotlin.modules.ModuleDefinition
  import co.algorand.passkeyautofill.credentials.CredentialRepository
 -import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++import co.algorand.passkeyautofill.autofill.AppLinkStore
 +// PERA LOCAL PATCH: check the legacy-named subclass so the ComponentName built
 +// below matches the native app's persisted credential-provider selection. See
 +// the shim class + module AndroidManifest patch notes.
@@ -892,7 +893,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f
  import android.content.ComponentName
  import android.content.Context
  import android.content.Intent
-@@ -11,6 +15,8 @@ import android.net.Uri
+@@ -11,6 +16,8 @@ import android.net.Uri
  import android.os.Build
  import android.provider.Settings
  import android.util.Log
@@ -901,7 +902,25 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f
  import org.bouncycastle.jce.provider.BouncyCastleProvider
  import java.security.Security
  
-@@ -155,6 +161,49 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -101,6 +108,17 @@ class ReactNativePasskeyAutofillModule : Module() {
+       val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+         ?: return@AsyncFunction Unit
+       credentialRepository.clearCredentials(context)
++      AppLinkStore.clear(context)
++    }
++
++    AsyncFunction("pruneAppLinks") { recordIdentifier: String, promise: Promise ->
++      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      if (context == null) {
++        promise.reject("no_context", "Could not get context to prune app links", null)
++        return@AsyncFunction
++      }
++      AppLinkStore.prune(context, recordIdentifier)
++      promise.resolve(null)
+     }
+ 
+     AsyncFunction("deleteCredential") { credentialId: String ->
+@@ -155,6 +173,49 @@ class ReactNativePasskeyAutofillModule : Module() {
        openCredentialProviderSettings(context)
      }
  
@@ -951,7 +970,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f
      AsyncFunction("getStoredCredentials") {
        val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
          ?: return@AsyncFunction emptyList<Map<String, Any>>()
-@@ -180,7 +229,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -180,7 +241,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -960,7 +979,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -195,7 +244,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -195,7 +256,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -969,7 +988,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f
      )
      val expected = component.flattenToString()
  
-@@ -246,7 +295,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -246,7 +307,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -1023,6 +1042,54 @@ index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2c
              }
              skipItem(c)
          }
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0c3e94552
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt
+@@ -0,0 +1,42 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.content.Context
++import com.tencent.mmkv.MMKV
++
++/**
++ * Package-to-login associations asserted by the user when they pick a login
++ * for an app that has none.
++ *
++ * Its own mmapID: the "keystore" instance must stay empty of non-keystore keys
++ * or master-key minting fails on a fresh install, and defaultMMKV already
++ * holds the credential provider's own bookkeeping.
++ */
++object AppLinkStore {
++    private const val MMAP_ID = "pera_autofill_app_links"
++
++    private fun store(context: Context): MMKV {
++        MMKV.initialize(context)
++        return MMKV.mmkvWithID(MMAP_ID)
++    }
++
++    fun linksFor(context: Context, packageName: String): Set<String> =
++        store(context).decodeStringSet(packageName, emptySet()) ?: emptySet()
++
++    fun link(context: Context, packageName: String, recordIdentifier: String) {
++        val next = linksFor(context, packageName) + recordIdentifier
++        store(context).encode(packageName, next)
++    }
++
++    /** Drops [recordIdentifier] from every package, and empty packages with it. */
++    fun prune(context: Context, recordIdentifier: String) {
++        val mmkv = store(context)
++        mmkv.allKeys()?.forEach { pkg ->
++            val next = linksFor(context, pkg) - recordIdentifier
++            if (next.isEmpty()) mmkv.removeValueForKey(pkg) else mmkv.encode(pkg, next)
++        }
++    }
++
++    fun clear(context: Context) {
++        store(context).clearAll()
++    }
++}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 index 35a27a63aa27cfd25d09dfb65472407be4303fb8..fea7a9744c7e995f8dc478be093651025235fa30 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
@@ -4231,7 +4298,7 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..e6874fe1fe079d618734331fb46f37bb
  
      AsyncFunction("getStoredCredentials") { () -> [[String: Any]] in
 diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
-index 87f7dd44e3e8a4b21ae655599dead4af828567a9..9902bd03fee10fe2cefb94704474e9d0349f3950 100644
+index 87f7dd44e3e8a4b21ae655599dead4af828567a9..f8bd88f96c8e3006bd31af0ae5e8d8bf23ccb7d1 100644
 --- a/src/ReactNativePasskeyAutofillModule.ts
 +++ b/src/ReactNativePasskeyAutofillModule.ts
 @@ -52,6 +52,16 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
@@ -4251,7 +4318,7 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..9902bd03fee10fe2cefb94704474e9d0
    refreshCredentialIdentities(): Promise<void>;
    /**
     * Resolves to `true` when this app is registered as the active
-@@ -67,6 +77,19 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
+@@ -67,6 +77,25 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
     * if a settings screen could be launched, `false` otherwise.
     */
    openProviderSettings(): Promise<boolean>;
@@ -4268,10 +4335,16 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..9902bd03fee10fe2cefb94704474e9d0
 +   * settings screen).
 +   */
 +  openAutofillSettings?(): Promise<boolean>;
++  /**
++   * Removes `recordIdentifier` from every app-package link the native
++   * autofill store recorded, and drops any package left with no links.
++   * Android only — iOS has no equivalent per-app link store.
++   */
++  pruneAppLinks?(recordIdentifier: string): Promise<void>;
  }
  
  // This call loads the native module object from the JSI.
-@@ -81,6 +104,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
+@@ -81,6 +110,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
  if (Platform.OS === "android") {
    const noops: Record<string, (...args: unknown[]) => Promise<unknown>> = {
      replaceCredentialIdentities: () => Promise.resolve(),

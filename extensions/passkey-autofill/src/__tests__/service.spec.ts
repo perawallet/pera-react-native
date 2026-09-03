@@ -144,6 +144,25 @@ describe('PasskeyAutofillService', () => {
             expect(native.deleteCredential).toHaveBeenCalledWith('cred-1')
         })
 
+        it('forwards pruneAppLinks to native with the record identifier', async () => {
+            const pruneAppLinks = vi.fn().mockResolvedValue(undefined)
+            const service = new PasskeyAutofillService(
+                makeNative({ pruneAppLinks }),
+            )
+
+            await service.pruneAppLinks('pera.login.abc')
+
+            expect(pruneAppLinks).toHaveBeenCalledWith('pera.login.abc')
+        })
+
+        it('resolves pruneAppLinks when the native module predates the method', async () => {
+            const service = new PasskeyAutofillService(makeNative({}))
+
+            await expect(
+                service.pruneAppLinks('pera.login.abc'),
+            ).resolves.toBeUndefined()
+        })
+
         it('returns the native isProviderActive / openProviderSettings results', async () => {
             const service = new PasskeyAutofillService(
                 makeNative({

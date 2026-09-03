@@ -12,16 +12,24 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 
 // vi.mock factories run before the rest of this module is evaluated, so
 // the mocked fns can only be shared via vi.hoisted.
-const { deleteLogin, publishLoginIdentities, service } = vi.hoisted(() => ({
-    deleteLogin: vi.fn(),
-    publishLoginIdentities: vi.fn(async () => undefined),
-    service: { replacePasswordCredentialIdentities: vi.fn() },
-}))
+const { deleteLogin, publishLoginIdentities, pruneAppLinks, service } =
+    vi.hoisted(() => {
+        const pruneAppLinks = vi.fn(async () => undefined)
+        return {
+            deleteLogin: vi.fn(),
+            publishLoginIdentities: vi.fn(async () => undefined),
+            pruneAppLinks,
+            service: {
+                replacePasswordCredentialIdentities: vi.fn(),
+                pruneAppLinks,
+            },
+        }
+    })
 
 vi.mock('../../storage/loginStore', () => ({ deleteLogin }))
 vi.mock('../../identities/publishIdentities', () => ({
@@ -67,5 +75,34 @@ describe('useDeleteLoginMutation', () => {
         ).rejects.toThrow('keystore unavailable')
 
         expect(publishLoginIdentities).not.toHaveBeenCalled()
+    })
+
+    it('prunes app links for the deleted login', async () => {
+        deleteLogin.mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useDeleteLoginMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.deleteLogin('pera.login.abc')
+        })
+
+        expect(pruneAppLinks).toHaveBeenCalledWith('pera.login.abc')
+    })
+
+    it('still deletes when link pruning fails', async () => {
+        deleteLogin.mockResolvedValue(undefined)
+        pruneAppLinks.mockRejectedValueOnce(new Error('store unavailable'))
+
+        const { result } = renderHook(() => useDeleteLoginMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.deleteLogin('pera.login.abc')
+        })
+
+        expect(deleteLogin).toHaveBeenCalledWith('pera.login.abc')
     })
 })
