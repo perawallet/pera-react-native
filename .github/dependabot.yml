@@ -247,6 +247,26 @@ updates:
       # override, or not at all.
       - dependency-name: expo-build-properties
 
+  # Fastlane's gem tree ships the iOS release lane, so an advisory there reaches
+  # a signing machine. Nothing else watches apps/mobile/Gemfile.lock — `pnpm
+  # audit` in pre-merge only covers npm — so without this a bumped gem silently
+  # rots back.
+  - package-ecosystem: bundler
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    groups:
+      bundler:
+        patterns:
+          - "*"
+
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.
   - package-ecosystem: github-actions
