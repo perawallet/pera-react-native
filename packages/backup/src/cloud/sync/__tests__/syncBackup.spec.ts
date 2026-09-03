@@ -31,7 +31,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { UpsertResult } from '../../api'
 import {
     BackupItemStatus,
@@ -142,11 +142,28 @@ describe('syncBackup', () => {
             ],
         })
 
+        const warn = vi.spyOn(logger, 'warn')
+
         const next = await syncBackup(deps(), createEmptySyncState('b'))
 
         expect(batchUpsertItems).toHaveBeenCalledTimes(1)
         expect(next.lastKnownBackupHash).toBeNull()
         expect(next.lastSyncedSeq).toBe(1)
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        // Reporting SUCCESS on a missing manifest is only correct once; a 404
+        // that keeps repeating disables the short-circuit and must be visible.
+        expect(warn).toHaveBeenCalledWith(
+            'syncBackup: no manifest, treating backup as empty',
+        )
+    })
+
+    it('treats an un-normalized 404 as an empty backup too', async () => {
+        fetchManifest.mockRejectedValue({ response: { status: 404 } })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({ results: [] })
+
+        const next = await syncBackup(deps(), createEmptySyncState('b'))
+
         expect(next.lastSyncResult).toBe('SUCCESS')
     })
 
