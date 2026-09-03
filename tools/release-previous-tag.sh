@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# tools/previous-release-tag.sh [tag]
+# tools/release-previous-tag.sh [tag]
 #
 # Prints the release tag preceding <tag> on the SAME channel, or nothing when
 # there is no predecessor. Defaults to the tag on HEAD.
@@ -10,7 +10,7 @@ set -uo pipefail
 # whichever channel tagged most recently and yields a range that is too short: a
 # Friday rc would diff against Thursday's nightly, and that night's nightly would
 # then diff against the rc and skip Friday morning entirely. Mirrors the
-# per-channel counter in tools/create-nightly-tag.sh.
+# per-channel counter in tools/release-prerelease-tag.sh.
 #
 # Deliberately prints nothing rather than guessing when a channel has no earlier
 # tag — each caller picks its own fallback, because the right answer differs

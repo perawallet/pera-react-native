@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/patch-ipa-for-browserstack.sh
+# tools/qa-patch-ipa-browserstack.sh
 # Strips AppGroupIdentifier from an IPA's Info.plist so the app survives
 # BrowserStack's re-signing.
 #

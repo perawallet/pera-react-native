@@ -6,10 +6,10 @@ set -uo pipefail
 # Prints the tag a release should be diffed against, or nothing when there is no
 # sensible predecessor. Defaults to the tag on HEAD.
 #
-# This is tools/previous-release-tag.sh plus the one fallback its callers share.
+# This is tools/release-previous-tag.sh plus the one fallback its callers share.
 # That script deliberately stays pure — it answers "the previous tag on this
 # channel" and nothing else — because its third caller
-# (tools/publish-github-release.sh) wants no fallback at all: with no predecessor
+# (tools/release-publish.sh) wants no fallback at all: with no predecessor
 # it lets GitHub choose the notes range.
 #
 # The rule, identical for the delivered-ticket list and the Slack changelog:
@@ -40,7 +40,7 @@ case "$TAG" in
     v[0-9]*) IS_STABLE=yes ;;
 esac
 
-START=$("${ROOT_DIR}/tools/previous-release-tag.sh" "$TAG")
+START=$("${ROOT_DIR}/tools/release-previous-tag.sh" "$TAG")
 
 if [ -z "$START" ] && [ -z "$IS_STABLE" ]; then
     # `${TAG:-HEAD}^`: on a build with no tag at all this still yields the

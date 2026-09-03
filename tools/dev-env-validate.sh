@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/validate-env.sh
+# tools/dev-env-validate.sh
 # Fails fast when a required Bitrise env var / secret for the current workflow
 # is missing, BEFORE expensive build steps run. Pure precondition check: reads
 # env, reports, exits. Never mutates env, never prints secret values.
@@ -12,7 +12,7 @@ set -euo pipefail
 #   DISTRIBUTION      firebase | play        (android distribution credential)
 #
 # Per-env secrets are configured in Bitrise under a STAGING_/PRODUCTION_ prefix
-# and aliased to unprefixed names at build time by setup-env-secrets.sh. This
+# and aliased to unprefixed names at build time by dev-env-secrets.sh. This
 # script validates the PREFIXED source names so it can run before aliasing.
 #
 # bash 3.2 safe: the iOS build runs on macOS whose /bin/bash is 3.2.
@@ -87,7 +87,7 @@ case "$PROFILE" in
     # the bitrise "Resolve distribution channel" step, so a play build must fail
     # fast on a missing Play key rather than after the Play upload succeeds.
     required_global+=( "FIREBASE_SERVICE_ACCOUNT_BASE64" )
-    if [ "$("$(dirname "${BASH_SOURCE[0]}")/resolve-distribution.sh")" = "play" ]; then
+    if [ "$("$(dirname "${BASH_SOURCE[0]}")/release-distribution.sh")" = "play" ]; then
       required_global+=( "ANDROID_JSON_KEY_FILE" )
     fi
     optional_prefixed+=(

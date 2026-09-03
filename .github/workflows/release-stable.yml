@@ -8,10 +8,10 @@ name: Release / Stable
 #
 # The GitHub Release is published here rather than left to release-publish.yml:
 # a tag pushed with GITHUB_TOKEN does not trigger further workflows, so that
-# workflow's `push: tags` trigger never sees this tag. create-nightly-tag.sh
+# workflow's `push: tags` trigger never sees this tag. release-prerelease-tag.sh
 # documents the same constraint.
 #
-# No version bump is needed afterwards. create-nightly-tag.sh detects the new
+# No version bump is needed afterwards. release-prerelease-tag.sh detects the new
 # stable tag and rolls subsequent prereleases to the next patch on its own.
 #
 # Promotion also retires that version's own alpha/rc tags, on origin and
@@ -53,10 +53,10 @@ jobs:
         id: promote
         env:
           RC_TAG: ${{ inputs.rc_tag }}
-        run: ./tools/promote-rc-tag.sh
+        run: ./tools/release-stable-tag.sh
 
       - name: Publish GitHub release
         if: steps.promote.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./tools/publish-github-release.sh "${{ steps.promote.outputs.tag }}"
+        run: ./tools/release-publish.sh "${{ steps.promote.outputs.tag }}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-# tools/smoke-verdict.sh <results-dir>
+# tools/qa-smoke-verdict.sh <results-dir>
 # Prints `ok` or `fail` for a finished Robot run, and exits 0/1 to match.
 #
 # Exists because the BrowserStack SDK's exit code is not evidence: a run that

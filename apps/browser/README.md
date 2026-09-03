@@ -3,7 +3,7 @@
 ## Build and load
 
 Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
-variable Bitrise injects for mobile; see `tools/generate-config.sh`).
+variable Bitrise injects for mobile; see `tools/dev-config.sh`).
 Without it, Pera-backend calls (should-refresh, asset metadata, prices,
 history) 401 against staging; `bundle` still succeeds but prints a warning.
 

@@ -16,7 +16,7 @@ The smoke gate only runs on staging builds: they are the only ones that bake `DI
 
 Run the `Release / Stable` workflow from the Actions tab. It tags the most recent rc's commit with the equivalent stable version (`v7.0.2-rc.3` → `v7.0.2`), publishes the GitHub Release, and fires the production builds. Leave the input blank to promote the highest rc, or name an older one explicitly.
 
-It tags the rc's _commit_, not `main`: that commit is what was built and put in front of QA. No version bump is needed afterwards: `create-nightly-tag.sh` sees the new stable tag and rolls subsequent prereleases to the next patch.
+It tags the rc's _commit_, not `main`: that commit is what was built and put in front of QA. No version bump is needed afterwards: `release-prerelease-tag.sh` sees the new stable tag and rolls subsequent prereleases to the next patch.
 
 ### iOS
 
@@ -34,7 +34,7 @@ It tags the rc's _commit_, not `main`: that commit is what was built and put in 
 
 - `ANDROID_JSON_KEY_FILE`: Play service-account JSON (global secret; written to `apps/mobile/config/api-key.json`).
 - `FIREBASE_SERVICE_ACCOUNT_BASE64`: Firebase service account (base64).
-- `PRODUCTION_FIREBASE_APP_ID_ANDROID`: Firebase Android app ID, aliased to `FIREBASE_APP_ID_ANDROID` by `setup-env-secrets.sh`. Required. If unset, the Firebase step aborts the release with `app: nil` _after_ the AAB is already on Play.
+- `PRODUCTION_FIREBASE_APP_ID_ANDROID`: Firebase Android app ID, aliased to `FIREBASE_APP_ID_ANDROID` by `dev-env-secrets.sh`. Required. If unset, the Firebase step aborts the release with `app: nil` _after_ the AAB is already on Play.
 - `PRODUCTION_ANDROID_GOOGLE_SERVICES_BASE64`, `PRODUCTION_IOS_GOOGLE_SERVICE_INFO_BASE64`, and the iOS signing/profile secrets, as already used by the production workflows.
 
 ### Ops prerequisite
