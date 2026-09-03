@@ -46,13 +46,11 @@ const service = {
     replacePasswordCredentialIdentities: vi.fn(async () => undefined),
 }
 
-const { getKeystoreStore, getProvider, reconcileKeystore } = vi.hoisted(
-    () => ({
-        getKeystoreStore: vi.fn(),
-        getProvider: vi.fn(),
-        reconcileKeystore: vi.fn(async () => ({ failedIds: [] })),
-    }),
-)
+const { getKeystoreStore, getProvider, reconcileKeystore } = vi.hoisted(() => ({
+    getKeystoreStore: vi.fn(),
+    getProvider: vi.fn(),
+    reconcileKeystore: vi.fn(async () => ({ failedIds: [] })),
+}))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore,
     getProvider,
