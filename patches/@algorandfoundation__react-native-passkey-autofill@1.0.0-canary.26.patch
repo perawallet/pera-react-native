@@ -1,5 +1,5 @@
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
-index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c860fb1b4 100644
+index e664746a384e1403297d47c42c1383f0f41d4766..a23442662e857c1bb4e3ad8110ab64dfacc01c01 100644
 --- a/android/src/main/AndroidManifest.xml
 +++ b/android/src/main/AndroidManifest.xml
 @@ -2,8 +2,19 @@
@@ -23,6 +23,28 @@ index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c
              android:enabled="true"
              android:exported="true"
              android:label="@string/passkey_autofill_label"
+@@ -34,5 +45,21 @@
+                 <category android:name="android.intent.category.DEFAULT"/>
+             </intent-filter>
+         </activity>
++        <!--
++          PERA LOCAL PATCH: password release. Declared exactly like the two
++          passkey activities. Exported is safe here even though the provider's
++          PendingIntent names the component explicitly: an external launch
++          carries no ProviderGetCredentialRequest, so GetPasswordActivity
++          reports a failure and releases nothing.
++        -->
++        <activity android:name="co.algorand.passkeyautofill.GetPasswordActivity"
++            android:exported="true"
++            android:launchMode="singleTop"
++            android:theme="@style/Theme.PasskeyAutofill.Dialog">
++            <intent-filter>
++                <action android:name="co.algorand.passkeyautofill.GET_PASSWORD"/>
++                <category android:name="android.intent.category.DEFAULT"/>
++            </intent-filter>
++        </activity>
+     </application>
+ </manifest>
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
 index ac8955cdec804b20e44eba44f6f1d702695045eb..2e8c3706056f6a92e0ae918da6874f7f61c75402 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
@@ -260,6 +282,484 @@ index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..fcd57d8b86e8d2a22112f80bed610618
                              userHandle = dbCred.userHandle,
                          )
                          val first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0b2430593844844c44eea5e6b54fc9cbaf52adfc
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt
+@@ -0,0 +1,179 @@
++package co.algorand.passkeyautofill
++
++import android.app.Activity
++import android.content.Intent
++import android.os.Build
++import android.os.Bundle
++import android.util.Log
++import androidx.annotation.RequiresApi
++import androidx.appcompat.app.AppCompatActivity
++import androidx.biometric.BiometricPrompt
++import androidx.core.content.ContextCompat
++import androidx.credentials.GetCredentialResponse
++import androidx.credentials.PasswordCredential
++import androidx.credentials.exceptions.GetCredentialCancellationException
++import androidx.credentials.exceptions.GetCredentialException
++import androidx.credentials.exceptions.GetCredentialUnknownException
++import androidx.credentials.provider.PendingIntentHandler
++import androidx.credentials.provider.ProviderGetCredentialRequest
++import androidx.lifecycle.lifecycleScope
++import co.algorand.passkeyautofill.auth.BiometricRequirement
++import kotlin.coroutines.resume
++import kotlin.coroutines.suspendCoroutine
++import kotlinx.coroutines.launch
++
++/**
++ * PERA LOCAL PATCH — releases one saved password to the caller that selected
++ * its entry.
++ *
++ * The provider's entry list carries only a login id, so this activity is where
++ * the secret is actually reached. The order below is the whole point of the
++ * class: identify the caller, re-check that the selected login is in that
++ * caller's scope, gate on biometrics, and only then unseal. A password is never
++ * read before there is a verified user in front of the device.
++ *
++ * Unlike [GetPasskeyActivity] this shows no UI of its own — the biometric
++ * prompt is the only thing the user sees, and a failure is reported to the
++ * caller rather than rendered, so there is no window in which a decrypted
++ * password is sitting behind a screen the user can dismiss.
++ */
++@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
++class GetPasswordActivity : AppCompatActivity() {
++    private val passwordStore = PasswordCredentialStore()
++
++    companion object {
++        const val TAG = "GetPasswordActivity"
++
++        /** Key inside the PendingIntent's `CREDENTIAL_DATA` bundle. */
++        const val EXTRA_LOGIN_ID = "loginId"
++    }
++
++    private var isHandling: Boolean = false
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        handleRelease()
++    }
++
++    private fun handleRelease() {
++        if (isHandling) return
++        isHandling = true
++
++        val request: ProviderGetCredentialRequest? = try {
++            PendingIntentHandler.retrieveProviderGetCredentialRequest(intent)
++        } catch (e: Exception) {
++            Log.e(TAG, "Error retrieving request from intent", e)
++            null
++        }
++        if (request == null) {
++            fail(GetCredentialUnknownException("The password request could not be read."))
++            return
++        }
++
++        val loginId = intent.getBundleExtra("CREDENTIAL_DATA")?.getString(EXTRA_LOGIN_ID)
++        if (loginId.isNullOrEmpty()) {
++            fail(GetCredentialUnknownException("The password request named no login."))
++            return
++        }
++
++        // Defence in depth. The login is selected purely by the id carried in
++        // the PendingIntent, so re-apply the provider's own scoping rule here
++        // rather than trusting that the query-time filter was the only way to
++        // reach this point. Mirrors GetPasskeyActivity's origin re-check.
++        val callerScope = PasswordCallerScope.resolve(this, request.callingAppInfo)
++        val summary = passwordStore.loginSummary(this, loginId)
++        if (callerScope == null || summary == null || !callerScope.matches(summary.host)) {
++            Log.e(TAG, "Refusing release: the selected login does not belong to the requester")
++            fail(GetCredentialUnknownException("This login is not available to the requesting app."))
++            return
++        }
++
++        lifecycleScope.launch {
++            val authenticated = biometrics()
++            if (!authenticated) {
++                Log.w(TAG, "Biometrics failed or was canceled; releasing nothing")
++                fail(GetCredentialCancellationException("Authentication was canceled."))
++                return@launch
++            }
++
++            val login = passwordStore.login(this@GetPasswordActivity, loginId)
++            if (login == null) {
++                Log.e(TAG, "The selected login could not be opened")
++                fail(GetCredentialUnknownException("This login could not be read."))
++                return@launch
++            }
++            // PasswordCredential rejects an empty password, so a record that
++            // somehow holds one is reported rather than thrown out of the
++            // coroutine, which would leave the caller waiting on a dead intent.
++            if (login.password.isEmpty()) {
++                Log.e(TAG, "The selected login has no password to release")
++                fail(GetCredentialUnknownException("This login has no password saved."))
++                return@launch
++            }
++
++            val resultIntent = Intent()
++            PendingIntentHandler.setGetCredentialResponse(
++                resultIntent,
++                GetCredentialResponse(PasswordCredential(login.username, login.password))
++            )
++            setResult(Activity.RESULT_OK, resultIntent)
++            finish()
++        }
++    }
++
++    /**
++     * The same prompt shape [GetPasskeyActivity] uses, honouring the build-time
++     * configured [BiometricRequirement].
++     *
++     * No `CryptoObject` is passed: a login is sealed with the wallet's master
++     * key, not with a user-auth-bound Keystore key, so this gate is enforced by
++     * the ordering in [handleRelease] rather than cryptographically — the same
++     * situation as a `WEAK_OR_CREDENTIAL` passkey.
++     */
++    private suspend fun biometrics(): Boolean {
++        val requirement = BiometricRequirement.resolve(this)
++        return suspendCoroutine { continuation ->
++            val biometricPrompt = BiometricPrompt(
++                this,
++                ContextCompat.getMainExecutor(this),
++                object : BiometricPrompt.AuthenticationCallback() {
++                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
++                        super.onAuthenticationSucceeded(result)
++                        continuation.resume(true)
++                    }
++
++                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
++                        super.onAuthenticationError(errorCode, errString)
++                        continuation.resume(false)
++                    }
++
++                    override fun onAuthenticationFailed() {
++                        super.onAuthenticationFailed()
++                    }
++                }
++            )
++            val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
++                .setTitle("Use saved login")
++                .setSubtitle("Authenticate to fill your password")
++                .setAllowedAuthenticators(requirement.allowedAuthenticators)
++            if (!requirement.allowsDeviceCredential) {
++                promptInfoBuilder.setNegativeButtonText("Cancel")
++            }
++            biometricPrompt.authenticate(promptInfoBuilder.build())
++        }
++    }
++
++    /**
++     * Reports a failure to the caller and releases nothing.
++     *
++     * `RESULT_OK` with an exception set is how AndroidX carries a provider
++     * error back: `RESULT_CANCELED` would be read as the user dismissing the
++     * system UI and loses the reason.
++     */
++    private fun fail(exception: GetCredentialException) {
++        val resultIntent = Intent()
++        PendingIntentHandler.setGetCredentialException(resultIntent, exception)
++        setResult(Activity.RESULT_OK, resultIntent)
++        finish()
++    }
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..ab9dd7637aa3a64b891be02e9910bd82ee936e64
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
+@@ -0,0 +1,287 @@
++package co.algorand.passkeyautofill
++
++import android.content.Context
++import android.util.Log
++import androidx.credentials.provider.CallingAppInfo
++import co.algorand.passkeyautofill.credentials.CredentialRepository
++import org.json.JSONObject
++
++/**
++ * PERA LOCAL PATCH — a login the wallet sealed into the shared keystore.
++ *
++ * `password` is the reason this type exists, so treat an instance as secret:
++ * build one only to answer a request that has already been user-verified, and
++ * never log it or put it in a Bundle that outlives the release.
++ */
++data class StoredLogin(
++    /**
++     * The keystore record id (`pera.login.<uuid>`), which is also what the
++     * provider's PendingIntent carries to say which login to release.
++     */
++    val recordIdentifier: String,
++    val domain: String,
++    val username: String,
++    val password: String,
++    val note: String?,
++    /** Epoch **milliseconds**, as the wallet writes them. */
++    val createdAt: Long,
++    val updatedAt: Long,
++)
++
++/**
++ * PERA LOCAL PATCH — what a login can say about itself without its secret:
++ * enough to list it, match it against a caller and label an entry.
++ *
++ * Every bulk read returns these. [StoredLogin] — the only shape carrying the
++ * password — is reachable one record at a time, so nothing can hold a set of
++ * decrypted passwords.
++ */
++data class LoginSummary(
++    val recordIdentifier: String,
++    /** The stored domain reduced to a comparable host, e.g. `example.com`. */
++    val host: String,
++    val username: String,
++)
++
++/**
++ * PERA LOCAL PATCH — reads the wallet's logins out of the same shared keystore
++ * MMKV instance the passkey path uses, through [CredentialRepository]'s record
++ * accessors, so the master key and the sealing envelope keep exactly one
++ * implementation.
++ *
++ * Nothing here writes: the wallet owns the record lifecycle and this is a
++ * reader that answers `BeginGetPasswordOption`.
++ */
++class PasswordCredentialStore(
++    private val repository: CredentialRepository = CredentialRepository(),
++) {
++    companion object {
++        /**
++         * Plaintext discriminator the wallet writes into `k/<id>` metadata.
++         * Logins share the canonical `secret-key` record type with the hashed
++         * PIN, the mirrored biometric blob and the card session tokens, so the
++         * record type cannot tell them apart — this is what does.
++         */
++        const val LOGIN_KIND = "login"
++
++        /**
++         * The only sealed-payload version this build understands. A record
++         * written by a newer wallet is skipped rather than guessed at.
++         */
++        const val PAYLOAD_VERSION = 1
++
++        /**
++         * A stored `example.com` answers a request for `example.com` and for
++         * any subdomain of it.
++         *
++         * The subdomain test requires the dot: a plain suffix check would hand
++         * `example.com`'s password to `evil-example.com`, and matching anywhere
++         * in the string would do it in both directions.
++         */
++        fun domainMatches(storedDomain: String, requestedHost: String): Boolean {
++            val storedHost = host(storedDomain)
++            if (storedHost.isEmpty() || requestedHost.isEmpty()) return false
++            return storedHost == requestedHost || requestedHost.endsWith(".$storedHost")
++        }
++
++        /**
++         * The comparable host of a stored domain or of a caller's verified web
++         * origin.
++         *
++         * A stored domain is whatever the user typed and a verified origin is a
++         * full URL, so both sides are reduced the same way: scheme, userinfo,
++         * port, path and the root label's trailing dot all dropped, then
++         * case-folded. `lowercase()` is the locale-independent overload on
++         * purpose — the Turkish locale would otherwise fold `I` to `ı`.
++         */
++        fun host(identifier: String): String {
++            var value = identifier.trim().lowercase()
++            val schemeEnd = value.indexOf("://")
++            if (schemeEnd >= 0) {
++                value = value.substring(schemeEnd + 3)
++            }
++            val pathStart = value.indexOfFirst { it == '/' || it == '?' || it == '#' }
++            if (pathStart >= 0) {
++                value = value.substring(0, pathStart)
++            }
++            val userInfoEnd = value.lastIndexOf('@')
++            if (userInfoEnd >= 0) {
++                value = value.substring(userInfoEnd + 1)
++            }
++            // A bracketed IPv6 literal's colons belong to the address.
++            val portStart = value.lastIndexOf(':')
++            if (portStart >= 0 && !value.startsWith("[")) {
++                value = value.substring(0, portStart)
++            }
++            return value.trimEnd('.')
++        }
++
++        /**
++         * Reads the summary half of the payload the wallet's
++         * `encodeLoginPayload` writes (`packages/passwords/src/models/login.ts`):
++         * UTF-8 JSON, no envelope of its own.
++         *
++         * Deliberately does not bind `password` — listing logins must not put a
++         * decrypted password into a variable that outlives the parse.
++         */
++        fun decodeSummary(payload: ByteArray, recordIdentifier: String): LoginSummary? {
++            val json = parse(payload) ?: return null
++            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
++            if (json.isNull("username")) return null
++            val host = host(domain)
++            if (host.isEmpty()) return null
++            return LoginSummary(recordIdentifier, host, json.optString("username"))
++        }
++
++        /** The whole payload, password included. See [StoredLogin]. */
++        fun decode(payload: ByteArray, recordIdentifier: String): StoredLogin? {
++            val json = parse(payload) ?: return null
++            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
++            if (json.isNull("username") || json.isNull("password")) return null
++            val createdAt = json.opt("createdAt") as? Number ?: return null
++            val updatedAt = json.opt("updatedAt") as? Number ?: return null
++            return StoredLogin(
++                recordIdentifier = recordIdentifier,
++                domain = domain,
++                username = json.optString("username"),
++                password = json.optString("password"),
++                note = if (json.isNull("note")) null else json.optString("note"),
++                createdAt = createdAt.toLong(),
++                updatedAt = updatedAt.toLong(),
++            )
++        }
++
++        private fun parse(payload: ByteArray): JSONObject? {
++            val json = try {
++                JSONObject(String(payload, Charsets.UTF_8))
++            } catch (e: Exception) {
++                return null
++            }
++            return if (json.optInt("v", -1) == PAYLOAD_VERSION) json else null
++        }
++    }
++
++    /**
++     * Every login, as summaries. The sealed payload is opened to read the
++     * domain and username — they live inside it — but the password is never
++     * bound, so none is retained past this call.
++     *
++     * The plaintext metadata index narrows the set to logins first, so a wallet
++     * full of seeds and passkeys costs one MMKV read rather than an unseal per
++     * record.
++     */
++    fun loginSummaries(context: Context): List<LoginSummary> =
++        repository.recordMetadataById(context)
++            .filterValues { isLoginRecord(it) }
++            .keys
++            .mapNotNull { summaryOf(context, it) }
++            .sortedWith(compareBy({ it.host }, { it.username }))
++
++    /** The summary of one record, or null when it is not a readable login. */
++    fun loginSummary(context: Context, recordIdentifier: String): LoginSummary? {
++        if (!isLoginRecord(repository.recordMetadata(context, recordIdentifier))) return null
++        return summaryOf(context, recordIdentifier)
++    }
++
++    /**
++     * The one way to reach a password, one record at a time. Call it when
++     * something is about to use the secret — never to build a list.
++     */
++    fun login(context: Context, recordIdentifier: String): StoredLogin? {
++        if (!isLoginRecord(repository.recordMetadata(context, recordIdentifier))) return null
++        val payload = repository.recordMaterial(context, recordIdentifier) ?: return null
++        return decode(payload, recordIdentifier)
++    }
++
++    private fun summaryOf(context: Context, recordIdentifier: String): LoginSummary? {
++        val payload = repository.recordMaterial(context, recordIdentifier) ?: return null
++        return decodeSummary(payload, recordIdentifier)
++    }
++
++    /**
++     * Whether a plaintext metadata record is one of the wallet's logins. This
++     * is what keeps a non-login record from ever being unsealed.
++     */
++    private fun isLoginRecord(record: JSONObject?): Boolean {
++        if (record == null) return false
++        val metadata = record.optJSONObject("metadata")
++        val kind = metadata?.optString("kind").takeUnless { it.isNullOrEmpty() }
++            ?: record.optString("kind").takeUnless { it.isEmpty() }
++        return kind == LOGIN_KIND
++    }
++}
++
++/**
++ * PERA LOCAL PATCH — who a password request is on behalf of, resolved from the
++ * caller's *verified* identity and never from anything the request claims.
++ *
++ * The passkey branch of the provider scopes every offered credential to the
++ * asserted relying party or to the calling app's own signing identity. A
++ * password query carries no relying party at all, so the equivalent scope has
++ * to come from `CallingAppInfo`. Without it, any installed app that asks for a
++ * password credential is handed every login in the store.
++ */
++sealed class PasswordCallerScope {
++    /**
++     * An allowlisted browser acting for a page. [host] comes from the origin
++     * Credential Manager populated and [PrivilegedBrowsers] verified against
++     * the browser's signing certificate, so it is the caller's identity rather
++     * than its claim.
++     */
++    data class Web(val host: String) : PasswordCallerScope()
++
++    /**
++     * Any other caller, identified only by its package. **Matches nothing.**
++     *
++     * Binding a package to a domain soundly needs a Digital Asset Links
++     * statement fetched from that domain
++     * (`delegate_permission/common.get_login_creds`) and checked against the
++     * caller's signing certificate, which nothing in this module can do yet.
++     * The obvious shortcut — reversing the package name into a host — is not a
++     * weaker form of that check but a hole: a sideloaded `com.<victim>.anything`
++     * would then claim `<victim>.com`. So an app caller is scoped to the empty
++     * set, the same fail-closed choice the passkey branch makes for a caller
++     * that supplies no relying-party id.
++     *
++     * Know what that costs before changing it. A password option carries no
++     * domain of its own ([androidx.credentials.GetPasswordOption] has only
++     * `allowedUserIds`), and the platform's own
++     * `com.android.credentialmanager.autofill.CredentialAutofillService` bridge
++     * turns ordinary form fields into password options whose caller is the app
++     * being filled, with no origin set. So this branch is the common one, and
++     * while it returns false the provider offers logins to browsers that pass a
++     * verified origin and to nothing else. Closing that gap means giving a
++     * login a verified app association, not loosening the check here.
++     */
++    data class App(val packageName: String) : PasswordCallerScope()
++
++    /** Whether a login stored for [storedDomain] may be offered to this caller. */
++    fun matches(storedDomain: String): Boolean = when (this) {
++        is Web -> PasswordCredentialStore.domainMatches(storedDomain, host)
++        is App -> false
++    }
++
++    companion object {
++        private const val TAG = "PasswordCallerScope"
++
++        /**
++         * The scope of [info], or null when the caller cannot be identified at
++         * all — `callingAppInfo` is nullable on the provider requests, and a
++         * request nobody can be held to gets no entries.
++         */
++        fun resolve(context: Context, info: CallingAppInfo?): PasswordCallerScope? {
++            if (info == null) return null
++            val webOrigin = try {
++                PrivilegedBrowsers.webOrigin(context, info)
++            } catch (e: Exception) {
++                Log.e(TAG, "Could not resolve the caller's web origin", e)
++                null
++            }
++            if (webOrigin != null) {
++                val host = PasswordCredentialStore.host(webOrigin)
++                if (host.isNotEmpty()) return Web(host)
++            }
++            return App(info.packageName)
++        }
++    }
++}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec10897a786b8b
@@ -425,11 +925,101 @@ index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2c
              }
              skipItem(c)
          }
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
+index 35a27a63aa27cfd25d09dfb65472407be4303fb8..fea7a9744c7e995f8dc478be093651025235fa30 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
+@@ -146,6 +146,32 @@ interface CredentialRepository {
+      */
+     fun getHdRootSecret(context: Context): ByteArray?
+ 
++    /**
++     * PERA LOCAL PATCH — the plaintext metadata of every split-layout record in
++     * the shared keystore instance, keyed by bare id (the `k/<id>` half with
++     * the prefix stripped).
++     *
++     * These three accessors exist so a reader that is not the passkey path
++     * (`PasswordCredentialStore`) can enumerate and open records without a
++     * second copy of the master-key lookup or the sealing envelope.
++     *
++     * Bulk on purpose: `k/` metadata is stored unsealed, so the whole index
++     * costs one MMKV open and no key material at all. Enumerating ids and then
++     * calling [recordMetadata] per id would instead do an AndroidKeyStore
++     * decrypt for every record in the wallet, inside a credential-provider
++     * query that the system time-limits.
++     */
++    fun recordMetadataById(context: Context): Map<String, JSONObject>
++
++    /** One record's plaintext metadata; see [KeystoreRecords]. */
++    fun recordMetadata(context: Context, id: String): JSONObject?
++
++    /**
++     * A record's unsealed raw material, or `null` when the master key is not
++     * available or the payload cannot be opened.
++     */
++    fun recordMaterial(context: Context, id: String): ByteArray?
++
+     companion object {
+         const val TAG = "CredentialRepository"
+         const val PASSKEYS_MMKV_ID = "keystore"
+@@ -634,6 +660,32 @@ class Repository() : CredentialRepository {
+     override fun getHdRootSecret(context: Context): ByteArray? =
+         (resolveParentSecret(context) as? ParentSecretResult.Available)?.secret?.bytes
+ 
++    override fun recordMetadataById(context: Context): Map<String, JSONObject> {
++        val mmkv = getPasskeysMMKV(context)
++        val allKeys = mmkv.allKeys() ?: return emptyMap()
++        val records = mutableMapOf<String, JSONObject>()
++        for (key in allKeys) {
++            if (!key.startsWith(KeystoreRecords.METADATA_PREFIX)) continue
++            val plaintext = mmkv.decodeString(key) ?: continue
++            val json = try {
++                JSONObject(plaintext)
++            } catch (e: Exception) {
++                Log.w(CredentialRepository.TAG, "Unreadable metadata record for $key", e)
++                continue
++            }
++            records[key.removePrefix(KeystoreRecords.METADATA_PREFIX)] = json
++        }
++        return records
++    }
++
++    override fun recordMetadata(context: Context, id: String): JSONObject? =
++        readMetadata(context, id, getMasterKey(context))
++
++    override fun recordMaterial(context: Context, id: String): ByteArray? {
++        val masterKey = getMasterKey(context) ?: return null
++        return readMaterial(context, id, masterKey)
++    }
++
+ 
+     private fun decodeKeyData(payload: String, masterKey: ByteArray?): JSONObject {
+         try {
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
-index 7199493d1680164000de4d44eaf939f5111cb0af..6f6d7ac29a9811a40a21df3b7493098dcdf6585f 100644
+index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce51f6267c4 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
-@@ -37,8 +37,12 @@ import kotlinx.coroutines.*
+@@ -19,13 +19,19 @@ import androidx.credentials.provider.BeginCreateCredentialResponse
+ import androidx.credentials.provider.BeginCreatePublicKeyCredentialRequest
+ import androidx.credentials.provider.BeginGetCredentialRequest
+ import androidx.credentials.provider.BeginGetCredentialResponse
++import androidx.credentials.provider.BeginGetPasswordOption
+ import androidx.credentials.provider.BeginGetPublicKeyCredentialOption
+ import androidx.credentials.provider.CreateEntry
++import androidx.credentials.provider.CredentialEntry
+ import androidx.credentials.provider.CredentialProviderService
++import androidx.credentials.provider.PasswordCredentialEntry
+ import androidx.credentials.provider.ProviderClearCredentialStateRequest
+ import androidx.credentials.provider.PublicKeyCredentialEntry
+ import androidx.credentials.provider.BiometricPromptData
+ import androidx.biometric.BiometricPrompt
++import co.algorand.passkeyautofill.GetPasswordActivity
++import co.algorand.passkeyautofill.PasswordCallerScope
++import co.algorand.passkeyautofill.PasswordCredentialStore
+ import co.algorand.passkeyautofill.auth.BiometricRequirement
+ import co.algorand.passkeyautofill.credentials.CredentialRepository
+ import co.algorand.passkeyautofill.credentials.Credential
+@@ -37,9 +43,16 @@ import kotlinx.coroutines.*
  import org.json.JSONArray
  import org.json.JSONObject
  
@@ -441,9 +1031,29 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..6f6d7ac29a9811a40a21df3b7493098d
 -class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
 +open class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
      private val credentialRepository = CredentialRepository()
++    // PERA LOCAL PATCH: shares the repository so the login reader and the
++    // passkey path use one master-key lookup.
++    private val passwordStore = PasswordCredentialStore(credentialRepository)
      private val job = SupervisorJob()
      private val scope = CoroutineScope(Dispatchers.IO + job)
-@@ -190,17 +194,37 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+ 
+@@ -51,6 +64,15 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+         const val DEFAULT_GET_PASSKEY_ACTION = "co.algorand.passkeyautofill.GET_PASSKEY"
+         const val DEFAULT_CREATE_PASSKEY_ACTION = "co.algorand.passkeyautofill.CREATE_PASSKEY"
+ 
++        /**
++         * PERA LOCAL PATCH: not configurable the way the two passkey actions
++         * are. Those are overridable because the legacy native app shipped its
++         * own action names that installed Credential Manager state still points
++         * at; password release is new, so it has one action, declared in this
++         * module's own manifest.
++         */
++        const val GET_PASSWORD_ACTION = "co.algorand.passkeyautofill.GET_PASSWORD"
++
+         /**
+          * MMKV key holding the last time Android routed a credential request to
+          * this service. Set from both `onBeginCreate` and `onBeginGet` callbacks.
+@@ -190,17 +212,37 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
          val action = credentialRepository.getGetPasskeyAction(this) ?: DEFAULT_GET_PASSKEY_ACTION
          val allEntries = mutableListOf<PublicKeyCredentialEntry>()
  
@@ -481,7 +1091,7 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..6f6d7ac29a9811a40a21df3b7493098d
                  Log.d(TAG, "handleGetPasskeyQuery: userVerification=$userVerification")
              } catch (e: Exception) {
                  Log.e(TAG, "Error parsing requestJson", e)
-@@ -217,6 +241,28 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+@@ -217,6 +259,28 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
              }
  
              for (credential in credentials) {
@@ -510,6 +1120,103 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..6f6d7ac29a9811a40a21df3b7493098d
                  if (allowedIds != null) {
                      val isAllowed = allowedIds.any { allowedId ->
                          allowedId == credential.credentialId ||
+@@ -280,7 +344,85 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+                 }
+             }
+         }
+-        return BeginGetCredentialResponse(allEntries)
++        // Passkey assertion is shipping behaviour and must not start failing
++        // because the login reader threw: the caller's whole request would come
++        // back as GetCredentialUnknownException.
++        val passwords = try {
++            passwordEntries(request)
++        } catch (e: Exception) {
++            Log.e(TAG, "Error collecting password entries", e)
++            emptyList()
++        }
++        val entries: List<CredentialEntry> = allEntries + passwords
++        return BeginGetCredentialResponse(entries)
++    }
++
++    /**
++     * PERA LOCAL PATCH: the saved logins offered for a `BeginGetPasswordOption`.
++     *
++     * The caller is resolved and the match applied BEFORE any entry is built,
++     * because an unscoped password query is a disclosure of the whole store to
++     * whoever asked. See [PasswordCallerScope].
++     *
++     * Entries carry only the username and the login's host: the password stays
++     * sealed until [GetPasswordActivity] has a biometric result, so building
++     * this list never puts one in memory.
++     */
++    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
++    private fun passwordEntries(request: BeginGetCredentialRequest): List<PasswordCredentialEntry> {
++        val options = request.beginGetCredentialOptions.filterIsInstance<BeginGetPasswordOption>()
++        if (options.isEmpty()) return emptyList()
++
++        val callerScope = PasswordCallerScope.resolve(this, request.callingAppInfo)
++        if (callerScope == null) {
++            Log.w(TAG, "Refusing the password query: the caller could not be identified")
++            return emptyList()
++        }
++
++        val matching = passwordStore.loginSummaries(this).filter { callerScope.matches(it.host) }
++        if (matching.isEmpty()) {
++            // Says which scope rejected everything: an app caller matches
++            // nothing by design, and reading "no saved login" instead would
++            // send someone hunting for a storage bug.
++            Log.d(TAG, "No saved login is in scope for $callerScope")
++            return emptyList()
++        }
++
++        val entries = mutableListOf<PasswordCredentialEntry>()
++        for (option in options) {
++            val allowedUserIds = option.allowedUserIds
++            for (login in matching) {
++                if (allowedUserIds.isNotEmpty() && !allowedUserIds.contains(login.username)) {
++                    continue
++                }
++                try {
++                    val data = Bundle()
++                    data.putString(GetPasswordActivity.EXTRA_LOGIN_ID, login.recordIdentifier)
++                    // Unlike the passkey entries the option is not part of the
++                    // request code: the only extra is the login id, so two
++                    // options asking for the same login want the very same
++                    // PendingIntent rather than two that differ by nothing.
++                    val uniqueRequestCode = (GET_PASSWORD_ACTION + login.recordIdentifier).hashCode()
++                    // PasswordCredentialEntry rejects an empty username, and
++                    // the wallet only requires a domain and a password to save
++                    // a login, so the host stands in as the label. The released
++                    // credential still carries the stored username as its id.
++                    val builder = PasswordCredentialEntry.Builder(
++                        this,
++                        login.username.ifEmpty { login.host },
++                        createNewPendingIntent(GET_PASSWORD_ACTION, uniqueRequestCode, data),
++                        option
++                    ).setIcon(Icon.createWithResource(this, android.R.drawable.ic_lock_lock))
++                    if (login.username.isNotEmpty()) {
++                        builder.setDisplayName(login.host)
++                    }
++                    entries.add(builder.build())
++                } catch (e: Exception) {
++                    Log.e(TAG, "Error building PasswordCredentialEntry", e)
++                }
++            }
++        }
++        return entries
+     }
+ 
+     override fun onClearCredentialStateRequest(
+@@ -303,6 +445,9 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+         val componentName = when(action) {
+             getAction -> android.content.ComponentName(packageName, "co.algorand.passkeyautofill.GetPasskeyActivity")
+             createAction -> android.content.ComponentName(packageName, "co.algorand.passkeyautofill.CreatePasskeyActivity")
++            // PERA LOCAL PATCH: last, so an app that configured either passkey
++            // action to this same string keeps its existing routing.
++            GET_PASSWORD_ACTION -> android.content.ComponentName(packageName, "co.algorand.passkeyautofill.GetPasswordActivity")
+             else -> null
+         }
+ 
 diff --git a/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f7063f3b6b8
@@ -1491,6 +2198,30 @@ index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee0
 +    }
 +  ]
 +}
+diff --git a/android/src/main/res/xml/provider.xml b/android/src/main/res/xml/provider.xml
+index 045847c91531aa36bb41aad811425f313077d3b1..9bf24fdd65bf79803bf65d015a0a0935fe5c5401 100644
+--- a/android/src/main/res/xml/provider.xml
++++ b/android/src/main/res/xml/provider.xml
+@@ -1,5 +1,18 @@
+ <credential-provider xmlns:android="http://schemas.android.com/apk/res/android">
+     <capabilities>
+         <capability name="androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL" />
++        <!--
++          PERA LOCAL PATCH: without this the OS never routes a password request
++          to the service, so the whole password branch is unreachable.
++
++          The framework matches this string against the request's credential
++          type verbatim (`CredentialProviderInfo.hasCapability`), and the type
++          of a password option is `PasswordCredential.TYPE_PASSWORD_CREDENTIAL`
++          = "android.credentials.TYPE_PASSWORD_CREDENTIAL". Note the missing
++          "x": unlike passkeys, whose AndroidX type string really is
++          "androidx.credentials.…", the password type keeps the platform
++          prefix. `CredentialProviderService`'s own javadoc shows this spelling.
++        -->
++        <capability name="android.credentials.TYPE_PASSWORD_CREDENTIAL" />
+     </capabilities>
+ </credential-provider>
+\ No newline at end of file
 diff --git a/app.plugin.js b/app.plugin.js
 index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0fdf8c0228 100644
 --- a/app.plugin.js
