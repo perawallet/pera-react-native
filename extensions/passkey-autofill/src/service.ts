@@ -190,8 +190,21 @@ export class PasskeyAutofillService {
         return this.invoke('openProviderSettings', [], false)
     }
 
+    /**
+     * Unlike other optional native methods, an absent
+     * `isAutofillServiceActive` must reject rather than resolve `false` via
+     * {@link invoke}'s fallback: "no autofill service exists on this
+     * platform" (iOS, or a build predating the native work) has to be
+     * distinguishable from "the service exists and is off", since only the
+     * latter is something the enable-action UI can fix.
+     */
     isAutofillServiceActive(): Promise<boolean> {
-        return this.invoke('isAutofillServiceActive', [], false)
+        if (typeof this.native.isAutofillServiceActive !== 'function') {
+            return Promise.reject(
+                new Error('isAutofillServiceActive is not supported'),
+            )
+        }
+        return (async () => this.native.isAutofillServiceActive!())()
     }
 
     openAutofillSettings(): Promise<boolean> {

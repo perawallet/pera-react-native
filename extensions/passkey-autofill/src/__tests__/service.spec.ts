@@ -204,19 +204,21 @@ describe('PasskeyAutofillService', () => {
             })
             const service = new PasskeyAutofillService(native)
 
-            await expect(service.isAutofillServiceActive()).resolves.toBe(
-                true,
-            )
+            await expect(service.isAutofillServiceActive()).resolves.toBe(true)
         })
 
-        it('resolves false when the native module predates the method', async () => {
+        it('resolves openAutofillSettings to false when the native module predates the method', async () => {
             const native = makeNative({})
             const service = new PasskeyAutofillService(native)
 
-            await expect(service.isAutofillServiceActive()).resolves.toBe(
-                false,
-            )
             await expect(service.openAutofillSettings()).resolves.toBe(false)
+        })
+
+        it('rejects isAutofillServiceActive when the native module has no such capability', async () => {
+            const native = makeNative({})
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.isAutofillServiceActive()).rejects.toThrow()
         })
     })
 
