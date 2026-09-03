@@ -1,5 +1,5 @@
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
-index e664746a384e1403297d47c42c1383f0f41d4766..a23442662e857c1bb4e3ad8110ab64dfacc01c01 100644
+index e664746a384e1403297d47c42c1383f0f41d4766..53cd695b9fa2f6433c19025c269b869c15a497a2 100644
 --- a/android/src/main/AndroidManifest.xml
 +++ b/android/src/main/AndroidManifest.xml
 @@ -2,8 +2,19 @@
@@ -23,19 +23,26 @@ index e664746a384e1403297d47c42c1383f0f41d4766..a23442662e857c1bb4e3ad8110ab64df
              android:enabled="true"
              android:exported="true"
              android:label="@string/passkey_autofill_label"
-@@ -34,5 +45,21 @@
+@@ -34,5 +45,28 @@
                  <category android:name="android.intent.category.DEFAULT"/>
              </intent-filter>
          </activity>
 +        <!--
-+          PERA LOCAL PATCH: password release. Declared exactly like the two
-+          passkey activities. Exported is safe here even though the provider's
-+          PendingIntent names the component explicitly: an external launch
-+          carries no ProviderGetCredentialRequest, so GetPasswordActivity
-+          reports a failure and releases nothing.
++          PERA LOCAL PATCH: password release. Unlike the two passkey activities
++          above, this one is NOT exported: the provider's PendingIntent names
++          the component explicitly and is same-app, so nothing is lost by
++          keeping it internal. It must stay non-exported because an external
++          caller can legally construct the extra it would need to reach this
++          activity directly — GetCredentialRequest, CallingAppInfo and
++          EXTRA_GET_CREDENTIAL_REQUEST are public SDK API, so any app could
++          synthesize a ProviderGetCredentialRequest with an origin of its
++          choosing (it would still have to forge SigningInfo past the
++          privileged-browser allowlist to pass PasswordCallerScope, which is
++          hard but not impossible) — exported="false" removes that path
++          entirely rather than relying on the allowlist alone.
 +        -->
 +        <activity android:name="co.algorand.passkeyautofill.GetPasswordActivity"
-+            android:exported="true"
++            android:exported="false"
 +            android:launchMode="singleTop"
 +            android:theme="@style/Theme.PasskeyAutofill.Dialog">
 +            <intent-filter>
@@ -284,10 +291,10 @@ index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..fcd57d8b86e8d2a22112f80bed610618
                          val first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0b2430593844844c44eea5e6b54fc9cbaf52adfc
+index 0000000000000000000000000000000000000000..452ead69fc9c4ab167c1e642d4c3838b2481b115
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasswordActivity.kt
-@@ -0,0 +1,179 @@
+@@ -0,0 +1,200 @@
 +package co.algorand.passkeyautofill
 +
 +import android.app.Activity
@@ -316,11 +323,15 @@ index 0000000000000000000000000000000000000000..0b2430593844844c44eea5e6b54fc9cb
 + * PERA LOCAL PATCH — releases one saved password to the caller that selected
 + * its entry.
 + *
-+ * The provider's entry list carries only a login id, so this activity is where
-+ * the secret is actually reached. The order below is the whole point of the
-+ * class: identify the caller, re-check that the selected login is in that
-+ * caller's scope, gate on biometrics, and only then unseal. A password is never
-+ * read before there is a verified user in front of the device.
++ * The provider's entry list carries a login id and its host (see
++ * [EXTRA_LOGIN_HOST]) but never a password, so this activity re-checks the
++ * caller's scope against that host, gates on biometrics, and only then calls
++ * [PasswordCredentialStore.login] to unseal the selected record. That call is
++ * this activity's only unseal, and it happens after biometrics succeeds.
++ * Building the provider's entry list is a separate step, in the service, and
++ * does unseal every matching login's material once to read its host and
++ * username — see [PasswordCallerScope] and
++ * [PasswordCredentialStore.loginSummaries] for why.
 + *
 + * Unlike [GetPasskeyActivity] this shows no UI of its own — the biometric
 + * prompt is the only thing the user sees, and a failure is reported to the
@@ -336,6 +347,18 @@ index 0000000000000000000000000000000000000000..0b2430593844844c44eea5e6b54fc9cb
 +
 +        /** Key inside the PendingIntent's `CREDENTIAL_DATA` bundle. */
 +        const val EXTRA_LOGIN_ID = "loginId"
++
++        /**
++         * Key inside the PendingIntent's `CREDENTIAL_DATA` bundle for the
++         * login's comparable host (see [PasswordCredentialStore.host]).
++         *
++         * `CREDENTIAL_DATA` is written by the service when it builds the
++         * entry, and [Intent.fillIn] cannot replace an existing extra, so a
++         * caller cannot substitute its own host here. Carrying it lets this
++         * activity re-check the caller's scope without unsealing the login a
++         * second time before biometrics.
++         */
++        const val EXTRA_LOGIN_HOST = "loginHost"
 +    }
 +
 +    private var isHandling: Boolean = false
@@ -360,19 +383,24 @@ index 0000000000000000000000000000000000000000..0b2430593844844c44eea5e6b54fc9cb
 +            return
 +        }
 +
-+        val loginId = intent.getBundleExtra("CREDENTIAL_DATA")?.getString(EXTRA_LOGIN_ID)
++        val credentialData = intent.getBundleExtra("CREDENTIAL_DATA")
++        val loginId = credentialData?.getString(EXTRA_LOGIN_ID)
 +        if (loginId.isNullOrEmpty()) {
 +            fail(GetCredentialUnknownException("The password request named no login."))
 +            return
 +        }
++        val loginHost = credentialData.getString(EXTRA_LOGIN_HOST)
 +
 +        // Defence in depth. The login is selected purely by the id carried in
 +        // the PendingIntent, so re-apply the provider's own scoping rule here
 +        // rather than trusting that the query-time filter was the only way to
 +        // reach this point. Mirrors GetPasskeyActivity's origin re-check.
++        //
++        // Matched against the host carried in CREDENTIAL_DATA, not against a
++        // freshly unsealed record: this activity must not unseal anything
++        // before biometrics succeed.
 +        val callerScope = PasswordCallerScope.resolve(this, request.callingAppInfo)
-+        val summary = passwordStore.loginSummary(this, loginId)
-+        if (callerScope == null || summary == null || !callerScope.matches(summary.host)) {
++        if (callerScope == null || loginHost.isNullOrEmpty() || !callerScope.matches(loginHost)) {
 +            Log.e(TAG, "Refusing release: the selected login does not belong to the requester")
 +            fail(GetCredentialUnknownException("This login is not available to the requesting app."))
 +            return
@@ -996,7 +1024,7 @@ index 35a27a63aa27cfd25d09dfb65472407be4303fb8..fea7a9744c7e995f8dc478be09365102
      private fun decodeKeyData(payload: String, masterKey: ByteArray?): JSONObject {
          try {
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
-index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce51f6267c4 100644
+index 7199493d1680164000de4d44eaf939f5111cb0af..27037c8af7e7579e6140404903f96d3952038cc7 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
 @@ -19,13 +19,19 @@ import androidx.credentials.provider.BeginCreateCredentialResponse
@@ -1120,7 +1148,7 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
                  if (allowedIds != null) {
                      val isAllowed = allowedIds.any { allowedId ->
                          allowedId == credential.credentialId ||
-@@ -280,7 +344,85 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+@@ -280,7 +344,107 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
                  }
              }
          }
@@ -1145,9 +1173,15 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
 +     * because an unscoped password query is a disclosure of the whole store to
 +     * whoever asked. See [PasswordCallerScope].
 +     *
-+     * Entries carry only the username and the login's host: the password stays
-+     * sealed until [GetPasswordActivity] has a biometric result, so building
-+     * this list never puts one in memory.
++     * [PasswordCredentialStore.loginSummaries] unseals every matching login's
++     * material once to read its host and username — the domain lives inside
++     * the sealed payload, so there is no cheaper way to filter by caller here.
++     * That unseal happens in this query, not in the released credential's
++     * password: neither field is bound to a `password` variable, and the
++     * chosen login's host is carried onward in `CREDENTIAL_DATA` (see
++     * [GetPasswordActivity.EXTRA_LOGIN_HOST]) so the activity can re-check the
++     * caller's scope without unsealing the login a second time before
++     * biometrics.
 +     */
 +    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 +    private fun passwordEntries(request: BeginGetCredentialRequest): List<PasswordCredentialEntry> {
@@ -1179,11 +1213,22 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
 +                try {
 +                    val data = Bundle()
 +                    data.putString(GetPasswordActivity.EXTRA_LOGIN_ID, login.recordIdentifier)
++                    data.putString(GetPasswordActivity.EXTRA_LOGIN_HOST, login.host)
 +                    // Unlike the passkey entries the option is not part of the
 +                    // request code: the only extra is the login id, so two
 +                    // options asking for the same login want the very same
 +                    // PendingIntent rather than two that differ by nothing.
-+                    val uniqueRequestCode = (GET_PASSWORD_ACTION + login.recordIdentifier).hashCode()
++                    //
++                    // The requestCode is a fixed constant rather than derived
++                    // from the login id: PendingIntent matching ignores extras,
++                    // so a hashCode collision between two different login ids
++                    // would make both entries resolve to the same PendingIntent
++                    // and release each other's password. The Intent.data below
++                    // carries the record id verbatim (not hashed) instead, so
++                    // two logins can never collide.
++                    val pendingIntentData = android.net.Uri.fromParts(
++                        "pera-password", login.recordIdentifier, null
++                    )
 +                    // PasswordCredentialEntry rejects an empty username, and
 +                    // the wallet only requires a domain and a password to save
 +                    // a login, so the host stands in as the label. The released
@@ -1191,7 +1236,12 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
 +                    val builder = PasswordCredentialEntry.Builder(
 +                        this,
 +                        login.username.ifEmpty { login.host },
-+                        createNewPendingIntent(GET_PASSWORD_ACTION, uniqueRequestCode, data),
++                        createNewPendingIntent(
++                            GET_PASSWORD_ACTION,
++                            GET_PASSWORD_ACTION.hashCode(),
++                            data,
++                            pendingIntentData,
++                        ),
 +                        option
 +                    ).setIcon(Icon.createWithResource(this, android.R.drawable.ic_lock_lock))
 +                    if (login.username.isNotEmpty()) {
@@ -1207,7 +1257,28 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
      }
  
      override fun onClearCredentialStateRequest(
-@@ -303,6 +445,9 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+@@ -292,7 +456,19 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+         callback.onResult(null)
+     }
+ 
+-    private fun createNewPendingIntent(action: String, requestCode: Int, extra: Bundle?): PendingIntent{
++    private fun createNewPendingIntent(
++        action: String,
++        requestCode: Int,
++        extra: Bundle?,
++        // PERA LOCAL PATCH: an optional Intent.data. PendingIntent identity is
++        // (requestCode, Intent.filterEquals — action, data, type, component,
++        // categories; extras are not part of it), so two PendingIntents for
++        // different logins that happen to share a requestCode would otherwise
++        // collapse into one. Setting a distinct, unhashed data Uri per login
++        // rules that out regardless of requestCode. Only the password path
++        // sets this; see passwordEntries.
++        data: android.net.Uri? = null,
++    ): PendingIntent{
+         MMKV.initialize(this)
+         val intent = Intent(action)
+ 
+@@ -303,6 +479,9 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
          val componentName = when(action) {
              getAction -> android.content.ComponentName(packageName, "co.algorand.passkeyautofill.GetPasskeyActivity")
              createAction -> android.content.ComponentName(packageName, "co.algorand.passkeyautofill.CreatePasskeyActivity")
@@ -1217,6 +1288,17 @@ index 7199493d1680164000de4d44eaf939f5111cb0af..8bdaf1c42600d6ecd36a1ea296558ce5
              else -> null
          }
  
+@@ -312,6 +491,10 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+             intent.setPackage(packageName)
+         }
+ 
++        if (data != null) {
++            intent.data = data
++        }
++
+         if (extra != null) {
+             intent.putExtra("CREDENTIAL_DATA", extra)
+         }
 diff --git a/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f7063f3b6b8
