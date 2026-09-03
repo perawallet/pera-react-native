@@ -34,7 +34,7 @@ on:
             # coverage lands, rather than a mistake to prune.
             - 'packages/asa-inbox/**'
 
-# Least-privilege default, matching pre-merge.yml.
+# Least-privilege default, matching ci-pre-merge.yml.
 permissions:
     contents: read
 
@@ -81,7 +81,7 @@ jobs:
             # is wide (hardware-wallet, platform, database, remote-config, plus
             # their own deps like shared/config/devtools, PLUS multisig/assets for
             # the typecheck step) and turbo already knows it via `dependsOn:
-            # ["^build"]` — mirrors pre-merge.yml's own `build` job (`pnpm run
+            # ["^build"]` — mirrors ci-pre-merge.yml's own `build` job (`pnpm run
             # build`, no filter) rather than hand-enumerating packages, which
             # missed two of them the first time this workflow was written.
             - name: Build
