@@ -11,10 +11,10 @@
  */
 
 import { useMemo } from 'react'
-import { type StyleProp, type TextStyle } from 'react-native'
+import type { StyleProp, TextStyle } from 'react-native'
 
 import { PWIcon, PWText, PWView } from '@components/core'
-import { type TypographyVariant } from '@theme/typography'
+import type { TypographyVariant } from '@theme/typography'
 import { getVerificationIcon } from '../../utils/verification'
 import { useStyles } from './styles'
 

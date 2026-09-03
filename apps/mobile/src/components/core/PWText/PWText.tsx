@@ -19,7 +19,7 @@ import {
     StyleSheet,
     useWindowDimensions,
 } from 'react-native'
-import { type FontWeight, type TypographyVariant } from '@theme/typography'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 import {
     DEFAULT_MINIMUM_FONT_SCALE,
     MAX_FONT_SIZE_MULTIPLIER,

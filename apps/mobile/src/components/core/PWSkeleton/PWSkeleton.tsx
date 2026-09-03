@@ -11,7 +11,7 @@
  */
 
 import { Skeleton as RNESkeleton } from '@rneui/themed'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
 

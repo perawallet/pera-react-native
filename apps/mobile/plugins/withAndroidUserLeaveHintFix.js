@@ -72,5 +72,6 @@ function addUserLeaveHintOverride(mainActivity) {
   return patched;
 }
 
-module.exports = withAndroidUserLeaveHintFix;
-module.exports.addUserLeaveHintOverride = addUserLeaveHintOverride;
+module.exports = Object.assign(withAndroidUserLeaveHintFix, {
+  addUserLeaveHintOverride,
+});

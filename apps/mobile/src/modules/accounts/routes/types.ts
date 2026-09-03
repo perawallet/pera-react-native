@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PeraCardAccountStackParamList } from '@modules/card/routes/types'
+import type { PeraCardAccountStackParamList } from '@modules/card/routes/types'
 
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }

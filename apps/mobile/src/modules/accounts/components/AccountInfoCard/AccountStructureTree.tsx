@@ -18,7 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

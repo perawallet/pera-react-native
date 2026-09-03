@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import {
-    type NativeStackHeaderProps,
-    type NativeStackNavigationOptions,
+import type {
+    NativeStackHeaderProps,
+    NativeStackNavigationOptions,
 } from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 

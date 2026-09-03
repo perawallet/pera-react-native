@@ -27,7 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
-import { type OnboardingStackParamList } from '../../routes/types'
+import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useExitAccountFlow,
     useRekeyScanNotice,

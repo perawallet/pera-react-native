@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     type AccountBalanceHistoryItem,
     useAccountSummaryQuery,
@@ -22,10 +22,7 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
     portfolioAlgoValue: Decimal

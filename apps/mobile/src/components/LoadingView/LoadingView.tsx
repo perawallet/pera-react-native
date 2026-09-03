@@ -15,7 +15,7 @@ import { PWSkeleton } from '@components/core/PWSkeleton'
 import { PWView } from '@components/core/PWView'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { type PropsWithChildren, type ReactNode } from 'react'
+import type { PropsWithChildren, ReactNode } from 'react'
 
 export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'

@@ -11,8 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type TextStyle } from 'react-native'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { TextStyle } from 'react-native'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getIconPixelSize } from '@components/core/PWIcon'
 import { getTypography } from '@theme/typography'
 import { getButtonIconSize } from './sizing'

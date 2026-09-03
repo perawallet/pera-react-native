@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { type BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { type modelsv2 } from 'algosdk'
+import type { modelsv2 } from 'algosdk'
 import {
     getAlgorandClient,
     useNetwork,

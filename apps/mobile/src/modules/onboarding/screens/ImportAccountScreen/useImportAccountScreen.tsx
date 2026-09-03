@@ -14,7 +14,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { Linking } from 'react-native'
 
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { type OnboardingStackParamList } from '../../routes/types'
+import type { OnboardingStackParamList } from '../../routes/types'
 import {
     consumePendingImportMnemonic,
     DuplicateAccountError,

@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type ScaledSize } from 'react-native'
+import type { ScaledSize } from 'react-native'
 
 const DOT_SIZE = 6
 const DOT_RADIUS = 3

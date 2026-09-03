@@ -18,6 +18,6 @@
 
 import React from 'react'
 // lanekeep-ignore-next-line pera/no-primitive-rn-components reason: stub standing in for a third-party component must render the primitive it replaces
-import { View, ViewProps } from 'react-native'
+import { View, type ViewProps } from 'react-native'
 
 export const LinearGradient = (props: ViewProps) => <View {...props} />

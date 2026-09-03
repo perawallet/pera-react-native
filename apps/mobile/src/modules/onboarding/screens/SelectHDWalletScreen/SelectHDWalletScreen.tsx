@@ -22,7 +22,7 @@ import {
     PWLoadingOverlay,
     PWScreen,
 } from '@components/core'
-import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
+import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'

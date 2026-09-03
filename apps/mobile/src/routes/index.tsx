@@ -36,7 +36,7 @@ import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 
-import { type RootStackParamList } from './types'
+import type { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { MessagesStackNavigator } from '@modules/messages/routes'

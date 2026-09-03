@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type ScaledSize } from 'react-native'
+import type { ScaledSize } from 'react-native'
 
 const TIME_LABEL_MIN_WIDTH = 44
 

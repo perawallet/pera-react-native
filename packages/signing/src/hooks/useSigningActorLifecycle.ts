@@ -26,7 +26,7 @@ import { useLocalKeyArc60Signer } from './useLocalKeyArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { useSigningStore, wasRestoredFromStorage } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
-import { type signingMachine } from '../machine/signingMachine'
+import type { signingMachine } from '../machine/signingMachine'
 import { recordAppStateChange } from '../machine/children/appStateTracker'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
@@ -35,7 +35,7 @@ import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
 import { isRequestGroupAlreadySubmitted } from '../ledger'
 import type { SigningMachineDeps } from '../machine/context'
-import { type SignRequest } from '../models'
+import type { SignRequest } from '../models'
 
 // Module scope, not a per-hook `useRef`, so every mounted consumer shares one
 // Map: the first effect to run for a request creates the actor and the rest

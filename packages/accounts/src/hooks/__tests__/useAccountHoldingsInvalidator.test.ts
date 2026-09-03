@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { type Query } from '@tanstack/react-query'
+import type { Query } from '@tanstack/react-query'
 import { useAccountHoldingsInvalidator } from '../useAccountHoldingsInvalidator'
 import {
     getAccountBalancesQueryKey,

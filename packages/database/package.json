@@ -16,8 +16,8 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",
     "test:unit": "bash ../../tools/rebuild-native.sh && vitest run",
     "db:generate": "drizzle-kit generate --name initial",
@@ -35,7 +35,6 @@
     "drizzle-kit": "^0.31.10",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:"
   }
 }

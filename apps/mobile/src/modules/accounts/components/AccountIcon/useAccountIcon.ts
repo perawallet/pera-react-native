@@ -20,8 +20,8 @@ import {
     type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { type IconName } from '@components/core'
-import { type PWRoundIconVariant } from '@components/core/PWRoundIcon'
+import type { IconName } from '@components/core'
+import type { PWRoundIconVariant } from '@components/core/PWRoundIcon'
 
 export type AccountDisplayState =
     | 'base'

@@ -73,5 +73,6 @@ const withAndroidRemoveAdIdPermissions = (config) =>
     return config;
   });
 
-module.exports = withAndroidRemoveAdIdPermissions;
-module.exports.removeAdIdPermissions = removeAdIdPermissions;
+module.exports = Object.assign(withAndroidRemoveAdIdPermissions, {
+  removeAdIdPermissions,
+});

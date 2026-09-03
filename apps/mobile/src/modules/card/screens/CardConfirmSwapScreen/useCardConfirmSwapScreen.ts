@@ -17,7 +17,7 @@ import {
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useAccountBalancesInvalidator,
@@ -30,11 +30,11 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { type PeraCardFlowParamList } from '../../routes/types'
+import type { PeraCardFlowParamList } from '../../routes/types'
 import { useCardAddFundsSwap } from '../CardAddFundsScreen/useCardAddFundsSwap'
 
 const EMPTY_VALUE = '—'

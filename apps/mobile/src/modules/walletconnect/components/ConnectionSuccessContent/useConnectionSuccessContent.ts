@@ -12,7 +12,7 @@
 
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { type WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 import { useReturnToDapp } from '../../hooks/useReturnToDapp'
 import { useReturnToDappStore } from '../../stores/useReturnToDappStore'
 

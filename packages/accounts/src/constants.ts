@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ImportAccountType } from './models'
+import type { ImportAccountType } from './models'
 
 export const KEY_DOMAIN = 'pera.accounts'
 

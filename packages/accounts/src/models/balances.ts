@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type PeraAsset } from '@perawallet/wallet-core-assets'
-import { type Decimal } from 'decimal.js'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Decimal } from 'decimal.js'
 
 export type AssetWithAccountBalance = {
     assetId: string

@@ -21,7 +21,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {

@@ -19,7 +19,7 @@ import {
     FALCON_1024_SCHEME,
     makePaymentTxnWithSuggestedParamsFromObject,
 } from 'algosdk'
-import { sha512_256 } from '@noble/hashes/sha2'
+import { sha512_256 } from '@noble/hashes/sha2.js'
 import { generateKey, signCompressed } from 'falcon-1024'
 import {
     assemblePQSignedTransaction,

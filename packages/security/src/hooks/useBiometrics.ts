@@ -11,17 +11,17 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import {
-    type BiometricsAuthenticateFailureReason,
-    type BiometricsAuthenticatePrompt,
-    type BiometricsAuthenticateResult,
-    type BiometricType,
+import type {
+    BiometricsAuthenticateFailureReason,
+    BiometricsAuthenticatePrompt,
+    BiometricsAuthenticateResult,
+    BiometricType,
 } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
-import { type BiometricsDisabledReason } from '../models'
+import type { BiometricsDisabledReason } from '../models'
 import { useSecurityStore } from '../store'
 
 /**

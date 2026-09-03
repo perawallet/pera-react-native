@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { render, screen } from '@test-utils/render'
 import { PWBottomSheet, type PWBottomSheetSize } from '../PWBottomSheet'
 import { Text } from 'react-native'

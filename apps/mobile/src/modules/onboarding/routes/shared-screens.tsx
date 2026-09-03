@@ -11,7 +11,7 @@
  */
 
 import type React from 'react'
-import { type createNativeStackNavigator } from '@react-navigation/native-stack'
+import type { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'

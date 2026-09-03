@@ -17,7 +17,7 @@ import {
     useCameraDevice,
     useCameraPermission,
 } from 'react-native-vision-camera'
-import { type ScannedBarcode } from './QRCameraScanner'
+import type { ScannedBarcode } from './QRCameraScanner'
 
 // NOTE: this hook intentionally does NOT import
 // `react-native-vision-camera-barcode-scanner`. That package pulls in MLKit at

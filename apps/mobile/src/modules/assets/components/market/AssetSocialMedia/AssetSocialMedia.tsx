@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     type IconName,
     PWIcon,

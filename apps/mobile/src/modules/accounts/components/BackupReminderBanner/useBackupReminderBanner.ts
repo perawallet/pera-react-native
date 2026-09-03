@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'

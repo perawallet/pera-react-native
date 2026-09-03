@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from './useNetwork'
 
 export type NetworkSwitchHandler = (from: Network, to: Network) => void

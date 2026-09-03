@@ -15,9 +15,9 @@ import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { type Nullable } from '@perawallet/wallet-core-shared'
-import { type ReactNode } from 'react'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { ReactNode } from 'react'
 import { useStyles } from './styles'
 
 export type AccountMenuContentResult =

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'

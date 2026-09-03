@@ -12,7 +12,6 @@
 
 import { defineConfig, type Plugin } from 'vite'
 import { resolve } from 'path'
-import dts from 'vite-plugin-dts'
 
 const pq = (file: string) => resolve(__dirname, 'src/crypto/pq', file)
 
@@ -125,26 +124,7 @@ export default defineConfig(({ mode }) => {
             // Both targets satisfy the same PQSignatureProvider contract, so one
             // set of declarations covers them; emitting twice would race on the
             // same files.
-            ...(target === 'native'
-                ? []
-                : [
-                      dts({
-                          include: ['src'],
-                          exclude: [
-                              '**/__tests__/**',
-                              '**/*.test.ts',
-                              '**/*.test.tsx',
-                              '**/{handlers,*-handlers}.ts',
-                          ],
-                          afterDiagnostic: diagnostics => {
-                              if (diagnostics.length > 0) {
-                                  throw new Error(
-                                      `TypeScript declaration generation failed with ${diagnostics.length} error(s)`,
-                                  )
-                              }
-                          },
-                      }),
-                  ]),
+            ...(target === 'native' ? [] : []),
         ],
         build: {
             // Never on either pass: the second would wipe the first, and the

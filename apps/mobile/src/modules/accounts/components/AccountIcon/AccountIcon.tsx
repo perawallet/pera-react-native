@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { type ViewStyle } from 'react-native'
-import { type SvgProps } from 'react-native-svg'
+import type { ViewStyle } from 'react-native'
+import type { SvgProps } from 'react-native-svg'
 
-import {
-    type AccountType,
-    type WalletAccount,
+import type {
+    AccountType,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PWRoundIcon, type PWRoundIconSize } from '@components/core/PWRoundIcon'
 import { useAccountIcon, type AccountDisplayState } from './useAccountIcon'

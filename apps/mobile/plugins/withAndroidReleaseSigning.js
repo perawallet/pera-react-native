@@ -83,5 +83,6 @@ function setReleaseSigningConfig(buildGradle) {
   return declared;
 }
 
-module.exports = withAndroidReleaseSigning;
-module.exports.setReleaseSigningConfig = setReleaseSigningConfig;
+module.exports = Object.assign(withAndroidReleaseSigning, {
+  setReleaseSigningConfig,
+});

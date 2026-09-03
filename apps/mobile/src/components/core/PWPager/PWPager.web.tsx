@@ -13,7 +13,7 @@
 import { Children } from 'react'
 import { PWView } from '../PWView'
 
-import { type PWPagerProps } from './types'
+import type { PWPagerProps } from './types'
 import { useStyles } from './styles'
 
 /**

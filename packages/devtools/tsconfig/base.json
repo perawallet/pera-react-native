@@ -2,12 +2,12 @@
     "$schema": "https://json.schemastore.org/tsconfig",
     "compilerOptions": {
         "composite": false,
-        "declaration": true,
-        "declarationMap": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "inlineSources": false,
         "isolatedModules": true,
+        "noUncheckedSideEffectImports": true,
+        "verbatimModuleSyntax": true,
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "noUnusedLocals": false,
@@ -22,8 +22,7 @@
             "@perawallet/test-utils/*": [
                 "./../../../extensions/platform/src/test-utils/*"
             ]
-        },
-        "outDir": "dist"
+        }
     },
     "exclude": [
         "node_modules"

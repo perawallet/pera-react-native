@@ -20,7 +20,7 @@ import {
     BACKUP_ACCESS_DOMAIN,
     type ExecuteWithMnemonicHandler,
 } from '@perawallet/wallet-core-kms'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
     /**
