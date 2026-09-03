@@ -829,10 +829,10 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..def8d18d1c96eada740de3e9289ad9228a6d9953
+index 0000000000000000000000000000000000000000..4963faa52c8b73ad9cbe90e24685aa6efea0fed8
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
-@@ -0,0 +1,234 @@
+@@ -0,0 +1,244 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
@@ -863,6 +863,16 @@ index 0000000000000000000000000000000000000000..def8d18d1c96eada740de3e9289ad922
 + * (https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json) — the same
 + * set Google Password Manager trusts. `userdebug` fingerprints in it only apply
 + * on `userdebug` builds; AndroidX filters them by `Build.TYPE`.
++ *
++ * The autofill service reuses this same allowlist through [isAllowlistedBrowser]
++ * to answer a different question: may this caller assert a web domain at all?
++ * Autofill hands over an `AssistStructure` whose `webDomain` the client app
++ * wrote itself, with no platform-populated origin to check, so the signing
++ * certificate is the only evidence available. Reusing the list is sound because
++ * the trust it encodes is strictly stronger: an app Google trusts to *dictate*
++ * the origin a WebAuthn assertion is signed over is trusted, by that same
++ * decision, merely to *report* the page it is rendering. Nothing narrower would
++ * be gained by a second list, and two lists would drift apart.
 + *
 + * Every failure path returns null, which means "treat this as an ordinary app
 + * call" — the pre-existing behaviour. A browser missing from the allowlist is
@@ -1236,18 +1246,19 @@ index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2c
          }
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0c3e94552
+index 0000000000000000000000000000000000000000..beaec92179fdaa3c8b8fc794a90dd4867ea892d7
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AppLinkStore.kt
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,73 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.content.Context
++import androidx.annotation.VisibleForTesting
 +import com.tencent.mmkv.MMKV
 +
 +/**
-+ * Package-to-login associations asserted by the user when they pick a login
-+ * for an app that has none.
++ * Caller-to-login associations asserted by the user when they pick a login for
++ * a caller that has none.
 + *
 + * Its own mmapID: the "keystore" instance must stay empty of non-keystore keys
 + * or master-key minting fails on a fresh install, and defaultMMKV already
@@ -1256,30 +1267,60 @@ index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0
 +object AppLinkStore {
 +    private const val MMAP_ID = "pera_autofill_app_links"
 +
-+    private fun store(context: Context): MMKV {
-+        MMKV.initialize(context)
-+        return MMKV.mmkvWithID(MMAP_ID)
++    /**
++     * Neither a package name nor a host may contain it, so a key parses back
++     * unambiguously and no package can forge another's key by naming itself.
++     */
++    private const val SEPARATOR = '|'
++
++    /**
++     * The storage key a link is asserted under.
++     *
++     * A caller that rendered a page and told us its domain is linked per
++     * *origin*, not per package. Keying such a caller on its package alone
++     * would let a link made on one page answer on every other page it ever
++     * renders — an in-app browser would offer a bank login to a phishing page
++     * and label it with the bank's host. A caller that claimed no domain is an
++     * ordinary native app with a single identity, and stays package-keyed:
++     * that is the case the user-asserted link was designed for.
++     */
++    @VisibleForTesting
++    internal fun linkKey(packageName: String, host: String?): String =
++        if (host.isNullOrEmpty()) packageName else "$packageName$SEPARATOR$host"
++
++    fun linksFor(context: Context, packageName: String, host: String?): Set<String> =
++        store(context).decodeStringSet(linkKey(packageName, host), emptySet()) ?: emptySet()
++
++    fun link(context: Context, packageName: String, host: String?, recordIdentifier: String) {
++        val key = linkKey(packageName, host)
++        val next = linksFor(context, packageName, host) + recordIdentifier
++        store(context).encode(key, next)
 +    }
 +
-+    fun linksFor(context: Context, packageName: String): Set<String> =
-+        store(context).decodeStringSet(packageName, emptySet()) ?: emptySet()
-+
-+    fun link(context: Context, packageName: String, recordIdentifier: String) {
-+        val next = linksFor(context, packageName) + recordIdentifier
-+        store(context).encode(packageName, next)
-+    }
-+
-+    /** Drops [recordIdentifier] from every package, and empty packages with it. */
++    /**
++     * Drops [recordIdentifier] from every key, and empty keys with it.
++     *
++     * Iterates raw keys rather than reconstructing them: one login may be
++     * linked under a package alone and under several of that package's hosts,
++     * and a delete has to reach all of them or the picker keeps offering an
++     * entry that no longer resolves.
++     */
 +    fun prune(context: Context, recordIdentifier: String) {
 +        val mmkv = store(context)
-+        mmkv.allKeys()?.forEach { pkg ->
-+            val next = linksFor(context, pkg) - recordIdentifier
-+            if (next.isEmpty()) mmkv.removeValueForKey(pkg) else mmkv.encode(pkg, next)
++        mmkv.allKeys()?.forEach { key ->
++            val current = mmkv.decodeStringSet(key, emptySet()) ?: emptySet()
++            val next = current - recordIdentifier
++            if (next.isEmpty()) mmkv.removeValueForKey(key) else mmkv.encode(key, next)
 +        }
 +    }
 +
 +    fun clear(context: Context) {
 +        store(context).clearAll()
++    }
++
++    private fun store(context: Context): MMKV {
++        MMKV.initialize(context)
++        return MMKV.mmkvWithID(MMAP_ID)
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt
@@ -1410,10 +1451,10 @@ index 0000000000000000000000000000000000000000..660d2f01eb1ac1d6e1df0e68bb08e323
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6433f3cc3
+index 0000000000000000000000000000000000000000..ea5b7f117f9ba3aba2d1cd00a0f5484f5a849d66
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,123 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.content.Context
@@ -1436,33 +1477,44 @@ index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6
 +sealed class AutofillScope {
 +    /**
 +     * A caller whose signing certificate matched the browser allowlist, acting
-+     * for a page on [host]. The only scope that may be handed login entries
-+     * without the user first naming them.
++     * for a page on [host] over a secure scheme. The only scope that may be
++     * handed login entries without the user first naming them.
 +     */
 +    data class Web(val host: String) : AutofillScope()
 +
-+    /** An app the user has already chosen logins for. */
-+    data class LinkedApp(val packageName: String) : AutofillScope()
-+
 +    /**
-+     * An app with no links yet, including any caller that claimed a domain but
-+     * could not be identified as a browser. Offered a picker, never entries.
++     * A caller the user has already chosen logins for, on the [host] it claimed
++     * (null when it claimed none). [links] are the associations recorded under
++     * exactly this caller's key, read once by [resolve] — a second read
++     * elsewhere could use a different key and undo the host scoping.
 +     */
-+    data class UnlinkedApp(val packageName: String) : AutofillScope()
++    data class LinkedApp(
++        val packageName: String,
++        val host: String?,
++        val links: Set<String>,
++    ) : AutofillScope()
 +
 +    /**
-+     * An allowlisted browser whose request carried no host we could resolve.
++     * A caller with no links yet for what it claimed to be, including any
++     * caller that claimed a domain but could not be identified as a browser.
++     * Offered a picker, never entries.
++     */
++    data class UnlinkedApp(val packageName: String, val host: String?) : AutofillScope()
++
++    /**
++     * An allowlisted browser whose request carried no host we could trust — no
++     * resolvable domain, or one claimed over an insecure scheme.
 +     * **Matches nothing, and must never be offered the linking picker.**
 +     *
-+     * A link is keyed by package, so linking a login to a browser would attach
-+     * it to *every* page that browser ever renders — the exact domain-blind
-+     * offer [Web] exists to prevent. The caller is verified but the page is
-+     * unknown, and an unknown page earns nothing.
++     * A browser link would have to be keyed on the browser package with no host
++     * to qualify it, attaching the login to *every* page that browser renders —
++     * the exact domain-blind offer [Web] exists to prevent. The caller is
++     * verified but the page is unknown, and an unknown page earns nothing.
 +     */
 +    data class UnscopedBrowser(val packageName: String) : AutofillScope()
 +
 +    /** Whether a login may be offered to this caller without being picked first. */
-+    fun matches(storedDomain: String, recordIdentifier: String, links: Set<String>): Boolean =
++    fun matches(storedDomain: String, recordIdentifier: String): Boolean =
 +        when (this) {
 +            is Web -> PasswordCredentialStore.domainMatches(storedDomain, host)
 +            is LinkedApp -> links.contains(recordIdentifier)
@@ -1472,34 +1524,58 @@ index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6
 +
 +    companion object {
 +        private const val TAG = "AutofillScope"
++        private const val INSECURE_SCHEME = "http"
 +
 +        @RequiresApi(Build.VERSION_CODES.O)
 +        fun resolve(context: Context, target: FillTarget): AutofillScope {
++            val host = target.webDomain
++                ?.let { PasswordCredentialStore.host(it) }
++                ?.takeIf { it.isNotEmpty() }
++
 +            // Browser identity is settled before the domain is looked at, so a
-+            // verified browser can never fall into app scope: `LinkedApp` has no
-+            // domain test, and a package-keyed link would then answer on every
-+            // page that browser renders.
++            // verified browser can never fall into app scope: a browser link
++            // could only be keyed on the browser itself, and would then answer
++            // on every page it renders.
 +            if (PrivilegedBrowsers.isAllowlistedBrowser(context, target.packageName)) {
-+                val host = target.webDomain?.let { PasswordCredentialStore.host(it) }.orEmpty()
-+                return if (host.isEmpty()) UnscopedBrowser(target.packageName) else Web(host)
++                return if (host == null || isInsecure(target.webScheme)) {
++                    UnscopedBrowser(target.packageName)
++                } else {
++                    Web(host)
++                }
 +            }
++
 +            // An unverified caller falls through to app scope rather than being
 +            // denied outright — it may well be honest, and the picker puts the
-+            // choice to the user instead of to the claim. Any domain it claimed
-+            // is dropped here: nothing has verified who it is.
++            // choice to the user instead of to the claim. The claim still binds
++            // the link it can create: an honest in-app browser reports the page
++            // it is on, so scoping to that page stops a login asserted on one
++            // origin being offered on the next one the same app renders.
 +            val links: Set<String> = try {
-+                AppLinkStore.linksFor(context, target.packageName)
++                AppLinkStore.linksFor(context, target.packageName, host)
 +            } catch (e: Exception) {
 +                // Fail to the picker, not to a match.
 +                Log.w(TAG, "Could not read app links for ${target.packageName}", e)
 +                emptySet()
 +            }
 +            return if (links.isEmpty()) {
-+                UnlinkedApp(target.packageName)
++                UnlinkedApp(target.packageName, host)
 +            } else {
-+                LinkedApp(target.packageName)
++                LinkedApp(target.packageName, host, links)
 +            }
 +        }
++
++        /**
++         * An `http` page is attacker-writable in transit, so a credential
++         * released to one leaks to whoever is on the path — even inside a fully
++         * verified browser.
++         *
++         * `ViewNode.getWebScheme()` only exists from API 28, and the parser
++         * reports null below it. Unknown is treated as allowed: the alternative
++         * withdraws web fill entirely from API 26 and 27, which is a larger
++         * regression than the narrow case it would close.
++         */
++        private fun isInsecure(scheme: String?): Boolean =
++            scheme?.equals(INSECURE_SCHEME, ignoreCase = true) == true
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
@@ -1585,10 +1661,10 @@ index 0000000000000000000000000000000000000000..ec85abd6ef7417908f6137f043df490a
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a934e9c8d
+index 0000000000000000000000000000000000000000..7566982587d306272fa7493ad5d9f60b7062dfb3
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
-@@ -0,0 +1,177 @@
+@@ -0,0 +1,217 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.app.assist.AssistStructure
@@ -1615,6 +1691,12 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +     * what the caller is.
 +     */
 +    val webDomain: String?,
++    /**
++     * The scheme in effect at the password field, or null below API 28 where
++     * `ViewNode.getWebScheme()` does not exist. Same standing as [webDomain]:
++     * a claim by the client, useful only once the caller has been identified.
++     */
++    val webScheme: String?,
 +    val packageName: String,
 +)
 +
@@ -1682,10 +1764,12 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +        val budget = Budget()
 +        for (i in 0 until structure.windowNodeCount) {
 +            val root = structure.getWindowNodeAt(i).rootViewNode ?: continue
-+            if (!collect(root, null, fields, budget, depth = 0)) return null
++            if (!collect(root, null, null, fields, budget, depth = 0)) return null
 +        }
 +
-+        val password = fields.firstOrNull { isPassword(it.node) } ?: return null
++        val password = focusedPassword(fields)
++            ?: fields.firstOrNull { isPassword(it.node) }
++            ?: return null
 +        val passwordId = password.node.autofillId ?: return null
 +
 +        // Only fields from the same frame are part of the same form. Pairing
@@ -1702,14 +1786,36 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +            usernameId = username?.node?.autofillId,
 +            passwordId = passwordId,
 +            webDomain = password.webDomain,
++            webScheme = password.webScheme,
 +            packageName = packageName,
 +        )
++    }
++
++    /**
++     * The password field belonging to the form the user is actually in.
++     *
++     * Document order alone picks the first password on the screen, which on a
++     * page carrying two forms — a signup above a login, or a hidden legacy form
++     * — is the wrong one: the fill lands in the wrong field and, worse, the
++     * request is scoped by the wrong form's domain. Focus is the only signal in
++     * the structure that says which form is live, so it wins where it exists.
++     *
++     * Searching forward from focus before backward matches how a form is
++     * traversed: the focused field is usually the username, with its password
++     * below it.
++     */
++    private fun focusedPassword(fields: List<Field>): Field? {
++        val focused = fields.indexOfFirst { it.node.isFocused }
++        if (focused < 0) return null
++        return fields.drop(focused).firstOrNull { isPassword(it.node) }
++            ?: fields.take(focused + 1).lastOrNull { isPassword(it.node) }
 +    }
 +
 +    /** A fillable text field, with the domain that was in effect where it sat. */
 +    private data class Field(
 +        val node: AssistStructure.ViewNode,
 +        val webDomain: String?,
++        val webScheme: String?,
 +    )
 +
 +    /**
@@ -1725,7 +1831,8 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +    /** False when the structure outran [MAX_DEPTH] or [MAX_NODES]. */
 +    private fun collect(
 +        node: AssistStructure.ViewNode,
-+        inherited: String?,
++        inheritedDomain: String?,
++        inheritedScheme: String?,
 +        into: MutableList<Field>,
 +        budget: Budget,
 +        depth: Int,
@@ -1733,16 +1840,25 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +        if (depth > MAX_DEPTH || budget.remainingNodes <= 0) return false
 +        budget.remainingNodes--
 +
-+        val domain = node.webDomain?.takeIf { it.isNotEmpty() } ?: inherited
++        val domain = node.webDomain?.takeIf { it.isNotEmpty() } ?: inheritedDomain
++        // The scheme travels with the domain it qualifies: an http frame nested
++        // in an https page must not inherit the parent's scheme, or the mixed
++        // content would read as secure.
++        val scheme = node.scheme()?.takeIf { it.isNotEmpty() }
++            ?: inheritedScheme.takeIf { node.webDomain.isNullOrEmpty() }
 +        if (node.autofillId != null && node.autofillType == View.AUTOFILL_TYPE_TEXT) {
-+            into += Field(node, domain)
++            into += Field(node, domain, scheme)
 +        }
 +        for (i in 0 until node.childCount) {
 +            val child = node.getChildAt(i) ?: continue
-+            if (!collect(child, domain, into, budget, depth + 1)) return false
++            if (!collect(child, domain, scheme, into, budget, depth + 1)) return false
 +        }
 +        return true
 +    }
++
++    /** Null below API 28, where `ViewNode.getWebScheme()` does not exist. */
++    private fun AssistStructure.ViewNode.scheme(): String? =
++        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) webScheme else null
 +
 +    private fun isPassword(node: AssistStructure.ViewNode): Boolean {
 +        if (node.hasHint(PASSWORD_HINTS)) return true
@@ -1768,10 +1884,10 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc437955546aeac
+index 0000000000000000000000000000000000000000..af20354f1fc3b081fc22e941bfc221edef8bf12c
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt
-@@ -0,0 +1,153 @@
+@@ -0,0 +1,159 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.app.PendingIntent
@@ -1818,7 +1934,7 @@ index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc43795
 +
 +            val scope = AutofillScope.resolve(this, target)
 +            val response = when (scope) {
-+                is AutofillScope.UnlinkedApp -> pickerResponse(target, scope.packageName)
++                is AutofillScope.UnlinkedApp -> pickerResponse(target, scope)
 +                is AutofillScope.Web, is AutofillScope.LinkedApp -> matchedResponse(target, scope)
 +                // A verified browser with no resolvable host must be offered nothing at
 +                // all: routing it to the picker would let the user link a login to the
@@ -1842,12 +1958,8 @@ index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc43795
 +    }
 +
 +    private fun matchedResponse(target: FillTarget, scope: AutofillScope): FillResponse? {
-+        val links = when (scope) {
-+            is AutofillScope.LinkedApp -> AppLinkStore.linksFor(this, scope.packageName)
-+            else -> emptySet()
-+        }
 +        val matches = store.loginSummaries(this).filter {
-+            scope.matches(it.host, it.recordIdentifier, links)
++            scope.matches(it.host, it.recordIdentifier)
 +        }
 +        if (matches.isEmpty()) return null
 +
@@ -1867,16 +1979,25 @@ index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc43795
 +        return builder.build()
 +    }
 +
-+    private fun pickerResponse(target: FillTarget, packageName: String): FillResponse? {
++    private fun pickerResponse(
++        target: FillTarget,
++        scope: AutofillScope.UnlinkedApp,
++    ): FillResponse? {
 +        if (store.loginSummaries(this).isEmpty()) return null
++        // The host the caller claimed travels to the picker so the link it
++        // writes is scoped to the page the user is actually looking at. The
++        // scope resolved it, so the picker cannot key the link differently
++        // from the lookup that will later read it back.
++        val host = scope.host
 +        return FillResponse.Builder()
 +            .addDataset(
 +                dataset(
 +                    target = target,
 +                    label = getString(R.string.pera_autofill_pick_login),
 +                    auth = authIntent(PeraPickerActivity::class.java, target).apply {
-+                        putExtra(EXTRA_PACKAGE_NAME, packageName)
-+                        data = Uri.parse("pera-autofill-pick:$packageName")
++                        putExtra(EXTRA_PACKAGE_NAME, scope.packageName)
++                        host?.let { putExtra(EXTRA_WEB_HOST, it) }
++                        data = Uri.parse("pera-autofill-pick:${scope.packageName}|${host.orEmpty()}")
 +                    },
 +                ),
 +            )
@@ -1923,14 +2044,15 @@ index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc43795
 +        const val EXTRA_USERNAME_ID = "co.algorand.passkeyautofill.USERNAME_ID"
 +        const val EXTRA_PASSWORD_ID = "co.algorand.passkeyautofill.PASSWORD_ID"
 +        const val EXTRA_PACKAGE_NAME = "co.algorand.passkeyautofill.PACKAGE_NAME"
++        const val EXTRA_WEB_HOST = "co.algorand.passkeyautofill.WEB_HOST"
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752f115ab69
+index 0000000000000000000000000000000000000000..0fe17ada91d8742419dfc187ac125894c6a7a7d7
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,151 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.os.Build
@@ -1949,11 +2071,12 @@ index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752
 +import kotlinx.coroutines.launch
 +
 +/**
-+ * PERA LOCAL PATCH — the dataset-auth target for an app with no linked login
-+ * ([PeraAutofillService.pickerResponse]). Android cannot verify that
-+ * [callerPackageName] legitimately represents the domain the user is signing
-+ * into (no Digital Asset Links here), so the user picking a login from a
-+ * screen that names the requesting app IS the verification step.
++ * PERA LOCAL PATCH — the dataset-auth target for a caller with no linked login
++ * ([PeraAutofillService.pickerResponse]). Android cannot verify that a package
++ * legitimately represents the domain the user is signing into (no Digital Asset
++ * Links here), so the user picking a login from a screen that names the
++ * requesting app IS the verification step. That makes the identity this screen
++ * shows load-bearing — see [callerText].
 + *
 + * The chosen login is released and [AppLinkStore.link] is written only after
 + * [biometrics] succeeds — mirroring [FillAuthActivity]'s ordering — so a
@@ -1976,6 +2099,9 @@ index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752
 +        setContentView(R.layout.pera_autofill_picker)
 +
 +        val callerPackageName = intent.getStringExtra(PeraAutofillService.EXTRA_PACKAGE_NAME)
++        // Absent when the caller claimed no domain, which is the ordinary
++        // native-app case and stays linked on the package alone.
++        val callerHost = intent.getStringExtra(PeraAutofillService.EXTRA_WEB_HOST)
 +        val passwordId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_PASSWORD_ID)
 +        val usernameId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_USERNAME_ID)
 +        if (callerPackageName == null || passwordId == null) {
@@ -1987,7 +2113,7 @@ index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752
 +        // The user is the only thing standing between this app and a login, so
 +        // they must be able to see which app is asking before they choose.
 +        findViewById<TextView>(R.id.pera_autofill_picker_caller).text =
-+            getString(R.string.pera_autofill_picker_caller, appLabel(callerPackageName))
++            callerText(callerPackageName)
 +
 +        val summaries = store.loginSummaries(this)
 +        findViewById<ListView>(R.id.pera_autofill_picker_list).apply {
@@ -2000,13 +2126,16 @@ index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752
 +                if (isHandling) return@setOnItemClickListener
 +                isHandling = true
 +                val chosen = summaries[position]
-+                lifecycleScope.launch { release(callerPackageName, chosen, usernameId, passwordId) }
++                lifecycleScope.launch {
++                    release(callerPackageName, callerHost, chosen, usernameId, passwordId)
++                }
 +            }
 +        }
 +    }
 +
 +    private suspend fun release(
 +        callerPackageName: String,
++        callerHost: String?,
 +        chosen: LoginSummary,
 +        usernameId: AutofillId?,
 +        passwordId: AutofillId,
@@ -2031,18 +2160,44 @@ index 0000000000000000000000000000000000000000..7a02269b57adfd7e6ed60b791e3aa752
 +
 +        // Only after the prompt succeeds: a cancelled prompt must leave no
 +        // association behind.
-+        AppLinkStore.link(this, callerPackageName, chosen.recordIdentifier)
++        AppLinkStore.link(this, callerPackageName, callerHost, chosen.recordIdentifier)
 +
 +        finishWith(
 +            buildDataset(usernameId, passwordId, login.username, login.password, packageName),
 +        )
 +    }
 +
-+    private fun appLabel(packageName: String): String = try {
++    /**
++     * Names the caller by its package, with its label alongside when one
++     * resolves.
++     *
++     * The label comes from the caller's own manifest, so an app can ship
++     * `android:label="mybank.com"` and have this screen read as the bank's. The
++     * package name is assigned at install time and is the only identity here
++     * the caller does not choose, so it is always shown; the label is a
++     * convenience shown with it, never instead of it.
++     */
++    private fun callerText(packageName: String): String {
++        val label = appLabel(packageName)
++        return if (label == null) {
++            getString(R.string.pera_autofill_picker_caller, packageName)
++        } else {
++            getString(R.string.pera_autofill_picker_caller_labelled, label, packageName)
++        }
++    }
++
++    /**
++     * Null when the label is unresolvable, which under Android 11 package
++     * visibility is the common case: a package this app does not declare in
++     * `<queries>` is simply not visible to `PackageManager`.
++     */
++    private fun appLabel(packageName: String): String? = try {
 +        val info = packageManager.getApplicationInfo(packageName, 0)
-+        packageManager.getApplicationLabel(info).toString()
++        packageManager.getApplicationLabel(info).toString().takeIf {
++            it.isNotBlank() && it != packageName
++        }
 +    } catch (e: Exception) {
-+        packageName
++        null
 +    }
 +
 +    companion object {
@@ -3406,14 +3561,15 @@ index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee0
 +  ]
 +}
 diff --git a/android/src/main/res/values/strings.xml b/android/src/main/res/values/strings.xml
-index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..a675fcd564319f37444b7ef7f815b839c3207b9d 100644
+index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..e47b531f26e0b9df4867f38ce9c987ed4889e189 100644
 --- a/android/src/main/res/values/strings.xml
 +++ b/android/src/main/res/values/strings.xml
-@@ -1,3 +1,5 @@
+@@ -1,3 +1,6 @@
  <resources>
      <string name="passkey_autofill_label">My Credential Provider</string>
 +    <string name="pera_autofill_pick_login">Choose a login from Pera</string>
 +    <string name="pera_autofill_picker_caller">Fill a login into %1$s</string>
++    <string name="pera_autofill_picker_caller_labelled">Fill a login into %1$s (%2$s)</string>
  </resources>
 diff --git a/android/src/main/res/xml/autofill_service.xml b/android/src/main/res/xml/autofill_service.xml
 new file mode 100644
@@ -3664,13 +3820,15 @@ index 0000000000000000000000000000000000000000..b457e5db0aa44c7e60b3f59cd80bb8b8
 +}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..d442b35840e760df077ac259fa1b499c29c1e87a
+index 0000000000000000000000000000000000000000..4d1ecd786db09622082010ecd1366e07ed48271a
 --- /dev/null
 +++ b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,96 @@
 +package co.algorand.passkeyautofill.autofill
 +
++import org.junit.Assert.assertEquals
 +import org.junit.Assert.assertFalse
++import org.junit.Assert.assertNotEquals
 +import org.junit.Assert.assertTrue
 +import org.junit.Test
 +
@@ -3685,42 +3843,81 @@ index 0000000000000000000000000000000000000000..d442b35840e760df077ac259fa1b499c
 +    @Test
 +    fun `a verified browser is offered a login stored for its host`() {
 +        val scope = AutofillScope.Web("example.com")
-+        assertTrue(scope.matches("example.com", record, emptySet()))
++        assertTrue(scope.matches("example.com", record))
 +    }
 +
 +    @Test
 +    fun `a verified browser is not offered a login stored for another host`() {
 +        val scope = AutofillScope.Web("evil.com")
-+        assertFalse(scope.matches("example.com", record, emptySet()))
++        assertFalse(scope.matches("example.com", record))
 +    }
 +
 +    @Test
 +    fun `a browser with no resolvable host is offered nothing`() {
 +        // The scope exists so a verified browser can never land in LinkedApp,
-+        // whose match is package-keyed and would answer on every page.
++        // whose match would then answer on every page the browser renders.
 +        val scope = AutofillScope.UnscopedBrowser("com.android.chrome")
-+        assertFalse(scope.matches("example.com", record, setOf(record)))
++        assertFalse(scope.matches("example.com", record))
 +    }
 +
 +    @Test
 +    fun `a linked app is offered only the logins it was linked to`() {
-+        val scope = AutofillScope.LinkedApp("com.example.app")
-+        assertTrue(scope.matches("example.com", record, setOf(record)))
-+        assertFalse(scope.matches("example.com", record, setOf("pera.login.other")))
++        assertTrue(
++            AutofillScope.LinkedApp("com.example.app", null, setOf(record))
++                .matches("example.com", record),
++        )
++        assertFalse(
++            AutofillScope.LinkedApp("com.example.app", null, setOf("pera.login.other"))
++                .matches("example.com", record),
++        )
 +    }
 +
 +    @Test
 +    fun `an unlinked app is offered nothing`() {
-+        val scope = AutofillScope.UnlinkedApp("com.example.app")
-+        assertFalse(scope.matches("example.com", record, setOf(record)))
++        val scope = AutofillScope.UnlinkedApp("com.example.app", null)
++        assertFalse(scope.matches("example.com", record))
 +    }
 +
 +    @Test
 +    fun `an app scope ignores the domain entirely`() {
 +        // A caller that claimed a domain but failed the browser check reaches
-+        // app scope; the claim must buy it nothing.
-+        val scope = AutofillScope.UnlinkedApp("com.example.app")
-+        assertFalse(scope.matches("example.com", record, emptySet()))
++        // app scope; the claim must buy it nothing without a picked link.
++        val scope = AutofillScope.UnlinkedApp("com.example.app", "example.com")
++        assertFalse(scope.matches("example.com", record))
++    }
++
++    @Test
++    fun `a link asserted on one page does not answer on another page of the same app`() {
++        // The offer a web-rendering caller gets is the link store's answer for
++        // its own key. An app that renders web content — an in-app browser, or
++        // a real browser missing from the allowlist — must not carry a login
++        // asserted on its bank page over to the next origin it renders.
++        val linkedOnBank = AppLinkStore.linkKey("com.example.browser", "bank.example")
++        val phishing = AppLinkStore.linkKey("com.example.browser", "phish.example")
++        assertNotEquals(linkedOnBank, phishing)
++
++        // What resolve() would build for each: links come from the caller's own
++        // key, so the phishing page's scope is handed an empty set.
++        val onBank = AutofillScope.LinkedApp("com.example.browser", "bank.example", setOf(record))
++        val onPhishing = AutofillScope.UnlinkedApp("com.example.browser", "phish.example")
++        assertTrue(onBank.matches("bank.example", record))
++        assertFalse(onPhishing.matches("bank.example", record))
++    }
++
++    @Test
++    fun `a caller that claimed no domain stays keyed on its package alone`() {
++        // An ordinary native app has one identity, and that is the case the
++        // user-asserted link was designed for.
++        assertEquals("com.example.app", AppLinkStore.linkKey("com.example.app", null))
++        assertEquals("com.example.app", AppLinkStore.linkKey("com.example.app", ""))
++    }
++
++    @Test
++    fun `a host-keyed link never collides with the package-only key`() {
++        assertNotEquals(
++            AppLinkStore.linkKey("com.example.app", null),
++            AppLinkStore.linkKey("com.example.app", "example.com"),
++        )
 +    }
 +}
 diff --git a/app.plugin.js b/app.plugin.js
