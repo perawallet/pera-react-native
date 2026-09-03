@@ -876,10 +876,10 @@ index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec1089
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..1fb420349a2bbbb6929885d0d53bb1d6897f1ac2 100644
+index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..0bc7e46296c2ca0cfb3c5c5ea085938f3434b379 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-@@ -3,7 +3,10 @@ package co.algorand.passkeyautofill
+@@ -3,7 +3,11 @@ package co.algorand.passkeyautofill
  import expo.modules.kotlin.modules.Module
  import expo.modules.kotlin.modules.ModuleDefinition
  import co.algorand.passkeyautofill.credentials.CredentialRepository
@@ -888,10 +888,70 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..1fb420349a2bbbb6929885d0d53bb1d6
 +// below matches the native app's persisted credential-provider selection. See
 +// the shim class + module AndroidManifest patch notes.
 +import com.algorand.android.credentials.passkeys.ui.PasskeyProviderService
++import android.content.ActivityNotFoundException
  import android.content.ComponentName
  import android.content.Context
  import android.content.Intent
-@@ -180,7 +183,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -11,6 +15,8 @@ import android.net.Uri
+ import android.os.Build
+ import android.provider.Settings
+ import android.util.Log
++import android.view.autofill.AutofillManager
++import expo.modules.kotlin.Promise
+ import org.bouncycastle.jce.provider.BouncyCastleProvider
+ import java.security.Security
+ 
+@@ -155,6 +161,49 @@ class ReactNativePasskeyAutofillModule : Module() {
+       openCredentialProviderSettings(context)
+     }
+ 
++    // Rejects (rather than resolving `false`) when autofill genuinely doesn't
++    // exist on the device, so the JS hook can tell "no autofill service" apart
++    // from "autofill exists but is off" and only offer an enable action for
++    // the latter.
++    AsyncFunction("isAutofillServiceActive") { promise: Promise ->
++      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
++        promise.reject("unsupported", "Autofill requires API 26", null)
++        return@AsyncFunction
++      }
++      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      val manager = context?.getSystemService(AutofillManager::class.java)
++      if (manager == null || !manager.isAutofillSupported) {
++        promise.reject("unsupported", "Autofill is not supported on this device", null)
++        return@AsyncFunction
++      }
++      promise.resolve(manager.hasEnabledAutofillServices())
++    }
++
++    AsyncFunction("openAutofillSettings") { promise: Promise ->
++      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
++        promise.resolve(false)
++        return@AsyncFunction
++      }
++      val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
++      if (context == null) {
++        promise.resolve(false)
++        return@AsyncFunction
++      }
++      val intent = Intent(Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE).apply {
++        data = Uri.parse("package:${context.packageName}")
++        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
++      }
++      promise.resolve(
++        try {
++          context.startActivity(intent)
++          true
++        } catch (e: ActivityNotFoundException) {
++          Log.w("ReactNativePasskeyAutofill", "Autofill settings intent unavailable: ${e.message}")
++          false
++        },
++      )
++    }
++
+     AsyncFunction("getStoredCredentials") {
+       val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
+         ?: return@AsyncFunction emptyList<Map<String, Any>>()
+@@ -180,7 +229,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -900,7 +960,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..1fb420349a2bbbb6929885d0d53bb1d6
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -195,7 +198,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -195,7 +244,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -909,7 +969,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..1fb420349a2bbbb6929885d0d53bb1d6
      )
      val expected = component.flattenToString()
  
-@@ -246,7 +249,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -246,7 +295,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -4171,7 +4231,7 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..e6874fe1fe079d618734331fb46f37bb
  
      AsyncFunction("getStoredCredentials") { () -> [[String: Any]] in
 diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
-index 87f7dd44e3e8a4b21ae655599dead4af828567a9..1b2a594ebec09bd624f7994d2458c74fa54cabd7 100644
+index 87f7dd44e3e8a4b21ae655599dead4af828567a9..24adab6c54cf32fdbf4519fd2533fc8912fb26f8 100644
 --- a/src/ReactNativePasskeyAutofillModule.ts
 +++ b/src/ReactNativePasskeyAutofillModule.ts
 @@ -52,6 +52,16 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
@@ -4191,7 +4251,27 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..1b2a594ebec09bd624f7994d2458c74f
    refreshCredentialIdentities(): Promise<void>;
    /**
     * Resolves to `true` when this app is registered as the active
-@@ -81,6 +91,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
+@@ -67,6 +77,19 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
+    * if a settings screen could be launched, `false` otherwise.
+    */
+   openProviderSettings(): Promise<boolean>;
++  /**
++   * Resolves to whether this app is the active Android Autofill service.
++   * Rejects when autofill is unavailable on the device (below API 26, or no
++   * `AutofillManager`) rather than resolving `false`, so callers can tell
++   * "no autofill service" apart from "autofill exists but is off".
++   */
++  isAutofillServiceActive(): Promise<boolean>;
++  /**
++   * Opens the OS Autofill settings screen. Resolves to `false` rather than
++   * rejecting when it cannot act (unsupported API level, no launchable
++   * settings screen).
++   */
++  openAutofillSettings(): Promise<boolean>;
+ }
+ 
+ // This call loads the native module object from the JSI.
+@@ -81,6 +104,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
  if (Platform.OS === "android") {
    const noops: Record<string, (...args: unknown[]) => Promise<unknown>> = {
      replaceCredentialIdentities: () => Promise.resolve(),
