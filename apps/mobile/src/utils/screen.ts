@@ -10,6 +10,8 @@
  limitations under the License
  */
 
-export { ConfirmAction } from './ConfirmAction'
-export type { ConfirmActionProps } from './ConfirmAction'
-export { CONFIRM_ACTION_LAYOUT } from './styles'
+import { LARGE_SCREEN_MIN_WIDTH_DP } from '@constants/ui'
+
+// The shorter side, so a phone held in landscape does not qualify.
+export const isLargeScreen = (width: number, height: number): boolean =>
+    Math.min(width, height) >= LARGE_SCREEN_MIN_WIDTH_DP
