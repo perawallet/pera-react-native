@@ -13,6 +13,8 @@
 import { useCallback } from 'react'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import {
+    MULTISIG_DECLINED_NOTIFICATION_TYPE,
+    MULTISIG_EXPIRED_NOTIFICATION_TYPE,
     MULTISIG_IMPORT_ACCOUNT_NOTIFICATION_TYPE,
     MULTISIG_NEW_SIGN_REQUEST_NOTIFICATION_TYPE,
     useInboxQuery,
@@ -38,21 +40,42 @@ export const getMultisigIntentKind = (
     return null
 }
 
-// A multisig notification only carries an account address, so resolve it to
-// the matching inbox item before reusing the inbox press handler. Only act on
-// an unambiguous single match — multiple sign requests for the same shared
-// account can't be auto-targeted, so the user simply lands on the inbox.
+/**
+ * A declined/expired sign request has no actionable target: it carries an
+ * `account-detail` URL for a shared account that often isn't local, so routing
+ * it silently bounces the user to Home. Both the in-app list and OS push taps
+ * suppress navigation for these, and share this predicate so they can't drift.
+ */
+export const isTerminalMultisigNotification = (type: Maybe<string>): boolean =>
+    type === MULTISIG_DECLINED_NOTIFICATION_TYPE ||
+    type === MULTISIG_EXPIRED_NOTIFICATION_TYPE
+
+const inboxItemTypeFor = (kind: MultisigIntentKind): InboxItem['type'] =>
+    kind === 'sign' ? 'multisig_sign' : 'multisig_import'
+
+// A multisig notification resolves to an inbox item before reusing the inbox
+// press handler. Only act on an unambiguous single match — multiple sign
+// requests for the same shared account can't be auto-targeted, so the user
+// simply lands on the inbox.
+//
+// A push carries no address at all (only /v1/notifications does), so with none
+// supplied the kind alone has to do the targeting. That is safe under the same
+// single-match rule: one pending item of that kind is unambiguous regardless of
+// which account it belongs to.
 export const findInboxItemForNotification = (
     items: InboxItem[],
     kind: MultisigIntentKind,
     address: Maybe<string>,
 ): InboxItem | undefined => {
-    if (!address) return undefined
-    const matches = items.filter(item => {
-        if (kind === 'sign' && item.type === 'multisig_sign') {
+    const ofKind = items.filter(item => item.type === inboxItemTypeFor(kind))
+    if (!address) {
+        return ofKind.length === 1 ? ofKind[0] : undefined
+    }
+    const matches = ofKind.filter(item => {
+        if (item.type === 'multisig_sign') {
             return item.data.multisigAccount.address === address
         }
-        if (kind === 'import' && item.type === 'multisig_import') {
+        if (item.type === 'multisig_import') {
             return item.data.address === address
         }
         return false
@@ -85,11 +108,12 @@ export const useHandleMultisigNotification =
                 })
                 // Refetch so a sign request / invitation that landed between the
                 // last poll and this tap is present, then hand the matching item
-                // to the same handler the inbox list uses on tap.
+                // to the same handler the inbox list uses on tap. refetch()
+                // resolves to the refreshed items directly, not a query result.
                 void refetchInbox()
-                    .then(({ data }) => {
+                    .then(items => {
                         const match = findInboxItemForNotification(
-                            data ?? [],
+                            items,
                             kind,
                             accountAddress,
                         )

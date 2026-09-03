@@ -8,10 +8,6 @@
     "apps/mobile/plugins/**",
     // Custom Metro transformer wired into metro.config.js by path.
     "apps/mobile/metro-raw-transformer.js",
-    // Guardrail checks are discovered at runtime via fast-glob, not imported.
-    "packages/devtools/guardrails/checks/**",
-    // Worker entry spawned at runtime via `new Worker(URL)`, not a static import.
-    "packages/devtools/guardrails/worker-entry.mjs",
     // Web-only native-module stubs resolved by metro.config.js via
     // `path.resolve(webShimsRoot, ...)` string lookups (webStubs/polyfillMap),
     // not a static import fallow's graph can follow.
@@ -101,7 +97,8 @@
   // Severities left at defaults during the report-only rollout. The CI job is
   // advisory (non-blocking); individual rules will be flipped to "error" with a
   // baseline once the legacy findings are triaged. Architecture boundaries are
-  // intentionally not configured — they are covered by the in-house guardrails.
+  // intentionally not configured here — they are covered by lanekeep (see
+  // lanekeep.config.ts and lanekeep/README.md), which runs in `pnpm lint`.
   "rules": {
     // Disabled: fallow's workspace-dependency resolution produces false positives
     // in this monorepo — it flagged deps that ARE imported (e.g.

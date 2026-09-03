@@ -37,9 +37,10 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * with the user's, and raising a fee forces a `grp` recomputation that would
  * invalidate those signatures. The swap flow also never calls the minimum-fee
  * pipeline at all — there is no `signableIndices` to key an adjustment off.
- * Enabling quantum swap therefore requires the backend to build the
- * user-signable transaction with the PQ fee (or isolate it in its own
- * partition). Tracked as PQ-024 / PERA-4705.
+ * The guard yields to the `enable_quantum_swap` remote flag: turning it on
+ * asserts that the backend prices the pqsig surcharge into prepared groups,
+ * and turning it off restores the hard block — the
+ * flag is the kill switch if that pricing regresses.
  */
 export const QUANTUM_SWAP_FEE_BLOCKED_KEY =
     'swap.execution.quantum_fee_unsupported'
@@ -138,9 +139,22 @@ export const requestSwapSignatures = (
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
+    options: {
+        /**
+         * `enable_quantum_swap` remote flag (`useIsQuantumSwapEnabled`).
+         * When false, quantum signers are rejected before signing — see
+         * {@link QUANTUM_SWAP_FEE_BLOCKED_KEY}.
+         */
+        isQuantumSwapEnabled: boolean
+    },
 ): Promise<PeraSignedTransaction[]> => {
-    const blocked = rejectIfQuantumAccount(signer, QUANTUM_SWAP_FEE_BLOCKED_KEY)
-    if (blocked) return blocked
+    if (!options.isQuantumSwapEnabled) {
+        const blocked = rejectIfQuantumAccount(
+            signer,
+            QUANTUM_SWAP_FEE_BLOCKED_KEY,
+        )
+        if (blocked) return blocked
+    }
 
     return new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {

@@ -69,8 +69,14 @@ export const AccountDisplay = ({
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
     const styles = useStyles({ noBorder })
-    const { displayName, secondaryText, renderSecondary, showTypeAsSecondary } =
-        useAccountDisplay({ account, compact, showAccountType })
+    const iconSize = iconProps?.size ?? 'xl'
+    const {
+        displayName,
+        secondaryText,
+        renderSecondary,
+        showTypeAsSecondary,
+        showBackupBadge,
+    } = useAccountDisplay({ account, compact, showAccountType, iconSize })
 
     if (card) {
         return (
@@ -117,12 +123,26 @@ export const AccountDisplay = ({
             style={[styles.container, rest.style]}
         >
             {!!account && (
-                <AccountIcon
-                    account={account}
-                    size='xl'
-                    color={theme.colors.textMain}
-                    {...iconProps}
-                />
+                <PWView>
+                    <AccountIcon
+                        account={account}
+                        size='xl'
+                        color={theme.colors.textMain}
+                        {...iconProps}
+                    />
+                    {showBackupBadge && (
+                        <PWView
+                            style={styles.backupBadge}
+                            testID='account_backup_badge'
+                        >
+                            <PWIcon
+                                name='warning'
+                                variant='error'
+                                size='sm'
+                            />
+                        </PWView>
+                    )}
+                </PWView>
             )}
             <PWView style={styles.textContainer}>
                 {!compact && (
@@ -151,7 +171,7 @@ export const AccountDisplay = ({
             {showChevron && (
                 <PWIcon
                     variant='secondary'
-                    name='chevron-down'
+                    name='chevron-right'
                     {...chevronProps}
                 />
             )}

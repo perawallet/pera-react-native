@@ -50,6 +50,7 @@ import { BottomSheetManager } from '@modules/bottom-sheet'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -97,7 +98,7 @@ const seedQuantumAccount = async (): Promise<WalletAccount> => {
     let key: QuantumKeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })
@@ -157,7 +158,7 @@ const advanceToDisplayedWords = async (): Promise<void> => {
     )
 }
 
-describe('backup quantum account (PQ-015)', () => {
+describe('backup quantum account', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

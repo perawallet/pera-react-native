@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
@@ -90,6 +91,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleSubmitEditing,
         invalidWordIndices,
         areAllWordsValid,
+        getMnemonicIndices,
     } = useMnemonicWordEntry({
         wordCount: mnemonicLength,
         onTooManyWords,
@@ -123,11 +125,23 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         void deferToNextCycle(async () => {
-            const mnemonic = words.join(' ')
+            // Zeroable indices straight from the slot state — no mnemonic
+            // string or word array is assembled on the import path.
+            // `canImport` already gates on every word being a wordlist word,
+            // so null only means an out-of-band invocation.
+            const mnemonicIndices = getMnemonicIndices()
+            if (!mnemonicIndices) {
+                errorToast(
+                    t('onboarding.import_account.invalid_mnemonic_title'),
+                    t('onboarding.import_account.invalid_mnemonic_body'),
+                )
+                setProcessing(false)
+                return
+            }
 
             try {
                 const result = await importAccount({
-                    mnemonic,
+                    mnemonicIndices,
                     type: accountType,
                 })
 
@@ -158,7 +172,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 const isDuplicate = e instanceof DuplicateAccountError
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.{failed,duplicate_account}_body preserved; raw error not surfaced to user
+                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: on DuplicateAccountError showError resolves to the generic errors.account.generic copy, not the specific import_account.duplicate_account_* strings this needs
                 showToast({
                     title: t(
                         isDuplicate
@@ -173,16 +187,18 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: 'error',
                 })
             } finally {
+                zeroBytes(mnemonicIndices)
                 setProcessing(false)
             }
         })
     }, [
         importAccount,
         markBackupComplete,
-        words,
+        getMnemonicIndices,
         accountType,
         navigation,
         showToast,
+        errorToast,
         t,
     ])
 

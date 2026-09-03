@@ -11,11 +11,14 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
+import { Decimal } from 'decimal.js'
 import {
     useTransactionEncoder,
     useAlgorandClient,
+    useMinimumFeeConfig,
     useNetwork,
     mapToDisplayableTransaction,
+    microAlgosToAlgos,
     type PeraDisplayableTransaction,
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -34,6 +37,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    computeSwapAlgoShortfall,
     isQuoteFresh,
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
@@ -44,12 +48,15 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import {
+    ALGO_ASSET_ID,
     encodeToBase64,
+    formatNumber,
     logger,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useIsQuantumSwapEnabled } from '@hooks/useIsQuantumSwapEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import {
@@ -120,9 +127,9 @@ type UseSwapExecutionResult = {
     execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
     /**
      * Abandons an execution that has not committed yet: effective while
-     * `preparing` (checked after the prepare call settles, before anything
-     * is handed to the signing pipeline). Once signing has started the
-     * execution is no longer cancellable from here.
+     * `preparing` (checked after the balance preflight and after the prepare
+     * call settle, before anything is handed to the signing pipeline). Once
+     * signing has started the execution is no longer cancellable from here.
      */
     cancel: () => void
     status: SwapExecutionStatus
@@ -153,6 +160,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     // (Falcon) via the resolved auth account. Same pattern as
     // `useTransactionConfirmationScreen`'s `isQuantumFee` check.
     const signer = useSignerFor(account?.address)
+    const isQuantumSwapEnabled = useIsQuantumSwapEnabled()
+    const { assetMbr } = useMinimumFeeConfig()
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -217,6 +226,65 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 return { kind: 'stale-quote' }
             }
 
+            // Mirror of the backend's prepare-time balance validation, run
+            // here so a shortfall fails with actionable copy before anything
+            // is signed — the backend's own 400 for it is not
+            // machine-readable. Fail open on lookup errors: the check is
+            // advisory, prepare and the node still validate. Runs under
+            // 'preparing' so the sheet's close gesture cancels instead of
+            // dismissing over a still-running execution.
+            if (account) {
+                setStatus('preparing')
+                let shortfall: Nullable<Decimal> = null
+                try {
+                    const info = await algorandClient.client.algod
+                        .accountInformation(account.address)
+                        .do()
+                    const holdsAssetOut =
+                        quote.assetOut.assetId === ALGO_ASSET_ID ||
+                        (info.assets ?? []).some(
+                            holding =>
+                                String(holding.assetId) ===
+                                quote.assetOut.assetId,
+                        )
+                    shortfall = computeSwapAlgoShortfall({
+                        quote,
+                        algoBalance: new Decimal(info.amount.toString()),
+                        minBalance: new Decimal(info.minBalance.toString()),
+                        optInMbr: holdsAssetOut
+                            ? undefined
+                            : new Decimal(assetMbr.toString()),
+                    })
+                } catch (e) {
+                    logger.warn('[swap] balance preflight lookup failed', {
+                        error: `${e}`,
+                    })
+                }
+                if (cancelRequestedRef.current) {
+                    setStatus('idle')
+                    return { kind: 'cancelled' }
+                }
+                if (shortfall) {
+                    const { sign, integer, fraction } = formatNumber(
+                        microAlgosToAlgos(shortfall),
+                        6,
+                        undefined,
+                        0,
+                    )
+                    const message = t('swap.execution.insufficient_algo_body', {
+                        amount: `${sign}${integer}${fraction}`,
+                    })
+                    setError({ phase: 'prepare', message })
+                    setStatus('error')
+                    return {
+                        kind: 'error',
+                        phase: 'prepare',
+                        message,
+                        title: t('swap.execution.insufficient_algo_title'),
+                    }
+                }
+            }
+
             let prepareResult: Optional<PrepareTransactionsResult>
 
             // Phase 1: Prepare transactions
@@ -226,12 +294,19 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     quote: quoteIdStr,
                 })
             } catch (e) {
-                // Map through getMessage like the submission phase so a
-                // backend 4xx surfaces a localized message, not a raw HTTP one.
-                const message = getMessage(e).body
-                setError({ phase: 'prepare', message })
+                // Map through resolveErrorCopy like the submission phase so a
+                // backend 4xx or an offline failure surfaces its own copy —
+                // never the algod fallback, which would blame the node for a
+                // request that never reached it.
+                const copy = resolveErrorCopy(e, t, undefined, getMessage)
+                setError({ phase: 'prepare', message: copy.body })
                 setStatus('error')
-                return { kind: 'error', phase: 'prepare', message }
+                return {
+                    kind: 'error',
+                    phase: 'prepare',
+                    message: copy.body,
+                    title: copy.title,
+                }
             }
 
             // The user backed out while prepare was in flight — nothing has
@@ -410,7 +485,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         ? t('swap.execution.user_rejected')
                         : // Guard rejections carry an i18n key of their own;
                           // everything else gets the generic localized copy
-                          // rather than the raw error text (PERA-4795).
+                          // rather than the raw error text.
                           e instanceof QuantumSwapBlockedError
                           ? t(e.translationKey)
                           : t('swap.execution.error_body')
@@ -446,6 +521,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                               },
                               unsignedTxs,
                               groupContext,
+                              { isQuantumSwapEnabled },
                           )
                         : []
             } catch (e) {
@@ -457,7 +533,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     ? t('swap.execution.user_rejected')
                     : // Guard rejections carry an i18n key of their own;
                       // everything else gets the generic localized copy rather
-                      // than the raw error text (PERA-4795).
+                      // than the raw error text.
                       e instanceof QuantumSwapBlockedError
                       ? t(e.translationKey)
                       : t('swap.execution.error_body')
@@ -554,6 +630,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             network,
             account,
             signer,
+            isQuantumSwapEnabled,
+            assetMbr,
             deviceId,
             registerHandoff,
         ],

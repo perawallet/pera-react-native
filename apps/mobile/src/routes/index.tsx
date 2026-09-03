@@ -44,6 +44,7 @@ import { MultisigStackNavigator } from '@modules/multisig'
 import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
+import { RekeyToQuantumStackNavigator } from '@modules/rekey/routes/rekey-to-quantum'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
 import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
@@ -154,6 +155,10 @@ export const MainRoutes = () => {
                             component={RekeyToStandardStackNavigator}
                         />
                         <RootStack.Screen
+                            name='RekeyToQuantum'
+                            component={RekeyToQuantumStackNavigator}
+                        />
+                        <RootStack.Screen
                             name='UndoRekey'
                             component={UndoRekeyStackNavigator}
                         />
@@ -179,7 +184,15 @@ export const MainRoutes = () => {
                             name='BannersCarouselModal'
                             component={BannersCarouselModalScreen}
                             options={{
-                                presentation: 'modal',
+                                // Full-screen on both platforms. `modal` is an
+                                // iOS-only presentation — Android has no
+                                // page-sheet equivalent and renders it
+                                // full-screen anyway — so the same banner
+                                // looked like a sheet on one platform and a
+                                // takeover on the other, and different again
+                                // from the auto-open prompt, which is a
+                                // full-bleed overlay.
+                                presentation: 'fullScreenModal',
                                 headerShown: false,
                             }}
                         />

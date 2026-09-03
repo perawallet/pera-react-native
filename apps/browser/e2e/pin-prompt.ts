@@ -57,7 +57,7 @@ export const clickThroughPinPrompt = async (
 }
 
 // Opportunistic dismissal is not enough once the nudge can swallow sheets.
-// PERA-4870 mounted PromptContainer on this shell for the first time, and a
+// PromptContainer is mounted on this shell, and a
 // pending prompt holds every NEW bottom-sheet presentation until it is
 // answered (bottom-sheet `presentationHolds`). The nudge fires on a wall-clock
 // delay from the moment the account exists, so it routinely lands *inside* a

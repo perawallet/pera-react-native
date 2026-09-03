@@ -1,4 +1,4 @@
-name: Pre-Merge
+name: CI / Pre-Merge
 
 on:
   pull_request:
@@ -147,7 +147,7 @@ jobs:
 
       # Lockfile-only, so it belongs on the cheap job. Two resolved algosdk
       # copies break `instanceof Transaction`/`instanceof Address` and msgpack
-      # identity across the algokit-utils boundary (PERA-4653), and a
+      # identity across the algokit-utils boundary, and a
       # resolution below the catalog's PQ floor silently costs quantum accounts
       # the ability to sign. Until now this ran only in tools/pre-push, which
       # the documented `--no-fail-on-error` invocation makes non-blocking.
@@ -294,12 +294,13 @@ jobs:
         # The suite is CPU-bound on a 4-core runner, so the win comes from more
         # runners rather than more threads per runner. Grouped by measured cost
         # (locally, cache forced, CI thread caps) so no one shard sets the floor:
-        #   background 67s | rest 57s | mobile-unit 44s | heavy 33s | mobile-int 27s
+        #   background 67s | rest 57s | mobile-unit 44s | heavy 33s | mobile-int 27s | lanekeep 4s
         # `core-background` runs alone because it alone is ~26% of package test
         # time, and it does NOT get faster with more threads (67s at 2, 74s at
         # 4) — its suite doesn't parallelize, so it only needs its own runner.
-        # Together these cover every test task exactly once: 1 + 3 + 49 package
-        # tasks, plus mobile's two vitest projects (4094 + 351 = the full run).
+        # Together these cover every test task exactly once: 1 + 3 + 51 package
+        # tasks, mobile's two vitest projects (4094 + 351), and the lanekeep
+        # fixture suite — the full run.
         shard:
           - name: packages-background
             command: pnpm exec turbo run test --filter=@perawallet/wallet-core-background
@@ -329,6 +330,10 @@ jobs:
           - name: mobile-integration
             command: pnpm --filter mobile test:integration
             vitestThreads: 4
+            turboConcurrency: 1
+          - name: lanekeep
+            command: pnpm run test:lanekeep
+            vitestThreads: 2
             turboConcurrency: 1
     steps:
       - name: Checkout
@@ -379,12 +384,10 @@ jobs:
           # GitHub-hosted ubuntu-24.04 runners have 4 cores, so each shard
           # budgets threads against that. The `packages` shard fans out through
           # turbo — without caps each of its ~30 sibling vitest processes would
-          # grab cpu_count threads and over-subscribe wildly, the symptom being
-          # intermittent timeouts in CPU-heavy specs (guardrails'
-          # runner.spec.ts, which `spawnSync`s pnpm and spawns its own
-          # worker_threads). 2 threads × 4 turbo tasks = 8 active threads, which
-          # fits 4 cores with headroom. The mobile shards run a single vitest
-          # process, so that process gets the whole runner.
+          # grab cpu_count threads and over-subscribe wildly. 2 threads × 4
+          # turbo tasks = 8 active threads, which fits 4 cores with headroom.
+          # The mobile shards run a single vitest process, so that process
+          # gets the whole runner.
           VITEST_MAX_THREADS: ${{ matrix.shard.vitestThreads }}
           TURBO_CONCURRENCY: ${{ matrix.shard.turboConcurrency }}
         # Coverage is deliberately absent: nothing consumed the report on the PR
@@ -586,6 +589,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      # No `cache: pnpm` here — same reasoning as the audit job above: this
+      # job never runs `pnpm install`, so there is no store to cache.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+
       - name: Install actionlint
         env:
           ACTIONLINT_VERSION: 1.7.12
@@ -620,3 +633,8 @@ jobs:
             echo "── ${suite}"
             bash "${suite}"
           done
+
+      # The shell harness above only exercises synthetic fixtures; this checks
+      # the real pnpm-workspace.yaml for patch/catalog drift.
+      - name: Check patch pins
+        run: pnpm run check:patch-pins

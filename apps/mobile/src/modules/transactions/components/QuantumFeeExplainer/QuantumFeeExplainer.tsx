@@ -35,7 +35,7 @@ export type QuantumFeeExplainerProps = {
  * the network fee is higher than for standard accounts. The show/hide decision
  * lives in the colocated screen hooks — this component only renders.
  *
- * When `adjustment` is provided (PQ-017), the explainer instead reports that
+ * When `adjustment` is provided, the explainer instead reports that
  * Pera raised the dApp's below-minimum fee, showing the original and adjusted
  * amounts.
  */

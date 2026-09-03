@@ -51,7 +51,7 @@ export type UseMinimumFeeCalculatorResult = {
  * Today the only rule is the post-quantum surcharge for quantum signers
  * (delegating to {@link assignMinimumFeesToGroup}); the interface is the
  * seam where future rules land — per-resource surcharges or a node
- * `simulate()`-based requirement (PQ-022) — without call sites changing.
+ * `simulate()`-based requirement — without call sites changing.
  *
  * Network behavior: the suggested minimum fee is fetched only when a
  * quantum signer is actually present (a cheap local account check), so

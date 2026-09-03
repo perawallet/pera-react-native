@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "App-Start fehlgeschlagen",
             "body": "Beim Initialisieren der App ist ein Fehler aufgetreten.  Bitte starte die App neu. Wenn das Problem weiterhin besteht, wende dich an den Support.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher.",
-            "retry": "Erneut versuchen"
+            "retry": "Erneut versuchen",
+            "keystore": {
+                "title": "Wallet-Datenfehler",
+                "body": "Pera konnte einen Teil der auf diesem Gerät gespeicherten Wallet-Daten nicht lesen und kann deshalb nicht sicher starten. Bitte wende dich an den Support, bevor du die App neu installierst: Bei einer Neuinstallation können Konten verloren gehen, die nur auf diesem Gerät existieren.\n\nDein Guthaben ist auf der Algorand-Blockchain sicher."
+            }
         }
     },
     "asset_sort": {
@@ -162,6 +166,8 @@
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
             "body_keyreg": "Die Schlüsselregistrierungs-Transaktion konnte nicht erstellt werden.",
             "body_keyreg_unknown_account": "Diese Schlüsselregistrierung gehört zu einem Konto, das sich nicht in diesem Wallet befindet. Füge das Konto zuerst hinzu und scanne dann erneut.",
+            "body_keyreg_cannot_sign": "Dieses Konto kann in Pera keine Transaktionen signieren. Für die Registrierung wird der private Schlüssel des Kontos benötigt, nicht nur eine Beobachtungskopie.",
+            "body_keyreg_network_mismatch": "Diese Registrierung gilt für ein anderes Algorand-Netzwerk als das deiner Wallet. Wechsle das Netzwerk und scanne erneut.",
             "title_recover": "Konto konnte nicht importiert werden",
             "body_recover": "Das Konto konnte nicht aus diesem QR-Code importiert werden.",
             "body_recover_duplicate": "Dieses Konto befindet sich bereits in deinem Wallet.",
@@ -369,6 +375,9 @@
         "rekey_option_ledger_description": "Transaktionen werden auf deinem Ledger-Gerät autorisiert.",
         "rekey_option_standard_title": "Zu einem Standard-Konto",
         "rekey_option_standard_description": "Transaktionen werden von einem anderen Konto in deinem Wallet autorisiert.",
+        "rekey_option_quantum_title": "Zu einem Quantum-Konto",
+        "rekey_option_quantum_description": "Transaktionen werden von einem quantensicheren Konto in deinem Wallet autorisiert.",
+        "rekey_option_quantum_badge": "NEU",
         "export_share_account": "Konto exportieren/teilen",
         "scan_rekeyed": "Nach rekeyed Konten suchen",
         "rename_account": "Konto umbenennen",
@@ -1294,7 +1303,9 @@
     },
     "notifications": {
         "empty_title": "Keine aktuellen Benachrichtigungen",
-        "empty_body": "Deine letzten Transaktionen, Asset-Anfragen und andere Transaktionen werden hier angezeigt"
+        "empty_body": "Deine letzten Transaktionen, Asset-Anfragen und andere Transaktionen werden hier angezeigt",
+        "unavailable_title": "Benachrichtigungen nicht verfügbar",
+        "unavailable_body": "Benachrichtigungen konnten auf diesem Gerät nicht eingerichtet werden. Überprüfe deine Berechtigungen und Verbindung und versuche es erneut."
     },
     "messages": {
         "tabs": {
@@ -1445,6 +1456,9 @@
         },
         "pending_signatures": {
             "title": "Ausstehende Signaturen",
+            "title_submitting": "Transaktion wird übermittelt",
+            "title_success": "Transaktion abgeschlossen",
+            "title_failure": "Transaktion nicht abgeschlossen",
             "x_of_y": "{{signed}} von {{total}} signiert",
             "time_left": "≈ {{time}} verbleibend",
             "accounts_heading": "Konten",
@@ -1853,13 +1867,14 @@
         },
         "to_standard": {
             "intro": {
-                "title": "Zu Standardkonto rekeyen",
-                "body": "Verwende den privaten Schlüssel eines anderen Kontos, um Transaktionen für dieses Konto zu signieren.",
+                "title": "Zu Standard-Konto rekeyen",
+                "body": "Beim Rekeyen wird ein neuer Schlüssel zum Signieren der künftigen Transaktionen dieses Kontos festgelegt, ohne Guthaben zu verschieben oder die Adresse zu ändern.",
                 "learn_more": "Mehr erfahren",
                 "expect_label": "Was dich erwartet",
-                "expect_1": "Zukünftige Transaktionen können nur noch vom delegierten Konto signiert werden.",
-                "expect_2": "Dieses Konto kann keine Transaktionen mehr signieren.",
-                "expect_3": "Der öffentliche Schlüssel, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_1": "Künftige Transaktionen dieses Kontos können nur noch mit dem Schlüssel des neuen Kontos signiert werden.",
+                "expect_2": "Sichere die Wiederherstellungsphrase dieses neuen Kontos, bevor du fortfährst. Verlierst du sie, verlierst du die Möglichkeit, für dieses Konto zu signieren, auch wenn sonst alles daran unverändert bleibt.",
+                "expect_3": "Die Adresse, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_4": "Wenn du dieses Konto später schließt, wird das Rekey entfernt. Sobald die Adresse wieder Guthaben erhält, liegt die Kontrolle beim ursprünglichen Schlüssel und nicht bei dem Konto, das du jetzt einrichtest.",
                 "cta": "Vorgang starten"
             },
             "select": {
@@ -1870,6 +1885,44 @@
             "confirm": {
                 "title": "Rekey bestätigen",
                 "body": "Du bist dabei, dieses Konto zu einer anderen autorisierten Adresse zu rekeyen. Die neue Adresse kann dann Transaktionen in seinem Namen signieren.",
+                "learn_more": "Mehr erfahren",
+                "summary_label": "Zusammenfassung des Rekeys",
+                "current_auth_label": "Derzeit rekeyed zu",
+                "fee_label": "Transaktionsgebühr",
+                "cta": "Bestätigen",
+                "replace_warning": {
+                    "title": "Dein vorheriger Rekey wird ersetzt",
+                    "body": "<0>{{currentAuth}}</0> ist nicht mehr berechtigt, Transaktionen für <1>{{source}}</1> zu signieren. Stelle sicher, dass du die Auswirkungen verstehst, bevor du fortfährst. <2>Mehr erfahren</2>",
+                    "confirm": "Bestätigen",
+                    "cancel": "Abbrechen"
+                }
+            },
+            "success": {
+                "title": "Konto erfolgreich rekeyed",
+                "body": "Das Konto <0>{{source}}</0> wurde erfolgreich rekeyed.",
+                "cta": "Fertig"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Zu Quantum-Konto rekeyen",
+                "body": "Beim Rekeyen wird ein neuer Schlüssel zum Signieren der künftigen Transaktionen dieses Kontos festgelegt, ohne Guthaben zu verschieben oder die Adresse zu ändern.",
+                "learn_more": "Mehr erfahren",
+                "expect_label": "Was dich erwartet",
+                "expect_1": "Künftige Transaktionen dieses Kontos können nur noch mit dem Post-Quanten-Schlüssel des Quantum-Kontos signiert werden.",
+                "expect_2": "Sichere die 25-Wort-Wiederherstellungsphrase dieses Kontos, bevor du fortfährst. Verlierst du sie, verlierst du die Möglichkeit, für dieses Konto zu signieren, auch wenn sonst alles daran unverändert bleibt.",
+                "expect_3": "Die Adresse, die Guthaben und die Konfiguration deines Kontos ändern sich nicht.",
+                "expect_4": "Künftige Transaktionen zahlen eine höhere Mindest-Netzwerkgebühr, und ein späteres Rekey zurück zu einem Standard-Konto erfordert selbst eine quantensignierte Transaktion.",
+                "cta": "Vorgang starten"
+            },
+            "select": {
+                "title": "Quantum-Konto auswählen",
+                "subtitle": "Wähle das Quantum-Konto aus, zu dem du rekeyen möchtest. Das hier ausgewählte Konto ist für die Signierung aller Transaktionen des Quellkontos verantwortlich.",
+                "empty": "Keine Quantum-Konten gefunden. Erstelle oder importiere zuerst ein Quantum-Konto."
+            },
+            "confirm": {
+                "title": "Rekey bestätigen",
+                "body": "Du bist dabei, dieses Konto zu einem Quantum-Konto zu rekeyen. Die neue Adresse kann dann Transaktionen in seinem Namen signieren.",
                 "learn_more": "Mehr erfahren",
                 "summary_label": "Zusammenfassung des Rekeys",
                 "current_auth_label": "Derzeit rekeyed zu",
@@ -2102,7 +2155,8 @@
             "confirm": "Wieder aktivieren",
             "cancel": "Jetzt nicht",
             "unavailable_title": "Biometrie nicht verfügbar",
-            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein."
+            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein.",
+            "body_not-available": "Die biometrische Entsperrung funktioniert nicht, weil auf deinem Gerät keine Biometrie für Pera eingerichtet ist. Richte sie in den Geräteeinstellungen ein und aktiviere sie hier wieder."
         }
     },
     "send_funds": {
@@ -2368,6 +2422,8 @@
             "biometric_error_message": "Wir konnten dich nicht authentifizieren.  Bitte versuche es erneut.",
             "biometric_weak_title": "Stärkere Biometrie erforderlich",
             "biometric_weak_message": "Pera benötigt einen Fingerabdruck oder eine andere starke biometrische Methode, um dein Wallet zu entsperren. Füge einen Fingerabdruck in den biometrischen Einstellungen deines Geräts hinzu und aktiviere dies erneut.",
+            "biometric_unconfirmed_title": "Entsperre zuerst dein Gerät",
+            "biometric_unconfirmed_message": "Die Biometrie deines Geräts ist gesperrt. Entsperre dein Gerät mit deinem Passcode, um sie wiederherzustellen, und aktiviere dies dann erneut.",
             "advanced_security_settings": "Erweiterte Sicherheitseinstellungen",
             "enable_asset_freeze_support": "Asset-Freeze-Unterstützung aktivieren",
             "enable_asset_freeze_support_description": "Sobald du dies aktivierst, kannst du Transaktionsanfragen zum Einfrieren oder Auftauen von Assets auf Konten bestätigen. Dies kann verhindern, dass das Zielkonto mit dem angegebenen Asset transagiert.",
@@ -2588,6 +2644,7 @@
             "app_call": "App-Aufruf",
             "key_registration": "Schlüsselregistrierung",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen"
         },
@@ -2648,6 +2705,9 @@
             "title": "Nicht unterstützter Transaktionstyp",
             "body": "Dieser Transaktionstyp wird nicht unterstützt."
         },
+        "state_proof": {
+            "body": "Das Netzwerk hat einen State Proof veröffentlicht, damit andere Chains Algorand-Blöcke verifizieren können."
+        },
         "asset_transfer": {
             "clawback_from": "Clawback von"
         },
@@ -2675,6 +2735,7 @@
             "key_dilution": "Schlüsselverdünnung",
             "participation_key": "Teilnahmeschlüssel",
             "selection_key": "Auswahlschlüssel",
+            "state_proof_key": "State-Proof-Schlüssel",
             "status": "Registrierungsstatus",
             "online": "Online",
             "offline": "Offline"
@@ -2882,6 +2943,8 @@
         "execution": {
             "error_title": "Tausch fehlgeschlagen",
             "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "insufficient_algo_title": "Unzureichendes ALGO",
+            "insufficient_algo_body": "Dieses Konto benötigt mindestens {{amount}} ALGO mehr, um diesen Tausch, die Gebühren und das Mindestguthaben zu decken. Füge mehr ALGO hinzu und versuche es erneut.",
             "success_title": "Tausch abgeschlossen",
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",

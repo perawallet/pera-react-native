@@ -95,7 +95,7 @@ describe('useQRScannerView', () => {
     })
 
     // The camera stills as soon as a code is accepted, so without this flag a
-    // multi-second WalletConnect pairing looks like a hang (PERA-4748).
+    // multi-second WalletConnect pairing looks like a hang.
     describe('isHandling', () => {
         const renderScanner = (onSuccess = vi.fn()) =>
             renderHook(() =>

@@ -13,16 +13,14 @@
 import { useCallback, useMemo } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
-import {
-    queryOptions,
-    useQuery,
-    type UseQueryResult,
-} from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'
@@ -34,25 +32,29 @@ const INBOX_IN_FLIGHT_POLL_INTERVAL_MS = 10_000
 /**
  * Single owner of the shared inbox query. Query-level options (queryFn,
  * retry) are last-observer-wins in TanStack, so every observer of
- * `getInboxQueryKey` must spread these options rather than redeclare them —
+ * `getInboxQueryKey` must spread `queryOptions` rather than redeclare them —
  * per-observer `select` is the only thing a consumer should add.
  */
 export const useInboxQueryOptions = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network) ?? ''
     const signingAccounts = useSigningAccounts()
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
     const addresses = useMemo(
         () => signingAccounts.map(a => a.address),
         [signingAccounts],
     )
 
-    return useMemo(
+    const queryOptionsResult = useMemo(
         () =>
             queryOptions({
                 queryKey: getInboxQueryKey(network, deviceID, addresses),
                 queryFn: () => fetchInbox(network, deviceID, addresses),
-                enabled: !!deviceID.length && !!addresses.length,
+                enabled:
+                    !!deviceID.length &&
+                    !!addresses.length &&
+                    !isUnavailableOnNetwork,
                 // Self-heal stale rows after a multisig sign action: poll only
                 // while the cached response still contains a non-terminal sign
                 // request, and stop automatically once everything settles.
@@ -76,12 +78,27 @@ export const useInboxQueryOptions = () => {
                 // trip ky's Error subclass via Babel's `_construct` helper.
                 retry: false,
             }),
-        [network, deviceID, addresses],
+        [network, deviceID, addresses, isUnavailableOnNetwork],
     )
+
+    return { queryOptions: queryOptionsResult, isUnavailableOnNetwork }
 }
 
-export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
-    const inboxQueryOptions = useInboxQueryOptions()
+export type UseInboxQueryResult = {
+    data: InboxItem[]
+    isPending: boolean
+    isRefetching: boolean
+    isError: boolean
+    error: Nullable<Error>
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
+    /** Resolves to the refreshed items so callers can act on them (see `useHandleMultisigNotification`). */
+    refetch: () => Promise<InboxItem[]>
+}
+
+export const useInboxQuery = (): UseInboxQueryResult => {
+    const { queryOptions: inboxQueryOptions, isUnavailableOnNetwork } =
+        useInboxQueryOptions()
     const signingAccounts = useSigningAccounts()
     const allAccounts = useAllAccounts()
 
@@ -90,7 +107,7 @@ export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
         [allAccounts],
     )
 
-    return useQuery({
+    const query = useQuery({
         ...inboxQueryOptions,
         select: useCallback(
             (data: InboxResponse) =>
@@ -108,4 +125,20 @@ export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
             [signingAccounts, localAddresses],
         ),
     })
+
+    return {
+        data: query.data ?? [],
+        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
+        isError: query.isError,
+        error: query.error,
+        isUnavailableOnNetwork,
+        // The observer's refetch() ignores `enabled` and would still fire the
+        // doomed Pera request on a non-backed network.
+        refetch: async () => {
+            if (isUnavailableOnNetwork) return []
+            const { data } = await query.refetch()
+            return data ?? []
+        },
+    }
 }

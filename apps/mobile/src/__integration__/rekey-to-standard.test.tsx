@@ -66,7 +66,7 @@ import { RekeyToStandardSuccessScreen } from '@modules/rekey/screens/rekey-to-st
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
@@ -83,7 +83,7 @@ const seedRekeyAccounts = async (): Promise<{
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })

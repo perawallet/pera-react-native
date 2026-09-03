@@ -16,7 +16,7 @@ import type {
     LegacyHDKey,
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
-import { hdWalletEntropyToMnemonic } from './legacyKeyConversion'
+import { hdWalletEntropyToIndices } from './legacyKeyConversion'
 import type { ImportedHdRoot, MigrateAccountArgs } from './types'
 
 export const migrateHdAccount = async (
@@ -80,16 +80,20 @@ const ensureHdRootImported = async (
         return reused
     }
 
-    const mnemonic = hdWalletEntropyToMnemonic(parent)
-    const { seedKey } = await createHDWalletKey({
-        id: parent.walletId,
-        mnemonic,
-    })
+    const mnemonicIndices = hdWalletEntropyToIndices(parent)
+    try {
+        const { seedKey } = await createHDWalletKey({
+            id: parent.walletId,
+            mnemonicIndices,
+        })
 
-    const root: ImportedHdRoot = {
-        seedKeyId: seedKey.id ?? parent.walletId,
+        const root: ImportedHdRoot = {
+            seedKeyId: seedKey.id ?? parent.walletId,
+        }
+        importedHdRoots.set(parent.walletId, root)
+        zeroBytes(parent.entropy)
+        return root
+    } finally {
+        zeroBytes(mnemonicIndices)
     }
-    importedHdRoots.set(parent.walletId, root)
-    zeroBytes(parent.entropy)
-    return root
 }

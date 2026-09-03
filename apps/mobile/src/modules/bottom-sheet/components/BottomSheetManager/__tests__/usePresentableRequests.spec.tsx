@@ -47,7 +47,7 @@ describe('usePresentableRequests', () => {
         expect(result.current).toEqual([request])
     })
 
-    // PERA-4743, centralized: a sheet presented while AutoLockGuard's overlay
+    // Centralized here: a sheet presented while AutoLockGuard's overlay
     // covers the app surfaces the instant the PIN is accepted. Holding here
     // covers every sheet at once instead of per-driver gates.
     it('holds a request that arrives while presentation is held', () => {

@@ -32,6 +32,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 }))
 
 const mockCheckBiometricsAvailable = vi.fn()
+const mockGetAvailability = vi.fn()
 const mockAuthenticate = vi.fn()
 const mockGetSecurityLevel = vi.fn()
 const mockCreateEnrollmentBinding = vi.fn()
@@ -40,6 +41,7 @@ const mockClearEnrollmentBinding = vi.fn()
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
+    getAvailability: mockGetAvailability,
     authenticate: mockAuthenticate,
     getSecurityLevel: mockGetSecurityLevel,
     getSupportedBiometricType: vi.fn(),
@@ -119,6 +121,7 @@ describe('useBiometrics', () => {
         // matching the set bound at opt-in; tests covering unavailable / weak /
         // revoked / re-enrolled devices override these.
         mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockGetAvailability.mockResolvedValue('available')
         mockGetSecurityLevel.mockResolvedValue('strong')
         mockCheckEnrollmentBinding.mockResolvedValue('valid')
     })
@@ -135,7 +138,12 @@ describe('useBiometrics', () => {
         })
     })
 
-    test('clears the biometric blob when the OS reports no enrolled biometric', async () => {
+    // `checkBiometricsAvailable` is false for a lockout, a busy sensor and a
+    // pending security update as well as for "nothing enrolled" — Android folds
+    // every non-SUCCESS `canAuthenticate` code into the same boolean. Deleting
+    // the blob here made a lockout, which clears itself, permanently cost the
+    // user their opt-in.
+    test('checkBiometricsEnabled keeps the blob when biometrics are merely unavailable', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(false)
 
@@ -147,19 +155,36 @@ describe('useBiometrics', () => {
         })
 
         expect(isEnabled).toBe(false)
-        expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
-            BIOMETRIC_BLOB_KEY_ID,
-        )
-        expect(kmsMocks.biometricBytes).toBeNull()
+        expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.biometricBytes).not.toBeNull()
         expect(result.current.isEnabled).toBe(false)
     })
 
-    test('refreshBiometricsBinding does not re-arm a blob whose enrollment is gone', async () => {
+    // The Android lockout repro: the opt-in has to come back on its own once the
+    // lockout expires, with no visit to Settings.
+    test('checkBiometricsEnabled re-arms the opt-in once availability returns', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+
+        const { result } = await renderAndSettle()
+        expect(result.current.isEnabled).toBe(false)
+
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        let isEnabled: boolean = false
+        await act(async () => {
+            isEnabled = await result.current.checkBiometricsEnabled()
+        })
+
+        expect(isEnabled).toBe(true)
+        expect(result.current.isEnabled).toBe(true)
+    })
+
+    // Same rule as the unconfirmable-level case below: a blob the reconcile
+    // keeps must still be re-bound, or it would outlive the PIN it mirrors and
+    // come back armed against the old one when the lockout clears.
+    test('refreshBiometricsBinding re-binds a blob kept through a transient unavailability', async () => {
         kmsMocks.pinBytes = new Uint8Array([10, 20, 30, 40])
         kmsMocks.biometricBytes = new Uint8Array([99])
-        // Enrolled at mount, revoked afterwards: the blob must still be present
-        // when refresh runs, or a bare `hasSecret` guard would bail for the
-        // wrong reason and the test would pass without proving anything.
         mockCheckBiometricsAvailable.mockResolvedValue(true)
 
         const { result } = await renderAndSettle()
@@ -170,7 +195,10 @@ describe('useBiometrics', () => {
             await result.current.refreshBiometricsBinding()
         })
 
-        expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.commitSecret).toHaveBeenCalledWith(
+            expect.objectContaining({ id: BIOMETRIC_BLOB_KEY_ID }),
+        )
     })
 
     test('checkBiometricsEnabled drops the blob when the remaining enrollment is only weak', async () => {
@@ -219,7 +247,7 @@ describe('useBiometrics', () => {
         },
     )
 
-    // The reported PERA-4702 symptom was a stale ON toggle in Settings while the
+    // The reported symptom was a stale ON toggle in Settings while the
     // lock screen had fallen back to PIN, so the downgrade has to clear the
     // shared flag for every consumer — not just for the one that reconciled.
     test('a downgrade to an unconfirmable level clears isEnabled for every mounted consumer', async () => {
@@ -257,15 +285,15 @@ describe('useBiometrics', () => {
         expect(result.current.isEnabled).toBe(false)
     })
 
-    // The reconcile keeps an unconfirmable blob, and with `isEnabled` false the
-    // Settings toggle reads OFF — so its delete branch is unpressable and the
-    // blob would be stranded. Refusing an explicit enable is the user-driven
-    // moment where clearing it is unambiguously safe.
-    test('enableBiometrics clears a blob it refuses to bind', async () => {
+    // A class-2 ("weak") enrollment can never be bound, and with `isEnabled`
+    // false the Settings toggle reads OFF — so its delete branch is unpressable
+    // and the blob would be stranded. Refusing an explicit enable is the
+    // user-driven moment where clearing it is unambiguously safe.
+    test('enableBiometrics clears a blob it refuses to bind for a weak enrollment', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockGetSecurityLevel.mockResolvedValue('secret')
+        mockGetSecurityLevel.mockResolvedValue('weak')
 
         const { result } = await renderAndSettle()
 
@@ -279,11 +307,14 @@ describe('useBiometrics', () => {
         expect(kmsMocks.biometricBytes).toBeNull()
     })
 
-    // Binding is stricter than the reconcile's delete rule on purpose: the
-    // reconcile tolerates an unconfirmable level, but nothing may be bound
-    // against one.
-    test('enableBiometrics refuses to bind when the security level cannot be confirmed', async () => {
+    // 'secret'/'none' is ambiguous: iOS reports enrolled-but-'secret' during a
+    // Face ID lockout the user clears with the device passcode, not from inside
+    // the app. Binding is refused, but the opt-in must survive so unlock
+    // auto-restores when the lockout clears — dropping it would turn a
+    // self-clearing lockout into a permanent opt-out.
+    test('enableBiometrics preserves the opt-in for an unconfirmed level (iOS Face ID lockout)', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockGetSecurityLevel.mockResolvedValue('secret')
 
@@ -294,9 +325,11 @@ describe('useBiometrics', () => {
             enableResult = await result.current.enableBiometrics()
         })
 
-        expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
+        expect(enableResult).toEqual({ ok: false, reason: 'unconfirmed' })
         expect(mockAuthenticate).not.toHaveBeenCalled()
-        expect(kmsMocks.biometricBytes).toBeNull()
+        // The blob must survive the lockout so unlock recovers on its own.
+        expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        expect(kmsMocks.biometricBytes).not.toBeNull()
     })
 
     test('authenticateWithBiometrics reports unavailable when only a weak biometric remains', async () => {
@@ -713,7 +746,7 @@ describe('useBiometrics', () => {
 
     // The QA gap in the first revision: the reconcile cleared the blob but only
     // the calling screen's copy of isEnabled, so Settings kept showing ON while
-    // the lock screen had already fallen back to PIN (PERA-4702).
+    // the lock screen had already fallen back to PIN.
     test('a revoked blob clears isEnabled for every mounted consumer', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 
@@ -723,8 +756,9 @@ describe('useBiometrics', () => {
         expect(settings.result.current.isEnabled).toBe(true)
         expect(lockScreen.result.current.isEnabled).toBe(true)
 
-        // Enrollment removed in OS settings while the app was running.
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
+        // Enrollment replaced in OS settings while the app was running. Keyed on
+        // the binding rather than on availability, which no longer revokes.
+        mockCheckEnrollmentBinding.mockResolvedValue('changed')
 
         await act(async () => {
             await lockScreen.result.current.checkBiometricsEnabled()
@@ -905,6 +939,125 @@ describe('useBiometrics', () => {
                 reason: 'weak-biometric',
             })
             expect(result.current.disabledReason).toBe('weak-biometric')
+        })
+
+        // The distinction ticket 2 could not make with a boolean: both of these
+        // read as "unavailable", but only one of them is the user's problem to
+        // solve.
+        test.each(['none-enrolled', 'denied'] as const)(
+            'explains a persistent %s state without destroying the opt-in',
+            async availability => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                mockCheckBiometricsAvailable.mockResolvedValue(false)
+                mockGetAvailability.mockResolvedValue(availability)
+
+                const { result } = await renderAndSettle()
+
+                await act(async () => {
+                    await result.current.checkBiometricsEnabled()
+                })
+
+                expect(result.current.disabledReason).toBe('not-available')
+                expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+                expect(kmsMocks.biometricBytes).not.toBeNull()
+            },
+        )
+
+        // An Android fingerprint lockout lands here. It clears itself, so
+        // telling the user to go and fix their device settings would be both
+        // wrong and alarming.
+        test.each(['unavailable', 'unknown'] as const)(
+            'stays silent while biometrics are transiently %s',
+            async availability => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                mockCheckBiometricsAvailable.mockResolvedValue(false)
+                mockGetAvailability.mockResolvedValue(availability)
+
+                const { result } = await renderAndSettle()
+
+                await act(async () => {
+                    await result.current.checkBiometricsEnabled()
+                })
+
+                expect(result.current.disabledReason).toBeNull()
+                expect(kmsMocks.biometricBytes).not.toBeNull()
+            },
+        )
+
+        // The blob survives a `not-available` state, so the user can recover it
+        // entirely in device settings without ever touching Pera. Leaving the
+        // reason behind would then greet them with a screen offering to fix
+        // something that already works.
+        test('drops the explanation once biometrics work again', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('denied')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            expect(result.current.disabledReason).toBe('not-available')
+
+            // Permission granted back in device settings.
+            mockCheckBiometricsAvailable.mockResolvedValue(true)
+            mockGetAvailability.mockResolvedValue('available')
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.isEnabled).toBe(true)
+            expect(result.current.disabledReason).toBeNull()
+        })
+
+        // `not-available` is re-derived from device state on every reconcile, so
+        // without remembering the decline the offer would return on every
+        // unlock until the user gave in.
+        test('does not re-offer a persistent state the user declined', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('none-enrolled')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            expect(result.current.disabledReason).toBe('not-available')
+
+            act(() => {
+                result.current.acknowledgeBiometricsDisabled()
+            })
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.disabledReason).toBeNull()
+        })
+
+        // Declining once must not make the user permanently un-warnable: a drop
+        // that actually destroys the opt-in is a new event.
+        test('offers again when a later drop destroys the opt-in', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(false)
+            mockGetAvailability.mockResolvedValue('none-enrolled')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            act(() => {
+                result.current.acknowledgeBiometricsDisabled()
+            })
+
+            // A biometric is enrolled again, and it is not the bound one.
+            mockCheckBiometricsAvailable.mockResolvedValue(true)
+            mockGetAvailability.mockResolvedValue('available')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            expect(result.current.disabledReason).toBe('enrollment-changed')
         })
 
         test('records no reason when the user disables biometrics themselves', async () => {

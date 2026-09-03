@@ -140,8 +140,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     // that never commits (204, Content-Disposition: attachment, blocked load)
     // leaves the user on the previous page, and an eager label would name the
     // target — the same frozen/wrong-host spoof this ticket fixes, inverted. So
-    // the label follows committed navigations only, like a browser URL bar
-    // (PERA-4665).
+    // the label follows committed navigations only, like a browser URL bar.
     const [committedUrl, setCommittedUrl] = useState(url)
 
     const isSecure = useMemo(
@@ -163,7 +162,7 @@ export const PWWebView = (props: PWWebViewProps) => {
 
     // Append the Pera identifier to the WebView's default browser UA rather
     // than replacing it: a bare non-browser UA (no Mozilla token) makes some
-    // dApp CDNs/bot filters serve 404 (PERA-4566). The API User-Agent header
+    // dApp CDNs/bot filters serve 404. The API User-Agent header
     // (useAppBootstrap) is separate and unaffected. Trust is decided once from
     // the initial load target, not per navigation: WKWebView reads
     // applicationNameForUserAgent only at WebView creation, so it cannot
@@ -319,7 +318,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     // Load failures surface through the in-view error/offline pages, not
     // toasts: `onError` fires PER FAILED SUBRESOURCE, so an offline page
     // load used to storm the global notifier with hardcoded-English
-    // "Failed to load resource" toasts carrying raw URLs (PERA-4582).
+    // "Failed to load resource" toasts carrying raw URLs.
     const handleLoadError = useCallback(
         (event: WebViewErrorEvent) => {
             loadState.handleLoadEnd()
@@ -397,7 +396,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 // Route EVERY scheme through onShouldStartLoadWithRequest — the
                 // default http(s) whitelist hands custom-scheme URLs straight to
                 // the OS before the guard runs, bypassing the origin check. With
-                // '*' the guard is the sole decision point (PERA-4717).
+                // '*' the guard is the sole decision point.
                 originWhitelist={['*']}
                 style={styles.webview}
                 renderLoading={() => (

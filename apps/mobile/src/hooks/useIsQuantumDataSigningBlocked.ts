@@ -25,7 +25,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  * protocol, so a Falcon signature from a quantum account would fail
  * verification on the dApp side. Block the request up front instead of
  * letting the user sign into a guaranteed failure. Remove once the
- * protocol gains PQ support (PERA-4918 / PERA-4919).
+ * protocol gains PQ support.
  */
 export const useIsQuantumDataSigningBlocked = (
     request: Nullable<SignRequest>,
@@ -38,10 +38,9 @@ export const useIsQuantumDataSigningBlocked = (
     // A request naming a quantum account as `signer` is caught here.
     //
     // The one case this can't see is an ARC-60 request whose keyless rekeyed
-    // signer resolves to a quantum auth account (PERA-4977 made that hop
-    // possible). `canSignArc60` refuses a quantum hop target outright, so such
-    // a request is rejected by the transport before it is ever enqueued and
-    // never reaches this hook.
+    // signer resolves to a quantum auth account. `canSignArc60` refuses a
+    // quantum hop target outright, so such a request is rejected by the
+    // transport before it is ever enqueued and never reaches this hook.
     return resolveAllSignerAddresses(request).some(address => {
         const account = accounts.find(a => a.address === address)
         return !!account && isQuantumAccount(account)

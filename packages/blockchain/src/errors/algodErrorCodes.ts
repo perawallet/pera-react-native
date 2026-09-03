@@ -64,7 +64,7 @@ export type AlgodErrorCode =
 export interface AlgodErrorParamsByCode {
     // No balance/spent/missing fields: the node's overspend message renders a
     // fee-adjusted figure that cannot be parsed back into a real balance. See
-    // docs/LOCALNET_CONFORMANCE.md and `parseAlgodMessage.ts`'s `OVERSPEND_RE`
+    // conformance/README.md and `parseAlgodMessage.ts`'s `OVERSPEND_RE`
     // comment for the full reasoning.
     overspend: {
         address: string

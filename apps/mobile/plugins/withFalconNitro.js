@@ -17,7 +17,7 @@ const {
 } = require('expo/config-plugins')
 
 /*
- * On-device Falcon-1024 signing (`@joe-p/react-native-falcon`, PQ-020).
+ * On-device Falcon-1024 signing (`@joe-p/react-native-falcon`).
  *
  * The package is a Nitro C++ HybridObject. Its native code (iOS pod via
  * `Falcon.podspec` + `nitrogen/generated/ios`, Android via `build.gradle` +
@@ -38,9 +38,9 @@ const {
  *
  * SWAP: paired with packages/kms/src/crypto/pq/rnFalconProvider.ts (Seam A).
  *
- * NOTE (unverified pending device build — handed off to Task 9): the native
- * pod/Gradle autolinking and the on-device signature round-trip have not been
- * exercised on a real prebuild/device in this task. If autolinking needs a
+ * NOTE (unverified pending a device build): the native pod/Gradle autolinking
+ * and the on-device signature round-trip have not been exercised on a real
+ * prebuild or device. If autolinking needs a
  * nudge in this pnpm monorepo (symlinked node_modules), or the Nitro module
  * requires additional Podfile/Gradle wiring, that fix belongs in this plugin.
  */

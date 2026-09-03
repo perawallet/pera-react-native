@@ -52,6 +52,11 @@ export type UsePendingSignaturesContentResult = {
     isLoading: boolean
     signRequest: MultisigSignRequest | null
     status: SignRequestStatus | null
+    /**
+     * Keyed on {@link bannerVariant}, so the header can never disagree with the
+     * banner rendered beneath it.
+     */
+    titleKey: string
     bannerVariant: StatusBannerVariant
     /**
      * Fallback when the backend supplies no `failReasonDisplay`. Status-specific
@@ -104,6 +109,13 @@ const FAILURE_BANNER_KEY_BY_STATUS: Partial<Record<SignRequestStatus, string>> =
         declined: 'multisig.pending_signatures.declined',
         failed: 'multisig.pending_signatures.failed_default',
     }
+
+const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, string> = {
+    waiting: 'multisig.pending_signatures.title',
+    submitting: 'multisig.pending_signatures.title_submitting',
+    success: 'multisig.pending_signatures.title_success',
+    failure: 'multisig.pending_signatures.title_failure',
+}
 
 export const usePendingSignaturesContent =
     (): UsePendingSignaturesContentResult => {
@@ -281,7 +293,7 @@ export const usePendingSignaturesContent =
                     })
                     addSignRequest(cosignRequest)
                 } catch (error) {
-                    // A cosign request that fails validation (PERA-4711) must
+                    // A cosign request that fails validation must
                     // never be signed; skip it without crashing the handler.
                     logger.error('Skipping invalid multisig cosign request', {
                         error,
@@ -380,6 +392,7 @@ export const usePendingSignaturesContent =
             isLoading,
             signRequest,
             status,
+            titleKey: TITLE_KEY_BY_VARIANT[bannerVariant],
             bannerVariant,
             failureBannerKey,
             signedCount,

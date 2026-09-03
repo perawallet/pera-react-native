@@ -21,12 +21,22 @@ import { config } from '@perawallet/wallet-core-config'
 import { isActiveAppState } from '@utils/app-state'
 import { shouldDehydrateQuery } from './query-persistence'
 import { queryClient } from './queryClient'
+import { usePeraServiceUnavailableToast } from '@hooks/usePeraServiceUnavailableToast'
 
 export type QueryProviderProps = OmitKeyof<
     PersistQueryClientRootOptions,
     'queryClient'
 > &
     PropsWithChildren
+
+// Mounted as a `null` host (not called from the provider body) so the toast
+// hook's UI subscriptions — safe-area insets via useToast, i18n via
+// useLanguage — re-render this leaf, never QueryProvider itself, whose
+// `persistOptions` would otherwise be re-allocated on every render.
+const PeraServiceUnavailableToast = (): null => {
+    usePeraServiceUnavailableToast()
+    return null
+}
 
 export function QueryProvider({ persister, children }: QueryProviderProps) {
     // Drive React Query's focusManager from AppState: on React Native the
@@ -49,6 +59,7 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
                 dehydrateOptions: { shouldDehydrateQuery },
             }}
         >
+            <PeraServiceUnavailableToast />
             {children}
         </PersistQueryClientProvider>
     )

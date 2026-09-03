@@ -295,7 +295,7 @@ describe('useAccountNfts', () => {
             ])
         })
 
-        // PERA-4845 QA regression: an NFT opted into seconds ago is already a
+        // QA regression: an NFT opted into seconds ago is already a
         // holding row (SQLite mirrors algod) but the lagging indexer has no
         // round for it yet. It must lead the list instantly, not sink.
         it('puts a fresh opt-in the indexer does not know yet on top', () => {
@@ -339,7 +339,7 @@ describe('useAccountNfts', () => {
         })
     })
 
-    // PERA-4921 QA regression: sorting a freshly imported account left the user
+    // QA regression: sorting a freshly imported account left the user
     // in the middle of the list. A new sort is a new query key, so the rows go
     // through a gap before the reordered ones land, and the reset used to be
     // driven off the rows themselves — so it read that gap as "nothing changed"
@@ -416,7 +416,7 @@ describe('useAccountNfts', () => {
 
         // A placeholder gap re-runs the effect, and its cleanup cancels the
         // frame the previous run scheduled. Recording the request as applied
-        // before that frame ran made the cancellation permanent (PERA-4932).
+        // before that frame ran made the cancellation permanent.
         it('still resets once the rows land if a placeholder gap cancelled the scheduled frame', async () => {
             const { result, rerender } = renderHook(() => useAccountNfts())
             const scrollToOffset = attachListRef(result.current.flatListRef)

@@ -34,7 +34,7 @@ vi.unmock('@perawallet/wallet-extension-platform')
 // `migration` service, so the provider singleton would resolve
 // `getProvider().migration` to undefined. Unmock the driver so the provider
 // uses the real in-memory test driver (apps/mobile/src/test-utils/
-// platform-driver-test.ts), which Task 1 extended with the migration service.
+// platform-driver-test.ts), which carries the migration service.
 vi.unmock('@perawallet/wallet-extension-platform-driver')
 
 import { mnemonicToSecretKey } from 'algosdk'
@@ -99,7 +99,7 @@ const legacyAlgo25Account = (address: string): LegacyAccount => ({
 })
 
 // A keyless (watch) account rekeyed to a signing account: `buildWatchAccount`
-// mirrors `authAddress` onto `rekeyAddress` (Task 9), which is what lets
+// mirrors `authAddress` onto `rekeyAddress`, which is what lets
 // `canSignWith` follow the rekey to the signable auth account and pull this
 // address into the inbox signing set.
 const legacyKeylessAccount = (
@@ -283,8 +283,8 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
             })
 
             // The inbox request scopes to BOTH migrated addresses — the
-            // rekeyed keyless account is only present because Task 9 mirrors
-            // its legacy authAddress onto rekeyAddress, making it signable.
+            // rekeyed keyless account is only present because `buildWatchAccount`
+            // mirrors its legacy authAddress onto rekeyAddress, making it signable.
             await waitFor(
                 () =>
                     expect(inboxBodies.at(-1)?.addresses).toEqual(

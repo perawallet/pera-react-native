@@ -491,7 +491,7 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
     it(
         'Given the web-import app-action URL arrives via source="deeplink" (a tapped link), then it is ignored and no import is staged',
         async () => {
-            // QR-only by design (PERA-4747): a tappable link would put the
+            // QR-only by design: a tappable link would put the
             // backup encryption key in a URL, so the handler drops non-QR
             // sources. This pins the decided policy for the URL form too.
             const { result } = renderHook(() => useDeepLink(), {

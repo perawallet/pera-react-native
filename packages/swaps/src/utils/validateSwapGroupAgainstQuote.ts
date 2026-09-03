@@ -99,7 +99,7 @@ export const validateSwapGroupAgainstQuote = (
         // previous behaviour) meant its rekey/close/outflow was never
         // inspected — and a wrong `swapper` turned the whole validator into a
         // no-op, since `outflow` is only populated inside this branch, so an
-        // arbitrary drain of the account passed. (PERA-4709)
+        // arbitrary drain of the account passed.
         if (tx.sender !== swapper) {
             throw new SwapQuoteMismatchError(
                 'Swap group contains a signable transaction from an unexpected sender',

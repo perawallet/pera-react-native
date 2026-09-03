@@ -16,7 +16,7 @@ import { type Arc0001ErrorCode } from './types'
 // message and data to the dApp; note the WalletConnect v1 bridge collapses any
 // code-bearing error to JSON-RPC -32000, so the numeric code is NOT relayed
 // there. Never place wallet-private data (e.g. held addresses) in either field
-// — it reaches the remote peer verbatim (PERA-4716).
+// — it reaches the remote peer verbatim.
 export class Arc0001Error extends Error {
     public readonly code: Arc0001ErrorCode
     public readonly data?: { index?: number; field?: string }

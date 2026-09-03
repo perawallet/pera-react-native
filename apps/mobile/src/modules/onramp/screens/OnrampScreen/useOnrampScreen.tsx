@@ -205,7 +205,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const isReady = !pairsLoading && destinationToken !== null
 
-    // PERA-4581 paused-state contract (docs/OFFLINE_PAUSED_STATE.md): a paused
+    // Paused-state contract (docs/OFFLINE_PAUSED_STATE.md): a paused
     // query reports isPending forever, so offline must be resolved before the
     // spinner, and cached/stale data (isReady) always wins over either.
     const pairsState = useMemo(():

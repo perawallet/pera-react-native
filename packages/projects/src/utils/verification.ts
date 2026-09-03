@@ -41,7 +41,7 @@ const hostMatches = (
  *
  * A `suspicious` tier is a warning and is always surfaced: fail-loud is safe,
  * and its absence must never be read as "clean". Returns the tier to render, or
- * `undefined` to render nothing (PERA-4715).
+ * `undefined` to render nothing.
  */
 export const resolveDisplayableVerificationTier = (
     project: PeraProject | null | undefined,

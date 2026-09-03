@@ -23,16 +23,11 @@ const mockImportAlgo25 = vi.fn()
 const mockUpdateAccount = vi.fn()
 const mockMarkBackupComplete = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockMnemonicFromSeed = vi.fn()
+const mockAlgo25SeedToIndices = vi.fn()
 const mockIsValidAlgorandAddress = vi.fn()
 const mockZeroBytes = vi.fn()
 
 let storeAccounts: WalletAccount[] = []
-
-vi.mock('algosdk', async importOriginal => ({
-    ...(await importOriginal<typeof import('algosdk')>()),
-    mnemonicFromSeed: (...args: unknown[]) => mockMnemonicFromSeed(...args),
-}))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     // The accounts barrel installs a network-switch subscription at load.
@@ -46,6 +41,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     ALGO25_SEED_LENGTH: 32,
+    algo25SeedToIndices: (...args: unknown[]) =>
+        mockAlgo25SeedToIndices(...args),
     zeroBytes: (...args: unknown[]) => mockZeroBytes(...args),
 }))
 
@@ -115,7 +112,7 @@ describe('useAsbAccountImport', () => {
         vi.clearAllMocks()
         storeAccounts = []
         mockIsValidAlgorandAddress.mockReturnValue(true)
-        mockMnemonicFromSeed.mockReturnValue('mock mnemonic')
+        mockAlgo25SeedToIndices.mockReturnValue(new Uint16Array(25).fill(1))
     })
 
     test('throws when the asb account address is not a valid Algorand address', async () => {
@@ -167,8 +164,8 @@ describe('useAsbAccountImport', () => {
         const account = singleAccount()
         const returned = await result.current.importAccount(account)
 
-        expect(mockMnemonicFromSeed).toHaveBeenCalledTimes(1)
-        const seedArg = mockMnemonicFromSeed.mock.calls[0][0] as Uint8Array
+        expect(mockAlgo25SeedToIndices).toHaveBeenCalledTimes(1)
+        const seedArg = mockAlgo25SeedToIndices.mock.calls[0][0] as Uint8Array
         // We must pass exactly the 32-byte seed half — and a *copy*, not a
         // subarray that would share memory with `account.privateKey`.
         expect(seedArg).toBeInstanceOf(Uint8Array)
@@ -176,13 +173,16 @@ describe('useAsbAccountImport', () => {
         expect(seedArg.buffer).not.toBe(account.privateKey!.buffer)
 
         expect(mockImportAlgo25).toHaveBeenCalledWith({
-            mnemonic: 'mock mnemonic',
+            mnemonicIndices: expect.objectContaining({ length: 25 }),
             type: 'algo25',
         })
         // No `name` on the asb row, so updateAccount must not be called.
         expect(mockUpdateAccount).not.toHaveBeenCalled()
         expect(mockMarkBackupComplete).toHaveBeenCalledWith(imported)
-        expect(mockZeroBytes).toHaveBeenCalledWith(seedArg)
+        expect(mockZeroBytes).toHaveBeenCalledWith(
+            seedArg,
+            expect.objectContaining({ length: 25 }),
+        )
         expect(returned).toBe(imported)
     })
 

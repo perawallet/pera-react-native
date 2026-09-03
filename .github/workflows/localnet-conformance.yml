@@ -1,7 +1,7 @@
-name: LocalNet Conformance
+name: CI / LocalNet Conformance
 
 # Runs conformance/ (30 files, 117 tests) against a real LocalNet node instead
-# of mocks — see docs/LOCALNET_CONFORMANCE.md. Nightly because it needs Docker
+# of mocks — see conformance/README.md. Nightly because it needs Docker
 # + a booted chain (too slow/flaky for every push); also gated on PR to the
 # packages this suite actually exercises, so a regression is caught before
 # merge rather than the following night.
@@ -73,7 +73,7 @@ jobs:
             - name: Start LocalNet
               run: pnpm localnet
 
-            # THE CI-BREAKING PREREQUISITE (see docs/LOCALNET_CONFORMANCE.md and
+            # THE CI-BREAKING PREREQUISITE (see conformance/README.md and
             # conformance/README.md): the suite's import graph — and, separately,
             # `conformance/tsconfig.json`'s `paths` for the typecheck step below —
             # reach several packages' built dist/, not their src, one or two levels

@@ -48,7 +48,7 @@ const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 
 // Sharing one in-flight pass per network keeps a switch-triggered pileup of
 // whole-wallet passes (the sync tick, refreshAccounts) from running the
-// (whole-wallet-sized) stale gate several times over (PERA-4953). Size alone
+// (whole-wallet-sized) stale gate several times over. Size alone
 // doesn't prove a list is whole-wallet — the per-account enrichment callers
 // can clear this on a single 300-asset account — so a pass is only joined
 // when the in-flight one covers every arriving id. Otherwise a fresh import

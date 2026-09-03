@@ -1,174 +1,68 @@
-# Pera Wallet Configuration
+# Configuration
 
-Centralized, type-safe configuration system for Pera Wallet with environment-specific overrides and build-time injection support.
+Zod-validated, type-safe configuration with safe open-source defaults and build-time injection from
+environment variables.
 
-## Overview
+## How a value is resolved
 
-This package provides a Zod-validated configuration system that supports:
+`getConfig()` in `src/main.ts` merges two things and validates the result against `configSchema`:
 
-- Safe open source defaults (public Algorand nodes, placeholder backend URLs)
-- Environment-specific overrides (development, staging, production)
-- Build-time injection via environment variables for official builds
-- Type safety and runtime validation
+1. `productionConfig`, the committed defaults in `src/main.ts`. These are safe for open-source builds:
+   public AlgoNode infrastructure, staging backend URLs, empty API keys.
+2. `generatedEnv` from `src/generated-env.ts`, written by `tools/generate-config.sh` from the
+   environment at build time. That file is gitignored, so a checkout always starts from the
+   committed defaults.
 
-## Configuration Loading Order
+`overrideEnvironmentMap` (bottom of `src/main.ts`) is the authoritative mapping from config field to
+environment variable name. Read it rather than any list in this file.
 
-Configuration values are loaded and merged in this order (later values override earlier ones):
+`tools/generate-config.sh` sources `.env` at the repo root, then an optional overlay file named by
+`PERA_ENV_OVERLAY` which wins over `.env`.
 
-1. **Base production config** (`production.ts`) - Safe OSS defaults
-2. **Environment overrides** (`development.ts`, `staging.ts`) - Environment-specific settings
-3. **Environment variables** (prefixed with `PERA_`) - Build-time injection for official builds
+Environment variable names are **not** prefixed. It is `BACKEND_API_KEY`, not `PERA_BACKEND_API_KEY`.
+The only `PERA_`-prefixed variables are `PERA_ENV_OVERLAY` and `PERA_DEFAULT_NETWORK`, the latter a
+fallback for `DEFAULT_NETWORK`.
 
-## Usage
+## Build channel
 
-### Basic Import
+`APP_ENV` selects the channel: `development` (the default when unset), `staging` or `production`. It
+picks the Discover base URL, and in a production build the schema **rejects** any first-party URL
+that still points at staging, naming the variable you need to set. That is a build-time failure by
+design, rather than an app that launches against the wrong backend.
 
-```typescript
-import { config } from '@perawallet/wallet-core-config'
+## Adding a config value
 
-// Use the config
-const backendUrl = config.mainnetBackendUrl
-const apiKey = config.backendAPIKey
-```
+A new value needs four edits, and missing any one of them leaves it silently unreachable rather than
+broken:
 
-### Environment Selection
+1. A field on `configSchema` and a default on `productionConfig` (`src/main.ts`).
+2. An entry in `overrideEnvironmentMap` mapping that field to its variable name.
+3. An `append_config` line in `tools/generate-config.sh`, or the variable never reaches
+   `generated-env.ts`.
+4. The variable name in `turbo.json`'s `globalEnv`, or turbo will not hash it.
 
-The environment is selected based on:
+Step 4 is the one that bites. `generated-env.ts` is gitignored, so `$TURBO_DEFAULT$` never hashed it,
+and a dist built from staging secrets shared a task hash with one built from production secrets.
+`turbo run build` would then restore a stale `dist/**` over a freshly rebuilt copy, and the esbuild
+surfaces (service worker, content scripts, db worker) shipped committed defaults while the Metro
+bundle, which resolves `packages/*/src` directly, shipped the real values.
 
-- `APP_ENV` environment variable (highest priority)
-- `NODE_ENV` environment variable (fallback)
-- Defaults to `'development'` if neither is set
+## Example build
 
-Supported environments:
-
-- `development` / `dev` - Development overrides
-- `staging` / `stage` - Staging overrides
-- `production` / `prod` - Production config (no overrides)
-- `test` - Mapped to development (for Vitest)
-
-## Open Source Builds
-
-By default, the configuration uses safe values for open source builds:
-
-- **Algorand Nodes**: Public AlgoNode infrastructure (no authentication required)
-    - Mainnet algod: `https://mainnet-api.algonode.cloud`
-    - Testnet algod: `https://testnet-api.algonode.cloud`
-    - Mainnet indexer: `https://mainnet-idx.algonode.cloud`
-    - Testnet indexer: `https://testnet-idx.algonode.cloud`
-
-- **Backend URLs**: Placeholder values
-    - Mainnet: `https://api.example.com`
-    - Testnet: `https://testnet-api.example.com`
-- **API Keys**: Empty strings (no authentication)
-
-These defaults allow the app to compile and partially function out of the box. Community builders can provide their own backend infrastructure by setting environment variables (see below).
-
-## Official Builds (Environment Variable Injection)
-
-For official Pera Wallet builds, sensitive values are injected at build time using environment variables:
-
-### Available Environment Variables
-
-All variables are optional and prefixed with `PERA_`:
-
-**Backend Configuration:**
-
-- `PERA_MAINNET_BACKEND_URL` - Mainnet backend API URL
-- `PERA_TESTNET_BACKEND_URL` - Testnet backend API URL
-- `PERA_BACKEND_API_KEY` - Backend API authentication key
-
-**Algorand Nodes (override public defaults):**
-
-- `PERA_MAINNET_ALGOD_URL` - Custom mainnet algod URL
-- `PERA_TESTNET_ALGOD_URL` - Custom testnet algod URL
-- `PERA_MAINNET_INDEXER_URL` - Custom mainnet indexer URL
-- `PERA_TESTNET_INDEXER_URL` - Custom testnet indexer URL
-
-**Node Authentication:**
-
-- `PERA_ALGOD_API_KEY` - Algod API key (if using custom nodes)
-- `PERA_INDEXER_API_KEY` - Indexer API key (if using custom nodes)
-
-**Feature Flags:**
-
-- `PERA_DEBUG_ENABLED` - Enable debug logging (`'true'` or `'false'`)
-- `PERA_PROFILING_ENABLED` - Enable React profiling (`'true'` or `'false'`)
-- `PERA_POLLING_ENABLED` - Enable background polling (`'true'` or `'false'`)
-
-### Example: Staging Build
-
-```bash
+```sh
 APP_ENV=staging \
-PERA_MAINNET_BACKEND_URL=https://mainnet.staging.api.perawallet.app \
-PERA_TESTNET_BACKEND_URL=https://testnet.staging.api.perawallet.app \
-PERA_BACKEND_API_KEY=staging-api-key-here \
-PERA_DEBUG_ENABLED=true \
+MAINNET_BACKEND_URL=https://mainnet.staging.api.perawallet.app \
+TESTNET_BACKEND_URL=https://testnet.staging.api.perawallet.app \
+BACKEND_API_KEY=... \
+DEBUG_ENABLED=true \
 pnpm build
 ```
 
-### Example: Production Build
+## What the schema covers
 
-```bash
-APP_ENV=production \
-PERA_MAINNET_BACKEND_URL=https://mainnet.api.perawallet.app \
-PERA_TESTNET_BACKEND_URL=https://testnet.api.perawallet.app \
-PERA_BACKEND_API_KEY=production-api-key-here \
-pnpm build
-```
+Algod and indexer URLs per network, Pera backend URLs, API keys, genesis hashes, explorer and
+dispenser URLs, support and external service links, card service configuration, timing and React
+Query cache settings, and the debug, profiling and polling flags.
 
-## Configuration Schema
-
-The configuration is validated using Zod. See `main.ts` for the complete schema definition.
-
-Key configuration sections:
-
-- **Algorand nodes** - Algod and indexer URLs for mainnet/testnet
-- **Backend APIs** - Pera backend service URLs
-- **API keys** - Authentication keys for services
-- **Explorer URLs** - Block explorer links
-- **Service URLs** - Support and external service links
-- **Timing** - Notification refresh, remote config refresh
-- **React Query** - Cache and stale time settings
-- **Feature flags** - Debug, profiling, polling toggles
-
-## Development
-
-### Testing
-
-Unit tests use Vitest:
-
-```bash
-# Run tests from package
-pnpm test
-
-# Run with coverage from root
-pnpm --filter config test
-
-# Watch mode
-pnpm test --watch
-```
-
-### Adding New Configuration Values
-
-1. Add the new field to `configSchema` in `main.ts`
-2. Add the default value to `productionConfig` in `production.ts`
-3. Add environment-specific overrides to `development.ts` or `staging.ts` if needed
-4. Add environment variable support to `env-loader.ts` if the value should be injectable
-5. Update this README and `.env.example`
-6. Add tests to verify the new configuration value
-
-### Conventions
-
-- TypeScript strict mode enabled
-- Format with `pnpm format` at root
-- Keep modules tree-shakeable
-- Avoid side effects in module top-level code
-- All config values must pass Zod validation
-
-## Security Considerations
-
-- **Never commit** `.env.staging` or `.env.production` files
-- **Never hardcode** production API keys or sensitive URLs in source code
-- Use environment variable injection for all sensitive values in official builds
-- OSS defaults should not expose production infrastructure
-- API keys should be empty strings in default configs
+Betanet carries chain endpoints only. It has no Pera backend, so its Pera service traffic fails typed
+through `createPeraClient`; see [Architecture](../../docs/ARCHITECTURE.md).

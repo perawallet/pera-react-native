@@ -85,7 +85,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 const { transactions } = await composer.build()
                 // Same PQ minimum as the opt-out path: AlgoKit sizes the fee
                 // for an Ed25519 envelope, which algod rejects for a Falcon
-                // signer (PERA-4922). See useAssetOptOutMutation.
+                // signer. See useAssetOptOutMutation.
                 const { transactions: unsignedTxs } = await assignFeeToGroup({
                     transactions: transactions.map(t => t.txn),
                 })
@@ -122,7 +122,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 // Not balances-only: account reads (holdings page, NFT
                 // gallery sort caches) cache over SQLite with staleTime:
                 // Infinity, and the sync diff can't catch this write later —
-                // the holding is already persisted (PERA-4845).
+                // the holding is already persisted.
                 invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return { txIds }

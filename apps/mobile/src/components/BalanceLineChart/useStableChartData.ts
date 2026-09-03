@@ -28,7 +28,7 @@ const haveSameValues = (a: ChartDatum[], b: ChartDatum[]): boolean =>
  * on the `data` prop's identity. Several of the history queries build their
  * results in an inline `select`, so a refetch (or merely a re-render) hands us
  * an equal-but-new array; without this the user's finger is still down and the
- * selection just vanishes (PERA-4849). Don't collapse this back to a plain
+ * selection just vanishes. Don't collapse this back to a plain
  * useMemo on `series`.
  */
 export const useStableChartData = <T>(

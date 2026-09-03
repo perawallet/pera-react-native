@@ -24,7 +24,7 @@ export const CHART_POINTER_DASH = [6, 2]
  * Horizontal travel (px) that activates the chart's scrub gesture. Deliberately
  * far below a native pager's touch slop (~8dp): whichever recognizer crosses
  * its threshold first claims the gesture, and losing that race is what let the
- * tab pager swallow horizontal drags on the chart (PERA-4849).
+ * tab pager swallow horizontal drags on the chart.
  */
 export const CHART_PRESS_ACTIVE_OFFSET_X: [number, number] = [-2, 2]
 /** Vertical travel (px) that hands the gesture back to the enclosing list. */

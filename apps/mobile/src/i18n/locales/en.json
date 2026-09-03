@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "App Launch Failed",
             "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
-            "retry": "Try again"
+            "retry": "Try again",
+            "keystore": {
+                "title": "Wallet Data Error",
+                "body": "Pera couldn't read some of the wallet data stored on this device, so it can't start safely. Please contact support before reinstalling the app: reinstalling can remove accounts that exist only on this device.\n\nYour funds are safe on the Algorand blockchain."
+            }
         }
     },
     "asset_sort": {
@@ -162,6 +166,8 @@
             "title_keyreg": "Couldn't prepare key registration",
             "body_keyreg": "We couldn't build the key-registration transaction.",
             "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
+            "body_keyreg_cannot_sign": "This account can't sign transactions in Pera. Key registration needs the account's private key, not a watch-only copy.",
+            "body_keyreg_network_mismatch": "This key registration is for a different Algorand network than the one your wallet is on. Switch networks, then scan again.",
             "title_recover": "Couldn't import account",
             "body_recover": "We couldn't import the account from this QR.",
             "body_recover_duplicate": "This account is already in your wallet.",
@@ -369,6 +375,9 @@
         "rekey_option_ledger_description": "Transactions will be authorized on your Ledger device.",
         "rekey_option_standard_title": "To a standard account",
         "rekey_option_standard_description": "Transactions will be authorized by another account in your wallet.",
+        "rekey_option_quantum_title": "To a quantum account",
+        "rekey_option_quantum_description": "Transactions will be authorized by a quantum-secure account in your wallet.",
+        "rekey_option_quantum_badge": "NEW",
         "export_share_account": "Export/Share Account",
         "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",
@@ -1302,7 +1311,9 @@
     },
     "notifications": {
         "empty_title": "No current notifications",
-        "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
+        "empty_body": "Your recent transactions, asset requests and other transactions will appear here",
+        "unavailable_title": "Notifications unavailable",
+        "unavailable_body": "We couldn't set up notifications on this device. Check your permissions and connection, then try again."
     },
     "messages": {
         "tabs": {
@@ -1453,6 +1464,9 @@
         },
         "pending_signatures": {
             "title": "Pending signatures",
+            "title_submitting": "Submitting transaction",
+            "title_success": "Transaction complete",
+            "title_failure": "Transaction not completed",
             "x_of_y": "{{signed}} of {{total}} signed",
             "time_left": "≈ {{time}} left",
             "accounts_heading": "Accounts",
@@ -1861,13 +1875,14 @@
         },
         "to_standard": {
             "intro": {
-                "title": "Rekey to standard account",
-                "body": "Use another account's private key to sign transactions for this account.",
+                "title": "Rekey to Standard Account",
+                "body": "Rekeying assigns a new key to sign this account's future transactions, without moving funds or changing its address.",
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
-                "expect_1": "Future transactions can only be signed by the delegated account.",
-                "expect_2": "This account will no longer be able to sign transactions.",
-                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "expect_1": "Future transactions for this account can only be signed by the new account's key.",
+                "expect_2": "Back up that account's recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_3": "Your account's address, balances, and configuration will not change.",
+                "expect_4": "If you close out this account later, the rekey is removed. Funding the address again restores control to the original key, not the account you're setting up now.",
                 "cta": "Start process"
             },
             "select": {
@@ -1878,6 +1893,44 @@
             "confirm": {
                 "title": "Confirm rekeying",
                 "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf.",
+                "learn_more": "Learn more",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently rekeyed to",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Rekey to Quantum Account",
+                "body": "Rekeying assigns a new key to sign this account's future transactions, without moving funds or changing its address.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions for this account can only be signed by the quantum account's post-quantum key.",
+                "expect_2": "Back up that account's 25-word recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_3": "Your account's address, balances, and configuration will not change.",
+                "expect_4": "Future transactions will pay a higher minimum network fee, and rekeying back to a standard account will itself require a quantum-signed transaction.",
+                "cta": "Start process"
+            },
+            "select": {
+                "title": "Select quantum account",
+                "subtitle": "Choose the quantum account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No quantum accounts found. Create or import a quantum account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this account to a quantum account. The new address will be able to sign transactions on its behalf.",
                 "learn_more": "Learn more",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently rekeyed to",
@@ -2110,7 +2163,8 @@
             "confirm": "Turn back on",
             "cancel": "Not now",
             "unavailable_title": "Biometrics unavailable",
-            "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again."
+            "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again.",
+            "body_not-available": "Biometric unlock isn't working because your device has no biometric set up for Pera. Set one up in your device settings, then turn it back on here."
         }
     },
     "send_funds": {
@@ -2376,6 +2430,8 @@
             "biometric_error_message": "We were unable to authenticate you.  Please try again.",
             "biometric_weak_title": "Stronger biometric required",
             "biometric_weak_message": "Pera requires a fingerprint or other strong biometric to unlock your wallet. Add a fingerprint in your device's biometric settings, then turn this on again.",
+            "biometric_unconfirmed_title": "Unlock your device first",
+            "biometric_unconfirmed_message": "Your device's biometrics are locked. Unlock your device with your passcode to restore them, then turn this on again.",
             "advanced_security_settings": "Advanced Security Settings",
             "enable_asset_freeze_support": "Enable Asset Freeze Support",
             "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset.",
@@ -2596,6 +2652,7 @@
             "app_call": "App Call",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transaction",
             "more_impacts": "Show {{count}} more"
         },
@@ -2656,6 +2713,9 @@
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
         },
+        "state_proof": {
+            "body": "The network published a state proof so other chains can verify Algorand blocks."
+        },
         "asset_transfer": {
             "clawback_from": "Clawback From"
         },
@@ -2683,6 +2743,7 @@
             "key_dilution": "Key Dilution",
             "participation_key": "Participation Key",
             "selection_key": "Selection Key",
+            "state_proof_key": "State Proof Key",
             "status": "Registration Status",
             "online": "Online",
             "offline": "Offline"
@@ -2890,6 +2951,8 @@
         "execution": {
             "error_title": "Swap Failed",
             "error_body": "Something went wrong during the swap. Please try again.",
+            "insufficient_algo_title": "Insufficient ALGO",
+            "insufficient_algo_body": "This account needs at least {{amount}} more ALGO to cover this swap, its fees, and the minimum balance. Add more ALGO and try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",

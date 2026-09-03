@@ -26,7 +26,7 @@ import { http, HttpResponse } from 'msw'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 
-// The mute-notifications flow below (PERA-4705) now re-registers the whole
+// The mute-notifications flow below now re-registers the whole
 // device via `useDevice().registerDevice` instead of a per-account PATCH, so
 // it reaches `getProvider().deviceInfo.getAppVersion()`. The default driver
 // mock in vitest.setup.ts predates that payload (its `deviceInfo` stub only
@@ -90,7 +90,7 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
@@ -154,7 +154,7 @@ const resetNotificationPreferences = () => {
 
 describe('Flow: Account management', () => {
     // Only the notification-mute test below actually hits the network (the
-    // rest of this file's writes are local-only per the PERA-4585 audit) —
+    // rest of this file's writes are local-only per the audit) —
     // but an unmatched request here would otherwise escape MSW and hit real
     // staging, so give this file its own server lifecycle rather than
     // relying on another integration file's beforeAll having started it.
@@ -305,7 +305,7 @@ describe('Flow: Account management', () => {
         async () => {
             // Hardware accounts from the Ledger pairing flow carry no `id`
             // (they are deduped by address). Removal used to silently no-op
-            // for them while still showing the success toast (PERA-4293).
+            // for them while still showing the success toast.
             const ledgerAccount = (
                 address: string,
                 accountIndex: number,
@@ -366,7 +366,7 @@ describe('Flow: Account management', () => {
             let key: Algo25KeyResult | null = null
             await waitFor(async () => {
                 key = await kms.current.createAlgo25Key({
-                    mnemonic: ALGO25_TEST_MNEMONIC,
+                    mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
                 })
                 expect(key).not.toBeNull()
             })
@@ -459,13 +459,10 @@ describe('Flow: Account management', () => {
             )
             expect(notifBefore.current.disabledAccounts).toEqual([])
 
-            // The toggle now genuinely re-registers the device (that's the
-            // whole point of PERA-4585's fix, carried forward onto v3 by
-            // PERA-4705) — mock it here rather than letting the request
-            // escape to the real network. Captures the payload too, so this
-            // pins the property Task 3 exists to guarantee: the right
-            // account and status are actually sent, not just the local store
-            // flip.
+            // The toggle genuinely re-registers the device, so mock it here
+            // rather than letting the request escape to the real network. Captures the payload too, so this
+            // pins the real guarantee: the right account and status are
+            // actually sent, not just the local store flip.
             let deviceBody: DeviceRegistrationRequest | undefined
             server.use(
                 http.post('*/api/v3/devices', async ({ request }) => {

@@ -29,6 +29,7 @@ export {
     getAssetPricesByIds,
     getStaleOrMissingAssetIds,
     getStaleOrMissingPriceAssetIds,
+    getCollectibleIdsMissingUrl,
     deleteAssets,
     deleteAssetPrices,
     recordPriceMisses,

@@ -22,6 +22,14 @@ import type { DeclinedRegister } from './declined'
  * `masterKeyForRead` is a thunk, never an awaited value: calling it can raise a
  * biometric prompt, and a revision that decides from the plaintext `k/` bucket
  * must never trigger one at launch.
+ *
+ * **A revision's `up` must never reject.** A rejection fails the whole run and
+ * rejects `keystore.ready`, stopping the app booting, and because the ledger
+ * entry is written only after `up` resolves it re-runs next launch. A transient
+ * cause (I/O, a cancelled biometric prompt) clears; a deterministic one
+ * re-fails forever, with no way out but a reinstall. So every storage mutation
+ * a per-record failure can trigger swallows its own failure and records the
+ * record through {@link DeclinedRegister} instead.
  */
 export type PeraMigrationContext = {
     /** The MMKV-style store holding the keystore's records. */

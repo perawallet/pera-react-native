@@ -14,6 +14,7 @@ import { withTimeout } from '@perawallet/wallet-core-shared'
 import {
     LEDGER_CONFIRMATION_TIMEOUT_MS,
     LEDGER_CONNECTION_TIMEOUT_MS,
+    LedgerDeviceNotFoundError,
     LedgerTimeoutError,
 } from '@perawallet/wallet-extension-ledger-shared'
 
@@ -39,6 +40,19 @@ export const ledgerTimeoutReason =
         new LedgerTimeoutError(`${operation} (${ms}ms ceiling)`)
 
 /**
+ * A connect that never completes means nothing answered at that device id, so
+ * it reports as "not found" rather than a timeout — matching the signing path's
+ * `connectTimeoutReason`. Kinds classified `device_not_found` are
+ * troubleshootable, so the user keeps the checklist; a bare `timeout` is not.
+ */
+const ledgerConnectTimeoutReason =
+    (operation: string) =>
+    (_op: string, ms: number): Error =>
+        new LedgerDeviceNotFoundError(
+            new Error(`${operation} (${ms}ms ceiling)`),
+        )
+
+/**
  * Bounds a transport connect/derive call by the connection ceiling. Per the
  * `withTimeout` contract the caller still owns any late-resolving transport
  * and must disconnect it.
@@ -51,7 +65,7 @@ export const withLedgerConnectionTimeout = <T>(
         promise,
         LEDGER_CONNECTION_TIMEOUT_MS,
         operation,
-        ledgerTimeoutReason(operation),
+        ledgerConnectTimeoutReason(operation),
     )
 
 /**

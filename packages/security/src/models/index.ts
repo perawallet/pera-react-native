@@ -16,11 +16,20 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * The two affirmative reports that turn biometric unlock off on the user's
- * behalf. Both are recoverable by re-enabling in the app — `enrollment-changed`
- * immediately, `weak-biometric` only once a class-3 biometric is enrolled.
+ * Why biometric unlock stopped working without the user asking for it.
+ *
+ * The first two are affirmative reports that destroy the opt-in, recoverable by
+ * re-enabling in the app — `enrollment-changed` immediately, `weak-biometric`
+ * only once a class-3 biometric is enrolled. `not-available` is different in
+ * kind: nothing is destroyed and it re-arms itself once the device is fixed, but
+ * until then unlock silently does not happen, which is worth saying out loud.
+ * Only persistent unavailability qualifies — a lockout clears on its own and is
+ * never reported here.
  */
-export type BiometricsDisabledReason = 'enrollment-changed' | 'weak-biometric'
+export type BiometricsDisabledReason =
+    | 'enrollment-changed'
+    | 'weak-biometric'
+    | 'not-available'
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number
@@ -39,8 +48,8 @@ export type SecurityState = BaseStoreState & {
      * AutoLockGuard's overlay (the lock screen or the startup/foreground
      * check) covers the app. UI drivers hold NEW overlay presentation
      * (e.g. the sign-request sheet) while it is set, so nothing presents
-     * into the covered layer and "pops in" when the PIN is accepted
-     * (PERA-4743). Mirrored by AutoLockGuard's useAutoLockListener.
+     * into the covered layer and "pops in" when the PIN is accepted.
+     * Mirrored by AutoLockGuard's useAutoLockListener.
      */
     isAppLockActive: boolean
     /**
@@ -48,8 +57,7 @@ export type SecurityState = BaseStoreState & {
      * blob is currently usable, shared so every consumer of `useBiometrics`
      * (Settings, the lock screen, PIN edit) sees the same answer. It was
      * per-hook state, so when a reconcile cleared a blob revoked in OS settings
-     * only the calling screen updated and Settings kept showing the toggle ON
-     * (PERA-4702).
+     * only the calling screen updated and Settings kept showing the toggle ON.
      *
      * A cache, never the source of truth: the keystore blob is, and it is
      * re-read on every `checkBiometricsEnabled`. Persisting this would make a
@@ -67,6 +75,14 @@ export type SecurityState = BaseStoreState & {
      * re-enable is not a claim that anything is enabled.
      */
     biometricsDisabledReason: Nullable<BiometricsDisabledReason>
+    /**
+     * The reason the user has already declined to act on. Needed because
+     * `not-available` is re-derived from live device state on every reconcile:
+     * without this, dismissing it would only last until the next one and the
+     * offer would return on every unlock. Cleared when the situation resolves,
+     * so a later recurrence prompts again.
+     */
+    acknowledgedBiometricsDisabledReason: Nullable<BiometricsDisabledReason>
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -77,6 +93,9 @@ export type SecurityState = BaseStoreState & {
     setAppLockActive: (active: boolean) => void
     setBiometricsEnabled: (enabled: boolean) => void
     setBiometricsDisabledReason: (
+        reason: Nullable<BiometricsDisabledReason>,
+    ) => void
+    setAcknowledgedBiometricsDisabledReason: (
         reason: Nullable<BiometricsDisabledReason>,
     ) => void
 }

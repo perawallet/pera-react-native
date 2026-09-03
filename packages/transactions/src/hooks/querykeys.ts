@@ -52,7 +52,7 @@ export const transactionQueryKeys = {
         ] as const,
 
     /**
-     * Txids with an open submission-ledger row (PERA-4588) — the "pending —
+     * Txids with an open submission-ledger row — the "pending —
      * verifying" badge set. Kept under the module prefix so
      * `invalidateTransactionQueries` also refreshes it.
      */

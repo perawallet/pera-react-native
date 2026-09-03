@@ -22,7 +22,7 @@ export const aggregateTransactionWarnings = (
     // ARC-0001 signer override). When set, gating keys off this entity instead
     // of `tx.sender` so the warning logic agrees with the signing decision,
     // which also signs as `signerOverride ?? tx.sender`. Keys index into
-    // `transactions`. [PERA-4417]
+    // `transactions`.
     authorizerByIndex?: Map<number, string>,
 ): TransactionWarning[] => {
     const warnings: TransactionWarning[] = []
@@ -67,7 +67,7 @@ export const aggregateTransactionWarnings = (
         // Gate rekey on signability, not mere ownership: only flag rekeys the
         // wallet can actually sign for (standard, ledger,
         // multisig-with-local-participant). Watch-only accounts and dApp
-        // escrow/contract accounts (Folks Finance, Tinyman) are excluded. [PERA-4348]
+        // escrow/contract accounts (Folks Finance, Tinyman) are excluded.
         if (signableAddresses.has(authorizer) && tx.rekeyTo?.publicKey) {
             const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({

@@ -51,6 +51,7 @@ const bindingMocks = vi.hoisted(() => ({
         createBinding: ReturnType<typeof vi.fn>
         checkBinding: ReturnType<typeof vi.fn>
         clearBinding: ReturnType<typeof vi.fn>
+        getAvailability: ReturnType<typeof vi.fn>
     } | null,
 }))
 
@@ -274,12 +275,14 @@ describe('RNBiometricsService', () => {
             createBinding: vi.fn(),
             checkBinding: vi.fn(),
             clearBinding: vi.fn(),
+            getAvailability: vi.fn(),
         }
 
         beforeEach(() => {
             nativeModule.createBinding.mockReset()
             nativeModule.checkBinding.mockReset()
             nativeModule.clearBinding.mockReset()
+            nativeModule.getAvailability.mockReset()
             bindingMocks.module = nativeModule
         })
 
@@ -326,6 +329,51 @@ describe('RNBiometricsService', () => {
             await expect(
                 service.clearEnrollmentBinding(),
             ).resolves.toBeUndefined()
+        })
+    })
+
+    describe('getAvailability', () => {
+        const nativeModule = {
+            createBinding: vi.fn(),
+            checkBinding: vi.fn(),
+            clearBinding: vi.fn(),
+            getAvailability: vi.fn(),
+        }
+
+        beforeEach(() => {
+            nativeModule.getAvailability.mockReset()
+            bindingMocks.module = nativeModule
+        })
+
+        test.each([
+            'available',
+            'none-enrolled',
+            'denied',
+            'unavailable',
+            'unknown',
+        ] as const)('passes through the native status %j', async status => {
+            nativeModule.getAvailability.mockResolvedValue(status)
+            expect(await service.getAvailability()).toBe(status)
+        })
+
+        // 'none-enrolled' and 'denied' put a screen in front of the user, so an
+        // unrecognized value must land on the one that shows nothing.
+        test.each(['NONE_ENROLLED', 'not-enrolled', ''])(
+            'maps unrecognized native status %j to "unknown"',
+            async status => {
+                nativeModule.getAvailability.mockResolvedValue(status)
+                expect(await service.getAvailability()).toBe('unknown')
+            },
+        )
+
+        test('reports "unknown" when the native call throws', async () => {
+            nativeModule.getAvailability.mockRejectedValue(new Error('nope'))
+            expect(await service.getAvailability()).toBe('unknown')
+        })
+
+        test('reports "unknown" when the native module is absent', async () => {
+            bindingMocks.module = null
+            expect(await service.getAvailability()).toBe('unknown')
         })
     })
 })

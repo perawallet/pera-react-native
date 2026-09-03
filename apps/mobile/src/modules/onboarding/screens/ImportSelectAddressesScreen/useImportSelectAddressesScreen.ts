@@ -214,7 +214,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // import: the user holds the account, and their retry would
                 // then say "already added".
                 if (!hasCommittedRef.current) {
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
+                    // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: import_account.failed_* names this post-commit step; an unrecognized error would fall through showError to the generic errors.general.* copy
                     showToast({
                         type: 'error',
                         title: t('onboarding.import_account.failed_title'),

@@ -298,6 +298,7 @@ describe('transactions utils', () => {
                     voteKeyDilution: 10n,
                     selectionKey: new Uint8Array([1]),
                     voteKey: new Uint8Array([2]),
+                    stateProofKey: new Uint8Array([3]),
                     nonParticipation: false,
                 },
             } as any
@@ -311,6 +312,11 @@ describe('transactions utils', () => {
             expect(
                 result?.keyregTransaction?.selectionParticipationKey,
             ).toEqual(new Uint8Array([1]))
+            // Dropping sprfkey left the review unable to show what a node
+            // runner's tooling printed, so it could not be verified at all.
+            expect(result?.keyregTransaction?.stateProofKey).toEqual(
+                new Uint8Array([3]),
+            )
         })
 
         it('should map StateProof transaction', () => {

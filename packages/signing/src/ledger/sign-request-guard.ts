@@ -22,7 +22,7 @@ import type { SignRequest } from '../models'
 /**
  * Reproduces the txids a persisted sign-request's group would have at submit
  * time, so a re-presented request can be matched against the submission
- * ledger (PERA-4588).
+ * ledger.
  *
  * The pipeline groups COPIES of the request's transactions at submit, so the
  * persisted originals carry no group. Reproduce the group id over the

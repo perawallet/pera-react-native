@@ -49,6 +49,7 @@ import { type Decimal } from 'decimal.js'
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse
     isLoading: boolean
+    isUnavailableOnNetwork: boolean
     assetId: string
     recipientAddress: string
     amount: Nullable<Decimal>
@@ -75,8 +76,14 @@ export const useARC59SendSummaryScreen =
         const assetId = selectedAssetId ?? ''
         const receiverAddress = destination ?? ''
 
-        const { data: summary, isLoading: summaryLoading } =
-            useArc59SendSummaryQuery(receiverAddress, assetId)
+        const {
+            data: summaryData,
+            isLoading: summaryLoading,
+            isUnavailableOnNetwork,
+        } = useArc59SendSummaryQuery(receiverAddress, assetId)
+        // Query data is Maybe<T> (null while unavailable); this screen only
+        // distinguishes "have a summary" from "don't", so collapse to undefined.
+        const summary = summaryData ?? undefined
 
         const { data: asset, isLoading: assetLoading } =
             useSingleAssetDetailsQuery(assetId)
@@ -92,7 +99,7 @@ export const useARC59SendSummaryScreen =
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
-            // Gate on the amount actually signed (PERA-4710), not the
+            // Gate on the amount actually signed, not the
             // independent `total_protocol_and_mbr_fee` field.
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 
@@ -162,6 +169,7 @@ export const useARC59SendSummaryScreen =
         return {
             summary,
             isLoading,
+            isUnavailableOnNetwork,
             assetId,
             recipientAddress: receiverAddress,
             fee,

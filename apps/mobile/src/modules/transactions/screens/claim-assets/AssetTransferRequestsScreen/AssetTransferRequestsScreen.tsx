@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { PWDivider, PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
@@ -24,8 +25,12 @@ import { InfoButton } from '@components/InfoButton'
 export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { assetRequests, isPending, handleItemPress } =
-        useAssetTransferRequestsScreen()
+    const {
+        assetRequests,
+        isPending,
+        isUnavailableOnNetwork,
+        handleItemPress,
+    } = useAssetTransferRequestsScreen()
 
     useNavigationHeader({
         right: (
@@ -72,14 +77,19 @@ export const AssetTransferRequestsScreen = () => {
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={renderSeparator}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending}
-                        loadingStyle={styles.loadingView}
-                        style={styles.emptyView}
-                        icon='inbox'
-                        title={t('arc59.requests.empty_title')}
-                        body={t('arc59.requests.empty_body')}
-                    />
+                    <OfflineTolerantView
+                        isOffline={false}
+                        isUnavailable={isUnavailableOnNetwork}
+                    >
+                        <EmptyView
+                            isLoading={isPending}
+                            loadingStyle={styles.loadingView}
+                            style={styles.emptyView}
+                            icon='inbox'
+                            title={t('arc59.requests.empty_title')}
+                            body={t('arc59.requests.empty_body')}
+                        />
+                    </OfflineTolerantView>
                 }
             />
         </PWScreen>

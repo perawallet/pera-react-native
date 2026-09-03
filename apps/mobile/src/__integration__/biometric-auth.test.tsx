@@ -153,6 +153,48 @@ describe('Flow: Biometric authentication lifecycle', () => {
     )
 
     it(
+        'Given biometrics is enabled, when the sensor is temporarily unavailable, then the keystore record survives and unlock recovers by itself',
+        async () => {
+            const pin = renderHook(() => usePinCode())
+            await act(async () => {
+                await pin.result.current.savePin('333333')
+            })
+            const { result } = renderHook(() => useBiometrics())
+            await waitFor(() => {
+                expect(result.current.isAvailable).toBe(true)
+            })
+            await act(async () => {
+                await result.current.enableBiometrics()
+            })
+            expect(result.current.isEnabled).toBe(true)
+
+            // Android folds a lockout (HW_UNAVAILABLE) in with "nothing
+            // enrolled", so this is what a user who failed the fingerprint too
+            // many times looks like from here.
+            wireBiometricsService({ available: false, authenticate: true })
+            await act(async () => {
+                expect(await result.current.checkBiometricsEnabled()).toBe(
+                    false,
+                )
+            })
+
+            // The lockout expires. Nothing was destroyed, so the opt-in returns
+            // without a trip to Settings.
+            wireBiometricsService({ available: true, authenticate: true })
+            await act(async () => {
+                expect(await result.current.checkBiometricsEnabled()).toBe(true)
+            })
+
+            let authResult: Optional<BiometricsAuthenticateResult>
+            await act(async () => {
+                authResult = await result.current.authenticateWithBiometrics()
+            })
+            expect(authResult).toEqual({ success: true })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given biometrics is enabled, when the enrolled biometric set changes, then the opt-in is dropped and cannot come back on its own',
         async () => {
             const pin = renderHook(() => usePinCode())

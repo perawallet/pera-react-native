@@ -76,7 +76,7 @@ export const useSendDestinationRouter = () => {
 
     // ARC-59 needs the router contract + Pera backend, which only exist on
     // Pera-backed networks. Block the route up front instead of landing the
-    // user on a summary screen that can never load (PERA-4923).
+    // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
         if (getArc59Config(network) === null) {
             showToast({

@@ -36,7 +36,7 @@ const SEPARATOR = 0x2c
  * query's hash by `JSON.stringify`-ing its whole key on *every render* of
  * every component observing it. Embedding the raw id array therefore costs an
  * O(ids) string build per render — hundreds of milliseconds of main-thread
- * work per keystroke on a large NFT gallery (PERA-4861). A digest makes that
+ * work per keystroke on a large NFT gallery. A digest makes that
  * O(1).
  *
  * The trade is a collision: two different id lists hashing alike would share
@@ -82,7 +82,7 @@ export const getAssetPriceHistoryQueryKey = (
 }
 
 /**
- * Chart-history key guard. Allowlisted into query persistence (PERA-4581):
+ * Chart-history key guard. Allowlisted into query persistence:
  * price history is network-only (no SQLite table backs it) and carries no
  * PII, so the last successful snapshot is safe and cheap to persist.
  */

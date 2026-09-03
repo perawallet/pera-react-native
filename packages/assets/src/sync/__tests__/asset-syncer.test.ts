@@ -22,6 +22,9 @@ const upsertPeraAssetsMock = vi.hoisted(() => vi.fn())
 const getStaleOrMissingAssetIdsMock = vi.hoisted(() =>
     vi.fn(async ({ assetIds }: { assetIds: string[] }) => assetIds),
 )
+const getCollectibleIdsMissingUrlMock = vi.hoisted(() =>
+    vi.fn(async () => [] as string[]),
+)
 
 vi.mock('../../api', () => ({
     fetchAssets: fetchAssetsMock,
@@ -35,6 +38,7 @@ vi.mock('../../db', () => ({
     upsertNodeAssets: upsertNodeAssetsMock,
     upsertPeraAssets: upsertPeraAssetsMock,
     getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
+    getCollectibleIdsMissingUrl: getCollectibleIdsMissingUrlMock,
 }))
 
 const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
@@ -46,6 +50,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 import {
+    ARC19_COLLECTIBLE_RECHECK_TTL_MS,
     ASSET_CACHE_TTL_MS,
     ASSET_NEWLY_SEEN_WINDOW_MS,
     ASSET_RECLASSIFY_TTL_MS,
@@ -65,6 +70,8 @@ describe('fetchAndPersistAssets', () => {
         getStaleOrMissingAssetIdsMock.mockImplementation(
             async ({ assetIds }: { assetIds: string[] }) => assetIds,
         )
+        getCollectibleIdsMissingUrlMock.mockReset()
+        getCollectibleIdsMissingUrlMock.mockResolvedValue([])
         deviceIdGetMock.mockReset()
         deviceIdGetMock.mockReturnValue(null)
     })
@@ -135,7 +142,7 @@ describe('fetchAndPersistAssets', () => {
     test('opts the freshness gate into rechecking newly seen, unclassified assets', async () => {
         // Without these the gate answers from the 7-day TTL alone, and a
         // freshly minted NFT stays typed as a plain asset for a week even
-        // after the backend's crawler classifies it (PERA-4955).
+        // after the backend's crawler classifies it.
         fetchAssetsMock.mockResolvedValue({ results: [] })
 
         await fetchAndPersistAssets(['1'], 'mainnet')
@@ -149,6 +156,67 @@ describe('fetchAndPersistAssets', () => {
                 },
             }),
         )
+    })
+
+    test('opts the freshness gate into rechecking ARC19 collectibles', async () => {
+        // ARC19 media is mutable via the manager's acfg; without this the
+        // 7-day TTL keeps serving the pre-update media URL.
+        fetchAssetsMock.mockResolvedValue({ results: [] })
+
+        await fetchAndPersistAssets(['1'], 'mainnet')
+
+        expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
+            }),
+        )
+    })
+
+    test('backfills missing collectible urls from the indexer', async () => {
+        // The bulk endpoint has no url field, so ARC19-ness is invisible to
+        // the recheck until the indexer is asked once. Urls are immutable
+        // on-chain, so this is one lookup per collectible ever.
+        getCollectibleIdsMissingUrlMock.mockResolvedValue(['7'])
+        getStaleOrMissingAssetIdsMock.mockResolvedValue([])
+        fetchIndexerAssetDetailsMock.mockResolvedValue({
+            assetId: '7',
+            decimals: 0,
+            url: 'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}',
+        })
+
+        await fetchAndPersistAssets(['7'], 'mainnet')
+
+        expect(fetchIndexerAssetDetailsMock).toHaveBeenCalledWith(
+            '7',
+            'mainnet',
+        )
+        expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
+            items: [
+                expect.objectContaining({
+                    assetId: '7',
+                    url: 'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}',
+                }),
+            ],
+            network: 'mainnet',
+        })
+    })
+
+    test('records a chain-confirmed absent url as empty string, not null', async () => {
+        // '' means "asked, the chain has no url" — NULL would make the
+        // backfill re-ask the indexer about this asset on every pass.
+        getCollectibleIdsMissingUrlMock.mockResolvedValue(['7'])
+        getStaleOrMissingAssetIdsMock.mockResolvedValue([])
+        fetchIndexerAssetDetailsMock.mockResolvedValue({
+            assetId: '7',
+            decimals: 0,
+        })
+
+        await fetchAndPersistAssets(['7'], 'mainnet')
+
+        expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
+            items: [expect.objectContaining({ assetId: '7', url: '' })],
+            network: 'mainnet',
+        })
     })
 
     test('only fetches the IDs returned by getStaleOrMissingAssetIds', async () => {

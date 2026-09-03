@@ -12,12 +12,13 @@
 
 import { type BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { seedFromMnemonic, type modelsv2 } from 'algosdk'
+import { type modelsv2 } from 'algosdk'
 import {
     getAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    indicesToAlgo25Seed,
     PQ_DERIVATION_CANONICAL,
     quantumAddressCandidates,
     useKMS,
@@ -135,15 +136,17 @@ export const useImportAccount = () => {
     }
 
     return async ({
-        mnemonic,
+        mnemonicIndices,
         type,
     }: {
-        mnemonic: string
+        /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
+         * itself. Caller owns zeroing after the import resolves. */
+        mnemonicIndices: Uint16Array
         type: ImportAccountType
     }): Promise<ImportAccountResult> => {
         if (type === 'hdWallet') {
             const { walletKeyId, derivationType } = await prepareImport({
-                mnemonic,
+                mnemonicIndices,
             })
             return { type: 'hdWallet', walletKeyId, derivationType }
         }
@@ -151,14 +154,14 @@ export const useImportAccount = () => {
         if (type === 'quantum') {
             // A quantum mnemonic is 25 words — indistinguishable from algo25
             // by count. Reaching this branch requires the caller to have
-            // picked quantum EXPLICITLY (dedicated entrypoint, PQ-009);
+            // picked quantum EXPLICITLY (dedicated entrypoint);
             // resolveImportAccountType never auto-detects it.
             //
             // Re-importing 25 words on a fresh device could land on either
             // derivation's address depending on which tool minted the
             // account originally, so probe both on chain and adopt whatever
-            // actually exists (see quantumAddressCandidates/PERA-4972).
-            const entropy = seedFromMnemonic(mnemonic)
+            // actually exists (see quantumAddressCandidates/).
+            const entropy = indicesToAlgo25Seed(mnemonicIndices)
             let candidates: QuantumAddressCandidate[]
             try {
                 candidates = quantumAddressCandidates(entropy)
@@ -194,7 +197,7 @@ export const useImportAccount = () => {
             let seedKeyId: string | undefined
             for (const candidate of newCandidates) {
                 const result = await createQuantumKey({
-                    mnemonic,
+                    mnemonicIndices,
                     derivation: candidate.derivation,
                     reuseSeedId: seedKeyId,
                 })
@@ -230,7 +233,7 @@ export const useImportAccount = () => {
 
         // Algo25: derive the key, then check whether the wallet already holds
         // this address before persisting the account.
-        const { seedKey, address } = await createAlgo25Key({ mnemonic })
+        const { seedKey, address } = await createAlgo25Key({ mnemonicIndices })
         await throwIfDuplicate(address, seedKey.id)
         return await createAlgo25WalletAccount({
             seed: { seedKeyId: seedKey.id, address },

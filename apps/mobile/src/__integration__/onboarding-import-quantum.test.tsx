@@ -191,7 +191,7 @@ describe('Flow: Onboarding → Import Quantum (25-word)', () => {
         // on the "Searching your accounts" step.
         server.use(mockIndexerSearchForAccounts())
 
-        // Dual-probe import (PERA-4972): neither candidate address has
+        // Dual-probe import: neither candidate address has
         // on-chain activity for this pinned test mnemonic, so the import
         // resolves to canonical-only — the single-account flow these tests
         // already exercise.

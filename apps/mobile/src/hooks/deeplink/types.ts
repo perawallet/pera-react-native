@@ -122,10 +122,25 @@ export interface AssetTransferDeeplink extends ParsedDeeplink {
     label?: string
 }
 
+export type KeyregType = 'online' | 'offline'
+
 export interface KeyregDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.KEYREG
     senderAddress: string
-    keyregType: string
+    /**
+     * Resolved intent, never the raw `type` query param. ARC-78 only ever
+     * spells that `keyreg`, so leaving it loose let each parser invent its own
+     * value and silently miss the offline case.
+     */
+    keyregType: KeyregType
+    /**
+     * ARC-90 `net:` genesis id or `gh:` genesis hash naming the chain this
+     * keyreg targets. Absent when the URI names none. Compared against the
+     * active network before building, because the transaction is built with
+     * whatever chain the wallet is on — so the genesis-hash analyzer downstream
+     * always matches and can never catch a cross-chain scan.
+     */
+    targetNetwork?: string
     voteKey?: string
     selkey?: string
     sprfkey?: string
@@ -136,6 +151,12 @@ export interface KeyregDeeplink extends ParsedDeeplink {
     note?: string
     xnote?: string
 }
+
+/** ARC-78 §Query Keys: all of these are required for an online registration. */
+export type KeyregParticipationFields = Pick<
+    KeyregDeeplink,
+    'voteKey' | 'selkey' | 'sprfkey' | 'votefst' | 'votelst' | 'votekd'
+>
 
 export interface RecoverAddressDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.RECOVER_ADDRESS

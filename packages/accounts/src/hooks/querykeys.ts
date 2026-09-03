@@ -46,6 +46,14 @@ export const getAccountSummaryQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'summary', { address, network }]
 
+// Network-agnostic by design (see `getAccountFundedNetworks`), but keyed on the
+// active network so the entry refetches once a newly selected network syncs.
+// The `{ address }` payload keeps it inside the sync tick's scoped invalidation.
+export const getAccountFundedNetworksQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'funded-networks', { address, network }]
+
 export const getAccountHoldingsPageQueryKey = (
     address: string,
     network: Network,
@@ -73,8 +81,8 @@ export const getAccountBalancesHistoryQueryKey = (
 ) => [MODULE_PREFIX, 'balance-history', { period, addresses, network }]
 
 /**
- * Wealth chart-history key guard. Allowlisted into query persistence
- * (PERA-4581): balance history is network-only (no SQLite table backs it)
+ * Wealth chart-history key guard. Allowlisted into query persistence:
+ * balance history is network-only (no SQLite table backs it)
  * and carries no PII, so the last successful snapshot is safe and cheap to
  * persist. Deliberately excludes the per-account asset balance-history key
  * (['accounts','assets','balance-history',…]).

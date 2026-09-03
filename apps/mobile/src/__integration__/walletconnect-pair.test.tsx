@@ -428,7 +428,7 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
     )
 
     it(
-        'Given a quantum account is selected, when the user taps Connect, then the PQ-025 warning sheet appears and Cancel rejects the session without approving it',
+        'Given a quantum account is selected, when the user taps Connect, then the warning sheet appears and Cancel rejects the session without approving it',
         async () => {
             await useRemoteConfigStore.persist.rehydrate()
             useRemoteConfigStore
@@ -572,7 +572,7 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         SLOW_TEST_TIMEOUT_MS,
     )
 
-    describe('Return to the dApp (PERA-4856)', () => {
+    describe('Return to the dApp', () => {
         const approveViaUi = async (accountName: string) => {
             const findConnectButton = (): Optional<HTMLButtonElement> =>
                 screen

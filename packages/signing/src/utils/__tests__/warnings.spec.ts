@@ -106,7 +106,7 @@ describe('aggregateTransactionWarnings', () => {
         ])
     })
 
-    // PERA-4902: the two close kinds are separate types so the review sheet can
+    // the two close kinds are separate types so the review sheet can
     // describe them differently — an asset opt-out must not read as "this closes
     // your account". `distinctWarnings` dedupes by type, so collapsing them
     // would also hide one of the two in a group that does both.
@@ -198,7 +198,7 @@ describe('aggregateTransactionWarnings', () => {
     test('flags close but not rekey for a user account that is not signable', () => {
         // WATCH_ADDR is in the wallet (close/freeze relevant) but cannot be
         // signed for (watch-only / no local multisig participant / rekeyed
-        // out), so it must NOT produce a rekey warning. [PERA-4348]
+        // out), so it must NOT produce a rekey warning.
         const txs = [
             makeTx({
                 sender: 'WATCH_ADDR',
@@ -339,7 +339,7 @@ describe('aggregateTransactionWarnings', () => {
         expect(warnings[1].type).toBe('rekey')
     })
 
-    // PERA-4417: gating must follow the authorizing entity (the dApp-supplied
+    // gating must follow the authorizing entity (the dApp-supplied
     // ARC-0001 signer override), not tx.sender. Otherwise a dApp can suppress
     // the rekey/close warning — and the blocking security gate it drives — by
     // setting a foreign sender it cannot import while signing with an account

@@ -28,7 +28,10 @@ if [ -z "$RC_TAG" ]; then
   # arbitrarily by date, and "the latest rc" should mean the highest version
   # regardless of when it happened to be tagged. Every candidate here carries
   # an -rc.N suffix, so the counters compare numerically.
-  RC_TAG=$(git tag --list 'v*-rc.*' --sort=-v:refname | head -n 1)
+  # Shape-filtered before the sort: a hand-cut v7.1.4-rc.1-qa sorts ABOVE the
+  # real v7.1.4-rc.1 under -v:refname, and would be promoted in its place.
+  RC_TAG=$(git tag --list 'v*-rc.*' --sort=-v:refname |
+    grep -E '^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$' | head -n 1 || true)
 fi
 
 if [ -z "$RC_TAG" ]; then
@@ -36,13 +39,12 @@ if [ -z "$RC_TAG" ]; then
   exit 1
 fi
 
-case "$RC_TAG" in
-  v[0-9]*-rc.[0-9]*) ;;
-  *)
-    echo "ERROR: '$RC_TAG' is not a release candidate tag (expected vX.Y.Z-rc.N)." >&2
-    exit 1
-    ;;
-esac
+# Exact shape, not a glob: the sibling scripts all anchor this, and a loose
+# match lets a suffixed tag through to be released from the wrong commit.
+if ! printf '%s' "$RC_TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$'; then
+  echo "ERROR: '$RC_TAG' is not a release candidate tag (expected vX.Y.Z-rc.N)." >&2
+  exit 1
+fi
 
 if ! git rev-parse -q --verify "refs/tags/${RC_TAG}" >/dev/null 2>&1; then
   echo "ERROR: rc tag '$RC_TAG' does not exist." >&2
@@ -54,7 +56,19 @@ STABLE="${RC_TAG%-rc.*}"
 # Release tags are immutable once cut: a moved one silently changes what a
 # published GitHub Release and an already-shipped store build point at.
 if git rev-parse -q --verify "refs/tags/${STABLE}" >/dev/null 2>&1; then
-  echo "ERROR: '$STABLE' already exists — promote a newer rc, or delete the tag deliberately." >&2
+  echo "ERROR: '$STABLE' already exists — promote a newer rc." >&2
+  exit 1
+fi
+
+# Existence is not monotonicity. A stable tag that was never cut, or was deleted,
+# leaves a hole below the newest release, and an rc cut on that stale base passes
+# the check above — promoting it publishes a production build numbered BELOW what
+# already shipped. Stores accept it, because versionCode keeps climbing.
+NEWEST_STABLE=$(git tag --list 'v*' --sort=-v:refname |
+  grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)
+if [ -n "$NEWEST_STABLE" ] &&
+  [ "$(printf '%s\n%s\n' "$NEWEST_STABLE" "$STABLE" | sort -V | tail -n 1)" != "$STABLE" ]; then
+  echo "ERROR: $STABLE is not above the newest shipped stable $NEWEST_STABLE — the rc was cut on a stale base." >&2
   exit 1
 fi
 

@@ -28,6 +28,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
+import {
+    expectApprovalSurfaceUrl,
+    openApprovalSurface,
+    trackPageErrors,
+} from './approval-surface'
 
 declare global {
     interface Window {
@@ -73,65 +78,11 @@ const clickAcceptingPopupClose = async (locator: Locator): Promise<void> => {
     }
 }
 
-// Without this, module-eval crashes in the bundle surface as bare selector
-// timeouts with no sign of the real cause.
-const trackPageErrors = (targetPage: Page): Error[] => {
-    const errors: Error[] = []
-    targetPage.on('pageerror', error => errors.push(error))
-    return errors
-}
-
-// Playwright can neither click the toolbar icon nor see its popup as a 'page',
-// so open popup.html directly — the same surface and getCurrentApproval()
-// discovery path the real popup uses. Waiting for the SW to register the
-// pending approval first mirrors real Chrome and guarantees the popup
-// discovers it instead of falling through to the wallet home.
-const openEnableApprovalPopup = async (): Promise<{
-    approvalPage: Page
-    approvalErrors: Error[]
-}> => {
+const openEnableApprovalPopup = async () => {
     await dappPage.evaluate(() => {
         window.sendArc('enable')
     })
-    await expect
-        .poll(
-            () =>
-                page.evaluate(
-                    scope =>
-                        new Promise<unknown>(resolve => {
-                            const runtime = (
-                                globalThis as unknown as {
-                                    chrome?: {
-                                        runtime?: {
-                                            sendMessage?: (
-                                                message: unknown,
-                                                callback: (r: unknown) => void,
-                                            ) => void
-                                        }
-                                    }
-                                }
-                            ).chrome?.runtime
-                            if (!runtime?.sendMessage) {
-                                resolve(null)
-                                return
-                            }
-                            runtime.sendMessage(
-                                { scope, kind: 'get-current-approval' },
-                                resolve,
-                            )
-                        }),
-                    'pera-dapp-approval',
-                ),
-            { timeout: 20_000 },
-        )
-        .not.toBeNull()
-    const approvalPage = await context.newPage()
-    // The real toolbar popup's dimensions, so the tab is a faithful proxy.
-    await approvalPage.setViewportSize({ width: 360, height: 600 })
-    const approvalErrors = trackPageErrors(approvalPage)
-    await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
-    await approvalPage.waitForLoadState('domcontentloaded')
-    return { approvalPage, approvalErrors }
+    return openApprovalSurface({ context, page, extensionId })
 }
 
 test.beforeAll(async () => {
@@ -245,7 +196,7 @@ test('discover resolves providerId + active-network genesisHash with no approval
 test('enable opens the approval popup; approving one account returns it', async () => {
     const { approvalPage, approvalErrors } = await openEnableApprovalPopup()
 
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     // VaultGate is outermost, so it wraps the approval surface too.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -370,7 +321,7 @@ test('Connections settings lists the localhost origin and can revoke it', async 
 test('enable prompts again after the permission was revoked in Settings', async () => {
     const { approvalPage } = await openEnableApprovalPopup()
 
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     await expect(approvalPage.getByTestId('dapp-enable-origin')).toBeVisible({
         timeout: 20_000,

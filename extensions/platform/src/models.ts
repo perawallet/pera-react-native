@@ -49,7 +49,7 @@ export interface PlatformServices {
  * `notifications` is deliberately a promise, not an awaited value: push
  * registration talks to FCM/APNs and is bounded at several seconds, so awaiting
  * it inside `initialize` kept the splash up for the whole round trip on a slow
- * or offline network (PERA-4727). Callers await `initialize` for the ordered
+ * or offline network. Callers await `initialize` for the ordered
  * init they depend on, then consume the token whenever it lands. It never
  * rejects — a failed or timed-out registration resolves with no token.
  */

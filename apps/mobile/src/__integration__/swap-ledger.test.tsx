@@ -56,6 +56,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -153,7 +154,7 @@ const buildQuote = (swapperAddress: string): SwapQuote =>
         // network fee, which validateSwapGroupAgainstQuote allows for.
         amountIn: new Decimal(1_000_000),
         peraFeeAmount: new Decimal(0),
-        // Client-stamped freshness marker (PERA-4589): execute() refuses a
+        // Client-stamped freshness marker: execute() refuses a
         // quote without a recent `fetchedAt` as stale before it ever reaches
         // prepare. Stamp it "now" so these signing-pipeline flows exercise a
         // fresh quote rather than tripping the staleness guard.
@@ -247,6 +248,19 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        // execute() runs a balance preflight against algod before prepare;
+        // fund the senders so the 1-ALGO quote (plus fees and the receive
+        // asset's opt-in MBR) clears it.
+        server.use(
+            mockAlgodAccountInformation({
+                address: LEDGER_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodAccountInformation({
+                address: AUTH_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
     })
 
     it(

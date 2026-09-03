@@ -71,6 +71,13 @@ export interface ErrorMetadata {
     params?: Record<string, unknown>
     recoverable: boolean
     retryable: boolean
+    /**
+     * Suppresses crash reporting for this error: it drops to a warning plus a
+     * breadcrumb instead of a non-fatal. Orthogonal to `severity`, which drives
+     * user-facing copy — a HIGH-severity Ledger disconnect still deserves a
+     * loud message on screen and still deserves nothing in Crashlytics.
+     */
+    expected?: boolean
 }
 
 /**

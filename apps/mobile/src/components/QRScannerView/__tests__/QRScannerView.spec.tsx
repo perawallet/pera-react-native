@@ -18,7 +18,7 @@ import { QRScannerView } from '../QRScannerView'
 import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 
 // The camera module is lazily imported by QRScannerView; rejecting that import
-// exercises the error boundary + retry path (PERA-4465). The throw lives in an
+// exercises the error boundary + retry path. The throw lives in an
 // export *getter* (not the factory) because the mock module is evaluated once
 // per file — the getter re-runs on every `import().then` access, so each lazy
 // instance independently sees the current `failImport` state.
@@ -144,7 +144,7 @@ describe('QRScannerView', () => {
         })
     })
 
-    describe('camera module load failure (PERA-4465)', () => {
+    describe('camera module load failure', () => {
         beforeEach(() => {
             vi.mocked(useCameraDevice).mockReturnValue({
                 id: 'mock-device',

@@ -105,7 +105,15 @@ export const TransactionDisplay = ({
             )
         }
 
-        case 'state-proof':
+        case 'state-proof': {
+            return (
+                <EmptyView
+                    title={t('transactions.type.stpf')}
+                    body={t('transactions.state_proof.body')}
+                />
+            )
+        }
+
         case 'unknown':
         default: {
             return (

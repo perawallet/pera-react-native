@@ -13,13 +13,17 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
 import { prepareHDMasterKey } from '../prepare-hd-master-key'
+import { mnemonicWordsToIndices } from '../mnemonic-indices'
 
 const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'
+const USER_MNEMONIC_INDICES = mnemonicWordsToIndices(USER_MNEMONIC.split(' '))!
 
 describe('prepareHDMasterKey', () => {
-    test('returns rootKey (96B), entropy (32B), and a stable id when mnemonic provided', async () => {
-        const result = await prepareHDMasterKey({ mnemonic: USER_MNEMONIC })
+    test('returns rootKey (96B), entropy (32B), and a stable id when indices provided', async () => {
+        const result = await prepareHDMasterKey({
+            mnemonicIndices: USER_MNEMONIC_INDICES,
+        })
         expect(result.rootKey.byteLength).toBe(96)
         expect(result.entropy.byteLength).toBe(32)
         expect(typeof result.keyId).toBe('string')
@@ -28,7 +32,7 @@ describe('prepareHDMasterKey', () => {
 
     test('uses the supplied id when given', async () => {
         const result = await prepareHDMasterKey({
-            mnemonic: USER_MNEMONIC,
+            mnemonicIndices: USER_MNEMONIC_INDICES,
             id: 'fixed-id-123',
         })
         expect(result.keyId).toBe('fixed-id-123')

@@ -174,12 +174,36 @@ const createHeartbeatTx = (
         ...overrides,
     }) as TransactionHistoryItem
 
+const createStateProofTx = (
+    overrides: Partial<TransactionHistoryItem> = {},
+): TransactionHistoryItem =>
+    ({
+        id: 'tx5',
+        txType: 'stpf',
+        sender: OTHER_ADDRESS,
+        receiver: null,
+        amount: null,
+        fee: new Decimal(0),
+        confirmedRound: 100,
+        roundTime: 1_700_000_000,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        applicationId: null,
+        innerTransactionCount: null,
+        groupId: null,
+        closeTo: null,
+        balanceImpacts: [],
+        ...overrides,
+    }) as TransactionHistoryItem
+
 // The hook now reads the open-submission badge set via React Query.
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={new QueryClient()}>
         {children}
     </QueryClientProvider>
 )
+
 describe('useTransactionListItem', () => {
     beforeEach(() => {
         vi.mocked(useSelectedAccount).mockReturnValue({
@@ -263,6 +287,19 @@ describe('useTransactionListItem', () => {
             )
             expect(result.current.title).toBe(
                 'transactions.list_item.heartbeat',
+            )
+        })
+
+        it('returns state-proof key for a state proof', () => {
+            const { result } = renderHook(
+                () =>
+                    useTransactionListItem({
+                        transaction: createStateProofTx(),
+                    }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe(
+                'transactions.list_item.state_proof',
             )
         })
 

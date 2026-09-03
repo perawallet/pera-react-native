@@ -1,4 +1,4 @@
-# Bottom Sheet Manager
+# Bottom sheet manager
 
 A central manager renders any bottom sheet requested from anywhere in the app.
 
@@ -35,34 +35,36 @@ const { resolve, dismiss } = useBottomSheetResult<'confirm' | 'cancel'>()
     Live data is read inside the sheet via hooks (Zustand stores / TanStack
     Query). Props captured at `request()` time never update.
 
-2. **Bottom safe-area handling (edge-to-edge).** `PWBottomSheet` draws
-   **edge-to-edge** (`bottomInset={0}` — the background extends under the home
-   indicator / nav bar). Each sheet's **content owns** the bottom safe-area inset
-   so the last row / CTA clears the nav bar (the host `innerContainer` does NOT
-   add it — don't double up):
-    - **Scroll content owns it inside the scroll** — `PWSheetLayout`,
-      `PWFlatList` / `PWScrollView` with `inBottomSheet`, and raw
-      `BottomSheetScrollView` sheets each add the inset to their scroll content.
-    - **A fixed footer owns it** — `PWSheetLayout`'s `footer` slot does this
-      automatically; hand-rolled footers add `insets.bottom` to the footer.
-    - Prefer **`PWSheetLayout`** — the sheet skeleton with `header` (sticky),
-      `children` (scroll body) and optional `footer` (pinned CTA) slots + a
-      `horizontalPadding` prop. Content-sized (`size='auto'`) sheets use the
-      default container; open a **bounded** sheet whose body must scroll
-      internally with `autoCreateContainer={false}` so its scroll gets a
-      definite height.
-    - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` (not
-      `PWBottomSheet`), so it owns its own inset.
+2. **Sheet content owns the bottom safe-area inset.** `PWBottomSheet` draws
+   edge-to-edge (`bottomInset={0}`), so its background extends under the home
+   indicator and nav bar. The host `innerContainer` does not add the inset, so
+   each sheet's content must, or the last row or CTA sits under the nav bar.
+   Don't double up.
+    - Scroll content adds it inside the scroll. `PWSheetLayout`, `PWFlatList`
+      and `PWScrollView` with `inBottomSheet`, and raw `BottomSheetScrollView`
+      sheets all do this.
+    - A fixed footer adds it instead. `PWSheetLayout`'s `footer` slot does so
+      automatically; hand-rolled footers add `insets.bottom` themselves.
+    - Prefer `PWSheetLayout`. It is the sheet skeleton, with a sticky `header`,
+      a scrolling `children` body, an optional pinned `footer`, and a
+      `horizontalPadding` prop.
+    - A content-sized sheet (`size='auto'`) grows to fit and then scrolls, and
+      uses the default container. A sheet whose body must scroll within a bound
+      needs `autoCreateContainer={false}` so the scroll gets a definite height.
+      The `footer` slot only pins under that same flag; in an auto-sized sheet
+      put the buttons in the body instead.
+    - Exception: `ModelViewerBottomSheet` is a direct `BottomSheetModal` rather
+      than a `PWBottomSheet`, so it owns its own inset.
 
-3. **Use named exports** and **`makeStyles` from `@rneui/themed`** as per
-   the project-wide convention.
+3. Named exports and `makeStyles` from `@rneui/themed`, per the project-wide
+   convention.
 
 ## Deep-link triggers
 
 If a sheet needs to be opened from a deep link or other non-React code,
 register it in
 `apps/mobile/src/modules/bottom-sheet/registrations.ts`. That file is the
-single source of truth for the registry — like a route table. Add an
+single source of truth for the registry, like a route table. Add an
 import + a `registerBottomSheet(...)` call + a `BottomSheetRegistry`
 augmentation entry:
 
@@ -96,11 +98,11 @@ useBottomSheetStore.getState().requestByType('asset-opt-in', {
 
 React callers can use the same path via `useBottomSheet().requestByType(...)`.
 
-The `assetId` / `accountAddress` props are type-checked against the registry
-entry, so a typo in the props or a missing field is a compile-time error.
+Props are type-checked against the registry entry, so a typo or a missing field
+is a compile-time error.
 
-**Live exemplar:** both the `ASSET_OPT_IN` case in
+For a worked example, the `ASSET_OPT_IN` case in
 `apps/mobile/src/hooks/useDeepLink.ts` and `useAddAssetView`'s
-`handleRequestAdd` open `OptInConfirmationContent` via
-`requestByType('asset-opt-in', { assetId, accountAddress })`. The two
-call paths share the same typed contract.
+`handleRequestAdd` both open `OptInConfirmationContent` through
+`requestByType('asset-opt-in', { assetId, accountAddress })`, sharing one typed
+contract.

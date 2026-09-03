@@ -162,6 +162,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         },
     ],
     resolveAuthAccount: (account: unknown) => account,
+    // The keyreg preflight resolves the signer through this; the seeded
+    // accounts above are all locally signable.
+    resolveSignerForAccount: (account: unknown) => ({
+        kind: 'ok',
+        signer: account,
+    }),
     resolveImportAccountType: (mnemonic: string) => {
         const wordCount = mnemonic.trim().split(/[,\s]+/).length
         if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
@@ -521,6 +527,23 @@ const cases: Case[] = [
         expect: { kind: 'addSignRequest' },
         extra: () => {
             expect(mockOnlineKeyRegistration).toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        },
+    },
+
+    // -- Keyreg (offline) --------------------------------------------------
+    // ARC-78's smallest valid URI, and verbatim what nodekit emits for "go
+    // offline". No participation keys means de-register, not a malformed
+    // online registration.
+    {
+        name: 'Keyreg (ARC-78 offline: bare ?type=keyreg)',
+        url: `algorand://${ADDRESS}?type=keyreg`,
+        expect: { kind: 'addSignRequest' },
+        extra: () => {
+            expect(mockOfflineKeyRegistration).toHaveBeenCalledWith(
+                expect.objectContaining({ sender: ADDRESS }),
+            )
+            expect(mockOnlineKeyRegistration).not.toHaveBeenCalled()
             expect(mockErrorToast).not.toHaveBeenCalled()
         },
     },

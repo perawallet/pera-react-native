@@ -165,9 +165,12 @@ export const useWalletConnect = (
             })
 
             // A missing/empty bridge makes the WC v1 Connector throw synchronously — skip it.
-            connect({ connection }).catch(error => {
+            connect({ connection }).catch((error: unknown) => {
                 logger.error(
-                    '[WC] Failed to establish stored session — skipping',
+                    new WalletConnectBridgeConnectionError(
+                        '[WC] Failed to establish stored session — skipping',
+                        error instanceof Error ? error : undefined,
+                    ),
                     { clientId: connection.clientId, error },
                 )
             })
@@ -275,7 +278,7 @@ export const useWalletConnect = (
             // reject is a repeat-handshake attempt, not the pending one the
             // user is declining. Dropping the stored entry there would
             // force-delete a live session while the connector stays connected
-            // (store desync, PERA-4713). Only remove on genuine cleanup.
+            // (store desync). Only remove on genuine cleanup.
             const wasConnected = getConnector(clientId)?.connected ?? false
             let delivered = false
             try {
@@ -415,7 +418,7 @@ export const useWalletConnect = (
             // session for it, a fresh session_request is a peerMeta-overwrite
             // attempt: the library rewrites peerMeta/peerId before this fires,
             // so refuse the frame outright rather than re-opening an approval
-            // sheet or reacting to a poisoned handshake (PERA-4713).
+            // sheet or reacting to a poisoned handshake.
             const storedSession = useWalletConnectStore
                 .getState()
                 .walletConnectConnections.find(
@@ -468,7 +471,7 @@ export const useWalletConnect = (
                 // `rejectSession()` throws on an already-connected connector;
                 // guarding it keeps the throw from escaping before the error is
                 // surfaced, which is what let the mismatch branch go silent and
-                // masked the peerMeta poisoning (PERA-4713).
+                // masked the peerMeta poisoning.
                 if (!connector.connected) {
                     connector.rejectSession()
                 }
@@ -493,11 +496,22 @@ export const useWalletConnect = (
         })
 
         connector.on('error', (error, payload) => {
-            logger.error('WC error received', { error, payload })
             // The SDK's EventManager delivers internal events as
             // callback(null, event) — only JSON-RPC error responses populate
             // the first argument. Reading `error` alone made this binding
             // decorative: every real 'error' event arrived in `payload`.
+            //
+            // So only the `payload` path is a transport event worth demoting;
+            // a populated `error` is a genuine protocol error response and
+            // stays reportable, logged unwrapped so its own type survives.
+            if (error instanceof Error) {
+                logger.error(error, { payload })
+            } else {
+                logger.error(
+                    new WalletConnectBridgeConnectionError('WC error received'),
+                    { payload, error },
+                )
+            }
             const detail = (
                 payload as { params?: { message?: string }[] } | undefined
             )?.params?.[0]

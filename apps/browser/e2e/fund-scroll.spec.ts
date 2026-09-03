@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PERA-4948 regression: the Fund form lives inside the PagerView web shim,
+// Regression: the Fund form lives inside the PagerView web shim,
 // and when a page's height chain isn't pushed down from the pager frame the
 // form's vertical ScrollView grows to content height instead of scrolling —
 // the frame's overflow then clips the Proceed button with no way to reach it.

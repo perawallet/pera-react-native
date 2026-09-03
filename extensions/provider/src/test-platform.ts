@@ -95,6 +95,7 @@ export const buildTestPlatform = (
     const defaultCrash: CrashReportingService = {
         initializeCrashReporting() {},
         recordNonFatalError(_: unknown) {},
+        logBreadcrumb() {},
     }
 
     const deviceInfo: DeviceInfoService = {
@@ -154,6 +155,9 @@ export const buildTestPlatform = (
         },
         async checkBiometricsAvailable() {
             return true
+        },
+        async getAvailability() {
+            return 'available' as const
         },
         async getSecurityLevel() {
             return 'strong'

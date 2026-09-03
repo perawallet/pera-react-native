@@ -250,7 +250,7 @@ export const useCollectibleDetail = (
                 type: 'success',
             })
         } catch {
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-copy error; bespoke localized title preserved
+            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible image-copy error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.image_copy_failed'),
                 body: '',
@@ -279,7 +279,7 @@ export const useCollectibleDetail = (
             })
         } catch (err) {
             if (err instanceof MediaPermissionDeniedError) {
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible permission-denied error; bespoke localized title preserved
+                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible permission-denied error; bespoke localized title preserved
                 showToast({
                     title: t(
                         'asset_details.collectible.media_permission_denied',
@@ -289,7 +289,7 @@ export const useCollectibleDetail = (
                 })
                 return
             }
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
+            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.media_save_failed'),
                 body: '',

@@ -1,0 +1,1537 @@
+diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
+index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c860fb1b4 100644
+--- a/android/src/main/AndroidManifest.xml
++++ b/android/src/main/AndroidManifest.xml
+@@ -2,8 +2,19 @@
+           xmlns:tools="http://schemas.android.com/tools">
+     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+     <application>
++        <!--
++          PERA LOCAL PATCH: register the credential provider under the legacy
++          native app's fully-qualified class name. Android's Credential Manager
++          persists the user's enabled provider as ComponentName =
++          package/serviceClass. The package (com.algorand.android) is unchanged
++          across the native -> RN upgrade, so keeping the legacy service class
++          name makes the OS treat this as the same provider and carry the
++          enablement over instead of silently dropping it. The class below is a
++          thin subclass of PasskeyAutofillCredentialProviderService. Keep this in
++          sync with the ComponentName checked in ReactNativePasskeyAutofillModule.
++        -->
+         <service
+-            android:name=".service.PasskeyAutofillCredentialProviderService"
++            android:name="com.algorand.android.credentials.passkeys.ui.PasskeyProviderService"
+             android:enabled="true"
+             android:exported="true"
+             android:label="@string/passkey_autofill_label"
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
+index ac8955cdec804b20e44eba44f6f1d702695045eb..2e8c3706056f6a92e0ae918da6874f7f61c75402 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
+@@ -42,6 +42,7 @@ class CreatePasskeyActivity : AppCompatActivity() {
+ 
+     companion object {
+         const val TAG = "CreatePasskeyActivity"
++        private const val COSE_ALGORITHM_ES256 = -7
+     }
+ 
+     private var origin: String = "unknown-origin" // Derivation origin (rpId or hash)
+@@ -384,17 +385,31 @@ class CreatePasskeyActivity : AppCompatActivity() {
+                 }
+             }
+ 
++            // PERA LOCAL PATCH: a browser calling on behalf of a page passes both
++            // the page's origin and the clientDataHash it has already committed
++            // to. Honour both. An `android:apk-key-hash:…` origin is not the
++            // page's origin, and a clientDataJSON we invent cannot match a hash
++            // the browser computed over its own. Non-browser callers keep the
++            // app-identity origin and get a clientDataJSON as before.
++            val clientDataOrigin =
++                PrivilegedBrowsers.webOrigin(this@CreatePasskeyActivity, req.callingAppInfo)
++                    ?: credentialRepository.getOrigin(req.callingAppInfo)
++            val systemClientDataHash =
++                (req.callingRequest as? CreatePublicKeyCredentialRequest)?.clientDataHash
++            Log.d(TAG, "clientData origin: $clientDataOrigin, system hash present: ${systemClientDataHash != null}")
++
+             Log.d(TAG, "Building AuthenticatorAttestationResponse")
+             val response = AuthenticatorAttestationResponse(
+                 requestOptions = requestOptions,
+                 credentialId = credentialId,
+                 credentialPublicKey = credentialRepository.getPublicKeyFromKeyPair(keyPair),
+-                origin = credentialRepository.getOrigin(req.callingAppInfo),
++                origin = clientDataOrigin,
+                 up = true,
+                 uv = true,
+                 be = true,
+                 bs = true,
+-                packageName = req.callingAppInfo.packageName
++                packageName = req.callingAppInfo.packageName,
++                clientDataHash = systemClientDataHash
+             )
+ 
+             val fidoCredential = FidoPublicKeyCredential(
+@@ -407,30 +422,35 @@ class CreatePasskeyActivity : AppCompatActivity() {
+             val fullJson = JSONObject(fidoCredential.json())
+             val respJson = fullJson.getJSONObject("response")
+ 
+-            // Ensure compact clientDataJSON for registration too
+-            val sanitizedOrigin = credentialRepository.getOrigin(req.callingAppInfo).replace(Regex("/$"), "")
+-            val challenge = if (requestJson.has("publicKey")) {
+-                requestJson.getJSONObject("publicKey").getString("challenge")
+-            } else {
+-                requestJson.getString("challenge")
+-            }
++            // A supplied clientDataHash means the caller owns the client data, so
++            // AndroidX leaves clientDataJSON out of the response. Re-adding ours
++            // would contradict the hash the caller signs against.
++            if (systemClientDataHash == null) {
++                // Ensure compact clientDataJSON for registration too
++                val sanitizedOrigin = clientDataOrigin.replace(Regex("/$"), "")
++                val challenge = if (requestJson.has("publicKey")) {
++                    requestJson.getJSONObject("publicKey").getString("challenge")
++                } else {
++                    requestJson.getString("challenge")
++                }
+ 
+-            Log.d(TAG, "Building clientDataJSON, challenge: $challenge, origin: $sanitizedOrigin")
+-            val clientDataJSONString = if (sanitizedOrigin.startsWith("https://") || sanitizedOrigin.startsWith("http://")) {
+-                "{\"type\":\"webauthn.create\",\"challenge\":\"$challenge\",\"origin\":\"$sanitizedOrigin\",\"crossOrigin\":false}"
+-            } else {
+-                val json = JSONObject()
+-                json.put("type", "webauthn.create")
+-                json.put("challenge", challenge)
+-                json.put("origin", sanitizedOrigin)
+-                json.put("crossOrigin", false)
+-                if (sanitizedOrigin.startsWith("android:apk-key-hash:")) {
+-                    json.put("androidPackageName", req.callingAppInfo.packageName)
++                Log.d(TAG, "Building clientDataJSON, challenge: $challenge, origin: $sanitizedOrigin")
++                val clientDataJSONString = if (sanitizedOrigin.startsWith("https://") || sanitizedOrigin.startsWith("http://")) {
++                    "{\"type\":\"webauthn.create\",\"challenge\":\"$challenge\",\"origin\":\"$sanitizedOrigin\",\"crossOrigin\":false}"
++                } else {
++                    val json = JSONObject()
++                    json.put("type", "webauthn.create")
++                    json.put("challenge", challenge)
++                    json.put("origin", sanitizedOrigin)
++                    json.put("crossOrigin", false)
++                    if (sanitizedOrigin.startsWith("android:apk-key-hash:")) {
++                        json.put("androidPackageName", req.callingAppInfo.packageName)
++                    }
++                    json.toString()
+                 }
+-                json.toString()
++                val clientDataJSONb64 = AndroidBase64.encodeToString(clientDataJSONString.toByteArray(), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING)
++                respJson.put("clientDataJSON", clientDataJSONb64)
+             }
+-            val clientDataJSONb64 = AndroidBase64.encodeToString(clientDataJSONString.toByteArray(), AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING)
+-            respJson.put("clientDataJSON", clientDataJSONb64)
+ 
+             WebAuthn.configuredAaguid(this@CreatePasskeyActivity)?.let { aaguid ->
+                 try {
+@@ -441,6 +461,30 @@ class CreatePasskeyActivity : AppCompatActivity() {
+                 }
+             }
+ 
++            // PERA LOCAL PATCH: AndroidX emits only clientDataJSON / attestationObject /
++            // transports, but RegistrationResponseJSON also requires authenticatorData and
++            // publicKeyAlgorithm. Chrome parses the response against that shape and rejects the
++            // WHOLE registration when they are missing — "MojoClassFromJSON failed to convert
++            // JSON: field missing or invalid: publicKeyAlgorithm" — surfacing to the page as an
++            // opaque NotReadableError. Added after the AAGUID splice so the standalone
++            // authenticatorData is the same bytes as the one inside the attestationObject.
++            respJson.put(
++                "authenticatorData",
++                WebAuthn.extractAuthData(respJson.getString("attestationObject")),
++            )
++            // createDeterministicKeyPair only ever produces P-256, so the credential is ES256
++            // regardless of what pubKeyCredParams asked for.
++            respJson.put("publicKeyAlgorithm", COSE_ALGORITHM_ES256)
++            // SPKI DER, which is what the JSON form of publicKey expects — not the COSE encoding
++            // that goes inside attestedCredentialData.
++            respJson.put(
++                "publicKey",
++                AndroidBase64.encodeToString(
++                    keyPair.public.encoded,
++                    AndroidBase64.URL_SAFE or AndroidBase64.NO_WRAP or AndroidBase64.NO_PADDING,
++                ),
++            )
++
+             // WebAuthn `prf` extension (hmac-secret).
+             // On registration we advertise `enabled = true` whenever the RP
+             // asked for the extension, signalling that the credential can be
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
+index 9c80dcf14339edf5e58e3cf1e61b84879e4b1f4a..f6c5d9095ed1b1ad22a343ec0bf57efad5b51032 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/GetPasskeyActivity.kt
+@@ -51,6 +51,14 @@ class GetPasskeyActivity : AppCompatActivity() {
+ 
+     private var origin: String = "unknown-origin"
+     private var displayOrigin: String = "unknown-origin"
++    // PERA LOCAL PATCH: the origin to sign into clientData. Separate from
++    // `origin`, the derivation input — that is the rpId when the request carries
++    // one, and only otherwise the caller's app identity. Do not merge the two.
++    private var clientDataOrigin: String = "unknown-origin"
++    // PERA LOCAL PATCH (PERA-4714): the rpId the caller asserted, kept separate
++    // from `displayOrigin` (which is only a UI label) so the assertion path can
++    // re-check the selected credential against it. Empty when none was sent.
++    private var requestedRpId: String = ""
+     private var userHandle: String = "unknown-user"
+     private var credentialIdEnc: String? = null
+     private var userVerification: String = "preferred"
+@@ -105,7 +113,12 @@ class GetPasskeyActivity : AppCompatActivity() {
+         if (request != null) {
+             origin = credentialRepository.getOrigin(request!!.callingAppInfo)
+             displayOrigin = origin
+-            
++            // PERA LOCAL PATCH: prefer the page origin when an allowlisted
++            // browser is asserting on a page's behalf; the relying party checks
++            // clientData against that, not against the browser's app identity.
++            clientDataOrigin =
++                PrivilegedBrowsers.webOrigin(this, request!!.callingAppInfo) ?: origin
++
+             // Try to extract rpId for better display
+             val rawJson = bundleRequestJson ?: (request?.credentialOptions?.get(0) as? GetPublicKeyCredentialOption)?.requestJson
+             if (rawJson != null) {
+@@ -115,6 +128,8 @@ class GetPasskeyActivity : AppCompatActivity() {
+                     val rpId = pkJson.optString("rpId")
+                     if (rpId.isNotEmpty()) {
+                         displayOrigin = rpId
++                        // PERA LOCAL PATCH (PERA-4714)
++                        requestedRpId = rpId
+                     }
+                 } catch (e: Exception) {
+                     // ignore
+@@ -462,7 +477,7 @@ class GetPasskeyActivity : AppCompatActivity() {
+             } else {
+                 throw org.json.JSONException("No value for challenge in requestJson: $passkeyReqJson")
+             }
+-            val sanitizedOrigin = origin.replace(Regex("/$"), "")
++            val sanitizedOrigin = clientDataOrigin.replace(Regex("/$"), "")
+ 
+             // Look for system-provided clientDataHash (e.g. from Chrome)
+             val systemClientDataHash = run {
+@@ -514,6 +529,20 @@ class GetPasskeyActivity : AppCompatActivity() {
+                 }
+             }
+ 
++            // PERA LOCAL PATCH (PERA-4714): defence in depth. The credential is
++            // selected purely by the id carried in the PendingIntent, so re-apply
++            // the provider's own scoping rule here rather than trusting that the
++            // query-time filter was the only way to reach this point. Mirrors
++            // processGetCredentialRequest: the credential must belong to the
++            // asserted relying party or to the calling app itself.
++            val belongsToRelyingParty =
++                requestedRpId.isNotEmpty() && dbCred.origin.equals(requestedRpId, ignoreCase = true)
++            val belongsToCallingApp = dbCred.origin == origin
++            if (!belongsToRelyingParty && !belongsToCallingApp) {
++                Log.e(TAG, "Refusing assertion: credential origin does not match the requester")
++                throw IllegalStateException("Credential does not belong to the requesting relying party")
++            }
++
+             Log.d(TAG, "Building AuthenticatorAssertionResponse")
+             val response = AuthenticatorAssertionResponse(
+                 requestOptions = requestOptions,
+@@ -566,7 +595,13 @@ class GetPasskeyActivity : AppCompatActivity() {
+ 
+             val fullJson = JSONObject(fidoCredential.json())
+             val respJson = fullJson.getJSONObject("response")
+-            respJson.put("clientDataJSON", clientDataJSONb64)
++            // PERA LOCAL PATCH: the signature above covers `systemClientDataHash`
++            // when the caller supplied one, so the caller's client data is the
++            // authoritative copy — AndroidX omits clientDataJSON for that reason
++            // and re-adding ours would contradict what was signed.
++            if (systemClientDataHash == null) {
++                respJson.put("clientDataJSON", clientDataJSONb64)
++            }
+             respJson.put("signature", signatureb64)
+ 
+             // Add clientExtensionResults as seen in the example
+@@ -599,7 +634,14 @@ class GetPasskeyActivity : AppCompatActivity() {
+                     } else {
+                         val credRandom = Prf.credRandom(
+                             hdRootSecret = parent.secret.bytes,
+-                            relyingPartyIdentifier = displayOrigin,
++                            // PERA LOCAL PATCH (PERA-4714): key on the origin
++                            // STORED with the credential, not the request-supplied
++                            // `displayOrigin`. CreatePasskeyActivity derived this
++                            // credential from `origin`, so using the claimed value
++                            // both breaks derivation for app-origin passkeys (a
++                            // request may assert an rpId that never created them)
++                            // and lets the request influence what secret we derive.
++                            relyingPartyIdentifier = dbCred.origin,
+                             userHandle = dbCred.userHandle,
+                         )
+                         val first = Prf.evaluate(credRandom, prfInput.first, prfInput.alreadyHashed)
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..76c818b12e0b1f4f1d325249b6ec10897a786b8b
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
+@@ -0,0 +1,71 @@
++package co.algorand.passkeyautofill
++
++import android.content.Context
++import android.util.Log
++import androidx.credentials.provider.CallingAppInfo
++
++/**
++ * PERA LOCAL PATCH — resolves the *web* origin a privileged browser is acting on
++ * behalf of.
++ *
++ * Credential Manager populates `CallingAppInfo.origin` when a browser holding
++ * `android.permission.CREDENTIAL_MANAGER_SET_ORIGIN` makes a WebAuthn call for a
++ * page. That value is the origin the page (and the relying party) expects to see
++ * in clientData; the caller's own `android:apk-key-hash:…` identity is not. But
++ * AndroidX keeps `origin` internal and only exposes it through
++ * [CallingAppInfo.getOrigin], which requires the caller to be matched against a
++ * privileged-app allowlist first — so shipping an allowlist is the only way to
++ * read it, and the check is the point rather than an obstacle: without it any
++ * caller that could set an origin could dictate what we sign it as.
++ *
++ * `res/raw/passkey_privileged_browsers.json` is Google's published allowlist
++ * (https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json) — the same
++ * set Google Password Manager trusts. `userdebug` fingerprints in it only apply
++ * on `userdebug` builds; AndroidX filters them by `Build.TYPE`.
++ *
++ * Every failure path returns null, which means "treat this as an ordinary app
++ * call" — the pre-existing behaviour. A browser missing from the allowlist is
++ * therefore no worse off than before the patch, so refreshing the JSON is
++ * maintenance rather than a correctness dependency.
++ */
++object PrivilegedBrowsers {
++    private const val TAG = "PrivilegedBrowsers"
++
++    @Volatile
++    private var cachedAllowlist: String? = null
++
++    /**
++     * The web origin [info] is acting for (e.g. `https://example.com`), or null
++     * when the caller is not an allowlisted browser or claimed no origin.
++     */
++    fun webOrigin(context: Context, info: CallingAppInfo): String? {
++        if (!info.isOriginPopulated()) return null
++        val allowlist = allowlist(context) ?: return null
++        return try {
++            info.getOrigin(allowlist)
++        } catch (e: IllegalStateException) {
++            // Origin set by a caller that is not on the allowlist. Deliberately
++            // not fatal: we fall back to the app-identity origin rather than
++            // honouring an unverifiable claim.
++            Log.w(TAG, "${info.packageName} claimed a web origin but is not an allowlisted browser")
++            null
++        } catch (e: IllegalArgumentException) {
++            Log.e(TAG, "Privileged browser allowlist is malformed", e)
++            null
++        }
++    }
++
++    private fun allowlist(context: Context): String? {
++        cachedAllowlist?.let { return it }
++        return try {
++            context.resources
++                .openRawResource(R.raw.passkey_privileged_browsers)
++                .bufferedReader()
++                .use { it.readText() }
++                .also { cachedAllowlist = it }
++        } catch (e: Exception) {
++            Log.e(TAG, "Could not read the privileged browser allowlist", e)
++            null
++        }
++    }
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..1fb420349a2bbbb6929885d0d53bb1d6897f1ac2 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+@@ -3,7 +3,10 @@ package co.algorand.passkeyautofill
+ import expo.modules.kotlin.modules.Module
+ import expo.modules.kotlin.modules.ModuleDefinition
+ import co.algorand.passkeyautofill.credentials.CredentialRepository
+-import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++// PERA LOCAL PATCH: check the legacy-named subclass so the ComponentName built
++// below matches the native app's persisted credential-provider selection. See
++// the shim class + module AndroidManifest patch notes.
++import com.algorand.android.credentials.passkeys.ui.PasskeyProviderService
+ import android.content.ComponentName
+ import android.content.Context
+ import android.content.Intent
+@@ -180,7 +183,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   }
+ 
+   /**
+-   * Returns `true` when this app's [PasskeyAutofillCredentialProviderService]
++   * Returns `true` when this app's [PasskeyProviderService]
+    * is registered as an active credential provider for the current user.
+    *
+    * On API 34+ (UpsideDownCake) we use the official
+@@ -195,7 +198,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   private fun isProviderEnabled(context: Context): Boolean {
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     )
+     val expected = component.flattenToString()
+ 
+@@ -246,7 +249,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // Manager screen isn't a directly launchable activity.
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     ).flattenToString()
+     val intents = listOf(
+       // Preferred: Credential Manager provider settings, deep-linked to our row.
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt b/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
+index 0ba3046c9820bdc7cda11d2e0f279fedd99156af..f7dcd2a16813e82293becfc15514fe2cbf63e69b 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/WebAuthn.kt
+@@ -56,6 +56,19 @@ object WebAuthn {
+         return Base64.encodeToString(bytes, BASE64_FLAGS)
+     }
+ 
++    /**
++     * PERA LOCAL PATCH — the raw authenticatorData inside [attestationObjectB64Url], base64url.
++     *
++     * RegistrationResponseJSON carries authenticatorData as its own field, but AndroidX only ever
++     * emits it nested in the attestationObject. Slicing it back out keeps the two views of the same
++     * bytes in step; rebuilding it separately would let them drift.
++     */
++    fun extractAuthData(attestationObjectB64Url: String): String {
++        val bytes = Base64.decode(attestationObjectB64Url, BASE64_FLAGS)
++        val (start, length) = findAuthData(bytes)
++        return Base64.encodeToString(bytes, start, length, BASE64_FLAGS)
++    }
++
+     private fun uuidToBytes(uuid: UUID): ByteArray =
+         ByteBuffer.allocate(AAGUID_LENGTH)
+             .putLong(uuid.mostSignificantBits)
+@@ -68,7 +81,10 @@ object WebAuthn {
+         var pos = 0
+     }
+ 
+-    private fun findAuthDataContentStart(buf: ByteArray): Int {
++    private fun findAuthDataContentStart(buf: ByteArray): Int = findAuthData(buf).first
++
++    /** (offset, length) of the authData byte-string contents inside [buf]. */
++    private fun findAuthData(buf: ByteArray): Pair<Int, Int> {
+         val c = Cursor(buf)
+         val (major, count) = readHead(c)
+         require(major == 5) { "attestationObject is not a CBOR map" }
+@@ -79,7 +95,7 @@ object WebAuthn {
+                 require(valueMajor == 2) { "authData is not a CBOR byte string" }
+                 val start = c.pos
+                 c.pos += valueLen.toInt()
+-                return start
++                return Pair(start, valueLen.toInt())
+             }
+             skipItem(c)
+         }
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+index 7199493d1680164000de4d44eaf939f5111cb0af..6f6d7ac29a9811a40a21df3b7493098dcdf6585f 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+@@ -37,8 +37,12 @@ import kotlinx.coroutines.*
+ import org.json.JSONArray
+ import org.json.JSONObject
+ 
++// PERA LOCAL PATCH: `open` so the legacy-named subclass
++// (com.algorand.android.credentials.passkeys.ui.PasskeyProviderService) can
++// extend it and be registered under the native app's ComponentName. See patch
++// notes in ReactNativePasskeyAutofillModule and the module AndroidManifest.
+ @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+-class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
++open class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+     private val credentialRepository = CredentialRepository()
+     private val job = SupervisorJob()
+     private val scope = CoroutineScope(Dispatchers.IO + job)
+@@ -190,17 +194,37 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+         val action = credentialRepository.getGetPasskeyAction(this) ?: DEFAULT_GET_PASSKEY_ACTION
+         val allEntries = mutableListOf<PublicKeyCredentialEntry>()
+ 
++        // PERA LOCAL PATCH (PERA-4714): the calling app's own identity, in the
++        // same "android:apk-key-hash:<sha256>" form CreatePasskeyActivity stores
++        // as `origin` for a passkey created without an `rp.id`. Those credentials
++        // belong to this caller and must still be offered to it. `callingAppInfo`
++        // is nullable on BeginGetCredentialRequest, and getOrigin() indexes
++        // apkContentsSigners, so both failure modes degrade to null == no
++        // app-origin match rather than throwing out of the whole query.
++        val callingAppOrigin = request.callingAppInfo?.let { info ->
++            try {
++                credentialRepository.getOrigin(info)
++            } catch (e: Exception) {
++                Log.e(TAG, "Could not derive calling app origin", e)
++                null
++            }
++        }
++
+         for (option in request.beginGetCredentialOptions) {
+             if (option !is BeginGetPublicKeyCredentialOption) continue
+ 
+             val requestJsonStr = option.requestJson
+             var allowCredentials: JSONArray? = null
+             var userVerification = "preferred"
++            // PERA LOCAL PATCH (PERA-4714): the relying-party id the caller is
++            // asserting for. Used below to scope which stored passkeys we offer.
++            var rpId = ""
+             try {
+                 val json = JSONObject(requestJsonStr)
+                 val pk = if (json.has("publicKey")) json.getJSONObject("publicKey") else json
+                 allowCredentials = pk.optJSONArray("allowCredentials")
+                 userVerification = pk.optString("userVerification", "preferred")
++                rpId = pk.optString("rpId", "")
+                 Log.d(TAG, "handleGetPasskeyQuery: userVerification=$userVerification")
+             } catch (e: Exception) {
+                 Log.e(TAG, "Error parsing requestJson", e)
+@@ -217,6 +241,28 @@ class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+             }
+ 
+             for (credential in credentials) {
++                // PERA LOCAL PATCH (PERA-4714): scope offered credentials to the
++                // requester. Without this the provider handed EVERY stored
++                // passkey to any caller, leaking cross-site credential IDs +
++                // userHandles and acting as a per-credential signing oracle.
++                //
++                // A credential is offered only when it belongs to the requested
++                // relying party (exact, case-insensitive — WebAuthn requires an
++                // exact rpId match for assertion, so never widen this to a
++                // registrable suffix) or to the calling app itself.
++                //
++                // Note this FAILS CLOSED when no rpId is supplied: a caller that
++                // omits it (androidx only requires a challenge, so a local app
++                // can) then matches nothing but its own app-origin credentials,
++                // rather than being handed every passkey in the store.
++                val matchesRelyingParty =
++                    rpId.isNotEmpty() && credential.origin.equals(rpId, ignoreCase = true)
++                val matchesCallingApp =
++                    callingAppOrigin != null && credential.origin == callingAppOrigin
++                if (!matchesRelyingParty && !matchesCallingApp) {
++                    continue
++                }
++
+                 if (allowedIds != null) {
+                     val isAllowed = allowedIds.any { allowedId ->
+                         allowedId == credential.credentialId ||
+diff --git a/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f7063f3b6b8
+--- /dev/null
++++ b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+@@ -0,0 +1,25 @@
++package com.algorand.android.credentials.passkeys.ui
++
++import android.os.Build
++import androidx.annotation.RequiresApi
++import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++
++/**
++ * PERA LOCAL PATCH — migration compatibility shim.
++ *
++ * The legacy native pera-android app registered its Credential Manager provider
++ * as `com.algorand.android/com.algorand.android.credentials.passkeys.ui.PasskeyProviderService`.
++ * Android persists the user's enabled provider by that exact ComponentName, so
++ * after the in-place native -> RN upgrade the provider selection is only
++ * retained if a service still resolves at this fully-qualified name.
++ *
++ * This subclass adds no behaviour; it exists purely so the manifest can declare
++ * the legacy ComponentName while all logic stays in the upstream base class.
++ * `ReactNativePasskeyAutofillModule` checks this same class for its
++ * `isProviderActive` / `openProviderSettings` ComponentName.
++ *
++ * Remove this shim (and the accompanying module patch) only once every user has
++ * migrated off the legacy native app.
++ */
++@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
++class PasskeyProviderService : PasskeyAutofillCredentialProviderService()
+diff --git a/android/src/main/res/raw/passkey_privileged_browsers.json b/android/src/main/res/raw/passkey_privileged_browsers.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee035742552
+--- /dev/null
++++ b/android/src/main/res/raw/passkey_privileged_browsers.json
+@@ -0,0 +1,944 @@
++{
++  "apps": [
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.android.chrome",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "F0:FD:6C:5B:41:0F:25:CB:25:C3:B5:33:46:C8:97:2F:AE:30:F8:EE:74:11:DF:91:04:80:AD:6B:2D:60:DB:83"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "19:75:B2:F1:71:77:BC:89:A5:DF:F3:1F:9E:64:A6:CA:E2:81:A5:3D:C1:D1:D5:9B:1D:14:7F:E1:C8:2A:FA:00"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.chrome.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "DA:63:3D:34:B6:9E:63:AE:21:03:B4:9D:53:CE:05:2F:C5:F7:F3:C5:3A:AB:94:FD:C2:A2:08:BD:FD:14:24:9C"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "3D:7A:12:23:01:9A:A3:9D:9E:A0:E3:43:6A:B7:C0:89:6B:FB:4F:B6:79:F4:DE:5F:E7:C2:3F:32:6C:8F:99:4A"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.chrome.dev",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "90:44:EE:5F:EE:4B:BC:5E:21:DD:44:66:54:31:C4:EB:1F:1F:71:A3:27:16:A0:BC:92:7B:CB:B3:92:33:CA:BF"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "3D:7A:12:23:01:9A:A3:9D:9E:A0:E3:43:6A:B7:C0:89:6B:FB:4F:B6:79:F4:DE:5F:E7:C2:3F:32:6C:8F:99:4A"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.chrome.canary",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "20:19:DF:A1:FB:23:EF:BF:70:C5:BC:D1:44:3C:5B:EA:B0:4F:3F:2F:F4:36:6E:9A:C1:E3:45:76:39:A2:4C:FC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.chromium.chrome",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C6:AD:B8:B8:3C:6D:4C:17:D2:92:AF:DE:56:FD:48:8A:51:D3:16:FF:8F:2C:11:C5:41:02:23:BF:F8:A7:DB:B3"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "19:75:B2:F1:71:77:BC:89:A5:DF:F3:1F:9E:64:A6:CA:E2:81:A5:3D:C1:D1:D5:9B:1D:14:7F:E1:C8:2A:FA:00"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.google.android.apps.chrome",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "19:75:B2:F1:71:77:BC:89:A5:DF:F3:1F:9E:64:A6:CA:E2:81:A5:3D:C1:D1:D5:9B:1D:14:7F:E1:C8:2A:FA:00"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.fennec_webauthndebug",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "BD:AE:82:02:80:D2:AF:B7:74:94:EF:22:58:AA:78:A9:AE:A1:36:41:7E:8B:C2:3D:C9:87:75:2E:6F:48:E8:48"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.firefox",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "A7:8B:62:A5:16:5B:44:94:B2:FE:AD:9E:76:A2:80:D2:2D:93:7F:EE:62:51:AE:CE:59:94:46:B2:EA:31:9B:04"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.firefox_beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "A7:8B:62:A5:16:5B:44:94:B2:FE:AD:9E:76:A2:80:D2:2D:93:7F:EE:62:51:AE:CE:59:94:46:B2:EA:31:9B:04"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.focus",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "62:03:A4:73:BE:36:D6:4E:E3:7F:87:FA:50:0E:DB:C7:9E:AB:93:06:10:AB:9B:9F:A4:CA:7D:5C:1F:1B:4F:FC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.fennec_aurora",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "BC:04:88:83:8D:06:F4:CA:6B:F3:23:86:DA:AB:0D:D8:EB:CF:3E:77:30:78:74:59:F6:2F:B3:CD:14:A1:BA:AA"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.rocket",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "86:3A:46:F0:97:39:32:B7:D0:19:9B:54:91:12:74:1C:2D:27:31:AC:72:EA:11:B7:52:3A:A9:0A:11:BF:56:91"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.fenix",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "50:04:77:90:88:E7:F9:88:D5:BC:5C:C5:F8:79:8F:EB:F4:F8:CD:08:4A:1B:2A:46:EF:D4:C8:EE:4A:EA:F2:11"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.fenix.debug",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "BD:AE:82:02:80:D2:AF:B7:74:94:EF:22:58:AA:78:A9:AE:A1:36:41:7E:8B:C2:3D:C9:87:75:2E:6F:48:E8:48"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.focus.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "62:03:A4:73:BE:36:D6:4E:E3:7F:87:FA:50:0E:DB:C7:9E:AB:93:06:10:AB:9B:9F:A4:CA:7D:5C:1F:1B:4F:FC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.focus.nightly",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "62:03:A4:73:BE:36:D6:4E:E3:7F:87:FA:50:0E:DB:C7:9E:AB:93:06:10:AB:9B:9F:A4:CA:7D:5C:1F:1B:4F:FC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.klar",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "62:03:A4:73:BE:36:D6:4E:E3:7F:87:FA:50:0E:DB:C7:9E:AB:93:06:10:AB:9B:9F:A4:CA:7D:5C:1F:1B:4F:FC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "org.mozilla.reference.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "B0:09:90:E3:0F:9D:81:5D:2E:BC:7B:9B:B2:21:CE:47:E5:C9:D5:17:AA:C7:0E:7F:D5:95:B1:E5:3E:9A:4B:14"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx.canary",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "01:E1:99:97:10:A8:2C:27:49:B4:D5:0C:44:5D:C8:5D:67:0B:61:36:08:9D:0A:76:6A:73:82:7C:82:A1:EA:C9"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx.dev",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "01:E1:99:97:10:A8:2C:27:49:B4:D5:0C:44:5D:C8:5D:67:0B:61:36:08:9D:0A:76:6A:73:82:7C:82:A1:EA:C9"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "01:E1:99:97:10:A8:2C:27:49:B4:D5:0C:44:5D:C8:5D:67:0B:61:36:08:9D:0A:76:6A:73:82:7C:82:A1:EA:C9"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "01:E1:99:97:10:A8:2C:27:49:B4:D5:0C:44:5D:C8:5D:67:0B:61:36:08:9D:0A:76:6A:73:82:7C:82:A1:EA:C9"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx.rolling",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "32:A2:FC:74:D7:31:10:58:59:E5:A8:5D:F1:6D:95:F1:02:D8:5B:22:09:9B:80:64:C5:D8:91:5C:61:DA:D1:E0"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.microsoft.emmx.local",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "32:A2:FC:74:D7:31:10:58:59:E5:A8:5D:F1:6D:95:F1:02:D8:5B:22:09:9B:80:64:C5:D8:91:5C:61:DA:D1:E0"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.brave.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "9C:2D:B7:05:13:51:5F:DB:FB:BC:58:5B:3E:DF:3D:71:23:D4:DC:67:C9:4F:FD:30:63:61:C1:D7:9B:BF:18:AC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.brave.browser_beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "9C:2D:B7:05:13:51:5F:DB:FB:BC:58:5B:3E:DF:3D:71:23:D4:DC:67:C9:4F:FD:30:63:61:C1:D7:9B:BF:18:AC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.brave.browser_nightly",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "9C:2D:B7:05:13:51:5F:DB:FB:BC:58:5B:3E:DF:3D:71:23:D4:DC:67:C9:4F:FD:30:63:61:C1:D7:9B:BF:18:AC"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "app.vanadium.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C6:AD:B8:B8:3C:6D:4C:17:D2:92:AF:DE:56:FD:48:8A:51:D3:16:FF:8F:2C:11:C5:41:02:23:BF:F8:A7:DB:B3"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.vivaldi.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "E8:A7:85:44:65:5B:A8:C0:98:17:F7:32:76:8F:56:89:B1:66:2E:C4:B2:BC:5A:0B:C0:EC:13:8D:33:CA:3D:1E"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.vivaldi.browser.snapshot",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "E8:A7:85:44:65:5B:A8:C0:98:17:F7:32:76:8F:56:89:B1:66:2E:C4:B2:BC:5A:0B:C0:EC:13:8D:33:CA:3D:1E"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.vivaldi.browser.sopranos",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "E8:A7:85:44:65:5B:A8:C0:98:17:F7:32:76:8F:56:89:B1:66:2E:C4:B2:BC:5A:0B:C0:EC:13:8D:33:CA:3D:1E"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.citrix.Receiver",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "3D:D1:12:67:10:69:AB:36:4E:F9:BE:73:9A:B7:B5:EE:15:E1:CD:E9:D8:75:7B:1B:F0:64:F5:0C:55:68:9A:49"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "CE:B2:23:D7:77:09:F2:B6:BC:0B:3A:78:36:F5:A5:AF:4C:E1:D3:55:F4:A7:28:86:F7:9D:F8:0D:C9:D6:12:2E"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AA:D0:D4:57:E6:33:C3:78:25:77:30:5B:C1:B2:D9:E3:81:41:C7:21:DF:0D:AA:6E:29:07:2F:C4:1D:34:F0:AB"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.android.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C9:00:9D:01:EB:F9:F5:D0:30:2B:C7:1B:2F:E9:AA:9A:47:A4:32:BB:A1:73:08:A3:11:1B:75:D7:B2:14:90:25"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.sec.android.app.sbrowser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C8:A2:E9:BC:CF:59:7C:2F:B6:DC:66:BE:E2:93:FC:13:F2:FC:47:EC:77:BC:6B:2B:0D:52:C1:1F:51:19:2A:B8"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "34:DF:0E:7A:9F:1C:F1:89:2E:45:C0:56:B4:97:3C:D8:1C:CF:14:8A:40:50:D1:1A:EA:4A:C5:A6:5F:90:0A:42"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.sec.android.app.sbrowser.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C8:A2:E9:BC:CF:59:7C:2F:B6:DC:66:BE:E2:93:FC:13:F2:FC:47:EC:77:BC:6B:2B:0D:52:C1:1F:51:19:2A:B8"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "34:DF:0E:7A:9F:1C:F1:89:2E:45:C0:56:B4:97:3C:D8:1C:CF:14:8A:40:50:D1:1A:EA:4A:C5:A6:5F:90:0A:42"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.google.android.gms",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "7C:E8:3C:1B:71:F3:D5:72:FE:D0:4C:8D:40:C5:CB:10:FF:75:E6:D8:7D:9D:F6:FB:D5:3F:04:68:C2:90:50:53"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "D2:2C:C5:00:29:9F:B2:28:73:A0:1A:01:0D:E1:C8:2F:BE:4D:06:11:19:B9:48:14:DD:30:1D:AB:50:CB:76:78"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "F0:FD:6C:5B:41:0F:25:CB:25:C3:B5:33:46:C8:97:2F:AE:30:F8:EE:74:11:DF:91:04:80:AD:6B:2D:60:DB:83"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "19:75:B2:F1:71:77:BC:89:A5:DF:F3:1F:9E:64:A6:CA:E2:81:A5:3D:C1:D1:D5:9B:1D:14:7F:E1:C8:2A:FA:00"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AC:A4:05:DE:D8:B2:5C:B2:E8:C6:DA:69:42:5D:2B:43:07:D0:87:C1:27:6F:C0:6A:D5:94:27:31:CC:C5:1D:BA"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AC:A4:05:DE:D8:B2:5C:B2:E8:C6:DA:69:42:5D:2B:43:07:D0:87:C1:27:6F:C0:6A:D5:94:27:31:CC:C5:1D:BA"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser.alpha",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AC:A4:05:DE:D8:B2:5C:B2:E8:C6:DA:69:42:5D:2B:43:07:D0:87:C1:27:6F:C0:6A:D5:94:27:31:CC:C5:1D:BA"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser.corp",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AC:A4:05:DE:D8:B2:5C:B2:E8:C6:DA:69:42:5D:2B:43:07:D0:87:C1:27:6F:C0:6A:D5:94:27:31:CC:C5:1D:BA"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser.canary",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "1D:A9:CB:AE:2D:CC:C6:A5:8D:6C:94:7B:E9:4C:DB:B7:33:D6:5D:A4:D1:77:0F:A1:4A:53:64:CB:4A:28:EB:49"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.yandex.browser.broteam",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "1D:A9:CB:AE:2D:CC:C6:A5:8D:6C:94:7B:E9:4C:DB:B7:33:D6:5D:A4:D1:77:0F:A1:4A:53:64:CB:4A:28:EB:49"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.talonsec.talon",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "A3:66:03:44:A6:F6:AF:CA:81:8C:BF:43:96:A2:3C:CF:D5:ED:7A:78:1B:B4:A3:D1:85:03:01:E2:F4:6D:23:83"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "E2:A5:64:74:EA:23:7B:06:67:B6:F5:2C:DC:E9:04:5E:24:88:3B:AE:D0:82:59:9A:A2:DF:0B:60:3A:CF:6A:3B"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.talonsec.talon_beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "F5:86:62:7A:32:C8:9F:E6:7E:00:6D:B1:8C:34:31:9E:01:7F:B3:B2:BE:D6:9D:01:01:B7:F9:43:E7:7C:48:AE"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "9A:A1:25:D5:E5:5E:3F:B0:DE:96:72:D9:A9:5D:04:65:3F:49:4A:1E:C3:EE:76:1E:94:C4:4E:5D:2F:65:8E:2F"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.talonsec.intune.talon",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "09:0C:4C:E6:20:65:9B:04:00:35:8F:C8:3F:DC:9F:02:D2:AB:77:C3:7F:4C:80:14:30:8E:FF:96:BA:54:49:55"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.duckduckgo.mobile.android.debug",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C4:F0:9E:2B:D7:25:AD:F5:AD:92:0B:A2:80:27:66:AC:16:4A:C1:53:B3:EA:9E:08:48:B0:57:98:37:F7:6A:29"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.duckduckgo.mobile.android",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "BB:7B:B3:1C:57:3C:46:A1:DA:7F:C5:C5:28:A6:AC:F4:32:10:84:56:FE:EC:50:81:0C:7F:33:69:4E:B3:D2:D4"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.naver.whale",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "0B:8B:85:23:BB:4A:EF:FA:34:6E:4B:DD:4F:BF:7D:19:34:50:56:9A:A1:4A:AA:D4:AD:FD:94:A3:F7:B2:27:BB"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.fido.fido2client",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "FC:98:DA:E6:3A:D3:96:26:C8:C6:7F:BE:83:F2:F0:6F:74:93:2A:9C:D1:46:B9:2C:EC:FC:6A:04:7A:90:43:86"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.heytap.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "B2:9A:A0:BB:DC:9F:D9:DE:F5:5D:C5:6E:A7:D7:45:76:D5:84:6C:BC:F5:E5:AB:D3:05:E2:D9:31:9E:4F:42:AE"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "AF:F8:A7:49:CF:0E:7D:75:44:65:D0:FB:FA:7B:8D:0C:64:5E:22:5C:10:C6:E2:32:AD:A0:D9:74:88:36:B8:E5"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "A8:FE:A4:CA:FB:93:32:DA:26:B8:E6:81:08:17:C1:DA:90:A5:03:0E:35:A6:0A:79:E0:6C:90:97:AA:C6:A4:42"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.oplus.credential",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "E4:98:02:40:95:84:CE:53:15:2A:90:00:82:0A:51:E4:FA:8A:72:3B:7B:CC:26:3E:33:52:40:AC:F1:00:BF:9E"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.Island",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "D9:C3:39:AC:9C:3A:EE:E1:75:1D:85:8C:35:D9:BA:C5:CC:87:B3:CE:76:30:93:F0:F5:10:64:F5:A2:F6:9B:04"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.IslandCanary",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "90:17:13:23:45:6E:6F:39:CB:FD:CF:B2:56:BE:1D:CF:F3:BC:1C:59:8A:15:93:30:E4:97:73:D0:4C:B9:C9:05"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.IslandBeta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "35:31:83:1A:9E:2B:21:1D:E6:AA:C3:69:4B:45:83:6E:56:09:B9:D7:D0:04:C3:1B:21:87:40:FB:77:17:38:D1"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.IslandDev",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.island.intune",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "C2:38:24:15:41:20:A0:8F:C3:95:42:AC:D8:2A:E9:24:94:78:80:1E:47:FD:6C:66:2B:18:1C:28:CA:7E:59:4E"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.island.canary.intune",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "1E:16:74:BB:79:EA:09:FB:37:CF:9F:1B:07:1B:1D:51:8D:46:03:0E:D3:EE:F2:C1:4E:AD:93:9E:C6:EE:3A:4C"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.island.beta.intune",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "D2:5E:AD:F6:1C:E6:36:6C:A4:23:A4:7F:C4:DB:9B:8C:9C:8A:35:B4:B0:19:E8:D9:82:FB:D0:8A:D9:DB:49:5A"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "io.island.island.dev.intune",
++        "signatures": [
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "6C:65:BD:B0:33:F5:CE:B1:74:09:EF:F9:99:48:D5:58:9F:55:63:9A:63:78:D5:A5:00:EB:95:FC:01:BC:6D:44"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "net.quetta.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "BE:FE:E7:31:12:6A:A5:6E:7E:FD:AE:AF:5E:F3:FA:EA:44:1C:19:CC:E0:CA:EC:42:6B:65:BB:F8:2C:59:46:80"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "F1:38:00:4F:38:04:51:D4:8A:05:2B:B3:A3:EF:17:24:23:D4:B0:D0:C8:A3:AA:DD:FB:DB:66:30:31:48:EC:A4"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "cz.seznam.sbrowser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "DB:95:40:66:10:78:83:6E:4E:B1:66:F6:9E:F4:07:30:9E:8D:AE:33:34:68:5E:C8:F6:FA:2F:13:81:B9:AC:F6"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.opera.mini.native",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "57:AC:BC:52:5F:1B:2E:BD:19:19:6C:D6:F0:14:39:7C:C9:10:FD:18:84:1E:0A:E8:50:FE:BC:3E:1E:59:3F:F2"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.opera.mini.native.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "57:AC:BC:52:5F:1B:2E:BD:19:19:6C:D6:F0:14:39:7C:C9:10:FD:18:84:1E:0A:E8:50:FE:BC:3E:1E:59:3F:F2"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.zoho.primeum.stable",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "A9:D6:D0:A2:AF:DB:15:84:9B:8C:D3:1D:51:FE:73:B8:E1:B1:70:BA:A5:70:C2:F8:F2:A3:F8:65:28:29:CB:BD"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "ai.perplexity.comet",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "89:58:A4:05:40:1F:69:F5:B0:FB:54:44:24:74:6C:40:DE:C3:0C:09:1F:40:1F:95:1F:61:3C:48:35:C3:E5:EC"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "68:75:3A:54:59:93:C1:34:D3:BD:A3:72:2A:30:53:BF:4D:48:AD:23:63:2C:4E:27:8B:B3:BF:C1:FB:F6:52:8C"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.amazon.cloud9",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "2F:19:AD:EB:28:4E:B3:6F:7F:07:78:61:52:B9:A1:D1:4B:21:65:32:03:AD:0B:04:EB:BF:9C:73:AB:6D:76:25"
++          },
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "70:D5:68:EC:6A:E6:F3:38:BC:1A:63:99:A6:53:7E:E0:69:08:CA:1D:72:FB:8F:F0:48:74:AB:95:43:3B:25:0E"
++          },
++          {
++            "build": "userdebug",
++            "cert_fingerprint_sha256": "7C:AC:39:19:37:98:1B:61:34:BD:CE:1F:D9:83:4C:25:31:81:F5:AB:F9:1D:ED:60:78:21:0D:0F:91:AC:E3:60"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "net.waterfox.android.release",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "29:39:99:7A:2D:8F:07:30:3C:EB:37:AD:68:10:AF:EF:0B:DA:71:0B:E2:11:64:76:E3:52:5A:73:79:EC:2E:1A"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.opera.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "5D:6A:FB:F8:7F:65:2A:F0:46:47:AD:A0:DF:63:4C:F2:23:70:90:0B:16:4B:09:D5:0B:D2:3A:A2:CB:52:85:B8"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.opera.browser.beta",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "5D:6A:FB:F8:7F:65:2A:F0:46:47:AD:A0:DF:63:4C:F2:23:70:90:0B:16:4B:09:D5:0B:D2:3A:A2:CB:52:85:B8"
++          }
++        ]
++      }
++    },
++    {
++      "type": "android",
++      "info": {
++        "package_name": "com.wsapp.browser",
++        "signatures": [
++          {
++            "build": "release",
++            "cert_fingerprint_sha256": "F5:21:95:30:FC:8F:87:99:3B:3C:F5:0E:83:8A:96:75:AB:3B:2D:C5:79:A2:A8:52:0D:99:87:2A:26:B1:5C:5F"
++          }
++        ]
++      }
++    }
++  ]
++}
+diff --git a/app.plugin.js b/app.plugin.js
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..e7f8c9408b30d0a6d2389628c41ca3c18b8ded89 100644
+--- a/app.plugin.js
++++ b/app.plugin.js
+@@ -160,7 +160,7 @@ const extensionInfoPlist = ({
+ ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
+   <string>${biometricRequirement}</string>
+   <key>NSFaceIDUsageDescription</key>
+-  <string>Rocca uses Face ID to create and use passkeys.</string>
++  <string>${label} uses Face ID to create and use passkeys.</string>
+   <key>NSExtension</key>
+   <dict>
+     <key>ASCredentialProviderExtensionSupportedDomains</key>
+diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c28d90e4e1 100644
+--- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
++++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+@@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     do {
+       guard let store else {
+         self.store?.appendDiagnostic("missing wallet root-key state")
+-        showFailure("Wallet root key is not available. Open Rocca Wallet once, unlock it, then try again.")
++        showFailure("Wallet root key is not available. Open Pera Wallet once, unlock it, then try again.")
+         return
+       }
+ 
+@@ -309,7 +315,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy assertion start")
+-    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return
+@@ -407,7 +413,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy start")
+-    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return

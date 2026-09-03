@@ -213,7 +213,7 @@ export const usePeraWebviewInterface = (
                     const rawUrl = message.params!.url
                     // Normalize before the https-only gate so a bare domain
                     // typed into the Discover URL bar ("perawallet.app")
-                    // still opens [PERA-4553]; unsafe schemes stay rejected.
+                    // still opens; unsafe schemes stay rejected.
                     const url = toValidatedBrowserUrl(rawUrl)
                     if (!url) {
                         sendErrorToWebview(
@@ -548,7 +548,7 @@ export const usePeraWebviewInterface = (
                             sourceMetadata: metadata,
                             // Platform-observed origin — unlike sourceMetadata
                             // the page can't assert it, so it's what gates the
-                            // verification badge (PERA-4715).
+                            // verification badge.
                             verifiedOrigin: sourceUrl ?? undefined,
                             respondWithResult: result =>
                                 sendMessageToWebview(
@@ -750,7 +750,7 @@ export const usePeraWebviewInterface = (
                             transportId: message.id,
                             sourceMetadata: metadata,
                             // Platform-observed origin, not page-asserted —
-                            // gates the verification badge (PERA-4715).
+                            // gates the verification badge.
                             verifiedOrigin: sourceUrl ?? undefined,
                             data: [data],
                             approve: async (
@@ -1057,7 +1057,7 @@ export const usePeraWebviewInterface = (
                     if (__DEV__) {
                         // eslint-disable-next-line no-console
                         console.warn(
-                            `[webview-bridge] Unknown method "${method}" from ${security.sourceUrl ?? 'unknown origin'} — not part of the v3 contract (docs/DISCOVER_BRIDGE_CONTRACT.md)`,
+                            `[webview-bridge] Unknown method "${method}" from ${security.sourceUrl ?? 'unknown origin'} — not part of the v3 contract (docs/WEBVIEW_ARCHITECTURE.md)`,
                         )
                     }
                     sendErrorToWebview(

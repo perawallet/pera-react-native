@@ -14,7 +14,7 @@
 // untranspiled JSX/TS that vitest can't parse, so route tests through these.
 
 import React from 'react'
-// guardrails-ignore-next-line no-primitive-rn-components
+// lanekeep-ignore-next-line pera/no-primitive-rn-components reason: stub standing in for a third-party component must render the primitive it replaces
 import { ScrollView, View } from 'react-native'
 
 import type { ReactNode } from 'react'
@@ -73,7 +73,14 @@ export type KeyboardAvoidingViewProps = ViewProps & {
 export const KeyboardAvoidingView = ({
     children,
     style,
-}: KeyboardAvoidingViewProps) => <View style={style}>{children}</View>
+}: KeyboardAvoidingViewProps) => (
+    <View
+        style={style}
+        testID='keyboard-avoiding-view'
+    >
+        {children}
+    </View>
+)
 
 export const KeyboardController = {
     setInputMode: () => {},

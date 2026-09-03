@@ -97,7 +97,7 @@ export const useTransactionDetailsScreen =
             // Offline wins over a stale error: a device that goes offline
             // carrying a prior error (e.g. `timeout`) must show the offline
             // surface, not a dead Retry that just re-pauses. Mirrors the
-            // PERA-4581 charts contract (`isPaused || (isError && !online)`).
+            // charts contract (`isPaused || (isError && !online)`).
             if (detailQuery.isPaused || (detailQuery.isError && !hasInternet)) {
                 return { kind: 'offline' }
             }
@@ -134,7 +134,7 @@ export const useTransactionDetailsScreen =
         const handleRetry = useCallback(() => {
             // Offline: skip the doomed request (30 s timeout) — the offline
             // copy on screen already promises a refresh on reconnect. Matches
-            // the PERA-4581 charts retry so both offline surfaces behave alike.
+            // the charts retry so both offline surfaces behave alike.
             if (!useNetworkStatusStore.getState().hasInternet) {
                 return
             }

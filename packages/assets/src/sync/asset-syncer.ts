@@ -20,9 +20,11 @@ import {
     upsertAssets,
     upsertNodeAssets,
     getStaleOrMissingAssetIds,
+    getCollectibleIdsMissingUrl,
 } from '../db'
 
 import {
+    ARC19_COLLECTIBLE_RECHECK_TTL_MS,
     ASSET_BULK_CHUNK_SIZE,
     ASSET_CACHE_TTL_MS,
     ASSET_NEWLY_SEEN_WINDOW_MS,
@@ -92,6 +94,52 @@ const persistChainIntrinsics = async (
     await upsertNodeAssets({ items, network })
 }
 
+// Bounds one url-backfill pass. Urls are immutable on-chain, so each
+// collectible is looked up at most once ever; the cap only spreads a large
+// wallet's first pass over several sync ticks.
+const COLLECTIBLE_URL_BACKFILL_MAX_PER_PASS = 100
+
+/**
+ * One-time indexer lookup for held collectibles whose url the DB has never
+ * seen. The Pera bulk endpoint carries no url field, and the url is what
+ * identifies an ARC19 collectible (`template-ipfs://…`) to the mutable-media
+ * recheck below. A chain-confirmed absent url is stored as '' so the row is
+ * never re-asked; failed lookups stay NULL and retry next pass.
+ */
+async function backfillCollectibleUrls(
+    assetIds: string[],
+    network: Network,
+): Promise<void> {
+    const missing = await getCollectibleIdsMissingUrl({
+        assetIds,
+        network,
+        limit: COLLECTIBLE_URL_BACKFILL_MAX_PER_PASS,
+    })
+    if (missing.length === 0) return
+
+    const items: PeraAsset[] = []
+
+    for (const slice of partition(missing, INDEXER_ASSET_CONCURRENCY)) {
+        const settled = await Promise.allSettled(
+            slice.map(async assetId =>
+                transformIndexerAssetResponse(
+                    await fetchIndexerAssetDetails(assetId, network),
+                ),
+            ),
+        )
+
+        for (const result of settled) {
+            if (result.status === 'fulfilled') {
+                items.push({ ...result.value, url: result.value.url ?? '' })
+            }
+        }
+    }
+
+    if (items.length > 0) {
+        await upsertNodeAssets({ items, network })
+    }
+}
+
 /**
  * Bulk-fetches asset metadata for the given IDs and persists them to the
  * `assets_node` / `assets_pera` tables. Skips IDs that are already cached
@@ -105,6 +153,12 @@ export async function fetchAndPersistAssets(
     const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     if (nonAlgoIds.length === 0) return
 
+    // Pera-backed networks only: elsewhere persistChainIntrinsics already
+    // sources whole rows (url included) from the chain indexer.
+    if (isPeraBackedNetwork(network)) {
+        await backfillCollectibleUrls(nonAlgoIds, network)
+    }
+
     const toFetch = await getStaleOrMissingAssetIds({
         assetIds: nonAlgoIds,
         network,
@@ -113,6 +167,7 @@ export async function fetchAndPersistAssets(
             ttlMs: ASSET_RECLASSIFY_TTL_MS,
             windowMs: ASSET_NEWLY_SEEN_WINDOW_MS,
         },
+        recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
     })
     if (toFetch.length === 0) return
 

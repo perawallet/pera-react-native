@@ -35,7 +35,7 @@ const migrations: MigrationConfig = {
     // Nullable on purpose: rows cached before this column stay NULL, which
     // reads as "not newly seen" and keeps them on the long asset TTL.
     '0005_add_assets_pera_first_seen_at': m0005,
-    // Submission ledger (PERA-4588): one row per broadcast attempt, written
+    // Submission ledger: one row per broadcast attempt, written
     // before the POST and resolved by confirmation / rejection / reconciler.
     '0006_add_submission_attempts': m0006,
 }

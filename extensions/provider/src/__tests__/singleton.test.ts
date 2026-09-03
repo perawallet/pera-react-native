@@ -170,9 +170,10 @@ describe('provider singleton', () => {
             seedReactiveStore([{ id: 'a' }])
             keystoreMocks.storageGetAllKeys.mockReturnValue([])
 
-            await reconcileKeystore()
+            const result = await reconcileKeystore()
 
             expect(getKeystoreStore().state.keys).toEqual([{ id: 'a' }])
+            expect(result).toEqual({ failedIds: [] })
         })
 
         // Material lives under `m/` and only metadata under `k/`; reading the
@@ -180,7 +181,7 @@ describe('provider singleton', () => {
         test('reads only the k/ bucket, stripped of its prefix', async () => {
             keystoreMocks.storageGetAllKeys.mockReturnValue(['m/a', 'k/a'])
             keystoreMocks.storageGetString.mockImplementation((key: string) =>
-                key === 'k/a' ? 'meta-a' : 'sealed-a',
+                key === 'k/a' ? '{"meta":"a"}' : 'sealed-a',
             )
             keystoreMocks.decode.mockReturnValue({
                 id: 'a',
@@ -191,7 +192,7 @@ describe('provider singleton', () => {
             await reconcileKeystore()
 
             expect(keystoreMocks.decode).toHaveBeenCalledExactlyOnceWith(
-                'meta-a',
+                '{"meta":"a"}',
             )
             expect(getKeystoreStore().state.keys).toEqual([
                 { id: 'a', type: 'hd-derived-p256', algorithm: 'P256' },
@@ -211,10 +212,10 @@ describe('provider singleton', () => {
             ])
             keystoreMocks.storageGetAllKeys.mockReturnValue(['k/a', 'k/b'])
             keystoreMocks.storageGetString.mockImplementation(
-                (key: string) => `meta-${key}`,
+                (key: string) => `{"record":"${key}"}`,
             )
             keystoreMocks.decode.mockImplementation((raw: string) =>
-                raw === 'meta-k/a'
+                raw === '{"record":"k/a"}'
                     ? {
                           id: 'a',
                           type: 'hd-derived-p256',
@@ -248,12 +249,9 @@ describe('provider singleton', () => {
             expect(keys.some(k => k.id === 'b')).toBe(true)
         })
 
-        test('skips entries that fail to decode and keeps the rest', async () => {
-            const consoleError = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
+        test('skips entries that fail to decode, keeps the rest, and reports the failures', async () => {
             keystoreMocks.storageGetAllKeys.mockReturnValue(['k/good', 'k/bad'])
-            keystoreMocks.storageGetString.mockReturnValue('meta')
+            keystoreMocks.storageGetString.mockReturnValue('{"meta":true}')
             keystoreMocks.decode.mockImplementationOnce(() => ({
                 id: 'good',
                 type: 'algo25',
@@ -263,13 +261,12 @@ describe('provider singleton', () => {
                 throw new Error('decode failed')
             })
 
-            await reconcileKeystore()
+            const result = await reconcileKeystore()
 
             const keys = getKeystoreStore().state.keys as Array<{ id: string }>
             expect(keys).toHaveLength(1)
             expect(keys[0].id).toBe('good')
-            expect(consoleError).toHaveBeenCalled()
-            consoleError.mockRestore()
+            expect(result.failedIds).toEqual(['k/bad'])
         })
     })
 })

@@ -201,7 +201,7 @@ export type GetOpenSubmissionAttemptsForIntentParams = {
 /**
  * Open attempts of the same logical operation (same sender + intent key) —
  * the overlap a rebuild/retry must refuse while the earlier attempt is
- * still unresolved (PERA-4588).
+ * still unresolved.
  */
 export const getOpenSubmissionAttemptsForIntent = async ({
     db = getDatabase(),

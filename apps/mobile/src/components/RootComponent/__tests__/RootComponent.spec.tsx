@@ -24,7 +24,7 @@ import { RootComponent } from '../RootComponent'
 import { useAutoLockListener } from '@modules/security/components/AutoLockGuard/useAutoLockListener'
 import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLockScreen'
 
-// PERA-4870: PromptContainer (T&C re-acceptance, PIN setup) must render
+// PromptContainer (T&C re-acceptance, PIN setup) must render
 // (a) inside RootContentContainer, above the navigator, and (b) inside
 // AutoLockGuard's children so the lock overlay hides it. A JSX reorder that
 // moves it outside AutoLockGuard would silently reintroduce the orphaned
@@ -198,7 +198,7 @@ describe('RootComponent PromptContainer mount point', () => {
 
         // No display delay for a gate. It holds bottom-sheet presentation from
         // the moment it is due, so waiting would leave a window where the app
-        // looks usable but silently discards sheets (PERA-4874). The reveal
+        // looks usable but silently discards sheets. The reveal
         // animation carries the beat the delay used to.
         expect(screen.getByTestId('terms-acceptance-prompt')).toBeTruthy()
     })

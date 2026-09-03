@@ -98,7 +98,7 @@ export const installWcApprovalRouter = ({
                     .then(decision => {
                         // A WC v1 handshake is completed with approveSession /
                         // rejectSession, NOT with the deliver channel's
-                        // approveRequest — and after Task 10 no UI surface owns a
+                        // approveRequest — and no UI surface owns a
                         // connector, so only the offscreen host can make those
                         // calls. Route the decision to it as its own control kind.
                         if (decision) {

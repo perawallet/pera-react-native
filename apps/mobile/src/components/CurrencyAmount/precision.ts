@@ -25,13 +25,13 @@ export const PREFERRED_MAX_PRECISION = 6
  * of value it is rendering, never raw digit counts:
  * - `noDecimal` — whole units / counts (e.g. NFT quantity): 0 dp.
  * - `compact` — a dense list/row or a summary total, asset OR preferred: a fixed
- *   {@link DEFAULT_PRECISION} dp, extended only for amounts that would
- *   otherwise round to zero (see {@link resolveCompactPrecision}).
+ * {@link DEFAULT_PRECISION} dp, extended only for amounts that would
+ * otherwise round to zero (see {@link resolveCompactPrecision}).
  * - `assetFull` — an asset amount on a detail surface: trims
- *   {@link DEFAULT_PRECISION} → the asset's own `decimals`. Collectibles /
- *   0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
+ * {@link DEFAULT_PRECISION} → the asset's own `decimals`. Collectibles /
+ * 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
  * - `preferredFull` — a preferred-currency value (fiat or ALGO) on a detail surface:
- *   trims {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp.
+ * trims {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp.
  */
 export type PrecisionVariant =
     | 'noDecimal'
@@ -48,8 +48,8 @@ export type ResolvedPrecision = {
 
 /**
  * Normally {@link DEFAULT_PRECISION}, but a nonzero amount that rounds to 0.00
- * there reads as nothing at all — a 0.004 ALGO fee showed as "0.00" in History
- * (PERA-4973). Those extend to their first significant digit: `Decimal.e` is
+ * there reads as nothing at all — a 0.004 ALGO fee showed as "0.00" in History.
+ * Those extend to their first significant digit: `Decimal.e` is
  * that digit's base-10 exponent (0.004 → -3), so negating it gives its place.
  */
 const resolveCompactPrecision = (value: Maybe<Decimal>): number => {

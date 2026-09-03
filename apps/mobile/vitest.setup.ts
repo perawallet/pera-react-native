@@ -35,6 +35,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi
                 .fn()
@@ -140,6 +141,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi
                 .fn()
@@ -479,6 +481,15 @@ vi.mock('@components/core', () => {
                 : null,
         PWDivider: () =>
             React.createElement('hr', { 'data-testid': 'PWDivider' }),
+        // Passthrough: the drawer panel is closed in every flow test, and
+        // rendering its content anyway would put a second copy of the account
+        // list into the tree for screen queries to trip over.
+        PWDrawer: ({ children }: any) => children,
+        // Renders every page inline, matching the react-native-pager-view mock
+        // it replaced — flow tests reach across pages (fund form, then history)
+        // without driving a swipe.
+        PWPager: ({ children }: any) =>
+            React.createElement('div', { 'data-testid': 'PWPager' }, children),
         PWHeader: ({ title, children, testID, ...props }: any) =>
             React.createElement(
                 'div',
@@ -1941,8 +1952,31 @@ vi.mock('react-native-gesture-handler', () => {
         Simultaneous: (...gestures: any[]) => gestures[0],
         Exclusive: (...gestures: any[]) => gestures[0],
     }
+    // The v3 hook API. PWPager uses it so nested swipeables can reference its
+    // handler tag, which the deprecated builder only assigns on attach — too
+    // late for a descendant to read. A stable object is all the tree needs here.
+    let nextHandlerTag = 1
+    const createHookGesture = () => ({
+        handlerTag: nextHandlerTag++,
+        type: 'PanGestureHandler',
+        config: {},
+        gestureRelations: {
+            simultaneousHandlers: [],
+            waitFor: [],
+            blocksHandlers: [],
+        },
+    })
+
     return {
         Gesture,
+        usePanGesture: createHookGesture,
+        useNativeGesture: createHookGesture,
+        useTapGesture: createHookGesture,
+        // Composition: PWPager runs one pan per direction so nested content can
+        // defer only the direction it needs. The tree just needs a gesture back.
+        useCompetingGestures: (...gestures: any[]) => gestures[0],
+        useExclusiveGestures: (...gestures: any[]) => gestures[0],
+        useSimultaneousGestures: (...gestures: any[]) => gestures[0],
         GestureDetector: ({ children }: any) => children,
         GestureHandlerRootView: MockView,
         Swipeable: MockView,
@@ -2369,6 +2403,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/utils/bytes')
     >('../../packages/shared/src/utils/bytes')
 
+    // Same reasoning again: expected.ts only imports the AppError type from
+    // base.ts, so pulling in the real classifier is side-effect free. Its
+    // `instanceof AppError` check targets the real class, not this mock's
+    // hand-rolled one, but every caller here has already exhausted the
+    // AppError/SubmissionError/NoConnectionError branches by the time it is
+    // reached, so it only ever sees plain Errors.
+    const { isExpectedError } = await vi.importActual<
+        typeof import('../../packages/shared/src/errors/expected')
+    >('../../packages/shared/src/errors/expected')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -2773,6 +2817,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         mutationDefaults: { throwOnError: false, networkMode: 'always' },
         assertOnline: vi.fn(),
         NoConnectionError,
+        isExpectedError,
     }
 })
 
@@ -2852,6 +2897,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
         useProvidersQuery: vi.fn(() => ({ data: [] })),
+        useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
 
@@ -3428,6 +3474,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_duress_pin: 'enable_duress_pin',
         onramp_currency_decimals: 'onramp_currency_decimals',
         enable_quantum_accounts: 'enable_quantum_accounts',
+        enable_quantum_swap: 'enable_quantum_swap',
         enable_gift_cards: 'enable_gift_cards',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PERA-4588 AC3 — kill-after-submit reconnect. The real submit chokepoint
+// Kill-after-submit reconnect. The real submit chokepoint
 // writes the ledger row before the algod POST; a relaunch offline surfaces it
 // as a "Pending — verifying" history row; a relaunch online reconciles it to
 // confirmed and the synced transaction appears exactly once.

@@ -75,11 +75,11 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
             label={
                 isPay ? t('onramp.form.you_pay') : t('onramp.form.you_receive')
             }
-            amountSize='h1'
+            amountSize='h2'
             amount={
                 isPay ? (
                     <PWInput
-                        variant='h1'
+                        variant='h2'
                         value={inputValue}
                         onChangeText={handleTextChange}
                         keyboardType='decimal-pad'
@@ -95,7 +95,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 ) : isReceiveLoading ? (
                     <PWSkeleton
                         width={120}
-                        height={40}
+                        height={28}
                     />
                 ) : (
                     <PWText

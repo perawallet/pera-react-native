@@ -26,7 +26,7 @@ import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
 import { ImportAccountOptionsScreen } from '@modules/onboarding/screens/ImportAccountOptionsScreen/ImportAccountOptionsScreen'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
-describe('quantum flag off (PQ-015)', () => {
+describe('quantum flag off', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
         server.resetHandlers()

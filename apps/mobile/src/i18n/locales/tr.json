@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "Uygulama başlatılamadı",
             "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
-            "retry": "Tekrar dene"
+            "retry": "Tekrar dene",
+            "keystore": {
+                "title": "Cüzdan verisi hatası",
+                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların Algorand blok zincirinde güvende."
+            }
         }
     },
     "asset_sort": {
@@ -162,6 +166,8 @@
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
             "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
             "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
+            "body_keyreg_cannot_sign": "Bu hesap Pera’da işlem imzalayamaz. Kayıt işlemi için hesabın özel anahtarı gerekir, yalnızca izleme kopyası yeterli değildir.",
+            "body_keyreg_network_mismatch": "Bu kayıt, cüzdanının bağlı olduğu ağdan farklı bir Algorand ağı için. Ağı değiştir ve yeniden tara.",
             "title_recover": "Hesap içe aktarılamadı",
             "body_recover": "Hesabı bu QR kodundan içe aktaramadık.",
             "body_recover_duplicate": "Bu hesap cüzdanında zaten var.",
@@ -369,6 +375,9 @@
         "rekey_option_ledger_description": "İşlemler Ledger cihazında yetkilendirilecek.",
         "rekey_option_standard_title": "Bir standart hesaba",
         "rekey_option_standard_description": "İşlemler cüzdanındaki başka bir hesap tarafından yetkilendirilecek.",
+        "rekey_option_quantum_title": "Bir Quantum hesabına",
+        "rekey_option_quantum_description": "İşlemler cüzdanındaki bir Quantum hesabı tarafından yetkilendirilecek.",
+        "rekey_option_quantum_badge": "YENİ",
         "export_share_account": "Hesabı dışa aktar/paylaş",
         "scan_rekeyed": "Rekey yapılmış hesapları tara",
         "rename_account": "Hesabı yeniden adlandır",
@@ -1302,7 +1311,9 @@
     },
     "notifications": {
         "empty_title": "Şu anda bildirim yok",
-        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek"
+        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek",
+        "unavailable_title": "Bildirimler kullanılamıyor",
+        "unavailable_body": "Bu cihazda bildirimler ayarlanamadı. İzinlerini ve bağlantını kontrol edip tekrar dene."
     },
     "messages": {
         "tabs": {
@@ -1453,6 +1464,9 @@
         },
         "pending_signatures": {
             "title": "Bekleyen imzalar",
+            "title_submitting": "İşlem gönderiliyor",
+            "title_success": "İşlem tamamlandı",
+            "title_failure": "İşlem tamamlanmadı",
             "x_of_y": "{{signed}} / {{total}} imzalandı",
             "time_left": "≈ {{time}} kaldı",
             "accounts_heading": "Hesaplar",
@@ -1862,12 +1876,13 @@
         "to_standard": {
             "intro": {
                 "title": "Standart hesaba rekey yap",
-                "body": "Bu hesap için işlemleri imzalamak üzere başka bir hesabın özel anahtarını kullan.",
+                "body": "Rekey, bu hesabın gelecekteki işlemlerini imzalamak için yeni bir anahtar atar; fonlar taşınmaz, adres değişmez.",
                 "learn_more": "Daha fazla bilgi",
                 "expect_label": "Ne olacak",
-                "expect_1": "Gelecekteki işlemler yalnızca yetki verilen hesap tarafından imzalanabilir.",
-                "expect_2": "Bu hesap artık işlem imzalayamayacak.",
-                "expect_3": "Hesabının açık anahtarı, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_1": "Bu hesabın gelecekteki işlemleri yalnızca yeni hesabın anahtarıyla imzalanabilir.",
+                "expect_2": "Devam etmeden önce o hesabın kurtarma ifadesini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
+                "expect_3": "Hesabının adresi, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_4": "Bu hesabı daha sonra kapatırsan rekey kaldırılır. Adrese yeniden fon gönderildiğinde kontrol, şimdi ayarladığın hesaba değil orijinal anahtara döner.",
                 "cta": "Süreci başlat"
             },
             "select": {
@@ -1878,6 +1893,44 @@
             "confirm": {
                 "title": "Rekey işlemini onayla",
                 "body": "Bu hesabı başka bir yetkili adrese rekey yapmak üzeresin. Yeni adres, bu hesap adına işlem imzalayabilecek.",
+                "learn_more": "Daha fazla bilgi",
+                "summary_label": "Rekey özeti",
+                "current_auth_label": "Şu anda rekey yapıldığı adres",
+                "fee_label": "İşlem ücreti",
+                "cta": "Onayla",
+                "replace_warning": {
+                    "title": "Önceki rekey’in değiştirilecek",
+                    "body": "<0>{{currentAuth}}</0>, artık <1>{{source}}</1> için işlem imzalama yetkisine sahip olmayacak. Devam etmeden önce bunun sonuçlarını anladığından emin ol. <2>Daha fazla bilgi</2>",
+                    "confirm": "Onayla",
+                    "cancel": "İptal"
+                }
+            },
+            "success": {
+                "title": "Hesaba başarıyla rekey yapıldı",
+                "body": "<0>{{source}}</0> hesabına başarıyla rekey yapıldı.",
+                "cta": "Bitti"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Quantum hesabına rekey yap",
+                "body": "Rekey, bu hesabın gelecekteki işlemlerini imzalamak için yeni bir anahtar atar; fonlar taşınmaz, adres değişmez.",
+                "learn_more": "Daha fazla bilgi",
+                "expect_label": "Ne olacak",
+                "expect_1": "Bu hesabın gelecekteki işlemleri yalnızca Quantum hesabının post-kuantum anahtarıyla imzalanabilir.",
+                "expect_2": "Devam etmeden önce o hesabın 25 kelimelik kurtarma ifadesini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
+                "expect_3": "Hesabının adresi, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_4": "Gelecekteki işlemler daha yüksek bir minimum ağ ücreti ödeyecek ve daha sonra standart bir hesaba geri rekey yapmak da kuantum imzalı bir işlem gerektirecek.",
+                "cta": "Süreci başlat"
+            },
+            "select": {
+                "title": "Quantum hesabı seç",
+                "subtitle": "Rekey yapmak istediğin Quantum hesabını seç. Burada seçtiğin hesap, kaynak hesabın tüm işlemlerini imzalamaktan sorumlu olacak.",
+                "empty": "Quantum hesabı bulunamadı. Önce bir Quantum hesabı oluştur veya içe aktar."
+            },
+            "confirm": {
+                "title": "Rekey işlemini onayla",
+                "body": "Bu hesabı bir Quantum hesabına rekey yapmak üzeresin. Yeni adres, bu hesap adına işlem imzalayabilecek.",
                 "learn_more": "Daha fazla bilgi",
                 "summary_label": "Rekey özeti",
                 "current_auth_label": "Şu anda rekey yapıldığı adres",
@@ -2110,7 +2163,8 @@
             "confirm": "Yeniden aç",
             "cancel": "Şimdi değil",
             "unavailable_title": "Biyometri kullanılamıyor",
-            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin."
+            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin.",
+            "body_not-available": "Cihazınızda Pera için ayarlanmış bir biyometri olmadığından biyometrik kilit açma çalışmıyor. Cihaz ayarlarınızdan bir tane ayarlayın, ardından burada yeniden açın."
         }
     },
     "send_funds": {
@@ -2376,6 +2430,8 @@
             "biometric_error_message": "Kimliğini doğrulayamadık. Lütfen tekrar dene.",
             "biometric_weak_title": "Daha güçlü biyometri gerekli",
             "biometric_weak_message": "Pera, cüzdanının kilidini açmak için parmak izi ya da başka güçlü bir biyometri gerektirir. Cihazının biyometri ayarlarından bir parmak izi ekle, sonra bunu yeniden aç.",
+            "biometric_unconfirmed_title": "Önce cihazının kilidini aç",
+            "biometric_unconfirmed_message": "Cihazının biyometrisi kilitli. Biyometriyi geri getirmek için cihazının kilidini parolanla aç, sonra bunu yeniden aç.",
             "advanced_security_settings": "Gelişmiş güvenlik ayarları",
             "enable_asset_freeze_support": "Varlık dondurma desteğini etkinleştir",
             "enable_asset_freeze_support_description": "Bunu etkinleştirdiğinde, hesaplardaki varlıkları donduran veya dondurmayı kaldıran işlem isteklerini onaylayabilirsin. Bu, hedef hesabın belirtilen varlıkla işlem yapmasını engelleyebilir.",
@@ -2596,6 +2652,7 @@
             "app_call": "Uygulama çağrısı",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster"
         },
@@ -2656,6 +2713,9 @@
             "title": "Desteklenmeyen işlem türü",
             "body": "Bu işlem türü desteklenmiyor."
         },
+        "state_proof": {
+            "body": "Ağ, diğer zincirlerin Algorand bloklarını doğrulayabilmesi için bir State Proof yayımladı."
+        },
         "asset_transfer": {
             "clawback_from": "Clawback yapılan adres"
         },
@@ -2683,6 +2743,7 @@
             "key_dilution": "Key dilution",
             "participation_key": "Katılım anahtarı",
             "selection_key": "Seçim anahtarı",
+            "state_proof_key": "State proof anahtarı",
             "status": "Kayıt durumu",
             "online": "Çevrimiçi",
             "offline": "Çevrimdışı"
@@ -2890,6 +2951,8 @@
         "execution": {
             "error_title": "Swap başarısız",
             "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "insufficient_algo_title": "Yetersiz ALGO",
+            "insufficient_algo_body": "Bu hesapta bu swap işlemini, ücretleri ve minimum bakiyeyi karşılamak için en az {{amount}} ALGO daha gerekiyor. Daha fazla ALGO ekle ve tekrar dene.",
             "success_title": "Swap tamamlandı",
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
             "user_rejected": "Swap iptal edildi",

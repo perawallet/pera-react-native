@@ -211,7 +211,7 @@ export const resolveSwapHandoffOutcome = async ({
                         // An unknown-outcome failure on a later group must
                         // carry the earlier groups' txids too — the retained
                         // handoff records the union so reconciliation matches
-                        // every group that may have landed (PERA-4588).
+                        // every group that may have landed.
                         if (
                             error instanceof SubmissionError &&
                             error.classification === 'unknown-outcome'

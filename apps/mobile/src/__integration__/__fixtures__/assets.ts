@@ -89,7 +89,7 @@ export const NFT_TEST_ASSET_2: PeraAsset = {
     },
 }
 
-// Third collectible for the fresh-opt-in scenario (PERA-4845): highest asset
+// Third collectible for the fresh-opt-in scenario: highest asset
 // id, alphabetically between the other two, so a three-way expected order can
 // be unique to opt-in data rather than id or title order.
 export const NFT_TEST_ASSET_3_ID = '88888882'

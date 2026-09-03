@@ -673,9 +673,13 @@ export default defineConfig({
                     // production icons) and is NOT under src/. It ran on the
                     // default glob until this include was added for the browser
                     // entry above — keep it listed or those specs go unrun.
+                    // `plugins/__tests__/` needs its own entry for the same
+                    // reason: it is a sibling of `__tests__/`, not a child, so
+                    // the config-plugin specs matched nothing and never ran.
                     include: [
                         'src/**/*.{test,spec}.{ts,tsx}',
                         '__tests__/**/*.{test,spec}.{ts,tsx}',
+                        'plugins/__tests__/**/*.{test,spec}.{ts,tsx}',
                         '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
                     ],
                     exclude: [

@@ -10,23 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useIsFocused } from '@react-navigation/native'
-import PagerView from 'react-native-pager-view'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    canSignWith,
-    useAllAccounts,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import {
+    AccountDrawerPager,
+    useAccountDrawerPickerKind,
+    useSigningPicker,
+} from '@modules/accounts/components/AccountDrawer'
 import {
     OnrampCountryChip,
     OnrampForm,
@@ -38,10 +37,6 @@ import { useHasPendingRampOrders } from '@modules/onramp/hooks/useHasPendingRamp
 import { useStyles } from './styles'
 import { useOnrampScreen } from './useOnrampScreen'
 
-const ACCOUNT_TRIGGER_ICON_PROPS = { size: 'sm' } as const
-const ACCOUNT_TRIGGER_CHEVRON_PROPS = { size: 'sm' } as const
-const ACCOUNT_TRIGGER_TEXT_PROPS = { variant: 'body' } as const
-
 // Pager page order mirrors the header tab order.
 const TAB_PAGES: OnrampTab[] = ['fund', 'history']
 
@@ -50,11 +45,6 @@ export const OnrampScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { network } = useNetwork()
-    const accounts = useAllAccounts()
-    const onrampAccountFilter = useCallback(
-        (account: WalletAccount) => canSignWith(account, accounts),
-        [accounts],
-    )
     const {
         isReady,
         pairsState,
@@ -68,26 +58,25 @@ export const OnrampScreen = () => {
         handleRetryPairs,
     } = useOnrampScreen()
 
-    const pagerRef = useRef<PagerView>(null)
     const hasPendingHistory = useHasPendingRampOrders()
     // The screen stays mounted in the navigator after navigating away, so tab
     // state alone would keep the history poll alive off-screen.
     const isFocused = useIsFocused()
 
-    // Header tap drives the pager; the pager's onPageSelected then syncs the
-    // active tab back (so swiping updates the header too).
-    const handleHeaderTabChange = useCallback((tab: OnrampTab) => {
-        pagerRef.current?.setPage(TAB_PAGES.indexOf(tab))
-    }, [])
+    // Above the mainnet gate below: these are hooks, so they must run on every
+    // render. One definition behind the drawer and the sheet fallback alike.
+    const accountPicker = useSigningPicker()
+    useAccountDrawerPickerKind('select')
 
-    const handleNavigateToHistory = useCallback(() => {
-        pagerRef.current?.setPage(TAB_PAGES.indexOf('history'))
-    }, [])
+    // The pager is controlled off the active tab, so the header and a swipe are
+    // two ways of setting the same value rather than two sources of truth.
+    const handleNavigateToHistory = useCallback(
+        () => handleTabChange('history'),
+        [handleTabChange],
+    )
 
-    const handlePageSelected = useCallback(
-        (event: { nativeEvent: { position: number } }) => {
-            handleTabChange(TAB_PAGES[event.nativeEvent.position])
-        },
+    const handleIndexChange = useCallback(
+        (pageIndex: number) => handleTabChange(TAB_PAGES[pageIndex]),
         [handleTabChange],
     )
 
@@ -112,50 +101,23 @@ export const OnrampScreen = () => {
         >
             <PWView style={styles.header}>
                 <PWView style={styles.headerRow}>
+                    <AccountSelection {...accountPicker} />
                     <OnrampCountryChip
                         countryCode={region?.countryCode}
                         onInfoPress={handleRegionInfoPress}
-                    />
-                    <AccountSelection
-                        accountFilter={onrampAccountFilter}
-                        triggerStyle={styles.accountTrigger}
-                        triggerIconProps={ACCOUNT_TRIGGER_ICON_PROPS}
-                        triggerChevronProps={ACCOUNT_TRIGGER_CHEVRON_PROPS}
-                        triggerTextProps={ACCOUNT_TRIGGER_TEXT_PROPS}
-                        hideDefaultHeader
-                        headerContent={
-                            <PWView style={styles.selectHeader}>
-                                <PWText
-                                    variant='h1'
-                                    style={styles.selectTitle}
-                                    truncate
-                                >
-                                    {t('account_menu.select_title')}
-                                </PWText>
-                                <PWText
-                                    style={styles.selectDescription}
-                                    numberOfLines={2}
-                                    ellipsizeMode='tail'
-                                >
-                                    {t('account_menu.select_description')}
-                                </PWText>
-                            </PWView>
-                        }
                     />
                 </PWView>
 
                 <OnrampHeaderTabs
                     activeTab={activeTab}
-                    onTabChange={handleHeaderTabChange}
+                    onTabChange={handleTabChange}
                     badges={{ history: hasPendingHistory }}
                 />
             </PWView>
 
-            <PagerView
-                ref={pagerRef}
-                style={styles.pager}
-                initialPage={0}
-                onPageSelected={handlePageSelected}
+            <AccountDrawerPager
+                index={TAB_PAGES.indexOf(activeTab)}
+                onIndexChange={handleIndexChange}
             >
                 <PWView
                     key='fund'
@@ -191,7 +153,7 @@ export const OnrampScreen = () => {
                         isActive={activeTab === 'history' && isFocused}
                     />
                 </PWView>
-            </PagerView>
+            </AccountDrawerPager>
         </PWView>
     )
 }

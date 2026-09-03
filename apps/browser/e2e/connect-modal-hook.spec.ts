@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// P2 Task 8: the end-to-end proof of the connect-modal-hook feature — a page
+// The end-to-end proof of the connect-modal-hook feature: a page
 // that renders its OWN @perawallet/connect QR modal (with no extension
 // transport of its own) still gets an injected "Connect With Pera Extension"
 // row, and clicking it carries a REAL WalletConnect v1 handshake from the

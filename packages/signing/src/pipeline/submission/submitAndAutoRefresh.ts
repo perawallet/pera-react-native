@@ -80,7 +80,7 @@ export interface SubmitAndAutoRefreshCoreInput {
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTransaction[]
     /**
-     * Submission-ledger metadata (PERA-4588). The ledger row is written
+     * Submission-ledger metadata. The ledger row is written
      * before the POST and resolved on the definitive outcome; with no
      * metadata the row is written with the generic flow (best-effort txid
      * match only). `db` defaults to the app singleton — injectable for tests.
@@ -96,7 +96,7 @@ export interface SubmitAndAutoRefreshCoreInput {
 /**
  * Optional submission-ledger metadata for {@link submitAndAutoRefresh} —
  * the flow's identity so a rebuild/retry can be matched against an earlier
- * unresolved attempt (PERA-4588). Defaults to the generic flow.
+ * unresolved attempt. Defaults to the generic flow.
  */
 export type SubmitAndAutoRefreshOptions = {
     flow?: SubmissionFlow
@@ -119,9 +119,8 @@ export type SubmitAndAutoRefreshOptions = {
  * `encodeSignedTransaction` emits the node-ready bytes the same way it does
  * for any other transaction, and a quantum-signed group broadcasts through
  * the same path. It therefore reaches the chain only on a `pqsig`-capable
- * node, and no algod available today is one — mainnet, testnet and LocalNet
- * alike reject `pqsig` at submit, so a quantum-signed group cannot currently
- * be confirmed anywhere. See `docs/QUANTUM_PQ_INTEGRATION.md`.
+ * node: public networks and a default LocalNet reject `pqsig` at submit. See
+ * `pnpm localnet:quantum-check` for the node image and genesis that accept it.
  *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
@@ -140,7 +139,7 @@ export const submitAndAutoRefreshCore = async (
         // A submit failure with no node verdict is ambiguous: the bytes may
         // already be in the pool (lost response, timeout). Check the chain
         // before letting "failed" propagate — this is exactly the case where
-        // the report would be a lie (PERA-4896).
+        // the report would be a lie.
         if (
             !(error instanceof SubmissionError) ||
             error.classification !== 'unknown-outcome' ||
@@ -190,7 +189,7 @@ export const submitAndAutoRefreshCore = async (
 }
 
 /**
- * Writes the durable submission-attempt row before the POST (PERA-4588).
+ * Writes the durable submission-attempt row before the POST.
  * Txids and the validity window come from the decoded signed txns — no chain
  * round-trip — and the row is skipped only when no txid can be derived.
  */

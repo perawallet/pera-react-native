@@ -33,7 +33,7 @@ const authAccount: WalletAccount = {
     keyPairId: 'key-auth',
 } as unknown as WalletAccount
 
-/** The PERA-4977 shape: rekeyed on chain, no local key of its own. */
+/** The shape: rekeyed on chain, no local key of its own. */
 const keylessRekeyedSigner: WalletAccount = {
     type: 'watch',
     address: PARTICIPANT,

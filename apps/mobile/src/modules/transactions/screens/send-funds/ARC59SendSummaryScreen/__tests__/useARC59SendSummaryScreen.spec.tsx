@@ -141,7 +141,7 @@ const mockSummary = {
     inner_tx_count: 4,
     // Decoy: the amount actually signed is algo_fund_amount + MBR = 300_000.
     // total_protocol_and_mbr_fee is a DIFFERENT field the signature never uses;
-    // display/pre-check must ignore it (PERA-4710), so a fee of 0.3 (not 0.004)
+    // display/pre-check must ignore it, so a fee of 0.3 (not 0.004)
     // proves the value comes from the signed fields.
     total_protocol_and_mbr_fee: 4000,
     inbox_address: 'INBOXADDR',
@@ -259,6 +259,20 @@ describe('useARC59SendSummaryScreen', () => {
 
         expect(result.current.fee).toBe(0.3)
         expect(result.current.isLoading).toBe(false)
+    })
+
+    it('forwards isUnavailableOnNetwork from the summary query', async () => {
+        const { useArc59SendSummaryQuery } =
+            await import('@perawallet/wallet-core-asa-inbox')
+        ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
+            data: null,
+            isLoading: false,
+            isUnavailableOnNetwork: true,
+        })
+
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
     })
 
     it('redirects to InsufficientBalance when sender lacks ALGO for the inbox fees', async () => {

@@ -58,7 +58,7 @@ type PasskeyDerivation = {
  * Reconstructs the WebAuthn origin dp256 derived against, for legacy Android.
  * Android stores the relying party as a bare host (`webauthn.io`), but the
  * derivation — and the credentialId the RP trusts — used the full origin
- * (`https://webauthn.io`), confirmed on-device (PERA-4391). WebAuthn origins are
+ * (`https://webauthn.io`), confirmed on-device. WebAuthn origins are
  * always `https` (except localhost), so prepend the scheme when absent; leave an
  * already-qualified origin untouched. (Legacy iOS derives with the origin
  * verbatim — see {@link resolvePlatformConvention}.)

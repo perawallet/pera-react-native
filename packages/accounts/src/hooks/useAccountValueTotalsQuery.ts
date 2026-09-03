@@ -59,7 +59,7 @@ const EMPTY_RESULT_BASE = {
  * (shared, by query key, with `useAccountSummaryQuery`'s header read) instead
  * of `useAccountBalancesQuery`'s full holdings walk. This is what the account
  * list, sort sheet, and portfolio header should use — on a 10k-asset wallet
- * the holdings walk is a multi-second JS stall per render storm (PERA-4953).
+ * the holdings walk is a multi-second JS stall per render storm.
  * Reach for `useAccountBalancesQuery` only where per-asset rows are needed.
  */
 export const useAccountValueTotalsQuery = (

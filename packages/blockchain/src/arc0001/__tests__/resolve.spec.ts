@@ -366,7 +366,7 @@ describe('resolveArc0001SignTxnRequest', () => {
             )
         })
 
-        // PERA-4503: algosdk v3 rejects a zero-address rekeyTo (algokit v10
+        // algosdk v3 rejects a zero-address rekeyTo (algokit v10
         // tolerated it). Strict rejection is intended — this asserts it stays
         // a well-formed ARC-0001 InvalidInput carrying the decode reason (not
         // an unhandled crash); transports log the relayed rejection.
@@ -387,7 +387,7 @@ describe('resolveArc0001SignTxnRequest', () => {
     })
 
     describe('authorizedAddresses gate (e.g. WalletConnect session)', () => {
-        it('still rejects (generic 4100) when the only signer is held but not authorized — without naming it (PERA-4716)', () => {
+        it('still rejects (generic 4100) when the only signer is held but not authorized — without naming it', () => {
             // The held-but-unauthorized signer is skipped, so nothing is
             // signable and the request terminates at the single generic error
             // — no address and no data.index reach the wire.
@@ -467,7 +467,7 @@ describe('resolveArc0001SignTxnRequest', () => {
             expect(result.toSign).toHaveLength(0)
         })
 
-        it('gives a held-but-unauthorized signer the SAME error as a wholly unheld one — no address leak (PERA-4716)', () => {
+        it('gives a held-but-unauthorized signer the SAME error as a wholly unheld one — no address leak', () => {
             const context = {
                 signableAddresses: new Set([
                     addrA.toString(),
@@ -498,7 +498,7 @@ describe('resolveArc0001SignTxnRequest', () => {
             expect(heldButUnauthorized.data).toBeUndefined()
         })
 
-        it('resolves an authorized entry and skips a held-but-unauthorized one without throwing (PERA-4716)', () => {
+        it('resolves an authorized entry and skips a held-but-unauthorized one without throwing', () => {
             const result = resolveArc0001SignTxnRequest(
                 {
                     transactions: [

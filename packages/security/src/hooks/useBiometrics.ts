@@ -28,20 +28,27 @@ import { useSecurityStore } from '../store'
  * Why enabling biometrics failed, so callers can show targeted guidance
  * instead of a single generic error.
  *
- * - `no-pin`         — no PIN record to wrap; a PIN must be set first.
- * - `unavailable`    — the device has no usable biometric hardware/enrollment.
+ * - `no-pin` — no PIN record to wrap; a PIN must be set first.
+ * - `unavailable` — the device has no usable biometric hardware/enrollment.
  * - `weak-biometric` — a biometric is enrolled, but only at class-2 ("weak")
- *                      strength (e.g. Samsung 2D face unlock). Wallet unlock
- *                      requires a hardware-backed class-3 ("strong")
- *                      authenticator, so the user must enroll a fingerprint or
- *                      other strong biometric.
- * - `declined`       — the user dismissed or failed the OS prompt.
- * - `error`          — an unexpected failure.
+ * strength (e.g. Samsung 2D face unlock). Wallet unlock
+ * requires a hardware-backed class-3 ("strong")
+ * authenticator, so the user must enroll a fingerprint or
+ * other strong biometric. Android-only in practice.
+ * - `unconfirmed` — a biometric is enrolled but the device reports a
+ * non-strong level we can't bind to right now, without it
+ * being a weak enrollment: iOS reports enrolled-but-'secret'
+ * during a Face ID lockout the user clears with the device
+ * passcode, not from inside the app. The opt-in is left
+ * intact so unlock auto-restores once the level does.
+ * - `declined` — the user dismissed or failed the OS prompt.
+ * - `error` — an unexpected failure.
  */
 export type EnableBiometricsFailureReason =
     | 'no-pin'
     | 'unavailable'
     | 'weak-biometric'
+    | 'unconfirmed'
     | 'declined'
     | 'error'
 
@@ -62,12 +69,11 @@ type UseBiometricsResult = {
     /**
      * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
      * ("strong") biometric that still matches the enrollment binding recorded at
-     * opt-in. It deletes the blob on an affirmative class-2 report, on an
-     * affirmative "the enrolled set changed" report, and — coarsely, see the
-     * branch itself — whenever no biometric appears available at all. A returned
-     * false therefore does NOT imply the blob is gone: an unconfirmable level
-     * reports false and keeps it. Callers get the post-reconciliation answer,
-     * consistent with a subsequent call.
+     * opt-in. It deletes the blob on the two affirmative reports — a class-2
+     * enrollment, or a changed enrollment set — and on nothing else: a level or
+     * an availability it cannot confirm reports false and keeps the blob, so a
+     * returned false does NOT imply the blob is gone. Callers get the
+     * post-reconciliation answer, consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
@@ -89,7 +95,7 @@ export const useBiometrics = (): UseBiometricsResult => {
     // Shared, not per-hook: Settings, the lock screen and PIN edit all mount
     // their own useBiometrics, and a reconcile that cleared a revoked blob used
     // to update only the calling screen's copy — leaving the Settings toggle
-    // showing ON (PERA-4702). Granular selectors, per the store conventions.
+    // showing ON. Granular selectors, per the store conventions.
     const isEnabled = useSecurityStore(state => state.isBiometricsEnabled)
     const setIsEnabled = useSecurityStore(state => state.setBiometricsEnabled)
     const disabledReason = useSecurityStore(
@@ -97,6 +103,12 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
     const setDisabledReason = useSecurityStore(
         state => state.setBiometricsDisabledReason,
+    )
+    const acknowledgedReason = useSecurityStore(
+        state => state.acknowledgedBiometricsDisabledReason,
+    )
+    const setAcknowledgedReason = useSecurityStore(
+        state => state.setAcknowledgedBiometricsDisabledReason,
     )
     const [isAvailable, setIsAvailable] = useState(false)
 
@@ -114,8 +126,17 @@ export const useBiometrics = (): UseBiometricsResult => {
             await biometricsService.clearEnrollmentBinding()
             setIsEnabled(false)
             setDisabledReason(reason)
+            // A fresh drop is its own event: an earlier decline must not
+            // swallow the offer for this one.
+            setAcknowledgedReason(null)
         },
-        [removeSecret, biometricsService, setIsEnabled, setDisabledReason],
+        [
+            removeSecret,
+            biometricsService,
+            setIsEnabled,
+            setDisabledReason,
+            setAcknowledgedReason,
+        ],
     )
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
@@ -124,19 +145,36 @@ export const useBiometrics = (): UseBiometricsResult => {
             return false
         }
 
-        // Fail closed on OS-level revocation. The blob is the app's only record
-        // that biometric unlock was opted into, so one that outlives its
-        // enrollment would silently re-arm unlock the moment the user enrolls a
-        // new biometric — a fingerprint added after the fact could open the
-        // wallet without the in-app toggle ever being touched. Drop the blob
-        // instead and require an explicit re-enable. The PIN record is a
-        // separate secret, so this never costs the user access.
+        // Reports disabled without destroying anything. Underneath, Android's
+        // `isEnrolledAsync` is `canAuthenticate(BIOMETRIC_WEAK) == SUCCESS`, so
+        // this predicate folds NONE_ENROLLED together with HW_UNAVAILABLE
+        // (sensor busy, or locked out after too many failed attempts),
+        // SECURITY_UPDATE_REQUIRED and STATUS_UNKNOWN — and expo exposes no way
+        // to tell them apart. Deleting the blob here meant a lockout, which
+        // clears itself, permanently cost the user their opt-in.
         //
-        // Coarser than the class check below, and not a positive signal:
-        // `checkBiometricsAvailable` folds "no hardware" and Android's
-        // transient HW_UNAVAILABLE in with "none enrolled". Pre-existing.
+        // Keeping it is safe because the enrollment binding below is the
+        // affirmative signal for the case this branch used to cover: a blob kept
+        // through "every biometric removed" is dropped as soon as a new one is
+        // enrolled, which is the only way it could have re-armed unlock.
         if (!(await biometricsService.checkBiometricsAvailable())) {
-            await dropOptIn('enrollment-changed')
+            setIsEnabled(false)
+            // Whether to say anything is a different question from whether to
+            // destroy anything, and only `getAvailability` can answer it: a
+            // lockout clears itself and must stay silent, while an empty
+            // enrollment or a revoked app permission persists until the user
+            // acts, and biometric unlock quietly not working is exactly what
+            // this is meant to prevent.
+            const availability = await biometricsService.getAvailability()
+            const isPersistent =
+                availability === 'none-enrolled' || availability === 'denied'
+            // Re-derived from live device state on every reconcile, unlike the
+            // event-driven reasons — so a decline has to be remembered here or
+            // the offer would come back on the very next unlock, and every one
+            // after it, until the user gave in.
+            if (isPersistent && acknowledgedReason !== 'not-available') {
+                setDisabledReason('not-available')
+            }
             return false
         }
 
@@ -159,12 +197,22 @@ export const useBiometrics = (): UseBiometricsResult => {
                 await biometricsService.createEnrollmentBinding()
             }
             setIsEnabled(true)
+            // Biometric unlock works, so there is nothing left to explain. This
+            // matters now that `not-available` is recorded without destroying
+            // the blob: the user who grants a revoked permission back recovers
+            // here silently, and a stale reason would put a screen in front of
+            // them offering to fix what they just fixed. Every other reason
+            // implies a destroyed blob, which never reaches this line.
+            setDisabledReason(null)
+            // Resolved, so a later recurrence is a new event and deserves the
+            // offer again even if this one was declined.
+            setAcknowledgedReason(null)
             return true
         }
 
         // Something is enrolled but cannot be bound by `enableBiometrics` or
         // pass the Android prompt's `strong` bar, so report disabled. Only an
-        // affirmative class-2 report may also destroy the opt-in (PERA-4702:
+        // affirmative class-2 report may also destroy the opt-in (
         // removing every fingerprint where weak 2D face remains used to keep
         // the blob armed). 'secret' and 'none' are ambiguous — iOS reports
         // enrolled-but-'secret' during a Face ID lockout the user cannot clear
@@ -175,7 +223,15 @@ export const useBiometrics = (): UseBiometricsResult => {
         }
         setIsEnabled(false)
         return false
-    }, [hasSecret, dropOptIn, biometricsService, setIsEnabled])
+    }, [
+        hasSecret,
+        dropOptIn,
+        biometricsService,
+        setIsEnabled,
+        setDisabledReason,
+        acknowledgedReason,
+        setAcknowledgedReason,
+    ])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
@@ -215,27 +271,33 @@ export const useBiometrics = (): UseBiometricsResult => {
                         }
 
                         // Only bind biometrics to a hardware-backed class-3
-                        // ("strong") authenticator. A class-2 ("weak") modality
-                        // — e.g. Samsung 2D face unlock — must not be bound;
-                        // fail fast with a distinct reason (before popping a
-                        // doomed OS prompt) so the UI can tell the user to
-                        // enroll a fingerprint.
+                        // ("strong") authenticator. Anything below that fails
+                        // fast, before popping a doomed OS prompt — but the two
+                        // non-strong cases must be handled apart, exactly as the
+                        // reconcile's own branches do.
                         const level = await biometricsService.getSecurityLevel()
-                        if (level !== 'strong') {
-                            // Clear any blob the reconcile kept for an
-                            // unconfirmable level. With `isEnabled` false the
-                            // Settings toggle reads OFF, so its delete branch
-                            // is unreachable and this is the only user-driven
-                            // moment where dropping it is unambiguously safe.
-                            //
-                            // The reason is recorded, not cleared: this is the
-                            // app disabling biometrics for a class-2 enrollment,
-                            // exactly as the reconcile's own `weak` branch does.
-                            // Clearing it here would dismiss the prompt that
-                            // asked for this enable, leaving the user with an
-                            // error toast and nothing to retry.
+                        if (level === 'weak') {
+                            // A class-2 ("weak") modality — e.g. Samsung 2D face
+                            // unlock — must not be bound. Drop the opt-in for it,
+                            // just as the reconcile's `weak` branch does: with
+                            // `isEnabled` false the Settings toggle reads OFF, so
+                            // its own delete branch is unreachable and this is the
+                            // only user-driven moment where dropping it is
+                            // unambiguously safe. The reason is recorded, not
+                            // cleared, so the UI can guide the user to enroll a
+                            // fingerprint.
                             await dropOptIn('weak-biometric')
                             return { ok: false, reason: 'weak-biometric' }
+                        }
+                        if (level !== 'strong') {
+                            // 'secret' / 'none': a biometric is enrolled but the
+                            // level is ambiguous — iOS reports enrolled-but-
+                            // 'secret' during a Face ID lockout the user can only
+                            // clear with the device passcode. Preserve the opt-in
+                            // (the reconcile's secret/none branch does the same):
+                            // dropping it here would turn a self-clearing lockout
+                            // into a permanent opt-out.
+                            return { ok: false, reason: 'unconfirmed' }
                         }
 
                         const authenticated =
@@ -303,8 +365,9 @@ export const useBiometrics = (): UseBiometricsResult => {
     // a decline is remembered — the prompt is shown once per drop, not on every
     // unlock until the user gives in.
     const acknowledgeBiometricsDisabled = useCallback((): void => {
+        if (disabledReason) setAcknowledgedReason(disabledReason)
         setDisabledReason(null)
-    }, [setDisabledReason])
+    }, [disabledReason, setAcknowledgedReason, setDisabledReason])
 
     const authenticateWithBiometrics = useCallback(
         async (

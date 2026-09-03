@@ -22,6 +22,7 @@ import {
 } from 'expo-local-authentication'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricAvailability,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricsAuthenticateFailureReason,
@@ -38,7 +39,21 @@ interface NativePeraBiometricBinding {
     createBinding(): Promise<boolean>
     checkBinding(): Promise<string>
     clearBinding(): Promise<void>
+    getAvailability(): Promise<string>
 }
+
+const AVAILABILITIES: readonly BiometricAvailability[] = [
+    'available',
+    'none-enrolled',
+    'denied',
+    'unavailable',
+    'unknown',
+]
+
+const asAvailability = (status: string): BiometricAvailability =>
+    (AVAILABILITIES as readonly string[]).includes(status)
+        ? (status as BiometricAvailability)
+        : 'unknown'
 
 const getBindingModule = (): NativePeraBiometricBinding | null =>
     requireOptionalNativeModule<NativePeraBiometricBinding>(
@@ -172,6 +187,23 @@ export class RNBiometricsService implements BiometricsService {
                 error,
             })
             return { success: false, reason: 'unknown' }
+        }
+    }
+
+    async getAvailability(): Promise<BiometricAvailability> {
+        const module = getBindingModule()
+        // Without the native module there is no status code to read. 'unknown'
+        // is the value that changes nothing, and `checkBiometricsAvailable`
+        // still answers the yes/no question on its own.
+        if (!module) return 'unknown'
+        try {
+            return asAvailability(await module.getAvailability())
+        } catch (error) {
+            logger.warn('getAvailability native call threw', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return 'unknown'
         }
     }
 

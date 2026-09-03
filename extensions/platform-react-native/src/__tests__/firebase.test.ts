@@ -14,6 +14,7 @@
 
 import { vi } from 'vitest'
 import { Platform } from 'react-native'
+import { onNotificationOpenedApp } from '@react-native-firebase/messaging'
 import { RNFirebaseService } from '../services/firebase'
 
 // Mock react-native Platform
@@ -128,7 +129,7 @@ describe('RNFirebaseService', () => {
             // `settings`/`defaultConfig` properties instead dispatched the fetch
             // first, and native setDefaults then reset the config database and
             // cancelled the in-flight request — so no fetch ever succeeded and
-            // every key served its bundled default (PERA-4836).
+            // every key served its bundled default.
             it('completes both native config writes before fetching', async () => {
                 const order: string[] = []
                 mockSetConfigSettings.mockImplementationOnce(async () => {
@@ -392,6 +393,81 @@ describe('RNFirebaseService', () => {
     describe('Notifications', () => {
         it('reports push notifications as supported', () => {
             expect(service.isSupported()).toBe(true)
+        })
+
+        // The FCM payload names these differently from /v1/notifications; reading
+        // only the REST spelling left every multisig push unroutable.
+        describe('push payload field mapping', () => {
+            const openPayloadFor = async (
+                data: Record<string, unknown>,
+            ): Promise<unknown> => {
+                mockNotifee.requestPermission.mockResolvedValue({
+                    authorizationStatus: 1,
+                })
+                await service.initializeNotifications()
+
+                const onOpened = vi.mocked(onNotificationOpenedApp).mock
+                    .calls[0]?.[1] as (message: { data: unknown }) => void
+
+                const received: unknown[] = []
+                service.addNotificationOpenListener(payload =>
+                    received.push(payload),
+                )
+                onOpened({ data })
+
+                return received[0]
+            }
+
+            it('reads the type from the push spelling `notification_type`', async () => {
+                const payload = await openPayloadFor({
+                    url: 'perawallet://asset-inbox/?address=SHARED_ADDR',
+                    notification_type: 'multi-sig-import-account',
+                })
+
+                expect(payload).toMatchObject({
+                    type: 'multi-sig-import-account',
+                })
+            })
+
+            // The deeplink's `address` is the invitee's account, identical on
+            // every invitation — sourcing it would guarantee a wrong match.
+            it('leaves the address undefined rather than taking it from the deeplink', async () => {
+                const payload = await openPayloadFor({
+                    url: 'perawallet://asset-inbox/?address=INVITEE_ADDR',
+                    notification_type: 'multisig-new-sign-request',
+                })
+
+                expect(payload).toMatchObject({
+                    accountAddress: undefined,
+                })
+            })
+
+            // A sign-request push names the shared account this way; without it
+            // resolution falls back to "the only pending item of this kind".
+            it('reads the address from `multisig_account_address`', async () => {
+                const payload = await openPayloadFor({
+                    url: 'perawallet://asset-inbox/?address=SHARED_ADDR',
+                    multisig_account_address: 'SHARED_ADDR',
+                    notification_type: 'multisig-new-sign-request',
+                })
+
+                expect(payload).toMatchObject({
+                    type: 'multisig-new-sign-request',
+                    accountAddress: 'SHARED_ADDR',
+                })
+            })
+
+            it('still honours the REST spellings when the payload uses them', async () => {
+                const payload = await openPayloadFor({
+                    type: 'multisig-new-sign-request',
+                    account_address: 'EXPLICIT_ADDR',
+                })
+
+                expect(payload).toMatchObject({
+                    type: 'multisig-new-sign-request',
+                    accountAddress: 'EXPLICIT_ADDR',
+                })
+            })
         })
 
         describe('initializeNotifications', () => {

@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { DuplicateAccountError } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -77,6 +78,18 @@ export const usePeraWebImportLoadingScreen = (): void => {
                 return
             }
 
+            // The deeplink handler jumps here straight from a QR scan,
+            // bypassing the disabled menu row on the options screen, so
+            // the network needs its own check here too.
+            if (!isPeraBackedNetwork(network)) {
+                errorToastRef.current(
+                    tRef.current('common.network_unavailable.title'),
+                    tRef.current('common.network_unavailable.body'),
+                )
+                navigationRef.current.goBack()
+                return
+            }
+
             // 1. Fetch the encrypted backup from the Pera mobile API.
             let response
             try {
@@ -84,7 +97,6 @@ export const usePeraWebImportLoadingScreen = (): void => {
             } catch (error) {
                 if (cancelled) return
                 logger.error('Pera Web backup fetch failed', { error })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: surfaced as typed PeraWebImportError to user
                 errorToastRef.current(
                     tRef.current(
                         'onboarding.pera_web_import.loading.fetch_failed_title',
@@ -111,7 +123,6 @@ export const usePeraWebImportLoadingScreen = (): void => {
                     error instanceof PeraWebImportError
                         ? error.reason
                         : PeraWebImportErrorReason.DecryptionFailed
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: typed reason mapped to localized string
                 errorToastRef.current(
                     tRef.current(
                         'onboarding.pera_web_import.loading.decrypt_failed_title',

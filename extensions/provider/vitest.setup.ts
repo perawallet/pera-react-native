@@ -89,6 +89,7 @@ const mockPlatformServices = {
     crashReporting: {
         initializeCrashReporting() {},
         recordNonFatalError() {},
+        logBreadcrumb() {},
     },
     database: {
         async open() {

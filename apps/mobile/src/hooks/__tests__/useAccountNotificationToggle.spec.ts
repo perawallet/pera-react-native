@@ -187,7 +187,7 @@ describe('useAccountNotificationToggle', () => {
         expect(stored).toBe(false)
     })
 
-    // PERA-4863: registration runs under networkMode 'always', so offline the
+    // registration runs under networkMode 'always', so offline the
     // request still fires and we rely on the transport to reject it — prompt on
     // iOS, but not on Android in airplane mode, which left the rollback below
     // stranded and the persisted store diverged from the backend. `assertOnline`
@@ -521,7 +521,7 @@ describe('useAccountNotificationToggle', () => {
         ])
     })
 
-    // PERA-4705 (final review, Finding 2): the mute branch spreads the
+    // (final review, Finding 2): the mute branch spreads the
     // pre-existing disabled set into the payload
     // (`[...new Set([...disabledAccounts, address])]`), but every test seeded
     // `disabledAccounts` as `[]`, so dropping that spread kept the whole suite

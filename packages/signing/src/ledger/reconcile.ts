@@ -82,7 +82,7 @@ export type ReconcileOpenSubmissionsParams = {
 }
 
 /**
- * Settles open submission-attempt rows (PERA-4588): probes each row's group
+ * Settles open submission-attempt rows: probes each row's group
  * — algod pendingTransactionInformation, then the indexer, and once the
  * decoded lastValid round has passed without landing the row is provably
  * not on chain and resolved failed. Bounded per pass and a no-op when no

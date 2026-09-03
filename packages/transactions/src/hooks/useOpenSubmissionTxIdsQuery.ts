@@ -25,7 +25,7 @@ export type UseOpenSubmissionTxIdsQueryResult = {
 
 /**
  * Txids that were submitted but not yet definitively resolved — the "pending
- * — verifying" badge set (PERA-4588). Invalidated by the sync service when
+ * — verifying" badge set. Invalidated by the sync service when
  * the reconciler settles a row, so a resolved attempt's badge disappears
  * without a manual refresh.
  */

@@ -110,4 +110,49 @@ describe('fetchApplication', () => {
             }),
         ).rejects.toThrow(PeraNetworkError)
     })
+
+    describe('non-Pera-backed networks', () => {
+        test.each(['betanet', 'custom'] as const)(
+            'returns null on %s without calling the client',
+            async network => {
+                const result = await fetchApplication({
+                    applicationId: '123',
+                    network,
+                })
+
+                expect(result).toBeNull()
+                expect(mockQueryClient).not.toHaveBeenCalled()
+            },
+        )
+
+        test('still calls through normally on testnet', async () => {
+            mockQueryClient.mockResolvedValue({
+                data: {
+                    application_id: 123,
+                    name: 'Test App',
+                    project: {
+                        name: 'Test Project',
+                        url: 'https://test.com',
+                        description: 'A test project',
+                        short_description: 'Test',
+                        logo_png: 'https://test.com/logo.png',
+                        verification_tier: 'verified',
+                        color: '#000',
+                        text_color: '#FFF',
+                        background_image: 'https://test.com/bg.png',
+                        categories: [],
+                        popularity_score: 10,
+                    },
+                },
+            })
+
+            const result = await fetchApplication({
+                applicationId: '123',
+                network: 'testnet',
+            })
+
+            expect(result).not.toBeNull()
+            expect(mockQueryClient).toHaveBeenCalledTimes(1)
+        })
+    })
 })

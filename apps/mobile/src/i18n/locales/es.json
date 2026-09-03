@@ -82,7 +82,11 @@
         "initialization_failed": {
             "title": "No se pudo iniciar la app",
             "body": "Se produjo un error al inicializar la app.  Prueba a reiniciarla. Si el problema continúa, contacta con soporte.\n\nTus fondos están seguros en la blockchain de Algorand.",
-            "retry": "Reintentar"
+            "retry": "Reintentar",
+            "keystore": {
+                "title": "Error en los datos de la wallet",
+                "body": "Pera no pudo leer parte de los datos de la wallet guardados en este dispositivo, por lo que no puede iniciarse de forma segura. Contacta con soporte antes de reinstalar la app: al reinstalarla podrían perderse las cuentas que solo existen en este dispositivo.\n\nTus fondos están seguros en la blockchain de Algorand."
+            }
         }
     },
     "asset_sort": {
@@ -162,6 +166,8 @@
             "title_keyreg": "No se pudo preparar el registro de clave",
             "body_keyreg": "No pudimos crear la transacción de registro de clave.",
             "body_keyreg_unknown_account": "Este registro de clave es para una cuenta que no tienes en este wallet. Añade primero la cuenta y vuelve a escanear.",
+            "body_keyreg_cannot_sign": "Esta cuenta no puede firmar transacciones en Pera. El registro necesita la clave privada de la cuenta, no una copia de solo lectura.",
+            "body_keyreg_network_mismatch": "Este registro es para una red de Algorand distinta de la que usa tu wallet. Cambia de red y vuelve a escanear.",
             "title_recover": "No se pudo importar la cuenta",
             "body_recover": "No pudimos importar la cuenta desde este QR.",
             "body_recover_duplicate": "Esta cuenta ya está en tu wallet.",
@@ -369,6 +375,9 @@
         "rekey_option_ledger_description": "Las transacciones se autorizarán en tu dispositivo Ledger.",
         "rekey_option_standard_title": "A una cuenta estándar",
         "rekey_option_standard_description": "Las transacciones se autorizarán por otra cuenta de tu wallet.",
+        "rekey_option_quantum_title": "A una cuenta cuántica",
+        "rekey_option_quantum_description": "Las transacciones se autorizarán por una cuenta cuántica de tu wallet.",
+        "rekey_option_quantum_badge": "NUEVO",
         "export_share_account": "Exportar/compartir cuenta",
         "scan_rekeyed": "Buscar cuentas con rekey",
         "rename_account": "Renombrar cuenta",
@@ -1302,7 +1311,9 @@
     },
     "notifications": {
         "empty_title": "No hay notificaciones",
-        "empty_body": "Aquí aparecerán tus transacciones recientes, solicitudes de activos y otras transacciones"
+        "empty_body": "Aquí aparecerán tus transacciones recientes, solicitudes de activos y otras transacciones",
+        "unavailable_title": "Notificaciones no disponibles",
+        "unavailable_body": "No pudimos configurar las notificaciones en este dispositivo. Revisa tus permisos y tu conexión, y vuelve a intentarlo."
     },
     "messages": {
         "tabs": {
@@ -1453,6 +1464,9 @@
         },
         "pending_signatures": {
             "title": "Firmas pendientes",
+            "title_submitting": "Enviando la transacción",
+            "title_success": "Transacción completada",
+            "title_failure": "Transacción no completada",
             "x_of_y": "{{signed}} de {{total}} firmadas",
             "time_left": "≈ {{time}} restante",
             "accounts_heading": "Cuentas",
@@ -1862,12 +1876,13 @@
         "to_standard": {
             "intro": {
                 "title": "Hacer rekey a una cuenta estándar",
-                "body": "Usa la clave privada de otra cuenta para firmar las transacciones de esta cuenta.",
+                "body": "El rekey asigna una nueva clave para firmar las futuras transacciones de esta cuenta, sin mover fondos ni cambiar su dirección.",
                 "learn_more": "Más información",
                 "expect_label": "Qué esperar",
-                "expect_1": "Las futuras transacciones solo podrán firmarse con la cuenta delegada.",
-                "expect_2": "Esta cuenta ya no podrá firmar transacciones.",
-                "expect_3": "La clave pública, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave de la nueva cuenta.",
+                "expect_2": "Haz una copia de seguridad de la frase de recuperación de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_4": "Si más adelante cierras esta cuenta, el rekey se elimina. Si vuelves a enviar fondos a la dirección, el control regresa a la clave original y no a la cuenta que estás configurando ahora.",
                 "cta": "Iniciar proceso"
             },
             "select": {
@@ -1878,6 +1893,44 @@
             "confirm": {
                 "title": "Confirmar el rekey",
                 "body": "Estás a punto de hacer rekey de esta cuenta a otra dirección autorizada. La nueva dirección podrá firmar transacciones en su nombre.",
+                "learn_more": "Más información",
+                "summary_label": "Resumen del rekey",
+                "current_auth_label": "Actualmente con rekey a",
+                "fee_label": "Comisión de transacción",
+                "cta": "Confirmar",
+                "replace_warning": {
+                    "title": "Tu rekey anterior se reemplazará",
+                    "body": "<0>{{currentAuth}}</0> ya no estará autorizada para firmar transacciones de <1>{{source}}</1>. Asegúrate de entender las implicaciones antes de continuar. <2>Más información</2>",
+                    "confirm": "Confirmar",
+                    "cancel": "Cancelar"
+                }
+            },
+            "success": {
+                "title": "Rekey de la cuenta completado",
+                "body": "Se hizo rekey de la cuenta <0>{{source}}</0> correctamente.",
+                "cta": "Hecho"
+            }
+        },
+        "to_quantum": {
+            "intro": {
+                "title": "Hacer rekey a una cuenta cuántica",
+                "body": "El rekey asigna una nueva clave para firmar las futuras transacciones de esta cuenta, sin mover fondos ni cambiar su dirección.",
+                "learn_more": "Más información",
+                "expect_label": "Qué esperar",
+                "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave post-cuántica de la cuenta cuántica.",
+                "expect_2": "Haz una copia de seguridad de la frase de recuperación de 25 palabras de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
+                "expect_4": "Las futuras transacciones pagarán una comisión de red mínima más alta, y volver a hacer rekey a una cuenta estándar requerirá a su vez una transacción firmada con la clave cuántica.",
+                "cta": "Iniciar proceso"
+            },
+            "select": {
+                "title": "Seleccionar cuenta cuántica",
+                "subtitle": "Elige la cuenta cuántica a la que quieres hacer rekey. La cuenta que selecciones aquí será la responsable de firmar todas las transacciones de la cuenta de origen.",
+                "empty": "No se encontraron cuentas cuánticas. Crea o importa primero una cuenta cuántica."
+            },
+            "confirm": {
+                "title": "Confirmar el rekey",
+                "body": "Estás a punto de hacer rekey de esta cuenta a una cuenta cuántica. La nueva dirección podrá firmar transacciones en su nombre.",
                 "learn_more": "Más información",
                 "summary_label": "Resumen del rekey",
                 "current_auth_label": "Actualmente con rekey a",
@@ -2110,7 +2163,8 @@
             "confirm": "Volver a activar",
             "cancel": "Ahora no",
             "unavailable_title": "Biometría no disponible",
-            "unavailable_body": "Activa Face ID o Touch ID para Pera en los ajustes de tu dispositivo y vuelve a habilitar el desbloqueo biométrico."
+            "unavailable_body": "Activa Face ID o Touch ID para Pera en los ajustes de tu dispositivo y vuelve a habilitar el desbloqueo biométrico.",
+            "body_not-available": "El desbloqueo biométrico no funciona porque tu dispositivo no tiene biometría configurada para Pera. Configúrala en los ajustes de tu dispositivo y vuelve a activarla aquí."
         }
     },
     "send_funds": {
@@ -2376,6 +2430,8 @@
             "biometric_error_message": "No hemos podido autenticarte.  Vuelve a intentarlo.",
             "biometric_weak_title": "Se requiere una biometría más segura",
             "biometric_weak_message": "Pera requiere una huella u otra biometría segura para desbloquear tu wallet. Añade una huella en los ajustes de biometría de tu dispositivo y vuelve a activar esta opción.",
+            "biometric_unconfirmed_title": "Desbloquea primero tu dispositivo",
+            "biometric_unconfirmed_message": "La biometría de tu dispositivo está bloqueada. Desbloquéalo con tu código de acceso para restaurarla y vuelve a activar esta opción.",
             "advanced_security_settings": "Ajustes de seguridad avanzados",
             "enable_asset_freeze_support": "Activar congelación de activos",
             "enable_asset_freeze_support_description": "Al activar esto, podrás confirmar solicitudes de transacción para congelar o descongelar activos en las cuentas. Esto puede impedir que la cuenta afectada realice transacciones con el activo indicado.",
@@ -2596,6 +2652,7 @@
             "app_call": "Llamada a app",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transacción",
             "more_impacts": "Ver {{count}} más"
         },
@@ -2656,6 +2713,9 @@
             "title": "Tipo de transacción no compatible",
             "body": "Este tipo de transacción no es compatible."
         },
+        "state_proof": {
+            "body": "La red publicó un State Proof para que otras cadenas puedan verificar los bloques de Algorand."
+        },
         "asset_transfer": {
             "clawback_from": "Clawback desde"
         },
@@ -2683,6 +2743,7 @@
             "key_dilution": "Dilución de clave",
             "participation_key": "Clave de participación",
             "selection_key": "Clave de selección",
+            "state_proof_key": "Clave de prueba de estado",
             "status": "Estado del registro",
             "online": "En línea",
             "offline": "Fuera de línea"
@@ -2890,6 +2951,8 @@
         "execution": {
             "error_title": "Swap fallido",
             "error_body": "Algo salió mal durante el swap. Vuelve a intentarlo.",
+            "insufficient_algo_title": "ALGO insuficiente",
+            "insufficient_algo_body": "Esta cuenta necesita al menos {{amount}} ALGO más para cubrir este swap, sus comisiones y el saldo mínimo. Añade más ALGO y vuelve a intentarlo.",
             "success_title": "Swap completado",
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
             "user_rejected": "Swap cancelado",

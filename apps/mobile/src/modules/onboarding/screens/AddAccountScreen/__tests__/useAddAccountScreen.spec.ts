@@ -108,6 +108,7 @@ vi.mock('@perawallet/wallet-core-config', async () => {
             termsOfServiceUrl: 'https://example.com/terms',
             privacyPolicyUrl: 'https://example.com/privacy',
             accountTypeSupportUrl: 'https://example.com/account-types',
+            quantumAccountSupportUrl: 'https://example.com/quantum-account',
         },
         // Pinned: the real values depend on the machine-local generated env
         // and test-runner globals, and the card-session cases assert
@@ -649,7 +650,7 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('quantum learn-more link opens the account-type support webview', () => {
+    it('quantum learn-more link opens the quantum-account support webview', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
         const quantumOption = result.current.mainOptions.find(
@@ -662,7 +663,7 @@ describe('useAddAccountScreen', () => {
 
         expect(mockPushWebView).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: 'https://example.com/account-types',
+                url: 'https://example.com/quantum-account',
             }),
         )
     })

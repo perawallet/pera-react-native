@@ -88,7 +88,7 @@ export const resolveArc0001SignTxnRequest = (
             // algokit-utils v10 tolerated — notably a zero-address `rekeyTo`
             // (canonical encoders omit an empty rekey). This strict rejection
             // is deliberate: algosdk is the canonical source of truth for
-            // transaction validity (PERA-4503). Transports log the relayed
+            // transaction validity. Transports log the relayed
             // rejection, so real-dApp impact stays observable.
             const reason = e instanceof Error ? e.message : String(e)
             throw new Arc0001Error(
@@ -127,7 +127,7 @@ export const resolveArc0001SignTxnRequest = (
         // context is SKIPPED, not rejected by name. Throwing an error that
         // named the address relayed that address verbatim to the dApp over the
         // WalletConnect bridge — a zero-interaction, batchable oracle for
-        // enumerating the wallet's other signable accounts (PERA-4716).
+        // enumerating the wallet's other signable accounts.
         // Skipping keeps session binding intact (the address never enters
         // `toSign`, so it's never signed for) while making the outcome
         // byte-identical to "the wallet holds none of these", via the single

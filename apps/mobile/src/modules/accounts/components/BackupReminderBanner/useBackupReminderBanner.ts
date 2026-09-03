@@ -11,12 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useAccountSummaryQuery,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
-import { useRequiresMnemonicBackup } from '@perawallet/wallet-core-backup'
+import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'
 
 export type UseBackupReminderBannerResult = {
@@ -27,15 +24,8 @@ export type UseBackupReminderBannerResult = {
 export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
-    const requiresBackup = useRequiresMnemonicBackup(account)
-    // Only the ALGO amount matters here; the one-row SQL summary answers it
-    // without useAccountBalancesQuery's full holdings walk, which on a
-    // 10k-asset account re-read and re-hydrated every holding from the home
-    // screen (PERA-4953).
-    const { algoAmount } = useAccountSummaryQuery(account.address)
+    const isVisible = useShouldPromptMnemonicBackup(account)
     const launch = useBackupFlowLauncher()
-
-    const isVisible = requiresBackup && algoAmount.gt(0)
 
     const onPress = useCallback(() => launch(account), [launch, account])
 

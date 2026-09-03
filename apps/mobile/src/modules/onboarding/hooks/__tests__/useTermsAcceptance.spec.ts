@@ -96,7 +96,7 @@ describe('useTermsAcceptance', () => {
     })
 
     it('gates once against the real version once config resolves', () => {
-        // PERA-4874's duplicate T&Cs: a placeholder fallback read as a genuine
+        //'s duplicate T&Cs: a placeholder fallback read as a genuine
         // version, so the user accepted it, the real version then activated and
         // the gate fired a second time.
         mocks.termsVersion = undefined

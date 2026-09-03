@@ -28,6 +28,7 @@ import {
     getAccountHoldings,
     isAssetFrozen,
     getAccountPortfolioTotals,
+    getAccountFundedNetworks,
     getAccountHoldingsPage,
     getAccountCollectiblesLite,
     insertAssetHolding,
@@ -1138,6 +1139,55 @@ describe('account repository', () => {
         })
     })
 
+    describe('getAccountFundedNetworks', () => {
+        it('reports every network holding ALGO, not just one', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [{ assetId: '0', amount: 0n }],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'testnet',
+                holdings: [{ assetId: '0', amount: 5_000_000n }],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(funded).toEqual(['testnet'])
+        })
+
+        it('ignores ASA holdings and other accounts', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: 0n },
+                    { assetId: '100', amount: 9_000_000n },
+                ],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+                holdings: [{ assetId: '0', amount: 1n }],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(funded).toEqual([])
+        })
+    })
+
     describe('getAssetHolderAddresses', () => {
         it('returns owners before opted-in-only accounts, scoped to the network', async () => {
             await refreshAccountHoldings({
@@ -1414,7 +1464,7 @@ describe('account repository', () => {
         })
 
         // Substring, not exact: mirrors the global search's
-        // `assetId.includes(term)` semantics (PERA-4900).
+        // `assetId.includes(term)` semantics.
         it('searches by asset id', async () => {
             const byFullId = await getAccountCollectiblesLite({
                 db,

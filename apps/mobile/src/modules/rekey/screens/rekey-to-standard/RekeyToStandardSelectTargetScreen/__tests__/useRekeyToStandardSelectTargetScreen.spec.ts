@@ -33,33 +33,21 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-let quantumEnabled = true
-vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
-    useIsQuantumAccountsEnabled: () => quantumEnabled,
-}))
-
 const mockIsEligibleRekeyTarget = vi.fn(
-    (
-        account: WalletAccount,
-        _source: WalletAccount,
-        _isQuantumTargetEnabled: boolean,
-    ) => account.address !== 'SRC',
+    (account: WalletAccount, _source: WalletAccount) =>
+        account.address !== 'SRC',
 )
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [sourceAccount, targetA, targetB],
     useFindAccountByAddress: (address: string) =>
         address === 'SRC' ? sourceAccount : undefined,
-    isEligibleRekeyTarget: (
-        account: WalletAccount,
-        source: WalletAccount,
-        isQuantumTargetEnabled: boolean,
-    ) => mockIsEligibleRekeyTarget(account, source, isQuantumTargetEnabled),
+    isEligibleRekeyTarget: (account: WalletAccount, source: WalletAccount) =>
+        mockIsEligibleRekeyTarget(account, source),
 }))
 
 describe('useRekeyToStandardSelectTargetScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        quantumEnabled = true
     })
 
     it('filters out ineligible accounts via isEligibleRekeyTarget', () => {
@@ -70,25 +58,12 @@ describe('useRekeyToStandardSelectTargetScreen', () => {
         expect(result.current.targets).toEqual([targetA, targetB])
     })
 
-    it('passes the resolved source account and the quantum flag to isEligibleRekeyTarget', () => {
+    it('passes the resolved source account to isEligibleRekeyTarget', () => {
         renderHook(() => useRekeyToStandardSelectTargetScreen())
 
         expect(mockIsEligibleRekeyTarget).toHaveBeenCalledWith(
             targetA,
             sourceAccount,
-            true,
-        )
-    })
-
-    it('passes the quantum flag through when quantum accounts are disabled', () => {
-        quantumEnabled = false
-
-        renderHook(() => useRekeyToStandardSelectTargetScreen())
-
-        expect(mockIsEligibleRekeyTarget).toHaveBeenCalledWith(
-            targetA,
-            sourceAccount,
-            false,
         )
     })
 

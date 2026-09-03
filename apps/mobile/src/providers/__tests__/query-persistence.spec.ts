@@ -67,7 +67,7 @@ const suggestedParametersKey: QueryKey = [
 ]
 
 describe('shouldDehydrateQuery', () => {
-    it('persists successful chart-history snapshots (the PERA-4581 allowlist)', () => {
+    it('persists successful chart-history snapshots (the allowlist)', () => {
         expect(
             shouldDehydrateQuery(asQuery(balanceHistoryKey, 'success')),
         ).toBe(true)

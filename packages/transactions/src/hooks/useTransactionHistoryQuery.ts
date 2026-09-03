@@ -129,7 +129,7 @@ export type UseTransactionHistoryQueryResult = {
      * disabled (no account address yet), which `isLoading` cannot express —
      * a disabled query reports `isLoading: false` with no data, so consumers
      * that gate an empty state on `!isLoading` flash "no transactions" before
-     * the first read (PERA-4861). Gate empty states on this instead.
+     * the first read. Gate empty states on this instead.
      */
     isFetched: boolean
     /** Whether more data is being fetched */
@@ -155,7 +155,7 @@ export type UseTransactionHistoryQueryResult = {
 
 /**
  * Synthesizes a list row for a broadcast attempt that has not yet been
- * definitively resolved (PERA-4588) — the "pending — verifying" entry. The
+ * definitively resolved — the "pending — verifying" entry. The
  * real row replaces it (same txid) once the reconciler confirms it, so the
  * transaction appears in history exactly once.
  */

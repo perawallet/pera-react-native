@@ -87,7 +87,7 @@ import {
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 
 // The API-response shapes aren't exported from the package (schemas are
@@ -379,7 +379,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })

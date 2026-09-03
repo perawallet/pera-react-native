@@ -14,7 +14,7 @@ import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
  * One broadcast attempt of an atomic transaction group. Written before the
- * POST (PERA-4588), resolved on definitive outcomes — confirmation, node
+ * POST, resolved on definitive outcomes — confirmation, node
  * rejection, or the reconciler — and left open on unknown outcomes so a
  * reconnect can settle them without a rebuild-induced double spend.
  */

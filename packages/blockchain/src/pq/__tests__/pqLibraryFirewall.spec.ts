@@ -24,8 +24,7 @@ import { describe, it, expect } from 'vitest'
 
 // Pera's quantum (post-quantum, Falcon-1024) accounts integrate Joe Polny's
 // interim PQ libraries behind a swap seam so they can later be replaced with
-// official Algorand code via a one-module change. See
-// docs/QUANTUM_PQ_INTEGRATION.md. `@joe-p/algosdk` is no longer one of the
+// official Algorand code via a one-module change. `@joe-p/algosdk` is no longer one of the
 // forbidden specifiers, and is no longer installed at all: the PQ transaction
 // surface now comes from official `algosdk` itself (3.7.0, resolved by the
 // `algosdk` catalog range in pnpm-workspace.yaml), so application code

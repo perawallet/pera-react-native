@@ -45,6 +45,7 @@ export const ImportAccountOptionsScreen = () => {
                             titleWeight='h3'
                             leftIcon={option.leftIcon}
                             onPress={option.onPress}
+                            disabled={option.isDisabled}
                         />
                     ))}
                 </PWView>

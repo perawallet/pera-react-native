@@ -818,7 +818,7 @@ describe('usePeraWebviewInterface', () => {
             expect.stringContaining('"clientType":"ios"'),
         )
         // protocolVersion is the bridge's negotiation signal — see
-        // docs/DISCOVER_BRIDGE_CONTRACT.md.
+        // docs/WEBVIEW_ARCHITECTURE.md.
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"protocolVersion":"3"'),
         )
@@ -1214,7 +1214,7 @@ describe('usePeraWebviewInterface', () => {
         })
 
         it('reports quantum accounts as their own Quantum type', async () => {
-            // PQ-006 shipped quantum signing routing, so the bridge must no
+            // Quantum signing routing exists, so the bridge must no
             // longer tell dApps a quantum account is unsignable — but it must
             // not claim `Algo25` either: a quantum account produces a ~1.2 KB
             // Falcon signature with no recoverable Ed25519 public key.
@@ -1475,7 +1475,7 @@ describe('usePeraWebviewInterface', () => {
         // In-app-browser counterpart of the WC gate: the dApp names the
         // connected account, which is rekeyed and holds no key of its own —
         // the auth account signs, so the request must reach the review sheet
-        // instead of being refused up front (PERA-4977).
+        // instead of being refused up front.
         const accounts = await import('@perawallet/wallet-core-accounts')
         vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
             {

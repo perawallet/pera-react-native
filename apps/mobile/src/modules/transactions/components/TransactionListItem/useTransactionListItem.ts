@@ -46,7 +46,7 @@ export type UseTransactionListItemResult = {
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     /**
-     * The transaction's id has an open submission-ledger row (PERA-4588) —
+     * The transaction's id has an open submission-ledger row —
      * broadcast but not yet definitively resolved.
      */
     isPendingVerifying: boolean
@@ -111,6 +111,9 @@ const getTitle = (
         }
         case 'hb': {
             return t('transactions.list_item.heartbeat')
+        }
+        case 'stpf': {
+            return t('transactions.list_item.state_proof')
         }
         default: {
             return t('transactions.list_item.default')

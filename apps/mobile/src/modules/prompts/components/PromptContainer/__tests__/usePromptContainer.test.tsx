@@ -176,7 +176,7 @@ describe('usePromptContainer', () => {
             })
 
             // Deliberately no timer advance. Only the first interruption of a
-            // session waits; that is what turns the PERA-4874 storm into one
+            // session waits; that is what turns the storm into one
             // flow rather than three separate ambushes.
             expect(result.current.nextPrompt?.id).toBe(
                 UserPreferences._securityPinSetupPrompt,
@@ -184,7 +184,7 @@ describe('usePromptContainer', () => {
         })
 
         it('runs terms, then a forced banner, then the PIN nudge', async () => {
-            // The PERA-4874 migration case: everything due at once. A forced
+            // The migration case: everything due at once. A forced
             // banner may be a forced update notice, so it outranks the nudge
             // but never the legally-required copy.
             mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })

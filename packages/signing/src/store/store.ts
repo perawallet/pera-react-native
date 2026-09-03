@@ -66,7 +66,7 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
  * WITHOUT an interactive approval gate:
  *   - malformed shape (missing id/type/transport) → can't drive the machine
  *   - non-interactive sources (`'local'`/undefined) → would sign HEADLESSLY on
- *     a cold start, with no review sheet (the same gap class as PERA-4416)
+ *     a cold start, with no review sheet
  *   - `'deeplink'` → ephemeral; the user re-scans rather than resuming
  * Interactive, persistable sources (e.g. `multisig-cosign`) are kept.
  */

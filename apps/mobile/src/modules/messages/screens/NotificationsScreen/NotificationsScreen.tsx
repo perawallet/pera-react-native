@@ -16,6 +16,7 @@ import { type PeraNotification } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
@@ -36,7 +37,19 @@ export const NotificationsScreen = () => {
         keyExtractor,
         handleNotificationPress,
         listRef,
+        isUnavailableOnNetwork,
+        isDeviceUnregistered,
     } = useNotificationsScreen()
+
+    const emptyCopy = isDeviceUnregistered
+        ? {
+              title: t('notifications.unavailable_title'),
+              body: t('notifications.unavailable_body'),
+          }
+        : {
+              title: t('notifications.empty_title'),
+              body: t('notifications.empty_body'),
+          }
 
     const renderItem = useCallback(
         ({ item }: { item: PeraNotification }) => (
@@ -58,7 +71,7 @@ export const NotificationsScreen = () => {
                 // Newest-first list: reveal freshly-prepended notifications when
                 // the user is near the top, natively and atomically with layout.
                 // A JS-side scrollToOffset reveal loses to MVCP's re-anchoring on
-                // later layout passes (PERA-4406) — don't reintroduce one.
+                // later layout passes — don't reintroduce one.
                 maintainVisibleContentPosition={{
                     autoscrollToTopThreshold: 200,
                 }}
@@ -67,13 +80,18 @@ export const NotificationsScreen = () => {
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending}
-                        style={styles.emptyView}
-                        icon='bell'
-                        title={t('notifications.empty_title')}
-                        body={t('notifications.empty_body')}
-                    />
+                    <OfflineTolerantView
+                        isOffline={false}
+                        isUnavailable={isUnavailableOnNetwork}
+                    >
+                        <EmptyView
+                            isLoading={isPending}
+                            style={styles.emptyView}
+                            icon='bell'
+                            title={emptyCopy.title}
+                            body={emptyCopy.body}
+                        />
+                    </OfflineTolerantView>
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? <LoadingView variant='circle' /> : null

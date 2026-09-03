@@ -30,32 +30,46 @@ import type { PQDerivation } from './pqDerivation'
  * master key.
  */
 
-/**
- * `null` on a missing or unreadable entry, so a caller can skip it rather than
- * abort a whole reconcile pass.
- */
-const decodeKeyEntry = (key: string): Key | null => {
-    const raw = keystoreStorage.getString(key)
-    if (!raw) return null
-
-    try {
-        return decode(raw) as Key
-    } catch (err) {
-        console.error(
-            `[provider] keystore decode: failed to decode entry ${key}`,
-            err,
-        )
-        return null
-    }
+export type PersistedKeysResult = {
+    keys: Key[]
+    /** `k/`-prefixed storage keys whose records were present but undecodable. */
+    failedIds: string[]
 }
 
-/** Every key currently persisted, read straight from storage. */
-export const readPersistedKeys = (): Key[] =>
-    keystoreStorage
-        .getAllKeys()
-        .filter(key => key.startsWith(METADATA_PREFIX))
-        .map(decodeKeyEntry)
-        .filter((key): key is Key => key !== null)
+/**
+ * Every key currently persisted, read straight from storage. An undecodable
+ * record is skipped rather than aborting the whole pass, but reported in
+ * `failedIds`: the engine's strict hydration will refuse that same record on
+ * the next launch, so callers must be able to surface it while the app still
+ * boots.
+ */
+export const readPersistedKeys = (): PersistedKeysResult => {
+    const keys: Key[] = []
+    const failedIds: string[] = []
+
+    for (const storageKey of keystoreStorage.getAllKeys()) {
+        if (!storageKey.startsWith(METADATA_PREFIX)) continue
+        const raw = keystoreStorage.getString(storageKey)
+        if (!raw) continue
+
+        // `decode` also tolerates the pre-unification legacy payload, but the
+        // engine's hydration (`listMeta`) is strict new-format-only. Reject
+        // anything non-JSON here too, so this pass can never accept a record
+        // that `keystore.ready` will refuse.
+        if (!raw.startsWith('{')) {
+            failedIds.push(storageKey)
+            continue
+        }
+
+        try {
+            keys.push(decode(raw) as Key)
+        } catch {
+            failedIds.push(storageKey)
+        }
+    }
+
+    return { keys, failedIds }
+}
 
 /** Binds {@link repairQuantumMaterial} to the live keystore's storage. */
 export const runMaterialRepair = (deps: {

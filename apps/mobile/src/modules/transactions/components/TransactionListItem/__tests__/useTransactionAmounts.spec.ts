@@ -85,7 +85,7 @@ describe('useTransactionAmounts', () => {
 
     it('includes the close amount in an outgoing close-out payment', () => {
         // A "send max" close-out carries the whole balance in closeAmount
-        // with amount 0 — showing only `amount` renders "0 ALGO" (PERA-4897).
+        // with amount 0 — showing only `amount` renders "0 ALGO".
         const { result } = renderHook(() =>
             useTransactionAmounts(
                 createPaymentTx({

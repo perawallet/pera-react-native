@@ -120,8 +120,15 @@ export const createTransportSelector = (
         }
 
         // External callback sources (WalletConnect, webview, deeplink) go
-        // back via callback for non-multisig accounts.
-        if (isExternalCallbackSource(source.type)) {
+        // back via callback for non-multisig accounts — unless the request
+        // explicitly tagged `algod`. A keyreg scanned from a QR is
+        // deeplink-sourced but has no dApp waiting on the signed bytes, so it
+        // must self-submit; routing it here threw "No approve callback
+        // provided" and nothing was ever broadcast.
+        if (
+            source.transport !== 'algod' &&
+            isExternalCallbackSource(source.type)
+        ) {
             return createWalletConnectTransport(options.network)
         }
 

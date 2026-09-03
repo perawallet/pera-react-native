@@ -131,7 +131,7 @@ describe('useNotificationPress', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockRefetchInbox.mockResolvedValue({ data: [] })
+        mockRefetchInbox.mockResolvedValue([])
     })
 
     it('calls handleDeepLink when url is valid', () => {
@@ -178,7 +178,7 @@ describe('useNotificationPress', () => {
     })
 
     it('navigates to Inbox and dispatches the matching sign request, skipping handleDeepLink', async () => {
-        mockRefetchInbox.mockResolvedValue({ data: [signItem] })
+        mockRefetchInbox.mockResolvedValue([signItem])
 
         const { result } = renderHook(() => useNotificationPress())
         const notification = makeNotification({
@@ -202,7 +202,7 @@ describe('useNotificationPress', () => {
     })
 
     it('navigates to Inbox and dispatches the matching invitation for an import notification', async () => {
-        mockRefetchInbox.mockResolvedValue({ data: [importItem] })
+        mockRefetchInbox.mockResolvedValue([importItem])
 
         const { result } = renderHook(() => useNotificationPress())
         const notification = makeNotification({
@@ -225,7 +225,7 @@ describe('useNotificationPress', () => {
     })
 
     it('navigates without dispatching when no inbox item matches', async () => {
-        mockRefetchInbox.mockResolvedValue({ data: [] })
+        mockRefetchInbox.mockResolvedValue([])
 
         const { result } = renderHook(() => useNotificationPress())
         const notification = makeNotification({

@@ -10,66 +10,31 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+// @vitest-environment node
+import { describe, it, expect } from 'vitest'
+import { algo25SecretKeyToIndices, algo25SeedToIndices } from '../algo25-utils'
 
-vi.mock('algosdk', async importOriginal => ({
-    ...(await importOriginal<typeof import('algosdk')>()),
-    mnemonicFromSeed: vi.fn(
-        (seed: Uint8Array) => `mnemonic-from-${seed.length}-bytes`,
-    ),
-}))
-
-import { mnemonicFromSeed } from 'algosdk'
-import { algo25SecretKeyToMnemonic } from '../algo25-utils'
-
-beforeEach(() => {
-    vi.mocked(mnemonicFromSeed).mockClear()
-})
-
-describe('algo25SecretKeyToMnemonic', () => {
-    it('truncates a 64-byte keypair to a 32-byte seed before deriving', () => {
+describe('algo25SecretKeyToIndices', () => {
+    it('truncates a 64-byte keypair to the 32-byte seed before encoding', () => {
         const secretKey = new Uint8Array(64).fill(7)
+        const seed = new Uint8Array(32).fill(7)
 
-        const mnemonic = algo25SecretKeyToMnemonic(secretKey)
-
-        expect(mnemonic).toBe('mnemonic-from-32-bytes')
-        const seedArg = vi.mocked(mnemonicFromSeed).mock.calls[0][0]
-        expect(seedArg).toHaveLength(32)
+        expect(Array.from(algo25SecretKeyToIndices(secretKey))).toEqual(
+            Array.from(algo25SeedToIndices(seed)),
+        )
     })
 
-    it('uses the full buffer when it is shorter than 32 bytes', () => {
-        const secretKey = new Uint8Array(16).fill(3)
-
-        const mnemonic = algo25SecretKeyToMnemonic(secretKey)
-
-        expect(mnemonic).toBe('mnemonic-from-16-bytes')
-    })
-
-    it('zeroes the derived seed slice after deriving the mnemonic', () => {
-        let capturedSeed: Uint8Array | null = null
-        vi.mocked(mnemonicFromSeed).mockImplementationOnce(seed => {
-            capturedSeed = seed
-            return 'words'
-        })
+    it('leaves the caller-owned secret key untouched', () => {
         const secretKey = new Uint8Array(64).fill(0xff)
 
-        algo25SecretKeyToMnemonic(secretKey)
+        algo25SecretKeyToIndices(secretKey)
 
-        expect(capturedSeed).not.toBeNull()
-        expect(Array.from(capturedSeed!)).toEqual(Array(32).fill(0))
+        expect(Array.from(secretKey)).toEqual(Array(64).fill(0xff))
     })
 
-    it('still zeroes the seed when mnemonicFromSeed throws', () => {
-        let capturedSeed: Uint8Array | null = null
-        vi.mocked(mnemonicFromSeed).mockImplementationOnce(seed => {
-            capturedSeed = seed
-            throw new Error('derive failure')
-        })
-        const secretKey = new Uint8Array(32).fill(0x42)
-
-        expect(() => algo25SecretKeyToMnemonic(secretKey)).toThrow(
-            'derive failure',
-        )
-        expect(Array.from(capturedSeed!)).toEqual(Array(32).fill(0))
+    it('rejects a buffer shorter than a 32-byte seed', () => {
+        expect(() =>
+            algo25SecretKeyToIndices(new Uint8Array(16).fill(3)),
+        ).toThrow(RangeError)
     })
 })

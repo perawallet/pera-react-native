@@ -38,6 +38,7 @@ import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quan
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'
 import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain/utils/multisig'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
+import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms/crypto/mnemonic-indices'
 import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
 import { algo25SeedToAddress } from '@perawallet/wallet-core-kms/utils'
 
@@ -200,10 +201,23 @@ export const createHdAccount = async (
     }
 
     const id = crypto.randomUUID()
+    // Throw, don't fall through: passing undefined for a bad phrase would
+    // silently mint a random wallet, and the suite would then "verify" it.
+    let mnemonicIndices: Uint16Array | undefined
+    if (mnemonic !== undefined) {
+        const indices = mnemonicWordsToIndices(mnemonic.split(' '))
+        if (!indices) {
+            throw new Error('HD mnemonic contains non-wordlist words')
+        }
+        mnemonicIndices = indices
+    }
     // The app's own BIP39→XHD-root preparation. It deliberately does not hand
     // back the phrase (heap hygiene), so the phrase is recovered from the
     // entropy it does return — again through the app's own helper.
-    const prepared = await prepareHDMasterKey({ id: `${id}-root`, mnemonic })
+    const prepared = await prepareHDMasterKey({
+        id: `${id}-root`,
+        mnemonicIndices,
+    })
     const resolvedMnemonic = mnemonic ?? entropyToMnemonic(prepared.entropy)
     prepared.entropy.fill(0)
 

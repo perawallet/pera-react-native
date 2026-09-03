@@ -49,7 +49,7 @@ describe('useTransactionWarnings', () => {
         expect(result.current.warningsByType['close-asset']).toEqual([])
     })
 
-    // PERA-4902: an ASA opt-out is a much smaller action than emptying an
+    // an ASA opt-out is a much smaller action than emptying an
     // account, so it must land in its own bucket and get its own copy.
     it('buckets an asset-transfer close-to as close-asset', () => {
         const { result } = renderHook(() =>

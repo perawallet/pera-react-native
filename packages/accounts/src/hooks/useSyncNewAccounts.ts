@@ -31,7 +31,7 @@ import { syncAndEnrichNewAccount } from '../sync/account-syncer'
  * until the migrated device id is written: enriching an account before the
  * device id lands fetches assets over the unscoped endpoint and caches
  * `is_favorited: false` under the asset TTL, so migrated favorites never
- * reappear (PERA-4564). While disabled the baseline is left unset so the
+ * reappear. While disabled the baseline is left unset so the
  * first enabled run re-establishes it without syncing.
  */
 type UseSyncNewAccountsOptions = {

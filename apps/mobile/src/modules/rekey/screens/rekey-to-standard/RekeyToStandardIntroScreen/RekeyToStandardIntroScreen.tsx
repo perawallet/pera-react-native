@@ -12,16 +12,21 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import { RekeyIntroScreen } from '../../../components/RekeyIntroScreen'
+import { useRekeyToStandardIntroScreen } from './useRekeyToStandardIntroScreen'
 
-export const RekeyToStandardIntroScreen = () => (
-    <RekeyIntroScreen
-        i18nBaseKey='rekey.to_standard.intro'
-        testIdPrefix='rekey-to-standard'
-        expectationCount={3}
-        navConfig={{
-            parentRoute: 'RekeyToStandard',
-            selectTargetScreen: 'RekeyToStandardSelectTarget',
-            supportUrl: config.rekeyToStandardSupportUrl,
-        }}
-    />
-)
+export const RekeyToStandardIntroScreen = () => {
+    const { i18nBaseKey, expectationCount } = useRekeyToStandardIntroScreen()
+
+    return (
+        <RekeyIntroScreen
+            i18nBaseKey={i18nBaseKey}
+            testIdPrefix='rekey-to-standard'
+            expectationCount={expectationCount}
+            navConfig={{
+                parentRoute: 'RekeyToStandard',
+                selectTargetScreen: 'RekeyToStandardSelectTarget',
+                supportUrl: config.rekeyToStandardSupportUrl,
+            }}
+        />
+    )
+}

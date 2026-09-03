@@ -13,6 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { Networks } from '@perawallet/wallet-core-config'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -37,6 +39,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 describe('useMarkNotificationsAsReadMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.mocked(useNetwork).mockReturnValue({
+            network: 'mainnet',
+        } as ReturnType<typeof useNetwork>)
+        vi.mocked(useDeviceID).mockReturnValue('test-device-id')
     })
 
     it('calls updateLastSeenNotification with correct parameters', async () => {
@@ -100,5 +106,44 @@ describe('useMarkNotificationsAsReadMutation', () => {
                 1,
             )
         })
+    })
+
+    describe('non-Pera-backed networks', () => {
+        it.each([Networks.betanet, Networks.custom])(
+            'no-ops markAsRead and flags isUnavailableOnNetwork on %s',
+            async network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(
+                    () => useMarkNotificationsAsReadMutation(),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+
+                result.current.markAsRead(12345)
+
+                await new Promise(resolve => setTimeout(resolve, 0))
+
+                expect(updateLastSeenNotification).not.toHaveBeenCalled()
+            },
+        )
+    })
+
+    // NotificationsScreen lists markAsRead as an effect dependency and marks
+    // read from that effect's cleanup, so an unstable identity would mark the
+    // list read on every render instead of on unmount.
+    it('keeps a stable markAsRead identity across re-renders', () => {
+        const { result, rerender } = renderHook(
+            () => useMarkNotificationsAsReadMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        const first = result.current.markAsRead
+        rerender()
+
+        expect(result.current.markAsRead).toBe(first)
     })
 })

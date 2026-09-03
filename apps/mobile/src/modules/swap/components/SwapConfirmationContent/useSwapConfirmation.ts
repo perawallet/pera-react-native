@@ -82,7 +82,7 @@ export const useSwapConfirmation = ({
         swapStatus === 'submitting' ||
         swapStatus === 'updating-status'
     // Preparing hasn't signed or broadcast anything yet — the sheet's close
-    // affordance cancels cleanly instead of trapping the user (PERA-4589).
+    // affordance cancels cleanly instead of trapping the user.
     const isCancellable = swapStatus === 'preparing'
     const isCommitted = isProcessing && !isCancellable
 

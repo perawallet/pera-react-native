@@ -11,7 +11,7 @@
  */
 
 /**
- * Lifecycle of a ledger row (PERA-4588):
+ * Lifecycle of a ledger row:
  * - `submitted` — the POST was issued (or is about to be); confirmation
  *   pending. Open.
  * - `unknown` — the POST failed without a node verdict; the group may still

@@ -12,7 +12,11 @@
 
 import type { CrashReportingService } from './models'
 
-type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical'
+// Mirrors `LogErrorSeverity` in `packages/shared/src/utils/logging.ts`, whose
+// 'expected' downgrade this router consumes. This extension deliberately does
+// not depend on that package, so nothing checks the two unions against each
+// other — the literals have to be kept in step by hand.
+type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
     severity: LogSeverity
@@ -34,15 +38,30 @@ const isReportableSeverity = (
 ): severity is 'error' | 'critical' =>
     severity === 'error' || severity === 'critical'
 
+const describeForBreadcrumb = (
+    error: unknown,
+    groupingKey?: string,
+): string => {
+    const message = error instanceof Error ? error.message : String(error)
+    return groupingKey ? `${groupingKey}: ${message}` : message
+}
+
 export const createCrashReportingErrorReporter = (
     crashReporting?: CrashReportingAdapter | null,
 ) => {
     return ({ severity, error, groupingKey }: ErrorReportPayload) => {
-        if (!isReportableSeverity(severity)) {
-            return
-        }
-
         try {
+            if (severity === 'expected') {
+                crashReporting?.logBreadcrumb?.(
+                    describeForBreadcrumb(error, groupingKey),
+                )
+                return
+            }
+
+            if (!isReportableSeverity(severity)) {
+                return
+            }
+
             if (typeof crashReporting?.recordNonFatalError === 'function') {
                 crashReporting.recordNonFatalError(error, groupingKey)
 

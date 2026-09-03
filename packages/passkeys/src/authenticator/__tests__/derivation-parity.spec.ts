@@ -98,7 +98,7 @@ describe('dp256 domain-specific derivation (called directly, no wrapper)', () =>
 
 describe('authenticator core wired to a real dp256-backed KeystoreSigner', () => {
     it('PROVES: createCredential.id is SHA256(SPKI-DER(dp256.getPurePKBytes(...))) end-to-end, not just against the fake in authenticator.spec.ts', async () => {
-        // Mirrors what Task 3's real keystore-chrome adapter does: derive via
+        // Mirrors what the real keystore-chrome adapter does: derive via
         // dp256 against the HD root, return the raw public key. No stubbing
         // of credentialId here — this authenticator computes it.
         const signer: KeystoreSigner = {

@@ -30,8 +30,7 @@ const DEV_LOCALE_TOUR_URL_BASE = 'perawallet://app/dev/locale-tour'
  * A `locale` that isn't in `SUPPORTED_LOCALES` (i18n/locales.ts — the single
  * source both this file and i18n/index.ts read from), or a URL with neither
  * `step` nor `run=all`, is unrecognized input, not a partially-parsed
- * deeplink — mirrors the asset-id boundary check in new-parser.ts
- * (PERA-4753).
+ * deeplink — mirrors the asset-id boundary check in new-parser.ts.
  */
 export const parseDevLocaleTourUri = (
     url: string,

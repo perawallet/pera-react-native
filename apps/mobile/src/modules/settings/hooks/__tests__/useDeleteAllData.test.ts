@@ -17,7 +17,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
-import { clearAllStores } from '@perawallet/wallet-core-shared'
+import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -31,6 +31,7 @@ const mockRemoveItem = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
 const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
+const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -38,6 +39,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         keyValueStorage: { removeItem: mockRemoveItem },
         database: {},
         migration: { resetLegacyData: mockResetLegacyData },
+        passkeyAutofill: { clearCredentials: mockClearPasskeyCredentials },
     }),
     clearKeystore: (...args: unknown[]) => mockClearKeystore(...args),
 }))
@@ -47,7 +49,7 @@ vi.mock('@perawallet/wallet-core-database', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
+    logger: { api: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
     clearAllStores: vi.fn(),
 }))
 
@@ -231,6 +233,64 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    // The credential providers keep their own copy of the master key, parent
+    // key id, and stored credentials (iOS app-group/keychain, Android MMKV) —
+    // none of it dies with the keystore, so the wipe must clear it explicitly.
+    it('clears the native passkey autofill state', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue if clearing native passkey autofill state fails', async () => {
+        mockClearPasskeyCredentials.mockRejectedValueOnce(
+            new Error('native passkey clear error'),
+        )
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearPasskeyCredentials).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledWith()
+        expect(logger.error).toHaveBeenCalledWith(
+            'Failed to clear native passkey autofill state',
+            expect.anything(),
+        )
+    })
+
+    // iOS `clearCredentials` ends with an identity-store sync that rejects
+    // with `storeDisabled` when the user never enabled Pera as a provider —
+    // the state clearing itself has already completed by then, so this is an
+    // expected state on every such erase, not a fault for the crash reporter.
+    it('does not report an error when the identity store is disabled during the passkey clear', async () => {
+        mockClearPasskeyCredentials.mockRejectedValueOnce(
+            new Error(
+                'The operation couldn’t be completed. (ASCredentialIdentityStoreErrorDomain error 1.)',
+            ),
+        )
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(logger.error).not.toHaveBeenCalledWith(
+            'Failed to clear native passkey autofill state',
+            expect.anything(),
+        )
+        expect(logger.warn).toHaveBeenCalled()
+        expect(clearAllStores).toHaveBeenCalledWith()
     })
 
     it('should continue if clearKeystore fails', async () => {

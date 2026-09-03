@@ -227,7 +227,7 @@ describe('buildGroupSignerTypeMap', () => {
         })
     })
 
-    describe('quantum classification (PQ-023 / PERA-4653)', () => {
+    describe('quantum classification', () => {
         it('classifies a quantum account as localKey, like algo25 and HD', () => {
             // Quantum accounts carry a keyPairId, so they satisfy
             // hasSigningKeys just like algo25/HD — there is no separate
@@ -339,9 +339,9 @@ describe('buildGroupSignerTypeMap', () => {
     })
 })
 
-describe('quantum-signed transactions over the callback transport (PQ-017 / PERA-4653)', () => {
+describe('quantum-signed transactions over the callback transport', () => {
     // A quantum (post-quantum) signature is just a `PeraSignedTransaction`
-    // with `pqsig` set instead of `sig` (PERA-4653 deleted the
+    // with `pqsig` set instead of `sig` (deleted the
     // `QuantumSignedTransaction` byte carrier) — so there is nothing
     // carrier-specific left for the callback transport to special-case; a
     // signed array with a pqsig entry forwards exactly like an all-`sig`

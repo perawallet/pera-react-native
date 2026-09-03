@@ -37,7 +37,12 @@ const notification = (id: string): PeraNotification =>
 
 const mockList = (
     notifications: PeraNotification[],
-    overrides: { isRefetching?: boolean; refetch?: () => void } = {},
+    overrides: {
+        isRefetching?: boolean
+        refetch?: () => void
+        isUnavailableOnNetwork?: boolean
+        isDeviceUnregistered?: boolean
+    } = {},
 ) =>
     vi.mocked(useNotificationsListQuery).mockReturnValue({
         data: notifications,
@@ -54,12 +59,14 @@ describe('useNotificationsScreen', () => {
         vi.clearAllMocks()
         vi.mocked(useMarkNotificationsAsReadMutation).mockReturnValue({
             markAsRead: mockMarkAsRead,
+            isUnavailableOnNetwork: false,
         })
         vi.mocked(useInboxStatus).mockReturnValue({
             hasUnreadItems: true,
             hasUnreadInboxItems: false,
             hasUnreadNotifications: true,
             unreadInboxCount: 0,
+            isUnavailableOnNetwork: false,
         })
     })
 
@@ -87,6 +94,7 @@ describe('useNotificationsScreen', () => {
             hasUnreadInboxItems: false,
             hasUnreadNotifications: false,
             unreadInboxCount: 0,
+            isUnavailableOnNetwork: false,
         })
         mockList([notification('42')])
 
@@ -124,5 +132,21 @@ describe('useNotificationsScreen', () => {
         unmount()
 
         expect(mockMarkAsRead).not.toHaveBeenCalled()
+    })
+
+    it('forwards isUnavailableOnNetwork from the notifications list query', () => {
+        mockList([], { isUnavailableOnNetwork: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('forwards isDeviceUnregistered from the notifications list query', () => {
+        mockList([], { isDeviceUnregistered: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isDeviceUnregistered).toBe(true)
     })
 })

@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import {
+    indicesToUtf8Bytes,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
 } from '../mnemonic-indices'
@@ -60,5 +61,29 @@ describe('mnemonicIndexToWord', () => {
         const indices = mnemonicWordsToIndices(words)
 
         expect(Array.from(indices!, mnemonicIndexToWord)).toEqual(words)
+    })
+})
+
+describe('indicesToUtf8Bytes', () => {
+    it('encodes exactly the UTF-8 bytes of the space-joined phrase', () => {
+        const words =
+            'champion say kitchen sock defense example mesh body sample artwork warfare canvas item recall cheese total floor cycle such asthma okay immense lake street'.split(
+                ' ',
+            )
+        const indices = mnemonicWordsToIndices(words)!
+
+        expect(Array.from(indicesToUtf8Bytes(indices))).toEqual(
+            Array.from(new TextEncoder().encode(words.join(' '))),
+        )
+    })
+
+    it('returns an empty buffer for no indices', () => {
+        expect(indicesToUtf8Bytes(new Uint16Array(0)).length).toBe(0)
+    })
+
+    it('throws for an out-of-range index', () => {
+        expect(() => indicesToUtf8Bytes(Uint16Array.of(2048))).toThrow(
+            RangeError,
+        )
     })
 })

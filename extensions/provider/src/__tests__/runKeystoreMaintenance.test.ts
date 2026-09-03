@@ -86,7 +86,7 @@ describe('runKeystoreMaintenance', () => {
         // `reconcileKeystore` is internal; this is how it announces itself.
         mocks.readPersistedKeys.mockImplementation(() => {
             calls.push('reconcile')
-            return [{ id: 'k1' }]
+            return { keys: [{ id: 'k1' }], failedIds: [] }
         })
     })
 
@@ -94,7 +94,31 @@ describe('runKeystoreMaintenance', () => {
         const result = await runKeystoreMaintenance(deps)
 
         expect(calls).toEqual(['reconcile', 'repair'])
-        expect(result).toEqual({ repair: NO_REPAIR })
+        expect(result).toEqual({ repair: NO_REPAIR, failedDecodeIds: [] })
+    })
+
+    // A record the reconcile could not decode is invisible in the reactive
+    // store but guaranteed to fail the engine's strict hydration on the next
+    // launch — the caller needs the ids to report it while the app still boots.
+    test('surfaces undecodable record ids from every reconcile pass, deduplicated', async () => {
+        mocks.readPersistedKeys
+            .mockImplementationOnce(() => {
+                calls.push('reconcile')
+                return { keys: [{ id: 'k1' }], failedIds: ['k/bad'] }
+            })
+            .mockImplementationOnce(() => {
+                calls.push('reconcile')
+                return { keys: [{ id: 'k1' }], failedIds: ['k/bad', 'k/worse'] }
+            })
+        mocks.runMaterialRepair.mockImplementation(async () => {
+            calls.push('repair')
+            return { repaired: 1, failed: 0 }
+        })
+
+        const result = await runKeystoreMaintenance(deps)
+
+        expect(calls).toEqual(['reconcile', 'repair', 'reconcile'])
+        expect(result.failedDecodeIds).toEqual(['k/bad', 'k/worse'])
     })
 
     // A quantum account minted before custody moved into the keystore has a

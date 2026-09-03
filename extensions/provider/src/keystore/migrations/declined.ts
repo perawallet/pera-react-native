@@ -41,7 +41,7 @@ export type NoteStore = {
 export type DeclinedRegister = {
     /**
      * No production caller yet — the consuming revision that acts on these
-     * notes is still deferred (Task 4). Kept because a write-only ledger has
+     * notes is still deferred. Kept because a write-only ledger has
      * no way to be proven correct: this is what the revision specs read the
      * note back through.
      */

@@ -74,7 +74,7 @@ export const useAccountCollectiblesQuery = (
         // Sort mode and search term are part of the key, so changing either
         // starts a cold query that would blank the gallery until SQL answers —
         // on a large, freshly imported account that read as "sorting does
-        // nothing" (PERA-4921). Hold the rows already on screen instead.
+        // nothing". Hold the rows already on screen instead.
         // Scoped to the same account and network: only those rows are stale
         // rather than someone else's.
         placeholderData: (previousRows, previousQuery) => {
