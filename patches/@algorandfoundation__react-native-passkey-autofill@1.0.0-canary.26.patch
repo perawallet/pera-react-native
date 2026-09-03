@@ -1282,6 +1282,127 @@ index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0
 +        store(context).clearAll()
 +    }
 +}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d12324ee9
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt
+@@ -0,0 +1,115 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.app.Activity
++import android.content.Intent
++import android.os.Build
++import android.os.Parcelable
++import android.service.autofill.Dataset
++import android.view.autofill.AutofillId
++import android.view.autofill.AutofillManager
++import android.view.autofill.AutofillValue
++import android.widget.RemoteViews
++import androidx.appcompat.app.AppCompatActivity
++import androidx.biometric.BiometricPrompt
++import androidx.core.content.ContextCompat
++import co.algorand.passkeyautofill.auth.BiometricRequirement
++import kotlin.coroutines.resume
++import kotlin.coroutines.suspendCoroutine
++
++/**
++ * PERA LOCAL PATCH — shared with [FillAuthActivity] and `PeraPickerActivity`,
++ * the two dataset-auth targets an `AutofillService` PendingIntent can reach.
++ *
++ * The biometric prompt is copied verbatim from `GetPasswordActivity`, which
++ * gates the Credential Manager password path the same way: same prompt copy,
++ * same [BiometricRequirement], no `CryptoObject`. A login is sealed with the
++ * wallet's master key rather than a user-auth-bound Keystore key, so this
++ * gate is enforced by call ordering — biometrics before unseal — not
++ * cryptographically.
++ */
++
++/**
++ * The same prompt [GetPasswordActivity][co.algorand.passkeyautofill.GetPasswordActivity]
++ * shows, honouring the build-time configured [BiometricRequirement].
++ */
++suspend fun AppCompatActivity.biometrics(): Boolean {
++    val requirement = BiometricRequirement.resolve(this)
++    return suspendCoroutine { continuation ->
++        val biometricPrompt = BiometricPrompt(
++            this,
++            ContextCompat.getMainExecutor(this),
++            object : BiometricPrompt.AuthenticationCallback() {
++                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
++                    super.onAuthenticationSucceeded(result)
++                    continuation.resume(true)
++                }
++
++                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
++                    super.onAuthenticationError(errorCode, errString)
++                    continuation.resume(false)
++                }
++
++                override fun onAuthenticationFailed() {
++                    super.onAuthenticationFailed()
++                }
++            }
++        )
++        val promptInfoBuilder = BiometricPrompt.PromptInfo.Builder()
++            .setTitle("Use saved login")
++            .setSubtitle("Authenticate to fill your password")
++            .setAllowedAuthenticators(requirement.allowedAuthenticators)
++        if (!requirement.allowsDeviceCredential) {
++            promptInfoBuilder.setNegativeButtonText("Cancel")
++        }
++        biometricPrompt.authenticate(promptInfoBuilder.build())
++    }
++}
++
++/**
++ * `Intent.getParcelableExtra` reads back exactly what [PeraAutofillService]
++ * put in with `putExtra(String, Parcelable)`, including an [android.view.autofill.AutofillId].
++ * The single-arg overload is deprecated from API 33; the typed overload
++ * replacing it only exists from API 33, hence the branch.
++ */
++inline fun <reified T : Parcelable> Intent.parcelable(key: String): T? =
++    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
++        getParcelableExtra(key, T::class.java)
++    } else {
++        @Suppress("DEPRECATION")
++        getParcelableExtra(key) as? T
++    }
++
++/**
++ * A dataset carrying the release credential, labelled with the username so
++ * the platform's fill-selection UI can distinguish entries if it shows one.
++ */
++fun buildDataset(
++    usernameId: AutofillId?,
++    passwordId: AutofillId,
++    username: String,
++    password: String,
++    packageName: String,
++): Dataset {
++    val presentation = RemoteViews(packageName, android.R.layout.simple_list_item_1).apply {
++        setTextViewText(android.R.id.text1, username)
++    }
++    return Dataset.Builder().apply {
++        usernameId?.let { setValue(it, AutofillValue.forText(username), presentation) }
++        setValue(passwordId, AutofillValue.forText(password), presentation)
++    }.build()
++}
++
++/** Returns [dataset] to the platform as the dataset-auth result. */
++fun AppCompatActivity.finishWith(dataset: Dataset) {
++    setResult(
++        Activity.RESULT_OK,
++        Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, dataset),
++    )
++    finish()
++}
++
++/** Releases nothing. Used on cancellation, biometric failure, or a failed unseal. */
++fun AppCompatActivity.cancel() {
++    setResult(Activity.RESULT_CANCELED)
++    finish()
++}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6433f3cc3
@@ -1378,25 +1499,63 @@ index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..7b55edffa24cc8a61087570ba23cbcd007467daa
+index 0000000000000000000000000000000000000000..96f622a01c74db5a5b8f45f47fac46d4bafe39d7
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,55 @@
 +package co.algorand.passkeyautofill.autofill
 +
-+import android.app.Activity
++import android.os.Build
 +import android.os.Bundle
++import android.util.Log
++import android.view.autofill.AutofillId
++import androidx.annotation.RequiresApi
 +import androidx.appcompat.app.AppCompatActivity
++import androidx.lifecycle.lifecycleScope
++import co.algorand.passkeyautofill.PasswordCredentialStore
++import kotlinx.coroutines.launch
 +
 +/**
-+ * Stub target of the dataset auth PendingIntent for an already-matched login.
-+ * Replaced with the real biometric-gated unseal flow in a later task.
++ * PERA LOCAL PATCH — the dataset-auth target for a matched login
++ * ([PeraAutofillService.matchedResponse]), and the point where a decrypted
++ * password is actually released to the platform.
++ *
++ * Biometrics gate the unseal, not the other way round: [PasswordCredentialStore.login]
++ * is called only after [biometrics] succeeds, mirroring `GetPasswordActivity`'s
++ * ordering on the Credential Manager side. On cancellation, biometric failure,
++ * or a failed unseal, nothing fills — see [cancel].
 + */
++@RequiresApi(Build.VERSION_CODES.O)
 +class FillAuthActivity : AppCompatActivity() {
++
++    private val store = PasswordCredentialStore()
++
 +    override fun onCreate(savedInstanceState: Bundle?) {
 +        super.onCreate(savedInstanceState)
-+        setResult(Activity.RESULT_CANCELED)
-+        finish()
++        lifecycleScope.launch { release() }
++    }
++
++    private suspend fun release() {
++        val recordId = intent.getStringExtra(PeraAutofillService.EXTRA_RECORD_ID)
++        val passwordId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_PASSWORD_ID)
++        val usernameId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_USERNAME_ID)
++
++        if (recordId == null || passwordId == null) { cancel(); return }
++        if (!biometrics()) { cancel(); return }
++
++        val login = try {
++            store.login(this, recordId)
++        } catch (e: Exception) {
++            Log.e(TAG, "Unseal failed", e)
++            null
++        }
++        if (login == null) { cancel(); return }
++
++        finishWith(buildDataset(usernameId, passwordId, login.username, login.password, packageName))
++    }
++
++    companion object {
++        private const val TAG = "FillAuthActivity"
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
