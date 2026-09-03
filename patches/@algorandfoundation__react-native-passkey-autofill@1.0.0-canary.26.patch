@@ -800,10 +800,10 @@ index 0000000000000000000000000000000000000000..8eed5f6fe3eef731973aa2fae7f5391e
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..87de8929a6160247f56f5a6c95c69517f4680446
+index 0000000000000000000000000000000000000000..def8d18d1c96eada740de3e9289ad9228a6d9953
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PrivilegedBrowsers.kt
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,234 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
@@ -813,6 +813,7 @@ index 0000000000000000000000000000000000000000..87de8929a6160247f56f5a6c95c69517
 +import androidx.annotation.VisibleForTesting
 +import androidx.credentials.provider.CallingAppInfo
 +import java.security.MessageDigest
++import org.json.JSONException
 +import org.json.JSONObject
 +
 +/**
@@ -938,7 +939,16 @@ index 0000000000000000000000000000000000000000..87de8929a6160247f56f5a6c95c69517
 +        packageName: String,
 +        acceptUserdebugSignatures: Boolean,
 +    ): Set<String> {
-+        val apps = JSONObject(raw).optJSONArray("apps") ?: return emptySet()
++        // Fails closed on its own rather than leaning on isAllowlistedBrowser's
++        // catch: a check on the security boundary must not owe that property to
++        // a caller's error handling, where it is invisible and easily dropped.
++        // Unparseable input and a missing "apps" key converge here.
++        val apps = try {
++            JSONObject(raw).optJSONArray("apps")
++        } catch (e: JSONException) {
++            Log.e(TAG, "Privileged browser allowlist is malformed", e)
++            null
++        } ?: return emptySet()
 +        val fingerprints = mutableSetOf<String>()
 +        for (i in 0 until apps.length()) {
 +            val info = apps.optJSONObject(i)?.optJSONObject("info") ?: continue
@@ -983,6 +993,10 @@ index 0000000000000000000000000000000000000000..87de8929a6160247f56f5a6c95c69517
 +            }
 +        } else {
 +            @Suppress("DEPRECATION")
++            // Below API 28 co-signers and one signer's rotation history are the
++            // same flat array, so a rotated-key browser is held to the stricter
++            // containsAll. That declines a legitimate browser rather than
++            // admitting a wrong one: an availability trade, not a hole.
 +            packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
 +                ?.also { multipleSigners = it.size > 1 }
 +        } ?: return empty
@@ -2925,10 +2939,10 @@ index 0000000000000000000000000000000000000000..b5d9eba657da43d60c174c5904cd9bc9
 +}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt b/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..605f3537a55aaabcfe4f36333b20d96083444f91
+index 0000000000000000000000000000000000000000..b457e5db0aa44c7e60b3f59cd80bb8b844134e8e
 --- /dev/null
 +++ b/android/src/test/java/co/algorand/passkeyautofill/PrivilegedBrowsersTest.kt
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,154 @@
 +package co.algorand.passkeyautofill
 +
 +import java.io.File
@@ -3043,7 +3057,23 @@ index 0000000000000000000000000000000000000000..605f3537a55aaabcfe4f36333b20d960
 +    }
 +
 +    @Test
-+    fun `malformed allowlist json yields no fingerprints rather than throwing`() {
++    fun `unparseable allowlist json yields no fingerprints rather than throwing`() {
++        // The parse must fail closed by itself. Relying on isAllowlistedBrowser's
++        // outer catch would make this property invisible at the point that owns
++        // it, and it would vanish the moment anything else called this directly.
++        for (unparseable in listOf("{", "not json", "", "[", """{"apps": [""")) {
++            val fingerprints = PrivilegedBrowsers.parseAllowlistFingerprints(
++                unparseable,
++                "com.android.chrome",
++                acceptUserdebugSignatures = false,
++            )
++            assertTrue("expected no fingerprints from <$unparseable>", fingerprints.isEmpty())
++        }
++    }
++
++    @Test
++    fun `allowlist json without an apps key yields no fingerprints`() {
++        // Valid JSON, wrong shape — a different path from unparseable input.
 +        assertTrue(
 +            PrivilegedBrowsers.parseAllowlistFingerprints(
 +                """{"unexpected": true}""",
