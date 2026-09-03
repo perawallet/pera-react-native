@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import React from 'react'
 import {
     afterAll,
     afterEach,
@@ -21,28 +20,10 @@ import {
     it,
     vi,
 } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { type QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-
-import { createTestQueryClient } from '@test-utils/render'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
-import {
-    AccountTypes,
-    DerivationTypes,
-    useAccountsStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    useKMS,
-    hdDerivedKeyId,
-    type Algo25KeyResult,
-} from '@perawallet/wallet-core-kms'
-import {
-    encodeAlgorandAddress,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     BackupAccountType,
     deriveBackupKeys,
@@ -64,119 +45,14 @@ import {
 } from '@modules/cloud-backup'
 
 import {
-    ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
-    HD_TEST_MNEMONIC_24,
-} from './__fixtures__/onboarding'
-
-// The push round-trip runs argon2 → HKDF → keystore reveal → AES-256-GCM
-// encrypt → upsert. Comfortably past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30_000
-
-// Any twelve wordlist words: the cloud-backup KDF hashes the phrase and never
-// checks a BIP39 checksum, so these don't need to form a valid mnemonic.
-const BACKUP_MNEMONIC = [
-    'abandon',
-    'ability',
-    'able',
-    'about',
-    'above',
-    'absent',
-    'absorb',
-    'abstract',
-    'absurd',
-    'abuse',
-    'access',
-    'accident',
-]
-
-const BACKUP_SALT = Buffer.from(new Uint8Array(16).fill(7)).toString('base64')
-
-// Mint a real Algo25 key from the pinned test mnemonic so the keystore can
-// later reveal it to the sync engine, and register the account.
-const seedAlgo25Account = async (): Promise<WalletAccount> => {
-    const { result: kms } = renderHook(() => useKMS())
-    let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
-        key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
-        })
-        expect(key).not.toBeNull()
-    })
-    const account: WalletAccount = {
-        id: 'algo25-1',
-        type: AccountTypes.algo25,
-        address: ALGO25_TEST_ADDRESS,
-        keyPairId: key!.seedKey.id ?? '',
-        name: 'Algo25 Test',
-    }
-    useAccountsStore.getState().setAccounts([account])
-    return account
-}
-
-// The derived child key id is the accounts' `keyPairId` so `seedIdOf` (used by
-// the HD resolver) can walk back to the seed.
-const seedHDWalletAccounts = async (): Promise<{
-    first: WalletAccount
-    second: WalletAccount
-}> => {
-    const { result: kms } = renderHook(() => useKMS())
-    let seedKeyId = ''
-    await waitFor(async () => {
-        const seed = await kms.current.createHDWalletKey({
-            mnemonic: HD_TEST_MNEMONIC_24,
-        })
-        expect(seed).not.toBeNull()
-        seedKeyId = seed!.seedKey.id ?? ''
-        expect(seedKeyId).not.toBe('')
-    })
-
-    const make = async (
-        account: number,
-        keyIndex: number,
-        name: string,
-    ): Promise<WalletAccount> => {
-        const pub = await kms.current.getDerivedPublicKey(
-            seedKeyId,
-            account,
-            keyIndex,
-            BIP32DerivationType.Peikert,
-        )
-        return {
-            id: `hd-${account}-${keyIndex}`,
-            type: AccountTypes.hdWallet,
-            address: encodeAlgorandAddress(pub),
-            keyPairId: hdDerivedKeyId(
-                seedKeyId,
-                account,
-                keyIndex,
-                BIP32DerivationType.Peikert,
-            ),
-            name,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType: DerivationTypes.Peikert,
-            },
-        }
-    }
-
-    const first = await make(0, 0, 'HD First')
-    const second = await make(0, 1, 'HD Second')
-    useAccountsStore.getState().setAccounts([first, second])
-    return { first, second }
-}
-
-const renderQueryHook = <T,>(hook: () => T) => {
-    const queryClient: QueryClient = createTestQueryClient()
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-    return renderHook(hook, { wrapper }).result
-}
+    BACKUP_MNEMONIC,
+    BACKUP_SALT,
+    SLOW_TEST_TIMEOUT_MS,
+    renderQueryHook,
+    seedAlgo25Account,
+    seedHDWalletAccounts,
+} from './__fixtures__/cloudBackup'
+import { ALGO25_TEST_MNEMONIC } from './__fixtures__/onboarding'
 
 describe('Flow: Cloud backup → Sync (push round-trip)', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
@@ -206,8 +82,6 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
                     salt: BACKUP_SALT,
                 })
 
-            // `withBackupEncryptionKey` (inside syncNow) reads these back out
-            // of the keystore, so the engine and this test share one key.
             await persistBackupKeys({
                 encryptionKey,
                 authSecretKey,
@@ -237,12 +111,10 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             const addressKey = `accounts/${account.address}`
             const secretsKey = `secrets/${account.address}`
             expect(getItem(addressKey)).toBeDefined()
-            expect(getItem(secretsKey)).toBeDefined()
 
-            // Decrypting back to the original 25-word phrase is the real
-            // validation of the push round-trip.
-            const secretItem = getItem(secretsKey)!
-            const plaintext = decryptItemPayload(secretItem.payload, {
+            const secretItem = getItem(secretsKey)
+            expect(secretItem).toBeDefined()
+            const plaintext = decryptItemPayload(secretItem!.payload, {
                 encryptionKey,
                 backupId,
                 key: secretsKey,
@@ -257,6 +129,59 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             expect(syncState?.items[addressKey]).toMatchObject({
                 isDirty: false,
             })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'signs with the device id the backup was registered under, not the current one in the device store',
+        async () => {
+            await seedAlgo25Account()
+
+            const { backupId, encryptionKey, authSecretKey } =
+                await deriveBackupKeys({
+                    mnemonic: BACKUP_MNEMONIC,
+                    salt: BACKUP_SALT,
+                })
+            await persistBackupKeys({
+                encryptionKey,
+                authSecretKey,
+                mnemonic: BACKUP_MNEMONIC,
+            })
+            useCloudBackupStore.getState().setConfigured({
+                backupId,
+                salt: BACKUP_SALT,
+                deviceId: 'registered-device',
+            })
+            useDeviceStore
+                .getState()
+                .setDeviceID(
+                    useNetworkStore.getState().network,
+                    'current-device',
+                )
+
+            const { handlers, seenDeviceIds } = buildSyncHandlers({ backupId })
+            server.use(...handlers)
+
+            const importHook = renderQueryHook(() => useCloudBackupImport())
+            const mnemonicHook = renderQueryHook(() =>
+                useResolveMnemonicForBackup(),
+            )
+
+            const manager = initializeBackupSyncManager({
+                importAccounts: importHook.current.importAccounts,
+                resolveMnemonic: mnemonicHook.current,
+                resolveHd: async () => null,
+            })
+            await manager.syncNow()
+
+            expect(
+                useBackupSyncStateStore.getState().syncState?.lastSyncResult,
+            ).toBe('SUCCESS')
+            expect(seenDeviceIds().length).toBeGreaterThan(0)
+            expect(new Set(seenDeviceIds())).toEqual(
+                new Set(['registered-device']),
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -300,13 +225,10 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             })
             await manager.syncNow()
 
-            // Each child gets its own address item; neither carries a personal
-            // secret.
             expect(getItem(`accounts/${first.address}`)).toBeDefined()
             expect(getItem(`accounts/${second.address}`)).toBeDefined()
             expect(getItem(`secrets/${second.address}`)).toBeUndefined()
 
-            // The seed is stored exactly once, at the first-derived slot.
             const seedItem = getItem(`secrets/${first.address}`)
             expect(seedItem).toBeDefined()
             const plaintext = decryptItemPayload(seedItem!.payload, {
