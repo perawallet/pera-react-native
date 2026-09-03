@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useNetworkStatusStore } from '@modules/network'
 import { useInboxScreen } from '../useInboxScreen'
 import { useInboxQuery, type InboxItem } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
@@ -34,6 +35,7 @@ vi.mock('@modules/messages/hooks', () => ({
 describe('useInboxScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useNetworkStatusStore.getState().setHasInternet(true)
         vi.mocked(useInboxQuery).mockReturnValue({
             data: [],
             isPending: false,
@@ -168,5 +170,49 @@ describe('useInboxScreen', () => {
         const { result } = renderHook(() => useInboxScreen())
 
         expect(result.current.isAwaitingRegistration).toBe(false)
+    })
+
+    it('flags offline while the inbox query is paused', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isPaused: true,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('flags offline for an error on a device with no internet', () => {
+        useNetworkStatusStore.getState().setHasInternet(false)
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isError: true,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('keeps an online error as an error, not offline', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isError: true,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isOffline).toBe(false)
+        expect(result.current.isError).toBe(true)
     })
 })

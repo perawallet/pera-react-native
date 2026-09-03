@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { onlineManager } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -393,6 +394,51 @@ describe('useInboxQuery', () => {
 
             await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
             expect(fetchInbox).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    it('returns a referentially stable refetch across renders', async () => {
+        vi.mocked(fetchInbox).mockResolvedValue({
+            joint_account_import_requests: [],
+            joint_account_sign_requests: [],
+            asa_inboxes: [],
+        } as unknown as InboxResponse)
+
+        const { result, rerender } = renderHook(() => useInboxQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        const { refetch } = result.current
+
+        rerender()
+
+        // A per-render identity turns any consumer effect with `refetch` in
+        // its deps into a refetch loop (see the notifications focus-refetch).
+        expect(result.current.refetch).toBe(refetch)
+    })
+
+    describe('offline pause', () => {
+        beforeEach(() => {
+            vi.mocked(fetchInbox).mockClear()
+        })
+
+        afterEach(() => {
+            onlineManager.setOnline(true)
+        })
+
+        it('reports isPaused — not isPending — when offline pauses an uncached query', async () => {
+            onlineManager.setOnline(false)
+
+            const { result } = renderHook(() => useInboxQuery(), {
+                wrapper: createWrapper(),
+            })
+
+            await waitFor(() => expect(result.current.isPaused).toBe(true))
+            // A paused query keeps `status: 'pending'`; surfacing that as
+            // isPending would spin the inbox empty view indefinitely.
+            expect(result.current.isPending).toBe(false)
+            expect(fetchInbox).not.toHaveBeenCalled()
         })
     })
 
