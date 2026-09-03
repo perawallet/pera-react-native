@@ -55,7 +55,7 @@
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
     "falcon-1024": "catalog:",
-    "fallow": "3.17.0",
+    "fallow": "3.19.0",
     "lanekeep": "catalog:",
     "msw": "catalog:",
     "oxfmt": "catalog:",
