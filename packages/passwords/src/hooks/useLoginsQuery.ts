@@ -10,11 +10,21 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type QueryKey } from '@tanstack/react-query'
 import type { Login } from '../models/login'
 import { listLogins } from '../storage/loginStore'
 
 export const loginsQueryKeyRoot = ['logins'] as const
+
+/**
+ * Matches every login query key, including the per-record `['logins', id]`
+ * key `useEditPasswordScreen` used to read through TanStack Query. Domain and
+ * username are sealed on purpose so the set of services a person holds logins
+ * for is never readable from disk in the clear — a disk-persisted query cache
+ * would defeat that, so this predicate exists to exclude these keys from it.
+ */
+export const isLoginQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === loginsQueryKeyRoot[0]
 
 export type UseLoginsQueryResult = {
     logins: Login[]

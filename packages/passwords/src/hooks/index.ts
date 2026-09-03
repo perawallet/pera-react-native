@@ -12,6 +12,7 @@
 
 export {
     loginsQueryKeyRoot,
+    isLoginQuery,
     useLoginsQuery,
     type UseLoginsQueryResult,
 } from './useLoginsQuery'

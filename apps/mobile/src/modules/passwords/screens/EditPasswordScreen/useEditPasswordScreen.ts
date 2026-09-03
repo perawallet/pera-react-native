@@ -12,7 +12,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { useQuery } from '@tanstack/react-query'
 import {
     readLogin,
     useSaveLoginMutation,
@@ -40,27 +39,35 @@ export const useEditPasswordScreen = (
     const navigation = useNavigation()
     const { saveLogin, isPending, error } = useSaveLoginMutation()
 
-    const query = useQuery({
-        queryKey: ['logins', id] as const,
-        queryFn: () => readLogin(id),
-    })
-
     const [domain, setDomain] = useState('')
     const [username, setUsername] = useState('')
     const [password, setPassword] = useState('')
     const [note, setNote] = useState('')
+    const [isLoading, setIsLoading] = useState(true)
 
-    // The form is uncontrolled until the sealed record resolves; seeding it in
-    // an effect (rather than as useState initial values) is what lets the
-    // fields populate on the render after the unseal completes.
+    // Read the sealed record through a plain effect rather than useQuery: the
+    // query cache is disk-persisted (apps/mobile/src/providers/query-persistence.ts),
+    // and the decrypted password must never reach it. The form is uncontrolled
+    // until this resolves, which is what lets the fields populate on the
+    // render after the unseal completes.
     useEffect(() => {
-        const login = query.data
-        if (!login) return
-        setDomain(login.domain)
-        setUsername(login.username)
-        setPassword(login.password)
-        setNote(login.note ?? '')
-    }, [query.data])
+        let cancelled = false
+        setIsLoading(true)
+        void readLogin(id)
+            .then(login => {
+                if (cancelled || !login) return
+                setDomain(login.domain)
+                setUsername(login.username)
+                setPassword(login.password)
+                setNote(login.note ?? '')
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false)
+            })
+        return () => {
+            cancelled = true
+        }
+    }, [id])
 
     const canSave = useMemo(
         () => domain.trim() !== '' && password !== '',
@@ -89,7 +96,7 @@ export const useEditPasswordScreen = (
         setPassword,
         setNote,
         canSave,
-        isLoading: query.isLoading,
+        isLoading,
         isSaving: isPending,
         error: error?.message ?? null,
         handleSave,

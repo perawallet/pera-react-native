@@ -521,7 +521,11 @@ function buildAppConfig(env) {
         { legacySuffix: legacyAutofillExtensionSuffix },
       ],
 
-      // Passkey autofill (FIDO2) — system credential provider extension
+      // Passkey autofill (FIDO2) — system credential provider extension.
+      // `providesPasswords` is variant-gated the same way the JS-side
+      // `passwordManager` capability is: production has not opted into the
+      // password-manager feature, so it stays passkey-only (ProvidesPasswords
+      // false, single-domain ASCredentialProviderExtensionSupportedDomains).
       [
         '@algorandfoundation/react-native-passkey-autofill',
         {
@@ -530,7 +534,8 @@ function buildAppConfig(env) {
           appGroup: `group.${bundleIdentifiers[variant].ios}`,
           appleTeamId: env.IOS_TEAM_ID,
           aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
-          biometricRequirement: 'strongOrCredential'
+          biometricRequirement: 'strongOrCredential',
+          providesPasswords: variant !== 'production',
         },
       ],
 

@@ -497,10 +497,10 @@ index 0000000000000000000000000000000000000000..452ead69fc9c4ab167c1e642d4c3838b
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..ab9dd7637aa3a64b891be02e9910bd82ee936e64
+index 0000000000000000000000000000000000000000..86c3564871197cd2bee269ae1a5a1b449a01a10b
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/PasswordCredentialStore.kt
-@@ -0,0 +1,287 @@
+@@ -0,0 +1,297 @@
 +package co.algorand.passkeyautofill
 +
 +import android.content.Context
@@ -579,12 +579,17 @@ index 0000000000000000000000000000000000000000..ab9dd7637aa3a64b891be02e9910bd82
 +         *
 +         * The subdomain test requires the dot: a plain suffix check would hand
 +         * `example.com`'s password to `evil-example.com`, and matching anywhere
-+         * in the string would do it in both directions.
++         * in the string would do it in both directions. It also requires the
++         * *stored* host to contain a dot before it is allowed to match a
++         * subdomain — without that, a login stored as the bare public-suffix
++         * label `com` would answer every `*.com` site.
 +         */
 +        fun domainMatches(storedDomain: String, requestedHost: String): Boolean {
 +            val storedHost = host(storedDomain)
 +            if (storedHost.isEmpty() || requestedHost.isEmpty()) return false
-+            return storedHost == requestedHost || requestedHost.endsWith(".$storedHost")
++            if (storedHost == requestedHost) return true
++            if (!storedHost.contains(".")) return false
++            return requestedHost.endsWith(".$storedHost")
 +        }
 +
 +        /**
@@ -631,6 +636,11 @@ index 0000000000000000000000000000000000000000..ab9dd7637aa3a64b891be02e9910bd82
 +            val json = parse(payload) ?: return null
 +            val domain = json.optString("domain").takeUnless { it.isEmpty() } ?: return null
 +            if (json.isNull("username")) return null
++            // Mirror decode()'s shape check so a malformed record is rejected
++            // the same way in both readers instead of surfacing here and only
++            // failing later, at release, when decode() is the one called.
++            json.opt("createdAt") as? Number ?: return null
++            json.opt("updatedAt") as? Number ?: return null
 +            val host = host(domain)
 +            if (host.isEmpty()) return null
 +            return LoginSummary(recordIdentifier, host, json.optString("username"))
@@ -2305,7 +2315,7 @@ index 045847c91531aa36bb41aad811425f313077d3b1..9bf24fdd65bf79803bf65d015a0a0935
  </credential-provider>
 \ No newline at end of file
 diff --git a/app.plugin.js b/app.plugin.js
-index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0fdf8c0228 100644
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b283684369c 100644
 --- a/app.plugin.js
 +++ b/app.plugin.js
 @@ -20,6 +20,8 @@ const IOS_EXTENSION_FILES = [
@@ -2317,23 +2327,33 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0f
    "WebAuthn.swift",
    "BiometricRequirement.swift",
    "Prf.swift",
-@@ -128,9 +130,14 @@ const writePlist = (filePath, body) => {
+@@ -128,11 +130,24 @@ const writePlist = (filePath, body) => {
    fs.writeFileSync(filePath, body);
  };
  
-+// `ASCredentialProviderExtensionSupportedDomains` is deliberately absent: while
-+// the key is present iOS offers this provider ONLY on the domains it lists, so
-+// a password saved for any other site is never offered and nothing reports an
-+// error. Absent, the key means every domain — which is what a password manager
-+// needs. It also widens the passkey provider from the single associated site to
-+// every domain.
++// PERA LOCAL PATCH: `providesPasswords` gates both the capability flag and
++// `ASCredentialProviderExtensionSupportedDomains` on the build variant.
++//
++// While the supported-domains key is present, iOS offers this provider ONLY
++// on the domains it lists, so a password saved for any other site is never
++// offered and nothing reports an error — and it also narrows the *passkey*
++// provider down to those same domains. Dropping the key entirely (what the
++// password-manager variants want) means every domain, which is what a
++// password manager needs but is NOT what production should ship: production
++// has not opted into the password-manager feature, so it keeps the
++// single-domain scoping (and ProvidesPasswords:false) the passkey-only
++// provider always had.
  const extensionInfoPlist = ({
    label,
 -  supportedDomains,
    aaguid,
    biometricRequirement,
++  providesPasswords,
++  supportedDomains,
  }) => `<?xml version="1.0" encoding="UTF-8"?>
-@@ -160,13 +167,9 @@ const extensionInfoPlist = ({
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+@@ -160,13 +175,9 @@ const extensionInfoPlist = ({
  ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
    <string>${biometricRequirement}</string>
    <key>NSFaceIDUsageDescription</key>
@@ -2348,16 +2368,32 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0f
      <key>CFBundleDisplayName</key>
      <string>${label}</string>
      <key>NSExtensionAttributes</key>
-@@ -178,7 +181,7 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
+@@ -178,14 +189,22 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
          <key>ProvidesPasskeys</key>
          <true/>
          <key>ProvidesPasswords</key>
 -        <false/>
-+        <true/>
++        <${providesPasswords ? "true" : "false"}/>
          <key>ProvidesTextToInsert</key>
          <false/>
          <key>ShowsConfigurationUI</key>
-@@ -219,7 +222,6 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+         <false/>
+       </dict>
+     </dict>
+-    <key>NSExtensionPointIdentifier</key>
++${
++  providesPasswords
++    ? ""
++    : `    <key>ASCredentialProviderExtensionSupportedDomains</key>
++    <array>
++${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n")}
++    </array>
++`
++}    <key>NSExtensionPointIdentifier</key>
+     <string>com.apple.authentication-services-credential-provider-ui</string>
+     <key>NSExtensionPrincipalClass</key>
+     <string>$(PRODUCT_MODULE_NAME).CredentialProviderViewController</string>
+@@ -219,11 +238,15 @@ const withIosPasskeyAutofill = (config, props = {}) => {
    const site = props.site || "https://debug.liquidauth.com";
    const label = props.label || "My Credential Provider";
    const associatedDomain = getAssociatedDomain(site);
@@ -2365,15 +2401,38 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..f1f183e663af09edcc75dc0a3e05ae0f
    const appGroup = getAppGroup(config, props);
    const keychainGroup = getKeychainGroup(config, props);
    const aaguid = getAaguid(props);
-@@ -263,7 +265,7 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+   const biometricRequirement = getBiometricRequirement(props);
++  // PERA LOCAL PATCH: password-manager support is variant-gated by the caller
++  // (see app.config.builder.js) — default false so a caller that forgets the
++  // prop gets the pre-password, single-domain passkey-only behaviour.
++  const providesPasswords = props.providesPasswords === true;
++  const supportedDomains = props.supportedDomains || [associatedDomain];
+ 
+   config = withInfoPlist(config, (config) => {
+     config.modResults.ReactNativePasskeyAutofillAppGroup = appGroup;
+@@ -263,7 +286,13 @@ const withIosPasskeyAutofill = (config, props = {}) => {
  
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}-Info.plist`),
 -        extensionInfoPlist({ label, supportedDomains, aaguid, biometricRequirement }),
-+        extensionInfoPlist({ label, aaguid, biometricRequirement }),
++        extensionInfoPlist({
++          label,
++          aaguid,
++          biometricRequirement,
++          providesPasswords,
++          supportedDomains,
++        }),
        );
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}.entitlements`),
+@@ -802,3 +831,7 @@ const withPasskeyAutofill = (config, props = {}) => {
+ module.exports = withPasskeyAutofill;
+ module.exports.getBiometricRequirement = getBiometricRequirement;
+ module.exports.getAaguid = getAaguid;
++// PERA LOCAL PATCH: exported so the consuming app can pin the production vs
++// non-production ProvidesPasswords/supported-domains branches with a test,
++// without rendering a full Xcode project.
++module.exports.extensionInfoPlist = extensionInfoPlist;
 diff --git a/build/ReactNativePasskeyAutofillModule.d.ts b/build/ReactNativePasskeyAutofillModule.d.ts
 index 8626ca1d219eb5c34b81a1b99fa59f71ed57d960..63b9138f55d4eb1b013859f00df4f861600e0664 100644
 --- a/build/ReactNativePasskeyAutofillModule.d.ts
@@ -2410,7 +2469,7 @@ index 3ef9075b2d63b8a981ddcecf8bc73aceade36eb8..ac8506436b9d98a85994cd245bb6ac47
          getStoredCredentials: () => Promise.resolve([]),
          getDiagnostics: () => Promise.resolve([]),
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1daaa727b 100644
+index 0b0216714b471156251207420f110c632b9afae7..33c4bca3912ebde98de208e6b344c2020527debc 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 @@ -7,6 +7,7 @@ import UIKit
@@ -2446,7 +2505,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
        }
      }
    }
-@@ -57,7 +69,14 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -57,7 +69,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
              relyingPartyIdentifier: relyingPartyIdentifier
            ).first(where: { allowedCredentials.isEmpty || allowedCredentials.contains($0.credentialIdData.base64URLEncodedString()) })
      else {
@@ -2454,15 +2513,19 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
 +      // This overload serves a list of passkey AND password credentials, and it
 +      // is the only one a WebAuthn-capable sign-in form calls — so a site with
 +      // no passkey must still reach the saved logins here, not be told nothing
-+      // is available.
++      // is available. But when there are no logins either, dismiss the same
++      // way the pre-password code did (cancelIfEmpty): presenting an empty
++      // picker on a WebAuthn site with neither a passkey nor a login is a
++      // dead end the caller can't otherwise recover from.
 +      offerLogins(
 +        serviceIdentifiers: serviceIdentifiers,
-+        emptyMessage: "No passkey or saved login is available for this site."
++        emptyMessage: "No passkey or saved login is available for this site.",
++        cancelIfEmpty: true
 +      )
        return
      }
  
-@@ -69,10 +88,31 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -69,10 +92,31 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      )
    }
  
@@ -2497,7 +2560,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
        cancel(code: .failed, message: "Unsupported credential request.")
        return
      }
-@@ -86,9 +126,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -86,9 +130,18 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
    }
  
    override func prepareInterfaceToProvideCredential(for credentialRequest: ASCredentialRequest) {
@@ -2519,7 +2582,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
        cancel(code: .failed, message: "Unsupported credential request.")
        return
      }
-@@ -149,7 +198,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -149,7 +202,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      do {
        guard let store else {
          self.store?.appendDiagnostic("missing wallet root-key state")
@@ -2528,7 +2591,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
          return
        }
  
-@@ -203,10 +252,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -203,10 +256,10 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
  
        Task {
          do {
@@ -2542,7 +2605,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
          }
        }
  
-@@ -309,7 +358,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -309,7 +362,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -2551,7 +2614,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -380,6 +429,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -380,6 +433,13 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      statusLabel.text = "checking passkeys..."
    }
  
@@ -2565,7 +2628,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
    private func showFailure(_ message: String) {
      store?.appendDiagnostic("showFailure: \(message)")
      activityIndicator.stopAnimating()
-@@ -407,7 +463,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -407,7 +467,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")
@@ -2574,7 +2637,7 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -456,6 +512,197 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -456,6 +516,209 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
    }
  }
  
@@ -2603,10 +2666,22 @@ index 0b0216714b471156251207420f110c632b9afae7..10d5b49b92e59b32448f5c90530576d1
 +
 +  /// Lists the logins matching the request. Summaries only — the picker shows a
 +  /// username and a host, and neither it nor this controller holds a password.
-+  func offerLogins(serviceIdentifiers: [ASCredentialServiceIdentifier], emptyMessage: String) {
++  ///
++  /// `cancelIfEmpty` covers the WebAuthn caller: unlike Pera's own password
++  /// picker, that caller expects `.credentialIdentityNotFound` when nothing
++  /// matches, not an empty sheet the user has to dismiss by hand.
++  func offerLogins(
++    serviceIdentifiers: [ASCredentialServiceIdentifier],
++    emptyMessage: String,
++    cancelIfEmpty: Bool = false
++  ) {
 +    let requested = serviceIdentifiers.map { $0.identifier }
 +    offeredLogins = passwordStore?.loginSummaries(serviceIdentifiers: requested) ?? []
 +    store?.appendDiagnostic("offering logins: \(offeredLogins.count)")
++    if cancelIfEmpty, offeredLogins.isEmpty {
++      cancel(code: .credentialIdentityNotFound, message: emptyMessage)
++      return
++    }
 +    showLoginPicker(emptyMessage: emptyMessage)
 +  }
 +
@@ -3762,10 +3837,10 @@ index 311007d2a90e810439f06362c6e7b2354ef05631..a4024e1493d110d888cc62a9dba3bf51
  
 diff --git a/ios/AutofillCredentialProvider/PasswordCredentialStore.swift b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
 new file mode 100644
-index 0000000000000000000000000000000000000000..e548c16165e671ab8f024e9ea61371ffb56d34d0
+index 0000000000000000000000000000000000000000..6d1bce66b06d4c449be4d3bb2b64c15b1da6bed0
 --- /dev/null
 +++ b/ios/AutofillCredentialProvider/PasswordCredentialStore.swift
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,226 @@
 +import Foundation
 +
 +/// A login the wallet sealed into the shared keystore.
@@ -3948,13 +4023,22 @@ index 0000000000000000000000000000000000000000..e548c16165e671ab8f024e9ea61371ff
 +  ///
 +  /// The subdomain test requires the dot: a plain suffix check would hand
 +  /// `example.com`'s password to `evil-example.com`, and matching anywhere in
-+  /// the string would do it in both directions.
++  /// the string would do it in both directions. It also requires the *stored*
++  /// host to contain a dot before it is allowed to match a subdomain — without
++  /// that, a login stored as the bare public-suffix label `com` would answer
++  /// every `*.com` site.
 +  static func domain(_ stored: String, matches requestedHost: String) -> Bool {
 +    let storedHost = host(of: stored)
 +    guard !storedHost.isEmpty, !requestedHost.isEmpty else {
 +      return false
 +    }
-+    return storedHost == requestedHost || requestedHost.hasSuffix("." + storedHost)
++    if storedHost == requestedHost {
++      return true
++    }
++    guard storedHost.contains(".") else {
++      return false
++    }
++    return requestedHost.hasSuffix("." + storedHost)
 +  }
 +
 +  /// The comparable host of a stored domain or of an `ASCredentialServiceIdentifier`.

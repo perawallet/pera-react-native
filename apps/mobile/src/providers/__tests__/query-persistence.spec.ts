@@ -112,6 +112,15 @@ describe('shouldDehydrateQuery', () => {
         expect(shouldDehydrateQuery(asQuery(['card', 'kyc'], 'success'))).toBe(
             false,
         )
+        // Domain and username are sealed on purpose — a persisted ['logins']
+        // query would put the set of services a person holds logins for back
+        // onto disk in the clear.
+        expect(shouldDehydrateQuery(asQuery(['logins'], 'success'))).toBe(false)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(['logins', 'pera.login.abc'], 'success'),
+            ),
+        ).toBe(false)
     })
 
     it('never persists blockchain-prefixed queries, even successful ones', () => {

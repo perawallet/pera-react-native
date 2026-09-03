@@ -18,7 +18,7 @@ import React from 'react'
 const { listLogins } = vi.hoisted(() => ({ listLogins: vi.fn() }))
 vi.mock('../../storage/loginStore', () => ({ listLogins }))
 
-import { useLoginsQuery } from '../useLoginsQuery'
+import { isLoginQuery, useLoginsQuery } from '../useLoginsQuery'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => {
     const client = new QueryClient({
@@ -52,5 +52,17 @@ describe('useLoginsQuery', () => {
         const { result } = renderHook(() => useLoginsQuery(), { wrapper })
 
         expect(result.current.logins).toEqual([])
+    })
+})
+
+describe('isLoginQuery', () => {
+    it('matches the list key and any per-record key', () => {
+        expect(isLoginQuery(['logins'])).toBe(true)
+        expect(isLoginQuery(['logins', 'pera.login.abc'])).toBe(true)
+    })
+
+    it('does not match other modules', () => {
+        expect(isLoginQuery(['accounts'])).toBe(false)
+        expect(isLoginQuery([])).toBe(false)
     })
 })
