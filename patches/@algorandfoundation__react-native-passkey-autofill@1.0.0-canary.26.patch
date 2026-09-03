@@ -1284,10 +1284,10 @@ index 0000000000000000000000000000000000000000..3ea99a7636c1abaef0f447f2d2b857e0
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d12324ee9
+index 0000000000000000000000000000000000000000..660d2f01eb1ac1d6e1df0e68bb08e323b9726c13
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillActivitySupport.kt
-@@ -0,0 +1,115 @@
+@@ -0,0 +1,120 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.app.Activity
@@ -1299,6 +1299,7 @@ index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d
 +import android.view.autofill.AutofillManager
 +import android.view.autofill.AutofillValue
 +import android.widget.RemoteViews
++import androidx.annotation.RequiresApi
 +import androidx.appcompat.app.AppCompatActivity
 +import androidx.biometric.BiometricPrompt
 +import androidx.core.content.ContextCompat
@@ -1307,8 +1308,10 @@ index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d
 +import kotlin.coroutines.suspendCoroutine
 +
 +/**
-+ * PERA LOCAL PATCH — shared with [FillAuthActivity] and `PeraPickerActivity`,
-+ * the two dataset-auth targets an `AutofillService` PendingIntent can reach.
++ * PERA LOCAL PATCH — helpers for [FillAuthActivity], the dataset-auth target
++ * an `AutofillService` PendingIntent reaches for a matched login. Placed here
++ * rather than inlined because `PeraPickerActivity`, the other dataset-auth
++ * target, will need the same release shape once it stops being a stub.
 + *
 + * The biometric prompt is copied verbatim from `GetPasswordActivity`, which
 + * gates the Credential Manager password path the same way: same prompt copy,
@@ -1373,6 +1376,7 @@ index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d
 + * A dataset carrying the release credential, labelled with the username so
 + * the platform's fill-selection UI can distinguish entries if it shows one.
 + */
++@RequiresApi(Build.VERSION_CODES.O)
 +fun buildDataset(
 +    usernameId: AutofillId?,
 +    passwordId: AutofillId,
@@ -1390,6 +1394,7 @@ index 0000000000000000000000000000000000000000..b2fcc6d64d8d83d9d17b18b04fe8437d
 +}
 +
 +/** Returns [dataset] to the platform as the dataset-auth result. */
++@RequiresApi(Build.VERSION_CODES.O)
 +fun AppCompatActivity.finishWith(dataset: Dataset) {
 +    setResult(
 +        Activity.RESULT_OK,
@@ -1499,10 +1504,10 @@ index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..96f622a01c74db5a5b8f45f47fac46d4bafe39d7
+index 0000000000000000000000000000000000000000..ec85abd6ef7417908f6137f043df490a5d253cd1
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
-@@ -0,0 +1,55 @@
+@@ -0,0 +1,75 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.os.Build
@@ -1530,8 +1535,18 @@ index 0000000000000000000000000000000000000000..96f622a01c74db5a5b8f45f47fac46d4
 +
 +    private val store = PasswordCredentialStore()
 +
++    /**
++     * Guards against [onCreate] running a second time (e.g. a config change)
++     * before the first [release] finishes — without it, a re-entrant call
++     * could show a second biometric prompt or unseal and finish twice.
++     * Mirrors `GetPasswordActivity.isHandling`.
++     */
++    private var isHandling: Boolean = false
++
 +    override fun onCreate(savedInstanceState: Bundle?) {
 +        super.onCreate(savedInstanceState)
++        if (isHandling) return
++        isHandling = true
 +        lifecycleScope.launch { release() }
 +    }
 +
@@ -1550,6 +1565,16 @@ index 0000000000000000000000000000000000000000..96f622a01c74db5a5b8f45f47fac46d4
 +            null
 +        }
 +        if (login == null) { cancel(); return }
++        // PasswordCredentialStore.decode only rejects a JSON-null/missing
++        // password key, not an explicitly-stored empty string. Mirrors
++        // GetPasswordActivity's guard: an empty password would otherwise fill
++        // a real username alongside nothing, which is the partial fill this
++        // feature must never produce.
++        if (login.password.isEmpty()) {
++            Log.e(TAG, "The selected login has no password to release")
++            cancel()
++            return
++        }
 +
 +        finishWith(buildDataset(usernameId, passwordId, login.username, login.password, packageName))
 +    }
