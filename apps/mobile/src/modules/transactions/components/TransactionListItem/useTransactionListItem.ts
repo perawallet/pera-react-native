@@ -26,7 +26,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
-import { type AmountDisplay } from './amounts'
+import { safeDecimals, type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
@@ -55,9 +55,23 @@ export type UseTransactionListItemResult = {
     handleLongPress: () => void
 }
 
+/** Trailing zeros below this are trimmed, so whole amounts stay short. */
+const MIN_FRACTION_DIGITS = 2
+
+/**
+ * A swap leg can be worth a fraction of a cent, which a flat 2-digit format
+ * renders as a bare `0.00` — and now disagrees with the amount column beside
+ * it. Show up to the asset's own precision instead, trimmed back to 2.
+ */
 const formatAmount = (baseUnits: Decimal, decimals: number): string => {
-    const displayAmount = baseUnitsToDisplayUnits(baseUnits, decimals)
-    const { sign, integer, fraction } = formatNumber(displayAmount, 2)
+    const precision = safeDecimals(decimals)
+    const displayAmount = baseUnitsToDisplayUnits(baseUnits, precision)
+    const { sign, integer, fraction } = formatNumber(
+        displayAmount,
+        precision,
+        undefined,
+        MIN_FRACTION_DIGITS,
+    )
     return `${sign}${integer}${fraction}`
 }
 

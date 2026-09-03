@@ -27,7 +27,7 @@ export const MAX_VISIBLE_AMOUNTS = 2
  * non-number and happily inflates on a negative one, and this runs inside a
  * list row's memo, so one bad value would take out the whole list.
  */
-const safeDecimals = (decimals: number): number =>
+export const safeDecimals = (decimals: number): number =>
     isNaN(decimals) ? 0 : Math.max(0, Math.min(19, decimals))
 
 export type AmountDisplay = {

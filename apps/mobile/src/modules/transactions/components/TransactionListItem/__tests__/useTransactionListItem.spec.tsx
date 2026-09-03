@@ -628,16 +628,14 @@ describe('useTransactionListItem', () => {
     })
 
     describe('swap subtitle', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
             // The global setup mocks formatNumber down to String(value), which
-            // erases the very digits under test here. Echo the scaled Decimal
-            // instead, so the assertion reads the scaling and not the
-            // formatting (covered in wallet-core-shared).
-            vi.mocked(formatNumber).mockImplementation(amount => ({
-                sign: '',
-                integer: amount.toString(),
-                fraction: '',
-            }))
+            // erases the very digits under test here. Restore the real one so
+            // the assertions read what a user actually sees.
+            const actual = await vi.importActual<
+                typeof import('@perawallet/wallet-core-shared')
+            >('@perawallet/wallet-core-shared')
+            vi.mocked(formatNumber).mockImplementation(actual.formatNumber)
         })
 
         afterEach(() => {
@@ -658,11 +656,36 @@ describe('useTransactionListItem', () => {
                 },
             })
 
-            const { result } = renderHook(() =>
-                useTransactionListItem({ transaction: tx }),
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
             )
 
-            expect(result.current.subtitle).toBe('1 ALGO for 5000 USDC')
+            expect(result.current.subtitle).toBe('1.00 ALGO for 5,000.00 USDC')
+        })
+
+        it('keeps enough digits for a sub-cent leg of a high-precision asset', () => {
+            const tx = createPaymentTx({
+                swapGroupDetail: {
+                    assetInId: '0',
+                    assetInUnitName: 'ALGO',
+                    assetInDecimals: 6,
+                    assetOutId: '31566704',
+                    assetOutUnitName: 'GEMS',
+                    assetOutDecimals: 8,
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('123456'),
+                },
+            })
+
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+
+            expect(result.current.subtitle).toBe(
+                '1.00 ALGO for 0.00123456 GEMS',
+            )
         })
     })
 })
