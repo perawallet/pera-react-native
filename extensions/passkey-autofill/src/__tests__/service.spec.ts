@@ -197,6 +197,29 @@ describe('PasskeyAutofillService', () => {
         })
     })
 
+    describe('autofill service status', () => {
+        it('returns the native autofill-enabled result', async () => {
+            const native = makeNative({
+                isAutofillServiceActive: vi.fn(async () => true),
+            })
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.isAutofillServiceActive()).resolves.toBe(
+                true,
+            )
+        })
+
+        it('resolves false when the native module predates the method', async () => {
+            const native = makeNative({})
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.isAutofillServiceActive()).resolves.toBe(
+                false,
+            )
+            await expect(service.openAutofillSettings()).resolves.toBe(false)
+        })
+    })
+
     describe('replacePasswordCredentialIdentities', () => {
         it('forwards the identities to the native module', async () => {
             const replacePasswordCredentialIdentities = vi.fn(

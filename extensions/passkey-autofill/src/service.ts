@@ -52,6 +52,8 @@ export interface PasskeyAutofillNativeAPI {
     ): Promise<void>
     isProviderActive(): Promise<boolean>
     openProviderSettings(): Promise<boolean>
+    isAutofillServiceActive?(): Promise<boolean>
+    openAutofillSettings?(): Promise<boolean>
     getDiagnostics?(): Promise<string[]>
     addListener(
         eventName: string,
@@ -186,6 +188,14 @@ export class PasskeyAutofillService {
 
     openProviderSettings(): Promise<boolean> {
         return this.invoke('openProviderSettings', [], false)
+    }
+
+    isAutofillServiceActive(): Promise<boolean> {
+        return this.invoke('isAutofillServiceActive', [], false)
+    }
+
+    openAutofillSettings(): Promise<boolean> {
+        return this.invoke('openAutofillSettings', [], false)
     }
 
     onPasskeyAdded(
