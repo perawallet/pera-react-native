@@ -1,5 +1,5 @@
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
-index e664746a384e1403297d47c42c1383f0f41d4766..53cd695b9fa2f6433c19025c269b869c15a497a2 100644
+index e664746a384e1403297d47c42c1383f0f41d4766..3a2d59733b91a1dbb505d55a1b7dbc42a3ca12e4 100644
 --- a/android/src/main/AndroidManifest.xml
 +++ b/android/src/main/AndroidManifest.xml
 @@ -2,8 +2,19 @@
@@ -23,7 +23,7 @@ index e664746a384e1403297d47c42c1383f0f41d4766..53cd695b9fa2f6433c19025c269b869c
              android:enabled="true"
              android:exported="true"
              android:label="@string/passkey_autofill_label"
-@@ -34,5 +45,28 @@
+@@ -34,5 +45,57 @@
                  <category android:name="android.intent.category.DEFAULT"/>
              </intent-filter>
          </activity>
@@ -50,6 +50,35 @@ index e664746a384e1403297d47c42c1383f0f41d4766..53cd695b9fa2f6433c19025c269b869c
 +                <category android:name="android.intent.category.DEFAULT"/>
 +            </intent-filter>
 +        </activity>
++        <!--
++          PERA LOCAL PATCH: autofill service. exported="true" and
++          BIND_AUTOFILL_SERVICE are both required: the platform binds this
++          service, and the permission is what stops anything else from doing so.
++        -->
++        <service
++            android:name="co.algorand.passkeyautofill.autofill.PeraAutofillService"
++            android:exported="true"
++            android:permission="android.permission.BIND_AUTOFILL_SERVICE">
++            <intent-filter>
++                <action android:name="android.service.autofill.AutofillService" />
++            </intent-filter>
++            <meta-data
++                android:name="android.autofill"
++                android:resource="@xml/autofill_service" />
++        </service>
++        <!--
++          PERA LOCAL PATCH: dataset auth targets for the autofill service. Not
++          exported: the service's own PendingIntent is the only legitimate way
++          to reach them, and it names the component explicitly (same-app).
++        -->
++        <activity android:name="co.algorand.passkeyautofill.autofill.FillAuthActivity"
++            android:exported="false"
++            android:launchMode="singleTop"
++            android:theme="@style/Theme.PasskeyAutofill.Dialog"/>
++        <activity android:name="co.algorand.passkeyautofill.autofill.PeraPickerActivity"
++            android:exported="false"
++            android:launchMode="singleTop"
++            android:theme="@style/Theme.PasskeyAutofill.Dialog"/>
      </application>
  </manifest>
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/CreatePasskeyActivity.kt
@@ -1347,6 +1376,29 @@ index 0000000000000000000000000000000000000000..7fc1ee3d5b4a3f1be35322ef7be7b7b6
 +        }
 +    }
 +}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..7b55edffa24cc8a61087570ba23cbcd007467daa
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillAuthActivity.kt
+@@ -0,0 +1,17 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.app.Activity
++import android.os.Bundle
++import androidx.appcompat.app.AppCompatActivity
++
++/**
++ * Stub target of the dataset auth PendingIntent for an already-matched login.
++ * Replaced with the real biometric-gated unseal flow in a later task.
++ */
++class FillAuthActivity : AppCompatActivity() {
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        setResult(Activity.RESULT_CANCELED)
++        finish()
++    }
++}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/FillStructureParser.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a934e9c8d
@@ -1529,6 +1581,188 @@ index 0000000000000000000000000000000000000000..b5588ff58a6eb526b13935909a59a58a
 +        autofillHints?.any { candidate ->
 +            hints.any { it.equals(candidate, ignoreCase = true) }
 +        } == true
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..fac137656e9473dd4c45dd8b4cc437955546aeac
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraAutofillService.kt
+@@ -0,0 +1,153 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.app.PendingIntent
++import android.content.Intent
++import android.net.Uri
++import android.os.Build
++import android.os.CancellationSignal
++import android.service.autofill.AutofillService
++import android.service.autofill.Dataset
++import android.service.autofill.FillCallback
++import android.service.autofill.FillRequest
++import android.service.autofill.FillResponse
++import android.service.autofill.SaveCallback
++import android.service.autofill.SaveRequest
++import android.util.Log
++import android.view.autofill.AutofillValue
++import android.widget.RemoteViews
++import androidx.annotation.RequiresApi
++import co.algorand.passkeyautofill.PasswordCredentialStore
++import co.algorand.passkeyautofill.R
++
++@RequiresApi(Build.VERSION_CODES.O)
++class PeraAutofillService : AutofillService() {
++
++    private val store = PasswordCredentialStore()
++
++    override fun onFillRequest(
++        request: FillRequest,
++        cancellationSignal: CancellationSignal,
++        callback: FillCallback,
++    ) {
++        var cancelled = false
++        cancellationSignal.setOnCancelListener { cancelled = true }
++
++        // The platform disables a service that throws out of onFillRequest, so
++        // every path below terminates in onSuccess rather than propagating.
++        try {
++            val context = request.fillContexts.lastOrNull()
++            if (context == null) { callback.onSuccess(null); return }
++
++            val clientPackage = context.structure.activityComponent.packageName
++            val target = FillStructureParser.parse(context.structure, clientPackage)
++            if (target == null) { callback.onSuccess(null); return }
++
++            val scope = AutofillScope.resolve(this, target)
++            val response = when (scope) {
++                is AutofillScope.UnlinkedApp -> pickerResponse(target, scope.packageName)
++                is AutofillScope.Web, is AutofillScope.LinkedApp -> matchedResponse(target, scope)
++                // A verified browser with no resolvable host must be offered nothing at
++                // all: routing it to the picker would let the user link a login to the
++                // browser package itself, which would then surface on every page it renders.
++                is AutofillScope.UnscopedBrowser -> null
++            }
++            if (!cancelled) callback.onSuccess(response)
++        } catch (e: Exception) {
++            Log.e(TAG, "Fill request failed", e)
++            callback.onSuccess(null)
++        }
++    }
++
++    /**
++     * Required by AutofillService. Capturing credentials typed into a form is
++     * out of scope, and reporting it here stops the OS offering a save prompt
++     * this build cannot honour.
++     */
++    override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
++        callback.onFailure(null)
++    }
++
++    private fun matchedResponse(target: FillTarget, scope: AutofillScope): FillResponse? {
++        val links = when (scope) {
++            is AutofillScope.LinkedApp -> AppLinkStore.linksFor(this, scope.packageName)
++            else -> emptySet()
++        }
++        val matches = store.loginSummaries(this).filter {
++            scope.matches(it.host, it.recordIdentifier, links)
++        }
++        if (matches.isEmpty()) return null
++
++        val builder = FillResponse.Builder()
++        matches.forEach { summary ->
++            builder.addDataset(
++                dataset(
++                    target = target,
++                    label = "${summary.username} — ${summary.host}",
++                    auth = authIntent(FillAuthActivity::class.java, target).apply {
++                        putExtra(EXTRA_RECORD_ID, summary.recordIdentifier)
++                        data = Uri.parse("pera-autofill:${summary.recordIdentifier}")
++                    },
++                ),
++            )
++        }
++        return builder.build()
++    }
++
++    private fun pickerResponse(target: FillTarget, packageName: String): FillResponse? {
++        if (store.loginSummaries(this).isEmpty()) return null
++        return FillResponse.Builder()
++            .addDataset(
++                dataset(
++                    target = target,
++                    label = getString(R.string.pera_autofill_pick_login),
++                    auth = authIntent(PeraPickerActivity::class.java, target).apply {
++                        putExtra(EXTRA_PACKAGE_NAME, packageName)
++                        data = Uri.parse("pera-autofill-pick:$packageName")
++                    },
++                ),
++            )
++            .build()
++    }
++
++    /**
++     * Placeholder values only. Real credentials are supplied by the auth
++     * activity's result, so nothing secret is ever handed to the platform in a
++     * FillResponse.
++     */
++    private fun dataset(target: FillTarget, label: String, auth: Intent): Dataset {
++        val presentation = RemoteViews(packageName, android.R.layout.simple_list_item_1).apply {
++            setTextViewText(android.R.id.text1, label)
++        }
++        val builder = Dataset.Builder()
++        target.usernameId?.let { builder.setValue(it, AutofillValue.forText(""), presentation) }
++        builder.setValue(target.passwordId, AutofillValue.forText(""), presentation)
++
++        // A distinct Intent.data per entry: PendingIntents that differ only by
++        // extras are treated as equal and collapse into one.
++        builder.setAuthentication(
++            PendingIntent.getActivity(
++                this,
++                PENDING_INTENT_REQUEST_CODE,
++                auth,
++                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
++            ).intentSender,
++        )
++        return builder.build()
++    }
++
++    private fun authIntent(target: Class<*>, fillTarget: FillTarget): Intent =
++        Intent(this, target).apply {
++            fillTarget.usernameId?.let { putExtra(EXTRA_USERNAME_ID, it) }
++            putExtra(EXTRA_PASSWORD_ID, fillTarget.passwordId)
++        }
++
++    companion object {
++        private const val TAG = "PeraAutofillService"
++        private const val PENDING_INTENT_REQUEST_CODE = 0
++
++        const val EXTRA_RECORD_ID = "co.algorand.passkeyautofill.RECORD_ID"
++        const val EXTRA_USERNAME_ID = "co.algorand.passkeyautofill.USERNAME_ID"
++        const val EXTRA_PASSWORD_ID = "co.algorand.passkeyautofill.PASSWORD_ID"
++        const val EXTRA_PACKAGE_NAME = "co.algorand.passkeyautofill.PACKAGE_NAME"
++    }
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0fb9a41c4d3a1ed267892a1c226cc3b759ac1dc4
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
+@@ -0,0 +1,17 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.app.Activity
++import android.os.Bundle
++import androidx.appcompat.app.AppCompatActivity
++
++/**
++ * Stub target of the dataset auth PendingIntent for an unlinked app's picker
++ * entry. Replaced with the real login-picker flow in a later task.
++ */
++class PeraPickerActivity : AppCompatActivity() {
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        setResult(Activity.RESULT_CANCELED)
++        finish()
++    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
 index 35a27a63aa27cfd25d09dfb65472407be4303fb8..fea7a9744c7e995f8dc478be093651025235fa30 100644
@@ -2857,6 +3091,22 @@ index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee0
 +    }
 +  ]
 +}
+diff --git a/android/src/main/res/values/strings.xml b/android/src/main/res/values/strings.xml
+index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..b2abd8bef9cbaa493470fe004eac554f8889b27d 100644
+--- a/android/src/main/res/values/strings.xml
++++ b/android/src/main/res/values/strings.xml
+@@ -1,3 +1,4 @@
+ <resources>
+     <string name="passkey_autofill_label">My Credential Provider</string>
++    <string name="pera_autofill_pick_login">Choose a login from Pera</string>
+ </resources>
+diff --git a/android/src/main/res/xml/autofill_service.xml b/android/src/main/res/xml/autofill_service.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..0530f206759a3be43c4b04e2d28894f95e1b29ce
+--- /dev/null
++++ b/android/src/main/res/xml/autofill_service.xml
+@@ -0,0 +1 @@
++<autofill-service xmlns:android="http://schemas.android.com/apk/res/android" />
 diff --git a/android/src/main/res/xml/provider.xml b/android/src/main/res/xml/provider.xml
 index 045847c91531aa36bb41aad811425f313077d3b1..9bf24fdd65bf79803bf65d015a0a0935fe5c5401 100644
 --- a/android/src/main/res/xml/provider.xml
