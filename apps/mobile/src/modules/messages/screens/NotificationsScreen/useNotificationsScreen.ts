@@ -20,12 +20,15 @@ import {
 } from '@perawallet/wallet-core-messages'
 import { type PWFlatListRef } from '@components/core'
 import { useNotificationPress } from '@modules/messages/hooks'
+import { useNetworkStatus } from '@modules/network'
 
 export type UseNotificationsScreenResult = {
     isPending: boolean
     notifications: PeraNotification[]
     isFetchingNextPage: boolean
     isRefetching: boolean
+    isError: boolean
+    isOffline: boolean
     keyExtractor: (item: PeraNotification) => string
     loadMoreItems: () => Promise<void>
     refetch: () => void
@@ -40,6 +43,8 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const {
         data,
         isPending,
+        isPaused,
+        isError,
         fetchNextPage,
         isFetchingNextPage,
         isRefetching,
@@ -47,6 +52,13 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isUnavailableOnNetwork,
         isDeviceUnregistered,
     } = useNotificationsListQuery()
+    const { hasInternet } = useNetworkStatus()
+
+    // Offline wins over a stale error: a paused, uncached fetch means there is
+    // nothing to show yet, and an error surfacing while genuinely offline is
+    // the same "nothing to show" situation — not a dead Retry. Mirrors the
+    // charts / staking contract (docs/OFFLINE_PAUSED_STATE.md).
+    const isOffline = isPaused || (isError && !hasInternet)
     const { markAsRead } = useMarkNotificationsAsReadMutation()
     const { handleNotificationPress } = useNotificationPress()
 
@@ -93,6 +105,8 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         notifications,
         isFetchingNextPage,
         isRefetching,
+        isError,
+        isOffline,
         keyExtractor: (item: PeraNotification) => item.id,
         loadMoreItems,
         refetch: () => void refetch(),

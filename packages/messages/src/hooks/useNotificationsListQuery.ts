@@ -23,6 +23,7 @@ import {
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
 import {
+    getQueryRenderState,
     type Maybe,
     type Nullable,
     type Optional,
@@ -44,7 +45,12 @@ const mapNotificationResponseToNotification = (
 const extractCursor = (url: Nullable<string>): Maybe<string> => {
     if (!url) return undefined
     try {
-        return new URL(url).searchParams.get('cursor') ?? undefined
+        // The API's last page can carry `next` with an EMPTY `?cursor=`.
+        // `''` is not nullish, and React Query reads any non-nullish page
+        // param as "there is a next page" — so `?? undefined` alone loops
+        // page one forever (one request per onEndReached tick, spinner
+        // pinned). Empty must collapse to undefined.
+        return new URL(url).searchParams.get('cursor') || undefined
     } catch {
         return undefined
     }
@@ -53,6 +59,10 @@ const extractCursor = (url: Nullable<string>): Maybe<string> => {
 export type UseNotificationsListQueryResult = {
     data: PeraNotification[]
     isPending: boolean
+    /** Paused by offline `networkMode: 'online'` gating with nothing cached — render the offline surface, not a spinner (docs/OFFLINE_PAUSED_STATE.md). */
+    isPaused: boolean
+    /** The fetch failed while the query was allowed to run — pair with a retry affordance. */
+    isError: boolean
     isFetchingNextPage: boolean
     isRefetching: boolean
     fetchNextPage: () => void
@@ -100,28 +110,41 @@ export const useNotificationsListQuery =
             ),
         })
 
+        const { isPaused, isError } = getQueryRenderState(query)
+
+        // The observer's fetchNextPage()/refetch() ignore `enabled` and would
+        // still fire the doomed Pera request on a non-backed network. Both
+        // guards MUST be referentially stable: NotificationsScreen refetches on
+        // focus with `refetch` in its effect deps, so a per-render identity
+        // re-runs the effect after every render the refetch itself causes — an
+        // infinite request loop with the refresh spinner pinned.
+        const fetchNextPage = useCallback(() => {
+            if (isUnavailableOnNetwork) return
+            void query.fetchNextPage()
+        }, [isUnavailableOnNetwork, query.fetchNextPage])
+
+        const refetch = useCallback(() => {
+            if (isUnavailableOnNetwork) return
+            void query.refetch()
+        }, [isUnavailableOnNetwork, query.refetch])
+
         return {
             data: query.data ?? [],
-            // A disabled query never leaves `status: 'pending'` in React Query
-            // v5, so `query.isPending` stays true forever while gated off. Only
-            // report loading when the query can actually run, otherwise the
-            // empty view spins indefinitely.
-            isPending: isEnabled ? query.isPending : false,
+            // Disabled and paused queries never leave `status: 'pending'` in
+            // React Query v5, so raw `query.isPending` stays true forever while
+            // gated off (no device id) or offline. Only report loading when a
+            // fetch can actually run, otherwise the empty view spins
+            // indefinitely.
+            isPending: isEnabled && !isPaused ? query.isPending : false,
+            isPaused,
+            isError,
             isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
             isFetchingNextPage: isUnavailableOnNetwork
                 ? false
                 : query.isFetchingNextPage,
             isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
-            // The observer's fetchNextPage()/refetch() ignore `enabled` and would
-            // still fire the doomed Pera request on a non-backed network.
-            fetchNextPage: () => {
-                if (isUnavailableOnNetwork) return
-                void query.fetchNextPage()
-            },
-            refetch: () => {
-                if (isUnavailableOnNetwork) return
-                void query.refetch()
-            },
+            fetchNextPage,
+            refetch,
             isUnavailableOnNetwork,
         }
     }

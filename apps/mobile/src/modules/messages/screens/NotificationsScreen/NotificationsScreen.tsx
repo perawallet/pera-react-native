@@ -31,6 +31,8 @@ export const NotificationsScreen = () => {
         notifications,
         isPending,
         isRefetching,
+        isError,
+        isOffline,
         refetch,
         loadMoreItems,
         isFetchingNextPage,
@@ -81,8 +83,10 @@ export const NotificationsScreen = () => {
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <OfflineTolerantView
-                        isOffline={false}
+                        isOffline={isOffline}
                         isUnavailable={isUnavailableOnNetwork}
+                        isError={isError}
+                        onRetry={refetch}
                     >
                         <EmptyView
                             isLoading={isPending}
