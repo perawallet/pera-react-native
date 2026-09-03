@@ -20,7 +20,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
-import { type PeraCardAccountStackParamList } from '../../routes/types'
+import type { PeraCardAccountStackParamList } from '../../routes/types'
 import { formatCardTransactionDateTime } from '../../utils/cardTransactions'
 
 type UseCardTransactionDetailScreenResult = {

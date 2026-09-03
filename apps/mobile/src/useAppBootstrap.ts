@@ -43,7 +43,7 @@ import {
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
-import { type Persister } from '@tanstack/react-query-persist-client'
+import type { Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
 import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'

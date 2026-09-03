@@ -24,7 +24,7 @@ import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 
-import { type AccountIconSize } from '../AccountIcon'
+import type { AccountIconSize } from '../AccountIcon'
 
 type UseAccountDisplayParams = {
     account: Optional<WalletAccount>

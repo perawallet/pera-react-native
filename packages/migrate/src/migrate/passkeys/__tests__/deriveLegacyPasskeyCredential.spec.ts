@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 import { createPublicKey } from 'node:crypto'
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
     credentialIdBytesToStandardBase64,

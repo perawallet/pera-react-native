@@ -18,7 +18,7 @@ import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/us
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import {
     trackEvent,
     WalletConnectEvent,

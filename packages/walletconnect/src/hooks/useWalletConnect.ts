@@ -22,9 +22,9 @@ import {
     WalletConnectInvalidSessionError,
     WalletConnectSessionRequestExpiredError,
 } from '../errors'
-import {
-    type WalletConnectConnection,
-    type WalletConnectSessionRequest,
+import type {
+    WalletConnectConnection,
+    WalletConnectSessionRequest,
 } from '../models'
 import { useWalletConnectStore } from '../store'
 import {

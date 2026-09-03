@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     computeBalanceImpact,
     useImpactTransactions,

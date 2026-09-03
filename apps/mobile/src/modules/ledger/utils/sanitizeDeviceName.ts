@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 // BLE advertisement names are fully attacker-controllable. Strip characters
 // that can spoof rendering in trusted chrome (nav header, account list):

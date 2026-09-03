@@ -13,9 +13,9 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import {
-    type CardInternalWallet,
-    type CardTransaction,
+import type {
+    CardInternalWallet,
+    CardTransaction,
 } from '@perawallet/wallet-core-card'
 import {
     useAllAccounts,

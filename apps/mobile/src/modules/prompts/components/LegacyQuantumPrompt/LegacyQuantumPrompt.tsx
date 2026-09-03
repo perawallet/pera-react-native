@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { PWInfoView, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { UserPreferences } from '@constants/user-preferences'
-import { type PromptViewProps } from '@modules/prompts/models'
+import type { PromptViewProps } from '@modules/prompts/models'
 import { useLegacyQuantumPrompt } from '@modules/prompts/hooks/useLegacyQuantumPrompt'
 import { useStyles } from './styles'
 

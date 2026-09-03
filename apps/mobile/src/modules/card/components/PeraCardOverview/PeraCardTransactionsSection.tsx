@@ -13,7 +13,7 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardTransactionListItem } from '../CardTransactionListItem'
-import { type CardTransactionSection } from '../../utils/cardTransactions'
+import type { CardTransactionSection } from '../../utils/cardTransactions'
 import { useStyles } from './styles'
 
 type PeraCardTransactionsSectionProps = {

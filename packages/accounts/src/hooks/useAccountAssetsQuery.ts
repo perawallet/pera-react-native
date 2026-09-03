@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { type AssetSortMode } from '@perawallet/wallet-core-assets'
+import type { AssetSortMode } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getAccountHoldingsLite,

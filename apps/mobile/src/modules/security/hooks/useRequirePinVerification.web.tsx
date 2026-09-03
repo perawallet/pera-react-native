@@ -31,7 +31,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequireVaultPassword } from '@modules/vault'
 import { useLanguage } from '@hooks/useLanguage'
 import { PinEditContent } from '../components/PinEditContent'
-import { type UseRequirePinVerificationResult } from './useRequirePinVerification'
+import type { UseRequirePinVerificationResult } from './useRequirePinVerification'
 
 export type { UseRequirePinVerificationResult }
 

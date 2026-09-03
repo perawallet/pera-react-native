@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ReactNode } from 'react'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 /**
  * Shapes the account list. The same object is spread into a screen's

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type SvgProps } from 'react-native-svg'
+import type { SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useNotificationsIcon } from './useNotificationsIcon'

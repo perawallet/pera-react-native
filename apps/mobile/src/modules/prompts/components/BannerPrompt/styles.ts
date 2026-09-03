@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 // Mirrors BannersCarouselModalScreen: same full-bleed carousel, same safe-area
 // insets, so the banner looks identical whichever way the user reaches it.

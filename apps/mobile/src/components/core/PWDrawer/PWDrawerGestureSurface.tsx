@@ -11,7 +11,7 @@
  */
 
 import { GestureDetector } from 'react-native-gesture-handler'
-import { type SharedValue } from 'react-native-reanimated'
+import type { SharedValue } from 'react-native-reanimated'
 import { PWView } from '../PWView'
 
 import { PWDRAWER_EDGE_WIDTH } from './constants'

@@ -31,7 +31,7 @@ import {
 } from './useSearchableList'
 import { SearchableListSheet } from './SearchableListSheet'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 // testID for the real (focusable) overlay input; the sticky bar is a

@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type PWIconSize } from '@components/core'
+import type { PWIconSize } from '@components/core'
 
 export type ContactAvatarVariant = 'default' | 'highlighted'
 

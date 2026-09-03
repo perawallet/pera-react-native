@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import React from 'react'
-import { type Contact } from '@perawallet/wallet-core-contacts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { render, screen } from '@test-utils/render'
 import { ContactAvatar } from '../ContactAvatar'
 

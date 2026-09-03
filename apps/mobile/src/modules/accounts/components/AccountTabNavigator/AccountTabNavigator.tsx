@@ -11,7 +11,7 @@
  */
 
 import { PWPagerTabBar, PWView } from '@components/core'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDrawerPager } from '@modules/accounts/components/AccountDrawer'
 
 import { AccountOverview } from '../AccountOverview'

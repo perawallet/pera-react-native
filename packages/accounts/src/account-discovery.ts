@@ -20,7 +20,7 @@ import {
     getAlgorandClient,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
-import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
+import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { indexerModels } from 'algosdk'
 import {
     AccountTypes,

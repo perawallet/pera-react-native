@@ -60,5 +60,6 @@ function allowRotationAndResize(attributes) {
   };
 }
 
-module.exports = withAndroidLargeScreenSupport;
-module.exports.allowRotationAndResize = allowRotationAndResize;
+module.exports = Object.assign(withAndroidLargeScreenSupport, {
+  allowRotationAndResize,
+});

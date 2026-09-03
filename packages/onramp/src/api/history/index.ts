@@ -15,4 +15,4 @@ export {
     getRampHistoryByUrl,
     type GetRampHistoryParams,
 } from './endpoints'
-export { type RampHistoryPage } from './transformers'
+export type { RampHistoryPage } from './transformers'

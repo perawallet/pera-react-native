@@ -11,7 +11,7 @@
  */
 
 import { AccountOverviewHeader } from './AccountOverviewHeader'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'
 import { PWRefreshControl, PWView } from '@components/core'

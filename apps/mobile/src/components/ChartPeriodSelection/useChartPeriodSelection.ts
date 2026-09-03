@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseChartPeriodSelectionParams = {

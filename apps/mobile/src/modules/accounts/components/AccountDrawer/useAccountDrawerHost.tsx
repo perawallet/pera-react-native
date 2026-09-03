@@ -11,11 +11,11 @@
  */
 
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
-import { type SharedValue } from 'react-native-reanimated'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { SharedValue } from 'react-native-reanimated'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { AccountDrawerContent } from './AccountDrawerContent'
-import { type AccountDrawerContextValue } from './AccountDrawerContext'
+import type { AccountDrawerContextValue } from './AccountDrawerContext'
 import { useAccountDrawer } from './useAccountDrawer'
 import { useAccountPickers, type AccountPickerKind } from './useAccountPickers'
 

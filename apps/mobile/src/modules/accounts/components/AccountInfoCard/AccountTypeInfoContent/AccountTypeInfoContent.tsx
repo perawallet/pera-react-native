@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountTypeInfo } from './useAccountTypeInfo'

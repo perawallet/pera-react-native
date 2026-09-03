@@ -12,10 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import {
     type AssetPriceHistoryItem,
