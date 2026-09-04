@@ -3921,7 +3921,7 @@ index 0000000000000000000000000000000000000000..4d1ecd786db09622082010ecd1366e07
 +    }
 +}
 diff --git a/app.plugin.js b/app.plugin.js
-index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b283684369c 100644
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c6413eb1f 100644
 --- a/app.plugin.js
 +++ b/app.plugin.js
 @@ -20,6 +20,8 @@ const IOS_EXTENSION_FILES = [
@@ -3933,7 +3933,65 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
    "WebAuthn.swift",
    "BiometricRequirement.swift",
    "Prf.swift",
-@@ -128,11 +130,24 @@ const writePlist = (filePath, body) => {
+@@ -73,9 +75,57 @@ const BIOMETRIC_REQUIREMENT_VALUES = ["strong", "strongOrCredential", "weakOrCre
+ const DEFAULT_BIOMETRIC_REQUIREMENT = "strongOrCredential";
+ // Must match `META_DATA_KEY` in android/.../auth/BiometricRequirement.kt.
+ const ANDROID_BIOMETRIC_META_DATA_NAME = "co.algorand.passkeyautofill.BIOMETRIC_REQUIREMENT";
++// PERA LOCAL PATCH: must match the `<service>` in android/src/main/AndroidManifest.xml.
++const ANDROID_AUTOFILL_SERVICE_NAME = "co.algorand.passkeyautofill.autofill.PeraAutofillService";
++
+ // Must match `infoDictionaryKey` in ios/AutofillCredentialProvider/BiometricRequirement.swift.
+ const IOS_BIOMETRIC_INFO_PLIST_KEY = "ReactNativePasskeyAutofillBiometricRequirement";
+ 
++/**
++ * PERA LOCAL PATCH: withdraws the autofill service from builds that do not
++ * provide passwords, mutating `manifest` in place.
++ *
++ * The `<service>` is declared in this library's own manifest, so the merger
++ * pulls it into every build that depends on the module — a JS route capability
++ * cannot reach it. Left in, Pera appears under Settings › Autofill service on a
++ * build with the feature off, and a user who selects it loses their real
++ * autofill provider in exchange for a service that offers nothing.
++ *
++ * `tools:node="remove"` is the merger's own mechanism for withdrawing a
++ * library-declared component; there is no way to make the library manifest
++ * itself conditional.
++ *
++ * Exported so the gating can be pinned by a test rather than a full prebuild,
++ * the same reason `extensionInfoPlist` is exported.
++ */
++const applyAutofillServiceGating = (manifest, providesPasswords) => {
++  if (providesPasswords) {
++    return manifest;
++  }
++  manifest["$"] = manifest["$"] || {};
++  if (!manifest["$"]["xmlns:tools"]) {
++    manifest["$"]["xmlns:tools"] = "http://schemas.android.com/tools";
++  }
++  const application = (manifest.application && manifest.application[0]) || null;
++  if (!application) {
++    return manifest;
++  }
++  if (!application.service) {
++    application.service = [];
++  }
++  const existing = application.service.find(
++    (s) => s["$"] && s["$"]["android:name"] === ANDROID_AUTOFILL_SERVICE_NAME,
++  );
++  if (existing) {
++    existing["$"]["tools:node"] = "remove";
++  } else {
++    application.service.push({
++      $: { "android:name": ANDROID_AUTOFILL_SERVICE_NAME, "tools:node": "remove" },
++    });
++  }
++  return manifest;
++};
++
+ // Authenticators a passkey operation will accept. Default is intentionally more permissive than
+ // strong-only: it leaves iOS unchanged (passcode still allowed) and lets Android accept the device
+ // credential. See docs/superpowers/specs/2026-05-28-configurable-biometric-requirement-design.md.
+@@ -128,11 +178,24 @@ const writePlist = (filePath, body) => {
    fs.writeFileSync(filePath, body);
  };
  
@@ -3959,7 +4017,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
  }) => `<?xml version="1.0" encoding="UTF-8"?>
  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
  <plist version="1.0">
-@@ -160,13 +175,9 @@ const extensionInfoPlist = ({
+@@ -160,13 +223,9 @@ const extensionInfoPlist = ({
  ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
    <string>${biometricRequirement}</string>
    <key>NSFaceIDUsageDescription</key>
@@ -3974,7 +4032,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
      <key>CFBundleDisplayName</key>
      <string>${label}</string>
      <key>NSExtensionAttributes</key>
-@@ -178,14 +189,22 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
+@@ -178,14 +237,22 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
          <key>ProvidesPasskeys</key>
          <true/>
          <key>ProvidesPasswords</key>
@@ -3999,7 +4057,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
      <string>com.apple.authentication-services-credential-provider-ui</string>
      <key>NSExtensionPrincipalClass</key>
      <string>$(PRODUCT_MODULE_NAME).CredentialProviderViewController</string>
-@@ -219,11 +238,15 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+@@ -219,11 +286,15 @@ const withIosPasskeyAutofill = (config, props = {}) => {
    const site = props.site || "https://debug.liquidauth.com";
    const label = props.label || "My Credential Provider";
    const associatedDomain = getAssociatedDomain(site);
@@ -4016,7 +4074,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
  
    config = withInfoPlist(config, (config) => {
      config.modResults.ReactNativePasskeyAutofillAppGroup = appGroup;
-@@ -263,7 +286,13 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+@@ -263,7 +334,13 @@ const withIosPasskeyAutofill = (config, props = {}) => {
  
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}-Info.plist`),
@@ -4031,7 +4089,31 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
        );
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}.entitlements`),
-@@ -802,3 +831,7 @@ const withPasskeyAutofill = (config, props = {}) => {
+@@ -711,6 +788,23 @@ const withPasskeyAutofill = (config, props = {}) => {
+     return config;
+   });
+ 
++  // PERA LOCAL PATCH: strip the autofill service on variants that do not provide
++  // passwords.
++  //
++  // The `<service>` is declared in this library's own manifest, so the merger
++  // pulls it into every build that depends on the module — a JS route capability
++  // cannot reach it. Left in, Pera appears under Settings › Autofill service on a
++  // build with the feature off, and a user who selects it loses their real
++  // autofill provider in exchange for a service that offers nothing.
++  //
++  // `tools:node="remove"` is the merger's own mechanism for withdrawing a
++  // library-declared component; there is no way to make the library manifest
++  // itself conditional.
++  config = withAndroidManifest(config, (config) => {
++    applyAutofillServiceGating(config.modResults.manifest, props.providesPasswords === true);
++    return config;
++  });
++
+   // 2. Add asset_statements string to strings.xml
+   config = withStringsXml(config, (config) => {
+     const stringItems = [
+@@ -802,3 +896,8 @@ const withPasskeyAutofill = (config, props = {}) => {
  module.exports = withPasskeyAutofill;
  module.exports.getBiometricRequirement = getBiometricRequirement;
  module.exports.getAaguid = getAaguid;
@@ -4039,6 +4121,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e1f3140ba5303f363cd079ca7cf49b28
 +// non-production ProvidesPasswords/supported-domains branches with a test,
 +// without rendering a full Xcode project.
 +module.exports.extensionInfoPlist = extensionInfoPlist;
++module.exports.applyAutofillServiceGating = applyAutofillServiceGating;
 diff --git a/build/ReactNativePasskeyAutofillModule.d.ts b/build/ReactNativePasskeyAutofillModule.d.ts
 index 8626ca1d219eb5c34b81a1b99fa59f71ed57d960..63b9138f55d4eb1b013859f00df4f861600e0664 100644
 --- a/build/ReactNativePasskeyAutofillModule.d.ts

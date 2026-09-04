@@ -65,3 +65,80 @@ describe('passkey-autofill extensionInfoPlist — password-manager gating', () =
         )
     })
 })
+
+type AndroidManifest = {
+    $?: Record<string, string>
+    application?: {
+        service?: { $: Record<string, string> }[]
+    }[]
+}
+
+type ApplyAutofillServiceGating = (
+    manifest: AndroidManifest,
+    providesPasswords: boolean,
+) => AndroidManifest
+
+// Exported by our local patch for the same reason `extensionInfoPlist` is: the
+// service is declared in the library's own manifest, so the only way to check
+// the gating without it is a full prebuild plus a manifest merge.
+const {
+    applyAutofillServiceGating,
+}: {
+    applyAutofillServiceGating: ApplyAutofillServiceGating
+} = require('@algorandfoundation/react-native-passkey-autofill/app.plugin.js')
+
+const AUTOFILL_SERVICE_NAME =
+    'co.algorand.passkeyautofill.autofill.PeraAutofillService'
+
+const manifestWithApplication = (): AndroidManifest => ({
+    application: [{}],
+})
+
+describe('passkey-autofill applyAutofillServiceGating — Android service gating', () => {
+    it('production (providesPasswords: false) withdraws the service from the merged manifest', () => {
+        const manifest = manifestWithApplication()
+
+        applyAutofillServiceGating(manifest, false)
+
+        const service = manifest.application?.[0].service?.find(
+            entry => entry.$['android:name'] === AUTOFILL_SERVICE_NAME,
+        )
+        expect(service?.$['tools:node']).toBe('remove')
+        expect(manifest.$?.['xmlns:tools']).toBe(
+            'http://schemas.android.com/tools',
+        )
+    })
+
+    it('non-production (providesPasswords: true) leaves the manifest untouched', () => {
+        const manifest = manifestWithApplication()
+
+        applyAutofillServiceGating(manifest, true)
+
+        expect(manifest.application?.[0].service).toBeUndefined()
+        expect(manifest.$).toBeUndefined()
+    })
+
+    it('marks an already-present service entry for removal rather than duplicating it', () => {
+        const manifest: AndroidManifest = {
+            application: [
+                {
+                    service: [
+                        { $: { 'android:name': AUTOFILL_SERVICE_NAME } },
+                        { $: { 'android:name': 'com.example.OtherService' } },
+                    ],
+                },
+            ],
+        }
+
+        applyAutofillServiceGating(manifest, false)
+
+        const services = manifest.application?.[0].service ?? []
+        expect(
+            services.filter(
+                entry => entry.$['android:name'] === AUTOFILL_SERVICE_NAME,
+            ),
+        ).toHaveLength(1)
+        expect(services[0].$['tools:node']).toBe('remove')
+        expect(services[1].$['tools:node']).toBeUndefined()
+    })
+})
