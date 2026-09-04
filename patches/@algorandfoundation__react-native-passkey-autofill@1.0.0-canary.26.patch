@@ -3907,6 +3907,30 @@ index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..72f6c2643cc4b686fa8d06949f3f4ea0
 +    <string name="pera_autofill_error_message">Pera could not open the login picker.</string>
 +    <string name="pera_autofill_error_dismiss">Dismiss</string>
  </resources>
+diff --git a/android/src/main/res/values/styles.xml b/android/src/main/res/values/styles.xml
+index 6f1847e082bd761226d25a06f8596376804341ce..c214d8e95320343d8156693dfac84c55ff0d3339 100644
+--- a/android/src/main/res/values/styles.xml
++++ b/android/src/main/res/values/styles.xml
+@@ -1,10 +1,16 @@
+ <resources>
+-    <style name="Theme.PasskeyAutofill.Dialog" parent="Theme.AppCompat.Light.Dialog.MinWidth">
++    <!--
++      Full-bleed and transparent, not a floating dialog. The React Native
++      surface draws the scrim and the sheet itself, so it needs the whole
++      window: under windowIsFloating the window wraps its content, every
++      flex:1 in the screen resolves against an auto height, and the list
++      collapses while the caller's app shows through the text.
++    -->
++    <style name="Theme.PasskeyAutofill.Dialog" parent="Theme.AppCompat.Light.NoActionBar">
+         <item name="android:windowIsTranslucent">true</item>
+         <item name="android:windowBackground">@android:color/transparent</item>
+         <item name="android:windowContentOverlay">@null</item>
+         <item name="android:windowNoTitle">true</item>
+-        <item name="android:windowIsFloating">true</item>
+-        <item name="android:backgroundDimEnabled">false</item>
++        <item name="android:windowAnimationStyle">@android:style/Animation.Translucent</item>
+     </style>
+ </resources>
 diff --git a/android/src/main/res/xml/autofill_service.xml b/android/src/main/res/xml/autofill_service.xml
 new file mode 100644
 index 0000000000000000000000000000000000000000..0530f206759a3be43c4b04e2d28894f95e1b29ce

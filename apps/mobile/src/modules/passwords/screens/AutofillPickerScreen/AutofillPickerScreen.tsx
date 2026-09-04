@@ -12,12 +12,15 @@
 
 import React, { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Login } from '@perawallet/wallet-core-passwords'
 import {
     PWButton,
     PWFlatList,
     PWListItem,
     PWText,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import {
@@ -27,6 +30,10 @@ import {
 import { useStyles } from './styles'
 
 const keyExtractor = (login: Login) => login.id
+
+// Tall enough that the list is worth scrolling, short enough that the caller's
+// app stays visible behind the sheet — the user is being asked about that app.
+const SHEET_HEIGHT_RATIO = 0.8
 
 type AutofillPickerScreenProps = {
     caller: AutofillPickerCaller
@@ -44,7 +51,15 @@ export const AutofillPickerScreen = ({ caller }: AutofillPickerScreenProps) => {
         handleSelect,
         handleCancel,
     } = useAutofillPickerScreen(caller)
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const { height: windowHeight } = useWindowDimensions()
+    const isListVisible = isUnlocked && logins.length > 0
+    const styles = useStyles({
+        insets,
+        sheetHeight: isListVisible
+            ? windowHeight * SHEET_HEIGHT_RATIO
+            : undefined,
+    })
 
     const renderItem = useCallback(
         ({ item }: { item: Login }) => (
@@ -59,72 +74,83 @@ export const AutofillPickerScreen = ({ caller }: AutofillPickerScreenProps) => {
     )
 
     return (
-        <PWView style={styles.container}>
-            <PWText variant='h4'>
-                {t('settings.passwords.autofill_picker_title')}
-            </PWText>
+        <PWView style={styles.backdrop}>
+            {/* Absolutely filled and drawn before the sheet, so it catches
+                taps beside the sheet without swallowing taps inside it. The
+                activity stopped being a floating window, so the platform no
+                longer finishes it on an outside touch — this restores that. */}
+            <PWTouchableOpacity
+                style={styles.scrim}
+                activeOpacity={1}
+                onPress={handleCancel}
+                accessible={false}
+            />
 
-            {/* callerText and hostText are rendered verbatim: the hook
-                sanitises both and puts the package first, and re-deriving
-                either here would undo that without any test noticing. */}
-            <PWText
-                variant='caption'
-                style={styles.caller}
-            >
-                {t('settings.passwords.autofill_picker_caller', {
-                    caller: callerText,
-                })}
-            </PWText>
+            <PWView style={styles.sheet}>
+                <PWText variant='h4'>
+                    {t('settings.passwords.autofill_picker_title')}
+                </PWText>
 
-            {hostText !== null && (
+                {/* callerText and hostText are rendered verbatim: the hook
+                    sanitises both and puts the package first, and re-deriving
+                    either here would undo that without any test noticing. */}
                 <PWText
                     variant='caption'
-                    style={styles.host}
+                    style={styles.caller}
                 >
-                    {t('settings.passwords.autofill_picker_host', {
-                        host: hostText,
+                    {t('settings.passwords.autofill_picker_caller', {
+                        caller: callerText,
                     })}
                 </PWText>
-            )}
 
-            {isUnlocked ? (
-                logins.length === 0 ? (
+                {hostText !== null && (
                     <PWText
                         variant='caption'
-                        style={styles.empty}
+                        style={styles.host}
                     >
-                        {t('settings.passwords.autofill_picker_empty')}
+                        {t('settings.passwords.autofill_picker_host', {
+                            host: hostText,
+                        })}
                     </PWText>
-                ) : (
-                    // FlashList needs a bounded height; without this the list
-                    // grows past the sheet and takes Cancel off screen with it.
-                    <PWView style={styles.list}>
-                        <PWFlatList
-                            data={logins}
-                            keyExtractor={keyExtractor}
-                            renderItem={renderItem}
-                            testID='autofill_picker_list'
-                        />
-                    </PWView>
-                )
-            ) : (
-                <PWButton
-                    variant='primary'
-                    title={t(
-                        'settings.passwords.autofill_picker_unlock_action',
-                    )}
-                    onPress={handleUnlock}
-                    isLoading={isUnlocking}
-                    style={styles.unlock}
-                />
-            )}
+                )}
 
-            <PWButton
-                variant='secondary'
-                title={t('settings.passwords.autofill_picker_cancel')}
-                onPress={handleCancel}
-                style={styles.cancel}
-            />
+                {isUnlocked ? (
+                    logins.length === 0 ? (
+                        <PWText
+                            variant='caption'
+                            style={styles.empty}
+                        >
+                            {t('settings.passwords.autofill_picker_empty')}
+                        </PWText>
+                    ) : (
+                        <PWView style={styles.list}>
+                            <PWFlatList
+                                data={logins}
+                                keyExtractor={keyExtractor}
+                                renderItem={renderItem}
+                                testID='autofill_picker_list'
+                            />
+                        </PWView>
+                    )
+                ) : (
+                    <PWButton
+                        variant='primary'
+                        title={t(
+                            'settings.passwords.autofill_picker_unlock_action',
+                        )}
+                        onPress={handleUnlock}
+                        isLoading={isUnlocking}
+                        style={styles.unlock}
+                    />
+                )}
+
+                <PWButton
+                    variant='secondary'
+                    title={t('settings.passwords.autofill_picker_cancel')}
+                    onPress={handleCancel}
+                    style={styles.cancel}
+                />
+            </PWView>
         </PWView>
     )
 }

@@ -63,8 +63,9 @@ export const AutofillPickerRoot = ({
     </PeraWalletProvider>
 )
 
-// Separate component because useIsDarkMode reads the settings store, which
-// only exists once PeraWalletProvider has bootstrapped the provider.
+// Separate component so useIsDarkMode runs inside PeraWalletProvider: it
+// reads the persisted theme setting, which is empty until the provider has
+// hydrated the settings store.
 const ThemedPicker = ({ caller }: { caller: AutofillPickerCaller }) => {
     const isDarkMode = useIsDarkMode()
 
