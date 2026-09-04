@@ -1078,7 +1078,7 @@ index 0000000000000000000000000000000000000000..4963faa52c8b73ad9cbe90e24685aa6e
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037876ebe73 100644
+index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..5f3fa0ce41fec76594104188da6853588756a7ef 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 @@ -3,7 +3,13 @@ package co.algorand.passkeyautofill
@@ -1106,7 +1106,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
  import org.bouncycastle.jce.provider.BouncyCastleProvider
  import java.security.Security
  
-@@ -101,6 +110,47 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -101,6 +110,61 @@ class ReactNativePasskeyAutofillModule : Module() {
        val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
          ?: return@AsyncFunction Unit
        credentialRepository.clearCredentials(context)
@@ -1127,9 +1127,19 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
 +    // picker screen; the bridge resolves harmlessly when nothing is
 +    // registered rather than rejecting, since the picker not being on
 +    // screen isn't an error the caller needs to react to.
++    //
++    // AsyncFunction bodies run on appContext.modulesQueue's HandlerThread by
++    // default, not the main thread — but AutofillPickerBridge.Host's contract
++    // promises every callback arrives on the main thread, so each call below
++    // hops onto appContext.mainQueue. That scope is cancelled with the
++    // module's own lifecycle (AppContext.mainQueue.cancel on teardown), so
++    // unlike an ad-hoc CoroutineScope(Dispatchers.Main) it can't outlive
++    // what created it.
 +    AsyncFunction("autofillPickerReady") { promise: Promise ->
-+      AutofillPickerBridge.current()?.onPickerReady()
-+      promise.resolve(null)
++      appContext.mainQueue.launch {
++        AutofillPickerBridge.current()?.onPickerReady()
++        promise.resolve(null)
++      }
 +    }
 +
 +    AsyncFunction("requestAutofillUnlock") { promise: Promise ->
@@ -1144,17 +1154,21 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
 +    }
 +
 +    AsyncFunction("resolveAutofillPick") { recordIdentifier: String, promise: Promise ->
-+      AutofillPickerBridge.current()?.onPickResolved(recordIdentifier)
-+      promise.resolve(null)
++      appContext.mainQueue.launch {
++        AutofillPickerBridge.current()?.onPickResolved(recordIdentifier)
++        promise.resolve(null)
++      }
 +    }
 +
 +    AsyncFunction("cancelAutofillPick") { promise: Promise ->
-+      AutofillPickerBridge.current()?.onPickCancelled()
-+      promise.resolve(null)
++      appContext.mainQueue.launch {
++        AutofillPickerBridge.current()?.onPickCancelled()
++        promise.resolve(null)
++      }
      }
  
      AsyncFunction("deleteCredential") { credentialId: String ->
-@@ -155,6 +205,49 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -155,6 +219,49 @@ class ReactNativePasskeyAutofillModule : Module() {
        openCredentialProviderSettings(context)
      }
  
@@ -1204,7 +1218,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
      AsyncFunction("getStoredCredentials") {
        val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
          ?: return@AsyncFunction emptyList<Map<String, Any>>()
-@@ -180,7 +273,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -180,7 +287,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -1213,7 +1227,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -195,7 +288,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -195,7 +302,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -1222,7 +1236,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037
      )
      val expected = component.flattenToString()
  
-@@ -246,7 +339,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -246,7 +353,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -1483,10 +1497,10 @@ index 0000000000000000000000000000000000000000..660d2f01eb1ac1d6e1df0e68bb08e323
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5ca7ce5347ca3e741367c37abd15f201714ee264
+index 0000000000000000000000000000000000000000..6075af723921a810a9d4b55ed3b5f38bb73d0b24
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,44 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import java.lang.ref.WeakReference
@@ -1499,6 +1513,12 @@ index 0000000000000000000000000000000000000000..5ca7ce5347ca3e741367c37abd15f201
 + * here would keep a finished picker (and its unsealed state) alive.
 + */
 +object AutofillPickerBridge {
++    /**
++     * Every callback is dispatched on the main thread by the module, so an
++     * implementing activity can freely touch UI/Activity state (`finish()`,
++     * `setResult`, React surfaces) from any of them without hopping threads
++     * itself.
++     */
 +    interface Host {
 +        fun onPickerReady()
 +        suspend fun onUnlockRequested(): Boolean
@@ -1506,6 +1526,11 @@ index 0000000000000000000000000000000000000000..5ca7ce5347ca3e741367c37abd15f201
 +        fun onPickCancelled()
 +    }
 +
++    // register()/unregister() run on the Activity's main thread; current() is
++    // read from the module's AsyncFunction dispatch thread (modulesQueue's
++    // HandlerThread by default). @Volatile gives that cross-thread read/write
++    // a visibility guarantee without a lock.
++    @Volatile
 +    private var host: WeakReference<Host>? = null
 +
 +    fun register(host: Host) {
@@ -3961,6 +3986,69 @@ index 0000000000000000000000000000000000000000..b457e5db0aa44c7e60b3f59cd80bb8b8
 +
 +    private companion object {
 +        const val RESOURCE_PATH = "src/main/res/raw/passkey_privileged_browsers.json"
++    }
++}
+diff --git a/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridgeTest.kt b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridgeTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..207b168cb941432d3342a2691e2b37058d7194db
+--- /dev/null
++++ b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridgeTest.kt
+@@ -0,0 +1,57 @@
++package co.algorand.passkeyautofill.autofill
++
++import org.junit.After
++import org.junit.Assert.assertNull
++import org.junit.Assert.assertSame
++import org.junit.Test
++
++/**
++ * `AutofillPickerBridge` is a process-wide singleton, so each test clears it
++ * afterward rather than relying on JVM test-ordering for isolation.
++ */
++class AutofillPickerBridgeTest {
++    private class FakeHost : AutofillPickerBridge.Host {
++        override fun onPickerReady() {}
++        override suspend fun onUnlockRequested(): Boolean = true
++        override fun onPickResolved(recordIdentifier: String) {}
++        override fun onPickCancelled() {}
++    }
++
++    @After
++    fun tearDown() {
++        AutofillPickerBridge.current()?.let { AutofillPickerBridge.unregister(it) }
++    }
++
++    @Test
++    fun `nothing is registered before any activity registers`() {
++        assertNull(AutofillPickerBridge.current())
++    }
++
++    @Test
++    fun `a registered host becomes current`() {
++        val host = FakeHost()
++        AutofillPickerBridge.register(host)
++        assertSame(host, AutofillPickerBridge.current())
++    }
++
++    @Test
++    fun `registering a second host replaces the first`() {
++        val first = FakeHost()
++        val second = FakeHost()
++        AutofillPickerBridge.register(first)
++        AutofillPickerBridge.register(second)
++        assertSame(second, AutofillPickerBridge.current())
++    }
++
++    @Test
++    fun `unregistering a stale host does not clear a newer registration`() {
++        // Guards against an older activity's teardown racing a newer
++        // activity's registration and clobbering it.
++        val first = FakeHost()
++        val second = FakeHost()
++        AutofillPickerBridge.register(first)
++        AutofillPickerBridge.register(second)
++        AutofillPickerBridge.unregister(first)
++        assertSame(second, AutofillPickerBridge.current())
 +    }
 +}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt b/android/src/test/java/co/algorand/passkeyautofill/autofill/AutofillScopeTest.kt
