@@ -1449,6 +1449,31 @@ index 0000000000000000000000000000000000000000..660d2f01eb1ac1d6e1df0e68bb08e323
 +    setResult(Activity.RESULT_CANCELED)
 +    finish()
 +}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerComponent.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerComponent.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..b31487a670a4a0caf55409583f16b95fa5175374
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerComponent.kt
+@@ -0,0 +1,19 @@
++package co.algorand.passkeyautofill.autofill
++
++import android.os.Bundle
++
++/**
++ * PERA LOCAL PATCH: the React component the picker activity mounts.
++ *
++ * Written by the config plugin as application meta-data because the picker can
++ * launch cold, before any JavaScript has run in the process — so the name has
++ * to be readable without asking JS.
++ */
++object AutofillPickerComponent {
++    // Must match `ANDROID_AUTOFILL_PICKER_META_DATA_NAME` in app.plugin.js.
++    const val META_DATA_NAME = "co.algorand.passkeyautofill.AUTOFILL_PICKER_COMPONENT"
++
++    /** The configured name, or null when unset or blank — the caller fails closed. */
++    fun fromMetaData(metaData: Bundle?): String? =
++        metaData?.getString(META_DATA_NAME)?.trim()?.takeIf { it.isNotEmpty() }
++}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillScope.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..ea5b7f117f9ba3aba2d1cd00a0f5484f5a849d66
@@ -3602,6 +3627,55 @@ index 045847c91531aa36bb41aad811425f313077d3b1..9bf24fdd65bf79803bf65d015a0a0935
      </capabilities>
  </credential-provider>
 \ No newline at end of file
+diff --git a/android/src/test/java/co/algorand/passkeyautofill/AutofillPickerComponentTest.kt b/android/src/test/java/co/algorand/passkeyautofill/AutofillPickerComponentTest.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b8cd1b0111593ed7c19255148cc7824a4433cfc
+--- /dev/null
++++ b/android/src/test/java/co/algorand/passkeyautofill/AutofillPickerComponentTest.kt
+@@ -0,0 +1,43 @@
++package co.algorand.passkeyautofill
++
++import android.os.Bundle
++import co.algorand.passkeyautofill.autofill.AutofillPickerComponent
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertNull
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.annotation.Config
++
++// Bundle is a framework class the plain JUnit stub jar can't construct;
++// Robolectric provides a real implementation. Pinned to 34 — the module
++// targets 36, but Robolectric 4.11.1 doesn't support an SDK that high yet.
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [34])
++class AutofillPickerComponentTest {
++    @Test
++    fun `returns the configured component name`() {
++        val bundle = Bundle().apply {
++            putString(AutofillPickerComponent.META_DATA_NAME, "PeraAutofillPicker")
++        }
++        assertEquals("PeraAutofillPicker", AutofillPickerComponent.fromMetaData(bundle))
++    }
++
++    @Test
++    fun `returns null when the bundle is absent`() {
++        assertNull(AutofillPickerComponent.fromMetaData(null))
++    }
++
++    @Test
++    fun `returns null when the key is missing`() {
++        assertNull(AutofillPickerComponent.fromMetaData(Bundle()))
++    }
++
++    @Test
++    fun `returns null when the value is blank`() {
++        val bundle = Bundle().apply {
++            putString(AutofillPickerComponent.META_DATA_NAME, "   ")
++        }
++        assertNull(AutofillPickerComponent.fromMetaData(bundle))
++    }
++}
 diff --git a/android/src/test/java/co/algorand/passkeyautofill/PasswordDomainMatchingTest.kt b/android/src/test/java/co/algorand/passkeyautofill/PasswordDomainMatchingTest.kt
 new file mode 100644
 index 0000000000000000000000000000000000000000..b5d9eba657da43d60c174c5904cd9bc979aff0bd
