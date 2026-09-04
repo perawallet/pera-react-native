@@ -1,5 +1,5 @@
 diff --git a/android/build.gradle b/android/build.gradle
-index 41dbd054f88416166abe74da3b931665e891c1b5..13d74e3ecb6595722d27eb9a2339ea1499099d04 100644
+index 41dbd054f88416166abe74da3b931665e891c1b5..3d676711c085a68fb551445492e0c24e95ba3ec8 100644
 --- a/android/build.gradle
 +++ b/android/build.gradle
 @@ -63,6 +63,12 @@ repositories {
@@ -9,14 +9,14 @@ index 41dbd054f88416166abe74da3b931665e891c1b5..13d74e3ecb6595722d27eb9a2339ea14
 +  // PERA LOCAL PATCH: PeraPickerActivity is a ReactActivity. expo-modules-core
 +  // depends on react-android with `implementation`, so it is not on this
 +  // module's compile classpath transitively. The version is left off on
-+  // purpose — the root React Native Gradle plugin forces it to the one the app
-+  // resolves, and pinning here would fight that.
++  // purpose: the `com.facebook.react` plugin on :app forces it, for every
++  // project rather than just its own, and pinning here would fight that.
 +  implementation "com.facebook.react:react-android"
    implementation "androidx.biometric:biometric-ktx:1.2.0-alpha05"
    implementation "androidx.credentials:credentials:1.5.0-rc01"
    implementation "androidx.credentials:credentials-play-services-auth:1.5.0-rc01"
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
-index e664746a384e1403297d47c42c1383f0f41d4766..3a2d59733b91a1dbb505d55a1b7dbc42a3ca12e4 100644
+index e664746a384e1403297d47c42c1383f0f41d4766..60e4f78aa3c052b2bd9a95bd8a625282389c63e8 100644
 --- a/android/src/main/AndroidManifest.xml
 +++ b/android/src/main/AndroidManifest.xml
 @@ -2,8 +2,19 @@
@@ -40,7 +40,7 @@ index e664746a384e1403297d47c42c1383f0f41d4766..3a2d59733b91a1dbb505d55a1b7dbc42
              android:enabled="true"
              android:exported="true"
              android:label="@string/passkey_autofill_label"
-@@ -34,5 +45,57 @@
+@@ -34,5 +45,66 @@
                  <category android:name="android.intent.category.DEFAULT"/>
              </intent-filter>
          </activity>
@@ -92,9 +92,18 @@ index e664746a384e1403297d47c42c1383f0f41d4766..3a2d59733b91a1dbb505d55a1b7dbc42
 +            android:exported="false"
 +            android:launchMode="singleTop"
 +            android:theme="@style/Theme.PasskeyAutofill.Dialog"/>
++        <!--
++          configChanges matches MainActivity's list because this activity is
++          also a ReactActivity now: without it every rotation or dark-mode
++          toggle recreates it mid-fill, which fires
++          ReactHostImpl.onHostDestroy(activity) on the React host it shares with
++          MainActivity, and orphans the biometrics() continuation on a prompt
++          bound to the destroyed activity.
++        -->
 +        <activity android:name="co.algorand.passkeyautofill.autofill.PeraPickerActivity"
 +            android:exported="false"
 +            android:launchMode="singleTop"
++            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode|smallestScreenSize|assetsPaths|locale|layoutDirection"
 +            android:theme="@style/Theme.PasskeyAutofill.Dialog"/>
      </application>
  </manifest>
@@ -2187,10 +2196,10 @@ index 0000000000000000000000000000000000000000..af20354f1fc3b081fc22e941bfc221ed
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b9283b0994c
+index 0000000000000000000000000000000000000000..5252b9addb1ad5887a4bbfb689aa6c6ea9b53d3b
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
-@@ -0,0 +1,281 @@
+@@ -0,0 +1,326 @@
 +package co.algorand.passkeyautofill.autofill
 +
 +import android.content.pm.PackageManager
@@ -2248,6 +2257,14 @@ index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b92
 +     * place that can hold "prompt before unseal" as an invariant.
 +     */
 +    private var isUnlocked: Boolean = false
++
++    /**
++     * Guards [onUnlockRequested] the way [isHandling] guards [onPickResolved].
++     * Two overlapping calls would put two `BiometricPrompt`s on one activity,
++     * and the only thing preventing that today is JavaScript's own
++     * `isUnlocking` — the enforcement this activity exists not to rely on.
++     */
++    private var isUnlocking: Boolean = false
 +
 +    private var isReady: Boolean = false
 +
@@ -2332,18 +2349,25 @@ index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b92
 +        watchdog.removeCallbacksAndMessages(null)
 +    }
 +
-+    override suspend fun onUnlockRequested(): Boolean =
-+        try {
++    override suspend fun onUnlockRequested(): Boolean {
++        if (isUnlocking) {
++            Log.e(TAG, "An unlock prompt is already showing")
++            return false
++        }
++        // Set synchronously, before the prompt suspends.
++        isUnlocking = true
++        return try {
 +            // A declined prompt is not a failure: the screen keeps its unlock
 +            // affordance so the user can try again.
 +            biometrics().also { if (it) isUnlocked = true }
-+        } catch (e: CancellationException) {
-+            throw e
 +        } catch (e: Exception) {
 +            Log.e(TAG, "The unlock prompt failed", e)
 +            cancel()
 +            false
++        } finally {
++            isUnlocking = false
 +        }
++    }
 +
 +    override fun onPickResolved(recordIdentifier: String) = failClosed {
 +        if (isHandling) return@failClosed
@@ -2356,9 +2380,30 @@ index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b92
 +        lifecycleScope.launch { release(recordIdentifier) }
 +    }
 +
-+    override fun onPickCancelled() = failClosed { cancel() }
++    override fun onPickCancelled() = failClosed {
++        // A release already in flight is not cancellable. finish() does not
++        // stop lifecycleScope — that waits for ON_DESTROY, one or more frames
++        // later — so cancelling here would consume the result the release is
++        // about to set with setResult(RESULT_CANCELED) and still let it write
++        // the caller-to-login link: no fill, but the association persisted.
++        if (isHandling) return@failClosed
++        cancel()
++    }
 +
-+    private suspend fun release(recordIdentifier: String) {
++    private suspend fun release(recordIdentifier: String) = try {
++        releaseOrFail(recordIdentifier)
++    } catch (e: CancellationException) {
++        throw e
++    } catch (e: Exception) {
++        // Past the unseal nothing is otherwise guarded: AppLinkStore's MMKV
++        // calls, buildDataset and setResult can all throw, lifecycleScope
++        // carries no CoroutineExceptionHandler, and an escape would take the
++        // process down with a plaintext password in memory.
++        Log.e(TAG, "Releasing the selected login failed", e)
++        cancel()
++    }
++
++    private suspend fun releaseOrFail(recordIdentifier: String) {
 +        val callerPackageName = this.callerPackageName
 +        val passwordId = this.passwordId
 +        if (callerPackageName == null || passwordId == null) {
@@ -2387,6 +2432,15 @@ index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b92
 +        if (login.password.isEmpty()) {
 +            Log.e(TAG, "The selected login has no password to release")
 +            cancel()
++            return
++        }
++
++        // The same finish()-does-not-cancel-lifecycleScope window, for the
++        // finishes this activity does not originate (back press, platform
++        // teardown). The link is this flow's only durable side effect, so a
++        // fill that can no longer be delivered must not leave one behind.
++        if (isFinishing) {
++            Log.e(TAG, "The picker finished before the release completed")
 +            return
 +        }
 +
