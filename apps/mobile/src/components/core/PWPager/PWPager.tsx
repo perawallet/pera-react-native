@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import { PWView } from '../PWView'
 
 import { PWPAGER_DRAWER_EDGE_WIDTH } from './constants'
 import { PWPagerGestureContext } from './PWPagerGestureContext'
-import { type PWPagerProps } from './types'
+import type { PWPagerProps } from './types'
 import { usePWPager } from './usePWPager'
 
 /**

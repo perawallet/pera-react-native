@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PWDrawerProps } from './types'
+import type { PWDrawerProps } from './types'
 
 /**
  * Passthrough on web. An edge drag isn't a gesture the extension popup can

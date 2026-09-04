@@ -14,7 +14,7 @@ import React from 'react'
 import { PWButton, type IconName, type PWIconVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
-import { type DocumentsState } from './useCardOnboardingStatusScreen'
+import type { DocumentsState } from './useCardOnboardingStatusScreen'
 import { useStyles } from './styles'
 
 // Icon, color, and copy for the "Submit Your Documents" row per KYC state.

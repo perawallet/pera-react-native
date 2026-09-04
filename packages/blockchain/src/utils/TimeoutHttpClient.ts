@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import {
-    type BaseHTTPClient,
-    type BaseHTTPClientError,
-    type BaseHTTPClientResponse,
-    type TokenHeader,
+import type {
+    BaseHTTPClient,
+    BaseHTTPClientError,
+    BaseHTTPClientResponse,
+    TokenHeader,
 } from 'algosdk'
 
 /**

@@ -11,6 +11,7 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
+import { resolveAssetFacts } from '../../../utils/algoAssetFacts'
 import { computeBalanceImpacts } from './balance-impacts'
 import {
     indexerTransactionSchema,
@@ -22,10 +23,6 @@ import type {
     TransactionHistoryApiResponse,
     TransactionHistoryItemApiResponse,
 } from '../schema'
-
-const ALGO_ASSET_KEY = '0'
-const ALGO_UNIT_NAME = 'ALGO'
-const ALGO_DECIMALS = 6
 
 /** Asset display facts, resolved from the real chain's indexer by the caller. */
 export type AssetLookup = Map<
@@ -117,21 +114,22 @@ const transformRow = (
                   asset_id: assetKey,
                   name: assetFacts?.name ?? '',
                   unit_name: assetFacts?.unitName ?? '',
-                  decimals: assetFacts?.decimals ?? 0,
+                  fraction_decimals: assetFacts?.decimals ?? 0,
               }
             : null,
         application_id: applicationIdOf(tx),
         inner_transaction_count: tx['inner-txns']?.length ?? null,
         balance_impacts: computeBalanceImpacts(tx, address).map(impact => {
-            const facts =
-                impact.assetId === ALGO_ASSET_KEY
-                    ? { unitName: ALGO_UNIT_NAME, decimals: ALGO_DECIMALS }
-                    : assets.get(impact.assetId)
+            const known = assets.get(impact.assetId)
+            const facts = resolveAssetFacts(impact.assetId, {
+                unitName: known?.unitName ?? '',
+                decimals: known?.decimals ?? 0,
+            })
 
             return {
                 asset_id: impact.assetId,
-                unit_name: facts?.unitName ?? '',
-                fraction_decimals: facts?.decimals ?? 0,
+                unit_name: facts.unitName,
+                fraction_decimals: facts.decimals,
                 amount: impact.amount.toString(),
             }
         }),

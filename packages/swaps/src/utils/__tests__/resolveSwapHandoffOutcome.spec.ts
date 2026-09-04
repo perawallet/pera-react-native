@@ -12,7 +12,20 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
-import { SubmissionError } from '@perawallet/wallet-core-signing'
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+        deriveSubmissionAttemptFromBytes: vi.fn(),
+    }
+})
+
+import {
+    deriveSubmissionAttemptFromBytes,
+    SubmissionError,
+} from '@perawallet/wallet-core-signing'
 import type { SwapHandoffRecord } from '../../models'
 import {
     resolveSwapHandoffOutcome,
@@ -56,6 +69,9 @@ const makeDeps = (): {
     removeHandoff: vi.fn(),
     reportError: vi.fn(),
     declineSignRequest: vi.fn().mockResolvedValue(undefined),
+    recordSubmissionAttempt: vi.fn().mockResolvedValue('attempt-1'),
+    markSubmissionUnknown: vi.fn().mockResolvedValue(undefined),
+    markSubmissionFailed: vi.fn().mockResolvedValue(undefined),
 })
 
 describe('resolveSwapHandoffOutcome', () => {
@@ -63,6 +79,12 @@ describe('resolveSwapHandoffOutcome', () => {
 
     beforeEach(() => {
         deps = makeDeps()
+        vi.mocked(deriveSubmissionAttemptFromBytes)
+            .mockReset()
+            .mockReturnValue({
+                txIds: ['derived-1'],
+                lastValid: 200,
+            })
     })
 
     test('ready: interleaves pre-signed + assembled bytes and submits the group', async () => {
@@ -194,6 +216,125 @@ describe('resolveSwapHandoffOutcome', () => {
         expect(deps.submitGroup).toHaveBeenCalledTimes(2)
         expect(deps.submitGroup).toHaveBeenNthCalledWith(1, [a])
         expect(deps.submitGroup).toHaveBeenNthCalledWith(2, [b])
+    })
+
+    test('ready: writes a ledger row per group before each submitGroup POST', async () => {
+        const a = new Uint8Array([10])
+        const b = new Uint8Array([20])
+        const record = makeRecord({
+            plan: [
+                { slots: [{ kind: 'toSign', flatIndex: 0 }] },
+                { slots: [{ kind: 'toSign', flatIndex: 1 }] },
+            ],
+        })
+        vi.mocked(deriveSubmissionAttemptFromBytes)
+            .mockReset()
+            .mockImplementation((bytes: readonly Uint8Array[]) =>
+                bytes[0] === a
+                    ? { txIds: ['id-a'], lastValid: 20 }
+                    : { txIds: ['id-b'], lastValid: 40 },
+            )
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [a, b] },
+            record,
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.recordSubmissionAttempt).toHaveBeenCalledTimes(2)
+        expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(1, {
+            network: 'mainnet',
+            txIds: ['id-a'],
+            flow: 'cosign',
+            intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+            // Without a sender no sender-scoped guard can match a cosign row,
+            // which let a re-proposed shared-account swap past the guard.
+            sender: 'JOINT_ADDR',
+            lastValid: 20,
+        })
+        expect(deps.recordSubmissionAttempt).toHaveBeenNthCalledWith(2, {
+            network: 'mainnet',
+            txIds: ['id-b'],
+            flow: 'cosign',
+            intentKey: { kind: 'cosign', signRequestId: 'req-1', swapId: '42' },
+            sender: 'JOINT_ADDR',
+            lastValid: 40,
+        })
+        // The durable row must exist before the POST, not after.
+        expect(
+            deps.recordSubmissionAttempt.mock.invocationCallOrder[0],
+        ).toBeLessThan(deps.submitGroup.mock.invocationCallOrder[0])
+        expect(
+            deps.recordSubmissionAttempt.mock.invocationCallOrder[1],
+        ).toBeLessThan(deps.submitGroup.mock.invocationCallOrder[1])
+    })
+
+    test('ready: skips the ledger row when the group derives no tx ids', async () => {
+        vi.mocked(deriveSubmissionAttemptFromBytes).mockReturnValueOnce({
+            txIds: [],
+        })
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.recordSubmissionAttempt).not.toHaveBeenCalled()
+        expect(deps.submitGroup).toHaveBeenCalledTimes(1)
+    })
+
+    test('unknown-outcome: marks the attempt unknown and lets the shared orchestrator retain the handoff', async () => {
+        deps.submitGroup.mockRejectedValueOnce(
+            new SubmissionError(
+                ['TXID'],
+                'unknown-outcome',
+                new AlgodError('network_unavailable', {}),
+            ),
+        )
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.markSubmissionUnknown).toHaveBeenCalledWith('attempt-1')
+        expect(deps.markSubmissionFailed).not.toHaveBeenCalled()
+        // The rethrown error reaches completeMultisigHandoff, which retains the
+        // handoff instead of failing or removing it.
+        expect(deps.updateSwapStatus).not.toHaveBeenCalled()
+        expect(deps.declineSignRequest).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).not.toHaveBeenCalled()
+    })
+
+    test('rejected-by-node: marks the attempt failed and the failure propagates', async () => {
+        deps.submitGroup.mockRejectedValueOnce(
+            new SubmissionError(
+                ['TXID'],
+                'rejected-by-node',
+                new AlgodError('overspend', {}),
+            ),
+        )
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.markSubmissionFailed).toHaveBeenCalledWith('attempt-1')
+        expect(deps.markSubmissionUnknown).not.toHaveBeenCalled()
+        // The rethrown error drives completeMultisigHandoff's failure path.
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'failed',
+                reason: 'blockchain_error',
+                swap_version: 'v2',
+            },
+        })
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
     test('ready: a missing assembled signature fails the swap, never submits a partial group', async () => {

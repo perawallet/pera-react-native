@@ -25,18 +25,6 @@ const coerceNumber = z.union([
 ])
 
 /**
- * Schema for swap group detail from API response
- */
-export const transactionSwapGroupDetailSchema = z.object({
-    asset_in_id: uint64IdSchema.optional(),
-    asset_in_unit_name: z.string().optional().default(''),
-    asset_out_id: uint64IdSchema.optional(),
-    asset_out_unit_name: z.string().optional().default(''),
-    amount_in: z.string().optional().default('0'),
-    amount_out: z.string().optional().default('0'),
-})
-
-/**
  * Schema for asset summary from API response
  * Note: Some fields may be missing for certain asset types
  */
@@ -44,7 +32,35 @@ export const transactionAssetSummarySchema = z.object({
     asset_id: uint64IdSchema,
     name: z.string().optional().default(''),
     unit_name: z.string().optional().default(''),
-    decimals: z.number().optional().default(0),
+    fraction_decimals: z.number().optional().default(0),
+})
+
+/**
+ * Per-side asset facts inside a swap group detail. `asset_id` is optional
+ * here, unlike the row-level summary above: rows are validated one at a time
+ * and a failure drops the whole transaction, so a side missing its id must
+ * degrade to an unlabelled amount rather than erase the swap from history.
+ */
+const swapAssetFactsSchema = z.object({
+    asset_id: uint64IdSchema.nullish(),
+    unit_name: z
+        .string()
+        .nullish()
+        .transform(value => value ?? ''),
+    fraction_decimals: z.number().nullish(),
+})
+
+/**
+ * Schema for swap group detail from API response. The per-side asset facts
+ * arrive as nested objects; reading them as flat `asset_in_unit_name`-style
+ * siblings yields an empty unit name and a blank amount label.
+ * `transformSwapGroupDetail` flattens them into the domain model.
+ */
+export const transactionSwapGroupDetailSchema = z.object({
+    asset_in: swapAssetFactsSchema.nullable().optional(),
+    asset_out: swapAssetFactsSchema.nullable().optional(),
+    amount_in: z.string().optional().default('0'),
+    amount_out: z.string().optional().default('0'),
 })
 
 /**

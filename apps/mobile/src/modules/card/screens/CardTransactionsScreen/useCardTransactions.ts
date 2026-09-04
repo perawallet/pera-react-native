@@ -12,11 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCardTransactionsQuery } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardComingSoonToast } from '../../hooks'
-import { type PeraCardAccountStackParamList } from '../../routes/types'
+import type { PeraCardAccountStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,

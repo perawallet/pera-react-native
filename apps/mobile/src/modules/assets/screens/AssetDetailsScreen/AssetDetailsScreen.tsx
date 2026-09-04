@@ -25,7 +25,7 @@ import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
-import { type NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'

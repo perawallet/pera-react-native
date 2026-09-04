@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { useAsyncAction } from '../useAsyncAction'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 describe('useAsyncAction', () => {
     it('should handle successful execution', async () => {

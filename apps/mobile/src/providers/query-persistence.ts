@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Query } from '@tanstack/react-query'
+import type { Query } from '@tanstack/react-query'
 import {
     isAccountBalancesHistoryQuery,
     isAccountQuery,

@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import { type Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
+import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
-import {
-    type PasskeyDecision,
-    type PasskeyCreateApprovalContext,
-    type PasskeyGetApprovalContext,
-    type PasskeyApprovalOpener,
+import type {
+    PasskeyDecision,
+    PasskeyCreateApprovalContext,
+    PasskeyGetApprovalContext,
+    PasskeyApprovalOpener,
 } from './passkey-opener'
 
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const

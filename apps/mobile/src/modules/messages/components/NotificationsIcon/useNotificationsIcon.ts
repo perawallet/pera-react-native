@@ -13,7 +13,7 @@
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, HomeEvent } from '@analytics'
 
 const MAX_INBOX_COUNT_DISPLAY = 9

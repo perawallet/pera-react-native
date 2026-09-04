@@ -13,8 +13,8 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningStore } from '../index'
-import { isResumableRehydratedRequest } from '../store'
-import { SignRequest } from '../../models'
+import { isResumableRehydratedRequest, wasRestoredFromStorage } from '../store'
+import type { SignRequest } from '../../models'
 
 const { mockStorage } = vi.hoisted(() => ({
     mockStorage: {
@@ -186,6 +186,31 @@ describe('SigningStore', () => {
         })
 
         expect(result.current.pendingSignRequests).toEqual([])
+    })
+
+    test('marks rehydrated requests as restored from storage', async () => {
+        mockStorage.getItem.mockReturnValueOnce(
+            JSON.stringify({
+                state: {
+                    pendingSignRequests: [
+                        {
+                            id: 'restored-1',
+                            type: 'transaction',
+                            transport: 'algod',
+                            sourceType: 'walletconnect',
+                            txs: [],
+                        },
+                    ],
+                },
+                version: 1,
+            }),
+        )
+        await useSigningStore.persist.rehydrate()
+
+        // Drives the re-presentation guard: only these ids pay for a ledger
+        // read before an approval sheet re-opens.
+        expect(wasRestoredFromStorage('restored-1')).toBe(true)
+        expect(wasRestoredFromStorage('fresh-1')).toBe(false)
     })
 
     test('boots with default state when persisted JSON is malformed', async () => {

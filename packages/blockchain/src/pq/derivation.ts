@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { sha512_256 } from '@noble/hashes/sha2'
+import { sha512_256 } from '@noble/hashes/sha2.js'
 import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES, type PQSchemeId } from './schemes'
 
 /** `protocol.PostQuantumKey` — go-algorand's PQ keygen-seed domain prefix. */

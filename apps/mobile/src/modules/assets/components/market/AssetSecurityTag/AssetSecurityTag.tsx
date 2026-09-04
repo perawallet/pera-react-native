@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity } from '@components/core'
-import { type IconName } from '@components/core/PWIcon/constants'
+import type { IconName } from '@components/core/PWIcon/constants'
 import { useStyles } from './styles'
 
 export type AssetSecurityTagVariant = 'neutral' | 'warning'

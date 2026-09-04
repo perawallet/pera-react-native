@@ -206,6 +206,34 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
     )
 
     it(
+        'Given the Algo25 word slots are rendered on iOS, then every slot requests the ASCII-capable keyboard so an IME cannot enter its composing state',
+        async () => {
+            renderAlgo25ImportFromOnboarding()
+
+            await openImportOptionsSheet()
+            await waitFor(() =>
+                screen.getByTestId('import_options_algo25_button'),
+            )
+            fireEvent.click(screen.getByTestId('import_options_algo25_button'))
+
+            await advanceThroughImportInfo()
+
+            await waitFor(() =>
+                screen.getByTestId('import_account_word_input_24'),
+            )
+
+            for (let idx = 0; idx < 25; idx++) {
+                expect(
+                    screen
+                        .getByTestId(`import_account_word_input_${idx}`)
+                        .getAttribute('keyboardType'),
+                ).toBe('ascii-capable')
+            }
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given an invalid 25-word mnemonic, when the user taps Import, then an error toast is raised and no account is persisted',
         async () => {
             renderAlgo25ImportFromOnboarding()

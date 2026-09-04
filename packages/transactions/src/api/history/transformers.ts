@@ -24,19 +24,37 @@ import type {
     TransactionBalanceImpact,
 } from '../../models/types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_DECIMALS, resolveAssetFacts } from '../../utils/algoAssetFacts'
 
 /**
- * Transforms a swap group detail from API response format to domain format.
+ * Transforms a swap group detail from API response format to domain format,
+ * flattening the per-side `asset_in`/`asset_out` objects the API nests. A side
+ * that arrives without decimals falls back to 6 rather than 0, which would
+ * inflate its amount by six orders of magnitude.
  */
 const transformSwapGroupDetail = (
     detail: TransactionHistoryItemApiResponse['swap_group_detail'],
 ): Nullable<TransactionSwapGroupDetail> => {
     if (!detail) return null
+
+    const assetInId = detail.asset_in?.asset_id ?? null
+    const assetOutId = detail.asset_out?.asset_id ?? null
+    const assetIn = resolveAssetFacts(assetInId, {
+        unitName: detail.asset_in?.unit_name ?? '',
+        decimals: detail.asset_in?.fraction_decimals ?? ALGO_DECIMALS,
+    })
+    const assetOut = resolveAssetFacts(assetOutId, {
+        unitName: detail.asset_out?.unit_name ?? '',
+        decimals: detail.asset_out?.fraction_decimals ?? ALGO_DECIMALS,
+    })
+
     return {
-        assetInId: detail.asset_in_id ?? null,
-        assetInUnitName: detail.asset_in_unit_name ?? '',
-        assetOutId: detail.asset_out_id ?? null,
-        assetOutUnitName: detail.asset_out_unit_name ?? '',
+        assetInId,
+        assetInUnitName: assetIn.unitName,
+        assetInDecimals: assetIn.decimals,
+        assetOutId,
+        assetOutUnitName: assetOut.unitName,
+        assetOutDecimals: assetOut.decimals,
         amountIn: new Decimal(detail.amount_in ?? '0'),
         amountOut: new Decimal(detail.amount_out ?? '0'),
     }
@@ -44,16 +62,27 @@ const transformSwapGroupDetail = (
 
 /**
  * Transforms an asset summary from API response format to domain format.
+ *
+ * Missing decimals stay 0 here rather than taking the swap sides' fallback of
+ * 6: the renderer prefers the locally-known asset's decimals and only reads
+ * this when the asset is unknown, where an unscaled amount is obviously wrong
+ * and a plausible-looking one is not.
  */
 const transformAssetSummary = (
     asset: TransactionHistoryItemApiResponse['asset'],
 ): Nullable<TransactionAssetSummary> => {
     if (!asset) return null
+
+    const facts = resolveAssetFacts(asset.asset_id, {
+        unitName: asset.unit_name ?? '',
+        decimals: asset.fraction_decimals ?? 0,
+    })
+
     return {
         assetId: asset.asset_id,
         name: asset.name ?? '',
-        unitName: asset.unit_name ?? '',
-        decimals: asset.decimals ?? 0,
+        unitName: facts.unitName,
+        decimals: facts.decimals,
     }
 }
 
@@ -64,12 +93,19 @@ const transformAssetSummary = (
 const transformBalanceImpacts = (
     impacts: TransactionHistoryItemApiResponse['balance_impacts'],
 ): TransactionBalanceImpact[] =>
-    (impacts ?? []).map(impact => ({
-        assetId: impact.asset_id,
-        unitName: impact.unit_name ?? '',
-        fractionDecimals: impact.fraction_decimals ?? 0,
-        amount: new Decimal(impact.amount),
-    }))
+    (impacts ?? []).map(impact => {
+        const facts = resolveAssetFacts(impact.asset_id, {
+            unitName: impact.unit_name ?? '',
+            decimals: impact.fraction_decimals ?? 0,
+        })
+
+        return {
+            assetId: impact.asset_id,
+            unitName: facts.unitName,
+            fractionDecimals: facts.decimals,
+            amount: new Decimal(impact.amount),
+        }
+    })
 
 /**
  * Transforms an interpreted meaning from API response format to domain format.

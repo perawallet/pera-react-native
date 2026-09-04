@@ -19,7 +19,7 @@ import {
     classifyDisplayableTransaction,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { type GestureResponderEvent } from 'react-native'
+import type { GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'
 

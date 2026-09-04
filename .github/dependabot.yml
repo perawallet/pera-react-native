@@ -146,8 +146,6 @@ updates:
       # 57.0.17 bundles. These move when the SDK moves.
       - dependency-name: expo-asset
       - dependency-name: expo-file-system
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
       # Nothing here runs eslint — there is no eslint config in the repo and
       # every workspace `lint` script is oxlint. `eslint` exists only to satisfy
       # the peer of the two plugins oxlint loads through `jsPlugins`, and
@@ -161,10 +159,6 @@ updates:
       - dependency-name: "@walletconnect/client"
       - dependency-name: "@walletconnect/types"
       - dependency-name: "@walletconnect/utils"
-      # @noble/hashes v2 is ESM-only and requires `.js` suffixes on subpath imports,
-      # which is a non-trivial migration for Metro + Vitest. Stay on v1 until we plan it.
-      - dependency-name: "@noble/hashes"
-        update-types: [version-update:semver-major]
       # @types/node must track the Node runtime pinned in .tool-versions (currently 22).
       # Auto-bumping past the runtime LTS just produces red builds.
       - dependency-name: "@types/node"
@@ -250,6 +244,26 @@ updates:
       # reopening a bump that cannot change what installs. Move it with the
       # override, or not at all.
       - dependency-name: expo-build-properties
+
+  # Fastlane's gem tree ships the iOS release lane, so an advisory there reaches
+  # a signing machine. Nothing else watches apps/mobile/Gemfile.lock — `pnpm
+  # audit` in pre-merge only covers npm — so without this a bumped gem silently
+  # rots back.
+  - package-ecosystem: bundler
+    directory: /apps/mobile
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    groups:
+      bundler:
+        patterns:
+          - "*"
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

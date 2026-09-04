@@ -19,8 +19,8 @@ import {
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { type Optional } from '@perawallet/wallet-core-shared'
-import { type SwapScreenParams } from '@modules/swap/routes/types'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
 import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 

@@ -19,10 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    type PeraAsset,
-    type PeraCollectible,
-} from '@perawallet/wallet-core-assets'
+import type { PeraAsset, PeraCollectible } from '@perawallet/wallet-core-assets'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useCollectibleInfo } from './useCollectibleInfo'

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { ReactNode } from 'react'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 

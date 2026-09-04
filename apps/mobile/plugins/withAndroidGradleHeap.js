@@ -65,5 +65,4 @@ function setProperty(items, key, value) {
   return [...items, { type: 'property', key, value }];
 }
 
-module.exports = withAndroidGradleHeap;
-module.exports.setProperty = setProperty;
+module.exports = Object.assign(withAndroidGradleHeap, { setProperty });

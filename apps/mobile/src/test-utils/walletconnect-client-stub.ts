@@ -20,7 +20,7 @@
 //
 // Aliased in via vitest.config.ts, so every consumer gets this class.
 
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type Handler = (...args: unknown[]) => void
 

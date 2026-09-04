@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type AssetSecurityTagVariant } from './AssetSecurityTag'
+import type { AssetSecurityTagVariant } from './AssetSecurityTag'
 
 type StyleProps = { variant: AssetSecurityTagVariant }
 

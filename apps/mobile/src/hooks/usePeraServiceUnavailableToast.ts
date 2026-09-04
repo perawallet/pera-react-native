@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { setOnPeraBackendUnavailable } from '@providers/queryClient'

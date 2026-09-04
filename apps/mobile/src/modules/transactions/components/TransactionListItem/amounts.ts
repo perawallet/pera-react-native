@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
@@ -20,6 +20,15 @@ import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transacti
 
 /** Maximum number of stacked amounts shown in a list row before overflow. */
 export const MAX_VISIBLE_AMOUNTS = 2
+
+/**
+ * Decimals reach here straight from the backend, which substitutes placeholder
+ * asset facts when its enrichment fails. `Decimal.pow(10, …)` throws on a
+ * non-number and happily inflates on a negative one, and this runs inside a
+ * list row's memo, so one bad value would take out the whole list.
+ */
+export const safeDecimals = (decimals: number): number =>
+    isNaN(decimals) ? 0 : Math.max(0, Math.min(19, decimals))
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyAmount */
@@ -55,10 +64,10 @@ export const createAssetAmount = (
     unitName: string,
     isOutgoing: boolean,
 ): AmountDisplay => {
-    const safeDecimals = isNaN(decimals)
-        ? 0
-        : Math.max(0, Math.min(19, decimals))
-    const absValue = baseUnitsToDisplayUnits(amount, safeDecimals).abs()
+    const absValue = baseUnitsToDisplayUnits(
+        amount,
+        safeDecimals(decimals),
+    ).abs()
 
     return {
         value: absValue,
@@ -75,10 +84,10 @@ export const createAssetAmount = (
 export const createBalanceImpactAmount = (
     impact: TransactionBalanceImpact,
 ): AmountDisplay => {
-    const safeDecimals = isNaN(impact.fractionDecimals)
-        ? 0
-        : Math.max(0, Math.min(19, impact.fractionDecimals))
-    const absValue = baseUnitsToDisplayUnits(impact.amount.abs(), safeDecimals)
+    const absValue = baseUnitsToDisplayUnits(
+        impact.amount.abs(),
+        safeDecimals(impact.fractionDecimals),
+    )
 
     return {
         value: absValue,
@@ -93,13 +102,17 @@ export const createBalanceImpactAmount = (
 
 /**
  * Creates an AmountDisplay for a swap's output amount, always shown as received
- * (positive). Swap group amounts are reported in a fixed 6-decimal display unit.
+ * (positive).
  */
 export const createSwapAmount = (
     amountOut: Decimal,
+    decimals: number,
     unitName: string,
 ): AmountDisplay => {
-    const absValue = baseUnitsToDisplayUnits(amountOut, 6).abs()
+    const absValue = baseUnitsToDisplayUnits(
+        amountOut,
+        safeDecimals(decimals),
+    ).abs()
 
     return {
         value: absValue,

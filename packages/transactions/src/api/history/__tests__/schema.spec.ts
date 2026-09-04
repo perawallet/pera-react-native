@@ -33,52 +33,56 @@ const makeValidItem = (overrides: Record<string, unknown> = {}) => ({
 })
 
 describe('transactionSwapGroupDetailSchema', () => {
-    it('parses a complete swap detail', () => {
+    it('parses the nested per-side asset objects', () => {
         const input = {
-            asset_in_id: 31566704,
-            asset_in_unit_name: 'USDC',
-            asset_out_id: 0,
-            asset_out_unit_name: 'ALGO',
-            amount_in: '1000000',
-            amount_out: '5000000',
+            asset_in: { asset_id: 0, unit_name: 'ALGO', fraction_decimals: 6 },
+            asset_out: {
+                asset_id: 2726252423,
+                unit_name: 'ALPHA',
+                fraction_decimals: 6,
+            },
+            amount_in: '500000',
+            amount_out: '6638534',
         }
 
         const result = transactionSwapGroupDetailSchema.parse(input)
 
-        expect(result.asset_in_id).toBe('31566704')
-        expect(result.asset_in_unit_name).toBe('USDC')
-        expect(result.asset_out_id).toBe('0')
-        expect(result.amount_in).toBe('1000000')
-    })
-
-    it('normalizes asset IDs to decimal strings', () => {
-        const input = {
-            asset_in_id: '31566704',
-            asset_out_id: '0',
-        }
-
-        const result = transactionSwapGroupDetailSchema.parse(input)
-
-        expect(result.asset_in_id).toBe('31566704')
-        expect(result.asset_out_id).toBe('0')
+        expect(result.asset_in?.asset_id).toBe('0')
+        expect(result.asset_in?.unit_name).toBe('ALGO')
+        expect(result.asset_in?.fraction_decimals).toBe(6)
+        expect(result.asset_out?.asset_id).toBe('2726252423')
+        expect(result.asset_out?.unit_name).toBe('ALPHA')
+        expect(result.asset_out?.fraction_decimals).toBe(6)
+        expect(result.amount_in).toBe('500000')
+        expect(result.amount_out).toBe('6638534')
     })
 
     it('preserves asset IDs above 2^53 without precision loss', () => {
         const bigId = '18446744073709551615' // 2^64 - 1
+
         const result = transactionSwapGroupDetailSchema.parse({
-            asset_in_id: bigId,
+            asset_in: { asset_id: bigId },
         })
 
-        expect(result.asset_in_id).toBe(bigId)
+        expect(result.asset_in?.asset_id).toBe(bigId)
     })
 
     it('applies defaults for missing optional fields', () => {
         const result = transactionSwapGroupDetailSchema.parse({})
 
-        expect(result.asset_in_unit_name).toBe('')
-        expect(result.asset_out_unit_name).toBe('')
+        expect(result.asset_in).toBeUndefined()
+        expect(result.asset_out).toBeUndefined()
         expect(result.amount_in).toBe('0')
         expect(result.amount_out).toBe('0')
+    })
+
+    it('accepts a side that carries no asset id', () => {
+        const result = transactionSwapGroupDetailSchema.parse({
+            asset_in: { unit_name: 'ALGO', fraction_decimals: 6 },
+        })
+
+        expect(result.asset_in?.asset_id).toBeUndefined()
+        expect(result.asset_in?.unit_name).toBe('ALGO')
     })
 })
 
@@ -88,7 +92,7 @@ describe('transactionAssetSummarySchema', () => {
             asset_id: 31566704,
             name: 'USD Coin',
             unit_name: 'USDC',
-            decimals: 6,
+            fraction_decimals: 6,
         }
 
         const result = transactionAssetSummarySchema.parse(input)
@@ -96,7 +100,7 @@ describe('transactionAssetSummarySchema', () => {
         expect(result.asset_id).toBe('31566704')
         expect(result.name).toBe('USD Coin')
         expect(result.unit_name).toBe('USDC')
-        expect(result.decimals).toBe(6)
+        expect(result.fraction_decimals).toBe(6)
     })
 
     it('normalizes asset_id to a decimal string', () => {
@@ -123,7 +127,7 @@ describe('transactionAssetSummarySchema', () => {
 
         expect(result.name).toBe('')
         expect(result.unit_name).toBe('')
-        expect(result.decimals).toBe(0)
+        expect(result.fraction_decimals).toBe(0)
     })
 
     it('rejects missing required asset_id', () => {
@@ -334,6 +338,59 @@ describe('transactionHistoryResponseSchema', () => {
 })
 
 describe('parseTransactionHistoryResponse', () => {
+    it('keeps a swap row whose asset side fields are explicitly null', () => {
+        const response = {
+            results: [
+                makeValidItem({
+                    swap_group_detail: {
+                        asset_in: {
+                            asset_id: null,
+                            unit_name: null,
+                            fraction_decimals: null,
+                        },
+                        asset_out: {
+                            asset_id: '2726252423',
+                            unit_name: 'ALPHA',
+                            fraction_decimals: 6,
+                        },
+                        amount_in: '500000',
+                        amount_out: '6638534',
+                    },
+                }),
+            ],
+        }
+
+        const result = parseTransactionHistoryResponse(response)
+
+        expect(result.results).toHaveLength(1)
+        expect(result.results[0].swap_group_detail?.asset_in?.unit_name).toBe(
+            '',
+        )
+    })
+
+    it('keeps a swap row whose asset side carries no id', () => {
+        const response = {
+            results: [
+                makeValidItem({
+                    swap_group_detail: {
+                        asset_in: { unit_name: 'ALGO', fraction_decimals: 6 },
+                        asset_out: {
+                            asset_id: '2726252423',
+                            unit_name: 'ALPHA',
+                            fraction_decimals: 6,
+                        },
+                        amount_in: '500000',
+                        amount_out: '6638534',
+                    },
+                }),
+            ],
+        }
+
+        const result = parseTransactionHistoryResponse(response)
+
+        expect(result.results).toHaveLength(1)
+    })
+
     it('keeps the good rows when one row is unparseable', () => {
         const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 

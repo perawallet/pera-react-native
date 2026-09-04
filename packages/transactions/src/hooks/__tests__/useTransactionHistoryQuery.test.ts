@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, afterEach, Mock } from 'vitest'
+import {
+    describe,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type Mock,
+} from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import {
     QueryClient,
@@ -40,6 +48,14 @@ vi.mock('../../db', () => ({
 }))
 vi.mock('../useTransactionHistoryDb', () => ({
     persistTransactionsToDb: mockPersistTransactions,
+}))
+
+const mockGetOpenSubmissionAttempts = vi.hoisted(() =>
+    vi.fn().mockResolvedValue([]),
+)
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    getOpenSubmissionAttempts: (...args: unknown[]) =>
+        mockGetOpenSubmissionAttempts(...args),
 }))
 
 describe('useTransactionHistoryQuery', () => {
@@ -766,5 +782,115 @@ describe('useTransactionHistoryQuery', () => {
         rerender()
 
         expect(result.current.transactions).toBe(firstIdentity)
+    })
+
+    describe('pending submission entries (PERA-4588)', () => {
+        beforeEach(() => {
+            mockGetOpenSubmissionAttempts.mockReset()
+            mockGetOpenSubmissionAttempts.mockResolvedValue([])
+        })
+
+        const pendingAttempt = (overrides: Record<string, unknown> = {}) => ({
+            id: 'ATTEMPT-1',
+            network: 'mainnet',
+            txIds: ['PENDING-TX-1'],
+            intentKey: null,
+            flow: 'generic',
+            sender: mockAddress,
+            status: 'submitted',
+            lastValid: null,
+            createdAt: 1704067200000,
+            resolvedAt: null,
+            ...overrides,
+        })
+
+        test('prepends open attempts as pending rows on the first unfiltered page', async () => {
+            mockGetOpenSubmissionAttempts.mockResolvedValue([pendingAttempt()])
+            mockGetTransactionHistory.mockResolvedValue([])
+
+            const { result } = renderHook(
+                () =>
+                    useTransactionHistoryQuery({
+                        accountAddress: mockAddress,
+                        network: 'mainnet',
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isFetched).toBe(true))
+            expect(result.current.transactions).toHaveLength(1)
+            expect(result.current.transactions[0]).toMatchObject({
+                id: 'PENDING-TX-1',
+                txType: 'pay',
+                confirmedRound: 0,
+            })
+        })
+
+        test('dedupes a pending entry against an already-confirmed row of the same txid', async () => {
+            mockGetOpenSubmissionAttempts.mockResolvedValue([pendingAttempt()])
+            mockGetTransactionHistory.mockResolvedValue([
+                { ...mockTransaction, id: 'PENDING-TX-1' },
+            ])
+
+            const { result } = renderHook(
+                () =>
+                    useTransactionHistoryQuery({
+                        accountAddress: mockAddress,
+                        network: 'mainnet',
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isFetched).toBe(true))
+            expect(result.current.transactions).toHaveLength(1)
+            // The real row wins: a synthetic pending entry must never shadow a
+            // transaction SQLite already holds, or the amount and interpreted
+            // meaning disappear until the reconciler settles.
+            expect(result.current.transactions[0]!.confirmedRound).toBe(12345)
+            expect(result.current.transactions[0]!.amount).not.toBeNull()
+        })
+
+        test('only merges pending rows sent by the viewing account', async () => {
+            mockGetOpenSubmissionAttempts.mockResolvedValue([pendingAttempt()])
+            mockGetTransactionHistory.mockResolvedValue([])
+
+            const { result } = renderHook(
+                () =>
+                    useTransactionHistoryQuery({
+                        accountAddress: mockAddress,
+                        network: 'mainnet',
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isFetched).toBe(true))
+            expect(result.current.transactions).toHaveLength(1)
+            expect(result.current.transactions[0]!.id).toBe('PENDING-TX-1')
+            // Scoping happens in SQL, not by post-filtering every account's rows.
+            expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
+                network: 'mainnet',
+                sender: mockAddress,
+                limit: expect.any(Number),
+            })
+        })
+
+        test('does not merge pending rows on filtered views', async () => {
+            mockGetOpenSubmissionAttempts.mockResolvedValue([pendingAttempt()])
+            mockGetTransactionHistory.mockResolvedValue([])
+
+            const { result } = renderHook(
+                () =>
+                    useTransactionHistoryQuery({
+                        accountAddress: mockAddress,
+                        network: 'mainnet',
+                        assetId: '123',
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() => expect(result.current.isFetched).toBe(true))
+            expect(result.current.transactions).toHaveLength(0)
+            expect(mockGetOpenSubmissionAttempts).not.toHaveBeenCalled()
+        })
     })
 })

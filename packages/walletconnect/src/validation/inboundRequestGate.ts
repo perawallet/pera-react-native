@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
 import { isChainIdAcceptable } from '../utils/chain'
 import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'

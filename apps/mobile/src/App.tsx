@@ -26,6 +26,7 @@ import { ThemeProvider } from '@rneui/themed'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { PWButton } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useOrientationPolicy } from '@hooks/useOrientationPolicy'
 import { useSystemBarsAppearance } from '@hooks/useSystemBarsAppearance'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
@@ -80,6 +81,7 @@ const AppContent = () => {
         useAppBootstrap()
 
     useSystemBarsAppearance(isDarkMode)
+    useOrientationPolicy()
     usePasskeyAutofillLifecycle()
     useAppIntegrityBootstrap()
 

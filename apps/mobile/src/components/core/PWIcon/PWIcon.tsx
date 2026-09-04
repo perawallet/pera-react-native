@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type SvgProps } from 'react-native-svg'
+import type { SvgProps } from 'react-native-svg'
 import { useTheme } from '@rneui/themed'
 import { useCallback, useMemo } from 'react'
 import { Keyboard, type GestureResponderEvent } from 'react-native'

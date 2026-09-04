@@ -11,10 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { type MutableRefObject } from 'react'
+import type { MutableRefObject } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { type PWFlatListRef } from '@components/core'
+import type { PWFlatListRef } from '@components/core'
 import { useAccountNfts } from '../useAccountNfts'
 
 const mockNavigate = vi.fn()

@@ -107,5 +107,6 @@ const withAndroidBlePermissionScoping = (config) =>
     return config;
   });
 
-module.exports = withAndroidBlePermissionScoping;
-module.exports.scopeBlePermissions = scopeBlePermissions;
+module.exports = Object.assign(withAndroidBlePermissionScoping, {
+  scopeBlePermissions,
+});

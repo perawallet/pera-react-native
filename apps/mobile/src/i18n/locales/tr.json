@@ -1865,6 +1865,9 @@
             },
             "submission_failed": {
                 "title": "Rekey gönderilemedi"
+            },
+            "submission_pending": {
+                "title": "Önceki deneme doğrulanıyor"
             }
         },
         "confirm": {
@@ -2666,6 +2669,7 @@
             "completed": "Tamamlandı",
             "failed": "Başarısız",
             "pending": "Beklemede",
+            "pending_verifying": "Beklemede — doğrulanıyor",
             "raw_transaction": "Ham işlem"
         },
         "list_item": {
@@ -2986,7 +2990,9 @@
             "pending_cosign_title": "Swap talebi gönderildi",
             "pending_cosign_body": "Bu swap için bir imza daha gerekiyor. Diğer imzalayan kişi gelen kutusundan onayladığında işlem tamamlanacak.",
             "quantum_fee_unsupported": "Quantum hesaplar henüz swap yapamaz. Swap ücreti sunucularımız tarafından belirlenir ve Quantum imzanın gerektirdiği daha yüksek ücreti karşılamaz.",
-            "quantum_multisig_unsupported": "Quantum hesaplar paylaşılan bir hesaptan swap yapamaz. Quantum anahtarlar Multisig imzalamaya katılamaz."
+            "quantum_multisig_unsupported": "Quantum hesaplar paylaşılan bir hesaptan swap yapamaz. Quantum anahtarlar Multisig imzalamaya katılamaz.",
+            "verifying_previous_title": "Önceki deneme doğrulanıyor",
+            "verifying_previous_body": "Önceki swap denemeniz hâlâ doğrulanıyor. Sonuçlandığında tekrar deneyin."
         },
         "signing": {
             "source_name": "Swap",

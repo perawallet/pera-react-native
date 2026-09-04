@@ -479,9 +479,12 @@ function buildAppConfig(env) {
       // expo-build-properties, which owns minify/shrinkResources.
       './plugins/withAndroidR8Optimization',
 
-      // Drop the Android portrait lock — Android 16 ignores it on large screens
-      // anyway, so keeping it only hides tablet landscape from us. iOS stays
-      // portrait via the top-level `orientation`.
+      // Let large screens rotate while phones stay portrait. The manifest
+      // declares no restriction (the package parser resolves it with no
+      // configuration, so a sw600dp qualifier can never win); phones are
+      // locked at runtime by useOrientationPolicy. iPhones stay portrait via
+      // the top-level `orientation`; iPads rotate via the all-orientations
+      // `UISupportedInterfaceOrientations~ipad` that `supportsTablet` writes.
       './plugins/withAndroidLargeScreenSupport',
 
       // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after

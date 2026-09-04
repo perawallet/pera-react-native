@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
-import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
 import {
     type IconName,

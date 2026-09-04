@@ -28,6 +28,7 @@ const FALLBACK_TITLE_KEYS: Record<
     build_failed: 'rekey.errors.build_failed.title',
     signing_failed: 'rekey.errors.signing_failed.title',
     submission_failed: 'rekey.errors.submission_failed.title',
+    submission_pending: 'rekey.errors.submission_pending.title',
 }
 
 /**

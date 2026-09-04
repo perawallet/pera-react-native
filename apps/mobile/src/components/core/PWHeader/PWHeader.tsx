@@ -14,7 +14,7 @@ import { PWText } from '@components/core/PWText'
 import { PWIcon, type IconName } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { type PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 
 export type PWHeaderProps = {
     title?: string

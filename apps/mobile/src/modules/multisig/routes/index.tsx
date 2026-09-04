@@ -22,7 +22,7 @@ import { EditParticipantScreen } from '../screens/EditParticipantScreen'
 import { SetThresholdScreen } from '../screens/SetThresholdScreen'
 import { NameMultisigScreen } from '../screens/NameMultisigScreen'
 import { ImportSharedAccountScreen } from '../screens/ImportSharedAccountScreen'
-import { type MultisigStackParamList } from './types'
+import type { MultisigStackParamList } from './types'
 
 export type { MultisigStackParamList } from './types'
 

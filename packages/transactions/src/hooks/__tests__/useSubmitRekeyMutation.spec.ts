@@ -44,6 +44,8 @@ const mockSubmitAndAutoRefresh = vi.fn()
 const mockUseAllAccounts = vi.fn()
 const mockUseMinimumFeeConfig = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
+const mockNetworkStoreGetState = vi.fn()
+const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => mockAlgokit,
@@ -53,6 +55,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     useFetchSuggestedMinFee: () => async () =>
         BigInt((await mockGetSuggestedParams()).minFee),
+    useNetworkStore: { getState: () => mockNetworkStoreGetState() },
     compactSignedResults: (signed: unknown[]) =>
         signed.filter(tx => tx !== null),
 }))
@@ -74,6 +77,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockSubmitAndAutoRefresh(...args),
     resolveMinFeeForSender: (...args: unknown[]) =>
         mockResolveMinFeeForSender(...args),
+    getOpenSubmissionAttemptsForIntent: (...args: unknown[]) =>
+        mockGetOpenSubmissionAttemptsForIntent(...args),
+    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
@@ -117,6 +123,10 @@ describe('useSubmitRekeyMutation', () => {
             pqMultiplier: 3n,
         })
         mockUseAllAccounts.mockReturnValue([])
+        mockNetworkStoreGetState.mockReturnValue({ network: 'testnet' })
+        // Default: no open ledger row — the previous attempt resolved, so
+        // the rebuild is allowed to proceed.
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
         // Default: no PQ signer in the chain — resolver returns the base
         // fee, which must never force a staticFee override (regression).
         mockResolveMinFeeForSender.mockReturnValue(1000n)
@@ -159,6 +169,64 @@ describe('useSubmitRekeyMutation', () => {
         expect(mockGetSuggestedParams).not.toHaveBeenCalled()
         expect(mockPayment).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('refuses to rebuild while an open rekey attempt exists', async () => {
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValueOnce([
+            { id: 'attempt-1' },
+        ])
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        const rejection = result.current.submitAsync({
+            sourceAddress: 'SRC',
+            rekeyToAddress: 'TGT',
+        })
+
+        await expect(rejection).rejects.toBeInstanceOf(RekeyError)
+        await expect(rejection).rejects.toMatchObject({
+            reason: 'submission_pending',
+        })
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
+            network: 'testnet',
+            sender: 'SRC',
+            intentKey: { kind: 'rekey', address: 'SRC' },
+            // Bounded like the swap guard: a row with no decodable validity
+            // window must not block this address's rekey forever.
+            unevaluatableBefore: expect.any(Number),
+        })
+        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('rebuilds once the previous attempt resolved failed', async () => {
+        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed-txn' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                rekeyToAddress: 'TGT',
+            })
+        })
+
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledTimes(1)
+        expect(mockPayment).toHaveBeenCalledTimes(1)
+        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
     })
 
     it('builds a 0-amount rekey payment, requests a signature, and submits the signed group', async () => {
@@ -206,6 +274,11 @@ describe('useSubmitRekeyMutation', () => {
             mockAlgokit,
             mockEncodeSignedTransactions,
             signedTxs,
+            {
+                flow: 'rekey',
+                intentKey: { kind: 'rekey', address: 'SRC' },
+                sender: 'SRC',
+            },
         )
         expect(returned).toEqual(txIds)
     })

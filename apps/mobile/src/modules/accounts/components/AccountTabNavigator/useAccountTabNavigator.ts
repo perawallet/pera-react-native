@@ -17,7 +17,7 @@ import {
     useSharedValue,
     type SharedValue,
 } from 'react-native-reanimated'
-import { type PWPagerTab } from '@components/core'
+import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { trackEvent, AccountDetailsEvent } from '@analytics'
 

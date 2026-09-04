@@ -38,7 +38,7 @@ import {
     type Arc60SignRequest,
     type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
-import { type Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
+import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     canSignArc60,
     useAllAccounts,

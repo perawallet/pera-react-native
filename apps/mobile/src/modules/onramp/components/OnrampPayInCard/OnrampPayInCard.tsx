@@ -15,7 +15,7 @@ import QRCode from 'react-native-qrcode-svg'
 import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useClipboard } from '@hooks/useClipboard'
 

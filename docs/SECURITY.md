@@ -2,6 +2,30 @@
 
 This is a non-custodial wallet. Users trust us with keys we cannot recover for them.
 
+## Reporting a vulnerability
+
+A flaw that exposes key material, forges a signature, or makes a transaction display as something
+other than what it does has no remedy after the fact. Report it privately to
+**security@perawallet.app** rather than opening an issue, pull request or discussion, and please don't
+publish it before a fix ships.
+
+Send whatever you have: affected version and platform, the steps or payload that reproduce it, and
+what an attacker gains. A rough report early beats a polished one late.
+
+In scope is anything that reaches key material, produces a signature the user did not authorise, or
+makes a transaction render as something other than what it will do on chain — the mobile app in
+`apps/mobile`, the extension vault in `extensions/keystore-chrome`, the hardware-wallet and passkey
+transports under `extensions/`, and the shared logic in `packages/`. A build or dependency path that
+could get unreviewed code into a released binary counts too.
+
+Out of scope: findings that need a device the attacker already controls (rooted or jailbroken, screen
+unlocked), that need the user to hand over their own passphrase, or that rest on a compromised
+third-party service we call. Scanner output without a working reproduction is rarely actionable on
+its own.
+
+We triage privately, fix on a private branch, and publish an advisory once a release carrying the fix
+is out. Say whether you want credit and how you would like to be named.
+
 ## Non-negotiables
 
 Private keys, mnemonics and passwords never appear in a log, a crash report, an analytics event or
@@ -69,7 +93,7 @@ pnpm audit --prod --audit-level=high  # What CI runs to block PRs
 
 ### CI-enforced
 
-See `.github/workflows/pre-merge.yml`.
+See `.github/workflows/ci-pre-merge.yml`.
 
 - `pnpm audit`: moderate+ advisories in prod deps block merge.
 - Lockfile drift: `pnpm-lock.yaml` must be in sync with every `package.json`.
@@ -82,11 +106,11 @@ See `.github/workflows/pre-merge.yml`.
 
 ### Scheduled
 
-- [CodeQL](../.github/workflows/codeql.yml) runs JS/TS static analysis weekly and on PR; findings go
+- [CodeQL](../.github/workflows/security-codeql.yml) runs JS/TS static analysis weekly and on PR; findings go
   to the Security tab.
-- [OpenSSF Scorecard](../.github/workflows/scorecard.yml) publishes a weekly posture score to the
+- [OpenSSF Scorecard](../.github/workflows/security-scorecard.yml) publishes a weekly posture score to the
   public Scorecard API.
-- [SBOM](../.github/workflows/sbom.yml) generates a CycloneDX SBOM on every push to `main` and
+- [SBOM](../.github/workflows/security-sbom.yml) generates a CycloneDX SBOM on every push to `main` and
   weekly, retained 90 days.
 - [Dependabot](../.github/dependabot.yml) opens weekly grouped updates for npm and github-actions.
   Framework-tier majors (React, React Native, Expo, TypeScript, ESLint) are ignored and bumped by

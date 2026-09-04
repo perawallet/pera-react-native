@@ -19,7 +19,7 @@ vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-assets')
 vi.unmock('@perawallet/wallet-core-blockchain')
 
-import { type Query, type QueryKey } from '@tanstack/react-query'
+import type { Query, QueryKey } from '@tanstack/react-query'
 import { shouldDehydrateQuery } from '../query-persistence'
 
 const asQuery = (

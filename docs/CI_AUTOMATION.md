@@ -30,15 +30,15 @@ Only stable `vX.Y.Z` tags get a GitHub Release. Nightly (`-alpha.N`) and rc
 (`-rc.N`) tags exist to fire Bitrise's release builds; they are tagged but never
 published under Releases.
 
-| Tag source                       | Who publishes the GitHub Release           |
-| -------------------------------- | ------------------------------------------ |
-| `nightly-tag.yml` / `rc-tag.yml` | nobody (prerelease, tag only)              |
-| `promote-rc.yml`                 | itself, in the same job                    |
-| Hand-pushed stable `vX.Y.Z`      | `github-release.yml` (`push: tags`)        |
-| Any older stable, after the fact | `github-release.yml` (`workflow_dispatch`) |
+| Tag source                               | Who publishes the GitHub Release            |
+| ---------------------------------------- | ------------------------------------------- |
+| `release-nightly.yml` / `release-rc.yml` | nobody (prerelease, tag only)               |
+| `release-stable.yml`                     | itself, in the same job                     |
+| Hand-pushed stable `vX.Y.Z`              | `release-publish.yml` (`push: tags`)        |
+| Any older stable, after the fact         | `release-publish.yml` (`workflow_dispatch`) |
 
-`promote-rc.yml` publishes its own release rather than leaving it to
-`github-release.yml` because a tag pushed with `GITHUB_TOKEN` does not trigger
+`release-stable.yml` publishes its own release rather than leaving it to
+`release-publish.yml` because a tag pushed with `GITHUB_TOKEN` does not trigger
 further workflows, so that workflow's `push: tags` trigger never fires for it.
 
 The stable-only rule lives in `tools/publish-github-release.sh`, not in the
@@ -103,7 +103,7 @@ skipping fix versions rather than failing.
 
 `tools/__tests__/*.test.sh` cover the sync, drift, range and release-publishing
 logic, against a stubbed Jira or a throwaway git repo where no Jira is involved.
-The `CI Lint` job in `pre-merge.yml` runs `actionlint`,
+The `CI Lint` job in `ci-pre-merge.yml` runs `actionlint`,
 `shellcheck --severity=error`, and those suites.
 
 Run one locally with `bash tools/__tests__/jira-sync.test.sh`.

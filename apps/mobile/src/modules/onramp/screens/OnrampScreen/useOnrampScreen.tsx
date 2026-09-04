@@ -34,7 +34,7 @@ import {
     type OnrampTab,
 } from '@modules/onramp/components'
 import { trackEvent, OnrampEvent } from '@analytics'
-import { type OnrampScreenParams } from '@modules/onramp/routes/types'
+import type { OnrampScreenParams } from '@modules/onramp/routes/types'
 import { useOnrampIntroduction } from './useOnrampIntroduction'
 
 const DEFAULT_DESTINATION_TOKEN_ID = ALGO_ASSET_NAME

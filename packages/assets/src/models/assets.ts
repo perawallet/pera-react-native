@@ -17,7 +17,7 @@ import {
     isPeraBackedNetwork,
 } from '@perawallet/wallet-core-config'
 
-import { type PeraCollectible } from './collectibles'
+import type { PeraCollectible } from './collectibles'
 import {
     ALGO_ASSET_ID,
     ALGO_ASSET_NAME,

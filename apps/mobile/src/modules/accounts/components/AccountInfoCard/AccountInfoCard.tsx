@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import {
     PWDivider,
     PWIcon,
@@ -18,7 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

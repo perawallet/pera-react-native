@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network } from '../models/base-types'
+import type { Network } from '../models/base-types'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
 
 /**

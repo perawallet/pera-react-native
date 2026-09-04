@@ -16,7 +16,7 @@
 // no-restricted-globals rule from touching the ambient `chrome` global
 // directly — has a package-level accessor to go through instead, same as
 // every other chrome API surface it needs.
-import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import { DAPP_APPROVAL_SCOPE, type PendingApproval } from './approval-bridge'
 
 const isPendingApproval = (value: unknown): value is PendingApproval =>

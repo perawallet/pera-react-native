@@ -28,7 +28,7 @@ import React, {
     useMemo,
     useState,
 } from 'react'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // Types
 

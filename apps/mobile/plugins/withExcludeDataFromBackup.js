@@ -214,6 +214,7 @@ const withExcludeDataFromBackup = (config) => {
   return config;
 };
 
-module.exports = withExcludeDataFromBackup;
-module.exports.injectBackupExclusion = injectBackupExclusion;
-module.exports.setAndroidBackupAttributes = setAndroidBackupAttributes;
+module.exports = Object.assign(withExcludeDataFromBackup, {
+  injectBackupExclusion,
+  setAndroidBackupAttributes,
+});

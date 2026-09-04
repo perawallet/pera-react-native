@@ -140,6 +140,20 @@ else
 fi
 rm "$KMS_PQ_LOG"
 
+# Run declaration-emit wiring guard. Each package emits its own .d.ts through
+# tsconfig.build.json, and both ways that breaks are silent: a package with no
+# build config publishes an untyped import, and a brace glob in `exclude` is
+# ignored by tsconfig rather than rejected (see tools/check-dts-emit.mjs).
+echo "\n${YELLOW}Checking declaration emit wiring...${NC}"
+DTS_LOG=$(mktemp)
+if pnpm run check:dts-emit > "$DTS_LOG" 2>&1; then
+    echo "${GREEN}✓ declaration emit wiring valid${NC}"
+else
+    echo "${RED}declaration emit check failed.${NC}"
+    record_failure "declaration emit wiring" "$DTS_LOG" "${YELLOW}A package would publish types it never emits — see the log below.${NC}"
+fi
+rm "$DTS_LOG"
+
 # Run i18n check
 echo "\n${YELLOW}Checking i18n...${NC}"
 I18N_LOG=$(mktemp)

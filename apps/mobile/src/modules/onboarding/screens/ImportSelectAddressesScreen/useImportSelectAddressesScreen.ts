@@ -37,7 +37,7 @@ import {
     useRekeyScanNotice,
     REKEY_SCAN_UNAVAILABLE,
 } from '@modules/onboarding/hooks'
-import { type OnboardingStackParamList } from '../../routes/types'
+import type { OnboardingStackParamList } from '../../routes/types'
 
 type ImportSelectAddressesRouteProp = RouteProp<
     OnboardingStackParamList,

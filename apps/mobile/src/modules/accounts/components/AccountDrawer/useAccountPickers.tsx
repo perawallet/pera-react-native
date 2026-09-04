@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 import { AccountDrawerSelectHeader } from './AccountDrawerSelectHeader'
-import { type AccountDrawerPickerProps } from './types'
+import type { AccountDrawerPickerProps } from './types'
 
 /**
  * How a screen wants the account list shaped. Screens publish the name rather

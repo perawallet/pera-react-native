@@ -28,7 +28,7 @@ import {
     removeSecret,
     withSecret,
 } from '../storage/secrets'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: Key, domain: string): void => {
     // `aclOf` always returns a non-empty ACL (the wallet's own-origin default

@@ -217,11 +217,16 @@ export const ImportAccountScreen = () => {
                                                             // Keyboard / Gboard ignore it; visible-password
                                                             // is the one Android input type that actually
                                                             // disables capitalization and prediction.
+                                                            // On iOS, ascii-capable keeps IME keyboards
+                                                            // (Japanese, Pinyin) out of their composing
+                                                            // state: composed text can't prefix-match the
+                                                            // ASCII wordlist, and leaving the slot commits
+                                                            // the marked text over a tapped suggestion.
                                                             keyboardType={
                                                                 Platform.OS ===
                                                                 'android'
                                                                     ? 'visible-password'
-                                                                    : 'default'
+                                                                    : 'ascii-capable'
                                                             }
                                                         />
                                                     </PWView>
