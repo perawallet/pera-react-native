@@ -22,19 +22,24 @@ const {
     requestAutofillUnlock,
     resolveAutofillPick,
     cancelAutofillPick,
-} = vi.hoisted(() => ({
-    autofillPickerReady: vi.fn(),
-    requestAutofillUnlock: vi.fn(async () => true),
-    resolveAutofillPick: vi.fn(),
-    cancelAutofillPick: vi.fn(),
-}))
+    service,
+} = vi.hoisted(() => {
+    const service = {
+        autofillPickerReady: vi.fn(),
+        requestAutofillUnlock: vi.fn(async () => true),
+        resolveAutofillPick: vi.fn(),
+        cancelAutofillPick: vi.fn(),
+    }
+    return {
+        autofillPickerReady: service.autofillPickerReady,
+        requestAutofillUnlock: service.requestAutofillUnlock,
+        resolveAutofillPick: service.resolveAutofillPick,
+        cancelAutofillPick: service.cancelAutofillPick,
+        service,
+    }
+})
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
-    usePasskeyAutofillService: () => ({
-        autofillPickerReady,
-        requestAutofillUnlock,
-        resolveAutofillPick,
-        cancelAutofillPick,
-    }),
+    usePasskeyAutofillService: () => service,
 }))
 
 const login = {
@@ -77,10 +82,13 @@ describe('useAutofillPickerScreen', () => {
         cancelAutofillPick.mockClear()
     })
 
-    it('signals readiness on mount', () => {
-        renderHook(() => useAutofillPickerScreen(caller), { wrapper })
+    it('signals readiness on mount, exactly once, even across re-renders', () => {
+        const { rerender } = renderHook(() => useAutofillPickerScreen(caller), {
+            wrapper,
+        })
+        rerender()
 
-        expect(autofillPickerReady).toHaveBeenCalled()
+        expect(autofillPickerReady).toHaveBeenCalledTimes(1)
     })
 
     it('puts the package first and caps the label', () => {
@@ -146,6 +154,23 @@ describe('useAutofillPickerScreen', () => {
             result.current.handleUnlock()
         })
 
+        expect(result.current.isUnlocked).toBe(false)
+        expect(result.current.logins).toEqual([])
+    })
+
+    it('stays locked and does not throw when unlock rejects', async () => {
+        requestAutofillUnlock.mockRejectedValueOnce(
+            new Error('biometric prompt failed'),
+        )
+        const { result } = renderHook(() => useAutofillPickerScreen(caller), {
+            wrapper,
+        })
+
+        await act(async () => {
+            result.current.handleUnlock()
+        })
+
+        await waitFor(() => expect(result.current.isUnlocking).toBe(false))
         expect(result.current.isUnlocked).toBe(false)
         expect(result.current.logins).toEqual([])
     })

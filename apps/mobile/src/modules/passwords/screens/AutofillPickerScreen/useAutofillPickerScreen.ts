@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePasskeyAutofillService } from '@perawallet/wallet-core-passkeys'
 import { useLoginsQuery, type Login } from '@perawallet/wallet-core-passwords'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export type AutofillPickerCaller = {
     packageName: string
@@ -69,6 +70,12 @@ export const useAutofillPickerScreen = (
         void service
             .requestAutofillUnlock()
             .then(granted => setIsUnlocked(granted))
+            .catch(err => {
+                // Fails closed either way, but a rejection here is the
+                // biometric prompt itself failing — worth a trace, not a
+                // silent swallow.
+                logger.warn('requestAutofillUnlock failed', { error: err })
+            })
             .finally(() => setIsUnlocking(false))
     }, [service])
 
