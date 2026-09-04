@@ -1078,15 +1078,16 @@ index 0000000000000000000000000000000000000000..4963faa52c8b73ad9cbe90e24685aa6e
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd70fe21e8 100644
+index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..a7752324c1863526ddcec1a795bab037876ebe73 100644
 --- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
 +++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
-@@ -3,7 +3,12 @@ package co.algorand.passkeyautofill
+@@ -3,7 +3,13 @@ package co.algorand.passkeyautofill
  import expo.modules.kotlin.modules.Module
  import expo.modules.kotlin.modules.ModuleDefinition
  import co.algorand.passkeyautofill.credentials.CredentialRepository
 -import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
 +import co.algorand.passkeyautofill.autofill.AppLinkStore
++import co.algorand.passkeyautofill.autofill.AutofillPickerBridge
 +// PERA LOCAL PATCH: check the legacy-named subclass so the ComponentName built
 +// below matches the native app's persisted credential-provider selection. See
 +// the shim class + module AndroidManifest patch notes.
@@ -1095,16 +1096,17 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd
  import android.content.ComponentName
  import android.content.Context
  import android.content.Intent
-@@ -11,6 +16,8 @@ import android.net.Uri
+@@ -11,6 +17,9 @@ import android.net.Uri
  import android.os.Build
  import android.provider.Settings
  import android.util.Log
 +import android.view.autofill.AutofillManager
 +import expo.modules.kotlin.Promise
++import kotlinx.coroutines.launch
  import org.bouncycastle.jce.provider.BouncyCastleProvider
  import java.security.Security
  
-@@ -101,6 +108,17 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -101,6 +110,47 @@ class ReactNativePasskeyAutofillModule : Module() {
        val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
          ?: return@AsyncFunction Unit
        credentialRepository.clearCredentials(context)
@@ -1119,10 +1121,40 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd
 +      }
 +      AppLinkStore.prune(context, recordIdentifier)
 +      promise.resolve(null)
++    }
++
++    // Delegates to whatever PeraPickerActivity is currently showing the JS
++    // picker screen; the bridge resolves harmlessly when nothing is
++    // registered rather than rejecting, since the picker not being on
++    // screen isn't an error the caller needs to react to.
++    AsyncFunction("autofillPickerReady") { promise: Promise ->
++      AutofillPickerBridge.current()?.onPickerReady()
++      promise.resolve(null)
++    }
++
++    AsyncFunction("requestAutofillUnlock") { promise: Promise ->
++      val host = AutofillPickerBridge.current()
++      if (host == null) {
++        promise.resolve(false)
++      } else {
++        appContext.mainQueue.launch {
++          promise.resolve(host.onUnlockRequested())
++        }
++      }
++    }
++
++    AsyncFunction("resolveAutofillPick") { recordIdentifier: String, promise: Promise ->
++      AutofillPickerBridge.current()?.onPickResolved(recordIdentifier)
++      promise.resolve(null)
++    }
++
++    AsyncFunction("cancelAutofillPick") { promise: Promise ->
++      AutofillPickerBridge.current()?.onPickCancelled()
++      promise.resolve(null)
      }
  
      AsyncFunction("deleteCredential") { credentialId: String ->
-@@ -155,6 +173,49 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -155,6 +205,49 @@ class ReactNativePasskeyAutofillModule : Module() {
        openCredentialProviderSettings(context)
      }
  
@@ -1172,7 +1204,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd
      AsyncFunction("getStoredCredentials") {
        val context = (appContext.reactContext ?: appContext.hostingRuntimeContext) as? Context
          ?: return@AsyncFunction emptyList<Map<String, Any>>()
-@@ -180,7 +241,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -180,7 +273,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    }
  
    /**
@@ -1181,7 +1213,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd
     * is registered as an active credential provider for the current user.
     *
     * On API 34+ (UpsideDownCake) we use the official
-@@ -195,7 +256,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -195,7 +288,7 @@ class ReactNativePasskeyAutofillModule : Module() {
    private fun isProviderEnabled(context: Context): Boolean {
      val component = ComponentName(
        context.packageName,
@@ -1190,7 +1222,7 @@ index 940a1ca2b303ce6b89f309a1afe21536d385b6a9..3da7c9796bb52cb191d5b9040e03cfcd
      )
      val expected = component.flattenToString()
  
-@@ -246,7 +307,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+@@ -246,7 +339,7 @@ class ReactNativePasskeyAutofillModule : Module() {
      // Manager screen isn't a directly launchable activity.
      val component = ComponentName(
        context.packageName,
@@ -1448,6 +1480,45 @@ index 0000000000000000000000000000000000000000..660d2f01eb1ac1d6e1df0e68bb08e323
 +fun AppCompatActivity.cancel() {
 +    setResult(Activity.RESULT_CANCELED)
 +    finish()
++}
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ca7ce5347ca3e741367c37abd15f201714ee264
+--- /dev/null
++++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerBridge.kt
+@@ -0,0 +1,33 @@
++package co.algorand.passkeyautofill.autofill
++
++import java.lang.ref.WeakReference
++
++/**
++ * PERA LOCAL PATCH: routes the JS picker's calls to the activity currently
++ * showing it.
++ *
++ * A weak reference because the activity owns its own lifecycle; a strong one
++ * here would keep a finished picker (and its unsealed state) alive.
++ */
++object AutofillPickerBridge {
++    interface Host {
++        fun onPickerReady()
++        suspend fun onUnlockRequested(): Boolean
++        fun onPickResolved(recordIdentifier: String)
++        fun onPickCancelled()
++    }
++
++    private var host: WeakReference<Host>? = null
++
++    fun register(host: Host) {
++        this.host = WeakReference(host)
++    }
++
++    fun unregister(host: Host) {
++        if (this.host?.get() === host) {
++            this.host = null
++        }
++    }
++
++    fun current(): Host? = host?.get()
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerComponent.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/AutofillPickerComponent.kt
 new file mode 100644
@@ -5998,7 +6069,7 @@ index b66566006ebb26bb66cdd07168591b3d36d4621a..e6874fe1fe079d618734331fb46f37bb
  
      AsyncFunction("getStoredCredentials") { () -> [[String: Any]] in
 diff --git a/src/ReactNativePasskeyAutofillModule.ts b/src/ReactNativePasskeyAutofillModule.ts
-index 87f7dd44e3e8a4b21ae655599dead4af828567a9..f8bd88f96c8e3006bd31af0ae5e8d8bf23ccb7d1 100644
+index 87f7dd44e3e8a4b21ae655599dead4af828567a9..b8e7426cb86166700cb5a5f2293b4f9454f80f3a 100644
 --- a/src/ReactNativePasskeyAutofillModule.ts
 +++ b/src/ReactNativePasskeyAutofillModule.ts
 @@ -52,6 +52,16 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
@@ -6018,7 +6089,7 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..f8bd88f96c8e3006bd31af0ae5e8d8bf
    refreshCredentialIdentities(): Promise<void>;
    /**
     * Resolves to `true` when this app is registered as the active
-@@ -67,6 +77,25 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
+@@ -67,6 +77,44 @@ declare class ReactNativePasskeyAutofillModule extends NativeModule<ReactNativeP
     * if a settings screen could be launched, `false` otherwise.
     */
    openProviderSettings(): Promise<boolean>;
@@ -6041,10 +6112,29 @@ index 87f7dd44e3e8a4b21ae655599dead4af828567a9..f8bd88f96c8e3006bd31af0ae5e8d8bf
 +   * Android only — iOS has no equivalent per-app link store.
 +   */
 +  pruneAppLinks?(recordIdentifier: string): Promise<void>;
++  /**
++   * Signals that the JS picker screen has mounted and is ready to receive
++   * the record list from the activity currently hosting it.
++   */
++  autofillPickerReady?(): Promise<void>;
++  /**
++   * Asks the hosting activity to run its unlock flow. Resolves `false`
++   * (rather than rejecting) when no activity is registered, matching "stay
++   * locked" so the caller can treat both cases the same way.
++   */
++  requestAutofillUnlock?(): Promise<boolean>;
++  /**
++   * Reports the user's picked record back to the hosting activity.
++   */
++  resolveAutofillPick?(recordIdentifier: string): Promise<void>;
++  /**
++   * Reports that the user cancelled the picker.
++   */
++  cancelAutofillPick?(): Promise<void>;
  }
  
  // This call loads the native module object from the JSI.
-@@ -81,6 +110,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
+@@ -81,6 +129,7 @@ const nativeModule = requireNativeModule<ReactNativePasskeyAutofillModule>(
  if (Platform.OS === "android") {
    const noops: Record<string, (...args: unknown[]) => Promise<unknown>> = {
      replaceCredentialIdentities: () => Promise.resolve(),
