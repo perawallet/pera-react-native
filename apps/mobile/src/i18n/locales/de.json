@@ -2513,7 +2513,13 @@
             "delete_confirm_body": "It is stored only on this device and cannot be recovered.",
             "not_backed_up_notice": "Passwords are stored only on this device. They are not included in your Pera backup and cannot be recovered if you lose the device.",
             "domain_required_error": "Enter a website.",
-            "password_required_error": "Enter a password."
+            "password_required_error": "Enter a password.",
+            "autofill_picker_title": "Fill a login",
+            "autofill_picker_caller": "Requested by {{caller}}",
+            "autofill_picker_host": "For {{host}}",
+            "autofill_picker_unlock_action": "Unlock to choose a login",
+            "autofill_picker_empty": "No saved passwords to fill.",
+            "autofill_picker_cancel": "Cancel"
         },
         "connected_sites": {
             "empty_title": "Keine verbundenen Websites",

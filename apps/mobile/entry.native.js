@@ -34,3 +34,12 @@ import { App } from './src/App'
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately
 registerRootComponent(App)
+
+// The autofill picker activity mounts this by name. The string must match
+// `autofillPickerComponent` in app.config.builder.js — native reads that name
+// from manifest meta-data before any JS has run, so nothing here can
+// negotiate it.
+import { AppRegistry } from 'react-native'
+import { AutofillPickerRoot } from './src/modules/passwords/AutofillPickerRoot'
+
+AppRegistry.registerComponent('PeraAutofillPicker', () => AutofillPickerRoot)
