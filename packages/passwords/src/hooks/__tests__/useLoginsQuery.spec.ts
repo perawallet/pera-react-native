@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
@@ -27,7 +27,21 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(QueryClientProvider, { client }, children)
 }
 
+// The shared wrapper mints a client per render, which is fine for a single
+// render but would discard the cache between the two renders below.
+const createStableWrapper = () => {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    return ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client }, children)
+}
+
 describe('useLoginsQuery', () => {
+    beforeEach(() => {
+        listLogins.mockReset()
+    })
+
     it('returns the stored logins', async () => {
         listLogins.mockResolvedValue([
             {
@@ -52,6 +66,37 @@ describe('useLoginsQuery', () => {
         const { result } = renderHook(() => useLoginsQuery(), { wrapper })
 
         expect(result.current.logins).toEqual([])
+    })
+
+    // listLogins unseals every stored password to build its summaries, so a
+    // disabled query has to leave the vault alone rather than fetch and hide.
+    it('does not read the store when disabled', () => {
+        listLogins.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () => useLoginsQuery({ enabled: false }),
+            { wrapper },
+        )
+
+        expect(listLogins).not.toHaveBeenCalled()
+        expect(result.current.logins).toEqual([])
+    })
+
+    it('reads the store once enabled flips true', async () => {
+        listLogins.mockResolvedValue([])
+
+        const { rerender } = renderHook(
+            ({ enabled }: { enabled: boolean }) => useLoginsQuery({ enabled }),
+            {
+                wrapper: createStableWrapper(),
+                initialProps: { enabled: false },
+            },
+        )
+        expect(listLogins).not.toHaveBeenCalled()
+
+        rerender({ enabled: true })
+
+        await waitFor(() => expect(listLogins).toHaveBeenCalled())
     })
 })
 

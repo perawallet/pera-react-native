@@ -14,6 +14,7 @@ export {
     loginsQueryKeyRoot,
     isLoginQuery,
     useLoginsQuery,
+    type UseLoginsQueryOptions,
     type UseLoginsQueryResult,
 } from './useLoginsQuery'
 export {

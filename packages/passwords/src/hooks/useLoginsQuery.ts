@@ -33,10 +33,23 @@ export type UseLoginsQueryResult = {
     refetch: () => void
 }
 
-export const useLoginsQuery = (): UseLoginsQueryResult => {
+export type UseLoginsQueryOptions = {
+    /**
+     * Defaults to true. Set false to keep `listLogins` from running at all:
+     * it materialises every stored secret while building its summaries, so a
+     * caller that must not touch the vault yet has to stop the fetch, not just
+     * hide the result.
+     */
+    enabled?: boolean
+}
+
+export const useLoginsQuery = ({
+    enabled = true,
+}: UseLoginsQueryOptions = {}): UseLoginsQueryResult => {
     const query = useQuery({
         queryKey: loginsQueryKeyRoot,
         queryFn: listLogins,
+        enabled,
     })
 
     return {

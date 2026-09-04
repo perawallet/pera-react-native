@@ -76,6 +76,7 @@ describe('useAutofillPickerScreen', () => {
             error: null,
             refetch: vi.fn(),
         })
+        useLoginsQuery.mockClear()
         autofillPickerReady.mockClear()
         requestAutofillUnlock.mockClear()
         resolveAutofillPick.mockClear()
@@ -121,12 +122,16 @@ describe('useAutofillPickerScreen', () => {
         expect(result.current.callerText).not.toContain('‮')
     })
 
-    it('exposes no logins before unlock', () => {
+    // listLogins unseals every stored password to build its summaries, so the
+    // query has to stay off before unlock, not merely be hidden from the list.
+    it('leaves the login query disabled before unlock', () => {
         const { result } = renderHook(() => useAutofillPickerScreen(caller), {
             wrapper,
         })
 
         expect(result.current.isUnlocked).toBe(false)
+        expect(useLoginsQuery).toHaveBeenCalledWith({ enabled: false })
+        expect(useLoginsQuery).not.toHaveBeenCalledWith({ enabled: true })
         expect(result.current.logins).toEqual([])
     })
 
@@ -141,6 +146,7 @@ describe('useAutofillPickerScreen', () => {
         })
 
         await waitFor(() => expect(result.current.isUnlocked).toBe(true))
+        expect(useLoginsQuery).toHaveBeenCalledWith({ enabled: true })
         expect(result.current.logins).toHaveLength(1)
     })
 
@@ -173,6 +179,24 @@ describe('useAutofillPickerScreen', () => {
         await waitFor(() => expect(result.current.isUnlocking).toBe(false))
         expect(result.current.isUnlocked).toBe(false)
         expect(result.current.logins).toEqual([])
+    })
+
+    it('flattens and caps a hostile claimed origin', () => {
+        const { result } = renderHook(
+            () =>
+                useAutofillPickerScreen({
+                    packageName: 'com.evil',
+                    label: null,
+                    // webDomain on an unlinked request is chosen by the caller
+                    // and only trimmed on the way here.
+                    host: `\u202Emoc.knabym\n${'x'.repeat(2000)}`,
+                }),
+            { wrapper },
+        )
+
+        expect(result.current.hostText).not.toContain('\u202E')
+        expect(result.current.hostText).not.toContain('\n')
+        expect(result.current.hostText?.length).toBeLessThan(80)
     })
 
     it('forwards a selection and a cancel to the service', async () => {

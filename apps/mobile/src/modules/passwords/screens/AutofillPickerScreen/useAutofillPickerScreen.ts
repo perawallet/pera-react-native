@@ -27,28 +27,33 @@ export type UseAutofillPickerScreenResult = {
     isUnlocked: boolean
     isUnlocking: boolean
     logins: Login[]
-    isLoading: boolean
     handleUnlock: () => void
     handleSelect: (id: string) => void
     handleCancel: () => void
 }
 
 const MAX_LABEL_LENGTH = 40
+const MAX_HOST_LENGTH = 60
 
-// An app's label is whatever its own manifest says, so it can impersonate
-// another app, hide the package behind newlines, or reverse what follows with
-// a bidi override. The package name is assigned by the platform, so it leads
-// and the label is sanitised decoration.
-const sanitizeLabel = (label: string | null): string | null => {
-    if (label === null) {
+// Both halves of the caller line are attacker-chosen: the label comes from the
+// requesting app's own manifest, and webDomain on an unlinked request is set by
+// that app too and only trimmed on the way here, never validated. Either can
+// impersonate another app, hide what follows behind newlines, or reverse it
+// with a bidi override. The package name is assigned by the platform, so it
+// leads and everything else is sanitised decoration.
+const sanitizeCallerText = (
+    value: string | null,
+    maxLength: number,
+): string | null => {
+    if (value === null) {
         return null
     }
-    const flattened = label.replace(/[\p{Cc}\p{Cf}]/gu, ' ').trim()
+    const flattened = value.replace(/[\p{Cc}\p{Cf}]/gu, ' ').trim()
     if (flattened === '') {
         return null
     }
-    return flattened.length > MAX_LABEL_LENGTH
-        ? `${flattened.slice(0, MAX_LABEL_LENGTH)}…`
+    return flattened.length > maxLength
+        ? `${flattened.slice(0, maxLength)}…`
         : flattened
 }
 
@@ -63,7 +68,10 @@ export const useAutofillPickerScreen = (
         void service.autofillPickerReady()
     }, [service])
 
-    const { logins, isLoading } = useLoginsQuery()
+    // Gating the query, not just the render: listLogins unseals every stored
+    // password to build its summaries, so leaving it enabled would decrypt the
+    // whole vault into the JS heap the moment any app triggers a fill.
+    const { logins } = useLoginsQuery({ enabled: isUnlocked })
 
     const handleUnlock = useCallback(() => {
         setIsUnlocking(true)
@@ -90,20 +98,18 @@ export const useAutofillPickerScreen = (
         void service.cancelAutofillPick()
     }, [service])
 
-    const label = sanitizeLabel(caller.label)
+    const label = sanitizeCallerText(caller.label, MAX_LABEL_LENGTH)
 
     return {
         callerText: label
             ? `${caller.packageName} · ${label}`
             : caller.packageName,
-        hostText: caller.host,
+        hostText: sanitizeCallerText(caller.host, MAX_HOST_LENGTH),
         isUnlocked,
         isUnlocking,
-        // The gate is what the user sees, not what the query fetched. Enforced
-        // here rather than natively because the same bundle can already read
-        // summaries on the Passwords screen without a prompt.
+        // Backstop for a warm cache: enabled:false stops a fetch but still
+        // hands back anything already cached under this key.
         logins: isUnlocked ? logins : [],
-        isLoading,
         handleUnlock,
         handleSelect,
         handleCancel,
