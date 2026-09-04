@@ -3921,7 +3921,7 @@ index 0000000000000000000000000000000000000000..4d1ecd786db09622082010ecd1366e07
 +    }
 +}
 diff --git a/app.plugin.js b/app.plugin.js
-index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c6413eb1f 100644
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..076edc0fdee12f9b57bbc164a5ee0143658d5f8c 100644
 --- a/app.plugin.js
 +++ b/app.plugin.js
 @@ -20,6 +20,8 @@ const IOS_EXTENSION_FILES = [
@@ -3933,12 +3933,17 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
    "WebAuthn.swift",
    "BiometricRequirement.swift",
    "Prf.swift",
-@@ -73,9 +75,57 @@ const BIOMETRIC_REQUIREMENT_VALUES = ["strong", "strongOrCredential", "weakOrCre
+@@ -73,9 +75,111 @@ const BIOMETRIC_REQUIREMENT_VALUES = ["strong", "strongOrCredential", "weakOrCre
  const DEFAULT_BIOMETRIC_REQUIREMENT = "strongOrCredential";
  // Must match `META_DATA_KEY` in android/.../auth/BiometricRequirement.kt.
  const ANDROID_BIOMETRIC_META_DATA_NAME = "co.algorand.passkeyautofill.BIOMETRIC_REQUIREMENT";
 +// PERA LOCAL PATCH: must match the `<service>` in android/src/main/AndroidManifest.xml.
 +const ANDROID_AUTOFILL_SERVICE_NAME = "co.algorand.passkeyautofill.autofill.PeraAutofillService";
++// PERA LOCAL PATCH: read by AutofillPickerComponent.kt. The value is an
++// AppRegistry key, because that is what ReactActivity.getMainComponentName
++// consumes — not a module path.
++const ANDROID_AUTOFILL_PICKER_META_DATA_NAME =
++  "co.algorand.passkeyautofill.AUTOFILL_PICKER_COMPONENT";
 +
  // Must match `infoDictionaryKey` in ios/AutofillCredentialProvider/BiometricRequirement.swift.
  const IOS_BIOMETRIC_INFO_PLIST_KEY = "ReactNativePasskeyAutofillBiometricRequirement";
@@ -3988,10 +3993,59 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
 +  return manifest;
 +};
 +
++/**
++ * PERA LOCAL PATCH: names the React component the picker activity mounts.
++ *
++ * Meta-data rather than anything JS-registered: the picker can launch cold,
++ * with the app never having run in that process, so the name must be readable
++ * before any JavaScript executes.
++ */
++const applyAutofillPickerComponent = (manifest, componentName) => {
++  const application = (manifest.application && manifest.application[0]) || null;
++  if (!application) {
++    return manifest;
++  }
++  if (!application["meta-data"]) {
++    application["meta-data"] = [];
++  }
++  const existing = application["meta-data"].find(
++    (m) => m["$"] && m["$"]["android:name"] === ANDROID_AUTOFILL_PICKER_META_DATA_NAME,
++  );
++  if (existing) {
++    existing["$"]["android:value"] = componentName;
++  } else {
++    application["meta-data"].push({
++      $: {
++        "android:name": ANDROID_AUTOFILL_PICKER_META_DATA_NAME,
++        "android:value": componentName,
++      },
++    });
++  }
++  return manifest;
++};
++
++/**
++ * PERA LOCAL PATCH: fails prebuild rather than shipping a picker that cannot
++ * mount. A typo still gets through — nothing here knows what JS registered —
++ * and lands on the activity's fail-closed error view.
++ */
++const validateAutofillPickerComponent = (props) => {
++  if (props.providesPasswords !== true) {
++    return;
++  }
++  const value = String(props.autofillPickerComponent ?? "").trim();
++  if (value === "") {
++    throw new Error(
++      'react-native-passkey-autofill: "autofillPickerComponent" is required when "providesPasswords" is true.',
++    );
++  }
++  return value;
++};
++
  // Authenticators a passkey operation will accept. Default is intentionally more permissive than
  // strong-only: it leaves iOS unchanged (passcode still allowed) and lets Android accept the device
  // credential. See docs/superpowers/specs/2026-05-28-configurable-biometric-requirement-design.md.
-@@ -128,11 +178,24 @@ const writePlist = (filePath, body) => {
+@@ -128,11 +232,24 @@ const writePlist = (filePath, body) => {
    fs.writeFileSync(filePath, body);
  };
  
@@ -4017,7 +4071,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
  }) => `<?xml version="1.0" encoding="UTF-8"?>
  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
  <plist version="1.0">
-@@ -160,13 +223,9 @@ const extensionInfoPlist = ({
+@@ -160,13 +277,9 @@ const extensionInfoPlist = ({
  ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
    <string>${biometricRequirement}</string>
    <key>NSFaceIDUsageDescription</key>
@@ -4032,7 +4086,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
      <key>CFBundleDisplayName</key>
      <string>${label}</string>
      <key>NSExtensionAttributes</key>
-@@ -178,14 +237,22 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
+@@ -178,14 +291,22 @@ ${supportedDomains.map((domain) => `      <string>${domain}</string>`).join("\n"
          <key>ProvidesPasskeys</key>
          <true/>
          <key>ProvidesPasswords</key>
@@ -4057,7 +4111,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
      <string>com.apple.authentication-services-credential-provider-ui</string>
      <key>NSExtensionPrincipalClass</key>
      <string>$(PRODUCT_MODULE_NAME).CredentialProviderViewController</string>
-@@ -219,11 +286,15 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+@@ -219,11 +340,15 @@ const withIosPasskeyAutofill = (config, props = {}) => {
    const site = props.site || "https://debug.liquidauth.com";
    const label = props.label || "My Credential Provider";
    const associatedDomain = getAssociatedDomain(site);
@@ -4074,7 +4128,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
  
    config = withInfoPlist(config, (config) => {
      config.modResults.ReactNativePasskeyAutofillAppGroup = appGroup;
-@@ -263,7 +334,13 @@ const withIosPasskeyAutofill = (config, props = {}) => {
+@@ -263,7 +388,13 @@ const withIosPasskeyAutofill = (config, props = {}) => {
  
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}-Info.plist`),
@@ -4089,7 +4143,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
        );
        writePlist(
          path.join(extensionRoot, `${IOS_EXTENSION_NAME}.entitlements`),
-@@ -711,6 +788,23 @@ const withPasskeyAutofill = (config, props = {}) => {
+@@ -711,6 +842,31 @@ const withPasskeyAutofill = (config, props = {}) => {
      return config;
    });
  
@@ -4110,10 +4164,18 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
 +    return config;
 +  });
 +
++  config = withAndroidManifest(config, (config) => {
++    const componentName = validateAutofillPickerComponent(props);
++    if (componentName) {
++      applyAutofillPickerComponent(config.modResults.manifest, componentName);
++    }
++    return config;
++  });
++
    // 2. Add asset_statements string to strings.xml
    config = withStringsXml(config, (config) => {
      const stringItems = [
-@@ -802,3 +896,8 @@ const withPasskeyAutofill = (config, props = {}) => {
+@@ -802,3 +958,10 @@ const withPasskeyAutofill = (config, props = {}) => {
  module.exports = withPasskeyAutofill;
  module.exports.getBiometricRequirement = getBiometricRequirement;
  module.exports.getAaguid = getAaguid;
@@ -4122,6 +4184,8 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..42c8169461e786f4e5ae619c44692e8c
 +// without rendering a full Xcode project.
 +module.exports.extensionInfoPlist = extensionInfoPlist;
 +module.exports.applyAutofillServiceGating = applyAutofillServiceGating;
++module.exports.applyAutofillPickerComponent = applyAutofillPickerComponent;
++module.exports.validateAutofillPickerComponent = validateAutofillPickerComponent;
 diff --git a/build/ReactNativePasskeyAutofillModule.d.ts b/build/ReactNativePasskeyAutofillModule.d.ts
 index 8626ca1d219eb5c34b81a1b99fa59f71ed57d960..63b9138f55d4eb1b013859f00df4f861600e0664 100644
 --- a/build/ReactNativePasskeyAutofillModule.d.ts

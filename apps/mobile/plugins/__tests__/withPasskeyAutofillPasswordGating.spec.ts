@@ -70,6 +70,7 @@ type AndroidManifest = {
     $?: Record<string, string>
     application?: {
         service?: { $: Record<string, string> }[]
+        'meta-data'?: { $: Record<string, string> }[]
     }[]
 }
 
@@ -140,5 +141,74 @@ describe('passkey-autofill applyAutofillServiceGating — Android service gating
         ).toHaveLength(1)
         expect(services[0].$['tools:node']).toBe('remove')
         expect(services[1].$['tools:node']).toBeUndefined()
+    })
+})
+
+const {
+    applyAutofillPickerComponent,
+    validateAutofillPickerComponent,
+} = require('@algorandfoundation/react-native-passkey-autofill/app.plugin.js')
+
+const PICKER_META_DATA_NAME =
+    'co.algorand.passkeyautofill.AUTOFILL_PICKER_COMPONENT'
+
+describe('passkey-autofill applyAutofillPickerComponent', () => {
+    it('writes the component name as application meta-data', () => {
+        const manifest: AndroidManifest = { application: [{}] }
+
+        applyAutofillPickerComponent(manifest, 'PeraAutofillPicker')
+
+        const entry = manifest.application?.[0]['meta-data']?.find(
+            m => m.$['android:name'] === PICKER_META_DATA_NAME,
+        )
+        expect(entry?.$['android:value']).toBe('PeraAutofillPicker')
+    })
+
+    it('overwrites an existing entry rather than duplicating it', () => {
+        const manifest = {
+            application: [
+                {
+                    'meta-data': [
+                        {
+                            $: {
+                                'android:name': PICKER_META_DATA_NAME,
+                                'android:value': 'Stale',
+                            },
+                        },
+                    ],
+                },
+            ],
+        }
+
+        applyAutofillPickerComponent(manifest, 'PeraAutofillPicker')
+
+        const entries = manifest.application[0]['meta-data'].filter(
+            m => m.$['android:name'] === PICKER_META_DATA_NAME,
+        )
+        expect(entries).toHaveLength(1)
+        expect(entries[0].$['android:value']).toBe('PeraAutofillPicker')
+    })
+})
+
+describe('passkey-autofill validateAutofillPickerComponent', () => {
+    it('throws when passwords are provided but no component is named', () => {
+        expect(() =>
+            validateAutofillPickerComponent({ providesPasswords: true }),
+        ).toThrow(/autofillPickerComponent/)
+    })
+
+    it('throws when the component name is blank', () => {
+        expect(() =>
+            validateAutofillPickerComponent({
+                providesPasswords: true,
+                autofillPickerComponent: '   ',
+            }),
+        ).toThrow(/autofillPickerComponent/)
+    })
+
+    it('accepts a missing component when passwords are not provided', () => {
+        expect(() =>
+            validateAutofillPickerComponent({ providesPasswords: false }),
+        ).not.toThrow()
     })
 })

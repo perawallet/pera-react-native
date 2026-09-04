@@ -540,6 +540,8 @@ function buildAppConfig(env) {
           aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
           biometricRequirement: 'strongOrCredential',
           providesPasswords: variant !== 'production',
+          // Must match the AppRegistry name registered in entry.native.js.
+          autofillPickerComponent: 'PeraAutofillPicker',
         },
       ],
 
