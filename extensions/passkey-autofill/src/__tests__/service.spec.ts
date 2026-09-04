@@ -276,3 +276,37 @@ describe('PasskeyAutofillService', () => {
         })
     })
 })
+
+describe('autofill picker bridge', () => {
+    it('forwards a selection to the native module', async () => {
+        const resolveAutofillPick = vi.fn(async () => undefined)
+        const service = new PasskeyAutofillService(
+            makeNative({ resolveAutofillPick }),
+        )
+
+        await service.resolveAutofillPick('pera.login.abc')
+
+        expect(resolveAutofillPick).toHaveBeenCalledWith('pera.login.abc')
+    })
+
+    it('returns the native unlock result', async () => {
+        const service = new PasskeyAutofillService(
+            makeNative({ requestAutofillUnlock: vi.fn(async () => true) }),
+        )
+
+        await expect(service.requestAutofillUnlock()).resolves.toBe(true)
+    })
+
+    it('resolves unlock false when the native module has no such method', async () => {
+        const service = new PasskeyAutofillService(makeNative({}))
+
+        await expect(service.requestAutofillUnlock()).resolves.toBe(false)
+    })
+
+    it('does not throw when ready and cancel are absent', async () => {
+        const service = new PasskeyAutofillService(makeNative({}))
+
+        await expect(service.autofillPickerReady()).resolves.toBeUndefined()
+        await expect(service.cancelAutofillPick()).resolves.toBeUndefined()
+    })
+})

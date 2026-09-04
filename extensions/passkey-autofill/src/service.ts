@@ -54,6 +54,10 @@ export interface PasskeyAutofillNativeAPI {
     openProviderSettings(): Promise<boolean>
     isAutofillServiceActive?(): Promise<boolean>
     openAutofillSettings?(): Promise<boolean>
+    autofillPickerReady?(): Promise<void>
+    requestAutofillUnlock?(): Promise<boolean>
+    resolveAutofillPick?(recordIdentifier: string): Promise<void>
+    cancelAutofillPick?(): Promise<void>
     pruneAppLinks?(recordIdentifier: string): Promise<void>
     getDiagnostics?(): Promise<string[]>
     addListener(
@@ -210,6 +214,22 @@ export class PasskeyAutofillService {
 
     openAutofillSettings(): Promise<boolean> {
         return this.invoke('openAutofillSettings', [], false)
+    }
+
+    autofillPickerReady(): Promise<void> {
+        return this.invoke('autofillPickerReady', [], undefined)
+    }
+
+    requestAutofillUnlock(): Promise<boolean> {
+        return this.invoke('requestAutofillUnlock', [], false)
+    }
+
+    resolveAutofillPick(recordIdentifier: string): Promise<void> {
+        return this.invoke('resolveAutofillPick', [recordIdentifier], undefined)
+    }
+
+    cancelAutofillPick(): Promise<void> {
+        return this.invoke('cancelAutofillPick', [], undefined)
     }
 
     pruneAppLinks(recordIdentifier: string): Promise<void> {
