@@ -1,3 +1,20 @@
+diff --git a/android/build.gradle b/android/build.gradle
+index 41dbd054f88416166abe74da3b931665e891c1b5..13d74e3ecb6595722d27eb9a2339ea1499099d04 100644
+--- a/android/build.gradle
++++ b/android/build.gradle
+@@ -63,6 +63,12 @@ repositories {
+ }
+ 
+ dependencies {
++  // PERA LOCAL PATCH: PeraPickerActivity is a ReactActivity. expo-modules-core
++  // depends on react-android with `implementation`, so it is not on this
++  // module's compile classpath transitively. The version is left off on
++  // purpose — the root React Native Gradle plugin forces it to the one the app
++  // resolves, and pinning here would fight that.
++  implementation "com.facebook.react:react-android"
+   implementation "androidx.biometric:biometric-ktx:1.2.0-alpha05"
+   implementation "androidx.credentials:credentials:1.5.0-rc01"
+   implementation "androidx.credentials:credentials-play-services-auth:1.5.0-rc01"
 diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
 index e664746a384e1403297d47c42c1383f0f41d4766..3a2d59733b91a1dbb505d55a1b7dbc42a3ca12e4 100644
 --- a/android/src/main/AndroidManifest.xml
@@ -2170,26 +2187,32 @@ index 0000000000000000000000000000000000000000..af20354f1fc3b081fc22e941bfc221ed
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..0fe17ada91d8742419dfc187ac125894c6a7a7d7
+index 0000000000000000000000000000000000000000..5e909821ac08e559485575c88d130b9283b0994c
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,281 @@
 +package co.algorand.passkeyautofill.autofill
 +
++import android.content.pm.PackageManager
 +import android.os.Build
 +import android.os.Bundle
++import android.os.Handler
++import android.os.Looper
 +import android.util.Log
 +import android.view.autofill.AutofillId
-+import android.widget.ArrayAdapter
-+import android.widget.ListView
-+import android.widget.TextView
++import android.widget.Button
 +import androidx.annotation.RequiresApi
-+import androidx.appcompat.app.AppCompatActivity
 +import androidx.lifecycle.lifecycleScope
-+import co.algorand.passkeyautofill.LoginSummary
 +import co.algorand.passkeyautofill.PasswordCredentialStore
 +import co.algorand.passkeyautofill.R
++import com.facebook.react.ReactActivity
++import com.facebook.react.ReactActivityDelegate
++import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
++import com.facebook.react.defaults.DefaultReactActivityDelegate
++import kotlinx.coroutines.CancellationException
++import kotlinx.coroutines.Dispatchers
 +import kotlinx.coroutines.launch
++import kotlinx.coroutines.withContext
 +
 +/**
 + * PERA LOCAL PATCH — the dataset-auth target for a caller with no linked login
@@ -2197,79 +2220,167 @@ index 0000000000000000000000000000000000000000..0fe17ada91d8742419dfc187ac125894
 + * legitimately represents the domain the user is signing into (no Digital Asset
 + * Links here), so the user picking a login from a screen that names the
 + * requesting app IS the verification step. That makes the identity this screen
-+ * shows load-bearing — see [callerText].
++ * shows load-bearing, and it is why the caller's package always travels to
++ * JavaScript in [ReactActivityDelegate.getLaunchOptions] — the picker must
++ * never render without it.
 + *
-+ * The chosen login is released and [AppLinkStore.link] is written only after
-+ * [biometrics] succeeds — mirroring [FillAuthActivity]'s ordering — so a
++ * The list itself is a React screen: this activity is only the host plus the
++ * privileged half of the flow. JavaScript drives it through
++ * [AutofillPickerBridge.Host], and the unseal stays gated on [biometrics]
++ * having succeeded here — mirroring [FillAuthActivity]'s ordering — so a
 + * cancelled prompt leaves no association behind.
 + */
 +@RequiresApi(Build.VERSION_CODES.O)
-+class PeraPickerActivity : AppCompatActivity() {
++class PeraPickerActivity : ReactActivity(), AutofillPickerBridge.Host {
 +
 +    private val store = PasswordCredentialStore()
 +
 +    /**
-+     * Guards the item-click path: without it, a double tap on a list row
-+     * could fire two biometric prompts, or write the link and release the
-+     * dataset twice. Mirrors [FillAuthActivity.isHandling].
++     * Guards [onPickResolved]: without it, a double call from JavaScript could
++     * unseal and finish twice. Set synchronously, before any suspending work.
++     * Mirrors [FillAuthActivity.isHandling].
 +     */
 +    private var isHandling: Boolean = false
 +
-+    override fun onCreate(savedInstanceState: Bundle?) {
-+        super.onCreate(savedInstanceState)
-+        setContentView(R.layout.pera_autofill_picker)
++    /**
++     * Set only by a biometric prompt that actually succeeded. The gate lives
++     * here rather than in JavaScript alone because this activity is the only
++     * place that can hold "prompt before unseal" as an invariant.
++     */
++    private var isUnlocked: Boolean = false
 +
-+        val callerPackageName = intent.getStringExtra(PeraAutofillService.EXTRA_PACKAGE_NAME)
-+        // Absent when the caller claimed no domain, which is the ordinary
-+        // native-app case and stays linked on the package alone.
-+        val callerHost = intent.getStringExtra(PeraAutofillService.EXTRA_WEB_HOST)
-+        val passwordId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_PASSWORD_ID)
-+        val usernameId = intent.parcelable<AutofillId>(PeraAutofillService.EXTRA_USERNAME_ID)
++    private var isReady: Boolean = false
++
++    private var callerPackageName: String? = null
++
++    /**
++     * Absent when the caller claimed no domain, which is the ordinary
++     * native-app case and stays linked on the package alone.
++     */
++    private var callerHost: String? = null
++
++    private var passwordId: AutofillId? = null
++    private var usernameId: AutofillId? = null
++
++    /**
++     * Read by the delegate during [ReactActivity.onCreate]. Left null on any
++     * path that must not mount JavaScript, which makes the delegate skip
++     * `loadApp` and leaves the content view to this activity.
++     */
++    private var mountName: String? = null
++
++    private val watchdog = Handler(Looper.getMainLooper())
++
++    override fun getMainComponentName(): String? = mountName
++
++    override fun createReactActivityDelegate(): ReactActivityDelegate =
++        // Deliberately not wrapped in Expo's ReactActivityDelegateWrapper, as
++        // MainActivity is: a wrapped delegate can be swapped wholesale by any
++        // Expo ReactActivityHandler, which would drop the launch options that
++        // carry the caller's identity onto the screen.
++        object : DefaultReactActivityDelegate(this, "", fabricEnabled) {
++            // DefaultReactActivityDelegate takes the component name in its
++            // constructor, which ReactActivity runs before the activity has a
++            // base context — no PackageManager, so no manifest lookup. Reading
++            // it here defers that to onCreate.
++            override fun getMainComponentName(): String? = mountName
++
++            override fun getLaunchOptions(): Bundle = Bundle().apply {
++                putString("callerPackage", callerPackageName.orEmpty())
++                appLabel(callerPackageName)?.let { putString("callerLabel", it) }
++                callerHost?.let { putString("callerHost", it) }
++            }
++        }
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        callerPackageName = intent.getStringExtra(PeraAutofillService.EXTRA_PACKAGE_NAME)
++        callerHost = intent.getStringExtra(PeraAutofillService.EXTRA_WEB_HOST)
++        passwordId = intent.parcelable(PeraAutofillService.EXTRA_PASSWORD_ID)
++        usernameId = intent.parcelable(PeraAutofillService.EXTRA_USERNAME_ID)
++
 +        if (callerPackageName == null || passwordId == null) {
 +            Log.e(TAG, "Missing required extras on the picker intent")
++            super.onCreate(null)
 +            cancel()
 +            return
 +        }
 +
-+        // The user is the only thing standing between this app and a login, so
-+        // they must be able to see which app is asking before they choose.
-+        findViewById<TextView>(R.id.pera_autofill_picker_caller).text =
-+            callerText(callerPackageName)
-+
-+        val summaries = store.loginSummaries(this)
-+        findViewById<ListView>(R.id.pera_autofill_picker_list).apply {
-+            adapter = ArrayAdapter(
-+                this@PeraPickerActivity,
-+                android.R.layout.simple_list_item_1,
-+                summaries.map { "${it.username} — ${it.host}" },
-+            )
-+            setOnItemClickListener { _, _, position, _ ->
-+                if (isHandling) return@setOnItemClickListener
-+                isHandling = true
-+                val chosen = summaries[position]
-+                lifecycleScope.launch {
-+                    release(callerPackageName, callerHost, chosen, usernameId, passwordId)
-+                }
-+            }
++        val configured = configuredComponentName()
++        if (configured == null) {
++            // Fail closed and legibly: config named no component, so nothing
++            // can mount.
++            Log.e(TAG, "No autofill picker component configured")
++            super.onCreate(null)
++            showError()
++            return
 +        }
++
++        mountName = configured
++        AutofillPickerBridge.register(this)
++        super.onCreate(savedInstanceState)
++        watchdog.postDelayed({ if (!isReady) showError() }, READY_TIMEOUT_MS)
 +    }
 +
-+    private suspend fun release(
-+        callerPackageName: String,
-+        callerHost: String?,
-+        chosen: LoginSummary,
-+        usernameId: AutofillId?,
-+        passwordId: AutofillId,
-+    ) {
-+        if (!biometrics()) { cancel(); return }
++    override fun onDestroy() {
++        watchdog.removeCallbacksAndMessages(null)
++        AutofillPickerBridge.unregister(this)
++        super.onDestroy()
++    }
 +
-+        val login = try {
-+            store.login(this, chosen.recordIdentifier)
++    override fun onPickerReady() = failClosed {
++        isReady = true
++        watchdog.removeCallbacksAndMessages(null)
++    }
++
++    override suspend fun onUnlockRequested(): Boolean =
++        try {
++            // A declined prompt is not a failure: the screen keeps its unlock
++            // affordance so the user can try again.
++            biometrics().also { if (it) isUnlocked = true }
++        } catch (e: CancellationException) {
++            throw e
 +        } catch (e: Exception) {
-+            Log.e(TAG, "Unseal failed", e)
-+            null
++            Log.e(TAG, "The unlock prompt failed", e)
++            cancel()
++            false
 +        }
-+        if (login == null) { cancel(); return }
++
++    override fun onPickResolved(recordIdentifier: String) = failClosed {
++        if (isHandling) return@failClosed
++        if (!isUnlocked) {
++            Log.e(TAG, "A pick was resolved before the unlock prompt succeeded")
++            cancel()
++            return@failClosed
++        }
++        isHandling = true
++        lifecycleScope.launch { release(recordIdentifier) }
++    }
++
++    override fun onPickCancelled() = failClosed { cancel() }
++
++    private suspend fun release(recordIdentifier: String) {
++        val callerPackageName = this.callerPackageName
++        val passwordId = this.passwordId
++        if (callerPackageName == null || passwordId == null) {
++            Log.e(TAG, "The picker intent lost its extras before release")
++            cancel()
++            return
++        }
++
++        // PasswordCredentialStore.login is blocking keystore I/O, and this
++        // activity's main thread is now driving a React surface.
++        val login = withContext(Dispatchers.IO) {
++            try {
++                store.login(this@PeraPickerActivity, recordIdentifier)
++            } catch (e: Exception) {
++                Log.e(TAG, "Unseal failed", e)
++                null
++            }
++        }
++        if (login == null) {
++            cancel()
++            return
++        }
 +        // Mirrors FillAuthActivity's guard: an empty password would otherwise
 +        // fill a real username alongside nothing, which is the partial fill
 +        // this feature must never produce.
@@ -2279,50 +2390,86 @@ index 0000000000000000000000000000000000000000..0fe17ada91d8742419dfc187ac125894
 +            return
 +        }
 +
-+        // Only after the prompt succeeds: a cancelled prompt must leave no
-+        // association behind.
-+        AppLinkStore.link(this, callerPackageName, callerHost, chosen.recordIdentifier)
++        // Only after the unseal succeeds: a cancelled or failed flow must
++        // leave no association behind.
++        withContext(Dispatchers.IO) {
++            AppLinkStore.link(
++                this@PeraPickerActivity,
++                callerPackageName,
++                callerHost,
++                recordIdentifier,
++            )
++        }
 +
 +        finishWith(
 +            buildDataset(usernameId, passwordId, login.username, login.password, packageName),
 +        )
 +    }
 +
++    private fun showError() {
++        watchdog.removeCallbacksAndMessages(null)
++        setContentView(R.layout.pera_autofill_error)
++        findViewById<Button>(R.id.pera_autofill_error_dismiss).setOnClickListener { cancel() }
++    }
++
 +    /**
-+     * Names the caller by its package, with its label alongside when one
-+     * resolves.
-+     *
-+     * The label comes from the caller's own manifest, so an app can ship
-+     * `android:label="mybank.com"` and have this screen read as the bank's. The
-+     * package name is assigned at install time and is the only identity here
-+     * the caller does not choose, so it is always shown; the label is a
-+     * convenience shown with it, never instead of it.
++     * The module resolves each JavaScript promise only after the callback it
++     * wraps returns, so an exception escaping one leaves that promise pending
++     * forever and the picker hangs instead of failing. Every failure ends the
++     * flow instead.
 +     */
-+    private fun callerText(packageName: String): String {
-+        val label = appLabel(packageName)
-+        return if (label == null) {
-+            getString(R.string.pera_autofill_picker_caller, packageName)
-+        } else {
-+            getString(R.string.pera_autofill_picker_caller_labelled, label, packageName)
++    private inline fun failClosed(body: () -> Unit) {
++        try {
++            body()
++        } catch (e: Exception) {
++            Log.e(TAG, "A picker callback failed", e)
++            cancel()
 +        }
++    }
++
++    private fun configuredComponentName(): String? = try {
++        AutofillPickerComponent.fromMetaData(
++            packageManager.getApplicationInfo(
++                packageName,
++                PackageManager.GET_META_DATA,
++            ).metaData,
++        )
++    } catch (e: PackageManager.NameNotFoundException) {
++        Log.e(TAG, "Could not read this app's own meta-data", e)
++        null
 +    }
 +
 +    /**
 +     * Null when the label is unresolvable, which under Android 11 package
 +     * visibility is the common case: a package this app does not declare in
 +     * `<queries>` is simply not visible to `PackageManager`.
++     *
++     * The label comes from the caller's own manifest, so an app can ship
++     * `android:label="mybank.com"` and have this screen read as the bank's. It
++     * travels alongside the package name, which is assigned at install time
++     * and is the only identity here the caller does not choose — never
++     * instead of it.
 +     */
-+    private fun appLabel(packageName: String): String? = try {
-+        val info = packageManager.getApplicationInfo(packageName, 0)
-+        packageManager.getApplicationLabel(info).toString().takeIf {
-+            it.isNotBlank() && it != packageName
++    private fun appLabel(callerPackageName: String?): String? = callerPackageName?.let {
++        try {
++            val info = packageManager.getApplicationInfo(it, 0)
++            packageManager.getApplicationLabel(info).toString().takeIf { label ->
++                label.isNotBlank() && label != it
++            }
++        } catch (e: Exception) {
++            null
 +        }
-+    } catch (e: Exception) {
-+        null
 +    }
 +
 +    companion object {
 +        private const val TAG = "PeraPickerActivity"
++
++        /**
++         * Untuned. Cold-starting Hermes plus the app's JS is device-dependent:
++         * too short turns a slow-but-working fill into a failure, too long
++         * makes a real breakage feel like a hang. Settle it on device.
++         */
++        private const val READY_TIMEOUT_MS = 8_000L
 +    }
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt b/android/src/main/java/co/algorand/passkeyautofill/credentials/CredentialRepository.kt
@@ -2702,33 +2849,34 @@ index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f70
 + */
 +@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 +class PasskeyProviderService : PasskeyAutofillCredentialProviderService()
-diff --git a/android/src/main/res/layout/pera_autofill_picker.xml b/android/src/main/res/layout/pera_autofill_picker.xml
+diff --git a/android/src/main/res/layout/pera_autofill_error.xml b/android/src/main/res/layout/pera_autofill_error.xml
 new file mode 100644
-index 0000000000000000000000000000000000000000..12e4aa079d5c5e4fb48e0db6a638723ef9313e81
+index 0000000000000000000000000000000000000000..1cee17150f4070730edc924ecbd85945d4ef6a01
 --- /dev/null
-+++ b/android/src/main/res/layout/pera_autofill_picker.xml
-@@ -0,0 +1,23 @@
++++ b/android/src/main/res/layout/pera_autofill_error.xml
+@@ -0,0 +1,24 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 +    android:layout_width="match_parent"
-+    android:layout_height="400dp"
++    android:layout_height="wrap_content"
 +    android:orientation="vertical"
 +    android:background="@android:color/white"
 +    android:padding="16dp">
 +
 +    <TextView
-+        android:id="@+id/pera_autofill_picker_caller"
++        android:id="@+id/pera_autofill_error_message"
 +        android:layout_width="match_parent"
 +        android:layout_height="wrap_content"
++        android:text="@string/pera_autofill_error_message"
 +        android:textSize="16sp"
-+        android:textStyle="bold"
-+        android:paddingBottom="12dp" />
++        android:paddingBottom="16dp" />
 +
-+    <ListView
-+        android:id="@+id/pera_autofill_picker_list"
-+        android:layout_width="match_parent"
-+        android:layout_height="0dp"
-+        android:layout_weight="1" />
++    <Button
++        android:id="@+id/pera_autofill_error_dismiss"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:layout_gravity="end"
++        android:text="@string/pera_autofill_error_dismiss" />
 +
 +</LinearLayout>
 diff --git a/android/src/main/res/raw/passkey_privileged_browsers.json b/android/src/main/res/raw/passkey_privileged_browsers.json
@@ -3682,15 +3830,15 @@ index 0000000000000000000000000000000000000000..f6d49b424f69135e864a99f7587fdee0
 +  ]
 +}
 diff --git a/android/src/main/res/values/strings.xml b/android/src/main/res/values/strings.xml
-index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..e47b531f26e0b9df4867f38ce9c987ed4889e189 100644
+index 223b9e9b401a83a52fbcf91f17edcdd36df102e3..72f6c2643cc4b686fa8d06949f3f4ea011125206 100644
 --- a/android/src/main/res/values/strings.xml
 +++ b/android/src/main/res/values/strings.xml
 @@ -1,3 +1,6 @@
  <resources>
      <string name="passkey_autofill_label">My Credential Provider</string>
 +    <string name="pera_autofill_pick_login">Choose a login from Pera</string>
-+    <string name="pera_autofill_picker_caller">Fill a login into %1$s</string>
-+    <string name="pera_autofill_picker_caller_labelled">Fill a login into %1$s (%2$s)</string>
++    <string name="pera_autofill_error_message">Pera could not open the login picker.</string>
++    <string name="pera_autofill_error_dismiss">Dismiss</string>
  </resources>
 diff --git a/android/src/main/res/xml/autofill_service.xml b/android/src/main/res/xml/autofill_service.xml
 new file mode 100644
