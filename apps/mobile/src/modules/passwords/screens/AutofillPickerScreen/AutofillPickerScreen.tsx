@@ -10,14 +10,23 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PWButton, PWListItem, PWText, PWView } from '@components/core'
+import type { Login } from '@perawallet/wallet-core-passwords'
+import {
+    PWButton,
+    PWFlatList,
+    PWListItem,
+    PWText,
+    PWView,
+} from '@components/core'
 import {
     useAutofillPickerScreen,
     type AutofillPickerCaller,
 } from './useAutofillPickerScreen'
 import { useStyles } from './styles'
+
+const keyExtractor = (login: Login) => login.id
 
 type AutofillPickerScreenProps = {
     caller: AutofillPickerCaller
@@ -37,15 +46,27 @@ export const AutofillPickerScreen = ({ caller }: AutofillPickerScreenProps) => {
     } = useAutofillPickerScreen(caller)
     const styles = useStyles()
 
+    const renderItem = useCallback(
+        ({ item }: { item: Login }) => (
+            <PWListItem
+                icon='key'
+                title={item.username}
+                value={item.domain}
+                onPress={() => handleSelect(item.id)}
+            />
+        ),
+        [handleSelect],
+    )
+
     return (
         <PWView style={styles.container}>
             <PWText variant='h4'>
                 {t('settings.passwords.autofill_picker_title')}
             </PWText>
 
-            {/* callerText is rendered verbatim: the hook sanitises the label and
-                puts the package first, and re-deriving it here would undo that
-                without any test noticing. */}
+            {/* callerText and hostText are rendered verbatim: the hook
+                sanitises both and puts the package first, and re-deriving
+                either here would undo that without any test noticing. */}
             <PWText
                 variant='caption'
                 style={styles.caller}
@@ -75,15 +96,16 @@ export const AutofillPickerScreen = ({ caller }: AutofillPickerScreenProps) => {
                         {t('settings.passwords.autofill_picker_empty')}
                     </PWText>
                 ) : (
-                    logins.map(login => (
-                        <PWListItem
-                            key={login.id}
-                            icon='key'
-                            title={login.username}
-                            value={login.domain}
-                            onPress={() => handleSelect(login.id)}
+                    // FlashList needs a bounded height; without this the list
+                    // grows past the sheet and takes Cancel off screen with it.
+                    <PWView style={styles.list}>
+                        <PWFlatList
+                            data={logins}
+                            keyExtractor={keyExtractor}
+                            renderItem={renderItem}
+                            testID='autofill_picker_list'
                         />
-                    ))
+                    </PWView>
                 )
             ) : (
                 <PWButton

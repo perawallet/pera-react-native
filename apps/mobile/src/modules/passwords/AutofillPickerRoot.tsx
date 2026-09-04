@@ -15,9 +15,13 @@ import { ThemeProvider } from '@rneui/themed'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getTheme } from '@theme/theme'
 import { QueryProvider } from '../../providers/QueryProvider'
-import { AutofillPickerScreen } from './screens/AutofillPickerScreen'
+import {
+    AutofillPickerScreen,
+    type AutofillPickerCaller,
+} from './screens/AutofillPickerScreen'
 
 type AutofillPickerRootProps = {
     callerPackage: string
@@ -49,18 +53,28 @@ export const AutofillPickerRoot = ({
     callerHost,
 }: AutofillPickerRootProps) => (
     <PeraWalletProvider>
-        <ThemeProvider theme={getTheme('light')}>
+        <ThemedPicker
+            caller={{
+                packageName: callerPackage,
+                label: callerLabel ?? null,
+                host: callerHost ?? null,
+            }}
+        />
+    </PeraWalletProvider>
+)
+
+// Separate component because useIsDarkMode reads the settings store, which
+// only exists once PeraWalletProvider has bootstrapped the provider.
+const ThemedPicker = ({ caller }: { caller: AutofillPickerCaller }) => {
+    const isDarkMode = useIsDarkMode()
+
+    return (
+        <ThemeProvider theme={getTheme(isDarkMode ? 'dark' : 'light')}>
             <SafeAreaProvider>
                 <QueryProvider persister={noopPersister}>
-                    <AutofillPickerScreen
-                        caller={{
-                            packageName: callerPackage,
-                            label: callerLabel ?? null,
-                            host: callerHost ?? null,
-                        }}
-                    />
+                    <AutofillPickerScreen caller={caller} />
                 </QueryProvider>
             </SafeAreaProvider>
         </ThemeProvider>
-    </PeraWalletProvider>
-)
+    )
+}

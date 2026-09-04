@@ -25,6 +25,9 @@ export const useStyles = makeStyles(theme => ({
     host: {
         color: theme.colors.textGray,
     },
+    list: {
+        flex: 1,
+    },
     empty: {
         color: theme.colors.textGray,
         paddingVertical: theme.spacing.lg,
