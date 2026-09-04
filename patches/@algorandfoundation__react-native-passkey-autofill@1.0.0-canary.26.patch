@@ -2196,12 +2196,13 @@ index 0000000000000000000000000000000000000000..af20354f1fc3b081fc22e941bfc221ed
 +}
 diff --git a/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
 new file mode 100644
-index 0000000000000000000000000000000000000000..5252b9addb1ad5887a4bbfb689aa6c6ea9b53d3b
+index 0000000000000000000000000000000000000000..c6551bc92ffb4c45eacfb201ba87cd7993e488d0
 --- /dev/null
 +++ b/android/src/main/java/co/algorand/passkeyautofill/autofill/PeraPickerActivity.kt
-@@ -0,0 +1,326 @@
+@@ -0,0 +1,339 @@
 +package co.algorand.passkeyautofill.autofill
 +
++import android.content.Intent
 +import android.content.pm.PackageManager
 +import android.os.Build
 +import android.os.Bundle
@@ -2288,8 +2289,6 @@ index 0000000000000000000000000000000000000000..5252b9addb1ad5887a4bbfb689aa6c6e
 +
 +    private val watchdog = Handler(Looper.getMainLooper())
 +
-+    override fun getMainComponentName(): String? = mountName
-+
 +    override fun createReactActivityDelegate(): ReactActivityDelegate =
 +        // Deliberately not wrapped in Expo's ReactActivityDelegateWrapper, as
 +        // MainActivity is: a wrapped delegate can be swapped wholesale by any
@@ -2336,6 +2335,20 @@ index 0000000000000000000000000000000000000000..5252b9addb1ad5887a4bbfb689aa6c6e
 +        AutofillPickerBridge.register(this)
 +        super.onCreate(savedInstanceState)
 +        watchdog.postDelayed({ if (!isReady) showError() }, READY_TIMEOUT_MS)
++    }
++
++    /**
++     * The activity is `singleTop`, so a second fill request can be redelivered
++     * to this live instance. Extras are read only in [onCreate] and
++     * [isUnlocked] is never reset, so retargeting would show the previous
++     * caller's identity over an already-satisfied unlock. A picker that
++     * silently changes who it is asking on behalf of is worse than one that
++     * dismisses.
++     */
++    override fun onNewIntent(intent: Intent) {
++        super.onNewIntent(intent)
++        Log.e(TAG, "A second picker request reached a live picker")
++        cancel()
 +    }
 +
 +    override fun onDestroy() {
