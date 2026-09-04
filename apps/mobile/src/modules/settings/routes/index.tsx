@@ -70,10 +70,6 @@ export type DeveloperSettingsStackParamsList = {
     MigrationInfo: undefined
     MigrationSimulator: undefined
     KeystoreMigrations: undefined
-    PasswordList: undefined
-    AddPassword: undefined
-    EditPassword: { id: string }
-    ViewPassword: { id: string }
 }
 
 const DeveloperSettingsStack =
@@ -180,34 +176,6 @@ const DeveloperSettingsStackNavigator = () => {
                 }}
                 component={SettingsDeveloperKeystoreMigrationsScreen}
             />
-            {routeCapabilities.passwordManager && (
-                <DeveloperSettingsStack.Screen
-                    name='PasswordList'
-                    options={{ title: 'settings.passwords.title' }}
-                    component={PasswordListScreen}
-                />
-            )}
-            {routeCapabilities.passwordManager && (
-                <DeveloperSettingsStack.Screen
-                    name='AddPassword'
-                    options={{ title: 'settings.passwords.add_action' }}
-                    component={AddPasswordScreen}
-                />
-            )}
-            {routeCapabilities.passwordManager && (
-                <DeveloperSettingsStack.Screen
-                    name='EditPassword'
-                    options={{ title: 'settings.passwords.edit_action' }}
-                    component={EditPasswordScreen}
-                />
-            )}
-            {routeCapabilities.passwordManager && (
-                <DeveloperSettingsStack.Screen
-                    name='ViewPassword'
-                    options={{ title: 'settings.passwords.title' }}
-                    component={ViewPasswordScreen}
-                />
-            )}
         </DeveloperSettingsStack.Navigator>
     )
 }
@@ -259,6 +227,10 @@ export type SettingsStackParamsList = {
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
+    PasswordList: undefined
+    AddPassword: undefined
+    EditPassword: { id: string }
+    ViewPassword: { id: string }
     ConnectedSites: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
@@ -336,6 +308,34 @@ export const SettingsStackNavigator = () => {
                         title: 'screens.passkeys',
                     }}
                     component={SettingsPasskeyScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='PasswordList'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={PasswordListScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='AddPassword'
+                    options={{ title: 'settings.passwords.add_action' }}
+                    component={AddPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='EditPassword'
+                    options={{ title: 'settings.passwords.edit_action' }}
+                    component={EditPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='ViewPassword'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={ViewPasswordScreen}
                 />
             )}
             {routeCapabilities.dappConnections && (

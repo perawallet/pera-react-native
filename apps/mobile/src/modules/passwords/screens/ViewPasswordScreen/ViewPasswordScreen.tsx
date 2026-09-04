@@ -26,15 +26,14 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import type { DeveloperSettingsStackParamsList } from '@modules/settings/routes'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { useViewPasswordScreen } from './useViewPasswordScreen'
 import { useStyles } from './styles'
 
 export const ViewPasswordScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const route =
-        useRoute<RouteProp<DeveloperSettingsStackParamsList, 'ViewPassword'>>()
+    const route = useRoute<RouteProp<SettingsStackParamsList, 'ViewPassword'>>()
     const {
         login,
         password,

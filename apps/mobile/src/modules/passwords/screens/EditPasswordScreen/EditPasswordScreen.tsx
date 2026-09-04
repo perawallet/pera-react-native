@@ -16,15 +16,14 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import type { DeveloperSettingsStackParamsList } from '@modules/settings/routes'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { useEditPasswordScreen } from './useEditPasswordScreen'
 import { useStyles } from './styles'
 
 export const EditPasswordScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const route =
-        useRoute<RouteProp<DeveloperSettingsStackParamsList, 'EditPassword'>>()
+    const route = useRoute<RouteProp<SettingsStackParamsList, 'EditPassword'>>()
     const {
         domain,
         username,

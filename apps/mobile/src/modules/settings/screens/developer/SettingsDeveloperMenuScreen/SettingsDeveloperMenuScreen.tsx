@@ -17,7 +17,6 @@ import { config } from '@perawallet/wallet-core-config'
 import { PWListItem, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
-import { routeCapabilities } from '@routes/capabilities'
 
 export const SettingsDeveloperMenuScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -74,14 +73,6 @@ export const SettingsDeveloperMenuScreen = () => {
                 title={t('settings.developer.screen_gallery')}
                 testID='developer_menu_gallery_item'
             />
-            {routeCapabilities.passwordManager && (
-                <PWListItem
-                    onPress={() => handleTapEvent('PasswordList')}
-                    icon='key'
-                    title={t('settings.passwords.title')}
-                    testID='developer_menu_passwords_item'
-                />
-            )}
         </PWScreen>
     )
 }
