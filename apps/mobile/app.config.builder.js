@@ -15,6 +15,7 @@
 // variant's resolved config can be asserted without mutating process.env.
 
 /* eslint-disable @typescript-eslint/no-require-imports */
+const AUTOFILL_PICKER_COMPONENT = require('./autofill-picker-component');
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 const { version: packageVersion, versionCodeBase } = require('./package.json');
 
@@ -540,8 +541,7 @@ function buildAppConfig(env) {
           aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
           biometricRequirement: 'strongOrCredential',
           providesPasswords: variant !== 'production',
-          // Must match the AppRegistry name registered in entry.native.js.
-          autofillPickerComponent: 'PeraAutofillPicker',
+          autofillPickerComponent: AUTOFILL_PICKER_COMPONENT,
         },
       ],
 
