@@ -24,18 +24,23 @@ describe('route capabilities', () => {
         // screen) — all are deliberately off for native, not a
         // current-behavior regression. deepLinkPaste is
         // web-only (native keeps the qrScanner camera instead — the two
-        // flags are mutually exclusive per platform).
+        // flags are mutually exclusive per platform). passwordManager is
+        // a proof of concept with credentials stored only on the device and
+        // unrecoverable if the device is lost, so it must not register
+        // in a shipped build.
         const {
             vaultSecuritySettings,
             dappConnections,
             connectionsSettings,
             deepLinkPaste,
+            passwordManager,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(dappConnections).toBe(false)
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
+        expect(passwordManager).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 

@@ -15,6 +15,7 @@
 // variant's resolved config can be asserted without mutating process.env.
 
 /* eslint-disable @typescript-eslint/no-require-imports */
+const AUTOFILL_PICKER_COMPONENT = require('./autofill-picker-component');
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 const { version: packageVersion, versionCodeBase } = require('./package.json');
 
@@ -524,7 +525,12 @@ function buildAppConfig(env) {
         { legacySuffix: legacyAutofillExtensionSuffix },
       ],
 
-      // Passkey autofill (FIDO2) — system credential provider extension
+      // Passkey autofill (FIDO2) — system credential provider extension.
+      // `providesPasswords` is gated on build variant: production stays
+      // passkey-only (ProvidesPasswords false, single-domain
+      // ASCredentialProviderExtensionSupportedDomains). The JS-side
+      // `passwordManager` capability gates the JS surface separately and is
+      // false in every variant.
       [
         '@algorandfoundation/react-native-passkey-autofill',
         {
@@ -533,7 +539,9 @@ function buildAppConfig(env) {
           appGroup: `group.${bundleIdentifiers[variant].ios}`,
           appleTeamId: env.IOS_TEAM_ID,
           aaguid: '418a66da-f981-47e8-814f-19c97f97bd4d',
-          biometricRequirement: 'strongOrCredential'
+          biometricRequirement: 'strongOrCredential',
+          providesPasswords: variant !== 'production',
+          autofillPickerComponent: AUTOFILL_PICKER_COMPONENT,
         },
       ],
 

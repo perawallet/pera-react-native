@@ -59,4 +59,7 @@ export const routeCapabilities: RouteCapabilities = {
     // one of its callbacks.
     sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
+    // Off: proof of concept only, and the browser extension has no OS
+    // credential provider to integrate with.
+    passwordManager: false,
 }

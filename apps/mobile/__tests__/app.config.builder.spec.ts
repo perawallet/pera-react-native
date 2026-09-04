@@ -236,6 +236,21 @@ describe('buildAppConfig — entitlements parity (production only)', () => {
     })
 })
 
+describe('buildAppConfig — passkey/password provider gating (production only)', () => {
+    it('disables ProvidesPasswords for production, keeping passkey-only scoping', () => {
+        expect(
+            passkeyOptions(build({ APP_ENV: 'production' })).providesPasswords,
+        ).toBe(false)
+    })
+
+    it('enables ProvidesPasswords for staging and dev', () => {
+        expect(
+            passkeyOptions(build({ APP_ENV: 'staging' })).providesPasswords,
+        ).toBe(true)
+        expect(passkeyOptions(build({})).providesPasswords).toBe(true)
+    })
+})
+
 describe('buildAppConfig — associated-domains restore plugin', () => {
     const findRestorePlugin = (config: ResolvedConfig) =>
         config.plugins.find(

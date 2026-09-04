@@ -47,6 +47,12 @@ import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/Set
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
 import { SettingsDeveloperKeystoreMigrationsScreen } from '../screens/developer/SettingsDeveloperKeystoreMigrationsScreen'
+import {
+    AddPasswordScreen,
+    EditPasswordScreen,
+    PasswordListScreen,
+    ViewPasswordScreen,
+} from '@modules/passwords'
 
 import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
@@ -221,6 +227,10 @@ export type SettingsStackParamsList = {
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
+    PasswordList: undefined
+    AddPassword: undefined
+    EditPassword: { id: string }
+    ViewPassword: { id: string }
     ConnectedSites: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
@@ -298,6 +308,34 @@ export const SettingsStackNavigator = () => {
                         title: 'screens.passkeys',
                     }}
                     component={SettingsPasskeyScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='PasswordList'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={PasswordListScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='AddPassword'
+                    options={{ title: 'settings.passwords.add_action' }}
+                    component={AddPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='EditPassword'
+                    options={{ title: 'settings.passwords.edit_action' }}
+                    component={EditPasswordScreen}
+                />
+            )}
+            {routeCapabilities.passwordManager && (
+                <SettingsStack.Screen
+                    name='ViewPassword'
+                    options={{ title: 'settings.passwords.title' }}
+                    component={ViewPasswordScreen}
                 />
             )}
             {routeCapabilities.dappConnections && (

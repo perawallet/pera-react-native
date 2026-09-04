@@ -81,6 +81,15 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
+                        ...(routeCapabilities.passwordManager
+                            ? [
+                                  {
+                                      route: 'PasswordList' as keyof SettingsStackParamsList,
+                                      icon: 'key',
+                                      title: t('settings.passwords.title'),
+                                  },
+                              ]
+                            : []),
                         ...(!routeCapabilities.connectionsSettings &&
                         routeCapabilities.dappConnections
                             ? [

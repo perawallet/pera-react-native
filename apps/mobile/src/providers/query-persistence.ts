@@ -22,6 +22,7 @@ import {
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
 import { isCardQuery } from '@perawallet/wallet-core-card'
 import { isBlockchainQuery } from '@perawallet/wallet-core-blockchain'
+import { isLoginQuery } from '@perawallet/wallet-core-passwords'
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
     // chart-history snapshots are allowlisted AHEAD of the module
@@ -42,12 +43,16 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
     // disk. Both consumers degrade acceptably without a disk copy: Transaction
     // Details falls back to the mapped SQLite row (losing only the indexer
     // enrichment), and the group list renders empty until the fetch lands.
+    // Login queries are excluded for the same reason as Card: domain and
+    // username are sealed on purpose, so the set of services a person holds
+    // logins for must never land in the unencrypted disk cache.
     if (
         isAccountQuery(query.queryKey) ||
         isAssetQuery(query.queryKey) ||
         isTransactionQuery(query.queryKey) ||
         isCardQuery(query.queryKey) ||
-        isBlockchainQuery(query.queryKey)
+        isBlockchainQuery(query.queryKey) ||
+        isLoginQuery(query.queryKey)
     ) {
         return false
     }

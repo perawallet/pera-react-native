@@ -69,4 +69,5 @@ export type RouteCapabilities = {
      * their routes/screens/capabilities stay untouched for direct
      * navigation (e.g. WalletConnectSettingsDetails). */
     connectionsSettings: boolean
+    passwordManager: boolean
 }

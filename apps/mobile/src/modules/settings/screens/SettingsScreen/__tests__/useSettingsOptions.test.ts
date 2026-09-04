@@ -58,6 +58,7 @@ const { mockCapabilities } = vi.hoisted(() => ({
         dappConnections: false,
         rekeyFlows: true,
         connectionsSettings: false,
+        passwordManager: false,
     },
 }))
 
@@ -93,6 +94,7 @@ describe('useSettingsOptions', () => {
             dappConnections: false,
             rekeyFlows: true,
             connectionsSettings: false,
+            passwordManager: false,
         })
     })
 
@@ -220,6 +222,22 @@ describe('useSettingsOptions', () => {
                 route: 'DeveloperSettings',
                 icon: 'code',
                 title: 'settings.main.developer_title',
+            })
+        })
+
+        it('places Passwords directly below Passkeys when the capability is on', () => {
+            Object.assign(mockCapabilities, { passwordManager: true })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const accountItems = result.current.settingsOptions[0].items
+
+            const passkeysIndex = accountItems.findIndex(
+                item => item.route === 'PasskeysSettings',
+            )
+            expect(accountItems[passkeysIndex + 1]).toEqual({
+                route: 'PasswordList',
+                icon: 'key',
+                title: 'settings.passwords.title',
             })
         })
 
