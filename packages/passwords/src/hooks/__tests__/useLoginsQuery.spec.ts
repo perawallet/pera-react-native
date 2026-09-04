@@ -82,6 +82,20 @@ describe('useLoginsQuery', () => {
         expect(result.current.logins).toEqual([])
     })
 
+    // refetch() bypasses `enabled` in TanStack Query, so the handle a
+    // disabled caller is handed has to refuse rather than unseal the vault.
+    it('does not read the store when a disabled query is refetched', () => {
+        listLogins.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () => useLoginsQuery({ enabled: false }),
+            { wrapper },
+        )
+        result.current.refetch()
+
+        expect(listLogins).not.toHaveBeenCalled()
+    })
+
     it('reads the store once enabled flips true', async () => {
         listLogins.mockResolvedValue([])
 

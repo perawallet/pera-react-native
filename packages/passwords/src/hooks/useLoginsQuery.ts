@@ -57,6 +57,12 @@ export const useLoginsQuery = ({
         isLoading: query.isLoading,
         isError: query.isError,
         error: query.error as Error | null,
-        refetch: () => void query.refetch(),
+        // refetch() ignores `enabled`, so a disabled caller could otherwise
+        // unseal the whole vault through this handle alone.
+        refetch: () => {
+            if (enabled) {
+                void query.refetch()
+            }
+        },
     }
 }
