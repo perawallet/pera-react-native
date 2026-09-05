@@ -14,7 +14,7 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
-import { createEmptySyncState } from '../models'
+import { createEmptySyncState, trackedItemsFromManifest } from '../models'
 import type { BackupId, DeviceId, SyncState } from '../models'
 import type { ImportSummary, SyncImportFn } from '../sync/types'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
@@ -51,8 +51,8 @@ type RestoreCloudBackupParams = {
 
 export type RestoreCloudBackupResult = {
     backupId: BackupId
-    /** Seeded from the pull so the first background sync resumes at `lastSeq`
-     *  instead of re-reading every item. */
+    /** Seeded from the pull's manifest, so the first background sync resumes at
+     *  `lastSeq` and pushes at the versions the server actually holds. */
     syncState: SyncState
     summary: ImportSummary
 }
@@ -103,6 +103,7 @@ const syncStateFromPull = (
     lastSyncedSeq: pull.lastSeq,
     lastSyncedAt: Date.now(),
     lastSyncResult: 'SUCCESS',
+    items: trackedItemsFromManifest(pull.manifestItems),
 })
 
 const deriveKeys = async (

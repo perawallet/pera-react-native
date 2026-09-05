@@ -203,7 +203,15 @@ describe('Flow: Cloud backup → Restore', () => {
             expect(restored?.type).toBe(AccountTypes.algo25)
             expect(restored?.name).toBe('Restored')
 
-            expect(useBackupSyncStateStore.getState().syncState).not.toBeNull()
+            // The restore has to hand the sync engine the versions the server
+            // holds. Tracking an item at 0 offers it as new, the server refuses
+            // the write, and no delta ever follows to correct it.
+            const syncState = useBackupSyncStateStore.getState().syncState
+            expect(syncState).not.toBeNull()
+            const tracked = Object.values(syncState?.items ?? {})
+            expect(tracked.length).toBeGreaterThan(0)
+            expect(tracked.every(item => item.knownVer > 0)).toBe(true)
+
             await expectRestoreLandedOnOverview()
         },
         SLOW_TEST_TIMEOUT_MS,

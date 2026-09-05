@@ -27,6 +27,7 @@ import {
     type DeltaEntry,
     type DeviceId,
     type FetchedItem,
+    type ManifestItem,
     type SecretsBackupPayload,
 } from '../models'
 
@@ -46,6 +47,10 @@ export type SkippedItem = {
 export type PullBackupItemsResult = {
     backupGlobalHash: string
     lastSeq: number
+    /** Every key the backup holds and the version it holds it at — including
+     *  tombstones and items the restore could not read, which the caller still
+     *  has to track or it will offer them to the server as new. */
+    manifestItems: Record<BackupItemKey, ManifestItem>
     accounts: PulledAccount[]
     skipped: SkippedItem[]
 }
@@ -219,6 +224,7 @@ export const pullBackupItems = async ({
     return {
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
+        manifestItems: manifest.items,
         accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
         skipped,
     }

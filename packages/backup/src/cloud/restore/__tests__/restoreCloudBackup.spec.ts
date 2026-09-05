@@ -59,9 +59,22 @@ const keys = (fill = 5) => ({
     authSecretKey: new Uint8Array(64).fill(4),
 })
 
+const manifestItem = (overrides = {}) => ({
+    type: 'ACCOUNT',
+    ver: 3,
+    status: 'ACTIVE',
+    hash: 'sha256:remote',
+    lastSeq: 9,
+    ...overrides,
+})
+
 const pull = {
     backupGlobalHash: 'hash',
     lastSeq: 10,
+    manifestItems: {
+        'accounts/A': manifestItem(),
+        'secrets/A': manifestItem({ ver: 2, hash: 'sha256:secret' }),
+    },
     accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
     skipped: [],
 }
@@ -103,6 +116,45 @@ describe('restoreCloudBackup', () => {
             lastSyncResult: 'SUCCESS',
         })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('adopts the manifest versions, so the first push after a restore is not refused', async () => {
+        const { syncState } = await restoreCloudBackup(params())
+
+        // Version 0 would mean "the server has nothing here"; the server has
+        // these at 3 and 2, refuses the write, and no delta ever follows to
+        // correct it.
+        expect(syncState.items['accounts/A']).toMatchObject({
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: 'ACTIVE',
+            lastRemoteHash: 'sha256:remote',
+        })
+        expect(syncState.items['secrets/A']).toMatchObject({
+            knownVer: 2,
+            baseVer: 2,
+        })
+    })
+
+    test('tracks keys the restore never imported, tombstones included', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                'accounts/GONE': manifestItem({ ver: 7, status: 'IGNORED' }),
+            },
+            // Deleted and unreadable items are filtered out of the import.
+            accounts: [],
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items['accounts/GONE']).toMatchObject({
+            knownVer: 7,
+            baseVer: 7,
+            status: 'IGNORED',
+        })
     })
 
     test('persists the keys before pulling, so the signed request can read them', async () => {

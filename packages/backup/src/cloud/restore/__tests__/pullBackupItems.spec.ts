@@ -313,6 +313,54 @@ describe('pullBackupItems', () => {
     })
 })
 
+describe('pullBackupItems manifest pass-through', () => {
+    beforeEach(() => {
+        fetchManifest.mockReset()
+        fetchDelta.mockReset()
+        readItems.mockReset()
+    })
+
+    it('returns every key the manifest holds, not just the ones it read', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 4,
+            items: {
+                'accounts/A': {
+                    type: 'ACCOUNT',
+                    ver: 2,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 3,
+                },
+                'accounts/GONE': {
+                    type: 'ACCOUNT',
+                    ver: 5,
+                    status: 'IGNORED',
+                    hash: 'h2',
+                    lastSeq: 4,
+                },
+            },
+        })
+        // Only the ACTIVE key is downloaded; the tombstone still has to be
+        // tracked or the next push offers it to the server as brand new.
+        fetchDelta.mockResolvedValue([])
+        readItems.mockResolvedValue([])
+
+        const result = await pullBackupItems({
+            network: 'mainnet',
+            backupId,
+            deviceId: 'device-1',
+            encryptionKey: encKey,
+        })
+
+        expect(Object.keys(result.manifestItems)).toEqual([
+            'accounts/A',
+            'accounts/GONE',
+        ])
+        expect(result.manifestItems['accounts/GONE'].ver).toBe(5)
+    })
+})
+
 describe('buildPulledAccounts', () => {
     it('attaches a hdSeed secret to its matching hdWallet account', () => {
         const addr = new Map<string, never>([

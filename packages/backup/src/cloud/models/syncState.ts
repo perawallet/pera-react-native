@@ -17,6 +17,7 @@ import type {
     BackupItemStatus,
     BackupItemType,
     ItemHash,
+    ManifestItem,
 } from './types'
 
 export type SyncItemState = {
@@ -58,3 +59,34 @@ export const createEmptySyncState = (backupId: BackupId): SyncState => ({
     lastSyncResult: null,
     items: {},
 })
+
+/**
+ * The manifest is the server's own per-key sync state, so adopting it wholesale
+ * is how a device learns what version every item is at. Getting this wrong is
+ * unrecoverable rather than merely stale: an item tracked at version 0 pushes
+ * `expected_ver: 0`, the server refuses it, and no delta ever follows to correct
+ * the version — so it re-conflicts on every sync forever.
+ *
+ * `localContentHash` stays null because the manifest carries the server's own
+ * item hash, not the hash of our canonical plaintext. The next reconcile
+ * therefore sees each item as changed and re-uploads it once, at the right
+ * version.
+ */
+export const trackedItemsFromManifest = (
+    manifestItems: Record<BackupItemKey, ManifestItem>,
+): Record<BackupItemKey, SyncItemState> =>
+    Object.fromEntries(
+        Object.entries(manifestItems).map(([key, item]) => [
+            key,
+            {
+                type: item.type,
+                knownVer: item.ver,
+                baseVer: item.ver,
+                isDirty: false,
+                status: item.status,
+                lastRemoteHash: item.hash,
+                localContentHash: null,
+                localUpdatedAt: null,
+            },
+        ]),
+    )
