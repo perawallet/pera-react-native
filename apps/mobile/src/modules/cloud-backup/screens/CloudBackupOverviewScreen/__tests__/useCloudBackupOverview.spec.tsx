@@ -172,7 +172,6 @@ describe('useCloudBackupOverview', () => {
         ['pending', null],
         ['syncing', 'syncing'],
         ['upToDate', 'success'],
-        ['destroyed', 'failed'],
         ['error', 'failed'],
     ]
 

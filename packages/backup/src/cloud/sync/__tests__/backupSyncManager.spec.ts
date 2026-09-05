@@ -25,6 +25,8 @@ const {
     mockConnect,
     mockDisconnect,
     mockSetSyncState,
+    mockSetIsSyncing,
+    mockResetSyncActivity,
     mockResetCloudBackup,
     mockResetSyncState,
     storedSyncState,
@@ -45,6 +47,8 @@ const {
     mockConnect: vi.fn(async () => undefined),
     mockDisconnect: vi.fn(),
     mockSetSyncState: vi.fn(),
+    mockSetIsSyncing: vi.fn(),
+    mockResetSyncActivity: vi.fn(),
     mockResetCloudBackup: vi.fn(),
     mockResetSyncState: vi.fn(),
     storedSyncState: { current: null as unknown },
@@ -112,6 +116,12 @@ vi.mock('../../store', () => ({
             syncState: storedSyncState.current,
             setSyncState: mockSetSyncState,
             resetState: mockResetSyncState,
+        }),
+    },
+    useBackupSyncActivityStore: {
+        getState: () => ({
+            setIsSyncing: mockSetIsSyncing,
+            resetState: mockResetSyncActivity,
         }),
     },
 }))
@@ -257,6 +267,41 @@ describe('BackupSyncManager', () => {
         )
     })
 
+    it('publishes the syncing flag around a background sync', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSetIsSyncing.mock.calls.map(call => call[0])).toEqual([
+            true,
+            false,
+        ])
+    })
+
+    it('publishes the syncing flag around a socket-driven pull', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.handleSocketEvent({
+            kind: 'itemsUpdated',
+            fromSeq: 1,
+            toSeq: 2,
+        })
+
+        expect(mockSetIsSyncing.mock.calls.map(call => call[0])).toEqual([
+            true,
+            false,
+        ])
+    })
+
+    it('clears the syncing flag when the sync throws', async () => {
+        mockSyncBackup.mockRejectedValue(new Error('network down'))
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.syncNow()
+
+        expect(mockSetIsSyncing).toHaveBeenLastCalledWith(false)
+    })
+
     it('handleSocketEvent itemsUpdated calls pullBackupDeltas', async () => {
         const mgr = new BackupSyncManager(makeDeps())
         await mgr.handleSocketEvent({
@@ -277,6 +322,7 @@ describe('BackupSyncManager', () => {
         expect(mockDeleteBackupKeys).toHaveBeenCalledTimes(1)
         expect(mockResetCloudBackup).toHaveBeenCalledTimes(1)
         expect(mockResetSyncState).toHaveBeenCalledTimes(1)
+        expect(mockResetSyncActivity).toHaveBeenCalledTimes(1)
         expect(onBackupDeleted).toHaveBeenCalledTimes(1)
     })
 

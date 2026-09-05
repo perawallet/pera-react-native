@@ -22,6 +22,7 @@ const {
     stopMock,
     resetCloudBackupMock,
     resetSyncStateMock,
+    resetSyncActivityMock,
     backupIdMock,
     deviceIdMock,
 } = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ const {
     stopMock: vi.fn(),
     resetCloudBackupMock: vi.fn(),
     resetSyncStateMock: vi.fn(),
+    resetSyncActivityMock: vi.fn(),
     backupIdMock: { value: 'did:pera:ADDR' as string | null },
     deviceIdMock: { value: 'dev-1' as string | null },
 }))
@@ -62,6 +64,12 @@ vi.mock('../../store/syncStateStore', () => ({
     useBackupSyncStateStore: (
         selector: (s: { resetState: () => void }) => unknown,
     ) => selector({ resetState: resetSyncStateMock }),
+}))
+
+vi.mock('../../store/syncActivityStore', () => ({
+    useBackupSyncActivityStore: (
+        selector: (s: { resetState: () => void }) => unknown,
+    ) => selector({ resetState: resetSyncActivityMock }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -115,6 +123,7 @@ describe('useRemoveCloudBackupMutation', () => {
         expect(deleteBackupKeysMock).toHaveBeenCalled()
         expect(resetCloudBackupMock).toHaveBeenCalled()
         expect(resetSyncStateMock).toHaveBeenCalled()
+        expect(resetSyncActivityMock).toHaveBeenCalled()
     })
 
     test('keeps the local backup intact when the remote destroy fails', async () => {
@@ -134,6 +143,7 @@ describe('useRemoveCloudBackupMutation', () => {
         expect(stopMock).not.toHaveBeenCalled()
         expect(resetCloudBackupMock).not.toHaveBeenCalled()
         expect(resetSyncStateMock).not.toHaveBeenCalled()
+        expect(resetSyncActivityMock).not.toHaveBeenCalled()
     })
 
     test('rejects without a request when no backup is configured', async () => {

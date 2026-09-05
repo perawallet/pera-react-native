@@ -20,6 +20,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import {
     useCloudBackupStore,
+    useBackupSyncActivityStore,
     useBackupSyncStateStore,
     resolveBackupDeviceId,
 } from '../store'
@@ -64,7 +65,6 @@ export type BackupSyncManagerDeps = {
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
     socketFactory?: BackupSocketFactory
-    onStateChange?: () => void
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
     onBackupDeleted?: () => void
@@ -83,6 +83,14 @@ export class BackupSyncManager {
 
     isSyncing(): boolean {
         return this.syncInProgress
+    }
+
+    /** Mirrored into the activity store so the UI can show background work — a
+     *  periodic tick, an account change or a socket-driven pull — not just the
+     *  runs it started itself. */
+    private setSyncing(isSyncing: boolean): void {
+        this.syncInProgress = isSyncing
+        useBackupSyncActivityStore.getState().setIsSyncing(isSyncing)
     }
 
     private context(): Nullable<{
@@ -128,8 +136,7 @@ export class BackupSyncManager {
         if (this.syncInProgress) return false
         const ctx = this.context()
         if (!ctx) return false
-        this.syncInProgress = true
-        this.deps.onStateChange?.()
+        this.setSyncing(true)
         try {
             const state =
                 useBackupSyncStateStore.getState().syncState ??
@@ -141,8 +148,7 @@ export class BackupSyncManager {
             useBackupSyncStateStore.getState().setSyncState(next)
             return true
         } finally {
-            this.syncInProgress = false
-            this.deps.onStateChange?.()
+            this.setSyncing(false)
         }
     }
 
@@ -260,6 +266,7 @@ export class BackupSyncManager {
         this.stop()
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
+        useBackupSyncActivityStore.getState().resetState()
         try {
             await deleteBackupKeys()
         } catch (error) {
@@ -276,8 +283,7 @@ export class BackupSyncManager {
             logger.warn('BackupSyncManager: sync skipped, no backup context')
             return
         }
-        this.syncInProgress = true
-        this.deps.onStateChange?.()
+        this.setSyncing(true)
         try {
             const state =
                 useBackupSyncStateStore.getState().syncState ??
@@ -306,8 +312,7 @@ export class BackupSyncManager {
                 .getState()
                 .setSyncState({ ...s, lastSyncResult: 'FAILED' })
         } finally {
-            this.syncInProgress = false
-            this.deps.onStateChange?.()
+            this.setSyncing(false)
         }
     }
 
@@ -315,7 +320,7 @@ export class BackupSyncManager {
         if (this.syncInProgress) return
         const ctx = this.context()
         if (!ctx) return
-        this.syncInProgress = true
+        this.setSyncing(true)
         try {
             const state =
                 useBackupSyncStateStore.getState().syncState ??
@@ -329,7 +334,7 @@ export class BackupSyncManager {
                 error: error instanceof Error ? error.message : String(error),
             })
         } finally {
-            this.syncInProgress = false
+            this.setSyncing(false)
         }
     }
 

@@ -17,6 +17,7 @@ import { destroyBackup } from '../api'
 import { deleteBackupKeys } from '../credentials/keyStorage'
 import { resolveBackupDeviceId } from '../store/resolveBackupDeviceId'
 import { useCloudBackupStore } from '../store/store'
+import { useBackupSyncActivityStore } from '../store/syncActivityStore'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
 import { getBackupSyncManager } from '../sync/backupSyncManager'
 
@@ -46,6 +47,9 @@ export const useRemoveCloudBackupMutation = (
     const backupId = useCloudBackupStore(state => state.backupId)
     const resetCloudBackup = useCloudBackupStore(state => state.resetState)
     const resetSyncState = useBackupSyncStateStore(state => state.resetState)
+    const resetSyncActivity = useBackupSyncActivityStore(
+        state => state.resetState,
+    )
 
     return useMutation({
         throwOnError: false,
@@ -63,6 +67,7 @@ export const useRemoveCloudBackupMutation = (
             await deleteBackupKeys()
             resetCloudBackup()
             resetSyncState()
+            resetSyncActivity()
         },
         ...options,
     })

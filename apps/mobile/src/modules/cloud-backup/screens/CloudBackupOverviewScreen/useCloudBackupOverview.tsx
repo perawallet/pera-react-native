@@ -74,7 +74,6 @@ const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge | null> = {
     pending: null,
     syncing: 'syncing',
     upToDate: 'success',
-    destroyed: 'failed',
     error: 'failed',
 }
 
@@ -108,7 +107,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const status = deriveBackupSyncStatus({
         isConfigured: backupId != null,
         isSyncing,
-        isDestroyed: false,
         lastSyncResult: syncState?.lastSyncResult ?? null,
     })
 

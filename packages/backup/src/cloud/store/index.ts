@@ -13,4 +13,5 @@
 export * from './draftStore'
 export * from './resolveBackupDeviceId'
 export * from './store'
+export { useBackupSyncActivityStore } from './syncActivityStore'
 export { useBackupSyncStateStore } from './syncStateStore'

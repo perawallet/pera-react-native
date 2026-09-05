@@ -13,6 +13,7 @@
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { deleteBackupKeys } from '../credentials/keyStorage'
 import { useCloudBackupStore } from '../store/store'
+import { useBackupSyncActivityStore } from '../store/syncActivityStore'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
 
 /** Local only — drops this device's keys and sync state, and leaves the remote
@@ -22,6 +23,9 @@ export const useDisableCloudBackupMutation = (
 ) => {
     const resetCloudBackup = useCloudBackupStore(state => state.resetState)
     const resetSyncState = useBackupSyncStateStore(state => state.resetState)
+    const resetSyncActivity = useBackupSyncActivityStore(
+        state => state.resetState,
+    )
 
     return useMutation({
         throwOnError: false,
@@ -29,6 +33,7 @@ export const useDisableCloudBackupMutation = (
             await deleteBackupKeys()
             resetCloudBackup()
             resetSyncState()
+            resetSyncActivity()
         },
         ...options,
     })
