@@ -17,7 +17,8 @@ import {
     useCloudBackupStore,
     useBackupSyncStateStore,
     deriveBackupSyncStatus,
-    deriveBackupSyncCounts,
+    deriveBackupContactsInSync,
+    deriveBackupAccountReview,
     backupIdToAddress,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -29,10 +30,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { PinEditContent } from '@modules/security'
-import {
-    BackupCredentialsSheet,
-    type BackupCredentialsResult,
-} from '../../components/BackupCredentialsSheet'
+import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
 import {
     TurnOffBackupSheet,
     type TurnOffBackupChoice,
@@ -90,12 +88,21 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { syncNow, isSyncing } = useBackupSync()
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
-    const accountsTotal = useAccountsStore(state => state.accounts.length)
+    const accounts = useAccountsStore(state => state.accounts)
     const contactsTotal = useContactsStore(state => state.contacts.length)
 
-    const { accountsInSync, contactsInSync } = useMemo(
-        () => deriveBackupSyncCounts(syncState),
+    const contactsInSync = useMemo(
+        () => deriveBackupContactsInSync(syncState),
         [syncState],
+    )
+
+    const addresses = useMemo(
+        () => accounts.map(account => account.address),
+        [accounts],
+    )
+    const { backedUp, notBackedUp } = useMemo(
+        () => deriveBackupAccountReview(syncState, addresses),
+        [syncState, addresses],
     )
 
     const status = deriveBackupSyncStatus({
@@ -116,8 +123,14 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     )
 
     const noop = useCallback(() => {
-        // TODO: wire row destinations as their screens land.
+        // TODO: wire the contacts and credential-info destinations as their
+        // screens land.
     }, [])
+
+    const onPressAccounts = useCallback(
+        () => navigation.navigate('CloudBackupAccounts'),
+        [navigation],
+    )
 
     const verifyPinIfEnabled = useCallback(async (): Promise<boolean> => {
         const pinEnabled = await checkPinEnabled()
@@ -136,7 +149,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const onPressCredentialAddress = useCallback(async () => {
         if (!(await verifyPinIfEnabled())) return
 
-        const result = await requestBottomSheet<BackupCredentialsResult>({
+        await requestBottomSheet({
             contents: <BackupCredentialsSheet />,
             options: {
                 size: 'auto',
@@ -144,14 +157,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 autoCreateContainer: false,
             },
         })
-
-        // The stored phrase couldn't be read, so the only way back to a
-        // working backup is re-entering it — see Case 25 in the backup flow
-        // docs.
-        if (result === 'restore') {
-            navigation.navigate('CloudBackupRestorePassphrase')
-        }
-    }, [verifyPinIfEnabled, requestBottomSheet, navigation])
+    }, [verifyPinIfEnabled, requestBottomSheet])
 
     const onPressTurnOff = useCallback(async () => {
         const choice = await requestBottomSheet<TurnOffBackupChoice>({
@@ -185,11 +191,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         syncStatus: STATUS_TO_BADGE[status],
         lastSyncedLabel,
         credentialAddressLabel,
-        accountsInSync,
-        accountsNotBackedUp: Math.max(0, accountsTotal - accountsInSync),
+        accountsInSync: backedUp.size,
+        accountsNotBackedUp: notBackedUp.length,
         contactsInSync,
         contactsNotBackedUp: Math.max(0, contactsTotal - contactsInSync),
-        onPressAccounts: noop,
+        onPressAccounts,
         onPressContacts: noop,
         onPressCredentialAddress,
         onPressCredentialInfo: noop,

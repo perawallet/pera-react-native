@@ -33,6 +33,11 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/syncCounts')
     >('../../../../../../../../packages/backup/src/cloud/models/syncCounts')),
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
+    >(
+        '../../../../../../../../packages/backup/src/cloud/models/reviewBuckets',
+    )),
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: vi.fn(),
@@ -94,10 +99,23 @@ type SyncStateFixture = {
             type: string
             status: string
             isDirty: boolean
+            knownVer: number
             pendingDelete?: boolean
         }
     >
 }
+
+/** `knownVer > 0` is what marks an item as actually uploaded, so the fixtures
+ *  have to carry it to read as backed up. */
+const uploaded = (
+    over: Partial<SyncStateFixture['items'][string]> = {},
+): SyncStateFixture['items'][string] => ({
+    type: 'ACCOUNT',
+    status: 'ACTIVE',
+    isDirty: false,
+    knownVer: 1,
+    ...over,
+})
 
 const emptySync = (): SyncStateFixture => ({
     backupId: 'did:pera:abc',
@@ -111,7 +129,7 @@ const emptySync = (): SyncStateFixture => ({
 const mockStores = (opts: {
     backupId: string | null
     syncState: SyncStateFixture | null
-    accounts: number
+    accounts: string[]
     contacts: number
     derivedStatus?: string
 }) => {
@@ -128,7 +146,7 @@ const mockStores = (opts: {
     )
     ;(useAccountsStore as unknown as Mock).mockImplementation(
         (s: (st: { accounts: unknown[] }) => unknown) =>
-            s({ accounts: new Array(opts.accounts).fill({}) }),
+            s({ accounts: opts.accounts.map(address => ({ address })) }),
     )
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>
@@ -162,7 +180,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: emptySync(),
-            accounts: 1,
+            accounts: ['A'],
             contacts: 0,
             derivedStatus: status,
         })
@@ -174,7 +192,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: emptySync(),
-            accounts: 2,
+            accounts: ['A', 'B'],
             contacts: 3,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -188,19 +206,15 @@ describe('useCloudBackupOverview', () => {
         const syncState = emptySync()
         syncState.items = {
             // Dirty but still backed up (local edits not yet pushed).
-            'accounts/A': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: false },
-            'accounts/B': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: true },
+            'accounts/A': uploaded(),
+            'accounts/B': uploaded({ isDirty: true }),
             // IGNORED = not backed up.
-            'accounts/C': {
-                type: 'ACCOUNT',
-                status: 'IGNORED',
-                isDirty: false,
-            },
+            'accounts/C': uploaded({ status: 'IGNORED' }),
         }
         mockStores({
             backupId: 'did:pera:abc',
             syncState,
-            accounts: 3,
+            accounts: ['A', 'B', 'C'],
             contacts: 0,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -208,16 +222,33 @@ describe('useCloudBackupOverview', () => {
         expect(result.current.accountsNotBackedUp).toBe(1)
     })
 
-    test('a single backed-up account reads as one, not one per stored item', () => {
+    test('an account tracked but never uploaded is not in sync', () => {
         const syncState = emptySync()
+        // What reconcile writes for a brand-new local account, before any push.
         syncState.items = {
-            'accounts/A': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: false },
-            'secrets/A': { type: 'ACCOUNT', status: 'ACTIVE', isDirty: false },
+            'accounts/A': uploaded({ knownVer: 0, isDirty: true }),
         }
         mockStores({
             backupId: 'did:pera:abc',
             syncState,
-            accounts: 1,
+            accounts: ['A'],
+            contacts: 0,
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.accountsInSync).toBe(0)
+        expect(result.current.accountsNotBackedUp).toBe(1)
+    })
+
+    test('a single backed-up account reads as one, not one per stored item', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            'accounts/A': uploaded(),
+            'secrets/A': uploaded(),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: ['A'],
             contacts: 0,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -229,7 +260,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -240,7 +271,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
 
@@ -254,7 +285,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(true)
@@ -274,7 +305,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(true)
@@ -293,7 +324,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(true)
@@ -311,7 +342,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(false)
@@ -326,7 +357,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(true)
@@ -344,7 +375,7 @@ describe('useCloudBackupOverview', () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
-            accounts: 0,
+            accounts: [],
             contacts: 0,
         })
         mockCheckPinEnabled.mockResolvedValue(true)

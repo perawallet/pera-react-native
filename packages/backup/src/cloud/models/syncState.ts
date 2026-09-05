@@ -30,6 +30,10 @@ export type SyncItemState = {
     /** SHA-256 of canonical PLAINTEXT (sans updatedAt); detects LOCAL changes. */
     localContentHash?: string | null
     pendingDelete?: boolean
+    /** Live in the backup but deliberately absent here: this device deleted the
+     *  account, then another device backed it up again. Held for the user to
+     *  Add or delete rather than silently re-imported. */
+    pendingImport?: boolean
     /** Epoch millis local content last diverged; written as payload.updatedAt. */
     localUpdatedAt?: number | null
 }

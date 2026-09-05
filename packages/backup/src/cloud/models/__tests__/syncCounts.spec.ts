@@ -12,21 +12,12 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import {
-    AccountTypes,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    buildLocalItems,
-    reconcile,
-    serializeAccountForBackup,
-} from '../../sync'
 import { createEmptySyncState, type SyncItemState } from '../syncState'
-import { deriveBackupSyncCounts } from '../syncCounts'
+import { deriveBackupContactsInSync } from '../syncCounts'
 import { BackupItemStatus, BackupItemType } from '../types'
 
-const item = (over: Partial<SyncItemState>): SyncItemState => ({
-    type: BackupItemType.ACCOUNT,
+const item = (over: Partial<SyncItemState> = {}): SyncItemState => ({
+    type: BackupItemType.CONTACT,
     knownVer: 1,
     baseVer: 1,
     isDirty: false,
@@ -40,108 +31,32 @@ const stateWith = (items: Record<string, SyncItemState>) => ({
     items,
 })
 
-describe('deriveBackupSyncCounts', () => {
-    it('returns zeroes when there is no sync state yet', () => {
-        expect(deriveBackupSyncCounts(null)).toEqual({
-            accountsInSync: 0,
-            contactsInSync: 0,
-        })
+describe('deriveBackupContactsInSync', () => {
+    it('returns zero when there is no sync state yet', () => {
+        expect(deriveBackupContactsInSync(null)).toBe(0)
     })
 
-    it('counts an address record once and never its secrets twin', () => {
-        const counts = deriveBackupSyncCounts(
+    it('counts contacts and leaves accounts to the review buckets', () => {
+        const count = deriveBackupContactsInSync(
             stateWith({
-                'accounts/A': item({}),
-                'secrets/A': item({}),
+                'contacts/A': item(),
+                'contacts/B': item({ isDirty: true }),
+                'accounts/A': item({ type: BackupItemType.ACCOUNT }),
             }),
         )
 
-        expect(counts.accountsInSync).toBe(1)
+        expect(count).toBe(2)
     })
 
-    it('excludes IGNORED and locally deleted records', () => {
-        const counts = deriveBackupSyncCounts(
+    it('excludes contacts that are ignored, deleted or never uploaded', () => {
+        const count = deriveBackupContactsInSync(
             stateWith({
-                'accounts/A': item({}),
-                'accounts/B': item({ status: BackupItemStatus.IGNORED }),
-                'accounts/C': item({ pendingDelete: true }),
+                'contacts/A': item({ status: BackupItemStatus.IGNORED }),
+                'contacts/B': item({ pendingDelete: true }),
+                'contacts/C': item({ knownVer: 0, isDirty: true }),
             }),
         )
 
-        expect(counts.accountsInSync).toBe(1)
-    })
-
-    it('counts dirty records, which are backed up but have unpushed edits', () => {
-        const counts = deriveBackupSyncCounts(
-            stateWith({ 'accounts/A': item({ isDirty: true }) }),
-        )
-
-        expect(counts.accountsInSync).toBe(1)
-    })
-
-    it('counts contacts separately from accounts', () => {
-        const counts = deriveBackupSyncCounts(
-            stateWith({
-                'accounts/A': item({}),
-                'contacts/C': item({ type: BackupItemType.CONTACT }),
-            }),
-        )
-
-        expect(counts).toEqual({ accountsInSync: 1, contactsInSync: 1 })
-    })
-})
-
-const algo25 = {
-    id: '1',
-    type: AccountTypes.algo25,
-    address: 'ADDR',
-    keyPairId: 'kp-1',
-    name: 'Main',
-} as WalletAccount
-
-const hdChild = (address: string, keyIndex: number) =>
-    ({
-        id: address,
-        type: AccountTypes.hdWallet,
-        address,
-        keyPairId: `kp-${address}`,
-        name: address,
-        hdWalletDetails: { account: 0, change: 0, keyIndex, derivationType: 9 },
-    }) as WalletAccount
-
-const countAfterSync = async (accounts: WalletAccount[]) => {
-    const local = await buildLocalItems(accounts, account =>
-        serializeAccountForBackup(account, {
-            updatedAt: 5,
-            resolveMnemonic: async () => 'w1 w2',
-            resolveHd: async () => ({
-                seedFirstDerivedAddress: 'SEEDFIRST',
-                publicKeyHex: 'pk',
-                seedHex: 'aa',
-                entropyHex: 'bb',
-            }),
-        }),
-    )
-    return deriveBackupSyncCounts(
-        reconcile(createEmptySyncState('did:pera:x'), local, 1),
-    )
-}
-
-describe('deriveBackupSyncCounts over a real reconciled snapshot', () => {
-    it('reports one account for a single algo25 account', async () => {
-        expect((await countAfterSync([algo25])).accountsInSync).toBe(1)
-    })
-
-    it('reports one account for a single HD account, whose seed is its own item', async () => {
-        expect((await countAfterSync([hdChild('HD1', 0)])).accountsInSync).toBe(
-            1,
-        )
-    })
-
-    it('reports every HD child once even though they share one seed item', async () => {
-        expect(
-            (await countAfterSync([hdChild('HD1', 0), hdChild('HD2', 1)]))
-                .accountsInSync,
-        ).toBe(2)
+        expect(count).toBe(0)
     })
 })

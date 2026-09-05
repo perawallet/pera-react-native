@@ -25,3 +25,7 @@ export const secretsItemKey = (address: string): BackupItemKey =>
  *  the wire, so only the key prefix tells them apart. */
 export const isAccountItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
+
+/** Address an `accounts/` key names, or null for any other item. */
+export const accountAddressFromItemKey = (key: BackupItemKey): string | null =>
+    isAccountItemKey(key) ? key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length) : null

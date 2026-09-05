@@ -10,45 +10,23 @@
  limitations under the License
  */
 
-import { isAccountItemKey } from './itemKeys'
-import type { SyncItemState, SyncState } from './syncState'
-import { BackupItemStatus, BackupItemType } from './types'
+import { isLiveInBackup } from './reviewBuckets'
+import type { SyncState } from './syncState'
+import { BackupItemType } from './types'
 
-export type BackupSyncCounts = {
-    accountsInSync: number
-    contactsInSync: number
-}
-
-/** A locally deleted account keeps its ACTIVE status until the server confirms
- *  the delete. */
-const isBackedUp = (item: SyncItemState): boolean =>
-    item.status === BackupItemStatus.ACTIVE && item.pendingDelete !== true
-
-/** Counts address records rather than ACCOUNT-typed items: a secret-bearing
- *  account stores its key material under that same type, so counting by type
- *  reports every such account twice. */
-export const deriveBackupSyncCounts = (
+/** Accounts are counted by `deriveBackupAccountReview`, which needs the
+ *  wallet's addresses to tell a backed-up account from one only the backup
+ *  holds. Contacts have no such split, so they are counted here. */
+export const deriveBackupContactsInSync = (
     syncState: SyncState | null,
-): BackupSyncCounts => {
-    let accountsInSync = 0
+): number => {
     let contactsInSync = 0
 
-    if (syncState != null) {
-        for (const [key, item] of Object.entries(syncState.items)) {
-            if (!isBackedUp(item)) continue
-
-            switch (item.type) {
-                case BackupItemType.ACCOUNT: {
-                    if (isAccountItemKey(key)) accountsInSync += 1
-                    break
-                }
-                case BackupItemType.CONTACT: {
-                    contactsInSync += 1
-                    break
-                }
-            }
+    for (const item of Object.values(syncState?.items ?? {})) {
+        if (item.type === BackupItemType.CONTACT && isLiveInBackup(item)) {
+            contactsInSync += 1
         }
     }
 
-    return { accountsInSync, contactsInSync }
+    return contactsInSync
 }
