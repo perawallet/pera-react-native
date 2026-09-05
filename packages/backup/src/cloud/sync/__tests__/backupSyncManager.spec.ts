@@ -29,6 +29,8 @@ const {
     mockResetSyncState,
     storedSyncState,
     storedDeviceId,
+    accountsState,
+    accountsListeners,
 } = vi.hoisted(() => ({
     mockSyncBackup: vi.fn(),
     mockPullBackupDeltas: vi.fn(),
@@ -47,11 +49,27 @@ const {
     mockResetSyncState: vi.fn(),
     storedSyncState: { current: null as unknown },
     storedDeviceId: { current: null as string | null },
+    accountsState: { current: [] as { address: string; name?: string }[] },
+    accountsListeners: {
+        current: [] as ((state: { accounts: unknown[] }) => void)[],
+    },
 }))
 
 vi.mock('../syncBackup', () => ({ syncBackup: mockSyncBackup }))
 vi.mock('../pullBackupDeltas', () => ({
     pullBackupDeltas: mockPullBackupDeltas,
+}))
+// Stubbed like syncBackup above: the real module reaches the API schemas and
+// the item cipher, neither of which this spec stands up.
+vi.mock('../reviewActions', () => ({
+    reviewActionDeps: (deps: unknown) => deps,
+    markAccountForBackup: (state: unknown) => state,
+    importFromBackup: ({ state }: { state: unknown }) => ({
+        state,
+        summary: { imported: 1, skippedDuplicate: 0, failed: [] },
+    }),
+    deleteFromBackup: ({ state }: { state: unknown }) => state,
+    keepAccountInBackup: (state: unknown) => state,
 }))
 
 vi.mock('../../credentials/keyStorage', () => ({
@@ -99,7 +117,17 @@ vi.mock('../../store', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: { getState: () => ({ accounts: [] }) },
+    useAccountsStore: {
+        getState: () => ({ accounts: accountsState.current }),
+        subscribe: (listener: (state: { accounts: unknown[] }) => void) => {
+            accountsListeners.current.push(listener)
+            return () => {
+                accountsListeners.current = accountsListeners.current.filter(
+                    entry => entry !== listener,
+                )
+            }
+        },
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -110,7 +138,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn(), info: vi.fn() },
 }))
 
-vi.mock('../../models', () => ({
+// Partial: the api schemas reachable through the review actions read the real
+// BackupItemType / BackupItemStatus enums at module load.
+vi.mock('../../models', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../models')>()),
     createEmptySyncState: (backupId: string) => ({
         backupId,
         lastSyncResult: 'NONE',
@@ -141,6 +172,13 @@ const makeDeps = () => ({
     resolveHd: vi.fn(async () => null),
 })
 
+const setAccounts = (accounts: { address: string; name?: string }[]) => {
+    accountsState.current = accounts
+    for (const listener of [...accountsListeners.current]) {
+        listener({ accounts })
+    }
+}
+
 // ─── tests ───────────────────────────────────────────────────────────────────
 
 describe('BackupSyncManager', () => {
@@ -158,6 +196,8 @@ describe('BackupSyncManager', () => {
         mockHasBackupCredentials.mockReturnValue(true)
         storedSyncState.current = null
         storedDeviceId.current = null
+        accountsState.current = []
+        accountsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -240,9 +280,133 @@ describe('BackupSyncManager', () => {
         expect(onBackupDeleted).toHaveBeenCalledTimes(1)
     })
 
+    it('keepAccountInBackup persists the reviewed state', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        expect(await mgr.keepAccountInBackup('ADDR')).toBe(true)
+        expect(mockSetSyncState).toHaveBeenCalled()
+        mgr.stop()
+    })
+
     it('getBackupSyncManager returns the instance from initializeBackupSyncManager', () => {
         const mgr = initializeBackupSyncManager(makeDeps())
         expect(getBackupSyncManager()).toBe(mgr)
+        mgr.stop()
+    })
+})
+
+describe('BackupSyncManager account watcher', () => {
+    const ACCOUNT_DEBOUNCE_MS = 2000
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        vi.clearAllMocks()
+        mockSyncBackup.mockResolvedValue({
+            backupId: 'backup-123',
+            lastSyncResult: 'SUCCESS',
+        })
+        mockHasBackupCredentials.mockReturnValue(true)
+        storedSyncState.current = null
+        storedDeviceId.current = null
+        accountsState.current = []
+        accountsListeners.current = []
+        mockWithBackupEncryptionKey.mockImplementation(
+            async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+        )
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('syncs once after the debounce when an account is added', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setAccounts([{ address: 'A' }])
+        expect(mockSyncBackup).not.toHaveBeenCalled()
+
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('coalesces a burst of additions into one sync', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setAccounts([{ address: 'A' }])
+        setAccounts([{ address: 'A' }, { address: 'B' }])
+        setAccounts([{ address: 'A' }, { address: 'B' }, { address: 'C' }])
+
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('syncs when an account is renamed', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        accountsState.current = [{ address: 'A', name: 'Old' }]
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setAccounts([{ address: 'A', name: 'New' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('does not sync for a store write the backup cannot see', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        accountsState.current = [{ address: 'A', name: 'Same' }]
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setAccounts([{ address: 'A', name: 'Same' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).not.toHaveBeenCalled()
+        mgr.stop()
+    })
+
+    it('stops watching after stop()', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mgr.stop()
+        mockSyncBackup.mockClear()
+
+        setAccounts([{ address: 'A' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).not.toHaveBeenCalled()
+    })
+
+    it('still syncs a change that arrived while a sync was running', async () => {
+        let release: () => void = () => {}
+        mockSyncBackup.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    release = () =>
+                        resolve({
+                            backupId: 'backup-123',
+                            lastSyncResult: 'SUCCESS',
+                        })
+                }),
+        )
+        const mgr = new BackupSyncManager(makeDeps())
+        const started = mgr.start()
+
+        setAccounts([{ address: 'A' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
+        release()
+        await started
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(2)
         mgr.stop()
     })
 })

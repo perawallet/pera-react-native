@@ -29,8 +29,16 @@ import {
     hasBackupCredentials,
     deleteBackupKeys,
 } from '../credentials/keyStorage'
-import { createEmptySyncState } from '../models'
+import { createEmptySyncState, type SyncState } from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
+import {
+    deleteFromBackup,
+    importFromBackup,
+    keepAccountInBackup,
+    markAccountForBackup,
+    reviewActionDeps,
+} from './reviewActions'
+import { accountFingerprint } from './accountFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -40,12 +48,14 @@ import {
     type BackupWebSocketEvent,
 } from './webSocketClient'
 import type {
+    ImportSummary,
     SyncEngineDeps,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'
 
 const PERIODIC_SYNC_MS = 5 * 60 * 1000
+const ACCOUNT_CHANGE_DEBOUNCE_MS = 2000
 
 export type BackupSyncManagerDeps = {
     importAccounts: SyncEngineDeps['importAccounts']
@@ -65,6 +75,9 @@ export class BackupSyncManager {
     private syncInProgress = false
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
+    private unwatchAccounts: Nullable<() => void> = null
+    private accountTimer: Nullable<ReturnType<typeof setTimeout>> = null
+    private accountsFingerprint = ''
 
     constructor(private readonly deps: BackupSyncManagerDeps) {}
 
@@ -106,6 +119,102 @@ export class BackupSyncManager {
         )
     }
 
+    /** Runs one exclusive mutation of the sync state, so a review action and a
+     *  background sync can't both write the whole state and lose the other's
+     *  edit. Returns false when a sync already holds the slot. */
+    private async withExclusiveState(
+        run: (state: SyncState, deps: SyncEngineDeps) => Promise<SyncState>,
+    ): Promise<boolean> {
+        if (this.syncInProgress) return false
+        const ctx = this.context()
+        if (!ctx) return false
+        this.syncInProgress = true
+        this.deps.onStateChange?.()
+        try {
+            const state =
+                useBackupSyncStateStore.getState().syncState ??
+                createEmptySyncState(ctx.backupId)
+            const next = await this.withEngineDeps(ctx, deps =>
+                run(state, deps),
+            )
+            if (!next) return false
+            useBackupSyncStateStore.getState().setSyncState(next)
+            return true
+        } finally {
+            this.syncInProgress = false
+            this.deps.onStateChange?.()
+        }
+    }
+
+    async backUpAccount(address: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markAccountForBackup(state, address),
+        )
+        if (!staged) return false
+        await this.syncNow()
+        return true
+    }
+
+    async addAccountFromBackup(address: string): Promise<ImportSummary | null> {
+        let summary: ImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deleteAccountFromBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async (state, deps) =>
+            deleteFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the address returns to the review
+     *  screen under "available from backup". */
+    async keepAccountInBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepAccountInBackup(state, address),
+        )
+    }
+
+    private watchAccounts(): void {
+        this.accountsFingerprint = accountFingerprint(
+            useAccountsStore.getState().accounts,
+        )
+        this.unwatchAccounts = useAccountsStore.subscribe(state => {
+            const next = accountFingerprint(state.accounts)
+            if (next === this.accountsFingerprint) return
+            this.accountsFingerprint = next
+            this.scheduleAccountSync()
+        })
+    }
+
+    /** Debounced so a batch import lands as one sync. Re-arms rather than
+     *  dropping when a sync is already running: syncBackup snapshots the
+     *  accounts at its start, so an in-flight run cannot see this change. */
+    private scheduleAccountSync(): void {
+        if (this.accountTimer != null) clearTimeout(this.accountTimer)
+        this.accountTimer = setTimeout(() => {
+            this.accountTimer = null
+            if (!this.running) return
+            if (this.syncInProgress) {
+                this.scheduleAccountSync()
+                return
+            }
+            void this.syncNow()
+        }, ACCOUNT_CHANGE_DEBOUNCE_MS)
+    }
+
     async start(): Promise<void> {
         if (this.running) return
         // No credentials = nothing to sync. This also covers the post-delete
@@ -121,6 +230,8 @@ export class BackupSyncManager {
         // Defensive: never leak a prior interval/socket if start races a stop.
         if (this.periodic != null) clearInterval(this.periodic)
         this.socket?.disconnect()
+        this.unwatchAccounts?.()
+        this.watchAccounts()
         await this.syncNow()
         this.connectSocket()
         this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
@@ -132,6 +243,12 @@ export class BackupSyncManager {
             clearInterval(this.periodic)
             this.periodic = null
         }
+        if (this.accountTimer != null) {
+            clearTimeout(this.accountTimer)
+            this.accountTimer = null
+        }
+        this.unwatchAccounts?.()
+        this.unwatchAccounts = null
         this.socket?.disconnect()
         this.socket = null
     }
