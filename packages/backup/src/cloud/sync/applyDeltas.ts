@@ -111,10 +111,23 @@ export const applyDeltas = async ({
                 status: BackupItemStatus.IGNORED,
                 isDirty: false,
                 pendingDelete: false,
+                pendingImport: false,
                 lastRemoteHash: d.hash,
             }
             continue
         }
+        const isAccountKey =
+            d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+            d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+        // The user deleted this account here and another device has since
+        // backed it up again. Re-importing would undo that deletion behind
+        // their back, so hold it for review instead.
+        const pendingImport =
+            isAccountKey &&
+            d.status === BackupItemStatus.ACTIVE &&
+            (existing?.pendingImport === true ||
+                existing?.status === BackupItemStatus.IGNORED)
+
         items[d.key] = {
             ...(existing ?? {
                 type: d.type,
@@ -131,15 +144,11 @@ export const applyDeltas = async ({
             baseVer: existing?.baseVer ?? d.ver,
             localContentHash: existing?.localContentHash ?? null,
             localUpdatedAt: existing?.localUpdatedAt ?? null,
+            pendingImport,
         }
         if (d.status !== BackupItemStatus.ACTIVE) continue
-        if (
-            !(
-                d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
-                d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
-            )
-        )
-            continue
+        if (!isAccountKey) continue
+        if (pendingImport) continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||

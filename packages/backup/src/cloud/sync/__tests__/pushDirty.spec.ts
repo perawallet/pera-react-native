@@ -118,7 +118,7 @@ describe('pushDirty', () => {
         })
     })
 
-    it('processes pending-delete keys via deleteItem and removes them from items', async () => {
+    it('processes pending-delete keys via deleteItem and tombstones them', async () => {
         const deps = baseDeps()
         const state = createEmptySyncState('b')
         state.items['accounts/GONE'] = {
@@ -139,6 +139,11 @@ describe('pushDirty', () => {
             'dev',
             'accounts/GONE',
         )
-        expect(next.items['accounts/GONE']).toBeUndefined()
+        expect(next.items['accounts/GONE']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            isDirty: false,
+            pendingDelete: false,
+            localContentHash: null,
+        })
     })
 })

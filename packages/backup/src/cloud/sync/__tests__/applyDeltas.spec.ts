@@ -253,4 +253,115 @@ describe('applyDeltas', () => {
             ]),
         )
     })
+
+    it('holds a returning account for review instead of re-importing it', async () => {
+        const deps = baseDeps()
+        const state = createEmptySyncState('b')
+        // The tombstone this device left when the user deleted the account.
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.IGNORED,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.readItems).not.toHaveBeenCalled()
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X']).toMatchObject({
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+        })
+    })
+
+    it('keeps an account under review across later deltas', async () => {
+        const deps = baseDeps()
+        const state = createEmptySyncState('b')
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 4,
+            baseVer: 4,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'rh',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 10,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 5,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh2',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X'].pendingImport).toBe(true)
+    })
+
+    it('drops the review flag when the backup deletes the account', async () => {
+        const deps = baseDeps()
+        const state = createEmptySyncState('b')
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 4,
+            baseVer: 4,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'rh',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 11,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 5,
+                    status: BackupItemStatus.IGNORED,
+                    op: DeltaOperation.DELETE,
+                    hash: null,
+                },
+            ],
+            deps,
+        })
+
+        expect(next.items['accounts/X']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingImport: false,
+        })
+    })
 })

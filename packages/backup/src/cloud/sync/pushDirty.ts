@@ -86,7 +86,17 @@ export const pushDirty = async ({
                 key,
             )
             lastSyncedSeq = Math.max(lastSyncedSeq, res.seq)
-            delete items[key]
+            // Tombstone rather than drop: if another device backs this account
+            // up again, the returning delta must read as "the user removed
+            // this here" and go to review, not as a brand-new item to import.
+            items[key] = {
+                ...item,
+                status: BackupItemStatus.IGNORED,
+                isDirty: false,
+                pendingDelete: false,
+                localContentHash: null,
+                localUpdatedAt: null,
+            }
         } catch (error) {
             logger.warn('pushDirty: delete failed', {
                 key,
