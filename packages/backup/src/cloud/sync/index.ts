@@ -16,6 +16,14 @@ export { buildLocalItems } from './buildLocalItems'
 export { reconcile } from './reconcile'
 export { applyDeltas } from './applyDeltas'
 export { pushDirty } from './pushDirty'
+export {
+    markAccountForBackup,
+    importFromBackup,
+    deleteFromBackup,
+    keepAccountInBackup,
+    reviewActionDeps,
+} from './reviewActions'
+export type { ReviewActionDeps } from './reviewActions'
 export { syncBackup } from './syncBackup'
 export { pullBackupDeltas } from './pullBackupDeltas'
 export { serializeAccountForBackup } from './serializeAccountForBackup'
