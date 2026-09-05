@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-export * from './useEnableCloudBackup'
-export * from './useDisableCloudBackup'
-export * from './useRemoveCloudBackup'
-export { useBackupSync } from './useBackupSync'
-export { useBackupSyncLifecycle } from './useBackupSyncLifecycle'
-export { useBackupAccountReview } from './useBackupAccountReview'
-export { useIsAccountBackedUp } from './useIsAccountBackedUp'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.xl,
+    },
+    section: {
+        gap: theme.spacing.sm,
+    },
+}))

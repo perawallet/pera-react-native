@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-export * from './useEnableCloudBackup'
-export * from './useDisableCloudBackup'
-export * from './useRemoveCloudBackup'
-export { useBackupSync } from './useBackupSync'
-export { useBackupSyncLifecycle } from './useBackupSyncLifecycle'
-export { useBackupAccountReview } from './useBackupAccountReview'
-export { useIsAccountBackedUp } from './useIsAccountBackedUp'
+import {
+    isAddressBackedUp,
+    useBackupSyncStateStore,
+} from '@perawallet/wallet-core-backup'
+
+/** One account's backup state, for callers that need nothing else:
+ *  `useBackupAccountReview` also builds the mutation and the review buckets, so
+ *  reading this through it re-renders on every account and sync-state change. */
+export const useIsAccountBackedUp = (address: string): boolean =>
+    useBackupSyncStateStore(state =>
+        isAddressBackedUp(state.syncState, address),
+    )
