@@ -26,6 +26,8 @@ import { CloudBackupScreen } from '../screens/CloudBackupScreen'
 import { CloudBackupSetupScreen } from '../screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '../screens/CloudBackupVerifyScreen'
 import { CloudBackupOverviewScreen } from '../screens/CloudBackupOverviewScreen'
+import { CloudBackupAccountsScreen } from '../screens/CloudBackupAccountsScreen'
+import { CloudBackupAccountsReviewScreen } from '../screens/CloudBackupAccountsReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 import type { CloudBackupStackParamList } from './types'
@@ -93,6 +95,20 @@ export const CloudBackupStackNavigator = () => {
                     title: 'cloud_backup.overview.title',
                 }}
                 component={CloudBackupOverviewScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupAccounts'
+                options={{
+                    title: 'cloud_backup.accounts.title',
+                }}
+                component={CloudBackupAccountsScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupAccountsReview'
+                options={{
+                    title: 'cloud_backup.accounts.review_title',
+                }}
+                component={CloudBackupAccountsReviewScreen}
             />
             <CloudBackupStack.Screen
                 name='CloudBackupRestorePassphrase'
