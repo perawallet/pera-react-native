@@ -16,11 +16,13 @@ import {
     resolveImportAccountType,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
+import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -49,6 +51,10 @@ export const useImportAccountOptionsScreen =
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
         const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+        const isCloudBackupEnabled = useIsCloudBackupEnabled()
+        const isCloudBackupConfigured = useCloudBackupStore(state =>
+            state.isConfigured(),
+        )
         const { network } = useNetwork()
 
         const {
@@ -140,6 +146,24 @@ export const useImportAccountOptionsScreen =
             navigation.push('PeraWebImportInfo')
         }, [navigation])
 
+        // Restoring over a device that already holds a backup would replace
+        // the local backup identity, orphaning what this device pushed.
+        const handleImportCloudBackup = useCallback(() => {
+            if (isCloudBackupConfigured) {
+                errorToast(
+                    t(
+                        'onboarding.import_account_options.cloud_backup_already_enabled_title',
+                    ),
+                    t(
+                        'onboarding.import_account_options.cloud_backup_already_enabled_body',
+                    ),
+                )
+                return
+            }
+
+            navigation.push('CloudBackupRestorePassphrase')
+        }, [isCloudBackupConfigured, errorToast, t, navigation])
+
         const handleImportQuantum = useCallback(() => {
             navigation.push('ImportAccount', { accountType: 'quantum' })
         }, [navigation])
@@ -217,6 +241,19 @@ export const useImportAccountOptionsScreen =
                     onPress: handleImportPeraWeb,
                     isDisabled: !isPeraWebImportAvailable,
                 },
+                ...(isCloudBackupEnabled
+                    ? [
+                          {
+                              testID: 'import_account_options_cloud_backup_button',
+                              titleKey:
+                                  'onboarding.import_account_options.cloud_backup_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.cloud_backup_description',
+                              leftIcon: 'cloud-download' as IconName,
+                              onPress: handleImportCloudBackup,
+                          },
+                      ]
+                    : []),
                 {
                     testID: 'import_account_options_asb_button',
                     titleKey: 'onboarding.import_account_options.asb_title',
@@ -235,7 +272,9 @@ export const useImportAccountOptionsScreen =
             handlePairLedgerUsb,
             handleImportAsb,
             handleImportPeraWeb,
+            handleImportCloudBackup,
             handleImportQuantum,
+            isCloudBackupEnabled,
             isQuantumAccountsEnabled,
             network,
         ])

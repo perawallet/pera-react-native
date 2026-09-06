@@ -92,6 +92,18 @@ vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
     useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
 }))
 
+const mockCloudBackupFlag = vi.hoisted(() => ({ enabled: false }))
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: () => mockCloudBackupFlag.enabled,
+}))
+
+const mockCloudBackupState = vi.hoisted(() => ({ isConfigured: false }))
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useCloudBackupStore: (
+        selector: (state: { isConfigured: () => boolean }) => unknown,
+    ) => selector({ isConfigured: () => mockCloudBackupState.isConfigured }),
+}))
+
 describe('useImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
 
@@ -100,6 +112,8 @@ describe('useImportAccountOptionsScreen', () => {
         Platform.OS = 'ios'
         mockRequestBottomSheet.mockResolvedValue(undefined)
         mockQuantumFlag.enabled = false
+        mockCloudBackupFlag.enabled = false
+        mockCloudBackupState.isConfigured = false
         vi.mocked(useNetwork).mockReturnValue({
             network: Networks.mainnet,
         } as ReturnType<typeof useNetwork>)
@@ -464,6 +478,70 @@ describe('useImportAccountOptionsScreen', () => {
             expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
                 accountType: 'quantum',
             })
+        })
+    })
+
+    describe('cloud backup import option', () => {
+        it('is absent when the cloud backup flag is off', () => {
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const testIDs = result.current.options.map(o => o.testID)
+
+            expect(testIDs).not.toContain(
+                'import_account_options_cloud_backup_button',
+            )
+        })
+
+        it('sits directly above the ASB option when the flag is on', () => {
+            mockCloudBackupFlag.enabled = true
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const testIDs = result.current.options.map(o => o.testID)
+
+            expect(testIDs.indexOf('import_account_options_asb_button')).toBe(
+                testIDs.indexOf('import_account_options_cloud_backup_button') +
+                    1,
+            )
+        })
+
+        it('navigates to the backup passphrase screen on press', () => {
+            mockCloudBackupFlag.enabled = true
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const cloudBackupOption = result.current.options.find(
+                o => o.testID === 'import_account_options_cloud_backup_button',
+            )!
+
+            act(() => {
+                cloudBackupOption.onPress()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith(
+                'CloudBackupRestorePassphrase',
+            )
+        })
+
+        it('shows an error instead of navigating when a backup is already configured on this device', () => {
+            mockCloudBackupFlag.enabled = true
+            mockCloudBackupState.isConfigured = true
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const cloudBackupOption = result.current.options.find(
+                o => o.testID === 'import_account_options_cloud_backup_button',
+            )!
+
+            act(() => {
+                cloudBackupOption.onPress()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'onboarding.import_account_options.cloud_backup_already_enabled_title',
+                'onboarding.import_account_options.cloud_backup_already_enabled_body',
+            )
+            expect(mockPush).not.toHaveBeenCalled()
         })
     })
 

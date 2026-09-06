@@ -32,6 +32,7 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
+import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -114,6 +115,8 @@ const PeraWebImportLoadingScreenWithErrorBoundary = withAccountErrorBoundary(
 const PeraWebImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
     PeraWebImportResultScreen,
 )
+const CloudBackupRestorePassphraseScreenWithErrorBoundary =
+    withAccountErrorBoundary(CloudBackupRestorePassphraseScreen)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -142,6 +145,7 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'PeraWebImportInfo',
     'PeraWebImportLoading',
     'PeraWebImportResult',
+    'CloudBackupRestorePassphrase',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -275,6 +279,11 @@ export const renderImportFlowScreens = (
             options={{ headerShown: false }}
             layout={fullScreenLayout}
             component={PeraWebImportResultScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestorePassphrase'
+            options={{ title: '' }}
+            component={CloudBackupRestorePassphraseScreenWithErrorBoundary}
         />
     </>
 )

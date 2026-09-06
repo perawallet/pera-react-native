@@ -132,6 +132,7 @@ export type ImportFlowParamList = {
         skippedDuplicateCount: number
         failedCount: number
     }
+    CloudBackupRestorePassphrase: undefined
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {
