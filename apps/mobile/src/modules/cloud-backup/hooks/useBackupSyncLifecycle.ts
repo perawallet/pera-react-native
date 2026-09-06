@@ -15,6 +15,7 @@ import { AppState } from 'react-native'
 import {
     getBackupSyncManager,
     initializeBackupSyncManager,
+    useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
     useResolveHdSeedForBackup,
@@ -31,7 +32,6 @@ import {
     getPollingTransitionAction,
     isActiveAppState,
 } from '@utils/app-state'
-import { useCloudBackupContactImport } from './useCloudBackupContactImport'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']

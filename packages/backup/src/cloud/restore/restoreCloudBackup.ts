@@ -15,8 +15,18 @@ import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import { createEmptySyncState, trackedItemsFromManifest } from '../models'
-import type { BackupId, DeviceId, SyncState } from '../models'
-import type { ImportSummary, SyncImportFn } from '../sync/types'
+import type {
+    BackupId,
+    ContactBackupPayload,
+    DeviceId,
+    SyncState,
+} from '../models'
+import type {
+    ContactImportFn,
+    ContactImportSummary,
+    ImportSummary,
+    SyncImportFn,
+} from '../sync/types'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
 import type { PullBackupItemsResult } from './pullBackupItems'
@@ -47,6 +57,8 @@ type RestoreCloudBackupParams = {
     /** Decrypted remote accounts → wallet. Hook-bound (needs KMS), so the app
      *  layer injects it. */
     importAccounts: SyncImportFn
+    /** Decrypted remote contacts → contacts store. */
+    importContacts: ContactImportFn
 }
 
 export type RestoreCloudBackupResult = {
@@ -55,6 +67,7 @@ export type RestoreCloudBackupResult = {
      *  `lastSeq` and pushes at the versions the server actually holds. */
     syncState: SyncState
     summary: ImportSummary
+    contactSummary: ContactImportSummary
 }
 
 /** Reads the category off a rejection from {@link restoreCloudBackup}. */
@@ -91,6 +104,23 @@ const cleanUpAfterRestoreFailure = async (): Promise<void> => {
                         : String(cleanupError),
             },
         )
+    }
+}
+
+/** Never let the contacts half sink a restore whose accounts already landed:
+ *  the keys are committed by this point, so a throw here would roll them back
+ *  and leave the wallet with neither. */
+const importContactsSafely = async (
+    importContacts: ContactImportFn,
+    contacts: ContactBackupPayload[],
+): Promise<ContactImportSummary> => {
+    try {
+        return await importContacts(contacts)
+    } catch (error) {
+        logger.warn('restoreCloudBackup: contact import failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return { imported: 0, failed: [] }
     }
 }
 
@@ -134,6 +164,7 @@ export const restoreCloudBackup = async ({
     deviceId,
     network,
     importAccounts,
+    importContacts,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
     const { backupId, encryptionKey, authSecretKey } = await deriveKeys(
         mnemonic,
@@ -150,11 +181,16 @@ export const restoreCloudBackup = async ({
             encryptionKey,
         })
         const summary = await importAccounts(pull.accounts)
+        const contactSummary = await importContactsSafely(
+            importContacts,
+            pull.contacts,
+        )
 
         return {
             backupId,
             syncState: syncStateFromPull(backupId, pull),
             summary,
+            contactSummary,
         }
     } catch (error) {
         const category = categorize(error)

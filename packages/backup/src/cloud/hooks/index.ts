@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './useCloudBackupContactImport'
 export * from './useCloudBackupImport'
 export * from './useDisableCloudBackupMutation'
 export * from './useEnableCloudBackupMutation'

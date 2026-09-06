@@ -42,7 +42,10 @@ import {
 const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
 
+const CONTACT_SUMMARY = { imported: 1, failed: [] }
+
 const importAccounts = vi.fn()
+const importContacts = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -50,6 +53,7 @@ const params = () => ({
     deviceId: 'device-123',
     network: 'mainnet' as const,
     importAccounts,
+    importContacts,
 })
 
 const keys = (fill = 5) => ({
@@ -76,6 +80,7 @@ const pull = {
         'secrets/A': manifestItem({ ver: 2, hash: 'sha256:secret' }),
     },
     accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
+    contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
     skipped: [],
 }
 
@@ -96,6 +101,7 @@ describe('restoreCloudBackup', () => {
         deleteBackupKeysMock.mockReset().mockResolvedValue(undefined)
         pullBackupItemsMock.mockReset().mockResolvedValue(pull)
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
+        importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -107,8 +113,10 @@ describe('restoreCloudBackup', () => {
             mnemonic: MNEMONIC,
         })
         expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
+        expect(importContacts).toHaveBeenCalledWith(pull.contacts)
         expect(result.backupId).toBe('did:pera:abc')
         expect(result.summary).toBe(SUMMARY)
+        expect(result.contactSummary).toBe(CONTACT_SUMMARY)
         expect(result.syncState).toMatchObject({
             backupId: 'did:pera:abc',
             lastKnownBackupHash: 'hash',
@@ -155,6 +163,16 @@ describe('restoreCloudBackup', () => {
             baseVer: 7,
             status: 'IGNORED',
         })
+    })
+
+    test('keeps a restore whose accounts landed when the contact import throws', async () => {
+        importContacts.mockRejectedValue(new Error('store unavailable'))
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(result.contactSummary).toEqual({ imported: 0, failed: [] })
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
     })
 
     test('persists the keys before pulling, so the signed request can read them', async () => {

@@ -13,17 +13,24 @@
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { fetchDelta, fetchManifest, readItems } from '../api'
-import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
+import {
+    parseAddressPayload,
+    parseContactPayload,
+    parseSecretsPayload,
+} from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
     BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_CONTACTS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
     DeltaOperation,
+    isContactItemKey,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
+    type ContactBackupPayload,
     type DeltaEntry,
     type DeviceId,
     type FetchedItem,
@@ -52,6 +59,7 @@ export type PullBackupItemsResult = {
      *  has to track or it will offer them to the server as new. */
     manifestItems: Record<BackupItemKey, ManifestItem>
     accounts: PulledAccount[]
+    contacts: ContactBackupPayload[]
     skipped: SkippedItem[]
 }
 
@@ -78,7 +86,10 @@ const chunk = <T>(items: T[], size: number): T[][] => {
     return out
 }
 
-/** Keys of the active account/secret items that should be read and restored. */
+/** Keys of the active items that should be read and restored. Contacts are in
+ *  here because the restore is their only way home: it seeds `lastSyncedSeq`
+ *  from the manifest, so no later delta ever mentions an item that was already
+ *  in the backup when the device joined. */
 const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
     deltas
         .filter(
@@ -86,7 +97,8 @@ const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
                 d.op === DeltaOperation.UPSERT &&
                 d.status === BackupItemStatus.ACTIVE &&
                 (d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
-                    d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX)),
+                    d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
+                    d.key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)),
         )
         .map(d => d.key)
 
@@ -125,6 +137,7 @@ const decryptItem = (
 type CollectedPayloads = {
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
+    contacts: ContactBackupPayload[]
     skipped: SkippedItem[]
 }
 
@@ -135,11 +148,15 @@ const collectItemPayloads = (
 ): CollectedPayloads => {
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
+    const contacts: ContactBackupPayload[] = []
     const skipped: SkippedItem[] = []
 
     for (const item of items) {
-        const address = addressFromKey(item.key)
-        if (!address) {
+        // A contact's address is the record, not the routing key, so it is
+        // never looked up here; `null` is what selects the contact branch.
+        const isContact = isContactItemKey(item.key)
+        const address = isContact ? null : addressFromKey(item.key)
+        if (!isContact && address === null) {
             logger.warn('pullBackupItems: unexpected item key format', {
                 key: item.key,
             })
@@ -154,7 +171,9 @@ const collectItemPayloads = (
         }
 
         try {
-            if (item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) {
+            if (address === null) {
+                contacts.push(parseContactPayload(plaintext))
+            } else if (item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) {
                 addressPayloads.set(address, parseAddressPayload(plaintext))
             } else {
                 secretsPayloads.set(address, parseSecretsPayload(plaintext))
@@ -167,7 +186,7 @@ const collectItemPayloads = (
         }
     }
 
-    return { addressPayloads, secretsPayloads, skipped }
+    return { addressPayloads, secretsPayloads, contacts, skipped }
 }
 
 /** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
@@ -215,17 +234,15 @@ export const pullBackupItems = async ({
         deviceId,
         wantedKeys,
     )
-    const { addressPayloads, secretsPayloads, skipped } = collectItemPayloads(
-        items,
-        encryptionKey,
-        backupId,
-    )
+    const { addressPayloads, secretsPayloads, contacts, skipped } =
+        collectItemPayloads(items, encryptionKey, backupId)
 
     return {
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
         manifestItems: manifest.items,
         accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
+        contacts,
         skipped,
     }
 }

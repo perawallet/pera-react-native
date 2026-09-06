@@ -30,6 +30,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
     useBackupSyncStateStore,
@@ -44,7 +45,6 @@ import {
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import { useCloudBackupContactImport } from '@modules/cloud-backup'
 
 import {
     BACKUP_MNEMONIC,

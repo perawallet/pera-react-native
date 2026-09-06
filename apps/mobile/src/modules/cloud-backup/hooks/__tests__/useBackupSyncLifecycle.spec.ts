@@ -19,6 +19,7 @@ const {
     managerMock,
     showToastMock,
     importAccountsMock,
+    importContactsMock,
     resolveHdMock,
     resolveMnemonicMock,
     isEnabledMock,
@@ -28,6 +29,7 @@ const {
     managerMock: { start: vi.fn(), stop: vi.fn() },
     showToastMock: vi.fn(),
     importAccountsMock: vi.fn(),
+    importContactsMock: vi.fn(),
     resolveHdMock: vi.fn(),
     resolveMnemonicMock: vi.fn(),
     isEnabledMock: vi.fn(),
@@ -38,6 +40,9 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     initializeBackupSyncManager: initializeMock,
     getBackupSyncManager: () => managerMock,
     useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),
+    useCloudBackupContactImport: () => ({
+        importContacts: importContactsMock,
+    }),
     useCloudBackupStore: (select: (state: unknown) => unknown) =>
         select({ backupId: backupIdRef.current }),
     useResolveHdSeedForBackup: () => resolveHdMock,

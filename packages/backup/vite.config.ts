@@ -25,6 +25,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
+                '@perawallet/wallet-core-contacts',
                 '@perawallet/wallet-core-device',
                 '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-shared',

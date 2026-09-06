@@ -15,11 +15,8 @@ import {
     DuplicateAddressError,
     useContactsStore,
 } from '@perawallet/wallet-core-contacts'
-import type {
-    ContactImportFn,
-    ContactImportSummary,
-} from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
+import type { ContactImportFn, ContactImportSummary } from '../sync/types'
 
 export type UseCloudBackupContactImportResult = {
     importContacts: ContactImportFn

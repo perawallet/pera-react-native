@@ -311,6 +311,104 @@ describe('pullBackupItems', () => {
             { key: 'unknown/FOO', reason: 'missing-address' },
         ])
     })
+
+    // The restore is a contact's only way home: it seeds the sync state at the
+    // manifest's seq, so no later delta ever mentions an item that was already
+    // in the backup when this device joined.
+    it('reads contacts, so a restore is not the last time they are reachable', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 4,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 3,
+                key: 'contacts/CADDR',
+                type: 'CONTACT',
+                ver: 1,
+                status: 'ACTIVE',
+                op: 'UPSERT',
+                hash: 'h1',
+            },
+            {
+                seq: 4,
+                key: 'contacts/GONE',
+                type: 'CONTACT',
+                ver: 2,
+                status: 'IGNORED',
+                op: 'DELETE',
+                hash: 'h2',
+            },
+        ])
+        readItems.mockResolvedValue([
+            {
+                key: 'contacts/CADDR',
+                ver: 1,
+                hash: 'h1',
+                payload: enc(
+                    'contacts/CADDR',
+                    JSON.stringify({
+                        address: 'CADDR',
+                        name: 'Alice',
+                        updatedAt: 7,
+                    }),
+                ),
+            },
+        ])
+
+        const result = await pullBackupItems({
+            network: 'mainnet',
+            backupId,
+            deviceId: 'device-1',
+            encryptionKey: encKey,
+        })
+
+        expect(readItems).toHaveBeenCalledWith(
+            'mainnet',
+            backupId,
+            'device-1',
+            ['contacts/CADDR'],
+        )
+        expect(result.contacts).toEqual([
+            { address: 'CADDR', name: 'Alice', updatedAt: 7 },
+        ])
+        expect(result.skipped).toHaveLength(0)
+    })
+
+    it('skips an unreadable contact without sinking the pull', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 3,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 3,
+                key: 'contacts/CADDR',
+                type: 'CONTACT',
+                ver: 1,
+                status: 'ACTIVE',
+                op: 'UPSERT',
+                hash: 'h1',
+            },
+        ])
+        readItems.mockResolvedValue([
+            { key: 'contacts/CADDR', ver: 1, hash: 'h1', payload: 'AAAA' },
+        ])
+
+        const result = await pullBackupItems({
+            network: 'mainnet',
+            backupId,
+            deviceId: 'device-1',
+            encryptionKey: encKey,
+        })
+
+        expect(result.contacts).toEqual([])
+        expect(result.skipped).toEqual([
+            { key: 'contacts/CADDR', reason: 'decrypt' },
+        ])
+    })
 })
 
 describe('pullBackupItems manifest pass-through', () => {

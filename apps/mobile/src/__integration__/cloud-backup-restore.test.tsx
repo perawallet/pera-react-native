@@ -34,6 +34,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
     useBackupSyncStateStore,
@@ -50,7 +51,6 @@ import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
-import { useCloudBackupContactImport } from '@modules/cloud-backup'
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'

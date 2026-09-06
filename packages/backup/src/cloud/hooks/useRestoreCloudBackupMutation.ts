@@ -20,6 +20,7 @@ import {
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
+import { useCloudBackupContactImport } from './useCloudBackupContactImport'
 import { useCloudBackupImport } from './useCloudBackupImport'
 
 export type RestoreCloudBackupVariables = {
@@ -44,6 +45,7 @@ export const useRestoreCloudBackupMutation = (
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const { importAccounts } = useCloudBackupImport()
+    const { importContacts } = useCloudBackupContactImport()
 
     return useMutation({
         throwOnError: false,
@@ -65,6 +67,7 @@ export const useRestoreCloudBackupMutation = (
                 deviceId,
                 network,
                 importAccounts,
+                importContacts,
             })
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.

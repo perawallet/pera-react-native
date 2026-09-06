@@ -13,7 +13,6 @@
 export * from './useEnableCloudBackup'
 export * from './useDisableCloudBackup'
 export * from './useRemoveCloudBackup'
-export * from './useCloudBackupContactImport'
 export { useBackupSync } from './useBackupSync'
 export { useBackupSyncLifecycle } from './useBackupSyncLifecycle'
 export { useBackupAccountReview } from './useBackupAccountReview'

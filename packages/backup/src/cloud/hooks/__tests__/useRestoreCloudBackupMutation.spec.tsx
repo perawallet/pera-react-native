@@ -120,6 +120,7 @@ describe('useRestoreCloudBackupMutation', () => {
             deviceId: 'device-123',
             network: 'mainnet',
             importAccounts: importAccountsMock,
+            importContacts: expect.any(Function),
         })
         expect(setConfiguredMock).toHaveBeenCalledWith({
             backupId: 'did:pera:abc',
