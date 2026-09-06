@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-export type CloudBackupStackParamList = {
-    CloudBackupHome: undefined
-    CloudBackupSetup: undefined
-    CloudBackupVerify: undefined
-    CloudBackupOverview: undefined
-    CloudBackupAccounts: undefined
-    CloudBackupAccountsReview: undefined
-    CloudBackupContacts: undefined
-    CloudBackupContactsReview: undefined
-    CloudBackupRestorePassphrase: undefined
-    CloudBackupRestoreEncryptionKey: undefined
-}
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.xl,
+    },
+    section: {
+        gap: theme.spacing.sm,
+    },
+}))

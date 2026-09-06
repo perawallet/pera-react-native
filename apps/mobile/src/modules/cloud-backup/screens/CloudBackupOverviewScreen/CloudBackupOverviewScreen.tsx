@@ -50,6 +50,7 @@ export const CloudBackupOverviewScreen = () => {
         accountsInSync,
         accountsNotBackedUp,
         contactsInSync,
+        contactsNotBackedUp,
         onPressAccounts,
         onPressContacts,
         onPressCredentialAddress,
@@ -119,12 +120,27 @@ export const CloudBackupOverviewScreen = () => {
                             variant='filled'
                             icon='contacts'
                             title={t('cloud_backup.overview.contacts')}
-                            subtitle={t(
-                                'cloud_backup.overview.contacts_in_sync',
-                                {
-                                    count: contactsInSync,
-                                },
-                            )}
+                            subtitle={
+                                contactsNotBackedUp > 0
+                                    ? t(
+                                          'cloud_backup.overview.contacts_not_backed_up',
+                                          {
+                                              count: contactsNotBackedUp,
+                                          },
+                                      )
+                                    : t(
+                                          'cloud_backup.overview.contacts_in_sync',
+                                          {
+                                              count: contactsInSync,
+                                          },
+                                      )
+                            }
+                            subtitleIcon={
+                                contactsNotBackedUp > 0
+                                    ? 'cloud-off'
+                                    : undefined
+                            }
+                            subtitleIconVariant='error'
                             showChevron
                             onPress={onPressContacts}
                             testID='cloud_backup_overview_contacts'

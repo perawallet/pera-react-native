@@ -10,15 +10,4 @@
  limitations under the License
  */
 
-export type CloudBackupStackParamList = {
-    CloudBackupHome: undefined
-    CloudBackupSetup: undefined
-    CloudBackupVerify: undefined
-    CloudBackupOverview: undefined
-    CloudBackupAccounts: undefined
-    CloudBackupAccountsReview: undefined
-    CloudBackupContacts: undefined
-    CloudBackupContactsReview: undefined
-    CloudBackupRestorePassphrase: undefined
-    CloudBackupRestoreEncryptionKey: undefined
-}
+export { CloudBackupContactsReviewScreen } from './CloudBackupContactsReviewScreen'

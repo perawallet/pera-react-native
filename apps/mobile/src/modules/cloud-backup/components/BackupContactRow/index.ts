@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AccountsToReviewCard } from './AccountsToReviewCard'
-export type { AccountsToReviewCardProps } from './AccountsToReviewCard'
+export { BackupContactRow } from './BackupContactRow'
+export type { BackupContactRowProps } from './BackupContactRow'
