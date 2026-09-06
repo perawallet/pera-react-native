@@ -14,6 +14,9 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 
 type DeleteFromBackupSheetProps = {
+    /** Defaults to the account copy; contacts pass their own. */
+    title?: string
+    message?: string
     /** Overrides the cancel label where declining is not "abort" but "keep the
      *  backup's copy". */
     cancelLabel?: string
@@ -22,6 +25,8 @@ type DeleteFromBackupSheetProps = {
 }
 
 export const DeleteFromBackupSheet = ({
+    title,
+    message,
     cancelLabel,
     onConfirm,
     onCancel,
@@ -32,8 +37,8 @@ export const DeleteFromBackupSheet = ({
         <ConfirmActionContent
             icon='cloud-off'
             iconVariant='error'
-            title={t('cloud_backup.accounts.delete_sheet_title')}
-            message={t('cloud_backup.accounts.delete_sheet_body')}
+            title={title ?? t('cloud_backup.accounts.delete_sheet_title')}
+            message={message ?? t('cloud_backup.accounts.delete_sheet_body')}
             isMessageCentered
             confirmLabel={t('cloud_backup.accounts.delete_sheet_confirm')}
             confirmVariant='destructiveLight'
