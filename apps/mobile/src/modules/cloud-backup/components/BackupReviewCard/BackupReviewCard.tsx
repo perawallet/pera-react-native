@@ -17,22 +17,24 @@ import {
     PWView,
     type IconName,
 } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type AccountsToReviewCardProps = {
-    notBackedUpCount: number
-    availableFromBackupCount: number
-    onReview: () => void
-}
-
-type SummaryLineProps = {
+export type BackupReviewLine = {
     icon: IconName
     isNegative: boolean
     label: string
 }
 
-const SummaryLine = ({ icon, isNegative, label }: SummaryLineProps) => {
+export type BackupReviewCardProps = {
+    title: string
+    /** Callers drop zero-count lines; an empty list renders no card. */
+    lines: BackupReviewLine[]
+    actionLabel: string
+    onReview: () => void
+    testID: string
+}
+
+const SummaryLine = ({ icon, isNegative, label }: BackupReviewLine) => {
     const styles = useStyles()
 
     return (
@@ -52,20 +54,21 @@ const SummaryLine = ({ icon, isNegative, label }: SummaryLineProps) => {
     )
 }
 
-export const AccountsToReviewCard = ({
-    notBackedUpCount,
-    availableFromBackupCount,
+export const BackupReviewCard = ({
+    title,
+    lines,
+    actionLabel,
     onReview,
-}: AccountsToReviewCardProps) => {
-    const { t } = useLanguage()
+    testID,
+}: BackupReviewCardProps) => {
     const styles = useStyles()
 
-    if (notBackedUpCount === 0 && availableFromBackupCount === 0) return null
+    if (lines.length === 0) return null
 
     return (
         <PWView
             style={styles.card}
-            testID='accounts_to_review_card'
+            testID={testID}
         >
             <PWView style={styles.glyph}>
                 <PWIcon
@@ -75,38 +78,22 @@ export const AccountsToReviewCard = ({
             </PWView>
             <PWView style={styles.content}>
                 <PWView style={styles.textColumn}>
-                    <PWText variant='h3'>
-                        {t('cloud_backup.accounts.review_title')}
-                    </PWText>
+                    <PWText variant='h3'>{title}</PWText>
                     <PWView style={styles.summary}>
-                        {notBackedUpCount > 0 && (
+                        {lines.map(line => (
                             <SummaryLine
-                                icon='cloud-off'
-                                isNegative
-                                label={t(
-                                    'cloud_backup.accounts.not_backed_up_count',
-                                    { count: notBackedUpCount },
-                                )}
+                                key={line.icon}
+                                {...line}
                             />
-                        )}
-                        {availableFromBackupCount > 0 && (
-                            <SummaryLine
-                                icon='cloud-download'
-                                isNegative={false}
-                                label={t(
-                                    'cloud_backup.accounts.available_count',
-                                    { count: availableFromBackupCount },
-                                )}
-                            />
-                        )}
+                        ))}
                     </PWView>
                 </PWView>
                 <PWButton
                     variant='primary'
-                    title={t('cloud_backup.accounts.review_action')}
+                    title={actionLabel}
                     onPress={onReview}
                     style={styles.button}
-                    testID='accounts_to_review_button'
+                    testID={`${testID}_button`}
                 />
             </PWView>
         </PWView>

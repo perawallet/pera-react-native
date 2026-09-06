@@ -14,7 +14,7 @@ import { Fragment } from 'react'
 import { PWScreen, PWView } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountsToReviewCard } from '../../components/AccountsToReviewCard'
+import { BackupReviewCard } from '../../components/BackupReviewCard'
 import { SectionHeading } from '../../components/SectionHeading'
 import { DeviceAccountRow } from './DeviceAccountRow'
 import { useCloudBackupAccounts } from './useCloudBackupAccounts'
@@ -36,10 +36,37 @@ export const CloudBackupAccountsScreen = () => {
     return (
         <PWScreen testID='cloud_backup_accounts_screen'>
             <PWView style={styles.container}>
-                <AccountsToReviewCard
-                    notBackedUpCount={notBackedUpCount}
-                    availableFromBackupCount={availableFromBackupCount}
+                <BackupReviewCard
+                    title={t('cloud_backup.accounts.review_title')}
+                    lines={[
+                        ...(notBackedUpCount > 0
+                            ? [
+                                  {
+                                      icon: 'cloud-off' as const,
+                                      isNegative: true,
+                                      label: t(
+                                          'cloud_backup.accounts.not_backed_up_count',
+                                          { count: notBackedUpCount },
+                                      ),
+                                  },
+                              ]
+                            : []),
+                        ...(availableFromBackupCount > 0
+                            ? [
+                                  {
+                                      icon: 'cloud-download' as const,
+                                      isNegative: false,
+                                      label: t(
+                                          'cloud_backup.accounts.available_count',
+                                          { count: availableFromBackupCount },
+                                      ),
+                                  },
+                              ]
+                            : []),
+                    ]}
+                    actionLabel={t('cloud_backup.accounts.review_action')}
                     onReview={onReview}
+                    testID='accounts_to_review_card'
                 />
                 <PWView style={styles.section}>
                     <SectionHeading

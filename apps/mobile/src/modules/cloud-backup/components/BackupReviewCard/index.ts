@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-export * from './types'
-export * from './syncState'
-export * from './syncStatus'
-export * from './reviewBuckets'
-export * from './itemKeys'
-export * from './store'
-export * from './payloads'
+export { BackupReviewCard } from './BackupReviewCard'
+export type {
+    BackupReviewCardProps,
+    BackupReviewLine,
+} from './BackupReviewCard'

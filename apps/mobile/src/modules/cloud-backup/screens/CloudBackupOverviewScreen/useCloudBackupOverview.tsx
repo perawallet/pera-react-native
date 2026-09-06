@@ -17,8 +17,8 @@ import {
     useCloudBackupStore,
     useBackupSyncStateStore,
     deriveBackupSyncStatus,
-    deriveBackupContactsInSync,
     deriveBackupAccountReview,
+    deriveBackupContactReview,
     backupIdToAddress,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -88,11 +88,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
-    const contactsTotal = useContactsStore(state => state.contacts.length)
+    const contacts = useContactsStore(state => state.contacts)
 
-    const contactsInSync = useMemo(
-        () => deriveBackupContactsInSync(syncState),
-        [syncState],
+    const contactAddresses = useMemo(
+        () => contacts.map(contact => contact.address),
+        [contacts],
+    )
+    const contactReview = useMemo(
+        () => deriveBackupContactReview(syncState, contactAddresses),
+        [syncState, contactAddresses],
     )
 
     const addresses = useMemo(
@@ -121,12 +125,16 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     )
 
     const noop = useCallback(() => {
-        // TODO: wire the contacts and credential-info destinations as their
-        // screens land.
+        // TODO: wire the credential-info destination as its screen lands.
     }, [])
 
     const onPressAccounts = useCallback(
         () => navigation.navigate('CloudBackupAccounts'),
+        [navigation],
+    )
+
+    const onPressContacts = useCallback(
+        () => navigation.navigate('CloudBackupContacts'),
         [navigation],
     )
 
@@ -191,10 +199,10 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         credentialAddressLabel,
         accountsInSync: backedUp.size,
         accountsNotBackedUp: notBackedUp.length,
-        contactsInSync,
-        contactsNotBackedUp: Math.max(0, contactsTotal - contactsInSync),
+        contactsInSync: contactReview.backedUp.size,
+        contactsNotBackedUp: contactReview.notBackedUp.length,
         onPressAccounts,
-        onPressContacts: noop,
+        onPressContacts,
         onPressCredentialAddress,
         onPressCredentialInfo: noop,
         onPressSyncDevices,

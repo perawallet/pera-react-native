@@ -23,16 +23,13 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupOverview } from '../useCloudBackupOverview'
 
-// The counting rules live in the package; import the real one so this spec
+// The bucket rules live in the package; import the real ones so this spec
 // exercises what the screen actually renders.
 vi.mock('@perawallet/wallet-core-backup', async () => ({
     useCloudBackupStore: vi.fn(),
     useBackupSyncStateStore: vi.fn(),
     deriveBackupSyncStatus: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
-    ...(await vi.importActual<
-        typeof import('../../../../../../../../packages/backup/src/cloud/models/syncCounts')
-    >('../../../../../../../../packages/backup/src/cloud/models/syncCounts')),
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
     >(
@@ -130,7 +127,7 @@ const mockStores = (opts: {
     backupId: string | null
     syncState: SyncStateFixture | null
     accounts: string[]
-    contacts: number
+    contacts: string[]
     derivedStatus?: string
 }) => {
     ;(deriveBackupSyncStatus as unknown as Mock).mockReturnValue(
@@ -150,7 +147,7 @@ const mockStores = (opts: {
     )
     ;(useContactsStore as unknown as Mock).mockImplementation(
         (s: (st: { contacts: unknown[] }) => unknown) =>
-            s({ contacts: new Array(opts.contacts).fill({}) }),
+            s({ contacts: opts.contacts.map(address => ({ address })) }),
     )
 }
 
@@ -180,7 +177,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: emptySync(),
             accounts: ['A'],
-            contacts: 0,
+            contacts: [],
             derivedStatus: status,
         })
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -192,7 +189,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: emptySync(),
             accounts: ['A', 'B'],
-            contacts: 3,
+            contacts: ['C1', 'C2', 'C3'],
         })
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(0)
@@ -214,7 +211,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState,
             accounts: ['A', 'B', 'C'],
-            contacts: 0,
+            contacts: [],
         })
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(2)
@@ -231,11 +228,27 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState,
             accounts: ['A'],
-            contacts: 0,
+            contacts: [],
         })
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(0)
         expect(result.current.accountsNotBackedUp).toBe(1)
+    })
+
+    test('counts a backed-up contact in sync and a local-only one as not backed up', () => {
+        const syncState = emptySync()
+        syncState.items = {
+            'contacts/C1': uploaded({ type: 'CONTACT' }),
+        }
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState,
+            accounts: [],
+            contacts: ['C1', 'C2'],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+        expect(result.current.contactsInSync).toBe(1)
+        expect(result.current.contactsNotBackedUp).toBe(1)
     })
 
     test('a single backed-up account reads as one, not one per stored item', () => {
@@ -248,7 +261,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState,
             accounts: ['A'],
-            contacts: 0,
+            contacts: [],
         })
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.accountsInSync).toBe(1)
@@ -260,7 +273,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         const { result } = renderHook(() => useCloudBackupOverview())
         expect(result.current.credentialAddressLabel).toBe('truncated(abc)')
@@ -271,7 +284,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
 
         const { result } = renderHook(() => useCloudBackupOverview())
@@ -285,7 +298,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet
@@ -305,7 +318,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet
@@ -324,7 +337,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValueOnce(undefined) // dismissed
@@ -342,7 +355,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(false)
 
@@ -357,7 +370,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet
@@ -375,7 +388,7 @@ describe('useCloudBackupOverview', () => {
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
-            contacts: 0,
+            contacts: [],
         })
         mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValueOnce(false)
