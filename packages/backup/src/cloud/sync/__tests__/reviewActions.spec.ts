@@ -20,10 +20,14 @@ import {
     type SyncState,
 } from '../../models'
 import {
+    deleteContactFromBackup,
     deleteFromBackup,
+    importContactFromBackup,
     importFromBackup,
     keepAccountInBackup,
+    keepContactInBackup,
     markAccountForBackup,
+    markContactForBackup,
 } from '../reviewActions'
 
 const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
@@ -48,6 +52,7 @@ const baseDeps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
     readItems: vi.fn(),
     deleteItem: vi.fn(async () => ({ seq: 1 })),
     decrypt: vi.fn(),
@@ -371,5 +376,117 @@ describe('keepAccountInBackup', () => {
         const next = keepAccountInBackup(state, 'X')
 
         expect(next.items['accounts/X'].pendingImport).toBeUndefined()
+    })
+})
+
+describe('contact review actions', () => {
+    const contact = (overrides: Partial<SyncItemState> = {}): SyncState => {
+        const state = createEmptySyncState('b')
+        state.items['contacts/A'] = tracked({
+            type: BackupItemType.CONTACT,
+            ...overrides,
+        })
+        return state
+    }
+
+    const servingContact = (payload: Record<string, unknown> | null) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue(
+            payload === null
+                ? []
+                : [{ key: 'contacts/A', ver: 4, hash: 'rh', payload: 'enc' }],
+        )
+        deps.decrypt.mockReturnValue(JSON.stringify(payload ?? {}))
+        return deps
+    }
+
+    it('markContactForBackup forgets the tracked item so it re-uploads as new', () => {
+        const next = markContactForBackup(contact({ knownVer: 3 }), 'A')
+
+        expect(next.items['contacts/A']).toBeUndefined()
+    })
+
+    it('keepContactInBackup holds it for review with its name', () => {
+        const next = keepContactInBackup(
+            contact({ isDirty: true }),
+            'A',
+            'Alice',
+        )
+
+        expect(next.items['contacts/A']).toMatchObject({
+            pendingImport: true,
+            isDirty: false,
+            pendingDelete: false,
+            label: 'Alice',
+        })
+    })
+
+    it('keepContactInBackup leaves a contact the backup never held alone', () => {
+        const state = contact({ status: BackupItemStatus.IGNORED })
+
+        expect(keepContactInBackup(state, 'A', 'Alice')).toBe(state)
+    })
+
+    it('importContactFromBackup re-reads the item and imports it', async () => {
+        const deps = servingContact({ address: 'A', name: 'Alice' })
+
+        const { state: next, summary } = await importContactFromBackup({
+            state: contact({ pendingImport: true }),
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { address: 'A', name: 'Alice' },
+        ])
+        expect(summary.imported).toBe(1)
+        expect(next.items['contacts/A']).toMatchObject({
+            pendingImport: false,
+            label: 'Alice',
+            knownVer: 4,
+        })
+    })
+
+    it('importContactFromBackup reports a contact the backup no longer holds', async () => {
+        const deps = servingContact(null)
+
+        const { summary } = await importContactFromBackup({
+            state: contact({ status: BackupItemStatus.IGNORED }),
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.readItems).not.toHaveBeenCalled()
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toHaveLength(1)
+    })
+
+    it('deleteContactFromBackup deletes the one key and tombstones it', async () => {
+        const deps = baseDeps()
+
+        const next = await deleteContactFromBackup({
+            state: contact(),
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.deleteItem).toHaveBeenCalledTimes(1)
+        expect(deps.deleteItem.mock.calls[0][3]).toBe('contacts/A')
+        expect(next.items['contacts/A']).toMatchObject({
+            status: BackupItemStatus.IGNORED,
+            pendingDelete: false,
+        })
+    })
+
+    it('deleteContactFromBackup makes no request for a contact already gone', async () => {
+        const deps = baseDeps()
+
+        await deleteContactFromBackup({
+            state: contact({ status: BackupItemStatus.IGNORED }),
+            address: 'A',
+            deps,
+        })
+
+        expect(deps.deleteItem).not.toHaveBeenCalled()
     })
 })

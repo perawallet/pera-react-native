@@ -33,6 +33,8 @@ const {
     storedDeviceId,
     accountsState,
     accountsListeners,
+    contactsState,
+    contactsListeners,
 } = vi.hoisted(() => ({
     mockSyncBackup: vi.fn(),
     mockPullBackupDeltas: vi.fn(),
@@ -56,6 +58,10 @@ const {
     accountsState: { current: [] as { address: string; name?: string }[] },
     accountsListeners: {
         current: [] as ((state: { accounts: unknown[] }) => void)[],
+    },
+    contactsState: { current: [] as { address: string; name: string }[] },
+    contactsListeners: {
+        current: [] as ((state: { contacts: unknown[] }) => void)[],
     },
 }))
 
@@ -140,6 +146,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContactsStore: {
+        getState: () => ({ contacts: contactsState.current }),
+        subscribe: (listener: (state: { contacts: unknown[] }) => void) => {
+            contactsListeners.current.push(listener)
+            return () => {
+                contactsListeners.current = contactsListeners.current.filter(
+                    entry => entry !== listener,
+                )
+            }
+        },
+    },
+}))
+
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },
 }))
@@ -178,6 +198,7 @@ const makeDeps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
     resolveMnemonic: vi.fn(async () => null),
     resolveHd: vi.fn(async () => null),
 })
@@ -186,6 +207,13 @@ const setAccounts = (accounts: { address: string; name?: string }[]) => {
     accountsState.current = accounts
     for (const listener of [...accountsListeners.current]) {
         listener({ accounts })
+    }
+}
+
+const setContacts = (contacts: { address: string; name: string }[]) => {
+    contactsState.current = contacts
+    for (const listener of [...contactsListeners.current]) {
+        listener({ contacts })
     }
 }
 
@@ -208,6 +236,8 @@ describe('BackupSyncManager', () => {
         storedDeviceId.current = null
         accountsState.current = []
         accountsListeners.current = []
+        contactsState.current = []
+        contactsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -355,6 +385,8 @@ describe('BackupSyncManager account watcher', () => {
         storedDeviceId.current = null
         accountsState.current = []
         accountsListeners.current = []
+        contactsState.current = []
+        contactsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
         )
@@ -401,6 +433,31 @@ describe('BackupSyncManager account watcher', () => {
         await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
 
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('syncs when a contact is added', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setContacts([{ address: 'C1', name: 'Alice' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('does not sync for a contact write the backup cannot see', async () => {
+        const mgr = new BackupSyncManager(makeDeps())
+        contactsState.current = [{ address: 'C1', name: 'Alice' }]
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        setContacts([{ address: 'C1', name: 'Alice' }])
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).not.toHaveBeenCalled()
         mgr.stop()
     })
 

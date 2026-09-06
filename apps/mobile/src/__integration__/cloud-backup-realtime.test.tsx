@@ -47,6 +47,7 @@ import {
     encryptItemPayload,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { useCloudBackupContactImport } from '@modules/cloud-backup'
 
 import {
     BACKUP_MNEMONIC,
@@ -136,9 +137,13 @@ describe('Flow: Cloud backup → real-time manager', () => {
             const mnemonicHook = renderQueryHook(() =>
                 useResolveMnemonicForBackup(),
             )
+            const contactImportHook = renderQueryHook(() =>
+                useCloudBackupContactImport(),
+            )
 
             manager = initializeBackupSyncManager({
                 importAccounts: importHook.current.importAccounts,
+                importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,
                 resolveHd: async () => null,
                 socketFactory: fakeSocketFactory,

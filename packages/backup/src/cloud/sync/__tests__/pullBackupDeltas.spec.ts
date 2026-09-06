@@ -40,6 +40,7 @@ const deps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
 })
 
 describe('pullBackupDeltas', () => {

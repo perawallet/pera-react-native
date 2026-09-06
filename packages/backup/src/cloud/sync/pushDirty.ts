@@ -21,6 +21,7 @@ import {
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
     isAccountItemKey,
+    isContactItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -50,13 +51,16 @@ export type PushDirtyDeps = {
     ) => Promise<DeleteItemResponse>
 }
 
-/** Inject the LWW timestamp into the address payload before encrypting. */
+/** Inject the LWW timestamp into payloads that carry one before encrypting.
+ *  Secrets have no `updatedAt` field, so they are deliberately left alone. */
 const withUpdatedAt = (
     item: LocalItem,
     updatedAt: number | null | undefined,
 ): string => {
+    const carriesUpdatedAt =
+        isAccountItemKey(item.key) || isContactItemKey(item.key)
     const payload =
-        isAccountItemKey(item.key) && updatedAt != null
+        carriesUpdatedAt && updatedAt != null
             ? { ...(item.payload as Record<string, unknown>), updatedAt }
             : item.payload
     return canonicalJson(payload)

@@ -56,6 +56,7 @@ const deps = () => ({
     deviceId: 'dev',
     encryptionKey,
     listAccounts: () => [watch],
+    listContacts: () => [],
     serializeAccount: async (a: WalletAccount) =>
         serializeAccountItems(a, { updatedAt: 1, secrets: null }),
     importAccounts: vi.fn(async () => ({
@@ -63,6 +64,7 @@ const deps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
 })
 
 describe('syncBackup', () => {
@@ -200,5 +202,42 @@ describe('syncBackup', () => {
 
         expect(deleteItem).not.toHaveBeenCalled()
         expect(next.items['accounts/W'].pendingDelete).toBeUndefined()
+    })
+
+    it('pushes local contacts alongside accounts', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g3',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'contacts/C1',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 2,
+                },
+            ],
+        })
+
+        const next = await syncBackup(
+            {
+                ...deps(),
+                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+            },
+            createEmptySyncState('b'),
+        )
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        expect(
+            request.items.map((entry: { key: string }) => entry.key).sort(),
+        ).toEqual(['accounts/W', 'contacts/C1'])
+        expect(next.items['contacts/C1']).toMatchObject({
+            type: BackupItemType.CONTACT,
+            isDirty: false,
+            knownVer: 1,
+        })
     })
 })

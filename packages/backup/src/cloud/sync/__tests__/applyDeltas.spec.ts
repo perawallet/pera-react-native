@@ -31,6 +31,7 @@ const baseDeps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
     readItems: vi.fn(),
     decrypt: vi.fn(),
 })
@@ -363,5 +364,123 @@ describe('applyDeltas', () => {
             status: BackupItemStatus.IGNORED,
             pendingImport: false,
         })
+    })
+})
+
+describe('applyDeltas: contacts', () => {
+    const contactDelta = (over: Record<string, unknown> = {}) => ({
+        seq: 5,
+        key: 'contacts/C1',
+        type: BackupItemType.CONTACT,
+        ver: 3,
+        status: BackupItemStatus.ACTIVE,
+        op: DeltaOperation.UPSERT,
+        hash: 'rh',
+        ...over,
+    })
+
+    const trackedContact = (over: Record<string, unknown> = {}) => ({
+        type: BackupItemType.CONTACT,
+        knownVer: 1,
+        baseVer: 1,
+        isDirty: false,
+        status: BackupItemStatus.ACTIVE,
+        lastRemoteHash: 'old',
+        localContentHash: null,
+        localUpdatedAt: null,
+        ...over,
+    })
+
+    const serving = (payload: Record<string, unknown>) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'contacts/C1', ver: 3, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(JSON.stringify(payload))
+        return deps
+    }
+
+    it('imports a new contact and caches its name', async () => {
+        const deps = serving({ address: 'C1', name: 'Alice' })
+
+        const next = await applyDeltas({
+            state: createEmptySyncState('b'),
+            deltas: [contactDelta()],
+            deps,
+        })
+
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { address: 'C1', name: 'Alice' },
+        ])
+        expect(next.items['contacts/C1']).toMatchObject({
+            label: 'Alice',
+            isDirty: false,
+            knownVer: 3,
+            baseVer: 3,
+        })
+    })
+
+    it('holds a contact this device deleted, downloading it only for its name', async () => {
+        const deps = serving({ address: 'C1', name: 'Alice' })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            status: BackupItemStatus.IGNORED,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [contactDelta({ ver: 4 })],
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(next.items['contacts/C1']).toMatchObject({
+            pendingImport: true,
+            label: 'Alice',
+        })
+    })
+
+    it('keeps a strictly newer local rename over the remote copy', async () => {
+        const deps = serving({
+            address: 'C1',
+            name: 'Remote',
+            updatedAt: 1000,
+        })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            isDirty: true,
+            localUpdatedAt: 2000,
+        })
+
+        const next = await applyDeltas({
+            state,
+            deltas: [contactDelta()],
+            deps,
+        })
+
+        expect(deps.importContacts).not.toHaveBeenCalled()
+        expect(next.items['contacts/C1']).toMatchObject({
+            isDirty: true,
+            baseVer: 3,
+        })
+    })
+
+    it('lets the remote win a tie', async () => {
+        const deps = serving({
+            address: 'C1',
+            name: 'Remote',
+            updatedAt: 1000,
+        })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = trackedContact({
+            isDirty: true,
+            localUpdatedAt: 1000,
+        })
+
+        await applyDeltas({ state, deltas: [contactDelta()], deps })
+
+        expect(deps.importContacts).toHaveBeenCalledWith([
+            { address: 'C1', name: 'Remote', updatedAt: 1000 },
+        ])
     })
 })

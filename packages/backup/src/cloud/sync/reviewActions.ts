@@ -13,10 +13,15 @@
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { deleteItem, readItems } from '../api'
-import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
+import {
+    parseAddressPayload,
+    parseContactPayload,
+    parseSecretsPayload,
+} from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
     accountItemKey,
+    contactItemKey,
     isAccountItemKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
@@ -33,7 +38,13 @@ import {
     type SyncState,
 } from '../models'
 import { buildPulledAccounts } from '../restore'
-import type { ImportSummary, SyncEngineDeps, SyncImportFn } from './types'
+import type {
+    ContactImportFn,
+    ContactImportSummary,
+    ImportSummary,
+    SyncEngineDeps,
+    SyncImportFn,
+} from './types'
 
 export type ReviewActionDeps = {
     network: Network
@@ -41,6 +52,7 @@ export type ReviewActionDeps = {
     deviceId: DeviceId
     encryptionKey: Uint8Array
     importAccounts: SyncImportFn
+    importContacts: ContactImportFn
     readItems: (
         network: Network,
         backupId: BackupId,
@@ -69,6 +81,7 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     deviceId: deps.deviceId,
     encryptionKey: deps.encryptionKey,
     importAccounts: deps.importAccounts,
+    importContacts: deps.importContacts,
     readItems,
     deleteItem,
     decrypt: decryptItemPayload,
@@ -344,24 +357,16 @@ const secretKeyToDelete = async (
 
 /** The local tombstone stays, so a later re-upload from elsewhere comes back to
  *  review rather than importing itself. */
-export const deleteFromBackup = async ({
+const deleteKeysFromBackup = async ({
     state,
-    address,
+    keys,
     deps,
 }: {
     state: SyncState
-    address: string
+    keys: BackupItemKey[]
     deps: ReviewActionDeps
 }): Promise<SyncState> => {
     const items = { ...state.items }
-    const addressKey = accountItemKey(address)
-    const keys: BackupItemKey[] = []
-    if (state.items[addressKey]?.status === BackupItemStatus.ACTIVE) {
-        keys.push(addressKey)
-    }
-    const secretKey = await secretKeyToDelete(state, address, deps)
-    if (secretKey !== null) keys.push(secretKey)
-
     for (const key of keys) {
         // Marked before the request, so a failure leaves a retry pushDirty can
         // finish rather than a delete the user asked for and never got.
@@ -391,4 +396,161 @@ export const deleteFromBackup = async ({
         }
     }
     return { ...state, items }
+}
+
+export const deleteFromBackup = async ({
+    state,
+    address,
+    deps,
+}: {
+    state: SyncState
+    address: string
+    deps: ReviewActionDeps
+}): Promise<SyncState> => {
+    const keys: BackupItemKey[] = []
+    const addressKey = accountItemKey(address)
+    if (state.items[addressKey]?.status === BackupItemStatus.ACTIVE) {
+        keys.push(addressKey)
+    }
+    const secretKey = await secretKeyToDelete(state, address, deps)
+    if (secretKey !== null) keys.push(secretKey)
+
+    return deleteKeysFromBackup({ state, keys, deps })
+}
+
+export const deleteContactFromBackup = async ({
+    state,
+    address,
+    deps,
+}: {
+    state: SyncState
+    address: string
+    deps: ReviewActionDeps
+}): Promise<SyncState> => {
+    const key = contactItemKey(address)
+    const keys =
+        state.items[key]?.status === BackupItemStatus.ACTIVE ? [key] : []
+
+    return deleteKeysFromBackup({ state, keys, deps })
+}
+
+/** Mirror of `markAccountForBackup`: dropping the tombstone rather than
+ *  reviving it is what makes the re-upload correct, since the server deleted
+ *  the key and it has to go back at version 0. */
+export const markContactForBackup = (
+    state: SyncState,
+    address: string,
+): SyncState => {
+    const items = { ...state.items }
+    delete items[contactItemKey(address)]
+    return { ...state, items }
+}
+
+/** Keeps the backup's copy of a contact the user is removing from this device.
+ *  `name` is stamped here because this device may never have downloaded the
+ *  item it pushed, and the review row has nothing else to render. */
+export const keepContactInBackup = (
+    state: SyncState,
+    address: string,
+    name: string,
+): SyncState => {
+    const key = contactItemKey(address)
+    const tracked = state.items[key]
+    if (!tracked || tracked.status !== BackupItemStatus.ACTIVE) return state
+
+    return {
+        ...state,
+        items: {
+            ...state.items,
+            [key]: {
+                ...tracked,
+                pendingImport: true,
+                isDirty: false,
+                pendingDelete: false,
+                label: name,
+            },
+        },
+    }
+}
+
+const contactNotInBackup = (
+    state: SyncState,
+    address: string,
+): { state: SyncState; summary: ContactImportSummary } => ({
+    state,
+    summary: {
+        imported: 0,
+        failed: [{ address, reason: 'Not present in the backup' }],
+    },
+})
+
+/** Re-reads the item rather than trusting the cached `label`, so `label` stays
+ *  a pure display concern and imports have one code path. */
+export const importContactFromBackup = async ({
+    state,
+    address,
+    deps,
+}: {
+    state: SyncState
+    address: string
+    deps: ReviewActionDeps
+}): Promise<{ state: SyncState; summary: ContactImportSummary }> => {
+    const key = contactItemKey(address)
+    if (state.items[key]?.status !== BackupItemStatus.ACTIVE) {
+        return contactNotInBackup(state, address)
+    }
+
+    const [fetched] = await deps.readItems(
+        deps.network,
+        deps.backupId,
+        deps.deviceId,
+        [key],
+    )
+    if (!fetched) return contactNotInBackup(state, address)
+
+    let payload
+    try {
+        payload = parseContactPayload(
+            deps.decrypt(fetched.payload, {
+                encryptionKey: deps.encryptionKey,
+                backupId: deps.backupId,
+                key,
+            }),
+        )
+    } catch (error) {
+        logger.warn('reviewActions: unreadable contact', { key })
+        return {
+            state,
+            summary: {
+                imported: 0,
+                failed: [
+                    {
+                        address,
+                        reason:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                    },
+                ],
+            },
+        }
+    }
+
+    const summary = await deps.importContacts([payload])
+    return {
+        state: {
+            ...state,
+            items: {
+                ...state.items,
+                [key]: {
+                    ...clearReviewed(
+                        state.items[key] as SyncItemState,
+                        fetched,
+                    ),
+                    label: payload.name,
+                },
+            },
+        },
+        summary,
+    }
 }

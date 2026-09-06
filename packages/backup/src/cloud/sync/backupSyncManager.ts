@@ -12,6 +12,7 @@
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import {
     logger,
     type Network,
@@ -33,13 +34,18 @@ import {
 import { createEmptySyncState, type SyncState } from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
 import {
+    deleteContactFromBackup,
     deleteFromBackup,
+    importContactFromBackup,
     importFromBackup,
     keepAccountInBackup,
+    keepContactInBackup,
     markAccountForBackup,
+    markContactForBackup,
     reviewActionDeps,
 } from './reviewActions'
 import { accountFingerprint } from './accountFingerprint'
+import { contactsFingerprint } from './contactsFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -49,6 +55,8 @@ import {
     type BackupWebSocketEvent,
 } from './webSocketClient'
 import type {
+    ContactImportFn,
+    ContactImportSummary,
     ImportSummary,
     SyncEngineDeps,
     SerializeHdResolver,
@@ -56,10 +64,11 @@ import type {
 } from './types'
 
 const PERIODIC_SYNC_MS = 5 * 60 * 1000
-const ACCOUNT_CHANGE_DEBOUNCE_MS = 2000
+const LOCAL_CHANGE_DEBOUNCE_MS = 2000
 
 export type BackupSyncManagerDeps = {
     importAccounts: SyncEngineDeps['importAccounts']
+    importContacts: ContactImportFn
     /** Hook-bound 25-word phrase resolver, injected from RootComponent. */
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
@@ -76,8 +85,10 @@ export class BackupSyncManager {
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
-    private accountTimer: Nullable<ReturnType<typeof setTimeout>> = null
+    private unwatchContacts: Nullable<() => void> = null
+    private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private accountsFingerprint = ''
+    private contactsFingerprint = ''
 
     constructor(private readonly deps: BackupSyncManagerDeps) {}
 
@@ -123,6 +134,8 @@ export class BackupSyncManager {
                         resolveHd: this.deps.resolveHd,
                     }),
                 importAccounts: this.deps.importAccounts,
+                listContacts: () => useContactsStore.getState().contacts ?? [],
+                importContacts: this.deps.importContacts,
             }),
         )
     }
@@ -193,7 +206,50 @@ export class BackupSyncManager {
         )
     }
 
-    private watchAccounts(): void {
+    async backUpContact(address: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markContactForBackup(state, address),
+        )
+        if (!staged) return false
+        await this.syncNow()
+        return true
+    }
+
+    async addContactFromBackup(
+        address: string,
+    ): Promise<ContactImportSummary | null> {
+        let summary: ContactImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importContactFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deleteContactFromBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async (state, deps) =>
+            deleteContactFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the contact returns to the review
+     *  screen under "available from backup". */
+    async keepContactInBackup(address: string, name: string): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepContactInBackup(state, address, name),
+        )
+    }
+
+    private watchLocalStores(): void {
         this.accountsFingerprint = accountFingerprint(
             useAccountsStore.getState().accounts,
         )
@@ -201,24 +257,35 @@ export class BackupSyncManager {
             const next = accountFingerprint(state.accounts)
             if (next === this.accountsFingerprint) return
             this.accountsFingerprint = next
-            this.scheduleAccountSync()
+            this.scheduleLocalSync()
+        })
+
+        this.contactsFingerprint = contactsFingerprint(
+            useContactsStore.getState().contacts ?? [],
+        )
+        this.unwatchContacts = useContactsStore.subscribe(state => {
+            const next = contactsFingerprint(state.contacts ?? [])
+            if (next === this.contactsFingerprint) return
+            this.contactsFingerprint = next
+            this.scheduleLocalSync()
         })
     }
 
     /** Debounced so a batch import lands as one sync. Re-arms rather than
      *  dropping when a sync is already running: syncBackup snapshots the
-     *  accounts at its start, so an in-flight run cannot see this change. */
-    private scheduleAccountSync(): void {
-        if (this.accountTimer != null) clearTimeout(this.accountTimer)
-        this.accountTimer = setTimeout(() => {
-            this.accountTimer = null
+     *  accounts and contacts at its start, so an in-flight run cannot see this
+     *  change. */
+    private scheduleLocalSync(): void {
+        if (this.localChangeTimer != null) clearTimeout(this.localChangeTimer)
+        this.localChangeTimer = setTimeout(() => {
+            this.localChangeTimer = null
             if (!this.running) return
             if (this.syncInProgress) {
-                this.scheduleAccountSync()
+                this.scheduleLocalSync()
                 return
             }
             void this.syncNow()
-        }, ACCOUNT_CHANGE_DEBOUNCE_MS)
+        }, LOCAL_CHANGE_DEBOUNCE_MS)
     }
 
     async start(): Promise<void> {
@@ -237,7 +304,8 @@ export class BackupSyncManager {
         if (this.periodic != null) clearInterval(this.periodic)
         this.socket?.disconnect()
         this.unwatchAccounts?.()
-        this.watchAccounts()
+        this.unwatchContacts?.()
+        this.watchLocalStores()
         await this.syncNow()
         this.connectSocket()
         this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
@@ -249,12 +317,14 @@ export class BackupSyncManager {
             clearInterval(this.periodic)
             this.periodic = null
         }
-        if (this.accountTimer != null) {
-            clearTimeout(this.accountTimer)
-            this.accountTimer = null
+        if (this.localChangeTimer != null) {
+            clearTimeout(this.localChangeTimer)
+            this.localChangeTimer = null
         }
         this.unwatchAccounts?.()
         this.unwatchAccounts = null
+        this.unwatchContacts?.()
+        this.unwatchContacts = null
         this.socket?.disconnect()
         this.socket = null
     }

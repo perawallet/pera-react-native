@@ -85,6 +85,7 @@ const pullDeps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
     readItems: vi.fn(async () => []),
     decrypt: vi.fn(() => '{}'),
 })

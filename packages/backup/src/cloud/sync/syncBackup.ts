@@ -21,10 +21,11 @@ import {
 import { decryptItemPayload } from '../crypto/itemPayload'
 import type { Manifest, SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
+import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'
 import { reconcile } from './reconcile'
-import type { SyncEngineDeps } from './types'
+import type { LocalSnapshot, SyncEngineDeps } from './types'
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
@@ -56,14 +57,22 @@ export const syncBackup = async (
     now: number = Date.now(),
 ): Promise<SyncState> => {
     // 1. Reconcile local first so the short-circuit below is accurate.
-    const local = await buildLocalItems(
+    const accounts = await buildLocalItems(
         deps.listAccounts(),
         deps.serializeAccount,
     )
-    if (local.skipped > 0) {
+    if (accounts.skipped > 0) {
         logger.warn('syncBackup: accounts skipped, deletions deferred', {
-            skipped: local.skipped,
+            skipped: accounts.skipped,
         })
+    }
+    const local: LocalSnapshot = {
+        items: [
+            ...accounts.items,
+            ...buildLocalContactItems(deps.listContacts(), now),
+        ],
+        // Account-only: a contact cannot fail to serialize.
+        skipped: accounts.skipped,
     }
     let next = reconcile(state, local, now)
 
@@ -93,6 +102,7 @@ export const syncBackup = async (
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
             readItems,
             decrypt: decryptItemPayload,
         },

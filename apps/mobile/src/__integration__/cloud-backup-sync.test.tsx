@@ -26,6 +26,7 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     BackupAccountType,
+    deriveBackupContactReview,
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
@@ -39,8 +40,11 @@ import {
 import {
     buildSyncHandlers,
     decryptItemPayload,
+    encryptItemPayload,
 } from '@perawallet/wallet-core-backup/test-handlers'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { useCloudBackupContactImport } from '@modules/cloud-backup'
 
 import {
     BACKUP_MNEMONIC,
@@ -80,10 +84,14 @@ const setupSyncedBackup = async ({
         deviceId,
     })
 
-    const { handlers, getItem, seenDeviceIds } = buildSyncHandlers({ backupId })
+    const { handlers, getItem, seenDeviceIds, pushFromOtherDevice } =
+        buildSyncHandlers({ backupId })
     server.use(...handlers)
 
     const importHook = renderQueryHook(() => useCloudBackupImport())
+    const contactImportHook = renderQueryHook(() =>
+        useCloudBackupContactImport(),
+    )
     const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
     const hdHook = withHdResolver
         ? renderQueryHook(() => useResolveHdSeedForBackup())
@@ -91,11 +99,19 @@ const setupSyncedBackup = async ({
 
     const manager = initializeBackupSyncManager({
         importAccounts: importHook.current.importAccounts,
+        importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,
         resolveHd: hdHook ? hdHook.current : async () => null,
     })
 
-    return { manager, getItem, seenDeviceIds, backupId, encryptionKey }
+    return {
+        manager,
+        getItem,
+        seenDeviceIds,
+        pushFromOtherDevice,
+        backupId,
+        encryptionKey,
+    }
 }
 
 describe('Flow: Cloud backup → Sync (push round-trip)', () => {
@@ -106,6 +122,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
     beforeEach(async () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useContactsStore.getState().resetState()
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
         useDeviceStore
@@ -291,6 +308,156 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
 
             expect(getItem(`accounts/${second.address}`)).toBeUndefined()
             expect(getItem(`secrets/${first.address}`)).toBeUndefined()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})
+
+describe('Flow: Cloud backup → Sync (contacts)', () => {
+    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    afterEach(() => server.resetHandlers())
+    afterAll(() => server.close())
+
+    beforeEach(async () => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([])
+        useContactsStore.getState().resetState()
+        useCloudBackupStore.getState().resetState()
+        useBackupSyncStateStore.getState().resetState()
+        useDeviceStore
+            .getState()
+            .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
+        await deleteBackupKeys().catch(() => undefined)
+        vi.clearAllMocks()
+    })
+
+    const seedContact = (address: string, name: string) =>
+        useContactsStore.getState().addContact({ address, name })
+
+    it(
+        'pushes a local contact: address + name land on the backend encrypted',
+        async () => {
+            seedContact('CONTACT_A', 'Alice')
+
+            const { manager, getItem, backupId, encryptionKey } =
+                await setupSyncedBackup()
+            await manager.syncNow()
+
+            const key = 'contacts/CONTACT_A'
+            const item = getItem(key)
+            expect(item).toBeDefined()
+            expect(
+                JSON.parse(
+                    decryptItemPayload(item!.payload, {
+                        encryptionKey,
+                        backupId,
+                        key,
+                    }),
+                ),
+            ).toMatchObject({ address: 'CONTACT_A', name: 'Alice' })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'holds a contact the user chose to keep, with its name, for review',
+        async () => {
+            seedContact('CONTACT_A', 'Alice')
+            const { manager } = await setupSyncedBackup()
+            await manager.syncNow()
+
+            expect(
+                await manager.keepContactInBackup('CONTACT_A', 'Alice'),
+            ).toBe(true)
+            useContactsStore.getState().resetState()
+            await manager.syncNow()
+
+            const review = deriveBackupContactReview(
+                useBackupSyncStateStore.getState().syncState,
+                [],
+            )
+            expect(review.availableFromBackup).toEqual([
+                { address: 'CONTACT_A', name: 'Alice' },
+            ])
+            expect(useContactsStore.getState().contacts).toEqual([])
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'adds a held contact back from the backup on request',
+        async () => {
+            seedContact('CONTACT_A', 'Alice')
+            const { manager } = await setupSyncedBackup()
+            await manager.syncNow()
+            await manager.keepContactInBackup('CONTACT_A', 'Alice')
+            useContactsStore.getState().resetState()
+
+            const summary = await manager.addContactFromBackup('CONTACT_A')
+
+            expect(summary).toMatchObject({ imported: 1, failed: [] })
+            expect(useContactsStore.getState().contacts).toEqual([
+                { address: 'CONTACT_A', name: 'Alice' },
+            ])
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'deletes the contact from the server when the user chooses Delete',
+        async () => {
+            seedContact('CONTACT_A', 'Alice')
+            const { manager, getItem } = await setupSyncedBackup()
+            await manager.syncNow()
+            expect(getItem('contacts/CONTACT_A')).toBeDefined()
+
+            expect(await manager.deleteContactFromBackup('CONTACT_A')).toBe(
+                true,
+            )
+            useContactsStore.getState().resetState()
+            await manager.syncNow()
+
+            expect(getItem('contacts/CONTACT_A')).toBeUndefined()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'keeps the server copy when a contact leaves the device without a choice',
+        async () => {
+            seedContact('CONTACT_A', 'Alice')
+            const { manager, getItem } = await setupSyncedBackup()
+            await manager.syncNow()
+
+            // No review action and no removal flow: the shape of a device wipe.
+            useContactsStore.getState().resetState()
+            await manager.syncNow()
+
+            expect(getItem('contacts/CONTACT_A')).toBeDefined()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'pulls a contact another device backed up',
+        async () => {
+            const { manager, pushFromOtherDevice, backupId, encryptionKey } =
+                await setupSyncedBackup()
+            await manager.syncNow()
+
+            const key = 'contacts/CONTACT_B'
+            pushFromOtherDevice(
+                key,
+                encryptItemPayload(
+                    JSON.stringify({ address: 'CONTACT_B', name: 'Bob' }),
+                    { encryptionKey, backupId, key },
+                ),
+            )
+            await manager.syncNow()
+
+            expect(useContactsStore.getState().contacts).toEqual([
+                { address: 'CONTACT_B', name: 'Bob' },
+            ])
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -46,9 +46,11 @@ import {
     buildRestoreHandlers,
     buildSyncHandlers,
 } from '@perawallet/wallet-core-backup/test-handlers'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
+import { useCloudBackupContactImport } from '@modules/cloud-backup'
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'
@@ -132,6 +134,7 @@ describe('Flow: Cloud backup → Restore', () => {
     beforeEach(async () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        useContactsStore.getState().resetState()
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
         useCloudBackupRestoreDraftStore.getState().resetState()
@@ -245,11 +248,15 @@ describe('Flow: Cloud backup → Restore', () => {
 
             const importHook = renderQueryHook(() => useCloudBackupImport())
             const hdHook = renderQueryHook(() => useResolveHdSeedForBackup())
+            const contactImportHook = renderQueryHook(() =>
+                useCloudBackupContactImport(),
+            )
             const mnemonicHook = renderQueryHook(() =>
                 useResolveMnemonicForBackup(),
             )
             await initializeBackupSyncManager({
                 importAccounts: importHook.current.importAccounts,
+                importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,
                 resolveHd: hdHook.current,
             }).syncNow()
@@ -295,6 +302,75 @@ describe('Flow: Cloud backup → Restore', () => {
             expect(restoredSecond?.name).toBe('HD Second')
 
             expect(useBackupSyncStateStore.getState().syncState).not.toBeNull()
+            await expectRestoreLandedOnOverview()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // The restore is the only path that can deliver them: it seeds
+    // `lastSyncedSeq` from the manifest, so no later delta mentions an item
+    // that was already in the backup when this device joined.
+    it(
+        'Given a backup holding contacts, when the user restores, then the contacts are on the device',
+        async () => {
+            const { backupId, encryptionKey } = await deriveBackupKeys({
+                mnemonic: BACKUP_MNEMONIC,
+                salt: BACKUP_SALT,
+            })
+
+            server.use(
+                ...buildRestoreHandlers({
+                    backupId,
+                    encryptionKey,
+                    items: [
+                        {
+                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
+                            plaintext: JSON.stringify({
+                                type: BackupAccountType.algo25,
+                                address: ALGO25_TEST_ADDRESS,
+                                customName: 'Restored',
+                            }),
+                        },
+                        {
+                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
+                            plaintext: JSON.stringify({
+                                type: BackupAccountType.algo25,
+                                mnemonic: ALGO25_TEST_MNEMONIC,
+                            }),
+                        },
+                        {
+                            key: 'contacts/CONTACT_A',
+                            plaintext: JSON.stringify({
+                                address: 'CONTACT_A',
+                                name: 'Alice',
+                                updatedAt: 1,
+                            }),
+                        },
+                    ],
+                }),
+            )
+
+            renderCloudBackupFlow()
+            await runRestoreFlow()
+
+            await waitFor(
+                () => {
+                    expect(useContactsStore.getState().contacts).toEqual([
+                        { address: 'CONTACT_A', name: 'Alice' },
+                    ])
+                },
+                { timeout: 10_000 },
+            )
+
+            // Tracked at the server's version, so the first sync after the
+            // restore does not offer it back as new.
+            await waitFor(() => {
+                const item =
+                    useBackupSyncStateStore.getState().syncState?.items[
+                        'contacts/CONTACT_A'
+                    ]
+                expect(item?.knownVer).toBeGreaterThan(0)
+            })
             await expectRestoreLandedOnOverview()
         },
         SLOW_TEST_TIMEOUT_MS,

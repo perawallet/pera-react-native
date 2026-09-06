@@ -23,7 +23,12 @@ import type { SyncEngineDeps } from './types'
 export const pullBackupDeltas = async (
     deps: Pick<
         SyncEngineDeps,
-        'network' | 'backupId' | 'deviceId' | 'encryptionKey' | 'importAccounts'
+        | 'network'
+        | 'backupId'
+        | 'deviceId'
+        | 'encryptionKey'
+        | 'importAccounts'
+        | 'importContacts'
     >,
     state: SyncState,
     now: number = Date.now(),
@@ -43,6 +48,7 @@ export const pullBackupDeltas = async (
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
             readItems,
             decrypt: decryptItemPayload,
         },

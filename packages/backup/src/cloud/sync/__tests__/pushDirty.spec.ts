@@ -18,6 +18,7 @@ import {
     createEmptySyncState,
 } from '../../models'
 import { UpsertResult } from '../../api'
+import { decryptItemPayload } from '../../crypto/itemPayload'
 import { pushDirty } from '../pushDirty'
 import type { LocalItem } from '../types'
 
@@ -144,6 +145,47 @@ describe('pushDirty', () => {
             isDirty: false,
             pendingDelete: false,
             localContentHash: null,
+        })
+    })
+
+    it('injects the last-write-wins timestamp into a contact payload', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const state = createEmptySyncState('b')
+        state.items['contacts/C1'] = {
+            type: BackupItemType.CONTACT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 777,
+        }
+
+        await pushDirty({
+            state,
+            localItems: [
+                {
+                    key: 'contacts/C1',
+                    type: BackupItemType.CONTACT,
+                    contentHash: 'h',
+                    payload: { address: 'C1', name: 'Alice' },
+                },
+            ],
+            deps,
+        })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key: 'contacts/C1',
+        })
+        expect(JSON.parse(plaintext)).toEqual({
+            address: 'C1',
+            name: 'Alice',
+            updatedAt: 777,
         })
     })
 })
