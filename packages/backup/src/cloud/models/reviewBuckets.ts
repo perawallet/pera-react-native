@@ -10,17 +10,28 @@
  limitations under the License
  */
 
-import { accountAddressFromItemKey, accountItemKey } from './itemKeys'
+import {
+    accountAddressFromItemKey,
+    accountItemKey,
+    contactAddressFromItemKey,
+} from './itemKeys'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus } from './types'
 
-export type BackupAccountReview = {
+type ReviewBuckets<TAvailable> = {
     backedUp: Set<string>
     notBackedUp: string[]
     /** Addresses live in the backup that this device deliberately deleted;
      *  each awaits an Add or a delete-from-cloud. */
-    availableFromBackup: string[]
+    availableFromBackup: TAvailable[]
 }
+
+export type BackupAccountReview = ReviewBuckets<string>
+
+export type BackupContactReview = ReviewBuckets<{
+    address: string
+    name: string
+}>
 
 /** Whether the backup holds this item, from the device's point of view. The
  *  single definition — `knownVer` is the upload test, because reconcile marks a
@@ -31,21 +42,20 @@ export const isLiveInBackup = (item: SyncItemState): boolean =>
     item.knownVer > 0 &&
     item.pendingDelete !== true
 
-/** Reads address records only: a secret-bearing account also stores key
- *  material under the same item type, so counting every ACCOUNT item would
- *  double it. */
-export const deriveBackupAccountReview = (
+const deriveReview = <TAvailable>(
     syncState: SyncState | null,
     localAddresses: readonly string[],
-): BackupAccountReview => {
+    addressFromKey: (key: string) => string | null,
+    toAvailable: (address: string, item: SyncItemState) => TAvailable,
+): ReviewBuckets<TAvailable> => {
     const backedUp = new Set<string>()
-    const availableFromBackup: string[] = []
+    const held: [string, SyncItemState][] = []
 
     for (const [key, item] of Object.entries(syncState?.items ?? {})) {
-        const address = accountAddressFromItemKey(key)
+        const address = addressFromKey(key)
         if (address === null || !isLiveInBackup(item)) continue
 
-        if (item.pendingImport === true) availableFromBackup.push(address)
+        if (item.pendingImport === true) held.push([address, item])
         else backedUp.add(address)
     }
 
@@ -55,11 +65,39 @@ export const deriveBackupAccountReview = (
         // review, whatever the sync state still says.
         backedUp: new Set([...backedUp].filter(address => local.has(address))),
         notBackedUp: localAddresses.filter(address => !backedUp.has(address)),
-        availableFromBackup: availableFromBackup.filter(
-            address => !local.has(address),
-        ),
+        availableFromBackup: held
+            .filter(([address]) => !local.has(address))
+            .map(([address, item]) => toAvailable(address, item)),
     }
 }
+
+/** Reads address records only: a secret-bearing account also stores key
+ *  material under the same item type, so counting every ACCOUNT item would
+ *  double it. */
+export const deriveBackupAccountReview = (
+    syncState: SyncState | null,
+    localAddresses: readonly string[],
+): BackupAccountReview =>
+    deriveReview(
+        syncState,
+        localAddresses,
+        accountAddressFromItemKey,
+        address => address,
+    )
+
+/** `name` comes from the cached label rather than the payload: a contact only
+ *  the backup holds would otherwise render as a bare address, and the name is
+ *  the whole record. */
+export const deriveBackupContactReview = (
+    syncState: SyncState | null,
+    localAddresses: readonly string[],
+): BackupContactReview =>
+    deriveReview(
+        syncState,
+        localAddresses,
+        contactAddressFromItemKey,
+        (address, item) => ({ address, name: item.label ?? '' }),
+    )
 
 /** For callers that already hold the account: `deriveBackupAccountReview`
  *  intersects with the wallet's addresses, which such a caller satisfies by

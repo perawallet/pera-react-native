@@ -14,6 +14,7 @@ import type { BackupItemKey } from './types'
 
 export const BACKUP_ACCOUNTS_KEY_PREFIX = 'accounts/'
 export const BACKUP_SECRETS_KEY_PREFIX = 'secrets/'
+export const BACKUP_CONTACTS_KEY_PREFIX = 'contacts/'
 
 export const accountItemKey = (address: string): BackupItemKey =>
     `${BACKUP_ACCOUNTS_KEY_PREFIX}${address}`
@@ -29,3 +30,13 @@ export const isAccountItemKey = (key: BackupItemKey): boolean =>
 /** Address an `accounts/` key names, or null for any other item. */
 export const accountAddressFromItemKey = (key: BackupItemKey): string | null =>
     isAccountItemKey(key) ? key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length) : null
+
+export const contactItemKey = (address: string): BackupItemKey =>
+    `${BACKUP_CONTACTS_KEY_PREFIX}${address}`
+
+export const isContactItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)
+
+/** Address a `contacts/` key names, or null for any other item. */
+export const contactAddressFromItemKey = (key: BackupItemKey): string | null =>
+    isContactItemKey(key) ? key.slice(BACKUP_CONTACTS_KEY_PREFIX.length) : null

@@ -145,3 +145,14 @@ export type Algo25SecretsPayload = z.infer<typeof algo25SecretsPayloadSchema>
 export type HdSeedSecretsPayload = z.infer<typeof hdSeedSecretsPayloadSchema>
 export type QuantumSecretsPayload = z.infer<typeof quantumSecretsPayloadSchema>
 export type SecretsBackupPayload = z.infer<typeof secretsBackupPayloadSchema>
+
+/** No discriminant: the `contacts/` prefix and the CONTACT item type already
+ *  identify the shape. `image` is a device-local `file://` URI and `nfd` is
+ *  re-resolvable from the address, so neither is backed up. */
+export const contactBackupPayloadSchema = z.object({
+    address: z.string(),
+    name: z.string(),
+    updatedAt,
+})
+
+export type ContactBackupPayload = z.infer<typeof contactBackupPayloadSchema>

@@ -27,7 +27,11 @@ import {
     type SyncState,
 } from '../syncState'
 import { BackupItemStatus, BackupItemType } from '../types'
-import { deriveBackupAccountReview, isAddressBackedUp } from '../reviewBuckets'
+import {
+    deriveBackupAccountReview,
+    deriveBackupContactReview,
+    isAddressBackedUp,
+} from '../reviewBuckets'
 
 const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
     type: BackupItemType.ACCOUNT,
@@ -199,5 +203,62 @@ describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
         expect(
             (await backedUpAfterSync([algo25], { uploaded: false })).size,
         ).toBe(0)
+    })
+})
+
+describe('deriveBackupContactReview', () => {
+    const contact = (overrides: Partial<SyncItemState> = {}): SyncItemState =>
+        tracked({ type: BackupItemType.CONTACT, ...overrides })
+
+    const stateWith = (items: Record<string, SyncItemState>): SyncState => ({
+        ...createEmptySyncState('did:pera:x'),
+        items,
+    })
+
+    it('splits local contacts into backed up and not backed up', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                'contacts/A': contact(),
+                'accounts/A': tracked(),
+            }),
+            ['A', 'B'],
+        )
+
+        expect([...review.backedUp]).toEqual(['A'])
+        expect(review.notBackedUp).toEqual(['B'])
+    })
+
+    it('offers a held contact from the backup, named from the cached label', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                'contacts/A': contact({ pendingImport: true, label: 'Alice' }),
+            }),
+            [],
+        )
+
+        expect(review.availableFromBackup).toEqual([
+            { address: 'A', name: 'Alice' },
+        ])
+    })
+
+    it('falls back to an empty name when nothing cached one', () => {
+        const review = deriveBackupContactReview(
+            stateWith({ 'contacts/A': contact({ pendingImport: true }) }),
+            [],
+        )
+
+        expect(review.availableFromBackup).toEqual([{ address: 'A', name: '' }])
+    })
+
+    it('drops a held contact the device holds again', () => {
+        const review = deriveBackupContactReview(
+            stateWith({
+                'contacts/A': contact({ pendingImport: true, label: 'Alice' }),
+            }),
+            ['A'],
+        )
+
+        expect(review.availableFromBackup).toEqual([])
+        expect(review.notBackedUp).toEqual(['A'])
     })
 })
