@@ -25,6 +25,7 @@ import { http, HttpResponse } from 'msw'
 import { View } from 'react-native'
 import { Notifier } from 'react-native-notifier'
 
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
@@ -88,7 +89,19 @@ const fillCredentials = async () => {
 
 describe('Flow: Card sign in', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    beforeEach(() => vi.mocked(Notifier.showNotification).mockClear())
+    beforeEach(() => {
+        vi.mocked(Notifier.showNotification).mockClear()
+        // Default fixture: the account already created its on-chain card, so a
+        // successful login lands on Home. The no-card test clears this.
+        useCardStore.getState().resetState()
+        useCardStore.getState().adoptCardUser('user-1')
+        useCardStore.getState().setEscrowCard({
+            cardAddress: 'ESCROW_CARD_ADDR',
+            ownerAddress: 'FUNDING_ADDR',
+            network: 'testnet',
+            txId: 'TX',
+        })
+    })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
@@ -339,6 +352,35 @@ describe('Flow: Card sign in', () => {
         expect(
             screen.queryByTestId('peracard-dest-CardOnboardingStatus'),
         ).toBeNull()
+    })
+
+    it('Given a completed registration with no on-chain card yet, when Sign In is pressed, then the setup checklist opens instead of home', async () => {
+        useCardStore.getState().resetState()
+        server.use(
+            http.post('*/v1/auth/login', () =>
+                HttpResponse.json(
+                    {
+                        accessToken: 'access-token',
+                        userId: 'user-1',
+                        isOtpRequired: false,
+                        phase: null,
+                        isLinked: true,
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+        stubOauthChain()
+        renderSignIn()
+        await fillCredentials()
+        fireEvent.click(screen.getByTestId('card-sign-in-submit'))
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('peracard-dest-CardOnboardingStatus'),
+            ).toBeTruthy(),
+        )
+        expect(screen.queryByTestId('home-tab-stub')).toBeNull()
     })
 
     it('Given wrong credentials, when Sign In is pressed, then an inline error shows on the password field and the flow stays put', async () => {

@@ -162,6 +162,7 @@ describe('Flow: Card onboarding — personal details', () => {
             // DD/MM/YYYY entry is converted to the API's ISO format.
             dateOfBirth: '1986-02-27',
             countryOfNationality: 'GB',
+            countryOfBirth: 'GB',
         })
         // A successful submit advances the flow to the residential-address step.
         await waitFor(() =>

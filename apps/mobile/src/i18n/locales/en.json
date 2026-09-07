@@ -936,7 +936,8 @@
             "report_suspicious_before_body": "Please verify with family or other authorized users if they have used your card. If they have, you can unfreeze your card anytime to keep using it. If not, continue with the report.",
             "report_suspicious_before_confirm": "Continue with Report",
             "error_title": "Something went wrong",
-            "error_body": "Please try again."
+            "error_body": "Please try again.",
+            "setup_incomplete": "Setup not complete"
         },
         "transactions": {
             "navigation_title": "Transactions",
@@ -1204,7 +1205,11 @@
             "nationality_picker_title": "Nationality",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't save your details. Please try again."
+            "error_body": "We couldn't save your details. Please try again.",
+            "birth_country_label": "Country of Birth",
+            "birth_country_placeholder": "Select country",
+            "birth_country_picker_title": "Country of Birth",
+            "birth_country_required": "Please select your country of birth"
         },
         "address": {
             "navigation_title": "Residential Address",

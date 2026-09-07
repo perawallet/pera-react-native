@@ -936,7 +936,8 @@
             "report_suspicious_before_body": "Veuillez vérifier auprès de votre famille ou des autres utilisateurs autorisés s’ils ont utilisé votre carte. Si c’est le cas, vous pouvez la débloquer à tout moment pour continuer à l’utiliser. Sinon, poursuivez le signalement.",
             "report_suspicious_before_confirm": "Poursuivre le signalement",
             "error_title": "Une erreur est survenue",
-            "error_body": "Veuillez réessayer."
+            "error_body": "Veuillez réessayer.",
+            "setup_incomplete": "Configuration incomplète"
         },
         "transactions": {
             "navigation_title": "Transactions",
@@ -1204,7 +1205,11 @@
             "nationality_picker_title": "Nationalité",
             "confirm_button": "Continuer",
             "error_title": "Une erreur est survenue",
-            "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer."
+            "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer.",
+            "birth_country_label": "Pays de naissance",
+            "birth_country_placeholder": "Sélectionnez un pays",
+            "birth_country_picker_title": "Pays de naissance",
+            "birth_country_required": "Veuillez sélectionner votre pays de naissance"
         },
         "address": {
             "navigation_title": "Adresse de résidence",

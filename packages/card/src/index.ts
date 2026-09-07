@@ -58,6 +58,7 @@ export {
     isConflictError,
     isInvalidInputError,
     isDuplicateError,
+    isUserAlreadyCreatedError,
     isNotVerifiedError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'

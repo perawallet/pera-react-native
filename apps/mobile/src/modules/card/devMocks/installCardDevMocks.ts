@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-// TODO(card): remove once the Baanx transactions sandbox returns data and the
-// internal-wallet routes are enabled for Pera (sandbox rejects them with "This
-// route is only available for CUSTODIAL" — platform is non-custodial). This is
-// dev-only — installed behind `__DEV__` from App.tsx, so it never ships.
+// TODO(card): remove once AB provides the escrow base URL and Baanx ships the
+// Algorand delegation post-approval. Dev-only: installed behind `__DEV__` from
+// App.tsx, so it never ships.
 
 import {
     getCardTransport,
@@ -23,41 +22,31 @@ import {
     type CardTransportRequest,
     type CardTransportResponse,
 } from '@perawallet/wallet-core-card'
-import { buildMockCardTransactions } from './mockCardTransactions'
-import {
-    applyMockWithdrawal,
-    buildMockInternalWallets,
-} from './mockInternalWallets'
-import {
-    applyMockDelegation,
-    buildMockDelegationProgram,
-    buildMockDelegationToken,
-    buildMockExternalWallets,
-} from './mockDelegation'
+import { applyMockDelegation } from './mockDelegation'
 import {
     applyMockDelegatorLsig,
     buildMockEscrowCardCreation,
 } from './mockEscrow'
 
-const TRANSACTIONS_PATH = '/v1/card/transactions'
-const INTERNAL_WALLETS_PATH = '/v1/wallet/internal'
-const WITHDRAW_PATH = '/v1/wallet/internal/withdraw'
-const DELEGATION_TOKEN_PATH = '/v1/delegation/token'
-const DELEGATION_CONFIG_PATH = '/v1/delegation/chain/config'
 const DELEGATION_POST_APPROVAL_PATH = '/v1/delegation/algorand/post-approval'
-const EXTERNAL_WALLETS_PATH = '/v1/wallet/external'
 const ESCROW_APPROVALS_PATH = '/api/approvals'
 const ESCROW_DELEGATOR_LSIG_PATH = '/api/internal/delegator-lsig'
 
+// Every intercepted call is announced so a mocked step can never pass for a
+// real one during QA.
+const announce = (path: string): void => {
+    console.warn(
+        `[card dev mock] served ${path} from the dev mock, not Baanx/AB`,
+    )
+}
+
 /**
- * Swaps in a transport that serves mock transactions for
- * `GET /v1/card/transactions` (page 0; later pages are empty so the infinite
- * query terminates), a mock USDC internal wallet for the custodial-only
- * wallet routes (list + withdraw, with a stateful balance), the assumed
- * Algorand delegation routes (stateful allowance per address, single-use
- * tokens), and the AB escrow card routes (card creation + delegator LSig),
- * delegating every other request to the real transport. Returns a disposer
- * that restores the default transport.
+ * Swaps in a transport that mocks ONLY the routes with no real counterpart
+ * yet: Baanx's Algorand delegation post-approval (unshipped) and the AB
+ * escrow card routes (creation approval + delegator LSig; AB has not provided
+ * a base URL). Every other request, including all Baanx wallet, delegation
+ * and transaction routes, goes to the real transport. Returns a disposer that
+ * restores the default transport.
  */
 export const installCardDevMocks = (): (() => void) => {
     const baseTransport = getCardTransport()
@@ -66,35 +55,11 @@ export const installCardDevMocks = (): (() => void) => {
         request: <TData, TVars = unknown>(
             req: CardTransportRequest<TVars>,
         ): Promise<CardTransportResponse<TData>> => {
-            if (req.method === 'GET' && req.path === TRANSACTIONS_PATH) {
-                const page = Number(req.params?.page ?? 0)
-                const data = (
-                    page === 0 ? buildMockCardTransactions() : []
-                ) as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
-            if (req.method === 'GET' && req.path === INTERNAL_WALLETS_PATH) {
-                const data = buildMockInternalWallets() as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
-            if (req.method === 'POST' && req.path === WITHDRAW_PATH) {
-                const { amount } = req.data as { amount: string }
-                applyMockWithdrawal(amount)
-                const data = { success: true } as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
-            if (req.method === 'GET' && req.path === DELEGATION_TOKEN_PATH) {
-                const data = buildMockDelegationToken() as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
-            if (req.method === 'GET' && req.path === DELEGATION_CONFIG_PATH) {
-                const data = buildMockDelegationProgram() as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
             if (
                 req.method === 'POST' &&
                 req.path === DELEGATION_POST_APPROVAL_PATH
             ) {
+                announce(req.path)
                 const data = applyMockDelegation(
                     req.data as {
                         address: string
@@ -104,11 +69,8 @@ export const installCardDevMocks = (): (() => void) => {
                 ) as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
-            if (req.method === 'GET' && req.path === EXTERNAL_WALLETS_PATH) {
-                const data = buildMockExternalWallets() as TData
-                return Promise.resolve({ data, status: 200, statusText: 'OK' })
-            }
             if (req.method === 'POST' && req.path === ESCROW_APPROVALS_PATH) {
+                announce(req.path)
                 const data = buildMockEscrowCardCreation(
                     req.data as { address: string },
                 ) as TData
@@ -118,6 +80,7 @@ export const installCardDevMocks = (): (() => void) => {
                 req.method === 'POST' &&
                 req.path === ESCROW_DELEGATOR_LSIG_PATH
             ) {
+                announce(req.path)
                 const data = applyMockDelegatorLsig(
                     req.data as { delegatorAddress: string },
                 ) as TData

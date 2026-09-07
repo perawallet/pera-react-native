@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { OnboardingStep } from '../../models'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -26,10 +27,14 @@ const {
     setCardSession,
     fetchOnboardingDetails,
     setOnboardingId,
+    adoptCardUser,
+    setOnboardingStep,
 } = vi.hoisted(() => ({
     loginRequest: vi.fn(),
     acquireCardSessionTokens: vi.fn(),
     setCardSession: vi.fn(),
+    adoptCardUser: vi.fn(),
+    setOnboardingStep: vi.fn(),
     fetchOnboardingDetails: vi.fn(),
     setOnboardingId: vi.fn(),
 }))
@@ -40,7 +45,9 @@ vi.mock('../../api/auth', () => ({
 vi.mock('../../session', () => ({ setCardSession }))
 vi.mock('../../api/onboarding', () => ({ fetchOnboardingDetails }))
 vi.mock('../../store', () => ({
-    useCardStore: { getState: () => ({ setOnboardingId }) },
+    useCardStore: {
+        getState: () => ({ setOnboardingId, adoptCardUser, setOnboardingStep }),
+    },
 }))
 
 import { useCardLoginMutation } from '../useCardLoginMutation'
@@ -107,6 +114,10 @@ describe('useCardLoginMutation', () => {
         // A complete account never touches the onboarding bridge.
         expect(fetchOnboardingDetails).not.toHaveBeenCalled()
         expect(setOnboardingId).not.toHaveBeenCalled()
+        // The device's setup state is scoped to the user who just signed in.
+        expect(adoptCardUser).toHaveBeenCalledWith('u1')
+        // A token means registration finished: the checklist's details step is done.
+        expect(setOnboardingStep).toHaveBeenCalledWith(OnboardingStep.Completed)
     })
 
     it('persists the fallback pair when the OAuth exchange degrades', async () => {

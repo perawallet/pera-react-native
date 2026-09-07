@@ -29,7 +29,6 @@ const api = vi.hoisted(() => ({
     submitAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
     linkOnboardingConsent: vi.fn(),
-    connectFundingSource: vi.fn(),
 }))
 vi.mock('../../api/onboarding', () => api)
 
@@ -47,7 +46,6 @@ import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMut
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useLinkConsentMutation } from '../useLinkConsentMutation'
-import { useConnectFundingSourceMutation } from '../useConnectFundingSourceMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 import { OnboardingNotVerifiedError } from '../../api/errors'
@@ -198,6 +196,7 @@ describe('onboarding mutation hooks', () => {
             lastName: 'Doe',
             dateOfBirth: '2000-01-01',
             countryOfNationality: 'GB',
+            countryOfBirth: 'GB',
         }
         const { result } = renderHook(
             () => useSubmitPersonalDetailsMutation(),
@@ -240,6 +239,7 @@ describe('onboarding mutation hooks', () => {
             lastName: 'Doe',
             dateOfBirth: '2000-01-01',
             countryOfNationality: 'GB',
+            countryOfBirth: 'GB',
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
@@ -421,37 +421,5 @@ describe('onboarding mutation hooks', () => {
             userId: 'user_1',
             network: 'mainnet',
         })
-    })
-
-    it('useConnectFundingSourceMutation links the account and stores its address', async () => {
-        api.connectFundingSource.mockResolvedValue({
-            fundingSourceId: 'fs_1',
-        })
-        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
-            wrapper,
-        })
-        result.current.mutate({ address: 'ALGO_ADDRESS' })
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        expect(api.connectFundingSource).toHaveBeenCalledWith({
-            address: 'ALGO_ADDRESS',
-            network: 'mainnet',
-        })
-        // The connected account address (not the fabricated id) is persisted so
-        // the checklist's Connect Funds row renders its done state.
-        expect(useCardStore.getState().connectedFundingSourceAddress).toBe(
-            'ALGO_ADDRESS',
-        )
-    })
-
-    it('useConnectFundingSourceMutation leaves the store untouched on failure', async () => {
-        api.connectFundingSource.mockRejectedValue(new Error('nope'))
-        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
-            wrapper,
-        })
-        result.current.mutate({ address: 'ALGO_ADDRESS' })
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(useCardStore.getState().connectedFundingSourceAddress).toBeNull()
     })
 })

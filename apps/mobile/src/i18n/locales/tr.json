@@ -936,7 +936,8 @@
             "report_suspicious_before_body": "Lütfen kartını ailenden birinin veya yetkili başka bir kullanıcının kullanıp kullanmadığını kontrol et. Kullandıysa, kullanmaya devam etmek için kartını dilediğin zaman kullanıma açabilirsin. Kullanmadıysa bildirime devam et.",
             "report_suspicious_before_confirm": "Bildirime devam et",
             "error_title": "Bir şeyler ters gitti",
-            "error_body": "Lütfen tekrar dene."
+            "error_body": "Lütfen tekrar dene.",
+            "setup_incomplete": "Kurulum tamamlanmadı"
         },
         "transactions": {
             "navigation_title": "İşlemler",
@@ -1204,7 +1205,11 @@
             "nationality_picker_title": "Uyruk",
             "confirm_button": "Devam et",
             "error_title": "Bir şeyler ters gitti",
-            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene."
+            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene.",
+            "birth_country_label": "Doğum Ülkesi",
+            "birth_country_placeholder": "Ülke seç",
+            "birth_country_picker_title": "Doğum Ülkesi",
+            "birth_country_required": "Lütfen doğum ülkeni seç"
         },
         "address": {
             "navigation_title": "İkamet adresi",

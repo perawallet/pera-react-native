@@ -16,6 +16,7 @@ import {
     isConflictError,
     isInvalidInputError,
     isAlreadyCreatedError,
+    isUserAlreadyCreatedError,
     isDuplicateError,
     isNotVerifiedError,
 } from '../errors'
@@ -44,6 +45,15 @@ describe('getCardApiError', () => {
             code: undefined,
             message: 'That email is already in use',
         })
+    })
+
+    it('drops an HTML error body instead of surfacing the markup', async () => {
+        const error = {
+            response: { status: 404 },
+            data: '<!DOCTYPE html><html><body><pre>Cannot POST /x</pre></body></html>',
+        }
+
+        expect(await getCardApiError(error)).toEqual({ status: 404 })
     })
 
     it('treats a plain-text error.data as the message', async () => {
@@ -194,6 +204,27 @@ describe('isInvalidInputError', () => {
 
     it.each([409, 404, 500, undefined])('is false for %s', status => {
         expect(isInvalidInputError({ status })).toBe(false)
+    })
+})
+
+describe('isUserAlreadyCreatedError', () => {
+    it('matches the address step re-run after the user was created', () => {
+        expect(
+            isUserAlreadyCreatedError({
+                status: 400,
+                message: 'Create user failed',
+            }),
+        ).toBe(true)
+    })
+
+    it('does not match other address failures', () => {
+        expect(
+            isUserAlreadyCreatedError({
+                status: 400,
+                message: 'Invalid onboarding ID',
+            }),
+        ).toBe(false)
+        expect(isUserAlreadyCreatedError({})).toBe(false)
     })
 })
 

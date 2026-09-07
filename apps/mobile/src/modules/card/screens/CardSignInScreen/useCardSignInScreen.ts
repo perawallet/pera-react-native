@@ -168,6 +168,22 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                         t('peraCard.sign_in.success_title'),
                         t('peraCard.sign_in.success_body'),
                     )
+                    // Registration complete is not setup complete: the
+                    // on-chain card is created only through the checklist's
+                    // signing steps, which a returning account may never have
+                    // run (e.g. registration finished on a call whose response
+                    // was lost). Without an escrow card, resume the checklist
+                    // so the card gets created and bound.
+                    if (useCardStore.getState().escrowCardAddress === null) {
+                        navigation.navigate('PeraCard', {
+                            screen: 'CardOnboarding',
+                            params: {
+                                screen: 'CardOnboardingStatus',
+                                params: {},
+                            },
+                        })
+                        return
+                    }
                     navigation.navigate('TabBar', { screen: 'Home' })
                     return
                 }

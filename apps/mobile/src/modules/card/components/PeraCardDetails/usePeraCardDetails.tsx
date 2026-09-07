@@ -17,7 +17,6 @@ import {
     useCardDetailsMutation,
     useCardIssuance,
     useCardStore,
-    useConnectFundingSourceMutation,
     useIsCardUnfreezing,
     useSetCardPinMutation,
     type CardIssuanceState,
@@ -394,8 +393,6 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     }, [addToWallet, walletPlatform])
 
     const { pickFundingSource } = useCardFundingSourcePicker()
-    const { mutateAsync: connectFundingSourceAsync } =
-        useConnectFundingSourceMutation()
 
     // Change the linked account. Blocked while Auto funding is on: the AutoDraw
     // authorization (AB-registered LSig + on-chain Killswitch box) is
@@ -418,20 +415,13 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
         const account = await pickFundingSource()
         if (!account || account.address === fundingAddress) return
-        try {
-            await connectFundingSourceAsync({ address: account.address })
-        } catch (error) {
-            await showError(error)
-        }
-    }, [
-        fundingAddress,
-        isAutoFunding,
-        pickFundingSource,
-        connectFundingSourceAsync,
-        showError,
-        infoToast,
-        t,
-    ])
+        // Connecting is a local selection: Baanx has no funding-source
+        // endpoint for a non-custodial wallet. The address is registered with
+        // the Baanx user by the Pera backend during card creation.
+        useCardStore
+            .getState()
+            .setConnectedFundingSourceAddress(account.address)
+    }, [fundingAddress, isAutoFunding, pickFundingSource, infoToast, t])
 
     // Guard the whole picker → repoint sequence so a double-tap can't run two
     // concurrent changes (the picker opens before any mutation flips its own

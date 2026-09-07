@@ -17,36 +17,38 @@ import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
  * analytics spec (Figma "Analytics" section), including the mixed `card_`/`cards_`
  * prefixes and casing — do not normalize, dashboards key on these exact strings.
  */
+// Firebase rejects event names over 40 characters and the tracker prefixes
+// `t_`, so every value here must stay within 38 characters.
 export enum CardEvent {
     OnboardingCreate = 'card_onboarding_create', // Tapped "Create a Baanx Account" on the intro screen
     OnboardingRecover = 'card_onboarding_recover', // Tapped "I already have an account" on the intro screen
     RecoverSignIn = 'card_onboarding_recover_signin', // Submitted the sign-in form
     RecoverForgotPassword = 'card_onboarding_recover_forgotpass', // Tapped "Forgot Password?" on the sign-in screen
-    RecoverResetRequestCode = 'card_onboarding_recover_forgotpass_requestCode', // Requested a password reset code (email submit or resend)
-    RecoverResetVerifyCode = 'card_onboarding_recover_forgotpass_verifyCode', // Submitted the reset verification code
-    RecoverResetComplete = 'card_onboarding_recover_forgotpass_complete', // Set the new password (reset completed)
+    RecoverResetRequestCode = 'card_onb_recover_fpass_requestCode', // Requested a password reset code (email submit or resend)
+    RecoverResetVerifyCode = 'card_onb_recover_fpass_verifyCode', // Submitted the reset verification code
+    RecoverResetComplete = 'card_onb_recover_fpass_complete', // Set the new password (reset completed)
     CreateCountrySelect = 'card_onboarding_create_countrySelect', // Picked a country on the account form (country id)
     CreateConfirmEmail = 'card_onboarding_create_confirmEmail', // Submitted the account/email form
-    CreateEmailVerification = 'card_onboarding_create_emailVerification', // Submitted the email verification code
-    CreateEmailVerifySendAgain = 'card_onboarding_create_emailVerify_sendAgain', // Requested a new email verification code
+    CreateEmailVerification = 'card_onb_create_emailVerification', // Submitted the email verification code
+    CreateEmailVerifySendAgain = 'card_onb_create_emailVerify_resend', // Requested a new email verification code
     CreatePassword = 'card_onboarding_create_createPassword', // Submitted the password form
     CreateSubmitDocs = 'card_onboarding_create_submitDocs', // Started identity verification (opens Veriff)
     CreateLogout = 'card_onboarding_create_logout', // Logged out during onboarding
-    CreateVerifyAccountContinue = 'card_onboarding_create_verifyAccount_continue', // Submitted personal details
-    CreateVerifyAccountContinue2 = 'card_onboarding_create_verifyAccount_continue2', // Submitted residential address
+    CreateVerifyAccountContinue = 'card_onb_create_verifyAcct_continue', // Submitted personal details
+    CreateVerifyAccountContinue2 = 'card_onb_create_verifyAcct_continue2', // Submitted residential address
     CreateConnectWallet = 'card_onboarding_create_connectWallet', // Tapped connect account on the status checklist
     CreateVerifyAccount = 'card_onboarding_create_verifyAccount', // Tapped verify identity on the status checklist
-    CreateVerifyAccountSelect = 'card_onboarding_create_verifyAccount_select', // Picked a funding account in the account sheet
+    CreateVerifyAccountSelect = 'card_onb_create_verifyAcct_select', // Picked a funding account in the account sheet
     CreateCard = 'card_onboarding_create_createCard', // Tapped "Create Pera Card" on the status checklist
-    CreateCardAutoFunding = 'card_onboarding_create_createCard_autoFunding', // Chose auto funding on the status checklist
-    CreateCardManualFunding = 'card_onboarding_create_createCard_manualFunding', // Chose manual funding on the status checklist
-    CreateCardChangeAccount = 'card_onboarding_create_createCard_changeAccount', // Tapped change account on the status checklist
+    CreateCardAutoFunding = 'card_onb_create_card_autoFunding', // Chose auto funding on the status checklist
+    CreateCardManualFunding = 'card_onb_create_card_manualFunding', // Chose manual funding on the status checklist
+    CreateCardChangeAccount = 'card_onb_create_card_changeAccount', // Tapped change account on the status checklist
     CreateArbTxProceed = 'card_onboarding_create_arbtxProceed', // Proceeded on the ownership-signing step
-    CreateArbTxConfirm = 'card_onboarding_create_arbtxProceed_confirm', // Approved the card ARC-60 signing request
-    CreateArbTxClose = 'card_onboarding_create_arbtxProceed_close', // Rejected/dismissed the card ARC-60 signing request
-    CreateFinalizeTxProceed = 'card_onboarding_create_finalizeCardTxProceed', // Proceeded on the authorize (auto-funding) step
-    CreateFinalizeTxConfirm = 'card_onboarding_create_finalizeCardTxProceed_confirm', // Approved the auto-funding authorization
-    CreateFinalizeTxCancel = 'card_onboarding_create_finalizeCardTxProceed_cancel', // Rejected auto-funding (falls back to manual)
+    CreateArbTxConfirm = 'card_onb_create_arbtx_confirm', // Approved the card ARC-60 signing request
+    CreateArbTxClose = 'card_onb_create_arbtx_close', // Rejected/dismissed the card ARC-60 signing request
+    CreateFinalizeTxProceed = 'card_onb_create_finalizeTx_proceed', // Proceeded on the authorize (auto-funding) step
+    CreateFinalizeTxConfirm = 'card_onb_create_finalizeTx_confirm', // Approved the auto-funding authorization
+    CreateFinalizeTxCancel = 'card_onb_create_finalizeTx_cancel', // Rejected auto-funding (falls back to manual)
     HomeOverviewTab = 'card_home_overview', // Switched to the Overview tab on the dashboard
     HomeCardDetailsTab = 'card_home_cardDetails', // Switched to the Card Details tab on the dashboard
     HomeAddFunds = 'card_home_addFunds', // Tapped Add Funds on the dashboard

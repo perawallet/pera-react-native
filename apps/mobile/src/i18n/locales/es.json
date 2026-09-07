@@ -936,7 +936,8 @@
             "report_suspicious_before_body": "Comprueba con tu familia o con otros usuarios autorizados si han usado tu tarjeta. Si la han usado, puedes descongelarla cuando quieras para seguir utilizándola. Si no, continúa con el reporte.",
             "report_suspicious_before_confirm": "Continuar con el reporte",
             "error_title": "Algo salió mal",
-            "error_body": "Vuelve a intentarlo."
+            "error_body": "Vuelve a intentarlo.",
+            "setup_incomplete": "Configuración incompleta"
         },
         "transactions": {
             "navigation_title": "Transacciones",
@@ -1204,7 +1205,11 @@
             "nationality_picker_title": "Nacionalidad",
             "confirm_button": "Continuar",
             "error_title": "Algo salió mal",
-            "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo."
+            "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo.",
+            "birth_country_label": "País de nacimiento",
+            "birth_country_placeholder": "Selecciona un país",
+            "birth_country_picker_title": "País de nacimiento",
+            "birth_country_required": "Selecciona tu país de nacimiento"
         },
         "address": {
             "navigation_title": "Dirección de residencia",

@@ -37,7 +37,7 @@ const mocks = vi.hoisted(() => ({
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
     requirePinVerification: vi.fn(),
-    connectAsync: vi.fn(),
+    setFundingAddress: vi.fn(),
     pushWebView: vi.fn(),
     openURL: vi.fn(),
     infoToast: vi.fn(),
@@ -73,20 +73,27 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useCardStore: (
-            selector: (state: {
-                lastKnownPanLast4: string | null
-                connectedFundingSourceAddress: string | null
-                selectedFundingType: string | null
-            }) => unknown,
-        ) =>
-            selector({
-                lastKnownPanLast4: mocks.panLast4,
-                connectedFundingSourceAddress: mocks.fundingAddress,
-                selectedFundingType: mocks.selectedFundingType,
-            }),
-        useConnectFundingSourceMutation: () =>
-            mutationResult(mocks.connectAsync),
+        // Selector reads come from the mock state; the Connect action writes
+        // through getState(), so expose that too.
+        useCardStore: Object.assign(
+            (
+                selector: (state: {
+                    lastKnownPanLast4: string | null
+                    connectedFundingSourceAddress: string | null
+                    selectedFundingType: string | null
+                }) => unknown,
+            ) =>
+                selector({
+                    lastKnownPanLast4: mocks.panLast4,
+                    connectedFundingSourceAddress: mocks.fundingAddress,
+                    selectedFundingType: mocks.selectedFundingType,
+                }),
+            {
+                getState: () => ({
+                    setConnectedFundingSourceAddress: mocks.setFundingAddress,
+                }),
+            },
+        ),
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
             fetchStatus: mocks.fetchStatus,
@@ -232,7 +239,6 @@ describe('usePeraCardDetails', () => {
         // The freeze sheet runs the freeze itself; opening it just resolves.
         mocks.request.mockResolvedValue(undefined)
         mocks.pickFundingSource.mockResolvedValue(null)
-        mocks.connectAsync.mockResolvedValue({ fundingSourceId: 'fs_1' })
         mocks.delegateTo.mockResolvedValue(undefined)
         mocks.cancelDelegation.mockResolvedValue(undefined)
         mocks.canDelegate.mockReturnValue(true)
@@ -829,9 +835,8 @@ describe('usePeraCardDetails', () => {
                 result.current.onChangeFunding()
             })
 
-            expect(mocks.connectAsync).toHaveBeenCalledWith({
-                address: 'NEW_ADDR',
-            })
+            // Connecting is a local selection now: no Baanx call, just the store.
+            expect(mocks.setFundingAddress).toHaveBeenCalledWith('NEW_ADDR')
             expect(mocks.delegateTo).not.toHaveBeenCalled()
             expect(mocks.cancelDelegation).not.toHaveBeenCalled()
         })
@@ -860,7 +865,7 @@ describe('usePeraCardDetails', () => {
             )
             // Blocked before the picker even opens.
             expect(mocks.pickFundingSource).not.toHaveBeenCalled()
-            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.setFundingAddress).not.toHaveBeenCalled()
         })
 
         it('does nothing when the picker is dismissed or re-picks the same account', async () => {
@@ -872,7 +877,7 @@ describe('usePeraCardDetails', () => {
                 result.current.onChangeFunding()
             })
 
-            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.setFundingAddress).not.toHaveBeenCalled()
         })
     })
 

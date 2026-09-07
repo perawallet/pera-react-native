@@ -57,6 +57,9 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
     /** Sends the user back to the identity-verification step. */
     handleVerifyIdentity: () => void
     handleSelectNationality: () => void
+    selectedBirthCountry: Optional<SupportedCountry>
+    isBirthCountryLocked: boolean
+    handleSelectBirthCountry: () => void
     handleConfirm: () => void
 }
 
@@ -118,6 +121,16 @@ export const useCardOnboardingPersonalDetailsScreen =
         const [selectedNationality, setSelectedNationality] =
             useState<Optional<SupportedCountry>>(undefined)
         const hasPreselected = useRef(false)
+        const serverBirthCountry = onboardingDetails?.countryOfBirth ?? null
+        const serverBirthCountryEntry = serverBirthCountry
+            ? settings?.countries.find(
+                  country => country.iso3166alpha2 === serverBirthCountry,
+              )
+            : undefined
+        const isBirthCountryLocked = Boolean(serverBirthCountryEntry)
+        const [selectedBirthCountry, setSelectedBirthCountry] =
+            useState<Optional<SupportedCountry>>(undefined)
+        const hasPreselectedBirth = useRef(false)
         const hasPrefilled = useRef(false)
 
         const {
@@ -133,6 +146,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                 lastName: '',
                 dateOfBirth: '',
                 countryOfNationality: '',
+                countryOfBirth: '',
             },
         })
 
@@ -184,6 +198,32 @@ export const useCardOnboardingPersonalDetailsScreen =
             selectedNationality,
             setValue,
         ])
+        // Baanx requires the birth country for EU/UK residents. Preselect it
+        // from the residence country like nationality, so the common case
+        // needs no extra tap and the field stays editable for the rest.
+        useEffect(() => {
+            if (hasPreselectedBirth.current || selectedBirthCountry) return
+            if (!settings?.countries.length) return
+            const match =
+                serverBirthCountryEntry ??
+                (countryIso
+                    ? settings.countries.find(
+                          country => country.iso3166alpha2 === countryIso,
+                      )
+                    : undefined)
+            if (!match) return
+            hasPreselectedBirth.current = true
+            setSelectedBirthCountry(match)
+            setValue('countryOfBirth', match.iso3166alpha2, {
+                shouldValidate: true,
+            })
+        }, [
+            serverBirthCountryEntry,
+            countryIso,
+            settings,
+            selectedBirthCountry,
+            setValue,
+        ])
 
         const handleSelectNationality = useCallback(() => {
             const openPicker = async () => {
@@ -207,12 +247,37 @@ export const useCardOnboardingPersonalDetailsScreen =
             void openPicker()
         }, [request, setValue, t])
 
+        const handleSelectBirthCountry = useCallback(() => {
+            const openPicker = async () => {
+                const country = await request<SupportedCountry>({
+                    contents: createElement(CardCountryPickerContent, {
+                        title: t(
+                            'peraCard.personal_details.birth_country_picker_title',
+                        ),
+                    }),
+
+                    options: { size: 'full', autoCreateContainer: false },
+                })
+
+                if (country) {
+                    setSelectedBirthCountry(country)
+
+                    setValue('countryOfBirth', country.iso3166alpha2, {
+                        shouldValidate: true,
+                    })
+                }
+            }
+
+            void openPicker()
+        }, [request, setValue, t])
+
         const submitDetails = handleSubmit(
             async ({
                 firstName,
                 lastName,
                 dateOfBirth,
                 countryOfNationality,
+                countryOfBirth,
             }) => {
                 // Set by email/verify; if missing, re-verify rather than submit
                 // an empty onboarding id.
@@ -233,6 +298,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                         lastName,
                         dateOfBirth: dobToIsoDate(dateOfBirth),
                         countryOfNationality,
+                        countryOfBirth,
                     })
                     navigation.navigate('CardOnboardingAddress')
                 } catch (error) {
@@ -276,6 +342,9 @@ export const useCardOnboardingPersonalDetailsScreen =
             isKycRequired,
             handleVerifyIdentity,
             handleSelectNationality,
+            selectedBirthCountry,
+            isBirthCountryLocked,
+            handleSelectBirthCountry,
             handleConfirm,
         }
     }

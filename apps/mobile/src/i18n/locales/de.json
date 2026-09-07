@@ -928,7 +928,8 @@
             "report_suspicious_before_body": "Bitte prüfe mit Familienmitgliedern oder anderen berechtigten Nutzern, ob sie deine Karte verwendet haben. Falls ja, kannst du die Sperre deiner Karte jederzeit aufheben, um sie weiter zu nutzen. Falls nicht, fahre mit der Meldung fort.",
             "report_suspicious_before_confirm": "Mit Meldung fortfahren",
             "error_title": "Etwas ist schiefgelaufen",
-            "error_body": "Bitte versuche es erneut."
+            "error_body": "Bitte versuche es erneut.",
+            "setup_incomplete": "Einrichtung nicht abgeschlossen"
         },
         "transactions": {
             "navigation_title": "Transaktionen",
@@ -1196,7 +1197,11 @@
             "nationality_picker_title": "Staatsangehörigkeit",
             "confirm_button": "Weiter",
             "error_title": "Etwas ist schiefgelaufen",
-            "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut."
+            "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+            "birth_country_label": "Geburtsland",
+            "birth_country_placeholder": "Land auswählen",
+            "birth_country_picker_title": "Geburtsland",
+            "birth_country_required": "Bitte wähle dein Geburtsland"
         },
         "address": {
             "navigation_title": "Wohnadresse",

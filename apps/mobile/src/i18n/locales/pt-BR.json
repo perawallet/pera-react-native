@@ -936,7 +936,8 @@
             "report_suspicious_before_body": "Verifique com familiares ou outros usuários autorizados se eles usaram seu cartão. Se sim, você pode desbloquear seu cartão a qualquer momento para continuar usando. Se não, siga com o registro.",
             "report_suspicious_before_confirm": "Continuar o registro",
             "error_title": "Algo deu errado",
-            "error_body": "Tente novamente."
+            "error_body": "Tente novamente.",
+            "setup_incomplete": "Configuração incompleta"
         },
         "transactions": {
             "navigation_title": "Transações",
@@ -1206,7 +1207,11 @@
             "nationality_picker_title": "Nacionalidade",
             "confirm_button": "Continuar",
             "error_title": "Algo deu errado",
-            "error_body": "Não conseguimos salvar seus dados. Tente novamente."
+            "error_body": "Não conseguimos salvar seus dados. Tente novamente.",
+            "birth_country_label": "País de nascimento",
+            "birth_country_placeholder": "Selecione um país",
+            "birth_country_picker_title": "País de nascimento",
+            "birth_country_required": "Selecione seu país de nascimento"
         },
         "address": {
             "navigation_title": "Endereço residencial",

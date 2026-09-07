@@ -89,6 +89,7 @@ export const onboardingDetailsResponseSchema = z.object({
     dateOfBirth: z.string().optional().nullable(),
     /** ISO 3166-1 alpha-2; null until the user provides it. */
     countryOfNationality: z.string().optional().nullable(),
+    countryOfBirth: z.string().optional().nullable(),
 })
 export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema
@@ -112,13 +113,3 @@ export const consentResponseSchema = z.object({
     consentSetId: z.string(),
 })
 export type ConsentApiResponse = z.infer<typeof consentResponseSchema>
-
-// POST /v1/card/funding-source — connects a Pera (Algorand) account as the
-// card's funding source on the setup checklist. ASSUMPTION: the request/response
-// shape is unverified (Baanx sandbox down), so it's mocked for now.
-export const connectFundingSourceResponseSchema = z.object({
-    fundingSourceId: z.string(),
-})
-export type ConnectFundingSourceApiResponse = z.infer<
-    typeof connectFundingSourceResponseSchema
->
