@@ -15,8 +15,8 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
-import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { type StackHeaderProps } from '@react-navigation/stack'
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
+import type { StackHeaderProps } from '@react-navigation/stack'
 
 export type NavigationHeaderProps = (
     | Partial<NativeStackHeaderProps>

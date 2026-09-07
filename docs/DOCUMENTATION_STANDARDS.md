@@ -1,51 +1,36 @@
 # Documentation Standards
 
-This project maintains documentation in two locations.
+Documentation lives in three places, split by audience and by how it gets loaded.
 
-## Documentation Locations
+| Location          | Audience              | Shape                                          |
+| ----------------- | --------------------- | ---------------------------------------------- |
+| `docs/`           | Humans, on demand     | Overviews and decision records                 |
+| `CLAUDE.md`       | Agents, every session | Dense, actionable rules with key examples      |
+| `.claude/skills/` | Agents, on demand     | Step-by-step procedures invoked via `/command` |
 
-| Location          | Purpose                  | Content Type                                   |
-| ----------------- | ------------------------ | ---------------------------------------------- |
-| `docs/`           | Human-readable overviews | Lean, high-level, no code examples             |
-| `CLAUDE.md`       | AI agent rules (inlined) | Dense, actionable rules with key examples      |
-| `.claude/skills/` | On-demand workflows      | Step-by-step procedures invoked via `/command` |
+Naming: `docs/` uses `SCREAMING_SNAKE_CASE.md`, `.claude/skills/` uses kebab-case directories.
 
-## docs/ Guidelines
+## The rule
 
-Files in `docs/` are **lean overviews** for quick human reference:
+**Record the decision and the reason, never the journey.** Nothing here carries a ticket, milestone
+or task reference, a description of what a PR changed, or a status that expires. Those are
+unlookupable or wrong within months, and they train readers to skim.
 
-- **DO**: Use bullet points, tables, short descriptions
-- **DO**: Keep files under 100 lines
-- **DON'T**: Include extensive code examples
-- **DON'T**: Duplicate information from `CLAUDE.md`
+**A doc must earn its place against the code.** Before writing one, check whether the fact belongs in
+a JSDoc beside the thing it describes; that is where a reader will look, and it cannot drift from the
+code it sits on. A `docs/` file is for what spans files, records a decision, or concerns something
+outside the repo entirely — an external contract, a third-party service, an ops procedure.
 
-## CLAUDE.md Guidelines
+If a doc and a module doc both explain something, one is the source and the other links to it.
 
-`CLAUDE.md` contains **inlined rules** that are auto-loaded every session:
+## Enforcement
 
-- **DO**: Keep rules dense and actionable
-- **DO**: Include one good/bad example per critical pattern
-- **DO**: Mark critical sections (Styling, Components, Hooks)
-- **DON'T**: Include verbose reference material (that goes in skill references)
+`pnpm lint:docs` (`tools/check-doc-hygiene.mjs`, part of pre-push) fails on work-item references,
+dead links and paths that are not in the repo, and reports over-long `docs/` files without failing.
+Record a genuine exception with its reason on the line above:
 
-## .claude/skills/ Guidelines
+```
+<!-- doc-hygiene-ignore-next-line stale-path reason: written by CI at build time -->
+```
 
-Skills in `.claude/skills/` are **on-demand workflows**:
-
-- Each skill has a `SKILL.md` with steps and optional `references/` dir
-- Invoked via slash commands (e.g., `/create-component`)
-- Reference files contain detailed code examples and templates
-
-## File Naming
-
-| Location          | Convention              | Example             |
-| ----------------- | ----------------------- | ------------------- |
-| `docs/`           | SCREAMING_SNAKE_CASE.md | `ARCHITECTURE.md`   |
-| `.claude/skills/` | kebab-case dirs         | `create-component/` |
-
-## When Updating Documentation
-
-1. **Identify location**: Overview (docs/) or actionable rule (CLAUDE.md)?
-2. **Avoid duplication**: Don't repeat the same content across locations
-3. **Keep focused**: One topic per section
-4. **Reference, don't repeat**: Point to other files instead of duplicating
+The `writing-docs` skill carries the full guidance, with worked examples.

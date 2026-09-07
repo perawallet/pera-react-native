@@ -11,7 +11,7 @@
  */
 
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'

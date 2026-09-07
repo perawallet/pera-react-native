@@ -25,7 +25,7 @@ import {
     getRemoteAssetDetailsQueryKey,
     invalidateAssetQueries,
 } from './querykeys'
-import { type ToggleStatusResponse } from '../api/settings/endpoints'
+import type { ToggleStatusResponse } from '../api/settings/endpoints'
 import { updateAssetPeraMetadata } from '../db'
 import { DEFAULT_ASSET_METADATA, type PeraAsset } from '../models/assets'
 

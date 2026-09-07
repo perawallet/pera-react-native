@@ -56,6 +56,8 @@ export const WebViewOverlay = () => {
                 options: {
                     size: 'full',
                     autoCreateContainer: false,
+                    // The WebView insets its own content.
+                    avoidKeyboard: false,
                 },
             }).finally(() => {
                 openedRef.current.delete(view.id)

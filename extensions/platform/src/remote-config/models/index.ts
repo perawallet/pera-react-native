@@ -29,6 +29,7 @@ export const RemoteConfigKeys = {
     enable_pera_card: 'enable_pera_card',
     enable_quantum_accounts: 'enable_quantum_accounts',
     enable_quantum_dapp_warning: 'enable_quantum_dapp_warning',
+    enable_quantum_swap: 'enable_quantum_swap',
     enable_card_auto_funding: 'enable_card_auto_funding',
     enable_card_push_provisioning: 'enable_card_push_provisioning',
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
@@ -71,6 +72,12 @@ export const RemoteConfigDefaults: Record<
     enable_pera_card: false,
     enable_quantum_accounts: false,
     enable_quantum_dapp_warning: true,
+    // Rollout gate and kill switch for swapping FROM quantum accounts. The
+    // backend must price the pqsig fee surcharge into prepared swap groups
+    // (the app cannot raise fees there — a re-group would invalidate the
+    // backend's pre-signed slots), so this stays off until Firebase turns it
+    // on, and flipping it off restores the pre-rollout guard.
+    enable_quantum_swap: false,
     // Off in prod (the hook keeps it on in dev/staging). Gates the auto-funding
     // UI only; prod is stopped from signing an unpinned program by
     // verifyDelegationProgram, not by this flag.

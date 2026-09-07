@@ -12,7 +12,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
-import { type OnboardingStackParamList } from '../../routes/types'
+import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useAccountsStore,
     useAllAccounts,

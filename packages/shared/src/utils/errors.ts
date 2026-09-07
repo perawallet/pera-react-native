@@ -13,13 +13,23 @@
 import type { Maybe, Optional } from './types'
 
 /**
- * Extracts the HTTP status code from an error thrown by the ky HTTP client.
- * Returns undefined if the error is not an HTTP error or has no status.
+ * Extracts the HTTP status code from an error thrown by the ky HTTP client
+ * (`response.status`) or from a `PeraNetworkError`, which carries the status
+ * flat and has no `response` at all. Returns undefined if the error is not an
+ * HTTP error or has no status.
+ *
+ * Both shapes matter: the request layer normalizes ky errors into
+ * `PeraNetworkError` before they reach any caller, so reading only
+ * `response.status` sees a status on almost nothing.
  */
 export const getHttpStatus = (error: unknown): Optional<number> => {
     if (typeof error !== 'object' || error === null) return undefined
-    const response = (error as { response?: { status?: unknown } }).response
-    return typeof response?.status === 'number' ? response.status : undefined
+    const { response, status } = error as {
+        response?: { status?: unknown }
+        status?: unknown
+    }
+    if (typeof response?.status === 'number') return response.status
+    return typeof status === 'number' ? status : undefined
 }
 
 /** Normalizes an unknown value to an Error instance. */

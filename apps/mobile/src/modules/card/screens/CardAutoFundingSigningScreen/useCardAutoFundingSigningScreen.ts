@@ -102,7 +102,7 @@ export const useCardAutoFundingSigningScreen =
                     // An unverified AutoDraw program can never succeed on
                     // retry, so "please try again" would strand the user on
                     // this screen. Degrade to Manual with the same honest copy
-                    // the decline path uses (PERA-4712).
+                    // the decline path uses.
                     if (err instanceof AutoDrawProgramUnverifiedError) {
                         logger.error(
                             'AutoDraw program failed verification — degrading to Manual funding',

@@ -14,6 +14,7 @@ import type { Network, Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory } from '../api/history'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 import { backfillMissingCloseAmounts } from './close-amount-backfill'
+import { backfillSwapAssetFacts } from './swap-asset-facts-backfill'
 
 export async function fetchAndPersistTransactions(
     address: string,
@@ -51,4 +52,9 @@ export async function fetchAndPersistTransactions(
     // provide (rows cached before the close_amount column, receiver-only
     // perspectives). Best-effort and bounded; never fails the sync.
     await backfillMissingCloseAmounts({ network })
+
+    // Likewise for swap rows cached without their per-side asset facts. The
+    // fetch above only asks for transactions newer than the newest cached one,
+    // so nothing else ever revisits them.
+    await backfillSwapAssetFacts({ network, accountAddress: address })
 }

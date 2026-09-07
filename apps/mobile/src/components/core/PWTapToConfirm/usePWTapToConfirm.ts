@@ -56,9 +56,21 @@ export const usePWTapToConfirm = ({
 }: UsePWTapToConfirmParams): UsePWTapToConfirmResult => {
     const { theme } = useTheme()
     const [isArmed, setIsArmed] = useState(false)
+    // Mirrors `isArmed` so handlePress can read it synchronously. The
+    // confirming tap of a quick double-tap routinely lands before React has
+    // committed the arming tap's render, and a handler closing over the state
+    // value still sees `false` there — so it re-arms instead of confirming and
+    // the action silently never fires. `allowRapidPress` on the Pressable is
+    // what lets that second tap through in the first place.
+    const isArmedRef = useRef(false)
     const disarmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const armedProgress = useSharedValue(0)
     const phase = useSharedValue(getPhaseTarget(isLoading, isConfirmed))
+
+    const setArmed = useCallback((next: boolean) => {
+        isArmedRef.current = next
+        setIsArmed(next)
+    }, [])
 
     const clearDisarmTimer = useCallback(() => {
         if (disarmTimerRef.current) {
@@ -72,9 +84,9 @@ export const usePWTapToConfirm = ({
     useEffect(() => {
         if (isLoading || isDisabled || isConfirmed) {
             clearDisarmTimer()
-            setIsArmed(false)
+            setArmed(false)
         }
-    }, [isLoading, isDisabled, isConfirmed, clearDisarmTimer])
+    }, [isLoading, isDisabled, isConfirmed, clearDisarmTimer, setArmed])
 
     useEffect(() => {
         armedProgress.value = withTiming(isArmed ? 1 : 0, {
@@ -91,25 +103,25 @@ export const usePWTapToConfirm = ({
     const handlePress = useCallback(() => {
         if (isLoading || isDisabled || isConfirmed) return
 
-        if (isArmed) {
+        if (isArmedRef.current) {
             clearDisarmTimer()
-            setIsArmed(false)
+            setArmed(false)
             onConfirm()
             return
         }
 
-        setIsArmed(true)
+        setArmed(true)
         clearDisarmTimer()
         disarmTimerRef.current = setTimeout(() => {
-            setIsArmed(false)
+            setArmed(false)
         }, TAP_TO_CONFIRM_ARMED_TIMEOUT)
     }, [
         isLoading,
         isDisabled,
         isConfirmed,
-        isArmed,
         onConfirm,
         clearDisarmTimer,
+        setArmed,
     ])
 
     const idleColor = isDisabled

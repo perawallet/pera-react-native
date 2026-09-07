@@ -16,7 +16,7 @@
  * DO NOT MODIFY IT BY HAND.
  * requires: @algorandfoundation/algokit-utils: ^7
  */
-import { type AlgorandClient } from '@algorandfoundation/algokit-utils/types/algorand-client'
+import type { AlgorandClient } from '@algorandfoundation/algokit-utils/types/algorand-client'
 import {
     ABIReturn,
     AppReturn,

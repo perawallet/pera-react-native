@@ -66,5 +66,6 @@ const withAutofillExtensionBundleId = (config, { legacySuffix } = {}) => {
   });
 };
 
-module.exports = withAutofillExtensionBundleId;
-module.exports.retargetExtensionBundleId = retargetExtensionBundleId;
+module.exports = Object.assign(withAutofillExtensionBundleId, {
+  retargetExtensionBundleId,
+});

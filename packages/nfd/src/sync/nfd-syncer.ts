@@ -16,6 +16,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { fetchNfdBulkRead } from '../api'
 import {
     NFD_BULK_CHUNK_SIZE,
@@ -38,6 +39,9 @@ export async function fetchAndPersistNfds(
     network: Network,
 ): Promise<void> {
     if (addresses.length === 0) return
+    // No Pera backend on betanet/custom: skip before any DB work, otherwise
+    // every requested address commits as a fresh negative-cache row for no reason.
+    if (!isPeraBackedNetwork(network)) return
 
     const dedup = Array.from(
         new Set(addresses.filter(addr => isValidAlgorandAddress(addr))),

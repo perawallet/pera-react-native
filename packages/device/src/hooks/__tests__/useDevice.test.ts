@@ -37,7 +37,7 @@ vi.mock('../endpoints', () => ({
         mockedRegisterDeviceEndpoint(...args),
 }))
 
-// PERA-4670's orphaning telemetry: replacing a migrated device id loses its
+//'s orphaning telemetry: replacing a migrated device id loses its
 // device-keyed server state, and the only signal is this event.
 const mockLogEvent = vi.fn()
 
@@ -117,15 +117,15 @@ const seedPushToken = async (token: string | null): Promise<void> => {
  * Per-test setup shared by everything that registers.
  *
  * 1. The registration queue is module scope — shared across every
- *    `useDevice()` consumer, not just the instance a test mounts — so a
- *    leaked, never-settled entry from an earlier test would wedge every later
- *    registration on the same network.
+ * `useDevice()` consumer, not just the instance a test mounts — so a
+ * leaked, never-settled entry from an earlier test would wedge every later
+ * registration on the same network.
  * 2. The mocked `useNetwork` is a module-scope `vi.fn()`. `vi.clearAllMocks()`
- *    clears its recorded calls but keeps its return value, and
- *    `vi.resetModules()` does not re-run the `vi.mock` factory — so a test
- *    that switches to testnet leaks testnet into every test after it. Pin it
- *    back to mainnet here; the two tests that need a switch set it themselves
- *    afterwards.
+ * clears its recorded calls but keeps its return value, and
+ * `vi.resetModules()` does not re-run the `vi.mock` factory — so a test
+ * that switches to testnet leaks testnet into every test after it. Pin it
+ * back to mainnet here; the two tests that need a switch set it themselves
+ * afterwards.
  */
 const importUseDevice = async () => {
     const { useNetwork } = await import('@perawallet/wallet-core-blockchain')
@@ -331,7 +331,7 @@ describe('services/device/hooks', () => {
         expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe('FRESH')
     })
 
-    // PERA-4670, carried onto the v3 flow. Only the 404 recreate can replace
+    // Carried onto the v3 flow: only the 404 recreate can replace
     // an id under v3 — a 400 is a push-token race that retries with the same
     // id (see `isPushTokenClaimedError`), so `device_already_exists` is no
     // longer a replacement reason and the two tests asserting it were dropped.
@@ -520,7 +520,7 @@ describe('services/device/hooks', () => {
         )
     })
 
-    // PERA-4705 (final review, Finding 5): the Global Constraint reads
+    // (final review, Finding 5): the Global Constraint reads
     // "400 → retry once", unqualified, but the retry lived only on the
     // id-carrying update path. The id-less create path is the one every
     // upgrading user traverses — a v1-issued id v3 doesn't recognise 404s,
@@ -642,7 +642,7 @@ describe('services/device/hooks', () => {
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
     })
 
-    // PERA-4705 (final review, Finding 1): `registerDevice` captures the
+    // (final review, Finding 1): `registerDevice` captures the
     // network at *enqueue* time, but the write used to resolve its URL from
     // the mutation's own `useNetwork()` at *execution* time. Queued behind an
     // in-flight request, a mainnet registration could therefore run after the
@@ -724,7 +724,7 @@ describe('services/device/hooks', () => {
     // (`registrationQueues`/`enqueueRegistration`), not from any lock on the
     // create path: the second call is chained behind the first, so by the time
     // it runs the first has already persisted the id and it takes the update
-    // branch. PERA-4705's final review removed a separate `pendingDeviceCreates`
+    // branch.'s final review removed a separate `pendingDeviceCreates`
     // join lock that could never fire for exactly this reason — every caller
     // reaches the create path from inside a queue slot.
     test('queues a concurrent id-less registration from a separate hook instance behind the first, yielding one create plus a follow-up carrying the second call’s accounts', async () => {
@@ -753,7 +753,7 @@ describe('services/device/hooks', () => {
             .mockResolvedValueOnce({ id: 'SHARED-ID' }) // instance B's follow-up update
 
         // Two DISTINCT mounted hook instances — e.g. the mount-time
-        // registration and Task 12's notification toggle, each its own
+        // registration and the notification toggle, each its own
         // component. The queue has to be shared across these, not just
         // within one, or this is exactly the race the fix was for.
         const { result: instanceA } = renderHook(() => useDevice(), {
@@ -815,7 +815,7 @@ describe('services/device/hooks', () => {
         )
     })
 
-    // PERA-4705 (Task 12 review, Finding 1): the queue must span the *whole*
+    // The queue must span the *whole*
     // registration, not just the id-less create. Once an id exists — the
     // steady state for every real toggle — `registerDevice` goes straight to
     // the update path. Two independent callers both hold the id already (e.g.

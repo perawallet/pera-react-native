@@ -20,7 +20,7 @@ import Animated, {
     withDelay,
     withTiming,
 } from 'react-native-reanimated'
-import { type ConfettiPieceConfig } from './createConfettiPieces'
+import type { ConfettiPieceConfig } from './createConfettiPieces'
 import { useStyles } from './styles'
 
 const FULL_ROTATION_DEG = 360

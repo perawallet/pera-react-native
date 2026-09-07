@@ -132,7 +132,7 @@ describe('compileAutoDrawProgram', () => {
         appEnvironment.value = 'development'
     })
 
-    // PERA-4712: algod is third-party; its compiled bytes are what gets signed,
+    // algod is third-party; its compiled bytes are what gets signed,
     // so an unpinned/attacker program ('BoEB' = `int 1`, approve-anything) must
     // be rejected even though the substituted TEAL is compiled correctly.
     it('compiles the substituted template but rejects an unpinned/int-1 program', async () => {

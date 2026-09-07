@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import { type RemoteConfigService } from '@perawallet/wallet-extension-platform'
+import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import type { RemoteConfigKey } from '../../models'
 import { readRemoteConfigWithOverrides } from '../readRemoteConfigWithOverrides'
 

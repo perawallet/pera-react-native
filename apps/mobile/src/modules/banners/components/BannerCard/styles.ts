@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { palette } from '@theme/colors'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
@@ -31,17 +30,28 @@ export const useStyles = makeStyles(theme => ({
     },
     contentHalf: {
         flex: 0.55,
-        backgroundColor: palette.gray[700],
+        backgroundColor: theme.colors.background,
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-        justifyContent: 'space-between',
+        paddingBottom: theme.spacing.sm,
     },
     topGroup: {
         gap: theme.spacing.md,
     },
+    // Everything but the art and the CTA scrolls, so the action stays reachable
+    // however long the copy runs.
+    scrollArea: {
+        flex: 1,
+    },
+    scrollContent: {
+        gap: theme.spacing.md,
+        // Explicit, so PWScrollView does not add its own safe-area inset — the
+        // pinned footer below already sits above it.
+        paddingBottom: theme.spacing.md,
+    },
     bottomGroup: {
         gap: theme.spacing.sm,
+        flexShrink: 0,
     },
     iconBubble: {
         width: theme.spacing['3xl'],
@@ -53,11 +63,11 @@ export const useStyles = makeStyles(theme => ({
     },
     title: {
         ...getTypography(theme, 'h2'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
     },
     subtitle: {
         ...getTypography(theme, 'body'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
     },
     cta: {
         alignSelf: 'stretch',
@@ -79,7 +89,7 @@ export const useStyles = makeStyles(theme => ({
     },
     dismissLinkText: {
         ...getTypography(theme, 'bodySemibold'),
-        color: theme.colors.textWhite,
+        color: theme.colors.textMain,
         textDecorationLine: 'underline',
     },
 }))

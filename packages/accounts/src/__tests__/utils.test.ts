@@ -19,11 +19,13 @@ import {
     canSignWith,
     findAccountByKey,
     getAccountDisplayName,
+    getAccountsRekeyedTo,
     getRekeyAccount,
     getSignerFor,
     hasSigningKeys,
     isAlgo25Account,
     isEligibleLedgerRekeyTarget,
+    isEligibleQuantumRekeyTarget,
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
     isQuantumAccount,
@@ -525,7 +527,7 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
         expect(canSignArc60(multisig, [multisig])).toBe(false)
     })
 
-    describe('canSignArc60 - rekeyed signers (PERA-4977)', () => {
+    describe('canSignArc60 - rekeyed signers', () => {
         const rekeyedTo = (auth: { address: string }) =>
             ({ ...watch, rekeyAddress: auth.address }) as any
 
@@ -772,7 +774,7 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
         // Product decision: a 25-word quantum mnemonic is indistinguishable
         // from legacy algo25 by word count. Auto-detection deliberately keeps
         // resolving 25 words to algo25; quantum import only happens through
-        // its dedicated explicit entrypoint (PQ-009).
+        // its dedicated explicit entrypoint.
         const result = resolveImportAccountType(words(25))
         expect(result).toEqual({ success: true, accountType: 'algo25' })
     })
@@ -954,32 +956,29 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
 
     test('rejects target equal to source', () => {
         expect(
-            isEligibleRekeyTarget(
-                algo25({ address: 'A' }),
-                { address: 'A' },
-                true,
-            ),
+            isEligibleRekeyTarget(algo25({ address: 'A' }), { address: 'A' }),
         ).toBe(false)
     })
 
     test("rejects target equal to source's current auth", () => {
         expect(
-            isEligibleRekeyTarget(
-                algo25({ address: 'B' }),
-                { address: 'SRC', rekeyAddress: 'B' },
-                true,
-            ),
+            isEligibleRekeyTarget(algo25({ address: 'B' }), {
+                address: 'SRC',
+                rekeyAddress: 'B',
+            }),
         ).toBe(false)
     })
 
     test('rejects multisig / hardware / watch targets', () => {
-        expect(
-            isEligibleRekeyTarget(multisig({ address: 'M' }), src, true),
-        ).toBe(false)
-        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), src, true)).toBe(
+        expect(isEligibleRekeyTarget(multisig({ address: 'M' }), src)).toBe(
             false,
         )
-        expect(isEligibleRekeyTarget(watch({ address: 'W' }), src, true)).toBe(
+        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), src)).toBe(false)
+        expect(isEligibleRekeyTarget(watch({ address: 'W' }), src)).toBe(false)
+    })
+
+    test('rejects quantum targets (the dedicated rekey-to-quantum flow lists them)', () => {
+        expect(isEligibleRekeyTarget(quantum({ address: 'F' }), src)).toBe(
             false,
         )
     })
@@ -988,7 +987,7 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
         const noKey = algo25({ address: 'A' })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(noKey as any).keyPairId = undefined
-        expect(isEligibleRekeyTarget(noKey, src, true)).toBe(false)
+        expect(isEligibleRekeyTarget(noKey, src)).toBe(false)
     })
 
     test('rejects target already rekeyed away', () => {
@@ -996,56 +995,97 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
             isEligibleRekeyTarget(
                 algo25({ address: 'A', rekeyAddress: 'B' }),
                 src,
-                true,
             ),
         ).toBe(false)
     })
 
     test('accepts valid algo25 / hdWallet target', () => {
-        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), src, true)).toBe(
-            true,
-        )
-        expect(isEligibleRekeyTarget(hd({ address: 'H' }), src, true)).toBe(
-            true,
-        )
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), src)).toBe(true)
+        expect(isEligibleRekeyTarget(hd({ address: 'H' }), src)).toBe(true)
     })
 
     test('accepts a rekeyed source rekeying to a different fresh target', () => {
         expect(
-            isEligibleRekeyTarget(
-                algo25({ address: 'A' }),
-                { address: 'SRC', rekeyAddress: 'B' },
-                true,
-            ),
+            isEligibleRekeyTarget(algo25({ address: 'A' }), {
+                address: 'SRC',
+                rekeyAddress: 'B',
+            }),
         ).toBe(true)
     })
+})
+
+describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
+    const src = { address: 'SRC' }
 
     test('accepts a quantum target when quantum targets are enabled (rekey-in migration path)', () => {
         expect(
-            isEligibleRekeyTarget(quantum({ address: 'F' }), src, true),
+            isEligibleQuantumRekeyTarget(quantum({ address: 'F' }), src, true),
         ).toBe(true)
     })
 
     test('rejects a quantum target when quantum targets are disabled', () => {
         expect(
-            isEligibleRekeyTarget(quantum({ address: 'F' }), src, false),
+            isEligibleQuantumRekeyTarget(quantum({ address: 'F' }), src, false),
         ).toBe(false)
     })
 
-    test('the quantum gate does not affect non-quantum targets', () => {
+    test('rejects every non-quantum account type', () => {
+        for (const target of [
+            algo25({ address: 'A' }),
+            hd({ address: 'H' }),
+            ledger({ address: 'L' }),
+            multisig({ address: 'M' }),
+            watch({ address: 'W' }),
+        ]) {
+            expect(isEligibleQuantumRekeyTarget(target, src, true)).toBe(false)
+        }
+    })
+
+    test('rejects target equal to source', () => {
         expect(
-            isEligibleRekeyTarget(algo25({ address: 'A' }), src, false),
-        ).toBe(true)
+            isEligibleQuantumRekeyTarget(
+                quantum({ address: 'F' }),
+                { address: 'F' },
+                true,
+            ),
+        ).toBe(false)
+    })
+
+    test("rejects target equal to source's current auth", () => {
+        expect(
+            isEligibleQuantumRekeyTarget(
+                quantum({ address: 'F' }),
+                { address: 'SRC', rekeyAddress: 'F' },
+                true,
+            ),
+        ).toBe(false)
+    })
+
+    test('rejects target without signing keys', () => {
+        const noKey = quantum({ address: 'F' })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(noKey as any).keyPairId = undefined
+        expect(isEligibleQuantumRekeyTarget(noKey, src, true)).toBe(false)
     })
 
     test('rejects a quantum target already rekeyed away', () => {
         expect(
-            isEligibleRekeyTarget(
+            isEligibleQuantumRekeyTarget(
                 quantum({ address: 'F', rekeyAddress: 'X' }),
                 src,
                 true,
             ),
         ).toBe(false)
+    })
+
+    test('accepts a rekeyed source rekeying to a different fresh quantum target', () => {
+        expect(
+            isEligibleQuantumRekeyTarget(
+                quantum({ address: 'F' }),
+                { address: 'SRC', rekeyAddress: 'B' },
+                true,
+            ),
+        ).toBe(true)
     })
 })
 
@@ -1284,5 +1324,40 @@ describe('services/accounts/utils - resolveAuthAccount', () => {
         expect(() => resolveAuthAccount(a, [a])).toThrow(
             RekeyTargetNotFoundError,
         )
+    })
+})
+
+describe('services/accounts/utils - getAccountsRekeyedTo', () => {
+    test('returns the accounts whose active-network auth-addr is the address', () => {
+        const target = quantum({ address: 'PQ' })
+        const rekeyed = algo25({ address: 'A', rekeyAddress: 'PQ' })
+        const unrelated = algo25({ address: 'B' })
+
+        expect(
+            getAccountsRekeyedTo('PQ', [target, rekeyed, unrelated]),
+        ).toEqual([rekeyed])
+    })
+
+    test('excludes the address itself', () => {
+        const selfRekeyed = algo25({ address: 'A', rekeyAddress: 'A' })
+        expect(getAccountsRekeyedTo('A', [selfRekeyed])).toEqual([])
+    })
+
+    test('matches a rekey recorded on a non-active network', () => {
+        // The mirror follows the active network, so a mainnet rekey seen while
+        // browsing testnet lives only in the per-network map.
+        const rekeyed = algo25({
+            address: 'A',
+            rekeyAddressByNetwork: { mainnet: 'PQ' },
+        })
+        expect(getAccountsRekeyedTo('PQ', [rekeyed])).toEqual([rekeyed])
+    })
+
+    test('returns an empty list when nothing points at the address', () => {
+        expect(
+            getAccountsRekeyedTo('PQ', [
+                algo25({ address: 'A', rekeyAddress: 'OTHER' }),
+            ]),
+        ).toEqual([])
     })
 })

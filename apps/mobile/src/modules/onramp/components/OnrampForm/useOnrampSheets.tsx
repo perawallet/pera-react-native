@@ -11,8 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { type RampQuote } from '@perawallet/wallet-core-onramp'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { RampQuote } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OnrampPairSelectionContent } from '../OnrampPairSelectionContent'

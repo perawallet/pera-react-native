@@ -13,7 +13,7 @@
 import React from 'react'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { type CollectibleTrait } from '@perawallet/wallet-core-assets'
+import type { CollectibleTrait } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 
 type CollectibleTraitsGridProps = {

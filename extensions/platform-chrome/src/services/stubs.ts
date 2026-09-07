@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import {
-    type AgeGateDeviceCapability,
-    type AgeGateResult,
-    type AgeGateService,
-    type AppIntegrityAttestation,
-    type AppIntegrityService,
-    type BiometricAvailability,
-    type BiometricEnrollmentBinding,
-    type BiometricSecurityLevel,
-    type BiometricType,
-    type BiometricsAuthenticateResult,
-    type BiometricsService,
-    type LegacyMigrationData,
-    type LegacyMigrationSourcePlatform,
-    type MigrationPlanSummary,
-    type MigrationService,
-    type MigrationStepVersions,
-    type SimulateLegacyDatabaseArgs,
-    type WalletProvisioningCardStatus,
-    type WalletProvisioningService,
-    type WalletProvisioningTokenizationStatus,
+import type {
+    AgeGateDeviceCapability,
+    AgeGateResult,
+    AgeGateService,
+    AppIntegrityAttestation,
+    AppIntegrityService,
+    BiometricAvailability,
+    BiometricEnrollmentBinding,
+    BiometricSecurityLevel,
+    BiometricType,
+    BiometricsAuthenticateResult,
+    BiometricsService,
+    LegacyMigrationData,
+    LegacyMigrationSourcePlatform,
+    MigrationPlanSummary,
+    MigrationService,
+    MigrationStepVersions,
+    SimulateLegacyDatabaseArgs,
+    WalletProvisioningCardStatus,
+    WalletProvisioningService,
+    WalletProvisioningTokenizationStatus,
 } from '@perawallet/wallet-extension-platform'
 
 /**

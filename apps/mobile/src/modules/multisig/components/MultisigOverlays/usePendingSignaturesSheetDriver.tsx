@@ -20,7 +20,7 @@ import { PendingSignaturesContent } from '../PendingSignaturesContent'
  * sign request id. The multisig analogue of `useSignRequestDriver`.
  *
  * No app-lock gate here: BottomSheetManager holds every sheet's presentation
- * while the lock overlay is up (PERA-4743), so requesting while locked is
+ * while the lock overlay is up, so requesting while locked is
  * safe — the sheet paints only after unlock.
  */
 export const usePendingSignaturesSheetDriver = () => {

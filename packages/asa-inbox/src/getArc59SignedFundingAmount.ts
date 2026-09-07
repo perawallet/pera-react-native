@@ -17,7 +17,7 @@
  * display and balance-check against. `total_protocol_and_mbr_fee` is an
  * independent backend field the signature never uses; displaying/checking
  * that while signing this let a malicious backend hide an overpayment of the
- * whole balance (PERA-4710).
+ * whole balance.
  *
  * Intentionally a zero-dependency leaf module (structural param, no imports)
  * so the single source of truth can be shared by the headless signer and the

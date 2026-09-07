@@ -18,7 +18,7 @@
 // paste field as a fallback for browsers that lack `BarcodeDetector`
 // (Firefox) or when the user denies camera permission.
 import React, { createRef, useState } from 'react'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { NotifierRoot } from 'react-native-notifier'
 import { PWBottomSheet } from '@components/core'
 // Explicit `.web` suffix (not a bare './QRScannerContent' specifier): `tsc

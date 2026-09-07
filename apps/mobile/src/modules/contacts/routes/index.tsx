@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'

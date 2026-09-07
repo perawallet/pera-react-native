@@ -13,6 +13,7 @@
 import {
     type Crashlytics,
     getCrashlytics,
+    log,
     recordError,
     setCrashlyticsCollectionEnabled,
 } from '@react-native-firebase/crashlytics'
@@ -98,7 +99,7 @@ const asNonEmptyString = (value: unknown): string | undefined =>
  * on a sign request while omitting it on an invitation; `/v1/notifications`
  * sends `type` and `account_address`. Reading only the REST spellings left
  * `type` undefined on every push, so multisig taps fell through to URL routing
- * and bounced to Home (PERA-4934).
+ * and bounced to Home.
  *
  * Do NOT cover the invitation's missing address with the deeplink's `address`
  * param: its meaning varies by notification type — the shared account on a sign
@@ -209,7 +210,7 @@ export class RNFirebaseService
         // and native `setDefaults` then reset the config database mid-flight and
         // cancelled it (NSURLErrorCancelled → RC error 8003) on every launch.
         // The fetch never once succeeded, so every key served its bundled
-        // default — an empty `staking_projects_i18n` among them (PERA-4836).
+        // default — an empty `staking_projects_i18n` among them.
         await remoteConfig.setConfigSettings({
             // Firebase persists this interval across launches, so an hour in dev
             // means freshly published values are invisible for an hour.
@@ -472,6 +473,13 @@ export class RNFirebaseService
         const reportable =
             error instanceof Error ? error : new Error(String(error))
         recordError(this.crashlytics, reportable, groupingKey)
+    }
+
+    logBreadcrumb(message: string): void {
+        if (!this.crashlytics) {
+            return
+        }
+        log(this.crashlytics, message)
     }
 
     initializeAnalytics(): void {

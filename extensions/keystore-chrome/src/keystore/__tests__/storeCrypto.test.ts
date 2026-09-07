@@ -209,7 +209,7 @@ describe('state.ts crypto entry points', () => {
             // Independent verifier: crypto.subtle's Ed25519, not our own
             // vendored verify() (which shares xhd's derivation with
             // signWithKeyData and so cannot catch a systematic signing
-            // error — see Task 7's sign.test.ts:102-118). edKey.publicKey
+            // error, as in sign.test.ts). edKey.publicKey
             // survives `sign`'s clearKeyData because only privateKey is
             // cleared.
             const cryptoKey = await crypto.subtle.importKey(

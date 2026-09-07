@@ -327,6 +327,33 @@ describe('useSettingsSecurityScreen', () => {
                 }),
             )
         })
+
+        it('shows the passcode-unlock guidance toast when the level is unconfirmed (iOS Face ID lockout)', async () => {
+            mockEnableBiometrics.mockResolvedValue({
+                ok: false,
+                reason: 'unconfirmed',
+            })
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            let success: boolean
+            await act(async () => {
+                success = await result.current.handleBiometricToggle(true)
+            })
+
+            expect(success!).toBe(false)
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'settings.security.biometric_unconfirmed_title',
+                    body: 'settings.security.biometric_unconfirmed_message',
+                    type: 'error',
+                }),
+            )
+        })
     })
 
     describe('handleChangePinPress', () => {

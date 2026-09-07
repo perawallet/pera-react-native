@@ -88,7 +88,7 @@ vi.mock('@algorandfoundation/provider-migrations', () => ({
             },
         }
     },
-    // `migrationsLedger.ts` (Task 1) calls this to build the real ledger
+    // `migrationsLedger.ts` calls this to build the real ledger
     // `singleton.ts` passes as `migrations.ledger` — irrelevant to what these
     // tests assert, but it must exist for the module graph to load.
     keyValueLedger: (kv: { get: (key: string) => unknown }) => ({

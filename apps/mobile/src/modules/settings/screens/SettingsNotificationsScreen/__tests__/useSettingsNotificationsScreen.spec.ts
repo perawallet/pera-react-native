@@ -125,7 +125,7 @@ describe('useSettingsNotificationsScreen', () => {
         )
     })
 
-    // Paused-silent regime is impossible post-PERA-4573; the fire-and-fail
+    // Paused-silent regime is impossible post-; the fire-and-fail
     // regime must reach the shared hook, which owns rollback + offline copy.
     it('still delegates while offline rather than swallowing the toggle', async () => {
         onlineManager.setOnline(false)

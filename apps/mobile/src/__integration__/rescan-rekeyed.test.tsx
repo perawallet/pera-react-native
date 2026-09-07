@@ -98,7 +98,7 @@ const AccountOptionsHost = () => {
 
 // Drives the flow from the production entry point (account options sheet)
 // instead of mounting the rescan screen with initialParams — guards against
-// the flow regressing to dead wiring (PERA-4634).
+// the flow regressing to dead wiring.
 const renderFromAccountOptions = () =>
     renderWithNavigation(AccountOptionsHost, 'AccountOptionsHost', {
         additionalScreens: [

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWFlatList, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useStyles } from './styles'
@@ -107,7 +107,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     }
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
-                    inBottomSheet
                 />
             </PWView>
         </PWView>

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Theme } from '@rneui/themed'
+import type { Theme } from '@rneui/themed'
 
 import { getIconPixelSize, type PWIconSize } from '@components/core/PWIcon'
 

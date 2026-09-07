@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import {
     AAGUID,
     attestationObjectNone,

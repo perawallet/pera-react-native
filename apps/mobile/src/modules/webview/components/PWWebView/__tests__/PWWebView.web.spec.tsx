@@ -232,7 +232,7 @@ describe('PWWebView.web', () => {
         expect(handleMessage).not.toHaveBeenCalled()
     })
 
-    // Controller correction (Task 4 review adjudication): the MAIN-world
+    // The MAIN-world
     // bridge calls are fire-and-forget with no client timeout, and the
     // relay's port is persistent — if the port dies mid-life (extension
     // reload, host disposal) every future bridge call silently vanishes for
@@ -289,7 +289,7 @@ describe('PWWebView.web', () => {
         )
     })
 
-    // M8 Task 2: the incoming webviewRef prop (used by e.g. useBidaliTransport
+    // The incoming webviewRef prop (used by e.g. useBidaliTransport
     // to reach webview.current?.injectJavaScript on native) must be populated
     // on web with this mount's transport-backed twin so the same ref works on
     // both platforms — bidali-events.web.ts recovers the transport back out

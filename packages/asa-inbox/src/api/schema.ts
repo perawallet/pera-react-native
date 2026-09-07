@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import {
-    type PeraAsset,
-    type PeraAssetVerificationTier,
+import type {
+    PeraAsset,
+    PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'
@@ -41,7 +41,7 @@ const safeBaseUnitInteger = z
 // MBR/funding values — inbox creation + asset opt-in MBR is O(0.2 ALGO) — so an
 // absolute ceiling far above any legitimate value hard-rejects a hostile
 // summary that would otherwise drain the account. MAX_SAFE_INTEGER (~9e9 ALGO)
-// is not a bound (PERA-4710).
+// is not a bound.
 //
 // Deliberately a build-time constant and NOT remote-config: remote config is
 // served by the same backend as the summary this bound exists to distrust, so a

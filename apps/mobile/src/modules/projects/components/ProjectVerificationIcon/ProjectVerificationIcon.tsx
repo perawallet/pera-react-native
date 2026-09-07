@@ -11,8 +11,8 @@
  */
 
 import { type IconName, PWIcon, type PWIconProps } from '@components/core'
-import { type VerificationTier } from '@perawallet/wallet-core-projects'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { VerificationTier } from '@perawallet/wallet-core-projects'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const verificationMap: Record<VerificationTier, Optional<IconName>> = {
     verified: 'assets/verified',

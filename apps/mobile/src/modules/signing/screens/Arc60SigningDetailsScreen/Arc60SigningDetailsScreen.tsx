@@ -16,7 +16,7 @@ import {
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60DataSigningView'
 
 export const Arc60SigningDetailsScreen = () => {

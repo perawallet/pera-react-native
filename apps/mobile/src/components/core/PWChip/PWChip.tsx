@@ -15,7 +15,7 @@ import { PWView } from '../PWView'
 import { PWText } from '../PWText'
 
 import { useStyles, type PWChipVariant } from './styles'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 
 import type { TypographyVariant } from '@theme/typography'
 

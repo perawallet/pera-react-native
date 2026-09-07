@@ -60,8 +60,11 @@ const PASSKEY_MAIN_KEY_SCHEME = 'pbkdf2-p256'
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
  * their AutoFill provider, not a fault. The distinct `ReactNativePasskeyAutofill`
  * code 1 ("App Group is not configured") IS a real bug, so it must not match.
+ * Exported for every caller of an identity-store-writing native method
+ * (`refreshCredentialIdentities`, `clearCredentials`) that must not report
+ * the disabled state as an error.
  */
-const isStoreDisabledError = (err: unknown): boolean =>
+export const isStoreDisabledError = (err: unknown): boolean =>
     err instanceof Error &&
     err.message.includes('ASCredentialIdentityStoreErrorDomain error 1')
 
@@ -77,7 +80,23 @@ const isMasterKeyNotFoundError = (err: unknown): boolean =>
     err instanceof MasterKeyNotFoundError ||
     (err instanceof Error && err.name === 'MasterKeyNotFoundError')
 
-let activeBootstrap: Promise<void> | null = null
+/**
+ * `skipped`: no wallet yet, nothing to publish. `failed`: a native step
+ * rejected and the remaining steps were NOT applied — the native side is at
+ * most a prefix of the intended configuration, never a mix of old and new.
+ */
+export type PasskeyBootstrapOutcome = 'ready' | 'skipped' | 'failed'
+
+// Thrown by `abortStep` after the failing step has been logged with its own
+// `step` context; the outer catch recognises it and must not log twice.
+const BOOTSTRAP_ABORT = Symbol('passkey-bootstrap-abort')
+
+const abortStep = (step: string, err: unknown): never => {
+    logger.error(err as Error, { step })
+    throw BOOTSTRAP_ABORT
+}
+
+let activeBootstrap: Promise<PasskeyBootstrapOutcome> | null = null
 
 /**
  * Bootstraps the native passkey autofill subsystem. Idempotent, and overlapping
@@ -89,7 +108,7 @@ let activeBootstrap: Promise<void> | null = null
  */
 export const bootstrapPasskeyAutofill = (
     options: BootstrapPasskeyAutofillOptions,
-): Promise<void> => {
+): Promise<PasskeyBootstrapOutcome> => {
     if (activeBootstrap) return activeBootstrap
 
     activeBootstrap = runBootstrap(options).finally(() => {
@@ -100,7 +119,7 @@ export const bootstrapPasskeyAutofill = (
 
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
-): Promise<void> => {
+): Promise<PasskeyBootstrapOutcome> => {
     const { service, intentActions } = options
 
     let masterKey: Buffer | null = null
@@ -118,7 +137,7 @@ const runBootstrap = async (
                     'No master key yet; skipping passkey autofill bootstrap',
                     { step: 'bootstrapPasskeyAutofill' },
                 )
-                return
+                return 'skipped'
             }
             throw err
         }
@@ -130,9 +149,7 @@ const runBootstrap = async (
         try {
             await service
                 .setMasterKey(masterKeyBytes)
-                .catch(err =>
-                    logger.error(err as Error, { step: 'setMasterKey' }),
-                )
+                .catch(err => abortStep('setMasterKey', err))
         } finally {
             masterKeyBytes.fill(0)
         }
@@ -144,9 +161,7 @@ const runBootstrap = async (
                 intentActions.getPasskeyAction,
                 intentActions.createPasskeyAction,
             )
-            .catch(err =>
-                logger.error(err as Error, { step: 'configureIntentActions' }),
-            )
+            .catch(err => abortStep('configureIntentActions', err))
 
         // Only meaningful when Pera is the active credential provider —
         // otherwise iOS rejects with `storeDisabled`, a benign expected state
@@ -168,37 +183,47 @@ const runBootstrap = async (
                     )
                     return
                 }
-                logger.error(err as Error, {
-                    step: 'refreshCredentialIdentities',
-                })
+                abortStep('refreshCredentialIdentities', err)
             })
         }
+
+        return 'ready'
     } catch (err) {
-        // Surface the actual error object (with stack) instead of string-
-        // interpolating it — `${err}` discards the stack and leaves the
-        // caller staring at a bare "TypeError: undefined is not a function".
-        logger.error(err as Error, { step: 'bootstrapPasskeyAutofill' })
+        if (err !== BOOTSTRAP_ABORT) {
+            // Surface the actual error object (with stack) instead of string-
+            // interpolating it — `${err}` discards the stack and leaves the
+            // caller staring at a bare "TypeError: undefined is not a function".
+            logger.error(err as Error, { step: 'bootstrapPasskeyAutofill' })
+        }
+        return 'failed'
     } finally {
         if (masterKey) masterKey.fill(0)
     }
 }
 
+// Code-unit order, deliberately locale-independent: the pick must be the same
+// on every launch and every device.
+const byId = (a: KeyData, b: KeyData): number =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+
 /**
- * The two derivation-parent candidates, from one pass over the plaintext `k/`
+ * Every derivation-parent candidate, from one pass over the plaintext `k/`
  * bucket. No material is decrypted and no biometric prompt is raised to answer
  * "which key is it".
  *
  * The main key must be found by a full scan rather than by taking the first
  * `hd-root-key`: it shares that type with the XHD root and is told apart only
- * by `metadata.scheme`.
+ * by `metadata.scheme`. Both lists come back sorted by id because MMKV's
+ * `getAllKeys` order is arbitrary — without the sort, which root wins a tie
+ * would silently change between launches.
  */
 const findParentKeyCandidates = (): {
-    mainKey: KeyData | null
-    hdRoot: KeyData | null
+    mainKeys: KeyData[]
+    hdRoots: KeyData[]
 } => {
     let scanned = 0
-    let mainKey: KeyData | null = null
-    let hdRoot: KeyData | null = null
+    const mainKeys: KeyData[] = []
+    const hdRoots: KeyData[] = []
 
     for (const key of keystoreStorage.getAllKeys()) {
         if (!key.startsWith(METADATA_PREFIX)) continue
@@ -223,13 +248,13 @@ const findParentKeyCandidates = (): {
             record.type === 'hd-root-key' &&
             scheme === PASSKEY_MAIN_KEY_SCHEME
         ) {
-            mainKey ??= record
+            mainKeys.push(record)
             continue
         }
-        if (HD_ROOT_KEY_TYPES.has(record.type)) hdRoot ??= record
+        if (HD_ROOT_KEY_TYPES.has(record.type)) hdRoots.push(record)
     }
 
-    if (!mainKey && !hdRoot) {
+    if (mainKeys.length === 0 && hdRoots.length === 0) {
         logger.warn(
             scanned === 0
                 ? 'Keystore MMKV is empty; passkey autofill has no HD root key to derive from'
@@ -238,29 +263,68 @@ const findParentKeyCandidates = (): {
         )
     }
 
-    return { mainKey, hdRoot }
+    return { mainKeys: mainKeys.sort(byId), hdRoots: hdRoots.sort(byId) }
 }
 
 const configureParentKey = async (
     service: PasskeyAutofillService,
 ): Promise<void> => {
-    const { mainKey, hdRoot } = findParentKeyCandidates()
+    const { mainKeys, hdRoots } = findParentKeyCandidates()
 
-    if (mainKey) {
+    if (mainKeys.length > 0) {
+        if (mainKeys.length > 1) {
+            // The dp256 main key is a device-wide singleton (`usePasskeyMainKey`
+            // short-circuits on it; repair 0003 mints at most one). A second one
+            // is an invariant violation worth a crash report, but not worth
+            // killing autofill over — the deterministic pick keeps it alive.
+            logger.error(
+                new Error(
+                    `Expected one passkey main key, found ${mainKeys.length}: ${mainKeys
+                        .map(k => k.id)
+                        .join(', ')}`,
+                ),
+                { step: 'configureParentKey' },
+            )
+        }
         await service
-            .setMainKeyId(mainKey.id)
-            .catch(err => logger.error(err as Error, { step: 'setMainKeyId' }))
+            .setMainKeyId(mainKeys[0].id)
+            .catch(err => abortStep('setMainKeyId', err))
         return
     }
 
-    if (!hdRoot) return
+    if (hdRoots.length > 0) {
+        if (hdRoots.length > 1) {
+            // Legitimate for a multi-wallet user whose main key hasn't been
+            // minted yet; the id-sorted pick is stable but still arbitrary.
+            logger.warn(
+                `Multiple HD roots and no passkey main key; wiring ${hdRoots[0].id} of ${hdRoots.length} candidates`,
+                { step: 'configureParentKey' },
+            )
+        }
+        // Deprecated upstream, but it is what a wallet with no main key yet
+        // still derives from, and `selectParentKey` honours a credential's
+        // pinned scheme either way.
+        await service
+            .setHdRootKeyId(hdRoots[0].id)
+            .catch(err => abortStep('setHdRootKeyId', err))
+        return
+    }
 
-    // Deprecated upstream, but it is what a wallet with no main key yet still
-    // derives from, and `selectParentKey` honours a credential's pinned scheme
-    // either way.
-    await service
-        .setHdRootKeyId(hdRoot.id)
-        .catch(err => logger.error(err as Error, { step: 'setHdRootKeyId' }))
+    // No local root, but the native side may still point at one from a
+    // previous wallet. `''` never resolves to a key, so both providers fail
+    // closed instead of deriving from a parent this keystore no longer holds.
+    // Only the pointer is invalidated — stored credentials are not touched,
+    // so a transient scan miss cannot destroy them.
+    const staleId = await service.getHdRootKeyId().catch(() => null)
+    if (staleId) {
+        logger.warn(
+            'Keystore has no HD root but native still holds a parent key id; invalidating it',
+            { step: 'configureParentKey' },
+        )
+        await service
+            .setHdRootKeyId('')
+            .catch(err => abortStep('setHdRootKeyId', err))
+    }
 }
 
 /**

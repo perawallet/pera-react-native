@@ -18,7 +18,7 @@ import {
     useState,
 } from 'react'
 import type WebView from 'react-native-webview'
-import { type WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
+import type { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { WebViewFavorite } from '@modules/webview/hooks'
 

@@ -11,11 +11,7 @@
  */
 
 import React, { useMemo } from 'react'
-import {
-    type GestureResponderEvent,
-    type StyleProp,
-    type ViewStyle,
-} from 'react-native'
+import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
@@ -96,7 +92,7 @@ const AssetListItemViewBase = ({
     const balance = (
         <PWView style={styles.amountContainer}>
             {/* No unit next to the figure: the row already carries it under the
-                asset name, and a long one squeezed the amount out (PERA-4733).
+                asset name, and a long one squeezed the amount out.
                 ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}

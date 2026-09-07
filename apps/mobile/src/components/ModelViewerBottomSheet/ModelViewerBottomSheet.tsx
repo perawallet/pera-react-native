@@ -74,8 +74,8 @@ export const ModelViewerBottomSheet = ({
             enableOverDrag={false}
             // Never disable the content pan outright: gorhom wraps content in
             // a disabled GestureDetector, which stops delivering touches on
-            // Android — taps fall through to the closing backdrop
-            // (PERA-4647). A never-reachable activation distance keeps the
+            // Android — taps fall through to the closing backdrop.
+            // A never-reachable activation distance keeps the
             // viewer's own drag gestures free without that side effect.
             activeOffsetY={[-99_999, 99_999]}
         >

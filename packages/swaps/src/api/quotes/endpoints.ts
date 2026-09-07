@@ -112,7 +112,7 @@ export const createQuotes = async (
     // returns a different swapper would silently disable that validator and
     // could rekey/drain the account. Hard-fail on divergence so a lying
     // backend surfaces as an error rather than being silently corrected.
-    // (PERA-4709)
+    //
     for (const quote of parsed.results) {
         if (
             quote.swapper_address &&

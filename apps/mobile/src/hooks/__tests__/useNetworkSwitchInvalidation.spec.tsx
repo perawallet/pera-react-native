@@ -112,7 +112,7 @@ describe('useNetworkSwitchInvalidation', () => {
         // On a 10k-asset wallet each DB-backed row query retains a multi-MB
         // hydrated array. With a 1-hour default gcTime, every switch parks the
         // old network's arrays in the cache — the heap ratchets up per switch
-        // until GC pauses dominate (PERA-4953). SQLite is the source of truth
+        // until GC pauses dominate. SQLite is the source of truth
         // for these, so dropping them on switch loses nothing.
         const seed = (client: QueryClient) => {
             client.setQueryData(

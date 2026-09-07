@@ -46,7 +46,7 @@ export const scannerNotifier = createRef<Nullable<NotifierRoot>>()
 //
 // Minted per instance instead of module-level: `lazy` caches a rejected import
 // forever, so one failed chunk fetch / MLKit init would otherwise re-throw on
-// every scanner open until app restart (PERA-4465). Retry mints a fresh one.
+// every scanner open until app restart. Retry mints a fresh one.
 const createQRCameraScanner = () =>
     lazy(() =>
         import('./QRCameraScanner').then(module => ({
@@ -175,7 +175,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                         // blip in dev, MLKit init in release), which would
                         // otherwise escape to the app root as a crash. The
                         // fallback mirrors the no-camera empty state, with
-                        // Retry re-attempting the import (PERA-4465).
+                        // Retry re-attempting the import.
                         <BaseErrorBoundary
                             t={t}
                             fallback={(_error, reset) => (

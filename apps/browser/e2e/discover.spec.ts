@@ -155,7 +155,7 @@ test.describe.skip('discover tab (web)', () => {
     // Networked best-effort: when the Discover site actually loads, the MAIN
     // world content script must have installed the bridge interface inside the
     // iframe. Skipped (not failed) when the frame never gets a document —
-    // networkless CI stays green; Task 8's manual checklist owns the full
+    // networkless CI stays green. The manual checklist owns the full
     // round-trip.
     test('discover iframe gets the bridge interface when the site loads', async () => {
         const frame = page

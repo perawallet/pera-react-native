@@ -20,12 +20,13 @@ import type { AppStackParamList } from '@routes/types'
 export type RekeyIntroNavConfig = {
     parentRoute: keyof Pick<
         AppStackParamList,
-        'RekeyToStandard' | 'RekeyToLedger' | 'RekeyToShared'
+        'RekeyToStandard' | 'RekeyToLedger' | 'RekeyToShared' | 'RekeyToQuantum'
     >
     selectTargetScreen:
         | 'RekeyToStandardSelectTarget'
         | 'RekeyToLedgerSelectTarget'
         | 'RekeyToSharedSelectTarget'
+        | 'RekeyToQuantumSelectTarget'
     supportUrl: string
 }
 

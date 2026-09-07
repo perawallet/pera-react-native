@@ -17,6 +17,8 @@ export * from './models'
 export * from './hooks'
 export * from './utils'
 export * from './pipeline'
+export * from './ledger'
+export * from './db'
 
 export {
     useWalletConnectHandoffsStore,

@@ -11,28 +11,39 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { ErrorCategory } from '@perawallet/wallet-core-shared'
+import {
+    ErrorCategory,
+    isExpectedError,
+    type AppError,
+} from '@perawallet/wallet-core-shared'
 import {
     classifyLedgerError,
+    LedgerAddressMismatchError,
+    LedgerAppNotOpenError,
     LedgerAppOutdatedError,
+    LedgerBluetoothDisabledError,
+    LedgerConnectionError,
     LedgerDeviceBusyError,
     LedgerDeviceLockedError,
     LedgerDeviceNotFoundError,
-    LedgerUserRejectedError,
-    LedgerAppNotOpenError,
     LedgerDisconnectedError,
-    LedgerTimeoutError,
-    LedgerConnectionError,
-    LedgerBluetoothDisabledError,
     LedgerLocationServicesDisabledError,
-    LedgerPermissionDeniedError,
-    LedgerScanTimeoutError,
-    LedgerSigningFailedError,
-    LedgerTransmissionError,
-    LedgerPublicKeyReadError,
     LedgerNetworkError,
+    LedgerNoAccountsFoundError,
+    LedgerPermissionDeniedError,
+    LedgerProviderNotFoundError,
+    LedgerPublicKeyReadError,
+    LedgerScanTimeoutError,
+    LedgerSigningError,
+    LedgerSigningFailedError,
+    LedgerTimeoutError,
+    LedgerTransmissionError,
     LedgerUnsupportedDeviceError,
+    LedgerUsbMultipleDevicesError,
+    LedgerUsbNoDeviceError,
+    LedgerUserRejectedError,
 } from '../errors'
+import * as ledgerErrors from '../errors'
 
 const createErrorWithStatus = (statusCode: number): Error => {
     const error = new Error('ledger error')
@@ -337,5 +348,69 @@ describe('new typed Ledger errors', () => {
         const error = new LedgerDeviceBusyError()
         expect(error.message.toLowerCase()).toContain('busy')
         expect(error.metadata.retryable).toBe(true)
+    })
+})
+
+describe('expected-error classification', () => {
+    // Exhaustive on purpose: adding a Ledger error class must fail this suite
+    // until someone decides whether it is our defect or the environment's.
+    const EXPECTED: Array<[string, AppError]> = [
+        ['LedgerDeviceNotFoundError', new LedgerDeviceNotFoundError()],
+        ['LedgerDeviceBusyError', new LedgerDeviceBusyError()],
+        ['LedgerDeviceLockedError', new LedgerDeviceLockedError()],
+        ['LedgerAppNotOpenError', new LedgerAppNotOpenError()],
+        ['LedgerDisconnectedError', new LedgerDisconnectedError()],
+        ['LedgerTimeoutError', new LedgerTimeoutError('device communication')],
+        [
+            'LedgerScanTimeoutError',
+            new LedgerScanTimeoutError('scan timed out'),
+        ],
+        ['LedgerUserRejectedError', new LedgerUserRejectedError()],
+        ['LedgerBluetoothDisabledError', new LedgerBluetoothDisabledError()],
+        ['LedgerPermissionDeniedError', new LedgerPermissionDeniedError()],
+        [
+            'LedgerLocationServicesDisabledError',
+            new LedgerLocationServicesDisabledError(),
+        ],
+        ['LedgerConnectionError', new LedgerConnectionError('offline')],
+        ['LedgerNetworkError', new LedgerNetworkError()],
+        ['LedgerUsbNoDeviceError', new LedgerUsbNoDeviceError()],
+        ['LedgerAppOutdatedError', new LedgerAppOutdatedError()],
+        ['LedgerNoAccountsFoundError', new LedgerNoAccountsFoundError()],
+        ['LedgerUnsupportedDeviceError', new LedgerUnsupportedDeviceError()],
+    ]
+
+    const REPORTABLE: Array<[string, AppError]> = [
+        [
+            'LedgerAddressMismatchError',
+            new LedgerAddressMismatchError('a', 'b'),
+        ],
+        ['LedgerSigningError', new LedgerSigningError('failed')],
+        ['LedgerSigningFailedError', new LedgerSigningFailedError('failed')],
+        ['LedgerTransmissionError', new LedgerTransmissionError('failed')],
+        ['LedgerPublicKeyReadError', new LedgerPublicKeyReadError()],
+        [
+            'LedgerProviderNotFoundError',
+            new LedgerProviderNotFoundError('no provider'),
+        ],
+        ['LedgerUsbMultipleDevicesError', new LedgerUsbMultipleDevicesError()],
+    ]
+
+    it.each(EXPECTED)('%s is expected', (_name, error) => {
+        expect(isExpectedError(error)).toBe(true)
+    })
+
+    it.each(REPORTABLE)('%s stays reportable', (_name, error) => {
+        expect(isExpectedError(error)).toBe(false)
+    })
+
+    it('covers every exported Ledger error class', () => {
+        const covered = new Set(
+            [...EXPECTED, ...REPORTABLE].map(([name]) => name),
+        )
+        const exported = Object.keys(ledgerErrors).filter(
+            key => key.startsWith('Ledger') && key.endsWith('Error'),
+        )
+        expect(exported.filter(name => !covered.has(name))).toEqual([])
     })
 })

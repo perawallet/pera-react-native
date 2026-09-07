@@ -49,7 +49,7 @@ const WATCH_TARGET_ADDRESS = QUANTUM_TEST_ADDRESS
 // NameAccount's handleFinish push the wall-clock past the 5s default.
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
-describe('watch quantum address (PQ-015)', () => {
+describe('watch quantum address', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => {
         server.resetHandlers()

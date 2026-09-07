@@ -72,7 +72,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
             // Payment = algo_fund_amount + minimum_balance_requirement. Shared
             // with the summary screen's display + balance-check so the amount
-            // shown/checked can never diverge from the amount signed (PERA-4710).
+            // shown/checked can never diverge from the amount signed.
             const totalPaymentAmount = getArc59SignedFundingAmount(summary)
 
             if (totalPaymentAmount > 0n) {

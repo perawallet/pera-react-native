@@ -11,8 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
-import { type SignRequest } from '@perawallet/wallet-core-signing'
+import type { StyleProp, ViewStyle } from 'react-native'
+import type { SignRequest } from '@perawallet/wallet-core-signing'
 import { PWButton } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'

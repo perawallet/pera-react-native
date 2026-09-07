@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PWRoundIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ApprovalWindowBridge, DAPP_APPROVAL_SCOPE } from '../approval-bridge'
+import {
+    ApprovalWindowBridge,
+    DAPP_APPROVAL_SCOPE,
+    POPUP_OPEN_TIMEOUT_MS,
+} from '../approval-bridge'
 
 // A chrome fake capturing windows.create + the two onMessage/onRemoved listeners.
 // idOverrides lets a test force a specific sequence of window ids (e.g. to
@@ -1095,6 +1099,87 @@ describe('ApprovalWindowBridge', () => {
             },
             trustedSender,
         )
+    })
+
+    // The rejection path is covered above; this is the promise that never
+    // settles at all. chrome.action.openPopup does that on a runner with no
+    // window manager, and an unbounded await left the entry registered with
+    // `surface` undefined forever — skipped by get-current-approval, with no
+    // window ever created and the popup slot burned for the worker's life.
+    it('falls back to the window when chrome.action.openPopup never settles', async () => {
+        vi.useFakeTimers()
+        try {
+            const { chromeLike, created, openPopup, fireMessage } = makeChrome(
+                undefined,
+                'manual',
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            const decision = bridge.openEnable({
+                requestId: 'hung-popup',
+                origin: 'https://a.com',
+            })
+
+            await vi.advanceTimersByTimeAsync(0)
+            expect(openPopup).toHaveBeenCalledTimes(1)
+            // Nothing yet — the bridge is still giving the popup its chance.
+            expect(created.length).toBe(0)
+
+            await vi.advanceTimersByTimeAsync(POPUP_OPEN_TIMEOUT_MS + 10)
+
+            expect(created.length).toBe(1)
+            expect(created[0].url).toContain(
+                'approval.html?requestId=hung-popup',
+            )
+
+            // And the approval is answerable through that window, rather than
+            // being stranded with nothing able to settle it.
+            await fireMessage(
+                {
+                    scope: DAPP_APPROVAL_SCOPE,
+                    kind: 'resolve-approval',
+                    requestId: 'hung-popup',
+                    approvedAddresses: ['A'],
+                },
+                trustedSender,
+            )
+            expect(await decision).toEqual({ approvedAddresses: ['A'] })
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    // A hung openPopup must not burn the single popup slot either: the next
+    // approval is entitled to its own attempt.
+    it('releases the popup-attempt reservation when openPopup never settles', async () => {
+        vi.useFakeTimers()
+        try {
+            const { chromeLike, created, openPopup } = makeChrome(
+                undefined,
+                'manual',
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            void bridge.openEnable({
+                requestId: 'hung-a',
+                origin: 'https://a.com',
+            })
+            await vi.advanceTimersByTimeAsync(POPUP_OPEN_TIMEOUT_MS + 10)
+            expect(created.length).toBe(1)
+
+            void bridge.openSignTransactions({
+                requestId: 'hung-b',
+                origin: 'https://b.com',
+                txns: [],
+                approvedAddresses: [],
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            expect(openPopup).toHaveBeenCalledTimes(2)
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
     it('finish() does not call windows.remove for a popup-surface enable resolved via resolve-approval', async () => {

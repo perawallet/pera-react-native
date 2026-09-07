@@ -39,7 +39,10 @@ import {
     buildTransactionListRows,
     type TransactionListRow,
 } from '@modules/transactions/utils/transactionListRows'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    PeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Return type for useAccountHistory hook.
@@ -172,7 +175,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()
 
-    const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
+    const {
+        exportCsv,
+        isLoading: isExportingCsv,
+        isUnavailableOnNetwork,
+    } = useCsvExportMutation({
         network,
         onSuccess: result => {
             void (async () => {
@@ -190,10 +197,26 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleExportCsv = useCallback(() => {
         trackEvent(AccountDetailsEvent.TransactionDownload)
+        // Guarding the request would silence's central toast too, so
+        // the reason has to be raised here or the button would do nothing.
+        if (isUnavailableOnNetwork) {
+            showError(
+                new PeraServiceUnavailableError(network),
+                t('common.network_unavailable.title'),
+            )
+            return
+        }
         if (account?.address) {
             exportCsv({ accountAddress: account.address })
         }
-    }, [account?.address, exportCsv])
+    }, [
+        account?.address,
+        exportCsv,
+        isUnavailableOnNetwork,
+        network,
+        showError,
+        t,
+    ])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
@@ -214,7 +237,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
     // selected account resolves, and a disabled query reports `isLoading:
     // false` with no rows — which rendered "no transactions" over a history
-    // that had not been read yet (PERA-4861).
+    // that had not been read yet.
     // `!hasNextPage` too: an empty local cache still has an API page
     // queued behind it, and calling that empty would flash the wrong
     // answer for the length of one request.

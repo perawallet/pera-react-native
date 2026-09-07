@@ -15,7 +15,7 @@
  * interrupts the user goes through one queue — before this, prompts and
  * auto-opening banners each decided independently when to appear, so a
  * post-migration launch showed them in whatever order their triggers happened
- * to fire (PERA-4874).
+ * to fire.
  *
  * Gaps are intentional: a new interruption should slot between existing ones
  * without renumbering.

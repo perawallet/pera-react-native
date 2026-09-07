@@ -13,24 +13,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    algo25SecretKeyToMnemonic: vi.fn(),
-    entropyToMnemonic: vi.fn(
-        (entropy: Uint8Array) => `bip39-mnemonic-${entropy.length}B`,
+    algo25SecretKeyToIndices: vi.fn(),
+    entropyToIndices: vi.fn(
+        (entropy: Uint8Array) => new Uint16Array(entropy.length),
     ),
 }))
 
-import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
+import { entropyToIndices } from '@perawallet/wallet-core-kms'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
-import {
-    hdWalletEntropyToMnemonic,
-    describeBytes,
-} from '../legacyKeyConversion'
+import { hdWalletEntropyToIndices, describeBytes } from '../legacyKeyConversion'
 
 beforeEach(() => {
-    vi.mocked(entropyToMnemonic).mockClear()
+    vi.mocked(entropyToIndices).mockClear()
 })
 
-describe('hdWalletEntropyToMnemonic', () => {
+describe('hdWalletEntropyToIndices', () => {
     const buildWallet = (
         overrides: Partial<LegacyHDWallet> = {},
     ): LegacyHDWallet => ({
@@ -41,37 +38,37 @@ describe('hdWalletEntropyToMnemonic', () => {
         ...overrides,
     })
 
-    it('delegates to kms entropyToMnemonic with the entropy bytes', () => {
+    it('delegates to kms entropyToIndices with the entropy bytes', () => {
         const entropy = new Uint8Array(32).fill(0xab)
 
-        const mnemonic = hdWalletEntropyToMnemonic(buildWallet({ entropy }))
+        const indices = hdWalletEntropyToIndices(buildWallet({ entropy }))
 
-        expect(mnemonic).toBe('bip39-mnemonic-32B')
-        const arg = vi.mocked(entropyToMnemonic).mock.calls[0][0]
+        expect(indices).toBeInstanceOf(Uint16Array)
+        const arg = vi.mocked(entropyToIndices).mock.calls[0][0]
         expect(arg).toBeInstanceOf(Uint8Array)
         expect(arg).toHaveLength(32)
     })
 
-    it('wipes the transient entropy copy after deriving the mnemonic', () => {
-        hdWalletEntropyToMnemonic(
+    it('wipes the transient entropy copy after deriving the indices', () => {
+        hdWalletEntropyToIndices(
             buildWallet({ entropy: new Uint8Array(32).fill(0xab) }),
         )
 
-        const passedCopy = vi.mocked(entropyToMnemonic).mock.calls[0][0]
+        const passedCopy = vi.mocked(entropyToIndices).mock.calls[0][0]
         expect(passedCopy.every(b => b === 0)).toBe(true)
     })
 
     it('leaves the source entropy on the wallet intact for the caller to wipe', () => {
         const entropy = new Uint8Array(32).fill(0xab)
 
-        hdWalletEntropyToMnemonic(buildWallet({ entropy }))
+        hdWalletEntropyToIndices(buildWallet({ entropy }))
 
         expect(entropy.every(b => b === 0xab)).toBe(true)
     })
 
     it('throws when entropy is null', () => {
         expect(() =>
-            hdWalletEntropyToMnemonic(
+            hdWalletEntropyToIndices(
                 buildWallet({ walletId: 'w-null', entropy: null }),
             ),
         ).toThrow('HD wallet w-null has no entropy')
@@ -79,7 +76,7 @@ describe('hdWalletEntropyToMnemonic', () => {
 
     it('throws when entropy is empty', () => {
         expect(() =>
-            hdWalletEntropyToMnemonic(
+            hdWalletEntropyToIndices(
                 buildWallet({
                     walletId: 'w-empty',
                     entropy: new Uint8Array(0),

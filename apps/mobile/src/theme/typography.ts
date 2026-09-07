@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type Theme } from '@rneui/themed'
-import { type TextStyle } from 'react-native'
+import type { Theme } from '@rneui/themed'
+import type { TextStyle } from 'react-native'
 import { fontFamilies } from '@constants/fonts'
 import { moderateScale } from './scaling'
 

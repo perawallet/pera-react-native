@@ -60,12 +60,12 @@ import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { renderWithNavigation } from './renderWithNavigation'
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from '../__integration__/__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
-    QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from '../__integration__/__fixtures__/quantum'
 
 export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
@@ -97,7 +97,7 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
     let keyResult: Algo25KeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
@@ -123,7 +123,7 @@ export const seedQuantumSigner = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 
 type UseSwitchNetworkResult = {
     switchNetwork: (newNetwork: Network) => Promise<void>
@@ -33,8 +33,8 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
             // for the new network is owned by useDeviceRegistration: its
             // [addresses, network] effect re-fires on this write
             // (create-or-update with the 404 re-register fallback), marks the
-            // network pending on failure, and heals on reconnect/foreground
-            // (PERA-4593); its useOnNetworkSwitch also clears the previous
+            // network pending on failure, and heals on reconnect/foreground;
+            // its useOnNetworkSwitch also clears the previous
             // network's push token. An unreachable backend must never block
             // or revert the switch; push notifications may lag until that
             // deferred registration lands. Callers kick the sync

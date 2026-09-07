@@ -16,7 +16,7 @@
  * only once someone runs a full install. This guard catches the same mistake in
  * a lint job with no network and no node_modules, so a drifted patch is caught
  * at review rather than after checkout. For the passkey-autofill patch the
- * stakes are Credential Manager continuity, PERA-4714 relying-party scoping and
+ * stakes are Credential Manager continuity relying-party scoping and
  * the Rocca-Wallet string overrides.
  *
  *   node tools/check-patch-pins.mjs [pnpm-workspace.yaml]

@@ -33,6 +33,7 @@ const makeQuote = (quoteIdStr?: string): SwapQuote =>
 
 const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
+const mockInfoToast = vi.fn()
 const mockExecute =
     vi.fn<(quoteIdStr: string) => Promise<SwapExecutionOutcome>>()
 const mockReset = vi.fn()
@@ -55,6 +56,21 @@ vi.mock('@hooks/useRunAfterDelay', () => ({
         schedule: mockSchedule,
         flush: mockFlush,
         cancel: mockCancel,
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        infoToast: mockInfoToast,
+        errorToast: vi.fn(),
+        successToast: vi.fn(),
+        showToast: vi.fn(),
+    }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
     }),
 }))
 
@@ -211,6 +227,27 @@ describe('useSwapConfirmationActions', () => {
         })
 
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'stale-quote' })
+        expect(mockSchedule).not.toHaveBeenCalled()
+    })
+
+    it('shows a verifying-previous toast and resolves without marking the swap failed', async () => {
+        mockExecute.mockResolvedValueOnce({ kind: 'verifying-previous' })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-9') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.verifying_previous_title',
+            'swap.execution.verifying_previous_body',
+        )
+        // Not an error: the swap was never signed or broadcast, so the form
+        // stays put and the user can retry once the earlier attempt resolves.
+        expect(mockResolve).toHaveBeenCalledWith({ kind: 'cancelled' })
         expect(mockSchedule).not.toHaveBeenCalled()
     })
 

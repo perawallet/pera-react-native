@@ -11,9 +11,9 @@
  */
 
 import { useMemo } from 'react'
-import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
-import { type TransactionSignRequest } from '../models'
+import type { TransactionSignRequest } from '../models'
 import { useSigningPipeline } from './useSigningPipeline'
 import { useGroupSimulationQuery } from './useGroupSimulationQuery'
 

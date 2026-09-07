@@ -18,4 +18,10 @@ export interface CrashReportingService {
      * genuine stack should omit it and let the stack do the grouping.
      */
     recordNonFatalError(error: unknown, groupingKey?: string): void
+    /**
+     * Writes to the reporter's local breadcrumb buffer. Creates no issue of its
+     * own; it only adds context to a crash or non-fatal that follows. Used for
+     * errors the severity policy deliberately does not report.
+     */
+    logBreadcrumb(message: string): void
 }

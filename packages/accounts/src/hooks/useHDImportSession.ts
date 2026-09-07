@@ -15,12 +15,12 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { prepareHDMasterKey, useKMS } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts, createXHDGetPublicKey } from '../account-discovery'
-import { type HDWalletAccount } from '../models/accounts'
+import type { HDWalletAccount } from '../models/accounts'
 import { useAccountsStore } from '../store'
 import { HDImportSessionNotFoundError } from '../errors'
 
 export type UseHDImportSessionResult = {
-    prepareImport: (params: { mnemonic?: string }) => Promise<{
+    prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
         walletKeyId: string
         derivationType: BIP32DerivationType
     }>
@@ -40,8 +40,8 @@ export const useHDImportSession = (): UseHDImportSessionResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
-        async ({ mnemonic }: { mnemonic?: string }) => {
-            const prepared = await prepareHDMasterKey({ mnemonic })
+        async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
+            const prepared = await prepareHDMasterKey({ mnemonicIndices })
             const derivationType = BIP32DerivationType.Peikert
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,

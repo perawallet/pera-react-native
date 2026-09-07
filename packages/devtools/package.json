@@ -6,6 +6,7 @@
   "exports": {
     "./tsconfig": "./tsconfig/vite.json",
     "./tsconfig/vite.json": "./tsconfig/vite.json",
+    "./tsconfig/emit.json": "./tsconfig/emit.json",
     "./vitest/coverage": {
       "types": "./vitest/coverage.d.ts",
       "default": "./vitest/coverage.js"
@@ -19,12 +20,7 @@
       "default": "./vitest/base.js"
     }
   },
-  "files": ["tsconfig", "vitest", "guardrails"],
-  "scripts": {
-    "guardrails": "tsx guardrails/index.ts",
-    "test": "vitest run",
-    "test:unit": "vitest run"
-  },
+  "files": ["tsconfig", "vitest"],
   "dependencies": {
     "typescript": "catalog:",
     "fast-glob": "catalog:"

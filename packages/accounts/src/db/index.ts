@@ -16,6 +16,7 @@ export {
     getAccountHoldings,
     isAssetFrozen,
     getAccountPortfolioTotals,
+    getAccountFundedNetworks,
     getAccountHoldingsPage,
     getAccountHoldingsLite,
     getAccountCollectiblesLite,

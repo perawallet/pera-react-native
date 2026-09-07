@@ -26,6 +26,8 @@ import { ThemeProvider } from '@rneui/themed'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { PWButton } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useOrientationPolicy } from '@hooks/useOrientationPolicy'
+import { useSystemBarsAppearance } from '@hooks/useSystemBarsAppearance'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
 import { QueryProvider } from './providers/QueryProvider'
@@ -78,6 +80,8 @@ const AppContent = () => {
     const { bootstrapped, persister, fcmToken, initError, retryBootstrap } =
         useAppBootstrap()
 
+    useSystemBarsAppearance(isDarkMode)
+    useOrientationPolicy()
     usePasskeyAutofillLifecycle()
     useAppIntegrityBootstrap()
 
@@ -92,12 +96,19 @@ const AppContent = () => {
     }, [provider])
 
     if (initError) {
+        // A keystore-integrity failure recurs on every launch, so the generic
+        // "try restarting" copy would send users toward a destructive
+        // reinstall; it gets its own message instead.
+        const errorKey =
+            initError === 'keystore'
+                ? 'app.initialization_failed.keystore'
+                : 'app.initialization_failed'
         return (
             <ThemeProvider theme={theme}>
                 <SafeAreaProvider>
                     <EmptyView
-                        title={t('app.initialization_failed.title')}
-                        body={t('app.initialization_failed.body')}
+                        title={t(`${errorKey}.title`)}
+                        body={t(`${errorKey}.body`)}
                         button={
                             <PWButton
                                 variant='primary'

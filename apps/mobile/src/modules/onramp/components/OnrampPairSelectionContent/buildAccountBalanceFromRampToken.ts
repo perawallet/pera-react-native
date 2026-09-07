@@ -17,7 +17,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { type RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { isAlgoAssetName, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Verification tier mapping for known onramp tokens, keyed on token.id.

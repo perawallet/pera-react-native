@@ -242,7 +242,7 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
  *
  * Strictly additive over "can this account sign for itself": the hop is only
  * consulted for a signer that has no key of its own, which is what let a
- * rekeyed account be refused outright (PERA-4977). A signer that can sign
+ * rekeyed account be refused outright. A signer that can sign
  * directly keeps signing with its own key — deliberately, because a dApp that
  * already resolved the auth address itself names *that* account as the signer,
  * and hopping again off a chained rekey would sign with a key the requested
@@ -322,6 +322,27 @@ export const canInitiateRekey = (
     accounts: WalletAccount[],
 ): boolean => canSignWith(account, accounts)
 
+/**
+ * Wallet accounts whose auth-addr is `address` — the accounts `address` signs
+ * for. Self-references are excluded (an account rekeyed to itself is not
+ * "another account").
+ *
+ * Looks at every network the wallet has observed, not just the active-network
+ * `rekeyAddress` mirror: a mainnet rekey still strands the mainnet account
+ * while the user is browsing testnet. The legacy mirror is kept in the check
+ * for accounts persisted before `rekeyAddressByNetwork` existed.
+ */
+export const getAccountsRekeyedTo = (
+    address: string,
+    accounts: WalletAccount[],
+): WalletAccount[] =>
+    accounts.filter(
+        a =>
+            a.address !== address &&
+            (a.rekeyAddress === address ||
+                Object.values(a.rekeyAddressByNetwork ?? {}).includes(address)),
+    )
+
 export type RekeyTransition = {
     /** Raw type of the rekeyed account itself. */
     from: WalletAccount['type']
@@ -351,28 +372,41 @@ type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
  * Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`.
  *
- * Quantum targets are gated on `isQuantumTargetEnabled`, and that gate is a
- * hard functional limit rather than a rollout toggle. Signing works locally,
- * but mainnet and testnet algod still reject the `pqsig` field, so on those
- * networks the rekey is a one-way door that strands the funds: every later
- * transaction needs a `pqsig`, *including the rekey-back that would undo it*.
- * See `docs/QUANTUM_PQ_INTEGRATION.md`.
+ * Quantum accounts are excluded here: the dedicated rekey-to-quantum flow
+ * lists them via {@link isEligibleQuantumRekeyTarget}.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,
     source: RekeySourceFields,
-    isQuantumTargetEnabled: boolean,
 ): boolean => {
     if (target.address === source.address) return false
     if (target.address === source.rekeyAddress) return false
     if (
         target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet &&
-        target.type !== AccountTypes.quantum
+        target.type !== AccountTypes.hdWallet
     )
         return false
-    if (target.type === AccountTypes.quantum && !isQuantumTargetEnabled)
-        return false
+    if (!hasSigningKeys(target)) return false
+    if (isRekeyedAccount(target)) return false
+    return true
+}
+
+/**
+ * `isQuantumTargetEnabled` is a hard functional limit rather than a rollout
+ * toggle. Signing works locally, but mainnet and testnet algod still reject
+ * the `pqsig` field, so on those networks the rekey is a one-way door that
+ * strands the funds: every later transaction needs a `pqsig`, *including the
+ * rekey-back that would undo it*.
+ */
+export const isEligibleQuantumRekeyTarget = (
+    target: WalletAccount,
+    source: RekeySourceFields,
+    isQuantumTargetEnabled: boolean,
+): boolean => {
+    if (!isQuantumTargetEnabled) return false
+    if (target.address === source.address) return false
+    if (target.address === source.rekeyAddress) return false
+    if (target.type !== AccountTypes.quantum) return false
     if (!hasSigningKeys(target)) return false
     if (isRekeyedAccount(target)) return false
     return true
@@ -487,7 +521,7 @@ export type MnemonicAccountTypeResult =
 /**
  * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to algo25
  * (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
- * goes through auto-detection, only its dedicated entrypoint (PQ-009).
+ * goes through auto-detection, only its dedicated entrypoint.
  */
 export const resolveImportAccountType = (
     mnemonic: string,

@@ -12,11 +12,7 @@
 
 import { PWView } from '@components/core'
 import React, { type PropsWithChildren, useEffect, useState } from 'react'
-import {
-    type StyleProp,
-    type ViewStyle,
-    type LayoutChangeEvent,
-} from 'react-native'
+import type { StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
 import Animated, {
     useSharedValue,
     withTiming,

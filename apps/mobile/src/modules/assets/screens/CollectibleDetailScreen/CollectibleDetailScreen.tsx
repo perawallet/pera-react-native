@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {
     PWButton,

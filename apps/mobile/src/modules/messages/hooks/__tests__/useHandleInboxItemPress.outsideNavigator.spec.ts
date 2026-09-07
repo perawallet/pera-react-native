@@ -28,7 +28,7 @@ import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
  * `@react-navigation/native` so that `useNavigation()` returns a working stub
  * and never throws, no matter where a component sits — which means no ordinary
  * unit test in this repo can observe an out-of-container navigation call. That
- * is how PERA-4814 shipped this crash with a green suite, including 69 new lines
+ * is how shipped this crash with a green suite, including 69 new lines
  * of its own tests. Overriding `useNavigation` to fail the way the real library
  * does is what makes this spec able to catch a reintroduction.
  *

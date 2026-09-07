@@ -26,7 +26,7 @@ const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
  * PipelineError subclasses wrap third-party text verbatim (`TransportError` and
  * `SourceError` pass `err.message` straight through) and interpolate wallet-held
  * addresses (`CannotSignError`, `NoLocalParticipantsError`) — the exact data
- * `Arc0001Error`'s own docblock forbids sending to a remote peer (PERA-4716).
+ * `Arc0001Error`'s own docblock forbids sending to a remote peer.
  *
  * The two entries earn their place: ARC-0001 requires a meaningful message
  * alongside the numeric code, and those strings only echo the dApp's own request

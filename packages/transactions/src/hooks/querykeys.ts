@@ -11,7 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { type QueryClient, type QueryKey } from '@tanstack/react-query'
+import type { QueryClient, QueryKey } from '@tanstack/react-query'
 
 export const MODULE_PREFIX = 'transactions'
 
@@ -50,6 +50,14 @@ export const transactionQueryKeys = {
             'page',
             { accountAddress, network, url },
         ] as const,
+
+    /**
+     * Txids with an open submission-ledger row — the "pending —
+     * verifying" badge set. Kept under the module prefix so
+     * `invalidateTransactionQueries` also refreshes it.
+     */
+    openSubmissionTxIds: (network: Network) =>
+        [MODULE_PREFIX, 'open-submission-txids', { network }] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

@@ -17,11 +17,12 @@ import type {
 import * as AppIntegrity from '@expo/app-integrity'
 import { config } from '@perawallet/wallet-core-config'
 import { Platform } from 'react-native'
-import { sha256 } from '@noble/hashes/sha256'
+import { Buffer } from 'buffer'
+import { sha256 } from '@noble/hashes/sha2.js'
 
 /**
  * Play Integrity request hash: base64(SHA256(utf8(challengeString))). Must match
- * the backend's recomputation over the same challenge string (see PERA-4077).
+ * the backend's recomputation over the same challenge string.
  */
 const computeRequestHash = (challenge: string): string =>
     Buffer.from(sha256(new TextEncoder().encode(challenge))).toString('base64')

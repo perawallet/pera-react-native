@@ -10,19 +10,64 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native'
+import { useCallback, useRef, useState } from 'react'
+import type {
+    LayoutChangeEvent,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
+} from 'react-native'
 
 const BOTTOM_THRESHOLD = 20
 
 type UseStakingDisclaimerSheetResult = {
     isScrolledToBottom: boolean
     handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    handleLayout: (event: LayoutChangeEvent) => void
+    handleContentSizeChange: (width: number, height: number) => void
 }
 
 export const useStakingDisclaimerSheet =
     (): UseStakingDisclaimerSheetResult => {
         const [isScrolledToBottom, setIsScrolledToBottom] = useState(false)
+        const viewportHeight = useRef(0)
+        const contentHeight = useRef(0)
+
+        /**
+         * On a tall viewport (tablet, landscape, large text off) the disclaimer
+         * fits without scrolling, so `onScroll` never fires and the accept
+         * button would stay disabled forever. Nothing is left to
+         * read in that case, so treat "fits" the same as "scrolled to bottom".
+         *
+         * One-way, like the scroll path: a later reflow that overflows does not
+         * re-gate an action the user has already been offered.
+         */
+        const unlockIfContentFits = useCallback(() => {
+            if (viewportHeight.current === 0 || contentHeight.current === 0) {
+                return
+            }
+            if (
+                contentHeight.current <=
+                viewportHeight.current + BOTTOM_THRESHOLD
+            ) {
+                setIsScrolledToBottom(true)
+            }
+        }, [])
+
+        const handleLayout = useCallback(
+            (event: LayoutChangeEvent) => {
+                viewportHeight.current = event.nativeEvent.layout.height
+                unlockIfContentFits()
+            },
+            [unlockIfContentFits],
+        )
+
+        const handleContentSizeChange = useCallback(
+            (_width: number, height: number) => {
+                contentHeight.current = height
+                unlockIfContentFits()
+            },
+            [unlockIfContentFits],
+        )
 
         const handleScroll = useCallback(
             (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -46,5 +91,7 @@ export const useStakingDisclaimerSheet =
         return {
             isScrolledToBottom,
             handleScroll,
+            handleLayout,
+            handleContentSizeChange,
         }
     }

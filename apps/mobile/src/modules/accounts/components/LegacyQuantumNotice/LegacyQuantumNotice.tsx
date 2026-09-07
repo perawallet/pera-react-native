@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'

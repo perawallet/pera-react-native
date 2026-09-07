@@ -19,14 +19,14 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useMemo } from 'react'
-import { type AccountIconProps } from '@modules/accounts/components/AccountIcon'
+import type { AccountIconProps } from '@modules/accounts/components/AccountIcon'
 import { useStyles } from './styles'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 
 export type NotificationSettingsListProps = {
     style?: StyleProp<ViewStyle>

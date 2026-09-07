@@ -906,7 +906,7 @@ describe('services/accounts/store', () => {
         // The launch fields were added without bumping the persist version, on
         // the theory that zustand's default shallow merge leaves absent keys at
         // their initial-state values. This asserts that rather than trusting
-        // it: seed storage with exactly what a pre-PERA-4855 build wrote, and
+        // it: seed storage with exactly what a pre- build wrote, and
         // require the upgrade to be a no-op for existing users.
         test('rehydrates a pre-launch-preference payload without a migration', async () => {
             const legacyPayload = {

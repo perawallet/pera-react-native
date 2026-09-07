@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
+
 // Known-good test vectors for the onboarding flows. Both mnemonics and the
 // addresses they derive to are pinned by the integration tests in
 // packages/kms/src/crypto/__tests__/{algo25,hdwallet}-integration.test.ts —
@@ -21,6 +23,10 @@ export const HD_TEST_MNEMONIC_24 =
 
 export const HD_TEST_MNEMONIC_24_WORDS = HD_TEST_MNEMONIC_24.split(' ')
 
+export const HD_TEST_MNEMONIC_24_INDICES = mnemonicWordsToIndices(
+    HD_TEST_MNEMONIC_24_WORDS,
+)!
+
 export const HD_TEST_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
@@ -29,6 +35,10 @@ export const ALGO25_TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
 export const ALGO25_TEST_MNEMONIC_WORDS = ALGO25_TEST_MNEMONIC.split(' ')
+
+export const ALGO25_TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(
+    ALGO25_TEST_MNEMONIC_WORDS,
+)!
 
 export const ALGO25_TEST_ADDRESS =
     'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'

@@ -12,7 +12,7 @@
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
@@ -21,7 +21,7 @@ import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWallet
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout } from '@layouts/index'
 
-import { type AddAccountStackParamList } from './types'
+import type { AddAccountStackParamList } from './types'
 import {
     renderImportFlowScreens,
     withAccountErrorBoundary,

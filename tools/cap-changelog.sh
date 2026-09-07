@@ -28,7 +28,7 @@ if [ "${#INPUT}" -le "$BUDGET" ]; then
   exit 0
 fi
 
-# Whole lines only: a mid-line cut can bisect a `<url|PERA-123>` link, which
+# Whole lines only: a mid-line cut can bisect a `<url|>` link, which
 # Slack renders as raw garbage rather than dropping.
 LIMIT=$((BUDGET - ${#MARKER} - 1))
 OUT=""

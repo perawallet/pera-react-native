@@ -77,8 +77,8 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         expect(mocks.showError).not.toHaveBeenCalled()
     })
 
-    // Before PERA-4585 goBack() ran from .finally, so a failed revoke closed
-    // the screen and the session stayed listed — indistinguishable from success.
+    // goBack() must not run from .finally: a failed revoke would close the
+    // screen with the session still listed, indistinguishable from success.
     it('keeps the user on the screen and reports the failure when revoke rejects', async () => {
         const error = new NoConnectionError()
         mocks.disconnect.mockRejectedValue(error)

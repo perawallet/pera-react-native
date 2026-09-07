@@ -72,8 +72,8 @@ const fromLogicError = (err: LogicError): AlgodError<'logic_error'> =>
 // transport error before rethrowing: it decodes the body into `response.text`
 // and copies `response.status` to a top-level numeric `status` — it has NO
 // `url`, which is why the previous guard (a v10 `ApiError` leftover requiring
-// `url`) silently killed the 5xx path after the algosdk v3 migration
-// (PERA-4502). Neither error type is publicly exported, so duck-type on
+// `url`) silently killed the 5xx path after the algosdk v3 migration.
+// Neither error type is publicly exported, so duck-type on
 // `status` + `response` together: `status` alone also matches unrelated Error
 // subclasses carrying an HTTP status (e.g. the Pera backend's
 // PeraNetworkError), which must NOT classify as algod network errors.

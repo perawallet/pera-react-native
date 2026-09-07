@@ -66,7 +66,7 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 // way to prove the AUTH account's key produced the signature is to spy on
 // the keystore primitive and inspect which childKeyId it was called with —
 // the test keystore's ed25519 `sign()` returns a fixed-length stub regardless
-// of key, so signature bytes alone can't distinguish the two (PERA-4977).
+// of key, so signature bytes alone can't distinguish the two.
 const REKEYED_SIGNER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
 
@@ -274,7 +274,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
             expect(signSpy).toHaveBeenCalledTimes(1)
             expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
 
-            // The signed bytes per PERA-4977: two concatenated SHA-256
+            // The signed bytes are two concatenated SHA-256
             // digests of the decoded SIWA payload and the authenticatorData.
             const decodedData = decodeArc60Data(
                 request.stdSigData.data,

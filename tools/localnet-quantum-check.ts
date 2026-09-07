@@ -11,8 +11,7 @@
  */
 
 /*
- End-to-end quantum (post-quantum) transaction check against LocalNet
- (PERA-4653, Task 8).
+ End-to-end quantum (post-quantum) transaction check against LocalNet.
 
  Everything except the node's own PQ support is asserted here and now:
  address derivation, funding, the signing preimage, and that our assembled
@@ -27,11 +26,12 @@
      submit accepted but never
      confirmed within the bound)
 
- As of 2026-07-28 no public algod accepts `pqsig` — 4.7.4-stable (this
- repo's LocalNet) and rel/nightly build 2680 both reject it with the same
- "no matching struct field found ... key pqsig" error, while accepting `sig`
- — so PENDING is the expected result today. This script becomes a true
- end-to-end test, unchanged, the moment a pqsig-capable node ships: only the
+ PASS needs two things together: the `algorand/algod:master` image, and a
+ genesis whose consensus enables the scheme (AlgoKit's
+ `algod_network_template.json` sets no `ConsensusProtocol`, so add
+ `"ConsensusProtocol": "future"`). A stable or nightly algod, and every public
+ network, reject `pqsig` with "no matching struct field found ... key pqsig"
+ while accepting `sig`, so PENDING is the expected result there. Only the
  `sendRawTransaction` rejection reason gates PENDING vs FAIL, and only actual
  confirmation (not mere acceptance) gates PASS.
 

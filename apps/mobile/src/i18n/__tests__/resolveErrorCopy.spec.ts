@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     AppError,
     ErrorCategory,
     NoConnectionError,
     PeraNetworkError,
+    logger,
 } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
 import { SubmissionError } from '@perawallet/wallet-core-signing'
@@ -41,7 +42,7 @@ describe('resolveErrorCopy', () => {
     it('renders the status-unknown copy for an unverified unknown-outcome SubmissionError', () => {
         // The transaction may have landed (lost response, timeout) — calling
         // it failed or "no connection" would be a lie; the user needs to
-        // check history before retrying (PERA-4896).
+        // check history before retrying.
         const algodError = new AlgodError('network_unavailable', {})
         const result = resolveErrorCopy(
             new SubmissionError(['TXID'], 'unknown-outcome', algodError),
@@ -212,5 +213,44 @@ describe('resolveErrorCopy', () => {
         )
 
         expect(result.title).toBe('caller title')
+    })
+})
+
+describe('resolveErrorCopy generic-banner logging', () => {
+    beforeEach(() => {
+        vi.spyOn(logger, 'error').mockImplementation(() => {})
+        vi.spyOn(logger, 'debug').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it('does not log an expected error at error level', () => {
+        // A plain Error, deliberately NOT a TypeError: this is the shape React
+        // Native's fetch rejects with when the device is offline, and the only
+        // expected-error shape that actually reaches the log line below.
+        // `PeraNetworkError` returns far earlier, and a TimeoutError is mapped
+        // to network_unavailable by toAlgodError before it can get here.
+        resolveErrorCopy(
+            new Error('Network request failed'),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+        expect(logger.error).not.toHaveBeenCalled()
+    })
+
+    it('still logs a genuinely unrecognized error at error level', () => {
+        resolveErrorCopy(
+            new Error('something we have no copy for'),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+        expect(logger.error).toHaveBeenCalledWith(
+            'Unrecognized error shown as generic banner',
+            expect.anything(),
+        )
     })
 })

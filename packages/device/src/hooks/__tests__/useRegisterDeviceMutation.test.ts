@@ -42,7 +42,7 @@ const registration: DeviceRegistration = {
 const wrapper = createWrapper()
 
 describe('useRegisterDeviceMutation', () => {
-    // PERA-4705 (final review, Finding 1): this hook used to resolve the
+    // (final review, Finding 1): this hook used to resolve the
     // network from its own `useNetwork()` — re-read on every render, so the
     // URL was chosen when the request fired, not when the caller decided to
     // make it. `useDevice.registerDevice` queues registrations behind one

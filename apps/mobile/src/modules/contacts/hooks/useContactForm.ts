@@ -24,7 +24,7 @@ import { contactSchema, type Contact } from '@perawallet/wallet-core-contacts'
 import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type NfdState = {
     resolvedAddress: string

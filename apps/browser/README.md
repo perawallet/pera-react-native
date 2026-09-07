@@ -1,18 +1,17 @@
-# Pera Wallet — Browser Extension (Chrome MV3)
+# Pera Wallet browser extension (Chrome MV3)
 
-Design spec: `docs/superpowers/specs/2026-07-13-browser-extension-design.md`
-
-## Build & load
+## Build and load
 
 Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
-variable Bitrise injects for mobile — see `tools/generate-config.sh`).
+variable Bitrise injects for mobile; see `tools/generate-config.sh`).
 Without it, Pera-backend calls (should-refresh, asset metadata, prices,
 history) 401 against staging; `bundle` still succeeds but prints a warning.
 
     pnpm --filter extension bundle
 
 Then open `chrome://extensions`, enable Developer mode, "Load unpacked",
-select `apps/browser/dist/`. Click the toolbar icon to open the popup.
+select the `dist/` folder the bundle writes into. Click the toolbar icon to
+open the popup.
 
 ## How it fits together
 
@@ -22,8 +21,8 @@ select `apps/browser/dist/`. Click the toolbar icon to open the popup.
 - `apps/mobile/metro.config.js` aliases
   `@perawallet/wallet-extension-platform-driver` to
   `extensions/platform-chrome` when bundling for web.
-- `src/background/` is the MV3 service worker (dapp routing arrives in
-  milestone 4), bundled by esbuild via `scripts/build.mjs`.
+- `src/background/` is the MV3 service worker, bundled by esbuild via
+  `scripts/build.mjs`.
 
 ## E2E
 

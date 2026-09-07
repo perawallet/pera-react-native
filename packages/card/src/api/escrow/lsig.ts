@@ -118,7 +118,7 @@ export class AutoDrawProgramUnverifiedError extends Error {
  * A digest rather than the program bytes: it verifies just as strictly, is 64
  * chars instead of kilobytes, and avoids shipping a second copy of an artifact
  * the app already carries as `AUTODRAW_TEAL_TEMPLATE` and could drift from.
- * (PERA-4712)
+ *
  */
 export const verifyAutoDrawProgram = (
     program: Uint8Array,
@@ -144,7 +144,7 @@ export const verifyAutoDrawProgram = (
  * returns the raw program bytes — after verifying them against the pinned
  * program. The *compiled bytes* (not the trusted template source) are what the
  * user delegates by signing, and algod is a third-party node, so its output is
- * checked before it can be signed. (PERA-4712)
+ * checked before it can be signed.
  */
 export const compileAutoDrawProgram = async ({
     network,

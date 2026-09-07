@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import type { SnapshotFrom } from 'xstate'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'

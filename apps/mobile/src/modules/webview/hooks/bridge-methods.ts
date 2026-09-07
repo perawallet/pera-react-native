@@ -13,7 +13,7 @@
 /**
  * The protocol v3 RN <-> web bridge method set — the single source of truth
  * for the dispatch in `usePeraWebviewInterface`. Adding or removing a method
- * here requires updating docs/DISCOVER_BRIDGE_CONTRACT.md and the contract
+ * here requires updating docs/WEBVIEW_ARCHITECTURE.md and the contract
  * test (`__tests__/bridge-methods.test.ts`) in the same change.
  */
 export const PERA_WEBVIEW_BRIDGE_METHODS = [

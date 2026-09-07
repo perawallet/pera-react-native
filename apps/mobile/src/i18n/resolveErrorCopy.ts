@@ -17,6 +17,7 @@ import {
     ErrorCategory,
     NoConnectionError,
     getNetworkErrorMessageKeys,
+    isExpectedError,
     isPeraNetworkError,
     logger,
     type Optional,
@@ -51,6 +52,17 @@ export const TITLE_KEY_BY_CATEGORY: Record<ErrorCategory, string> = {
     [ErrorCategory.UNKNOWN]: 'errors.general.title',
     [ErrorCategory.VALIDATION]: 'errors.general.title',
     [ErrorCategory.WALLETCONNECT]: 'errors.general.title',
+}
+
+// An offline or timed-out request has no bespoke copy by design; the request
+// layer already accounted for it. Reporting it here would fire a second event
+// for every failure the severity policy just suppressed.
+const logGenericBannerFallback = (error: unknown, message: string): void => {
+    if (isExpectedError(error)) {
+        logger.debug('Expected error shown as generic banner', { message })
+        return
+    }
+    logger.error('Unrecognized error shown as generic banner', { message })
 }
 
 /**
@@ -126,18 +138,14 @@ export const resolveErrorCopy = (
             return getAlgodMessage(algodError)
         }
 
-        logger.error('Unrecognized error shown as generic banner', {
-            message: error.message,
-        })
+        logGenericBannerFallback(error, error.message)
         return {
             title: fallbackTitle ?? t('errors.general.title'),
             body: t('errors.general.body'),
         }
     }
 
-    logger.error('Unrecognized error shown as generic banner', {
-        message: String(error),
-    })
+    logGenericBannerFallback(error, String(error))
     return {
         title: fallbackTitle ?? t('errors.general.title'),
         body: t('errors.general.body'),

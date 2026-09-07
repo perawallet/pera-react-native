@@ -94,7 +94,7 @@ describe('sanitizeErrorForWebview', () => {
 
     it('withholds wallet-held addresses interpolated by CannotSignError', () => {
         // Arc0001Error's docblock forbids sending held addresses to a remote
-        // peer (PERA-4716); passing every AppError through violated that.
+        // peer; passing every AppError through violated that.
         const address =
             'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
         const error = new CannotSignError(address, 'rekeyed elsewhere')

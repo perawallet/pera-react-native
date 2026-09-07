@@ -1,68 +1,38 @@
 # Pera Mobile App
 
-The React Native application for Pera Wallet.
-
-## Quick Start
+The React Native application. Setup and repo-wide commands live in the
+[root README](../../README.md); this covers what is specific to the app.
 
 ```sh
-# From apps/mobile directory
 pnpm install
-# Generate native folders (first time or after clean)
-pnpm expo:prebuild
-# Start dev server
+pnpm expo:prebuild   # generate native folders, first run or after a clean
 pnpm start
-# Run on device/simulator
-pnpm ios      # or: pnpm android
+pnpm ios             # or: pnpm android
+pnpm test
 ```
 
-## Key Concepts
+## Two rules that catch most review comments
 
-### Business Logic
-
-All business logic lives in `packages/*`. Import from there, don't implement in the app:
+Business logic lives in `packages/*`. Import it, don't reimplement it in the app:
 
 ```typescript
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 ```
 
-### Shared Components
-
-Design-system components are `PW`-prefixed and live in `src/components/core/`.
-Import them from the barrel:
+Design-system components are `PW`-prefixed, live in `src/components/core/`, and are imported from the
+barrel:
 
 ```typescript
 import { PWButton } from '@components/core'
 ```
 
-## Testing
-
-```sh
-pnpm test                   # All tests
-pnpm test -- --watch        # Watch mode
-```
-
 ## Troubleshooting
 
-### Native Project Issues (iOS/Android)
+Native code or dependency problems usually clear with `pnpm expo:prebuild`, or
+`pnpm expo:prebuild:clean` for a full regeneration. A confused bundler clears with
+`pnpm start -- --reset-cache`.
 
-If you're having issues with native code or dependencies:
+## Learn more
 
-```sh
-# Regenerate native folders
-pnpm expo:prebuild
-
-# For a completely fresh start
-pnpm expo:prebuild:clean
-```
-
-### Metro Issues
-
-```sh
-pnpm start -- --reset-cache
-```
-
-## Learn More
-
-- [Root README](../../README.md) - Setup and commands
-- [Architecture](../../docs/ARCHITECTURE.md) - How the codebase is structured
-- [Folder Structure](../../docs/FOLDER_STRUCTURE.md) - Where to put files
+- [Architecture](../../docs/ARCHITECTURE.md) for how the layers fit together
+- [Code Layout](../../docs/CODE_LAYOUT.md) for where files go and what to call them

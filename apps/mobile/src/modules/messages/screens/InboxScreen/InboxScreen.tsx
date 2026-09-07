@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
@@ -30,6 +30,8 @@ export const InboxScreen = () => {
         inboxItems,
         isPending,
         isRefetching,
+        isError,
+        isOffline,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
         refetch,
@@ -59,8 +61,10 @@ export const InboxScreen = () => {
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <OfflineTolerantView
-                        isOffline={false}
+                        isOffline={isOffline}
                         isUnavailable={isUnavailableOnNetwork}
+                        isError={isError}
+                        onRetry={refetch}
                     >
                         <EmptyView
                             isLoading={isPending || isAwaitingRegistration}

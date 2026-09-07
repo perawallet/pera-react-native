@@ -23,7 +23,7 @@ const listFilesRecursively = (dir: string): string[] =>
 
 // Matches a bare/subpath static import ('@algorandfoundation/keystore' or
 // '@algorandfoundation/keystore/types') and a dynamic import() of either form —
-// canary.23 (Task 10) exposes '/types' and '/errors' subpaths, so a bare-only
+// upstream exposes '/types' and '/errors' subpaths, so a bare-only
 // check misses the exact regression this guard exists to catch.
 const UPSTREAM_KEYSTORE_IMPORT =
     /from ['"]@algorandfoundation\/keystore(\/[^'"]*)?['"]|import\(\s*['"]@algorandfoundation\/keystore(\/[^'"]*)?['"]/

@@ -18,12 +18,12 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 export type WalletConnectSessionItemProps = {
     session: WalletConnectConnection

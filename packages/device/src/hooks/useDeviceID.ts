@@ -11,7 +11,7 @@
  */
 
 import { useDeviceStore } from '../store'
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 
 export const useDeviceID = (network: Network) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)

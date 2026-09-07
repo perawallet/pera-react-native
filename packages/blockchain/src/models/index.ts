@@ -11,11 +11,8 @@
  */
 
 import type { SignedTransaction, Transaction, indexerModels } from 'algosdk'
-import {
-    type BaseStoreState,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { type Address } from 'algosdk'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type { Address } from 'algosdk'
 import type { PQSchemeId } from '../pq/schemes'
 
 type IndexerTransaction = indexerModels.Transaction
@@ -39,10 +36,12 @@ type PlainModel<T> = T extends Uint8Array
         ? PlainModel<U>[]
         : T extends object
           ? {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                [K in keyof T as T[K] extends (...args: any[]) => any
-                    ? never
-                    : K]: PlainModel<T[K]>
+                [
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    K in keyof T as T[K] extends (...args: any[]) => any
+                        ? never
+                        : K
+                ]: PlainModel<T[K]>
             }
           : T
 

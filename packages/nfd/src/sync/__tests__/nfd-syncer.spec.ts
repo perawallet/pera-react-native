@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { fetchAndPersistNfds } from '../nfd-syncer'
 import { NFD_BULK_CHUNK_SIZE } from '../../constants'
+import { Networks } from '@perawallet/wallet-core-config'
 
 const mockFetchNfdBulkRead = vi.hoisted(() => vi.fn())
 const mockUpsertNfdEntries = vi.hoisted(() => vi.fn())
@@ -163,5 +164,35 @@ describe('fetchAndPersistNfds', () => {
 
         // The successful batch should still write
         expect(mockUpsertNfdEntries).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('non-Pera-backed networks', () => {
+    beforeEach(() => {
+        mockFetchNfdBulkRead.mockReset()
+        mockUpsertNfdEntries.mockReset().mockResolvedValue(undefined)
+        mockGetStaleOrMissingAddresses
+            .mockReset()
+            .mockImplementation(async ({ addresses }) => addresses)
+    })
+
+    it.each([Networks.betanet, Networks.custom])(
+        'writes nothing on %s',
+        async network => {
+            await fetchAndPersistNfds([ADDR_A], network)
+
+            expect(mockFetchNfdBulkRead).not.toHaveBeenCalled()
+            expect(mockUpsertNfdEntries).not.toHaveBeenCalled()
+        },
+    )
+
+    it('still persists misses as null on mainnet', async () => {
+        mockFetchNfdBulkRead.mockResolvedValue([])
+
+        await fetchAndPersistNfds([ADDR_A], Networks.mainnet)
+
+        expect(mockUpsertNfdEntries).toHaveBeenCalledTimes(1)
+        const persisted = mockUpsertNfdEntries.mock.calls[0][0].entries
+        expect(persisted).toEqual([{ address: ADDR_A, name: null }])
     })
 })

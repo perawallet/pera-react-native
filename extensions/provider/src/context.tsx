@@ -11,7 +11,7 @@
  */
 
 import { createContext, useContext, useRef } from 'react'
-import { type PeraProvider } from './pera-provider'
+import type { PeraProvider } from './pera-provider'
 import { getProvider } from './singleton'
 
 const PeraWalletContext = createContext<PeraProvider | null>(null)

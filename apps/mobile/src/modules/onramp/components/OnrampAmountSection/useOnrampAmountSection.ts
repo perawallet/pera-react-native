@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'

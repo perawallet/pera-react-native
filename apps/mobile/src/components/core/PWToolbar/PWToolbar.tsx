@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWView } from '../PWView'
 import { useStyles } from './styles'
 import { usePWToolbar } from './usePWToolbar'

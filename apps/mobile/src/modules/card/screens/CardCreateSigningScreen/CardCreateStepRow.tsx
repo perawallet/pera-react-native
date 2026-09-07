@@ -14,7 +14,7 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWView } from '@components/core'
-import { type CardCreateStepStatus } from './useCardCreateSigningScreen'
+import type { CardCreateStepStatus } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
 
 type CardCreateStepRowProps = {

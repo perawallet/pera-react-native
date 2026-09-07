@@ -109,4 +109,9 @@ export class ChromeCrashReportingService implements CrashReportingService {
             error instanceof Error ? error : new Error(String(error)),
         )
     }
+
+    logBreadcrumb(_message: string): void {
+        // Sentry breadcrumbs are not wired for this platform; the shared
+        // classifier already keeps these errors out of the issue stream.
+    }
 }

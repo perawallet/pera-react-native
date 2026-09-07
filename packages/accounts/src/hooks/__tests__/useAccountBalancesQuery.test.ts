@@ -158,8 +158,7 @@ describe('useAccountBalances', () => {
     it('keeps the result referentially stable across renders with a fresh but equal accounts array', async () => {
         // Call sites like AccountWithBalance pass `[account]` as a fresh
         // literal every render. If array identity feeds the memo, every render
-        // of every row re-walks all holdings — a Decimal per field per asset
-        // (PERA-4953).
+        // of every row re-walks all holdings — a Decimal per field per asset.
         mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result, rerender } = renderHook(

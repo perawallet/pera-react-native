@@ -11,6 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
+import { isExpectedError } from '../errors/expected'
 import type { Nullable, Optional } from './types'
 
 /**
@@ -327,7 +328,12 @@ const redactErrorForReport = (error: Error): Error => {
     }
 }
 
-export type LogErrorSeverity = 'error' | 'critical'
+// Structurally mirrored by `LogSeverity` in
+// `extensions/platform/src/reporting/utils.ts`, which routes 'expected' to a
+// breadcrumb. The two unions are unrelated at compile time because the platform
+// extension deliberately does not depend on this package, so the literals have
+// to be kept in step by hand.
+export type LogErrorSeverity = 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
     severity: LogErrorSeverity
@@ -378,7 +384,27 @@ class Logger {
         this.log(LogLevel.WARN, message, context)
     }
 
-    public error(error: Error | string, context?: LogContext) {
+    public error(
+        error: Error | string,
+        context?: LogContext,
+        options?: { force?: boolean },
+    ) {
+        // A site that already knows better can opt out; everything else is
+        // classified centrally so the policy stays in one reviewable place.
+        //
+        // The context is classified too because most call sites pass a constant
+        // string plus `{ error }` (the query cache's 'An error has occurred:'
+        // being the one every algod and indexer failure reaches). Judging only
+        // the first argument would leave the policy inert at the majority of
+        // sites, including every transport timeout and 5xx.
+        if (
+            !options?.force &&
+            (isExpectedError(error) ||
+                isExpectedError(this.findContextError(context)))
+        ) {
+            this.log(LogLevel.WARN, error, context, 'expected')
+            return
+        }
         this.log(LogLevel.ERROR, error, context)
     }
 
@@ -598,6 +624,7 @@ class Logger {
         level: LogLevel,
         messageOrError: string | Error,
         context?: LogContext,
+        reportAs?: LogErrorSeverity,
     ) {
         // Filter out logs below current level
         if (level < this.level) {
@@ -630,6 +657,12 @@ class Logger {
             }
             case LogLevel.WARN: {
                 console.warn(`${prefix} ${message}`, ...args)
+                // Only a downgraded error reports; a plain `warn` stays
+                // console-only, so the breadcrumb trail reads as "errors we
+                // chose not to report" rather than every warning in the app.
+                if (reportAs) {
+                    this.reportError(reportAs, messageOrError, context)
+                }
                 break
             }
             case LogLevel.ERROR: {

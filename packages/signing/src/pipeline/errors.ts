@@ -138,7 +138,7 @@ export class HardwareSigningAbortedError extends PipelineError {
 }
 
 /**
- * How a failed broadcast relates to chain state (PERA-4587 / PERA-4896):
+ * How a failed broadcast relates to chain state:
  *
  * - `rejected-by-node` — the node answered and refused the transaction. It is
  *   definitively not on chain; safe to report as a failure.

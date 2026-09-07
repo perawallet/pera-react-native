@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type QueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {

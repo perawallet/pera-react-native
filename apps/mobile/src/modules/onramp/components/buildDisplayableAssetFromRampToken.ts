@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
-import { type RampToken } from '@perawallet/wallet-core-onramp'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { ALGO_ASSET_ID, isAlgoAssetName } from '@perawallet/wallet-core-shared'
 
 // ALGO needs assetId '0' so AssetIcon renders the built-in Algo SVG via

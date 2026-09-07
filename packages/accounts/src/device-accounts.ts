@@ -16,11 +16,7 @@ import {
     type DeviceAccountRegistration,
     type DeviceAccountType,
 } from '@perawallet/wallet-core-device'
-import {
-    type ACCOUNT_TYPE_RANK,
-    type AccountType,
-    type WalletAccount,
-} from './models'
+import type { ACCOUNT_TYPE_RANK, AccountType, WalletAccount } from './models'
 
 /**
  * The wallet's internal `AccountType` and the device API's `account_type`

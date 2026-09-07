@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type Platform } from 'react-native'
-import { type Decimal } from 'decimal.js'
+import type { Platform } from 'react-native'
+import type { Decimal } from 'decimal.js'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,

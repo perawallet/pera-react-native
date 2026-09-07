@@ -59,7 +59,7 @@ import {
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
@@ -76,7 +76,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })

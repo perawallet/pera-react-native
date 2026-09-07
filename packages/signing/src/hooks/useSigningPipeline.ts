@@ -95,7 +95,7 @@ const computeDisplayData = (
     // account the wallet holds via `signerOverrides`. Keyed by position in
     // `txs` (the signable subset), so translate into `allTransactions`'
     // index space — `signableIndices` maps that position to its slot in
-    // `groupContext` when the full group is shown. [PERA-4417]
+    // `groupContext` when the full group is shown.
     const authorizerByIndex = new Map<number, string>()
     if (txRequest.signerOverrides) {
         const usingGroupContext = !!txRequest.groupContext
@@ -162,7 +162,7 @@ const EMPTY_DISPLAY_DATA: DisplayData = {
 // each call useSigningPipeline. Without sharing, every consumer — and every
 // actor-snapshot re-render — reran the full O(n) transform above, which at
 // 1000 txns meant ~8×800ms of duplicated main-thread work that froze the UI
-// and starved the bottom-sheet present animation (PERA-3353). Keyed by
+// and starved the bottom-sheet present animation. Keyed by
 // request identity + its input arrays (referentially stable from the store)
 // + the accounts reference, so it recomputes exactly when an input changes.
 let displayDataCache: {

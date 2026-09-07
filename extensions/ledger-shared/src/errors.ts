@@ -18,6 +18,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { LEDGER_STATUS_CODES } from './constants'
 
+// `expected` suppresses crash reporting without touching `severity`, which
+// still drives the user-facing copy for these.
 export class LedgerConnectionError extends AppError {
     constructor(message: string, originalError?: Error) {
         super(
@@ -26,6 +28,7 @@ export class LedgerConnectionError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -41,6 +44,7 @@ export class LedgerAppNotOpenError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -56,6 +60,7 @@ export class LedgerDeviceLockedError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -78,6 +83,7 @@ export class LedgerDeviceNotFoundError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -97,6 +103,7 @@ export class LedgerDeviceBusyError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -111,6 +118,7 @@ export class LedgerUsbNoDeviceError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -144,6 +152,7 @@ export class LedgerUserRejectedError extends AppError {
                 severity: ErrorSeverity.LOW,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
+                expected: true,
             },
             originalError,
         )
@@ -162,6 +171,7 @@ export class LedgerDisconnectedError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -176,6 +186,7 @@ export class LedgerTimeoutError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -240,6 +251,7 @@ export class LedgerNoAccountsFoundError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -254,6 +266,7 @@ export class LedgerBluetoothDisabledError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -268,6 +281,7 @@ export class LedgerPermissionDeniedError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -288,6 +302,7 @@ export class LedgerLocationServicesDisabledError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -306,6 +321,7 @@ export class LedgerScanTimeoutError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -364,6 +380,7 @@ export class LedgerNetworkError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: true,
+                expected: true,
             },
             originalError,
         )
@@ -378,6 +395,7 @@ export class LedgerUnsupportedDeviceError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
+                expected: true,
             },
             originalError,
         )
@@ -397,6 +415,7 @@ export class LedgerAppOutdatedError extends AppError {
                 severity: ErrorSeverity.MEDIUM,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
+                expected: true,
             },
             originalError,
         )

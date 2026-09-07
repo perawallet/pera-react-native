@@ -33,7 +33,7 @@ import {
     useShouldPlayConfetti,
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,

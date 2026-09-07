@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
-import { type RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
 import { useOnrampAmountSection } from './useOnrampAmountSection'
@@ -75,11 +75,11 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
             label={
                 isPay ? t('onramp.form.you_pay') : t('onramp.form.you_receive')
             }
-            amountSize='h1'
+            amountSize='h2'
             amount={
                 isPay ? (
                     <PWInput
-                        variant='h1'
+                        variant='h2'
                         value={inputValue}
                         onChangeText={handleTextChange}
                         keyboardType='decimal-pad'
@@ -95,7 +95,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 ) : isReceiveLoading ? (
                     <PWSkeleton
                         width={120}
-                        height={40}
+                        height={28}
                     />
                 ) : (
                     <PWText

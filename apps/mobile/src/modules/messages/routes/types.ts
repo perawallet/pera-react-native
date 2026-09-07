@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type ASAInbox } from '@perawallet/wallet-core-messages'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { ASAInbox } from '@perawallet/wallet-core-messages'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { StackScreenProps } from '@react-navigation/stack'
 
 export type MultisigInvitationParam = {

@@ -33,9 +33,9 @@ type UseBalanceLineChartParams = {
     isError: boolean
     isPending: boolean
     /** True when the active network has no Pera backend — the query is
-     *  `enabled: false` and stays isPending forever, so this must be checked
-     *  before pending/error or the UI hangs on a spinner that can never
-     *  resolve. */
+     * `enabled: false` and stays isPending forever, so this must be checked
+     * before pending/error or the UI hangs on a spinner that can never
+     * resolve. */
     isUnavailableOnNetwork: boolean
     onRetry?: () => void
 }
@@ -46,7 +46,7 @@ type UseBalanceLineChartResult = {
 }
 
 /**
- * PERA-4581 paused-state contract for charts (docs/OFFLINE_PAUSED_STATE.md):
+ * Paused-state contract for charts (docs/OFFLINE_PAUSED_STATE.md):
  * last-known data always wins, then a distinct offline surface, then error,
  * then loading, then genuine emptiness. A paused query reports isPending
  * forever, so offline MUST be resolved before the spinner.

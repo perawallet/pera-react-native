@@ -42,6 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
 import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
 
@@ -110,7 +111,10 @@ export class SyncService {
     // repeatedly in quick succession (back-to-back phases, rapid ticks) stacks
     // up redundant full re-reads on the single DB connection. A short trailing
     // debounce collapses bursts into one refetch pass.
-    private invalidateTimers = new Map<string, ReturnType<typeof setTimeout>>()
+    private invalidateTimers = new Map<
+        string,
+        { timer: ReturnType<typeof setTimeout>; run: () => void }
+    >()
     // Guards against overlapping syncs. The poll loop self-reschedules (next
     // tick only after the current completes), but restart()/manual triggers
     // could otherwise start a second syncAll while a long fresh-import sync is
@@ -137,14 +141,14 @@ export class SyncService {
         delayMs = 250,
     ): void {
         const existing = this.invalidateTimers.get(key)
-        if (existing) clearTimeout(existing)
-        this.invalidateTimers.set(
-            key,
-            setTimeout(() => {
+        if (existing) clearTimeout(existing.timer)
+        this.invalidateTimers.set(key, {
+            run,
+            timer: setTimeout(() => {
                 this.invalidateTimers.delete(key)
                 run()
             }, delayMs),
-        )
+        })
     }
 
     start(): void {
@@ -170,7 +174,14 @@ export class SyncService {
             clearTimeout(this.timer)
             this.timer = null
         }
-        this.invalidateTimers.forEach(t => clearTimeout(t))
+        // Flush, don't drop: the writes these notify about are already in
+        // SQLite, and the next tick diffs against that persisted state — so a
+        // discarded notification leaves every mounted query stale until app
+        // restart (nothing ever re-flags the account as changed).
+        this.invalidateTimers.forEach(({ timer, run }) => {
+            clearTimeout(timer)
+            run()
+        })
         this.invalidateTimers.clear()
         // A pause does not survive the service it was holding off. Leaving the
         // count set would carry into the next start() and suppress its first
@@ -287,9 +298,26 @@ export class SyncService {
             return
         }
 
+        // Claimed before the first await below: the reconcile pass issues
+        // network probes, and a reconnect landing mid-pass would otherwise
+        // pass handleReconnect's guard and start a second overlapping tick.
         this.syncInProgress = true
 
         try {
+            // Settle open submission-attempt rows before the sync
+            // phases. Piggybacks the tick's online gate and cadence — the pass
+            // is bounded, a no-op when nothing is open, and never throws.
+            const reconcileSummary = await reconcileOpenSubmissions()
+            if (reconcileSummary.confirmed + reconcileSummary.failed > 0) {
+                // A settled row changes the "pending — verifying" badge set and
+                // must drop the pending history entry (history queries are
+                // DB-cached with staleTime: Infinity, so a settle on a no-work
+                // tick would otherwise leave a resolved row showing).
+                // Covers the badge set too — its key sits under the same
+                // module prefix.
+                invalidateTransactionQueries(this.deps.queryClient)
+            }
+
             const activeNetwork = useNetworkStore.getState().network
             let networksToSync: Network[]
             let shouldRefreshRound: Nullable<number> = null

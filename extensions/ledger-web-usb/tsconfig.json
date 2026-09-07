@@ -1,6 +1,7 @@
 {
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
+    "types": ["node", "w3c-web-hid"],
     "outDir": "./dist",
     "rootDir": "./src"
   },

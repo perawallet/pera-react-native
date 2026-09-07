@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { type AssetSortMode } from '@perawallet/wallet-core-assets'
+import type { AssetSortMode } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getAccountHoldingsLite,
@@ -69,7 +69,7 @@ export const useAccountAssetsQuery = (
         enabled: !!address && enabled,
         staleTime: Infinity,
         gcTime: HOLDINGS_ROWS_GC_TIME_MS,
-        // Same reason as the collectibles read (PERA-4921): sort mode, filters
+        // Same reason as the collectibles read: sort mode, filters
         // and search are part of the key, so changing one starts a cold query
         // that would empty the list mid-interaction. Hold the previous rows,
         // but never across accounts or networks.

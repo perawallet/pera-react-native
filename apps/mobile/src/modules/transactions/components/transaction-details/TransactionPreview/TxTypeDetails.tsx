@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {

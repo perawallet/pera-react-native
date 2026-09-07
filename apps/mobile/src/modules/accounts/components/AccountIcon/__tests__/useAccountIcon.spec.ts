@@ -99,7 +99,7 @@ describe('useAccountIcon', () => {
 
     // The Ledger info sheet forces `rekeyedSignable` on a synthetic account whose
     // auth Ledger is not in the store, so `useRekeyAccount` resolves nothing and
-    // the glyph fell back to the turquoise standard one (PERA-4403).
+    // the glyph fell back to the turquoise standard one.
     it('uses the supplied auth type when the auth account is not in the store', () => {
         vi.mocked(isRekeyedAccount).mockReturnValue(false)
         vi.mocked(useCanSignWith).mockReturnValue(false)

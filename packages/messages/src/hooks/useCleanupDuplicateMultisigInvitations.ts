@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { type InboxResponse } from '../api/inbox'
+import type { InboxResponse } from '../api/inbox'
 import { useInboxQueryOptions } from './useInboxQuery'
 import { useDeleteMultisigInvitationMutation } from './useDeleteMultisigInvitationMutation'
 

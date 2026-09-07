@@ -91,7 +91,7 @@ export const usePinEditView = ({
     // we prompt automatically; on cancel/failure, the user falls back to PIN.
     // Tracked per-mode so re-entering verify after a cancelled prompt doesn't
     // immediately re-fire, but switching from change_old → setup → ... does.
-    // (PERA-4193)
+    //
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
     // The prompt's collaborators are read through a ref so the effect depends
@@ -99,7 +99,7 @@ export const usePinEditView = ({
     // bottom sheet finishing its open animation) — which changes the inline
     // `onSuccess` identity — would run the effect cleanup mid-prompt, drop the
     // in-flight biometric success, and force the user onto the PIN pad after
-    // already passing biometrics. (PERA-4466)
+    // already passing biometrics.
     const promptRef = useRef({
         checkBiometricsEnabled,
         authenticateWithBiometrics,

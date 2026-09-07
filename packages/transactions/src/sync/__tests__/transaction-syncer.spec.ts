@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     fetchTransactionHistory: vi.fn(),
     upsertTransactions: vi.fn(),
     backfillMissingCloseAmounts: vi.fn(),
+    backfillSwapAssetFacts: vi.fn(),
 }))
 
 vi.mock('../../api/history', () => ({
@@ -32,6 +33,10 @@ vi.mock('../close-amount-backfill', () => ({
     backfillMissingCloseAmounts: mocks.backfillMissingCloseAmounts,
 }))
 
+vi.mock('../swap-asset-facts-backfill', () => ({
+    backfillSwapAssetFacts: mocks.backfillSwapAssetFacts,
+}))
+
 import { fetchAndPersistTransactions } from '../transaction-syncer'
 
 const ADDRESS = 'ADDR'
@@ -45,6 +50,7 @@ beforeEach(() => {
     mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
     mocks.upsertTransactions.mockResolvedValue(undefined)
     mocks.backfillMissingCloseAmounts.mockResolvedValue(undefined)
+    mocks.backfillSwapAssetFacts.mockResolvedValue(undefined)
 })
 
 describe('fetchAndPersistTransactions', () => {
@@ -110,6 +116,15 @@ describe('fetchAndPersistTransactions', () => {
 
         expect(mocks.backfillMissingCloseAmounts).toHaveBeenCalledWith({
             network: NETWORK,
+        })
+    })
+
+    it('heals swap rows cached without their asset facts', async () => {
+        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+
+        expect(mocks.backfillSwapAssetFacts).toHaveBeenCalledWith({
+            network: NETWORK,
+            accountAddress: ADDRESS,
         })
     })
 })

@@ -18,7 +18,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { algo25SignKeyId } from '../models'
-import { seedFromMnemonic } from 'algosdk'
+import { indicesToAlgo25Seed } from '../crypto/algo25-utils'
 import { useKMSService } from './useKMSServices'
 import { algo25SeedToAddress, buildSeedMetadata } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
@@ -37,7 +37,9 @@ export const useAlgo25 = () => {
 
     const createAlgo25Key = async (params?: {
         id?: string
-        mnemonic?: string
+        /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
+         * itself, so no mnemonic string reaches the key path. */
+        mnemonicIndices?: Uint16Array
     }): Promise<Algo25KeyResult> => {
         const seedKeyId = params?.id ?? generateOrderedUniqueId()
 
@@ -49,8 +51,8 @@ export const useAlgo25 = () => {
         let stage: 'seed' | 'seedImport' | 'signChild' = 'seed'
 
         try {
-            seed = params?.mnemonic
-                ? seedFromMnemonic(params.mnemonic)
+            seed = params?.mnemonicIndices
+                ? indicesToAlgo25Seed(params.mnemonicIndices)
                 : nacl.randomBytes(32)
 
             address = algo25SeedToAddress(seed)

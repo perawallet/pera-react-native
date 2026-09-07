@@ -913,8 +913,7 @@ describe('useWalletConnectHandlers', () => {
         it('accepts a keyless rekeyed signer whose auth account holds keys', () => {
             // The dApp names the connected account itself (pera-demo-dapp
             // scenario #84), not its auth address. The keyless signer falls
-            // back to the rekey hop, so the auth account's key signs
-            // (PERA-4977).
+            // back to the rekey hop, so the auth account's key signs.
             ;(useAllAccounts as any).mockReturnValue([
                 {
                     address: 'addr1',
@@ -1542,7 +1541,7 @@ describe('useWalletConnectHandlers', () => {
             expect(sentRequest.groupContext).toHaveLength(2)
         })
 
-        it('rejects sign requests for a local account that is not in the session (PERA-4267)', () => {
+        it('rejects sign requests for a local account that is not in the session', () => {
             // Wallet has addr1 (in session) AND addr2 (NOT in session). A
             // malicious dApp asks the wallet to sign a tx whose sender is
             // addr2. The session approves addr1 only, so the request must
@@ -1577,7 +1576,7 @@ describe('useWalletConnectHandlers', () => {
             expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
-        it('rejects sign requests where explicit signers field targets a non-session local account (PERA-4267)', () => {
+        it('rejects sign requests where explicit signers field targets a non-session local account', () => {
             // Variant: sender is a third-party (contract), but the dApp
             // sets `signers: [addr2]` to coerce the wallet into signing
             // with addr2 (not in session). Must reject.
@@ -1698,8 +1697,8 @@ describe('useWalletConnectHandlers', () => {
     // the user approved the session (the library rewrites it on any second
     // handshake frame). Identity on the sign sheet must come from the store
     // snapshot captured at approval time, never the live connector, or a drain
-    // renders under a spoofed brand (PERA-4713).
-    describe('sourceMetadata identity stamping (PERA-4713)', () => {
+    // renders under a spoofed brand.
+    describe('sourceMetadata identity stamping', () => {
         const approvedPeerMeta = {
             name: 'NFT Airdrop',
             url: 'https://airdrop.example',

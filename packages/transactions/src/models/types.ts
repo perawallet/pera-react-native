@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /** Maps directly to the transaction types returned by the API. */
@@ -39,9 +39,13 @@ export interface TransactionSwapGroupDetail {
     /** Decimal string — uint64 ids must never live in a JS number. */
     assetInId: Nullable<string>
     assetInUnitName: string
+    /** 0-19. */
+    assetInDecimals: number
     /** Decimal string. */
     assetOutId: Nullable<string>
     assetOutUnitName: string
+    /** 0-19. */
+    assetOutDecimals: number
     /** Base units. */
     amountIn: Decimal
     /** Base units. */

@@ -218,4 +218,47 @@ describe('useCsvExportMutation', () => {
         })
         expect(result.current.result?.assetId).toBe('12345')
     })
+
+    describe('non-Pera-backed networks', () => {
+        it.each([Networks.betanet, Networks.custom])(
+            'reports isUnavailableOnNetwork and no-ops exportCsv on %s',
+            async network => {
+                const { result, rerender } = renderHook(
+                    () =>
+                        useCsvExportMutation({
+                            network,
+                            onSuccess: mockOnSuccess,
+                            onError: mockOnError,
+                        }),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+
+                const firstExportCsv = result.current.exportCsv
+                act(() => {
+                    result.current.exportCsv({ accountAddress: VALID_ADDRESS })
+                })
+
+                expect(fetchTransactionsCsv).not.toHaveBeenCalled()
+                expect(mockOnSuccess).not.toHaveBeenCalled()
+                expect(mockOnError).not.toHaveBeenCalled()
+
+                rerender()
+                expect(result.current.exportCsv).toBe(firstExportCsv)
+            },
+        )
+
+        it.each([Networks.mainnet, Networks.testnet])(
+            'reports isUnavailableOnNetwork as false on %s',
+            network => {
+                const { result } = renderHook(
+                    () => useCsvExportMutation({ network }),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(false)
+            },
+        )
+    })
 })

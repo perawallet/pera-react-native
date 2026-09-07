@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PWIcon, type IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView, type PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
-import { type ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string

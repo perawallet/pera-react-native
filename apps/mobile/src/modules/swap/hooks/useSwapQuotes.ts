@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Keyboard } from 'react-native'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     displayUnitsToBaseUnits,
     useNetwork,
@@ -129,7 +129,7 @@ export const useSwapQuotes = ({
     }, [resetQuoteMutation])
 
     // Re-runs the quote effect with unchanged inputs — used when a quote
-    // went stale at confirm time (PERA-4589) and the same amount needs a
+    // went stale at confirm time and the same amount needs a
     // fresh rate.
     const [refreshNonce, setRefreshNonce] = useState(0)
     const refresh = useCallback(() => setRefreshNonce(nonce => nonce + 1), [])

@@ -367,7 +367,7 @@ describe('useWebViewNavigationGuard', () => {
         })
     })
 
-    describe('external-navigation handoff (PERA-4742)', () => {
+    describe('external-navigation handoff', () => {
         const HOST = 'https://discover.example/main'
         const renderWithHandoff = (
             onExternalNavigation: (url: string) => void,
@@ -445,7 +445,7 @@ describe('useWebViewNavigationGuard', () => {
         })
     })
 
-    describe('blob: navigations (Vestige charts, PERA-4881)', () => {
+    describe('blob: navigations (Vestige charts)', () => {
         it('allows a blob:https iframe navigation to load in place', () => {
             // Vestige's Discover charts render in iframes whose src is
             // blob:https://vestige.fi/...; refusing them blanks the chart.

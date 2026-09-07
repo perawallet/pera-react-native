@@ -54,7 +54,7 @@ describe('useAssetTransferDisplay', () => {
 
     it('exposes the sweep separately when the sender opted out of the asset', () => {
         // An opt-out has amount 0 and the remaining holding in closeAmount —
-        // reading only `amount` renders 0 (PERA-4897).
+        // reading only `amount` renders 0.
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: { assetId: '123', name: 'Test', decimals: 6 },
         } as UseQueryResult<PeraAsset, Error>)

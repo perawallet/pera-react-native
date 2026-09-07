@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { argon2id } from '@noble/hashes/argon2'
+import { argon2id } from '@noble/hashes/argon2.js'
 import { base64 } from '@scure/base'
 import {
     InvalidPasswordError,

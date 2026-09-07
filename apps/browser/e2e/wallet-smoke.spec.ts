@@ -601,7 +601,7 @@ test('settings scrolls to the remove-all button in the 600px popup', async () =>
     await popupPage.close()
 })
 
-// Web forces tap-to-confirm (PERA-4949), so the slide/tap Confirmation choice
+// Web forces tap-to-confirm, so the slide/tap Confirmation choice
 // must not be offered here — only the Launch row remains.
 test('advanced preferences hides the confirmation-mode setting on web', async () => {
     await dismissPinPromptIfPresent(page)

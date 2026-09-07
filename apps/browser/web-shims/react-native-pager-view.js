@@ -159,7 +159,7 @@ const PagerView = forwardRef((props, ref) => {
             // Without both, a page's flex:1 resolves against an auto-height
             // wrapper, any vertical ScrollView inside grows to content
             // height, and the frame's overflow clips it unscrollably
-            // (PERA-4948: the Fund form's Proceed button was unreachable).
+            // (the Fund form's Proceed button was unreachable).
             contentContainerStyle: { height: '100%' },
             ...rest,
         },

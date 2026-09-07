@@ -235,7 +235,7 @@ describe('services/security/store', () => {
         useSecurityStore.getState().resetState()
 
         // Two independent subscribers stand in for Settings and the lock screen:
-        // a reconcile in one has to be visible to the other (PERA-4702).
+        // a reconcile in one has to be visible to the other.
         const settings = renderHook(() =>
             useSecurityStore(state => state.isBiometricsEnabled),
         )

@@ -15,7 +15,7 @@ import { PWText } from '@components/core/PWText'
 import { usePinSecurityPrompt } from './usePinSecurityPrompt'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { type PromptViewProps } from '@modules/prompts/models'
+import type { PromptViewProps } from '@modules/prompts/models'
 import { PWInfoView, PWTouchableOpacity } from '@components/core'
 import LockImage from '@assets/icons/lock.svg'
 

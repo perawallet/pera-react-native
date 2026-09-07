@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PQ-019 / PERA-4643: a Falcon-signed group is broadcast through the ordinary
+// a Falcon-signed group is broadcast through the ordinary
 // submission path — quantum is not special-cased at submit time. The
 // carrier-aware `encodeSignedTransaction` emits the node-ready `pqsig` bytes,
 // so a quantum payment over the ALGOD transport reaches algod's
@@ -67,7 +67,7 @@ import {
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
-    QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -89,7 +89,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
@@ -106,7 +106,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     return sender
 }
 
-describe('submit from quantum account over algod transport (PQ-019)', () => {
+describe('submit from quantum account over algod transport', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScreen, PWText, PWView } from '@components/core'
+import { PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
@@ -19,6 +19,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useSelectDestinationScreen } from './useSelectDestinationScreen'
 import { LoadingView } from '@components/LoadingView'
+import { useMemo } from 'react'
 
 export const SelectDestinationScreen = () => {
     const styles = useStyles()
@@ -29,9 +30,29 @@ export const SelectDestinationScreen = () => {
         handleSelected,
         isCheckingExternalOptIn,
         isAutoAdvancing,
+        canClose,
+        onClose,
     } = useSelectDestinationScreen()
 
+    // Memoize so the node identity is stable — `useNavigationHeader` lists
+    // `left` as an effect dep and calls setOptions, so fresh JSX every render
+    // would loop through setOptions → re-render (the same trap InputScreen
+    // documents). `null` (not undefined) when there's a back entry, so any
+    // stale close is cleared and the default header back button takes over.
+    const headerLeft = useMemo(
+        () =>
+            canClose ? (
+                <PWIcon
+                    name='cross'
+                    onPress={onClose}
+                    testID='send_destination_close_button'
+                />
+            ) : null,
+        [canClose, onClose],
+    )
+
     useNavigationHeader({
+        left: headerLeft,
         title: selectedAsset ? (
             <PWView style={styles.assetTitleContainer}>
                 <AssetIcon

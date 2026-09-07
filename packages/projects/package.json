@@ -12,8 +12,8 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "test": "vitest run",
     "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
@@ -21,6 +21,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@tanstack/react-query": "catalog:",
@@ -36,7 +37,6 @@
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
     "msw": "catalog:"
   }

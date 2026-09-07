@@ -48,13 +48,15 @@ export const useBiometricsDisabledPrompt =
             if (result.ok) return
 
             // The OS refused before showing any prompt — biometrics off at the
-            // device level, Pera's own biometric permission revoked, or nothing
-            // strong enough enrolled. The user has to leave the app to fix it,
-            // so the offer is NOT spent: say what is wrong and stay on screen so
-            // the same button works when they come back.
+            // device level, Pera's own biometric permission revoked, nothing
+            // strong enough enrolled, or a temporary lockout ('unconfirmed').
+            // The user has to leave the app to fix it, so the offer is NOT spent:
+            // say what is wrong and stay on screen so the same button works when
+            // they come back.
             if (
                 result.reason === 'unavailable' ||
-                result.reason === 'weak-biometric'
+                result.reason === 'weak-biometric' ||
+                result.reason === 'unconfirmed'
             ) {
                 showToast({
                     title: t('security.biometrics_disabled.unavailable_title'),

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { type ViewStyle } from 'react-native'
+import type { ViewStyle } from 'react-native'
 import {
     type AnimatedStyle,
     Easing,

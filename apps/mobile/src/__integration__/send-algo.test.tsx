@@ -57,7 +57,7 @@ import {
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
@@ -74,7 +74,7 @@ const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     let keyResult: Algo25KeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
@@ -267,7 +267,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             let authKey: Algo25KeyResult | null = null
             await waitFor(async () => {
                 authKey = await kms.current.createAlgo25Key({
-                    mnemonic: ALGO25_TEST_MNEMONIC,
+                    mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
                 })
                 expect(authKey).not.toBeNull()
             })
@@ -499,7 +499,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             // landing verification comes up empty. The surfaced copy must be
             // the honest "status unknown" message — not "failed" and not
             // plain "no connection" — because the transaction may still have
-            // landed (PERA-4896).
+            // landed.
             await waitFor(
                 () => {
                     expect(
@@ -518,7 +518,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     )
 
     it(
-        'Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure (PERA-4896)',
+        'Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure',
         async () => {
             await seedAlgo25Sender()
             useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
@@ -579,7 +579,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     )
 
     it(
-        'Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success (PERA-4896)',
+        'Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success',
         async () => {
             await seedAlgo25Sender()
             useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)

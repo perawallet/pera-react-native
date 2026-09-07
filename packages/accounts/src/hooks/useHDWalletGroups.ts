@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
-import { type HDWalletAccount } from '../models'
+import type { HDWalletAccount } from '../models'
 import { isHDWalletAccount } from '../utils'
 
 export type HDWalletGroup = {

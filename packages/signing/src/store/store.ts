@@ -66,7 +66,7 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
  * WITHOUT an interactive approval gate:
  *   - malformed shape (missing id/type/transport) → can't drive the machine
  *   - non-interactive sources (`'local'`/undefined) → would sign HEADLESSLY on
- *     a cold start, with no review sheet (the same gap class as PERA-4416)
+ *     a cold start, with no review sheet
  *   - `'deeplink'` → ephemeral; the user re-scans rather than resuming
  * Interactive, persistable sources (e.g. `multisig-cosign`) are kept.
  */
@@ -96,6 +96,17 @@ const STORE_NAME = 'signing-store'
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
 }
+
+/**
+ * Ids of requests that came back from persisted storage on this launch. Only
+ * these can be re-presentations of a group that may already be on chain, so
+ * only these pay for the submission-ledger guard before an actor is created —
+ * a request the user just initiated stays on the synchronous path.
+ */
+const restoredRequestIds = new Set<string>()
+
+export const wasRestoredFromStorage = (id: string): boolean =>
+    restoredRequestIds.has(id)
 
 export const useSigningStore: UseBoundStore<
     WithPersist<StoreApi<SigningStore>, PartializedState>
@@ -151,6 +162,9 @@ export const useSigningStore: UseBoundStore<
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []
                     ).filter(isResumableRehydratedRequest)
+                    state.pendingSignRequests.forEach(request =>
+                        restoredRequestIds.add(request.id),
+                    )
                 }
             },
         },

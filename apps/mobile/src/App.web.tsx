@@ -15,7 +15,7 @@
 import React, { useEffect, useState } from 'react'
 // oxlint-disable-next-line no-restricted-imports -- pre-hydration boot screen;
 // must not import @components/core (store-bearing graph) before hydration.
-// guardrails-ignore-next-line: no-primitive-rn-components -- temporary bootstrap; real shell loaded dynamically after hydration
+// lanekeep-ignore-next-line pera/no-primitive-rn-components reason: temporary bootstrap; real shell loaded dynamically after hydration
 import { Text, View } from 'react-native'
 import {
     getSurface,

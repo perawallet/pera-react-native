@@ -48,17 +48,21 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
+    // Equal min dimensions keep it circular; padding alone would leave the
+    // height short of the width. Opaque, because 18% was invisible on the mint
+    // this sits on (`bannerBg`, the same turquoise in both themes).
     moreBadge: {
-        minWidth: theme.spacing.xl,
+        minWidth: theme.spacing.xl + theme.spacing.xs,
+        minHeight: theme.spacing.xl + theme.spacing.xs,
         paddingHorizontal: theme.spacing.xs,
-        paddingVertical: theme.spacing.xxs,
         borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+        backgroundColor: theme.colors.white,
     },
     moreBadgeText: {
         ...getTypography(theme, 'captionMedium'),
         color: theme.colors.bannerText,
+        textAlign: 'center',
     },
 }))

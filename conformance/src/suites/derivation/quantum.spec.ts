@@ -30,7 +30,7 @@ import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
 import { GO_ALGORAND_PQ_VECTOR } from '../../vectors/knownAnswerVectors'
 
-/** Falcon-1024's NIST public-key header byte; `164` was the on-device defect adjacent to PERA-4972. */
+/** Falcon-1024's NIST public-key header byte; a stored `164` is the malformed-key defect. */
 const FALCON_1024_NIST_HEADER_BYTE = 10
 
 describe('quantum derivation conformance', () => {
@@ -50,7 +50,7 @@ describe('quantum derivation conformance', () => {
         await fundAccount(oracle.address, 1_000_000n)
 
         // Funding the oracle's address and querying the app's makes this leg
-        // sensitive to a wrong derivation (PERA-4972's failure mode): if the two
+        // sensitive to a wrong derivation ('s failure mode): if the two
         // diverged, this account would show a zero balance instead of the
         // assertion failing to even find a mismatched address.
         const info = await getConformanceClient()
@@ -94,7 +94,7 @@ describe('quantum derivation conformance', () => {
     // the keystore mints the signing child, and `getPQProvider()` derives an
     // in-memory keypair for the import probe and the legacy-account notice.
     // Nothing else compares them — a probe pointed at the wrong address shows
-    // an existing account as new, which is how PERA-4972 presented.
+    // an existing account as new, which is how presented.
     it("matches the keystore's minted key with the provider the import probe uses", async () => {
         const ks = await createConformanceKeyStore()
         const account = await createQuantumAccount(ks)

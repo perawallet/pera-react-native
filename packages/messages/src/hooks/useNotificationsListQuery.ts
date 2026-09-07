@@ -22,11 +22,8 @@ import {
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
-import {
-    type Maybe,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import { getQueryRenderState } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
@@ -44,7 +41,12 @@ const mapNotificationResponseToNotification = (
 const extractCursor = (url: Nullable<string>): Maybe<string> => {
     if (!url) return undefined
     try {
-        return new URL(url).searchParams.get('cursor') ?? undefined
+        // The API's last page can carry `next` with an EMPTY `?cursor=`.
+        // `''` is not nullish, and React Query reads any non-nullish page
+        // param as "there is a next page" — so `?? undefined` alone loops
+        // page one forever (one request per onEndReached tick, spinner
+        // pinned). Empty must collapse to undefined.
+        return new URL(url).searchParams.get('cursor') || undefined
     } catch {
         return undefined
     }
@@ -53,12 +55,23 @@ const extractCursor = (url: Nullable<string>): Maybe<string> => {
 export type UseNotificationsListQueryResult = {
     data: PeraNotification[]
     isPending: boolean
+    /** Paused by offline `networkMode: 'online'` gating with nothing cached — render the offline surface, not a spinner (docs/OFFLINE_PAUSED_STATE.md). */
+    isPaused: boolean
+    /** The fetch failed while the query was allowed to run — pair with a retry affordance. */
+    isError: boolean
     isFetchingNextPage: boolean
     isRefetching: boolean
     fetchNextPage: () => void
     refetch: () => void
     /** True when the active network has no Pera backend — this can never succeed here. */
     isUnavailableOnNetwork: boolean
+    /**
+     * On a Pera-backed network but with no device id yet (push registration
+     * hasn't landed — denied permission, FCM failure, first-run POST not yet
+     * succeeded). The query stays disabled, so the screen shows a terminal
+     * "unavailable" message instead of an empty inbox it can't distinguish from.
+     */
+    isDeviceUnregistered: boolean
 }
 
 export const useNotificationsListQuery =
@@ -66,6 +79,7 @@ export const useNotificationsListQuery =
         const { network } = useNetwork()
         const deviceID = useDeviceID(network)
         const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+        const isEnabled = !!deviceID?.length && !isUnavailableOnNetwork
 
         const query = useInfiniteQuery({
             queryKey: getNotificationsListQueryKey(network, deviceID!),
@@ -79,7 +93,7 @@ export const useNotificationsListQuery =
             getNextPageParam: lastPage => extractCursor(lastPage.next),
             getPreviousPageParam: firstPage =>
                 extractCursor(firstPage.previous),
-            enabled: !!deviceID?.length && !isUnavailableOnNetwork,
+            enabled: isEnabled,
             select: useCallback(
                 (data: InfiniteData<NotificationsListResponse>) => {
                     return data.pages.flatMap((p: NotificationsListResponse) =>
@@ -92,23 +106,41 @@ export const useNotificationsListQuery =
             ),
         })
 
+        const { isPaused, isError } = getQueryRenderState(query)
+
+        // The observer's fetchNextPage()/refetch() ignore `enabled` and would
+        // still fire the doomed Pera request on a non-backed network. Both
+        // guards MUST be referentially stable: NotificationsScreen refetches on
+        // focus with `refetch` in its effect deps, so a per-render identity
+        // re-runs the effect after every render the refetch itself causes — an
+        // infinite request loop with the refresh spinner pinned.
+        const fetchNextPage = useCallback(() => {
+            if (isUnavailableOnNetwork) return
+            void query.fetchNextPage()
+        }, [isUnavailableOnNetwork, query.fetchNextPage])
+
+        const refetch = useCallback(() => {
+            if (isUnavailableOnNetwork) return
+            void query.refetch()
+        }, [isUnavailableOnNetwork, query.refetch])
+
         return {
             data: query.data ?? [],
-            isPending: isUnavailableOnNetwork ? false : query.isPending,
+            // Disabled and paused queries never leave `status: 'pending'` in
+            // React Query v5, so raw `query.isPending` stays true forever while
+            // gated off (no device id) or offline. Only report loading when a
+            // fetch can actually run, otherwise the empty view spins
+            // indefinitely.
+            isPending: isEnabled && !isPaused ? query.isPending : false,
+            isPaused,
+            isError,
+            isDeviceUnregistered: !isUnavailableOnNetwork && !deviceID?.length,
             isFetchingNextPage: isUnavailableOnNetwork
                 ? false
                 : query.isFetchingNextPage,
             isRefetching: isUnavailableOnNetwork ? false : query.isRefetching,
-            // The observer's fetchNextPage()/refetch() ignore `enabled` and would
-            // still fire the doomed Pera request on a non-backed network.
-            fetchNextPage: () => {
-                if (isUnavailableOnNetwork) return
-                void query.fetchNextPage()
-            },
-            refetch: () => {
-                if (isUnavailableOnNetwork) return
-                void query.refetch()
-            },
+            fetchNextPage,
+            refetch,
             isUnavailableOnNetwork,
         }
     }

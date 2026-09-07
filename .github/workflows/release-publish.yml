@@ -1,0 +1,48 @@
+name: Release / Publish
+
+# Publishes a GitHub Release for a stable vX.Y.Z tag, and only for those.
+# Nightly (-alpha.N) and rc (-rc.N) tags never get a release: their workflows
+# only push the tag, which is all Bitrise needs to build.
+#
+# Both entry points below funnel through tools/publish-github-release.sh, which
+# owns the stable-only rule — so a hand-pushed prerelease tag and a manual
+# dispatch of one behave identically to the scheduled path: no release.
+#
+# workflow_dispatch doubles as a backfill: the repo has 50+ release tags and no
+# releases, so any stable one can be published after the fact by tag name.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Stable release tag to publish (e.g. v7.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the notes range is derived from the previous tag
+          # on the same channel.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: ./tools/publish-github-release.sh "$TAG"

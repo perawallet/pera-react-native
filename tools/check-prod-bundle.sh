@@ -14,9 +14,9 @@
 #   sub-export. Those are public-by-design even though their consumers are
 #   only tests.
 # - Source files that have test-only suffixes but no test-only imports.
-#   `vite-plugin-dts` is configured to exclude those at build time
-#   (`**/{handlers,*-handlers}.ts`); this script is the runtime fallback
-#   for cases the dts excludes miss.
+#   Each package's `tsconfig.build.json` excludes those from declaration
+#   emit (`**/{handlers,*-handlers}.ts`); this script is the runtime fallback
+#   for cases those excludes miss.
 #
 # Run after `pnpm build`.
 

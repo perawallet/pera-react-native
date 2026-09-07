@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => {
             marginBottom: theme.spacing.md,
         },
         // The container centers its children, so the button must claim the
-        // full width or its flex:1 text column collapses to zero. [PERA-4348]
+        // full width or its flex:1 text column collapses to zero.
         panelButton: {
             width: '100%',
         },

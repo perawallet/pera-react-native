@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import {
-    type WalletAccount,
-    type HDWalletAccount,
-    type ImportAccountType,
-    type DerivationType,
+import type {
+    WalletAccount,
+    HDWalletAccount,
+    ImportAccountType,
+    DerivationType,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { Optional } from '@perawallet/wallet-core-shared'

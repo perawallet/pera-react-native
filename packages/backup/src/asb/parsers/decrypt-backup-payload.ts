@@ -12,7 +12,7 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
-import { backupMnemonicToKey, generateBackupCipherKey } from '../crypto'
+import { backupIndicesToKey, generateBackupCipherKey } from '../crypto'
 import {
     decodePrivateKeyBytes,
     secretboxOpenWithPrependedNonce,
@@ -87,13 +87,15 @@ const parseAccount = (raw: unknown): AsbBackupAccount | null => {
  *     the only buffers the parser owns; the per-account `privateKey` arrays
  *     in the returned payload survive until the caller is done with them
  *     (see `useAsbAccountImport`).
- *   - The mnemonic string, the JSON-parsed object, and the base64-encoded
- *     `private_key` strings inside it are immutable JS strings — we can't
- *     wipe them, but we drop references as soon as possible so GC can.
+ *   - The JSON-parsed object and the base64-encoded `private_key` strings
+ *     inside it are immutable JS strings — we can't wipe them, but we drop
+ *     references as soon as possible so GC can. The recovery phrase itself
+ *     arrives as wordlist indices (caller-owned, caller-zeroed), never a
+ *     string.
  */
 export const decryptBackupPayload = (
     envelope: AsbBackupEnvelope,
-    recoveryMnemonic: string,
+    recoveryIndices: Uint16Array,
 ): AsbBackupPayload => {
     let seed: Uint8Array | null = null
     let cipherKey: Uint8Array | null = null
@@ -101,7 +103,7 @@ export const decryptBackupPayload = (
 
     try {
         try {
-            seed = backupMnemonicToKey(recoveryMnemonic)
+            seed = backupIndicesToKey(recoveryIndices)
         } catch {
             throw new AsbImportError(AsbErrorReason.InvalidRecoveryKey)
         }

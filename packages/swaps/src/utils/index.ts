@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './computeSwapAlgoShortfall'
 export * from './isSwappableAsset'
 export * from './quoteFreshness'
 export * from './slippage'

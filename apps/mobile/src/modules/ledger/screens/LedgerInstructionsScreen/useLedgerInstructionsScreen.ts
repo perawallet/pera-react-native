@@ -18,7 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
 import { useBlePermissions } from '../../hooks'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type LedgerInstructionsRouteParams = {
     LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>

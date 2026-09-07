@@ -19,7 +19,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
 import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
 
@@ -42,7 +41,6 @@ export const useRekeyToStandardSelectTargetScreen =
         const sourceAddress = route.params.sourceAddress
         const accounts = useAllAccounts()
         const source = useFindAccountByAddress(sourceAddress)
-        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
 
         const targets = useMemo(
             () =>
@@ -50,10 +48,9 @@ export const useRekeyToStandardSelectTargetScreen =
                     isEligibleRekeyTarget(
                         account,
                         source ?? { address: sourceAddress },
-                        isQuantumTargetEnabled,
                     ),
                 ),
-            [accounts, source, sourceAddress, isQuantumTargetEnabled],
+            [accounts, source, sourceAddress],
         )
 
         const handleSelect = useCallback(

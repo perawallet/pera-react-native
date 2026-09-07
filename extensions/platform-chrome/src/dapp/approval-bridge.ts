@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import { type Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
+import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
-import {
-    type PasskeyDecision,
-    type PasskeyCreateApprovalContext,
-    type PasskeyGetApprovalContext,
-    type PasskeyApprovalOpener,
+import type {
+    PasskeyDecision,
+    PasskeyCreateApprovalContext,
+    PasskeyGetApprovalContext,
+    PasskeyApprovalOpener,
 } from './passkey-opener'
 
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
@@ -120,6 +120,26 @@ const MAX_PENDING_APPROVALS = 8
 // dismissed. Comfortably longer than a popup's first paint plus one message
 // round-trip, and far shorter than a user deliberating.
 const POPUP_CLAIM_TIMEOUT_MS = 5000
+
+/**
+ * How long `chrome.action.openPopup()` gets to settle before we give up on the
+ * toolbar popup and open the dedicated window instead.
+ *
+ * It normally resolves once the popup finishes its first load and rejects if
+ * the popup is dismissed before that — but it can also do NEITHER, and an
+ * environment with no window manager (a headless CI runner, a fully minimised
+ * browser) is where that happens. Awaiting it unbounded strands the approval:
+ * the entry is already registered, its `surface` stays undefined so
+ * get-current-approval skips it forever, no window is ever created, and
+ * `popupAttemptRequestId` keeps the popup slot reserved for the rest of the
+ * worker's life. The dApp just waits, and nothing surfaces to the user.
+ *
+ * Sized above a cold popup boot (the approval UI bundle is several MB) so a
+ * genuinely slow-but-working popup is not pre-empted, while a hang still
+ * resolves into a real surface promptly. A late resolve after this fires is
+ * ignored — the window has taken over by then and owns the entry's `surface`.
+ */
+export const POPUP_OPEN_TIMEOUT_MS = 4000
 
 /**
  * Which approval kinds each decision message may settle.
@@ -487,6 +507,10 @@ export class ApprovalWindowBridge
     // dismissed before completing its first load. Either way a
     // rejection/absence is expected, not exceptional — callers fall back to
     // the dedicated window.
+    //
+    // The timeout covers the third outcome: never settling at all. See
+    // POPUP_OPEN_TIMEOUT_MS for why that strands the approval outright rather
+    // than merely delaying it.
     private async tryOpenActionPopup(): Promise<boolean> {
         // Cast away the (options?, callback) overloads: chrome.action.openPopup
         // is a plain namespace function (no `this` binding), so TS's .call()
@@ -495,11 +519,24 @@ export class ApprovalWindowBridge
             | (() => Promise<void>)
             | undefined
         if (!openPopup) return false
+        let timer: ReturnType<typeof setTimeout> | undefined
         try {
-            await openPopup.call(this.chromeLike.action)
-            return true
+            return await Promise.race([
+                openPopup.call(this.chromeLike.action).then(() => true),
+                new Promise<boolean>(resolve => {
+                    timer = setTimeout(
+                        () => resolve(false),
+                        POPUP_OPEN_TIMEOUT_MS,
+                    )
+                }),
+            ])
         } catch {
             return false
+        } finally {
+            // The loser of the race is abandoned, not cancelled — clear the
+            // timer so a settled openPopup doesn't leave one pending, and let
+            // a late openPopup resolve into a promise nobody awaits.
+            if (timer !== undefined) clearTimeout(timer)
         }
     }
 

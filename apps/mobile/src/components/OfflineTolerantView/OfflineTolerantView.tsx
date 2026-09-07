@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -57,7 +57,7 @@ export type OfflineTolerantViewProps = {
  * — in place of its children, so every remote-backed screen tells the same
  * story instead of hand-rolling the fork.
  *
- * It covers the middle of the PERA-4581 precedence
+ * It covers the middle of the precedence
  * (`data → offline → error → loading → empty`): callers keep owning `data`,
  * `loading` and `empty`, which stay surface-specific, and pass whatever they
  * would have rendered as `children`.

@@ -69,6 +69,15 @@ const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
     },
 }
 
+const SUPPORT_URL: Record<AccountType, string> = {
+    [AccountTypes.algo25]: config.accountTypeSupportUrl,
+    [AccountTypes.hdWallet]: config.accountTypeSupportUrl,
+    [AccountTypes.watch]: config.accountTypeSupportUrl,
+    [AccountTypes.hardware]: config.ledgerAccountSupportUrl,
+    [AccountTypes.multisig]: config.multisigSupportUrl,
+    [AccountTypes.quantum]: config.quantumAccountSupportUrl,
+}
+
 const REKEYED_UNSIGNABLE_I18N = {
     title: 'account_type_info.no_auth_title',
     description: 'account_type_info.no_auth_description',
@@ -133,19 +142,10 @@ export const useAccountTypeInfo = ({
     }, [account, canSign, rekeyTransition, t])
 
     const handleLearnMore = useCallback(() => {
-        // Send shared accounts — and accounts rekeyed to a shared account — to
-        // the shared-accounts article rather than the generic account-types
-        // page, matching the info sheet's copy.
-        const isShared =
-            account.type === AccountTypes.multisig ||
-            rekeyTransition?.to === AccountTypes.multisig
-        let url = config.accountTypeSupportUrl
-        if (account.type === AccountTypes.hardware) {
-            url = config.ledgerAccountSupportUrl
-        } else if (isShared) {
-            url = config.multisigSupportUrl
-        }
-        pushWebView({ url })
+        // A rekeyed account's sheet copy describes its signer, not its own
+        // type, so the article has to follow the same type to match.
+        const type = rekeyTransition?.to ?? account.type
+        pushWebView({ url: SUPPORT_URL[type] })
     }, [pushWebView, account.type, rekeyTransition])
 
     return {

@@ -12,11 +12,7 @@
 
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { mnemonicToEntropy } from '@scure/bip39'
-// The `.js` suffix matches how `packages/kms` imports the same wordlist;
-// Vite's library build excludes the wordlist entry without it and the
-// downstream consumer (vitest, RN bundler) fails to resolve.
-import { wordlist } from '@scure/bip39/wordlists/english.js'
+import { indicesToEntropy } from '@perawallet/wallet-core-kms'
 
 // ARC-35 (Algorand Offline Wallet Backup Protocol) primitives. The
 // secretbox open is shared with the Pera Web flow — see
@@ -31,11 +27,11 @@ const CIPHER_KEY_CONTEXT = new TextEncoder().encode('Algorand export 1.0')
  * NOT a BIP-39 seed — no PBKDF2, no `mnemonic` salt. This is the raw 16 bytes
  * of entropy the 12-word phrase encodes, checksum-verified, which
  * `generateBackupCipherKey` then stretches to the 32-byte symmetric key.
+ * Takes wordlist indices, not the phrase, so the recovery key never exists as
+ * a string on this path.
  */
-export const backupMnemonicToKey = (mnemonic: string): Uint8Array => {
-    const normalized = mnemonic.trim().split(/\s+/).join(' ')
-    return mnemonicToEntropy(normalized, wordlist)
-}
+export const backupIndicesToKey = (indices: Uint16Array): Uint8Array =>
+    indicesToEntropy(indices)
 
 /**
  * The context string is the HMAC *key*, not the message — argument order

@@ -37,7 +37,12 @@ export const StakingDisclaimerContent = () => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
-    const { isScrolledToBottom, handleScroll } = useStakingDisclaimerSheet()
+    const {
+        isScrolledToBottom,
+        handleScroll,
+        handleLayout,
+        handleContentSizeChange,
+    } = useStakingDisclaimerSheet()
 
     const handleTermsPress = () => {
         dismiss()
@@ -49,6 +54,8 @@ export const StakingDisclaimerContent = () => {
     return (
         <PWSheetLayout
             onScroll={handleScroll}
+            onLayout={handleLayout}
+            onContentSizeChange={handleContentSizeChange}
             testID='staking-disclaimer-content'
             header={
                 <SheetHeader

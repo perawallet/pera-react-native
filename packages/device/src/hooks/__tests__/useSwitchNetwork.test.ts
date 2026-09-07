@@ -46,11 +46,11 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-// Switching networks is a purely local concern (PERA-4583): the store flips
+// Switching networks is a purely local concern: the store flips
 // immediately — offline included — and device registration for the new
 // network is owned by useDeviceRegistration, whose [addresses, network]
 // effect re-fires on the store write and heals failures on reconnect /
-// foreground (PERA-4593; covered by useDeviceRegistration.test.ts).
+// foreground (covered by useDeviceRegistration.test.ts).
 describe('useSwitchNetwork', () => {
     beforeEach(() => {
         vi.clearAllMocks()

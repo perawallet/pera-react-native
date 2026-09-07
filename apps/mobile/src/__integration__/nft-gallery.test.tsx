@@ -258,7 +258,7 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
                 })
             }
 
-            // PERA-4845 QA scenario: asset 3 is held (SQLite mirrors algod)
+            // QA scenario: asset 3 is held (SQLite mirrors algod)
             // but the lagging indexer omits it. Expected order is unique to
             // opt-in data: raw id order gives [3, 2, 1], titles give
             // [2, 3, 1], the old sink behavior gave [1, 2, 3].

@@ -10,6 +10,7 @@ export default defineConfig({
         '../accounts/src/db/schema.ts',
         '../transactions/src/db/schema.ts',
         '../nfd/src/db/schema.ts',
+        '../signing/src/db/schema.ts',
     ],
     out: './src/migrations',
     dialect: 'sqlite',

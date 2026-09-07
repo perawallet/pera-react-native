@@ -21,7 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { type SignerRow } from '../../utils/buildSignerRows'
+import type { SignerRow } from '../../utils/buildSignerRows'
 import {
     SignerStatusListItem,
     type SignerAction,
@@ -37,6 +37,7 @@ export const PendingSignaturesContent = () => {
     const { t } = useLanguage()
     const {
         signRequest,
+        titleKey,
         bannerVariant,
         failureBannerKey,
         signedCount,
@@ -74,7 +75,7 @@ export const PendingSignaturesContent = () => {
                         variant='h4'
                         style={styles.title}
                     >
-                        {t('multisig.pending_signatures.title')}
+                        {t(titleKey)}
                     </PWText>
 
                     {bannerVariant === 'failure' && (

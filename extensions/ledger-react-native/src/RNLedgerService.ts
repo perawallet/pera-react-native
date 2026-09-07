@@ -13,7 +13,7 @@
 import { requireOptionalNativeModule } from 'expo'
 import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { HardwareWalletAdapterState } from '@perawallet/wallet-core-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'

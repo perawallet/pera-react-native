@@ -277,7 +277,7 @@ describe('useInputScreen', () => {
     })
 
     // Zero-amount ALGO payments are valid on-chain and used for notes and
-    // sync pings (PERA-4968).
+    // sync pings.
     it('proceeds with a zero amount for ALGO', async () => {
         const { result } = renderHook(() => useInputScreen())
         act(() => {

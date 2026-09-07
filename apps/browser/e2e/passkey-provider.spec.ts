@@ -31,6 +31,11 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
+import {
+    expectApprovalSurfaceUrl,
+    openApprovalSurface,
+    trackPageErrors,
+} from './approval-surface'
 
 declare global {
     interface Window {
@@ -70,14 +75,6 @@ let createdCredentialId = ''
 let createdPasskeyRowTestId = ''
 const PASSWORD = 'e2e-passkey-provider-password-1'
 
-// Without this, module-eval crashes in the bundle surface as bare selector
-// timeouts with no sign of the real cause.
-const trackPageErrors = (targetPage: Page): Error[] => {
-    const errors: Error[] = []
-    targetPage.on('pageerror', error => errors.push(error))
-    return errors
-}
-
 // Automatic presence simulation resolves the ceremony with no native OS UI,
 // which is what makes the fall-through path drivable headlessly at all. The
 // resident-key/user-verification flags match what Touch ID / Windows Hello
@@ -110,50 +107,23 @@ const attachVirtualAuthenticator = async (
 }
 
 // Passkey approvals share the pending-approval store and discovery message
-// with enable/sign, so this mirrors dapp-connect/dapp-sign's helpers.
+// with enable/sign, so this defers to the shared helper.
+//
+// This used to carry its own copy of the pre-#1400 discovery poll, which only
+// ever asked `get-current-approval`. That message deliberately skips entries
+// whose surface is 'window' (approval-bridge.ts), so once the service worker
+// fell back to the window — routine on a headless runner with no window
+// manager — the poll could never return non-null and the spec failed
+// permanently rather than slowly. #1400 fixed that everywhere except here.
 const openApprovalPopup = async (): Promise<{
     approvalPage: Page
     approvalErrors: Error[]
 }> => {
-    await expect
-        .poll(
-            () =>
-                page.evaluate(
-                    scope =>
-                        new Promise<unknown>(resolve => {
-                            const runtime = (
-                                globalThis as unknown as {
-                                    chrome?: {
-                                        runtime?: {
-                                            sendMessage?: (
-                                                message: unknown,
-                                                callback: (r: unknown) => void,
-                                            ) => void
-                                        }
-                                    }
-                                }
-                            ).chrome?.runtime
-                            if (!runtime?.sendMessage) {
-                                resolve(null)
-                                return
-                            }
-                            runtime.sendMessage(
-                                { scope, kind: 'get-current-approval' },
-                                resolve,
-                            )
-                        }),
-                    'pera-dapp-approval',
-                ),
-            { timeout: 20_000 },
-        )
-        .not.toBeNull()
-
-    const approvalPage = await context.newPage()
-    // The real toolbar popup's dimensions.
-    await approvalPage.setViewportSize({ width: 360, height: 600 })
-    const approvalErrors = trackPageErrors(approvalPage)
-    await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
-    await approvalPage.waitForLoadState('domcontentloaded')
+    const { approvalPage, approvalErrors } = await openApprovalSurface({
+        context,
+        page,
+        extensionId,
+    })
 
     // VaultGate wraps the approval surface too.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -328,7 +298,7 @@ test('interception on: create() opens the Pera consent screen; approving returns
     await dappPage.click('#create-button')
 
     const { approvalPage, approvalErrors } = await openApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     await expect(approvalPage.getByTestId('dapp-passkey-rp-id')).toBeVisible({
         timeout: 20_000,
@@ -386,7 +356,7 @@ test('interception on: get() asserts against the stored credential and the RP pa
     await dappPage.click('#get-button')
 
     const { approvalPage, approvalErrors } = await openApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     await expect(approvalPage.getByTestId('dapp-passkey-rp-id')).toBeVisible({
         timeout: 20_000,
@@ -447,7 +417,7 @@ const attemptDeclineFallThrough = async (): Promise<{
     await dappPage.click('#create-button')
 
     const { approvalPage, approvalErrors } = await openApprovalPopup()
-    expect(approvalPage.url()).toContain('popup.html')
+    expectApprovalSurfaceUrl(approvalPage)
 
     await expect(approvalPage.getByTestId('dapp-passkey-rp-id')).toBeVisible({
         timeout: 20_000,

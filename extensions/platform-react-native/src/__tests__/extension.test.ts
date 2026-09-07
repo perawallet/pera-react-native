@@ -77,7 +77,7 @@ describe('WithReactNativePlatformExtension', () => {
                 const extension = WithReactNativePlatformExtension({})
                 // initialize no longer waits on push registration, so it
                 // resolves before the budget elapses; the budget now bounds the
-                // notifications promise it handed back (PERA-4727).
+                // notifications promise it handed back.
                 const { notifications } = await extension.initialize()
                 await vi.advanceTimersByTimeAsync(8000)
                 const result = await notifications

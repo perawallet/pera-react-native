@@ -25,7 +25,7 @@ export const ACCEPTED_TERMS_VERSION_KEY = 'acceptedTermsVersion'
  * `currentVersion !== ''` guard below then holds the gate closed until a real
  * version activates. A placeholder here reads as a genuine version, so the user
  * accepts it, the real value activates moments later and the gate fires a
- * second time — the duplicate T&Cs in PERA-4874, worst on a first launch after
+ * second time, showing duplicate T&Cs, worst on a first launch after
  * migration when the config cache is cold.
  *
  * Consequence: if `terms_version` is never set in remote config, the gate never

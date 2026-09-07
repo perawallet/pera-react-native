@@ -14,7 +14,8 @@ import { describe, it, expect } from 'vitest'
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import nacl from 'tweetnacl'
-import { backupMnemonicToKey, generateBackupCipherKey } from '../asb-crypto'
+import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
+import { backupIndicesToKey, generateBackupCipherKey } from '../asb-crypto'
 
 // BIP-39 well-known zero-entropy vector. The 12-word phrase
 // "abandon abandon abandon abandon abandon abandon abandon abandon
@@ -23,29 +24,24 @@ const ZERO_MNEMONIC =
     'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
 
 const ZERO_ENTROPY = new Uint8Array(16)
+const zeroIndices = () => mnemonicWordsToIndices(ZERO_MNEMONIC.split(' '))!
 
-describe('backupMnemonicToKey', () => {
+describe('backupIndicesToKey', () => {
     it('returns the 16-byte BIP-39 entropy for the zero-vector phrase', () => {
-        expect(Array.from(backupMnemonicToKey(ZERO_MNEMONIC))).toEqual(
-            Array.from(ZERO_ENTROPY),
-        )
-    })
-
-    it('normalizes inner whitespace and trims', () => {
-        const messy = `  ${ZERO_MNEMONIC.split(' ').join('   ')}\n`
-        expect(Array.from(backupMnemonicToKey(messy))).toEqual(
+        expect(Array.from(backupIndicesToKey(zeroIndices()))).toEqual(
             Array.from(ZERO_ENTROPY),
         )
     })
 
     it('throws on an invalid BIP-39 checksum', () => {
         // Swap the last "about" for "abandon" → checksum breaks.
-        const invalid = ZERO_MNEMONIC.replace(/about$/, 'abandon')
-        expect(() => backupMnemonicToKey(invalid)).toThrow()
+        const invalid = zeroIndices()
+        invalid[11] = 0
+        expect(() => backupIndicesToKey(invalid)).toThrow()
     })
 
     it('throws on the wrong word count', () => {
-        expect(() => backupMnemonicToKey('abandon abandon')).toThrow()
+        expect(() => backupIndicesToKey(new Uint16Array(2))).toThrow()
     })
 })
 

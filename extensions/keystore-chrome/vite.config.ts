@@ -12,22 +12,9 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [
-        dts({
-            include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/test-utils/**'],
-            afterDiagnostic: diagnostics => {
-                if (diagnostics.length > 0) {
-                    throw new Error(
-                        `TypeScript declaration generation failed with ${diagnostics.length} error(s)`,
-                    )
-                }
-            },
-        }),
-    ],
+    plugins: [],
     build: {
         lib: {
             entry: {
@@ -44,7 +31,6 @@ export default defineConfig({
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js',
                 '@noble/ciphers',
-                '@noble/hashes/sha2',
                 '@noble/hashes/sha2.js',
                 '@scure/base',
                 '@scure/bip39',

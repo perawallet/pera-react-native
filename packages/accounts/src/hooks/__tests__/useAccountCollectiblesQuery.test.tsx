@@ -79,7 +79,7 @@ describe('useAccountCollectiblesQuery', () => {
         )
     })
 
-    // PERA-4921: the sort mode is part of the key, so re-sorting starts a cold
+    // the sort mode is part of the key, so re-sorting starts a cold
     // query. Blanking the gallery until SQL answers is what read as "sorting
     // does nothing" on a freshly imported account.
     describe('placeholder rows while a new request resolves', () => {

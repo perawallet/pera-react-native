@@ -16,9 +16,9 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    type AlgorandChainId,
-    type WalletConnectSessionRequest,
+import type {
+    AlgorandChainId,
+    WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 

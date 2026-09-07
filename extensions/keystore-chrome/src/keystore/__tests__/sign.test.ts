@@ -102,8 +102,8 @@ describe('sign.ts', () => {
 
         // Independent verifier: crypto.subtle's Ed25519, not our own
         // verifyWithKeyData (which shares xhd's derivation with signXHDEd25519
-        // and so cannot catch a systematic signing error — see Task 7 fix
-        // round 1 finding 2). edKey.publicKey is the raw 32-byte Ed25519
+        // and so cannot catch a systematic signing error).
+        // edKey.publicKey is the raw 32-byte Ed25519
         // public key xhd.keyGen derived alongside the private key.
         const cryptoKey = await crypto.subtle.importKey(
             'raw',

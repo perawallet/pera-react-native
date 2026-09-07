@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
-import { type AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
+import type { AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardComingSoonToast } from '../../hooks'

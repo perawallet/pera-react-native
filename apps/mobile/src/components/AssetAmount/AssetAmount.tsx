@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     CurrencyAmount,
     type CurrencyAmountProps,
 } from '@components/CurrencyAmount'
-import { type MinimalAsset } from '@perawallet/wallet-core-assets'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { MinimalAsset } from '@perawallet/wallet-core-assets'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 /**
  * - `detailed` (default) — the asset's natural precision (trims the default

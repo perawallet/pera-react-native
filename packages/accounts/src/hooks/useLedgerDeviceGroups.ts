@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useAllAccounts } from './useAllAccounts'
-import { type HardwareWalletAccount } from '../models'
+import type { HardwareWalletAccount } from '../models'
 import { isLedgerAccount } from '../utils'
 
 export type LedgerDeviceGroup = {

@@ -12,7 +12,7 @@
 
 import { assertMaxLength } from '@perawallet/wallet-core-shared'
 import { PeraWebImportError, PeraWebImportErrorReason } from '../errors'
-import { type PeraWebQrPayload } from '../models'
+import type { PeraWebQrPayload } from '../models'
 import { parsePeraWebImportFields } from './parse-import-fields'
 
 // Upper bound on the scanned QR string. A transfer QR carries a small JSON

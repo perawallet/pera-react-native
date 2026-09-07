@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 type StyleProps = { height: number; insets: EdgeInsets }
 

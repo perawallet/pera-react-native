@@ -31,7 +31,7 @@ const TXID = '[A-Z0-9]{52}'
 
 // "overspend (account ADDR, data {...}, tried to spend ...)" — matched on
 // shape only; go-algorand's balance/spend rendering has changed format
-// before and isn't parsed back into params. See docs/LOCALNET_CONFORMANCE.md.
+// before and isn't parsed back into params. See conformance/README.md.
 const OVERSPEND_RE = new RegExp(
     `overspend \\(account (${ADDRESS}),.*?tried to spend`,
     's',

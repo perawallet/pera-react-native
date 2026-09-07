@@ -34,7 +34,7 @@ export const SwapTopPairs = () => {
         >
             <PWView style={styles.header}>
                 <PWText
-                    variant='body'
+                    variant='h4'
                     style={styles.headerTitle}
                     truncate
                 >

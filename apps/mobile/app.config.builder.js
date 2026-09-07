@@ -19,7 +19,7 @@ const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 const { version: packageVersion, versionCodeBase } = require('./package.json');
 
 // iOS build number / Android versionCode floor. The committed base clears the
-// live store values (in-place update over the native apps, PERA-4451); adding
+// live store values (in-place update over the native apps); adding
 // the monotonic CI BUILD_NUMBER keeps each build unique and strictly higher.
 function resolveBuildNumber(env) {
   return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10);
@@ -167,6 +167,11 @@ function buildAppConfig(env) {
         // browser's social-media handoff (PWWebView navigation guard).
         LSApplicationQueriesSchemes: ['itms-apps', 'twitter', 'tg', 'com.hammerandchisel.discord'],
         UIRequiredDeviceCapabilities: ['arm64'],
+        // Must stay YES: react-native-screens drives the iOS status bar per
+        // screen (the navigator's `statusBarStyle` option) and RNSScreenWindowTraits
+        // errors out without it. The cost is that RN's imperative StatusBar API
+        // — expo-status-bar's setStatusBarStyle — errors instead; the two are
+        // mutually exclusive, so nothing may call it on iOS.
         UIViewControllerBasedStatusBarAppearance: true,
         // Custom fonts
         UIAppFonts: [
@@ -230,7 +235,7 @@ function buildAppConfig(env) {
       // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
       // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
       // overlay permission (never in release — blocked defensively).
-      // Confirm the final set against the native pera-android manifest (WB-7).
+      // Confirm the final set against the native pera-android manifest.
       blockedPermissions: [
         'android.permission.RECORD_AUDIO',
         'android.permission.SYSTEM_ALERT_WINDOW',
@@ -256,7 +261,7 @@ function buildAppConfig(env) {
             { scheme: 'wc' },
             { scheme: 'perawallet-wc' },
             // Native iOS parity (algorand-wc) + Liquid Auth (liquid). Registered
-            // on Android too so there's a single source of truth (WB-8).
+            // on Android too so there's a single source of truth.
             { scheme: 'algorand-wc' },
             { scheme: 'liquid' },
           ],
@@ -304,6 +309,20 @@ function buildAppConfig(env) {
     // Expo plugins configuration
     // These modify native code during prebuild
     plugins: [
+      // System navigation bar. `AppTheme` inherits Theme.AppCompat.DayNight,
+      // which never sets `windowLightNavigationBar`, so the buttons stay light
+      // in BOTH system themes and vanish against any light surface under
+      // edge-to-edge (targetSdk 36). `style` seeds the build-time default for
+      // the light splash; useSystemBarsAppearance then drives it from the
+      // user's in-app theme. `enforceContrast: false` is required or Android
+      // paints a scrim over that choice.
+      [
+        'expo-navigation-bar',
+        {
+          style: 'dark',
+          enforceContrast: false,
+        },
+      ],
       // Expo font loading
       [
         'expo-font',
@@ -460,6 +479,14 @@ function buildAppConfig(env) {
       // expo-build-properties, which owns minify/shrinkResources.
       './plugins/withAndroidR8Optimization',
 
+      // Let large screens rotate while phones stay portrait. The manifest
+      // declares no restriction (the package parser resolves it with no
+      // configuration, so a sw600dp qualifier can never win); phones are
+      // locked at runtime by useOrientationPolicy. iPhones stay portrait via
+      // the top-level `orientation`; iPads rotate via the all-orientations
+      // `UISupportedInterfaceOrientations~ipad` that `supportsTablet` writes.
+      './plugins/withAndroidLargeScreenSupport',
+
       // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
       // the React host is ready) by overriding it in MainActivity.
       './plugins/withAndroidUserLeaveHintFix',
@@ -476,7 +503,7 @@ function buildAppConfig(env) {
       // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
       './plugins/withPublicSwiftImports.js',
 
-      // On-device Falcon-1024 signing (@joe-p/react-native-falcon, PQ-020):
+      // On-device Falcon-1024 signing (@joe-p/react-native-falcon):
       // pin the New Architecture flag the Nitro module requires. The native
       // pod/Gradle module itself is picked up by RN/Nitro autolinking.
       './plugins/withFalconNitro.js',

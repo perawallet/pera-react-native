@@ -13,7 +13,7 @@
 import { Store } from '@tanstack/store'
 import type { Key, KeyStoreState } from '../../keystore'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { beforeEach, describe, expect, it } from 'vitest'
 // This suite's resolution of the '/webauthn' subpath depends on
 // packages/passkeys/dist existing (workspace subpath exports resolve against

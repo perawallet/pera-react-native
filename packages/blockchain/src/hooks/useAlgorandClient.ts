@@ -12,10 +12,10 @@
 
 import { useMemo } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    type PeraEncodedTransactionSigner,
-    type PeraTransactionGroup,
-    type PeraTransactionSigner,
+import type {
+    PeraEncodedTransactionSigner,
+    PeraTransactionGroup,
+    PeraTransactionSigner,
 } from '../models'
 import { useCustomNetworkStore } from '../store'
 import { encodeSignedTransactions } from '../utils/transact'

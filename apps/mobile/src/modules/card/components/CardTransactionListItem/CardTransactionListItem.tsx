@@ -12,7 +12,7 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { type CardTransaction } from '@perawallet/wallet-core-card'
+import type { CardTransaction } from '@perawallet/wallet-core-card'
 import { useCardTransactionListItem } from './useCardTransactionListItem'
 import { useStyles } from './styles'
 

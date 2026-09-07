@@ -91,13 +91,15 @@ describe('setAndroidBackupAttributes', () => {
 
     it('wires allowBackup=false and the exclude-all rule resources', () => {
         const result = setAndroidBackupAttributes(manifestWithApp())
-        const app = result.manifest.application[0].$
+        const app = result.manifest.application?.[0].$
 
-        expect(app['android:allowBackup']).toBe('false')
-        expect(app['android:dataExtractionRules']).toBe(
+        expect(app?.['android:allowBackup']).toBe('false')
+        expect(app?.['android:dataExtractionRules']).toBe(
             '@xml/pera_data_extraction_rules',
         )
-        expect(app['android:fullBackupContent']).toBe('@xml/pera_backup_rules')
+        expect(app?.['android:fullBackupContent']).toBe(
+            '@xml/pera_backup_rules',
+        )
     })
 
     it('throws loudly if the <application> node is missing', () => {

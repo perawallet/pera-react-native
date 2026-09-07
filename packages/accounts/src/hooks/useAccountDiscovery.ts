@@ -17,7 +17,7 @@ import {
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
     type GetPublicKey,
 } from '../account-discovery'
-import { type BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 
 export const useAccountDiscovery = () => {
     const { getDerivedPublicKey } = useKMS()

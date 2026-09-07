@@ -36,7 +36,7 @@ const useTransactionRequestFAQDriver = () => {
     const { getPreference, setPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
     // No app-lock gate: BottomSheetManager holds presentation while the lock
-    // overlay is up (PERA-4743), so requesting while locked is safe.
+    // overlay is up, so requesting while locked is safe.
     const openIdRef = useRef<string | null>(null)
 
     useEffect(() => {
@@ -68,7 +68,7 @@ const useTransactionRequestFAQDriver = () => {
 
 /**
  * Owns the `AppState` subscription for the hardware-signing backgrounding
- * policy (PERA-4637). The app layer subscribes here — where react-native
+ * policy. The app layer subscribes here — where react-native
  * legitimately lives — and forwards each change to the signing package's
  * pure `applyAppStateToHardwareSessions`, so the logic package stays free of
  * react-native (which would otherwise force every signing dependent to parse

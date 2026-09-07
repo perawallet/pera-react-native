@@ -49,7 +49,6 @@ export const useRekeyScanNotice = (): UseRekeyScanNoticeResult => {
                 logger.error('Rekeyed-account scan failed after import', {
                     error,
                 })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized non-fatal rekey_scan_failed notice; raw error not surfaced to user
                 showToast({
                     type: 'info',
                     title: t(

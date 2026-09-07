@@ -209,7 +209,7 @@ describe('indexer history transformer conformance', () => {
         expect(row?.asset?.asset_id).toBe(assetId.toString())
         // The decimals the app renders with come from the lookup, not from the
         // indexer row — a wrong wiring here misprices every amount on screen.
-        expect(row?.asset?.decimals).toBe(2)
+        expect(row?.asset?.fraction_decimals).toBe(2)
         expect(row?.asset?.unit_name).toBe('CONF')
         // The per-row impact list the UI renders is built by the same
         // arithmetic, and carries ALGO's own unit facts without a lookup.

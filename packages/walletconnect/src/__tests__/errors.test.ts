@@ -11,7 +11,9 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { isExpectedError } from '@perawallet/wallet-core-shared'
 import {
+    WalletConnectBridgeConnectionError,
     WalletConnectConnectionTimeoutError,
     WalletConnectError,
     WalletConnectInvalidNetworkError,
@@ -72,5 +74,29 @@ describe('walletconnect error copy', () => {
         const error = new WalletConnectConnectionTimeoutError()
 
         expect(error.metadata.retryable).toBe(true)
+    })
+})
+
+describe('WalletConnect error classification', () => {
+    it('a bridge connection failure is expected', () => {
+        expect(isExpectedError(new WalletConnectBridgeConnectionError())).toBe(
+            true,
+        )
+    })
+
+    it('a connection timeout is expected', () => {
+        expect(isExpectedError(new WalletConnectConnectionTimeoutError())).toBe(
+            true,
+        )
+    })
+
+    it('a sign-request failure stays reportable', () => {
+        expect(isExpectedError(new WalletConnectSignRequestError())).toBe(false)
+    })
+
+    it('an invalid session stays reportable', () => {
+        expect(isExpectedError(new WalletConnectInvalidSessionError())).toBe(
+            false,
+        )
     })
 })

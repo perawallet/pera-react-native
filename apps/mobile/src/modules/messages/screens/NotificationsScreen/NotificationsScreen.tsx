@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type PeraNotification } from '@perawallet/wallet-core-messages'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
@@ -31,6 +31,8 @@ export const NotificationsScreen = () => {
         notifications,
         isPending,
         isRefetching,
+        isError,
+        isOffline,
         refetch,
         loadMoreItems,
         isFetchingNextPage,
@@ -38,7 +40,18 @@ export const NotificationsScreen = () => {
         handleNotificationPress,
         listRef,
         isUnavailableOnNetwork,
+        isDeviceUnregistered,
     } = useNotificationsScreen()
+
+    const emptyCopy = isDeviceUnregistered
+        ? {
+              title: t('notifications.unavailable_title'),
+              body: t('notifications.unavailable_body'),
+          }
+        : {
+              title: t('notifications.empty_title'),
+              body: t('notifications.empty_body'),
+          }
 
     const renderItem = useCallback(
         ({ item }: { item: PeraNotification }) => (
@@ -60,7 +73,7 @@ export const NotificationsScreen = () => {
                 // Newest-first list: reveal freshly-prepended notifications when
                 // the user is near the top, natively and atomically with layout.
                 // A JS-side scrollToOffset reveal loses to MVCP's re-anchoring on
-                // later layout passes (PERA-4406) — don't reintroduce one.
+                // later layout passes — don't reintroduce one.
                 maintainVisibleContentPosition={{
                     autoscrollToTopThreshold: 200,
                 }}
@@ -70,15 +83,17 @@ export const NotificationsScreen = () => {
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <OfflineTolerantView
-                        isOffline={false}
+                        isOffline={isOffline}
                         isUnavailable={isUnavailableOnNetwork}
+                        isError={isError}
+                        onRetry={refetch}
                     >
                         <EmptyView
                             isLoading={isPending}
                             style={styles.emptyView}
                             icon='bell'
-                            title={t('notifications.empty_title')}
-                            body={t('notifications.empty_body')}
+                            title={emptyCopy.title}
+                            body={emptyCopy.body}
                         />
                     </OfflineTolerantView>
                 }

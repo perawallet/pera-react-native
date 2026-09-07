@@ -28,6 +28,9 @@ declare module '@rneui/themed' {
         layerGrayLighter: string
         layerGrayLightest: string
 
+        // Drawer overlay (alpha baked in — see the palettes for why it inverts)
+        drawerScrim: string
+
         // Warning surface (gold attention callout)
         warningSurface: string
 

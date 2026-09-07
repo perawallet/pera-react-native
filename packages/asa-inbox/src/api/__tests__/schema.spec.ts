@@ -97,7 +97,7 @@ describe('arc59SendSummaryResponseSchema', () => {
         expect(result.inbox_address).toBe('TESTINBOXADDRESS')
     })
 
-    // PERA-4710: the signed payment = algo_fund_amount + minimum_balance_requirement
+    // the signed payment = algo_fund_amount + minimum_balance_requirement
     // must be bounded well below MAX_SAFE_INTEGER so a hostile summary can't
     // drain the account through the headless signature.
     test('rejects an algo_fund_amount above the funding ceiling', () => {

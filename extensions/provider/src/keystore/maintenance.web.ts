@@ -31,7 +31,10 @@ import type { PQDerivation } from './pqDerivation'
  * stays silent instead of reporting work it did not do.
  */
 
-export const readPersistedKeys = (): Key[] => []
+export const readPersistedKeys = (): {
+    keys: Key[]
+    failedIds: string[]
+} => ({ keys: [], failedIds: [] })
 
 export const runMaterialRepair = async (_deps: {
     keys: () => Key[]

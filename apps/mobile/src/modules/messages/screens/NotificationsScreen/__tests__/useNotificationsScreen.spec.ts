@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { useNetworkStatusStore } from '@modules/network'
 import { useNotificationsScreen } from '../useNotificationsScreen'
 import {
     useInboxStatus,
@@ -41,6 +42,9 @@ const mockList = (
         isRefetching?: boolean
         refetch?: () => void
         isUnavailableOnNetwork?: boolean
+        isDeviceUnregistered?: boolean
+        isPaused?: boolean
+        isError?: boolean
     } = {},
 ) =>
     vi.mocked(useNotificationsListQuery).mockReturnValue({
@@ -56,6 +60,7 @@ const mockList = (
 describe('useNotificationsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        useNetworkStatusStore.getState().setHasInternet(true)
         vi.mocked(useMarkNotificationsAsReadMutation).mockReturnValue({
             markAsRead: mockMarkAsRead,
             isUnavailableOnNetwork: false,
@@ -139,5 +144,39 @@ describe('useNotificationsScreen', () => {
         const { result } = renderHook(() => useNotificationsScreen())
 
         expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('forwards isDeviceUnregistered from the notifications list query', () => {
+        mockList([], { isDeviceUnregistered: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isDeviceUnregistered).toBe(true)
+    })
+
+    it('flags offline while the list query is paused', () => {
+        mockList([], { isPaused: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('flags offline for an error on a device with no internet', () => {
+        useNetworkStatusStore.getState().setHasInternet(false)
+        mockList([], { isError: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('keeps an online error as an error, not offline', () => {
+        mockList([], { isError: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isOffline).toBe(false)
+        expect(result.current.isError).toBe(true)
     })
 })

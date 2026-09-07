@@ -97,7 +97,7 @@ export const QRCameraScanner = ({
     // stops it reverting to whole-scene AF.
     //
     // No-ops before layout is measured and rejects without focus metering —
-    // both fall back to native AF plus tap-to-focus. See PERA-4402.
+    // both fall back to native AF plus tap-to-focus. See.
     const focusCenter = useCallback(() => {
         if (Platform.OS !== 'android') {
             return

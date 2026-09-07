@@ -106,7 +106,7 @@ const renderHDImportFromOnboarding = () =>
 
 // Drives the user from the Onboarding screen into the import-options bottom
 // sheet. The intermediate ImportAccountOptions screen was introduced in
-// PERA-3268 — tapping "Import account" no longer opens the sheet directly.
+// — tapping "Import account" no longer opens the sheet directly.
 const openImportOptionsSheet = async () => {
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>

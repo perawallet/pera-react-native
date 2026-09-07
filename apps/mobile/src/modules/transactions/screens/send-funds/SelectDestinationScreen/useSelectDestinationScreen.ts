@@ -12,11 +12,13 @@
 
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
 export const useSelectDestinationScreen = () => {
-    const { destination } = useSendFunds()
+    const { destination, onFinished } = useSendFunds()
+    const navigation = useNavigation()
     const selectedAccount = useSelectedAccount()
     const {
         selectedAsset,
@@ -58,11 +60,23 @@ export const useSelectDestinationScreen = () => {
         resolveDestination,
     ])
 
+    // The send sheet deliberately disables swipe- and backdrop-dismissal, so
+    // every screen that can be the flow's *initial* route must offer its own
+    // way out. A pure-NFT transfer skips the amount step, leaving this screen
+    // as the stack root with nothing beneath it — `canGoBack()` is false and
+    // the default header back button never renders, which is exactly what
+    // stranded the sheet. Surface a close that tears the flow down; when this
+    // screen was pushed instead (canGoBack), the back button already handles it.
+    const canClose = !navigation.canGoBack()
+    const handleClose = useCallback(() => onFinished?.(), [onFinished])
+
     return {
         selectedAsset,
         selectedAccount,
         handleSelected: resolveDestination,
         isCheckingExternalOptIn: isResolvingDestination,
         isAutoAdvancing,
+        canClose,
+        onClose: handleClose,
     }
 }

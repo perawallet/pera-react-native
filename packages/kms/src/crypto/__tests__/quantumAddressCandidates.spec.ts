@@ -20,7 +20,7 @@ const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
 // Both addresses were independently verified outside this codebase (algokey
-// for canonical, the pre-PERA-4972 minting path for legacy) — never compute
+// for canonical, the pre- minting path for legacy) — never compute
 // these through `quantumAddressCandidates` itself, or a wrong derivation and
 // its "expected" value drift together with no test able to notice.
 const CANONICAL_ADDRESS =

@@ -150,6 +150,7 @@ const withMLKitSimulatorExclusion = config => {
     })
 }
 
-module.exports = withMLKitSimulatorExclusion
-module.exports.injectMlkitSimulatorExclusion = injectMlkitSimulatorExclusion
-module.exports.MLKIT_FRAMEWORKS = MLKIT_FRAMEWORKS
+module.exports = Object.assign(withMLKitSimulatorExclusion, {
+  injectMlkitSimulatorExclusion,
+  MLKIT_FRAMEWORKS,
+})

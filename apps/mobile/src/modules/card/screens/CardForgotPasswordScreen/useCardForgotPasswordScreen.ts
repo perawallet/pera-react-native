@@ -22,7 +22,7 @@ import {
 import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { type PeraCardStackParamList } from '../../routes/types'
+import type { PeraCardStackParamList } from '../../routes/types'
 
 export type UseCardForgotPasswordScreenResult = {
     control: Control<ForgotPasswordEmailFormValues>

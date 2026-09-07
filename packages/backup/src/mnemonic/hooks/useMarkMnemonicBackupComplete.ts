@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useMnemonicBackupStore } from '../store'
 import { getMnemonicBackupKeyId } from '../utils'
 

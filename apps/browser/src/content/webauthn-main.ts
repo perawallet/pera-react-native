@@ -44,9 +44,9 @@ import {
     type BridgeRequestEnvelope,
     type BridgeResponseEnvelope,
 } from './channel'
-import {
-    type WebauthnCeremonyRequest,
-    type WebauthnCeremonyResponse,
+import type {
+    WebauthnCeremonyRequest,
+    WebauthnCeremonyResponse,
 } from '@perawallet/wallet-extension-platform-chrome'
 
 // Must be captured BEFORE anything assigns to navigator.credentials — running

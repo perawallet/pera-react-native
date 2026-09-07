@@ -28,6 +28,7 @@ export const routeCapabilities: RouteCapabilities = {
     pushNotificationSettings: true,
     walletConnectSettings: true,
     passkeysAutofillSettings: true,
+    accountDrawer: true,
     storeRating: true,
     confirmationModeSetting: true,
     developerSettings: true,

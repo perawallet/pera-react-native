@@ -36,7 +36,7 @@ describe('PQDerivation constants', () => {
 describe('quantumSignKeyId', () => {
     test('legacy derivation keeps the historical id', () => {
         // Existing accounts persist this exact string as `keyPairId`. Changing
-        // it orphans every quantum account created before PERA-4972.
+        // it orphans every quantum account created before.
         expect(quantumSignKeyId('seed-1', PQ_DERIVATION_LEGACY)).toBe(
             'seed-1-quantum',
         )

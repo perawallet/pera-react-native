@@ -31,7 +31,7 @@ import type { SignableData, SourceMetadata } from '../../pipeline/types'
  *   signer holds no key of its own. SIWA names the authenticated account
  *   (`account_address`) separately from the signing key, so a verifier
  *   resolves the auth-addr on chain — which makes the auth account the right
- *   producer for a keyless rekeyed signer (PERA-4977). A signer that can sign
+ * producer for a keyless rekeyed signer. A signer that can sign
  *   directly must NOT hop: a dApp that resolved the auth address itself names
  *   that account as `signer`, and hopping again off its own chained rekey
  *   would sign with a key the authenticated account's auth-addr never

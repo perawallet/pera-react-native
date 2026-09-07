@@ -24,12 +24,12 @@ import type {
  */
 export const MIGRATION_STEP_TARGET_VERSIONS: Record<MigrationStepName, number> =
     {
-        // v2 (PERA-4655): authAddress fidelity + watch-account reconciliation.
+        // v2: authAddress fidelity + watch-account reconciliation.
         accounts: 2,
         preferences: 1,
         swaps: 1,
-        // v2 (PERA-4655): legacy single-id fallback.
-        // v3 (PERA-4670): device-id origin flags so migrated-id replacement
+        // v2: legacy single-id fallback.
+        // v3: device-id origin flags so migrated-id replacement
         // is observable for users who migrated before the flags existed.
         deviceIdentifiers: 3,
         contacts: 1,

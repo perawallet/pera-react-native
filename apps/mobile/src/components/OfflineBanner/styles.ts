@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({

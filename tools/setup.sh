@@ -14,40 +14,57 @@ NC='\033[0m' # No Color
 # Set up Git hooks
 echo -e "${YELLOW}Setting up Git hooks...${NC}"
 
-# Create .git/hooks directory if it doesn't exist
-mkdir -p .git/hooks
+# A worktree's .git is a file rather than a directory, and its hooks are the
+# main checkout's. Asking git for the common dir handles that, and resolves from
+# a subdirectory too, so nothing here depends on the working directory.
+HOOKS_DIR="$(git rev-parse --git-common-dir)/hooks"
+mkdir -p "$HOOKS_DIR"
 
-# Create symlink for pre-push hook
-if [ -L .git/hooks/pre-push ]; then
-  echo "  • Pre-push hook symlink already exists"
-elif [ -f .git/hooks/pre-push ]; then
-  echo "  • Backing up existing pre-push hook to pre-push.backup"
-  mv .git/hooks/pre-push .git/hooks/pre-push.backup
-  ln -s ../../tools/pre-push .git/hooks/pre-push
-  echo "  • Pre-push hook symlink created"
-else
-  ln -s ../../tools/pre-push .git/hooks/pre-push
-  echo "  • Pre-push hook symlink created"
+missing=0
+
+# A symlink whose target has moved is still a symlink, so testing -L alone
+# reports the hook as wired while Git silently skips it — the push or commit
+# then goes through unchecked, with no warning. Require the target to resolve.
+link_hook() {
+  local hook="$1"
+  local link="${HOOKS_DIR}/${hook}"
+  local target="../../tools/${hook}"
+
+  # ln -s links happily to a missing path, which would leave behind exactly the
+  # silently-skipped hook this is here to prevent. Check before linking, and
+  # keep going so one missing file cannot cost us the other hook.
+  if [ ! -e "${HOOKS_DIR}/${target}" ]; then
+    echo "  • ${hook}: tools/${hook} is missing — not linked" >&2
+    missing=1
+    return 0
+  fi
+
+  if [ -L "$link" ] && [ -e "$link" ]; then
+    echo "  • ${hook} hook symlink already exists"
+  else
+    if [ -L "$link" ]; then
+      echo "  • Relinking broken ${hook} hook symlink"
+      rm "$link"
+    elif [ -e "$link" ]; then
+      echo "  • Backing up existing ${hook} hook to ${hook}.backup"
+      mv "$link" "${link}.backup"
+    fi
+
+    ln -s "$target" "$link"
+    echo "  • ${hook} hook symlink created"
+  fi
+
+  # Follows the symlink, so this is the tools/ copy Git will execute.
+  chmod +x "$link"
+}
+
+link_hook pre-push
+link_hook commit-msg
+
+if [ "$missing" = 1 ]; then
+  echo -e "${YELLOW}Some hooks were not installed — check your checkout.${NC}" >&2
+  exit 1
 fi
-
-# Make sure the pre-push script is executable
-chmod +x tools/pre-push
-
-# Create symlink for commit-msg hook
-if [ -L .git/hooks/commit-msg ]; then
-  echo "  • Commit-msg hook symlink already exists"
-elif [ -f .git/hooks/commit-msg ]; then
-  echo "  • Backing up existing commit-msg hook to commit-msg.backup"
-  mv .git/hooks/commit-msg .git/hooks/commit-msg.backup
-  ln -s ../../tools/commit-msg .git/hooks/commit-msg
-  echo "  • Commit-msg hook symlink created"
-else
-  ln -s ../../tools/commit-msg .git/hooks/commit-msg
-  echo "  • Commit-msg hook symlink created"
-fi
-
-# Make sure the commit-msg script is executable
-chmod +x tools/commit-msg
 
 echo -e "${GREEN}✓ Git hooks configured${NC}"
 

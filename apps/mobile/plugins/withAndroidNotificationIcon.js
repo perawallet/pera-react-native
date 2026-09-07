@@ -102,7 +102,7 @@ const withAndroidNotificationIcon = config => {
   return config;
 };
 
-module.exports = withAndroidNotificationIcon;
-module.exports.addNotificationIconMetaData = addNotificationIconMetaData;
-module.exports.notificationIconDrawableTarget =
-  notificationIconDrawableTarget;
+module.exports = Object.assign(withAndroidNotificationIcon, {
+  addNotificationIconMetaData,
+  notificationIconDrawableTarget,
+});

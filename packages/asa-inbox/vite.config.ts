@@ -12,31 +12,9 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [
-        dts({
-            include: ['src'],
-            exclude: [
-                '**/__tests__/**',
-                '**/*.test.ts',
-                '**/*.test.tsx',
-                '**/*.generated.ts',
-                '**/{handlers,*-handlers}.ts',
-            ],
-            afterDiagnostic: diagnostics => {
-                const nonGenerated = diagnostics.filter(
-                    d => !d.file?.fileName.includes('.generated.'),
-                )
-                if (nonGenerated.length > 0) {
-                    throw new Error(
-                        `TypeScript declaration generation failed with ${nonGenerated.length} error(s)`,
-                    )
-                }
-            },
-        }),
-    ],
+    plugins: [],
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),

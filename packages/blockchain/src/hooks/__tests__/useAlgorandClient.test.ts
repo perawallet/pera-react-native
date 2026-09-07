@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi, Mock } from 'vitest'
+import { describe, test, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
 import { useAlgorandClient } from '../../hooks'

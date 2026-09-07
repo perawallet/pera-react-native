@@ -16,6 +16,16 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useAppBootstrap } from '../useAppBootstrap'
 
 const mocks = vi.hoisted(() => {
+    // Mirrors the provider's class so `instanceof` works against the mocked
+    // module.
+    class KeystoreHydrationError extends Error {
+        readonly failedIds: string[]
+        constructor(failedIds: string[]) {
+            super('keystore hydration failed')
+            this.name = 'KeystoreHydrationError'
+            this.failedIds = failedIds
+        }
+    }
     const provider = {
         initialize: vi.fn(),
         database: {},
@@ -43,6 +53,7 @@ const mocks = vi.hoisted(() => {
     }
     return {
         provider,
+        KeystoreHydrationError,
         keystoreReady: vi.fn(),
         runKeystoreMaintenance: vi.fn(),
         getProvider: vi.fn(() => provider),
@@ -74,6 +85,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
     runKeystoreMaintenance: mocks.runKeystoreMaintenance,
     getProvider: mocks.getProvider,
+    KeystoreHydrationError: mocks.KeystoreHydrationError,
 }))
 
 vi.mock('@perawallet/wallet-core-database', () => ({
@@ -203,6 +215,7 @@ describe('useAppBootstrap', () => {
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
+            failedDecodeIds: [],
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
@@ -233,7 +246,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
@@ -241,7 +254,7 @@ describe('useAppBootstrap', () => {
     // rAF does not fire while the app produces no frames, so a cold start that
     // begins in the background must still reach hideAsync via the backstop
     // timer — otherwise the splash sits there until the user foregrounds the
-    // app (PERA-4727).
+    // app.
     it('hides the splash via the backstop when no frames are produced', async () => {
         const rafSpy = vi
             .spyOn(globalThis, 'requestAnimationFrame')
@@ -268,7 +281,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(false)
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -282,7 +295,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(false)
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -314,7 +327,47 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(false)
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
+    })
+
+    // A record the engine cannot decode fails hydration on every launch, so
+    // "try again" copy is a dead end — the UI needs to know this failure is
+    // a data-integrity one.
+    it('reports a keystore initError when hydration fails on undecodable records', async () => {
+        mocks.runKeystoreMaintenance.mockRejectedValue(
+            new mocks.KeystoreHydrationError(['k/bad']),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(false)
+        expect(result.current.initError).toBe('keystore')
+    })
+
+    // Records skipped by the reconcile still hydrate fine this session but
+    // will fail the strict hydration at the next cold start — they must reach
+    // crash reporting while the app still boots.
+    it('logs undecodable reconcile records as a non-fatal and still bootstraps', async () => {
+        mocks.runKeystoreMaintenance.mockResolvedValue({
+            repair: { repaired: 0, failed: 0 },
+            failedDecodeIds: ['k/bad', 'k/worse'],
+        })
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(true)
+        expect(result.current.initError).toBeNull()
+        expect(mocks.loggerError).toHaveBeenCalledWith(
+            expect.stringContaining('k/bad, k/worse'),
+        )
     })
 
     it('tolerates token undefined from initialize (fcmToken null, no error)', async () => {
@@ -329,7 +382,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.fcmToken).toBeNull()
     })
 
@@ -346,7 +399,7 @@ describe('useAppBootstrap', () => {
             await vi.runAllTimersAsync()
         })
 
-        expect(result.current.initError).toBe(true)
+        expect(result.current.initError).toBe('generic')
         expect(result.current.bootstrapped).toBe(false)
 
         await act(async () => {
@@ -356,7 +409,7 @@ describe('useAppBootstrap', () => {
             await vi.runAllTimersAsync()
         })
 
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(result.current.bootstrapped).toBe(true)
     })
 
@@ -454,7 +507,7 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -488,8 +541,8 @@ describe('useAppBootstrap', () => {
         ).not.toHaveBeenCalledWith('active_locales', '')
     })
 
-    // Cold start is the only place the launch account preference is applied
-    // (PERA-4855), and it must land inside the bootstrap gate so the pinned
+    // Cold start is the only place the launch account preference is applied,
+    // and it must land inside the bootstrap gate so the pinned
     // account is selected before the splash lifts.
     it('applies the launch account preference before bootstrap completes', async () => {
         vi.useFakeTimers()
@@ -542,6 +595,6 @@ describe('useAppBootstrap', () => {
         })
 
         expect(result.current.bootstrapped).toBe(true)
-        expect(result.current.initError).toBe(false)
+        expect(result.current.initError).toBeNull()
     })
 })

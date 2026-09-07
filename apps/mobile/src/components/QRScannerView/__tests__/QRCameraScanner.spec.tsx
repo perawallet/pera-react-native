@@ -14,7 +14,7 @@ import React from 'react'
 import { Platform } from 'react-native'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { type CameraDevice } from 'react-native-vision-camera'
+import type { CameraDevice } from 'react-native-vision-camera'
 import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner'
 import { QRCameraScanner } from '../QRCameraScanner'
 

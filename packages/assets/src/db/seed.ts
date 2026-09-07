@@ -33,7 +33,7 @@ import { upsertAssets } from './repository'
  * The device-local fields (isFavorited, isPriceAlertEnabled) are stripped:
  * `ALGO_ASSET` carries concrete `false` defaults, and upsertPeraAssets only
  * preserves the stored value when the incoming one is nullish — seeding the
- * constant as-is reset ALGO's favorite on every launch (PERA-4904). ALGO is
+ * constant as-is reset ALGO's favorite on every launch. ALGO is
  * also excluded from the device-scoped bulk sync, so nothing would restore it.
  */
 export async function seedAlgoAsset(db: Database): Promise<void> {

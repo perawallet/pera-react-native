@@ -606,6 +606,14 @@ export const getScreenSections = (): GallerySection[] => [
                 'RekeyToSharedSuccess',
                 'To shared',
             ),
+            ...rekeyFlow(
+                'RekeyToQuantum',
+                'RekeyToQuantumIntro',
+                'RekeyToQuantumSelectTarget',
+                'RekeyToQuantumConfirm',
+                'RekeyToQuantumSuccess',
+                'To quantum',
+            ),
             {
                 id: 'scr-undo-rekey-confirm',
                 label: 'Undo rekey · Confirm',

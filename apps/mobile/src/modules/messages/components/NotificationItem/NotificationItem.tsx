@@ -20,7 +20,7 @@ import {
 import { formatRelativeTime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { type PeraNotification } from '@perawallet/wallet-core-messages'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 import { UnreadIndicator } from '../UnreadIndicator'
 
 export type NotificationItemProps = {

@@ -56,7 +56,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     // Offline wins over a stale error: a paused, uncached fetch means there is
     // nothing to show yet, and an error surfacing while genuinely offline is
     // the same "nothing to show" situation — not a dead Retry. Mirrors the
-    // PERA-4581 charts / TransactionDetails contract.
+    // charts / TransactionDetails contract.
     const isOffline = isPaused || (isError && !hasInternet)
 
     useEffect(() => {

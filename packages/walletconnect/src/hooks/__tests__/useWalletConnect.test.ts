@@ -86,7 +86,7 @@ vi.mock('@perawallet/walletconnect', () => {
                 // already-established session (dist/index.js:961). Encode that
                 // so the silent-overwrite path is actually exercised: without
                 // it the old test asserted intended behaviour against a fn that
-                // never threw (PERA-4713).
+                // never threw.
                 rejectSession: vi.fn(() => {
                     if (instance.connected) {
                         throw new Error('Session currently connected')
@@ -568,7 +568,7 @@ describe('useWalletConnect', () => {
             expect(mockAddSessionRequest).not.toHaveBeenCalled()
         })
 
-        it('does not call rejectSession on a connected connector for a wrong-network request but still surfaces the error (PERA-4713)', async () => {
+        it('does not call rejectSession on a connected connector for a wrong-network request but still surfaces the error', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
             )
@@ -611,7 +611,7 @@ describe('useWalletConnect', () => {
             )
         })
 
-        it('refuses a repeat session_request on an already-connected session without touching the store (PERA-4713)', async () => {
+        it('refuses a repeat session_request on an already-connected session without touching the store', async () => {
             const connection = { clientId: 'client-established' } as any
             mockConnections.push(connection)
 
@@ -1146,7 +1146,7 @@ describe('useWalletConnect', () => {
             expect(updatedConnections).toHaveLength(0)
         })
 
-        it('keeps a live session in the store when rejectSession throws because it is already connected (PERA-4713)', async () => {
+        it('keeps a live session in the store when rejectSession throws because it is already connected', async () => {
             const connection = { clientId: 'client-live' } as any
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>

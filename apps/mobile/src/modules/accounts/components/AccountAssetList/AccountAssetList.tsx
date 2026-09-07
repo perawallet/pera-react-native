@@ -13,12 +13,12 @@
 import { PWButton, PWText, PWView } from '@components/core'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback } from 'react'
-import { type RefreshControlProps } from 'react-native'
+import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import {
-    type WalletAccount,
-    type AccountHoldingsLiteRow,
+import type {
+    WalletAccount,
+    AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 
 import { EmptyView } from '@components/EmptyView'
@@ -141,7 +141,7 @@ export const AccountAssetList = ({
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
                 keyExtractor={item => item.assetId}
-                // Same anchoring hazard as the NFT gallery (PERA-4921): FlashList
+                // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags
                 // the viewport to wherever that row went. This list only ever

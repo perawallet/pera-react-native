@@ -36,7 +36,9 @@ export const useHDWallet = () => {
 
     const createHDWalletKey = async (params?: {
         id?: string
-        mnemonic?: string
+        /** Wordlist indices (`mnemonicWordsToIndices`) — never the phrase
+         * itself, so no mnemonic string reaches the key path. */
+        mnemonicIndices?: Uint16Array
     }): Promise<HDWalletKeyResult> => {
         const prepared = await prepareHDMasterKey(params)
         return persistHDMasterKey({

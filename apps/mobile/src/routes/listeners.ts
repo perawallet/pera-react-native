@@ -11,7 +11,7 @@
  */
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { type ParamListBase, type RouteProp } from '@react-navigation/native'
+import type { ParamListBase, RouteProp } from '@react-navigation/native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     trackScreen,

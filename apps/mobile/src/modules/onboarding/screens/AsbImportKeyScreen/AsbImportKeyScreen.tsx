@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { Platform } from 'react-native'
 import {
     PWButton,
     PWInput,
@@ -143,6 +144,14 @@ export const AsbImportKeyScreen = () => {
                                                             }
                                                             autoCapitalize='none'
                                                             autoCorrect={false}
+                                                            // Same word-slot keyboard as ImportAccountScreen;
+                                                            // the rationale lives there.
+                                                            keyboardType={
+                                                                Platform.OS ===
+                                                                'android'
+                                                                    ? 'visible-password'
+                                                                    : 'ascii-capable'
+                                                            }
                                                             autoFocus={
                                                                 globalIndex ===
                                                                 0

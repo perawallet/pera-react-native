@@ -26,17 +26,18 @@ export type PreparedHDMasterKey = {
  * XHD root key (96 bytes: kL || kR || chainCode), and the BIP39 entropy.
  * Nothing is written to the keystore — caller decides when to persist.
  *
- * The BIP39 mnemonic is intentionally not returned — JS strings can't be
- * zeroed, so exposing it here would leave the phrase reachable on the heap
+ * The mnemonic is index-native end to end: it arrives as wordlist indices
+ * (`mnemonicWordsToIndices`) and is never returned — JS strings can't be
+ * zeroed, so exposing the phrase here would leave it reachable on the heap
  * for the lifetime of the returned object. Callers that need the words can
- * rebuild them from `entropy` via `entropyToMnemonic` at the call site.
+ * rebuild them from `entropy` via `entropyToIndices` at the call site.
  */
 export const prepareHDMasterKey = async (params?: {
     id?: string
-    mnemonic?: string
+    mnemonicIndices?: Uint16Array
 }): Promise<PreparedHDMasterKey> => {
     const keyId = params?.id ?? generateOrderedUniqueId()
-    const masterKey = await generateHDMasterKey(params?.mnemonic)
+    const masterKey = await generateHDMasterKey(params?.mnemonicIndices)
 
     let rootKey: Uint8Array
     try {

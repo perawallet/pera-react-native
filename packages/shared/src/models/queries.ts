@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network } from './base-types'
+import type { Network } from './base-types'
 
 export type RequestConfiguration<TData = unknown> = {
     backend: 'algod' | 'indexer' | 'pera' | 'backup'

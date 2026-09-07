@@ -80,7 +80,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                             )
                         } catch (error) {
                             // A cosign request that fails validation
-                            // (PERA-4711) must never be signed; skip it
+                            // must never be signed; skip it
                             // without crashing the tap handler.
                             logger.error(
                                 'Skipping invalid multisig cosign request',

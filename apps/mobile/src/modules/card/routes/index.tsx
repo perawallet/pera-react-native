@@ -23,7 +23,7 @@ import { CardForgotPasswordScreen } from '../screens/CardForgotPasswordScreen'
 import { CardForgotPasswordVerifyScreen } from '../screens/CardForgotPasswordVerifyScreen'
 import { CardForgotPasswordNewPasswordScreen } from '../screens/CardForgotPasswordNewPasswordScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
-import { type PeraCardStackParamList } from './types'
+import type { PeraCardStackParamList } from './types'
 
 export type {
     PeraCardStackParamList,

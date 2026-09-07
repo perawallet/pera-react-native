@@ -249,20 +249,53 @@ describe('useMnemonicWordEntry — paste distribution', () => {
 })
 
 describe('useMnemonicWordEntry — unmount cleanup', () => {
-    it('wipes the entered words from the held array on unmount', async () => {
+    it('scrubs the retained slot indices on unmount', async () => {
         const { result, unmount } = renderEntry()
 
         await act(async () => {
             await result.current.handleWordChange(TWELVE_WORDS.join(' '), 0)
         })
 
-        // Same array the hook holds internally; cleanup fills it in place.
-        const heldWords = result.current.words
-        expect(heldWords).toEqual(TWELVE_WORDS)
+        expect(result.current.words).toEqual(TWELVE_WORDS)
+        const getMnemonicIndices = result.current.getMnemonicIndices
+        expect(getMnemonicIndices()!.some(index => index !== 0)).toBe(true)
 
         unmount()
 
-        expect(heldWords.every(w => w === '')).toBe(true)
+        // The slot objects are scrubbed in place, so the retained indices all
+        // read zero after unmount. (The derived `words` array snapshot holds
+        // interned wordlist constants — nothing user-typed to wipe there.)
+        expect(Array.from(getMnemonicIndices()!)).toEqual(new Array(12).fill(0))
+    })
+})
+
+describe('useMnemonicWordEntry — getMnemonicIndices', () => {
+    it('returns the wordlist indices once every slot holds a valid word', async () => {
+        const { result } = renderEntry()
+
+        await act(async () => {
+            await result.current.handleWordChange(TWELVE_WORDS.join(' '), 0)
+        })
+
+        // The spec's mocked wordlist is ordered, so indices are positions.
+        expect(Array.from(result.current.getMnemonicIndices()!)).toEqual(
+            TWELVE_WORDS.map((_, i) => i),
+        )
+    })
+
+    it('returns null while any slot is empty or not a wordlist word', async () => {
+        const { result } = renderEntry()
+
+        expect(result.current.getMnemonicIndices()).toBeNull()
+
+        await act(async () => {
+            await result.current.handleWordChange(TWELVE_WORDS.join(' '), 0)
+        })
+        act(() => {
+            result.current.updateWord('zzzz', 3)
+        })
+
+        expect(result.current.getMnemonicIndices()).toBeNull()
     })
 })
 

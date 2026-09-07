@@ -12,9 +12,9 @@
 
 import { useCallback } from 'react'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    type ShowNotificationParams,
-    type NotifierRoot,
+import type {
+    ShowNotificationParams,
+    NotifierRoot,
 } from 'react-native-notifier'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import { useToast } from './useToast'

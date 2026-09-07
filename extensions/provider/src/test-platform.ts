@@ -33,7 +33,7 @@ import {
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { initializeProvider, resetProvider } from './singleton'
-import { type PeraProvider } from './pera-provider'
+import type { PeraProvider } from './pera-provider'
 
 export type TestPlatformOverrides = Partial<{
     analytics: AnalyticsService
@@ -95,6 +95,7 @@ export const buildTestPlatform = (
     const defaultCrash: CrashReportingService = {
         initializeCrashReporting() {},
         recordNonFatalError(_: unknown) {},
+        logBreadcrumb() {},
     }
 
     const deviceInfo: DeviceInfoService = {

@@ -19,6 +19,7 @@ import {
     mockAlgo25Account,
 } from '@perawallet/wallet-core-dev-fixtures'
 
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { AccountMenuContent } from '@modules/accounts/components/AccountMenuContent'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
@@ -137,11 +138,7 @@ export const getSheetSections = (): GallerySection[] => [
                     kind: 'sheetByType',
                     type: 'bidali',
                     props: {},
-                    options: {
-                        size: 'modal',
-                        enablePanDownToClose: true,
-                        autoCreateContainer: false,
-                    },
+                    options: BIDALI_SHEET_OPTIONS,
                 },
             },
         ],

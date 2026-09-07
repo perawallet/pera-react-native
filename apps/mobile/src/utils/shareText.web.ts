@@ -21,7 +21,7 @@
 // Copying to the clipboard is the honest fallback: the user asked to send this
 // text somewhere, and the clipboard is the one destination always available.
 // The caller's existing success toast then tells the truth either way.
-import { type ShareTextOptions } from './shareText'
+import type { ShareTextOptions } from './shareText'
 
 /**
  * Composes the share payload into the single string the clipboard can carry.

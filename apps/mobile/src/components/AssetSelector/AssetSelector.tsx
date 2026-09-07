@@ -16,7 +16,7 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { useStyles } from './styles'
 

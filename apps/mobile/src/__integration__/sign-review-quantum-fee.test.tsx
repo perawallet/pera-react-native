@@ -255,7 +255,7 @@ describe('Flow: quantum-fee explainer on the signing review surface', () => {
         SLOW_TEST_TIMEOUT_MS,
     )
 
-    // PERA-4950: a rekey applied mid-session moves the effective signer across
+    // a rekey applied mid-session moves the effective signer across
     // the quantum boundary. The fee follows the rekeyed-to signer, so the
     // explainer has to follow the same hop or it describes the wrong signer.
     it(

@@ -16,6 +16,8 @@ export {
     getTransactionHistory,
     getLatestTransactionRoundTime,
     getCloseRowsMissingCloseAmount,
+    getSwapRowsMissingAssetFacts,
+    persistResolvedSwapAssetFacts,
     updateTransactionCloseAmount,
     deleteTransactionsForAccount,
 } from './repository'

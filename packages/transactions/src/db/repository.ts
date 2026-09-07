@@ -27,6 +27,8 @@ import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type {
     TransactionHistoryItem,
     TransactionBalanceImpact,
+    TransactionAssetSummary,
+    TransactionSwapGroupDetail,
 } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 import {
@@ -34,6 +36,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
+import { ALGO_DECIMALS, resolveAssetFacts } from '../utils/algoAssetFacts'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -67,12 +70,68 @@ function deserializeBalanceImpacts(
         fractionDecimals: number
         amount: string
     }>
-    return parsed.map(impact => ({
-        assetId: impact.assetId,
-        unitName: impact.unitName,
-        fractionDecimals: impact.fractionDecimals,
-        amount: new Decimal(impact.amount),
-    }))
+    return parsed.map(impact => {
+        const facts = resolveAssetFacts(impact.assetId, {
+            unitName: impact.unitName,
+            decimals: impact.fractionDecimals,
+        })
+
+        return {
+            assetId: impact.assetId,
+            unitName: facts.unitName,
+            fractionDecimals: facts.decimals,
+            amount: new Decimal(impact.amount),
+        }
+    })
+}
+
+/**
+ * Rehydrates a persisted asset summary. The syncer only fetches transactions
+ * newer than the newest cached one, so a row that captured the backend's
+ * `asset(<id>)` placeholder is never revisited — ALGO's real facts have to be
+ * restored on the way out instead.
+ */
+function deserializeAsset(
+    json: Nullable<string>,
+): Nullable<TransactionAssetSummary> {
+    if (!json) return null
+    const parsed = JSON.parse(json) as TransactionAssetSummary
+    const facts = resolveAssetFacts(parsed.assetId, {
+        unitName: parsed.unitName,
+        decimals: parsed.decimals,
+    })
+
+    return { ...parsed, unitName: facts.unitName, decimals: facts.decimals }
+}
+
+/**
+ * Rehydrates a persisted swap group detail. A cached row carrying no per-side
+ * decimals falls back to 6 rather than 0, which would inflate its amounts by
+ * six orders of magnitude.
+ */
+function deserializeSwapGroupDetail(
+    json: Nullable<string>,
+): Nullable<TransactionSwapGroupDetail> {
+    if (!json) return null
+    const parsed = JSON.parse(json) as TransactionSwapGroupDetail
+    const assetIn = resolveAssetFacts(parsed.assetInId, {
+        unitName: parsed.assetInUnitName,
+        decimals: parsed.assetInDecimals ?? ALGO_DECIMALS,
+    })
+    const assetOut = resolveAssetFacts(parsed.assetOutId, {
+        unitName: parsed.assetOutUnitName,
+        decimals: parsed.assetOutDecimals ?? ALGO_DECIMALS,
+    })
+
+    return {
+        ...parsed,
+        assetInUnitName: assetIn.unitName,
+        assetInDecimals: assetIn.decimals,
+        assetOutUnitName: assetOut.unitName,
+        assetOutDecimals: assetOut.decimals,
+        amountIn: new Decimal(parsed.amountIn),
+        amountOut: new Decimal(parsed.amountOut),
+    }
 }
 
 function toDb(item: TransactionHistoryItem) {
@@ -136,10 +195,8 @@ function fromDb(row: {
         closeAmount: row.closeAmount,
         applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
-        asset: row.assetJson ? JSON.parse(row.assetJson) : null,
-        swapGroupDetail: row.swapGroupDetailJson
-            ? JSON.parse(row.swapGroupDetailJson)
-            : null,
+        asset: deserializeAsset(row.assetJson),
+        swapGroupDetail: deserializeSwapGroupDetail(row.swapGroupDetailJson),
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)
             : null,
@@ -362,6 +419,109 @@ export async function getCloseRowsMissingCloseAmount({
         )
         .limit(limit)
         .all()
+}
+
+type GetSwapRowsMissingAssetFactsParams = {
+    db?: Database
+    network: string
+    accountAddress: string
+    limit?: number
+}
+
+/**
+ * Swap rows cached before the per-side asset facts were read off the response,
+ * for one account — the caller syncs per account, and an unscoped list would
+ * have every account refetch every other account's stale rows.
+ *
+ * The predicate lives in SQL rather than in a JS filter so `limit` actually
+ * bounds the stale rows: filtering afterwards would keep re-selecting the same
+ * healthy oldest rows and the backfill would never terminate. `json_extract`
+ * raises on malformed input rather than returning null, so it is fed through
+ * `json_valid` — one unparseable row would otherwise fail the whole query and
+ * silently disable the backfill for good.
+ */
+export async function getSwapRowsMissingAssetFacts({
+    db = getDatabase(),
+    network,
+    accountAddress,
+    limit = 20,
+}: GetSwapRowsMissingAssetFactsParams): Promise<
+    Array<{ id: string; roundTime: number }>
+> {
+    return db
+        .select({
+            id: TransactionsSchema.id,
+            roundTime: TransactionsSchema.roundTime,
+        })
+        .from(TransactionsSchema)
+        .innerJoin(
+            AccountTransactionsSchema,
+            and(
+                eq(
+                    AccountTransactionsSchema.transactionId,
+                    TransactionsSchema.id,
+                ),
+                eq(
+                    AccountTransactionsSchema.network,
+                    TransactionsSchema.network,
+                ),
+            ),
+        )
+        .where(
+            and(
+                eq(TransactionsSchema.network, network),
+                eq(AccountTransactionsSchema.accountAddress, accountAddress),
+                isNotNull(TransactionsSchema.swapGroupDetailJson),
+                sql`json_extract(CASE WHEN json_valid(${TransactionsSchema.swapGroupDetailJson}) THEN ${TransactionsSchema.swapGroupDetailJson} END, '$.assetInDecimals') IS NULL`,
+            ),
+        )
+        .limit(limit)
+        .all()
+}
+
+type PersistResolvedSwapAssetFactsParams = {
+    db?: Database
+    network: string
+    ids: string[]
+}
+
+/**
+ * Writes the read path's resolved swap facts into the rows themselves, so a
+ * row the backend could not re-serve stops being re-queried on every sync. The
+ * stored value becomes what {@link getTransactionHistory} was already
+ * returning for it, so nothing renders differently.
+ */
+export async function persistResolvedSwapAssetFacts({
+    db = getDatabase(),
+    network,
+    ids,
+}: PersistResolvedSwapAssetFactsParams): Promise<void> {
+    for (const id of ids) {
+        const [row] = await db
+            .select({ json: TransactionsSchema.swapGroupDetailJson })
+            .from(TransactionsSchema)
+            .where(
+                and(
+                    eq(TransactionsSchema.id, id),
+                    eq(TransactionsSchema.network, network),
+                ),
+            )
+            .all()
+
+        const resolved = deserializeSwapGroupDetail(row?.json ?? null)
+        if (!resolved) continue
+
+        await db
+            .update(TransactionsSchema)
+            .set({ swapGroupDetailJson: JSON.stringify(resolved) })
+            .where(
+                and(
+                    eq(TransactionsSchema.id, id),
+                    eq(TransactionsSchema.network, network),
+                ),
+            )
+            .run()
+    }
 }
 
 type UpdateTransactionCloseAmountParams = {

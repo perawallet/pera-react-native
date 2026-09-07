@@ -24,7 +24,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useLanguage } from '@hooks/useLanguage'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
-import { type PeraCardStackParamList } from '../../routes/types'
+import type { PeraCardStackParamList } from '../../routes/types'
 
 /** Seconds the user must wait before the reset code can be re-requested. */
 const RESEND_COOLDOWN_SECONDS = 60

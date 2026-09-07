@@ -34,7 +34,7 @@ type UseQuantumFeeExplainerResult = {
  * (`assignMinimumFeesToGroup` → `getSignerFor`): ARC-0001 authAddr override,
  * else the sender, then one rekey hop. Reading the authorizer's own type makes
  * the copy contradict the fee once an account is rekeyed across the quantum
- * boundary — a rekeyed-away Quantum account pays 0.001 (PERA-4950).
+ * boundary — a rekeyed-away Quantum account pays 0.001.
  *
  * - Per-transaction (SingleTransactionScreen): resolves from the transaction.
  * - Group total (TransactionListFooter, no transaction): uses the pipeline's

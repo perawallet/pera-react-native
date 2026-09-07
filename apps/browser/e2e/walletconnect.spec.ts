@@ -24,6 +24,11 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
+import {
+    expectApprovalSurfaceUrl,
+    openApprovalSurface,
+    trackPageErrors,
+} from './approval-surface'
 import algosdk from 'algosdk'
 import WalletConnect from '@perawallet/walletconnect'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
@@ -52,12 +57,6 @@ const GARBAGE_WC_URI = 'wc:garbage-without-bridge'
 
 // Without this, module-eval crashes in the bundle surface as bare selector
 // timeouts with no sign of the real cause.
-const trackPageErrors = (targetPage: Page): Error[] => {
-    const errors: Error[] = []
-    targetPage.on('pageerror', error => errors.push(error))
-    return errors
-}
-
 /**
  * `qr-paste-input` is a CONTROLLED PWInput, and `submitPasted` reads the React
  * state rather than the DOM node — with `if (!trimmed) return`, so submitting
@@ -198,8 +197,29 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     await fillPasteInput(page, UNREACHABLE_BRIDGE_WC_URI)
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
-    // Bounded settle window for connect()'s async failure.
-    await page.waitForTimeout(3000)
+    // Wait for the re-arm, NOT a fixed window. This dispatch only fails once
+    // useWalletConnectPairing.web's `waitForPairOutcome` gives up after
+    // WC_SESSION_OUTCOME_TIMEOUT_MS (8s), so the 3s sleep this replaces
+    // returned with the pairing still in flight and let the rest of the file
+    // run on top of it. Two things then went wrong, both silently:
+    //
+    //   - QRScannerContent.web's `handlingRef` stays latched for the whole
+    //     dispatch, so the next test's paste hit `if (handlingRef.current)
+    //     return` and never reached the validity check it exists to prove.
+    //   - When the outcome finally landed, its failure callback ran
+    //     `onRestart()`, which bumps QRScannerView.web's `restartKey` and
+    //     REMOUNTS QRScannerContent, resetting `pastedValue`. Landing between
+    //     a later test's fill and its submit left `submitPasted` reading empty
+    //     state, where `if (!trimmed) return` drops it without a trace — so no
+    //     pairing was dispatched at all and that test died 20s later waiting
+    //     for an approval nothing had requested.
+    //
+    // That re-arm clears the paste field, so an empty input is the observable
+    // proof the dispatch is done. The timeout must clear the 8s outcome budget
+    // on a loaded runner.
+    await expect(page.getByTestId('qr-paste-input')).toHaveValue('', {
+        timeout: 20_000,
+    })
 
     await expect(scannerSheet).toBeVisible()
     await expect(
@@ -290,8 +310,8 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     await discoverPage.close()
 })
 
-// Task 11: the end-to-end proof the whole headless-WalletConnect project
-// exists for. Everything above this point is deliberately networkless (see
+// The end-to-end proof the whole headless-WalletConnect design exists for.
+// Everything above this point is deliberately networkless (see
 // the file header); a real paired session and a real inbound sign request
 // need a real WC v1 bridge, so this block spins up a local one
 // (fixtures/fake-wc-bridge.mjs — pub/sub over topics with offline queueing,
@@ -309,58 +329,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
     let dappConnector: WalletConnect
     let approvedAddress: string
 
-    // Mirrors dapp-connect.spec.ts's openEnableApprovalPopup /
-    // dapp-sign.spec.ts's openApprovalPopup: the toolbar popup can't be
-    // clicked or observed by Playwright, so the approval is driven by
-    // navigating a fresh tab straight to popup.html — the exact surface
-    // and get-current-approval discovery path the real toolbar popup uses.
-    // Waits for the SW to register the pending approval first, mirroring
-    // real Chrome (the SW only calls openPopup after registering it).
-    const openWcApprovalPopup = async (): Promise<{
-        approvalPage: Page
-        approvalErrors: Error[]
-    }> => {
-        await expect
-            .poll(
-                () =>
-                    page.evaluate(
-                        scope =>
-                            new Promise<unknown>(resolve => {
-                                const runtime = (
-                                    globalThis as unknown as {
-                                        chrome?: {
-                                            runtime?: {
-                                                sendMessage?: (
-                                                    message: unknown,
-                                                    callback: (
-                                                        r: unknown,
-                                                    ) => void,
-                                                ) => void
-                                            }
-                                        }
-                                    }
-                                ).chrome?.runtime
-                                if (!runtime?.sendMessage) {
-                                    resolve(null)
-                                    return
-                                }
-                                runtime.sendMessage(
-                                    { scope, kind: 'get-current-approval' },
-                                    resolve,
-                                )
-                            }),
-                        'pera-dapp-approval',
-                    ),
-                { timeout: 20_000 },
-            )
-            .not.toBeNull()
-        const approvalPage = await context.newPage()
-        await approvalPage.setViewportSize({ width: 360, height: 600 })
-        const approvalErrors = trackPageErrors(approvalPage)
-        await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
-        await approvalPage.waitForLoadState('domcontentloaded')
-        return { approvalPage, approvalErrors }
-    }
+    const openWcApproval = () =>
+        openApprovalSurface({ context, page, extensionId })
 
     // The dApp-side connector's own proof that approveSession actually
     // reached it over the bridge — resolves with the accounts the wallet
@@ -465,16 +435,15 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // connector, subscribes, and — once the fake bridge flushes the
         // queued wc_sessionRequest createSession() published before the
         // wallet ever subscribed — asks the SW for approval, which
-        // registers the pending approval this polls for. This test requires
-        // the popup surface specifically (see openWcApprovalPopup's poll):
-        // with `page` still open, ApprovalWindowBridge's
-        // chrome.action.openPopup() attempt succeeds (see the mechanism note
-        // on the next test), so get-current-approval's entry keeps
-        // surface:'popup' rather than flipping to 'window'. On a Chromium
-        // build where chrome.action.openPopup is unavailable at all, this
-        // poll would time out and this test would hard-fail — see that note.
-        const { approvalPage, approvalErrors } = await openWcApprovalPopup()
-        expect(approvalPage.url()).toContain('popup.html')
+        // registers the pending approval this waits for. Either surface is a
+        // pass: with `page` still open ApprovalWindowBridge's
+        // chrome.action.openPopup() usually succeeds and the entry keeps
+        // surface:'popup', but it legitimately falls back to the window (see
+        // the mechanism note on the window-fallback test below, and
+        // openApprovalSurface). What this test is about is that the session
+        // survives the popup closing, not which surface Chrome gave us.
+        const { approvalPage, approvalErrors } = await openWcApproval()
+        expectApprovalSurfaceUrl(approvalPage)
 
         const unlockInput = approvalPage.getByTestId('unlock-password-input')
         if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -783,11 +752,11 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             pairingPage.getByTestId('qr-paste-submit'),
         )
 
-        // openWcApprovalPopup polls through `page` — point it at the live
+        // openApprovalSurface polls through `page` — point it at the live
         // surface first. Reaching the approval at all proves the pair
         // bridged the recreated document's boot.
         page = pairingPage
-        const { approvalPage, approvalErrors } = await openWcApprovalPopup()
+        const { approvalPage, approvalErrors } = await openWcApproval()
 
         const approvalUnlock = approvalPage.getByTestId('unlock-password-input')
         if (

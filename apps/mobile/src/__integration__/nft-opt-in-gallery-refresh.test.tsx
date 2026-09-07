@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// PERA-4845 QA follow-up: the NFT gallery must reflect a fresh opt-in in
+// QA follow-up: the NFT gallery must reflect a fresh opt-in in
 // EVERY sort mode, purely from the opt-in mutation's own writes and
 // invalidation. The gallery queries cache with staleTime: Infinity, so sort
 // caches warmed before the opt-in keep serving the pre-opt-in list unless
@@ -79,7 +79,7 @@ import {
 } from './__fixtures__/assets'
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -185,7 +185,7 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
         let key: Algo25KeyResult | null = null
         await waitFor(async () => {
             key = await kms.current.createAlgo25Key({
-                mnemonic: ALGO25_TEST_MNEMONIC,
+                mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })
             expect(key).not.toBeNull()
         })

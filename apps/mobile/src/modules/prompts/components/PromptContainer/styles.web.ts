@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({

@@ -21,10 +21,10 @@ import ky, {
     isTimeoutError,
 } from 'ky'
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
-import {
-    type RequestConfiguration,
-    type RequestRetryOverrides,
-    type ResponseConfiguration,
+import type {
+    RequestConfiguration,
+    RequestRetryOverrides,
+    ResponseConfiguration,
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
@@ -479,7 +479,7 @@ export const updateNodeEndpoints = (
     },
 ): void => {
     // Must go through the gate, not `clients.get(network)` with an early
-    // return: the map is lazily populated (Task 2), so a bail-on-miss would
+    // return: the map is lazily populated, so a bail-on-miss would
     // silently discard an override written before that network's first request.
     ensureClientsBuilt()
     const existing = clients.get(network)

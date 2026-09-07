@@ -27,7 +27,7 @@ export const DiscoverScreen = () => {
             // The Discover web app sizes its search modal from a viewport
             // height snapshotted at load and anchors it to the viewport
             // bottom; shrinking the WebView with the keyboard pushes the
-            // search input off the top of the screen on Android (PERA-4905).
+            // search input off the top of the screen on Android.
             // Let the keyboard overlay the page instead, matching iOS.
             keyboardAvoidance='never'
             style={styles.container}

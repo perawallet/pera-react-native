@@ -67,5 +67,6 @@ const withProductionAssociatedDomains = (config, { isProduction } = {}) => {
   });
 };
 
-module.exports = withProductionAssociatedDomains;
-module.exports.mergeAssociatedDomains = mergeAssociatedDomains;
+module.exports = Object.assign(withProductionAssociatedDomains, {
+  mergeAssociatedDomains,
+});

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { type RemoteConfigService } from '@perawallet/wallet-extension-platform'
+import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import { useRemoteConfig } from '../index'
 import type { RemoteConfigKey } from '../../models'
 import { useRemoteConfigOverrides } from '../useRemoteConfigOverrides'

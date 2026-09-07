@@ -76,7 +76,7 @@ export const LedgerAccountInfoContent = ({
                                     // Ledger, so a forced rekeyedSignable state
                                     // is a rekey to hardware — say so, since the
                                     // auth account isn't in the store to be
-                                    // looked up (PERA-4403).
+                                    // looked up.
                                     authType: AccountTypes.hardware,
                                 }}
                             />

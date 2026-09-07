@@ -34,9 +34,9 @@ type BottomSheetState = {
     /**
      * While true, BottomSheetManager holds NEW presentations (already-painted
      * sheets stay mounted). Derived from `presentationHolds` — set by the
-     * app-lock guard so nothing paints under its overlay (PERA-4743) and by
+     * app-lock guard so nothing paints under its overlay and by
      * the blocking-prompt overlay, which gorhom's portal would otherwise paint
-     * over (PERA-4870); kept as neutral flags here so this module stays free
+     * over; kept as neutral flags here so this module stays free
      * of security and prompt dependencies.
      */
     isPresentationHeld: boolean

@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 type UseNumberPadAmountParams = {
     /** Max fraction digits; 0 blocks the decimal separator entirely. */

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWIcon, type PWIconProps } from '../PWIcon'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 

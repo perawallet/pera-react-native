@@ -12,7 +12,7 @@
 
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
-import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'

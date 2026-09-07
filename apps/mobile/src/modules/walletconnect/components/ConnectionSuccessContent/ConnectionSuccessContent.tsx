@@ -12,7 +12,7 @@
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { type WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
 import { useConnectionSuccessContent } from './useConnectionSuccessContent'
 

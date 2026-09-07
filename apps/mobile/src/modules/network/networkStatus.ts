@@ -19,7 +19,7 @@ import { useNetworkStatusStore } from './hooks/useNetworkStatusStore'
  * signal, so without an explicit probe URL `isInternetReachable` never turns
  * `false` on a captive portal or dead gateway.
  *
- * TODO(PERA-4570): swap for a Pera-controlled 204 endpoint once ops hosts it.
+ * TODO: swap for a Pera-controlled 204 endpoint once ops hosts it.
  */
 export const REACHABILITY_URL = 'https://clients3.google.com/generate_204'
 

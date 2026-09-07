@@ -15,7 +15,7 @@ import QRCode from 'react-native-qrcode-svg'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
-import { type Contact } from '@perawallet/wallet-core-contacts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import { PWButton, PWText, PWView } from '@components/core'

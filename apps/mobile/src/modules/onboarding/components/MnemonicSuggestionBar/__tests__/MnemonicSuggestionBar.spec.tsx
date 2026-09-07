@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Keyboard } from 'react-native'
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 
@@ -54,5 +55,20 @@ describe('MnemonicSuggestionBar', () => {
         fireEvent.click(screen.getByTestId('test_suggestion_ability'))
 
         expect(onSelectSuggestion).toHaveBeenCalledWith('ability')
+    })
+
+    it('leaves the keyboard up when a suggestion is tapped', () => {
+        const dismissSpy = vi.spyOn(Keyboard, 'dismiss')
+        render(
+            <MnemonicSuggestionBar
+                suggestions={['abandon']}
+                onSelectSuggestion={vi.fn()}
+                testIDPrefix='test_suggestion'
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('test_suggestion_abandon'))
+
+        expect(dismissSpy).not.toHaveBeenCalled()
     })
 })

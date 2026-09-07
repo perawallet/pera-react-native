@@ -140,6 +140,20 @@ else
 fi
 rm "$KMS_PQ_LOG"
 
+# Run declaration-emit wiring guard. Each package emits its own .d.ts through
+# tsconfig.build.json, and both ways that breaks are silent: a package with no
+# build config publishes an untyped import, and a brace glob in `exclude` is
+# ignored by tsconfig rather than rejected (see tools/check-dts-emit.mjs).
+echo "\n${YELLOW}Checking declaration emit wiring...${NC}"
+DTS_LOG=$(mktemp)
+if pnpm run check:dts-emit > "$DTS_LOG" 2>&1; then
+    echo "${GREEN}✓ declaration emit wiring valid${NC}"
+else
+    echo "${RED}declaration emit check failed.${NC}"
+    record_failure "declaration emit wiring" "$DTS_LOG" "${YELLOW}A package would publish types it never emits — see the log below.${NC}"
+fi
+rm "$DTS_LOG"
+
 # Run i18n check
 echo "\n${YELLOW}Checking i18n...${NC}"
 I18N_LOG=$(mktemp)
@@ -150,6 +164,19 @@ else
     record_failure "i18n Check" "$I18N_LOG" "${YELLOW}Please ensure all files have the proper i18n.${NC}"
 fi
 rm "$I18N_LOG"
+
+# Doc hygiene. Blocks on wrongness (a path that no longer exists, a dead link,
+# a reference to a work item nobody will be able to look up); reports on length
+# without blocking, because that needs a human's judgement.
+echo "\n${YELLOW}Checking doc hygiene...${NC}"
+DOCS_LOG=$(mktemp)
+if pnpm run lint:docs > "$DOCS_LOG" 2>&1; then
+    echo "${GREEN}✓ docs and comments clean${NC}"
+else
+    echo "${RED}Doc hygiene check failed.${NC}"
+    record_failure "Doc Hygiene" "$DOCS_LOG" "${YELLOW}Fix the stale reference, or record an exception with a reason.${NC}"
+fi
+rm "$DOCS_LOG"
 
 # Secret scan. The CI job is authoritative; this catches obvious leaks
 # before they hit the network. Soft-skip if gitleaks isn't installed so

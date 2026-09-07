@@ -21,7 +21,7 @@ import {
     useIsMultisigAddressQuery,
     type MultisigValidationError,
 } from '@perawallet/wallet-core-multisig'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'

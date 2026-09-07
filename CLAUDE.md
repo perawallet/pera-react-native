@@ -5,12 +5,12 @@ React Native monorepo for Pera Wallet, a non-custodial Algorand crypto wallet. *
 ```sh
 pnpm build                          # Run to confirm no type/compile issues
 pnpm pre-push --no-fail-on-error    # Run before completing any task
-pnpm test:unit                      # Fast tests — use this while iterating, not `pnpm test`
-pnpm test                           # Full suite (unit + mobile integration) — run once at the very end of a task, not on every change
-pnpm --filter mobile test:unit <path> -t <filterpattern> # Run only specific mobile tests — always pass a path too, or vitest collects (transforms + spins up jsdom for) all ~250 spec files before the name filter ever applies
+pnpm test:unit                      # Fast tests; use while iterating, not `pnpm test`
+pnpm test                           # Full suite (unit + mobile integration); run once at the end of a task
+pnpm --filter mobile test:unit <path> -t <filterpattern> # Run specific mobile tests; always pass a path too, or vitest collects (transforms + spins up jsdom for) all ~250 spec files before the name filter applies
 ```
 
-While iterating: run only the individual test file(s) you're touching, and move on. Don't re-run `pnpm test`/`pnpm test:unit` for the whole repo after every change — save the full-repo run for the end of the task.
+While iterating: run only the individual test file(s) you're touching, and move on. Don't re-run `pnpm test`/`pnpm test:unit` for the whole repo after every change; save the full-repo run for the end of the task.
 
 ## Architecture
 
@@ -23,8 +23,8 @@ While iterating: run only the individual test file(s) you're touching, and move 
 
 **ALWAYS** use `makeStyles` from `@rneui/themed`. **NEVER** use `StyleSheet.create`.
 
-- Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`) — no hardcoded colors or values
-- No inline styles — all styles go in `styles.ts` next to the component
+- Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`). No hardcoded colors or values
+- No inline styles; all styles go in `styles.ts` next to the component
 - Export `useStyles` hook from `styles.ts`
 
 ## Components (CRITICAL)
@@ -90,7 +90,7 @@ If creating a core component, update `apps/mobile/src/components/core/index.ts` 
 
 ## Numbers & Precision (CRITICAL)
 
-All monetary/financial values (amounts, balances, prices, fees) use `Decimal` from `decimal.js` as the internal representation. **Never** use JS `number` for financial amounts — it loses precision beyond 2^53.
+All monetary/financial values (amounts, balances, prices, fees) use `Decimal` from `decimal.js` as the internal representation. **Never** use JS `number` for financial amounts; it loses precision beyond 2^53.
 
 Always use the **named import** (`{ Decimal }`), never the default import. Always construct with `new Decimal(...)`, never bare `Decimal(...)` without `new`.
 
@@ -102,7 +102,7 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 | AlgoKit/blockchain → app   | `bigint`        | `Decimal`          | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                  |
 | App → display              | `Decimal`       | formatted `string` | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                 |
 | App → transaction building | `Decimal`       | `bigint`           | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain` |
-| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn` — no manual conversion needed                               |
+| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn`, no manual conversion needed                                |
 
 ### Conversion Utilities
 
@@ -120,25 +120,25 @@ Canonical conversion helpers live in `@perawallet/wallet-core-blockchain` (`base
 - `type` for props, unions, simple shapes; `interface` for data models that may be extended
 - Boolean props: prefix with `is`, `has`, `can`, `should` (`isLoading`, `hasError`)
 - Event handler props: `on` prefix (`onPress`); internal handlers: `handle` prefix (`handlePress`)
-- Named exports only — no default exports
+- Named exports only, no default exports
 
 ## Comments (CRITICAL)
 
-**The code says what. Comments say why — and only when the why isn't obvious.** Default to no comment. Most code needs none.
+**The code says what. Comments say why, and only when the why isn't obvious.** Default to no comment. Most code needs none.
 
 Write a comment only when one of these is true:
 
-- **Non-obvious rationale** — why this approach over the obvious one, a constraint from an external system, a deliberate ordering
-- **A trap** — a workaround, a footgun, something that looks wrong but is right, something that will break if changed
+- **Non-obvious rationale**: why this approach over the obvious one, a constraint from an external system, a deliberate ordering
+- **A trap**: a workaround, a footgun, something that looks wrong but is right, something that will break if changed
 - **Units, ranges, encodings** that the type can't express (base units vs display units, microAlgos, seconds vs ms)
 
 Delete or don't write:
 
 - Restatements of the code (`// Set the loading state`, `// Map over accounts`)
-- JSDoc that repeats the signature — `@param address The address`, `@returns The result`
+- JSDoc that repeats the signature (`@param address The address`, `@returns The result`)
 - Banner/section dividers (`// ===== Types =====`), narration of a file's structure
 - "This hook does X" on a hook already named `useX`
-- Change log or process narration (`// Added for PERA-1234`, `// Previously this used…`) — that's what git is for
+- Change log or process narration (`// Added for PERA-1234`, `// Previously this used…`); that's what git is for
 - Commented-out code
 
 Sizing: one line is the norm. Three is a lot. Past that, either the code needs restructuring or the explanation belongs in `docs/`.
@@ -156,7 +156,36 @@ Sizing: one line is the norm. Three is a lot. Past that, either the code needs r
 // Indexer returns base units as strings; wrap before any arithmetic to avoid 2^53 loss.
 ```
 
-Keep JSDoc on exported package APIs where it earns its place (units, constraints, gotchas) — drop the ceremony that doesn't.
+Keep JSDoc on exported package APIs where it earns its place (units, constraints, gotchas), and drop the ceremony that doesn't.
+
+## Documentation (CRITICAL)
+
+The same rule as comments, one level up: **record the decision and the reason, never the journey.**
+`pnpm lint:docs` enforces the mechanical half of this and runs in pre-push.
+
+**Never write, in a doc or a comment:**
+
+- Ticket, milestone or task references (`PERA-1234`, `PQ-017`, `Task 8`, `M6`). They are unlookupable
+  in six months. State the reason itself.
+- Change narration: what a PR did, what landed when, what was renamed, deleted or retired, which
+  version something shipped in. Git holds that.
+- Status that expires: "currently blocked on", "pending review", "phase 2 will", "not yet started",
+  measured timings, file and test counts.
+- The same fact twice. If a doc and a module doc both explain something, one of them is the source
+  and the other links to it.
+
+**Do write:** why this approach over the obvious one, a trap that will cost someone a day, a
+constraint an external system imposes, units and encodings the type can't express.
+
+If the code is odd because of a production incident, that is **one sentence** of consequence, not
+paragraphs of story. "Android's split-first lookup shadows the flat record, so the pair must be
+removed rather than dual-written" beats a history of how it was discovered.
+
+**Verify before you write.** A doc asserting a path, an export or a dependency is a claim about the
+repo. Check it. Prefer naming a file over quoting a line number, which goes stale silently.
+
+Where things belong: `docs/` for overviews and decision records (aim under 400 lines), `CLAUDE.md`
+for rules loaded every session, `.claude/skills/` for on-demand procedures. Reference, don't repeat.
 
 ## Import Order
 
@@ -181,34 +210,34 @@ import { useStyles } from './styles'
 
 | Location                                                             | Unit tests?                                                                                                                |
 | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Hooks (`useXxx.ts`), utils, stores, transformers                     | **Yes — required.** This is where behavior lives.                                                                          |
-| Core components (`apps/mobile/src/components/core/PW*/`)             | **Yes** — behavioral tests (interactions, prop wiring, conditional rendering) + one smoke test is fine.                    |
-| Shared components (`apps/mobile/src/components/[Name]/`)             | **Yes** — same rules as core: behavioral + smoke OK.                                                                       |
+| Hooks (`useXxx.ts`), utils, stores, transformers                     | **Yes, required.** This is where behavior lives.                                                                           |
+| Core components (`apps/mobile/src/components/core/PW*/`)             | **Yes.** Behavioral tests (interactions, prop wiring, conditional rendering) plus one smoke test is fine.                  |
+| Shared components (`apps/mobile/src/components/[Name]/`)             | **Yes**, same rules as core: behavioral plus smoke is fine.                                                                |
 | Module-level components & screens (`apps/mobile/src/modules/**/...`) | **No.** These are covered by integration tests in `apps/mobile/src/__integration__/`. Test the hook (`use[Name]`) instead. |
 
 ### Avoid
 
 - Tests with no real assertion (`expect(container).toBeTruthy()` after `render()`).
-- Multiple tests in the same file that all just check the same text or count renders — pick one.
+- Multiple tests in the same file that all just check the same text or count renders. Pick one.
 - Style assertions (color, padding, fontWeight, etc.). Theme/style tokens are caught by reviews, not tests.
 - Re-testing React Native primitives ("renders children", "passes testID through") on every wrapper.
 - Snapshot tests.
 
 ### Hook tests are the unit-test backbone for screens
 
-When a screen or module-level component has logic, extract it into a `useXxx` hook and test the hook. Don't test the rendered screen — the integration test exercises the rendered flow.
+When a screen or module-level component has logic, extract it into a `useXxx` hook and test the hook. Don't test the rendered screen; the integration test exercises the rendered flow.
 
 See `docs/TESTING.md` for the integration test harness, MSW handler factories, and flow-test patterns.
 
 ## Translations
 
-Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pnpm run lint:i18n` enforces **bidirectional** key parity against `en.json` — an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps — Turkish suffixes must never attach to a `{{placeholder}}`.
+Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pnpm run lint:i18n` enforces **bidirectional** key parity against `en.json`, so an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps, such as Turkish suffixes never attaching to a `{{placeholder}}`.
 
 ## Work Completion
 
 Before reporting any task complete:
 
-1. `pnpm pre-push --no-fail-on-error` must pass
-2. `pnpm test` must pass (the full suite — this is the one point in a task where the full run belongs; use `pnpm test:unit` or a single-file run for everything before this)
+1. `pnpm pre-push --no-fail-on-error` must pass (includes `lint:docs`)
+2. `pnpm test` must pass (the full suite; this is the one point in a task where the full run belongs, and everything before it uses `pnpm test:unit` or a single-file run)
 3. Tests written for any new code
 4. For major changes: `pnpm build` must pass

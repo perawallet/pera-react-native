@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import type { NavigatorScreenParams } from '@react-navigation/native'
+import type { CardOnboardingStackParamList } from './card-onboarding/types'
 
 /**
  * The card dashboard is an account home, so it lives in the Home tab's account

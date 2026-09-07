@@ -18,7 +18,7 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useTransactionListItem } from './useTransactionListItem'
-import { type AmountDisplay } from './amounts'
+import type { AmountDisplay } from './amounts'
 
 export type TransactionListItemProps = {
     /** The transaction data to display */
@@ -39,6 +39,7 @@ const TransactionListItemView = ({
         subtitle,
         amounts,
         amountsOverflowCount,
+        isPendingVerifying,
         handlePress,
         handleLongPress,
     } = useTransactionListItem({
@@ -105,6 +106,14 @@ const TransactionListItemView = ({
                         ellipsizeMode='middle'
                     >
                         {subtitle}
+                    </PWText>
+                )}
+                {isPendingVerifying && (
+                    <PWText
+                        variant='caption'
+                        style={styles.pendingVerifying}
+                    >
+                        {t('transactions.common.pending_verifying')}
                     </PWText>
                 )}
             </PWView>

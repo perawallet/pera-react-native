@@ -43,8 +43,8 @@ import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
-import { type SvgProps } from 'react-native-svg'
-import { type Decimal } from 'decimal.js'
+import type { SvgProps } from 'react-native-svg'
+import type { Decimal } from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse
@@ -99,7 +99,7 @@ export const useARC59SendSummaryScreen =
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
-            // Gate on the amount actually signed (PERA-4710), not the
+            // Gate on the amount actually signed, not the
             // independent `total_protocol_and_mbr_fee` field.
             const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 

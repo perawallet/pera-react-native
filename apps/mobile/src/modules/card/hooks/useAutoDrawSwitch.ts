@@ -19,7 +19,7 @@ import {
     useKillswitchAutoDraw,
     isKillswitchConfigured,
 } from '@perawallet/wallet-core-card'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     encodeDelegatedLsigAccount,
     useProgramSigner,

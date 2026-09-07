@@ -45,6 +45,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
             'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
         multisigSupportUrl:
             'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
+        quantumAccountSupportUrl:
+            'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
     },
 }))
 
@@ -257,6 +259,56 @@ describe('useAccountTypeInfo', () => {
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
+        })
+    })
+
+    it('opens webview with the quantum article when learn more is pressed for a quantum account', () => {
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('quantum') }),
+        )
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
+        })
+    })
+
+    it('opens webview with the quantum article when learn more is pressed for an account rekeyed to quantum', () => {
+        mockUseRekeyTransition.mockReturnValue({
+            from: 'algo25',
+            to: 'quantum',
+        })
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+        )
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
+        })
+    })
+
+    it('opens webview with the quantum article when learn more is pressed for a Ledger account rekeyed to quantum', () => {
+        mockUseRekeyTransition.mockReturnValue({
+            from: 'hardware',
+            to: 'quantum',
+        })
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('hardware', 'AUTH') }),
+        )
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/create-or-upgrade-to-a-quantum-account-on-pera-wallet-19d53rn/',
         })
     })
 

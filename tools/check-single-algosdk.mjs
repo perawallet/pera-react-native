@@ -51,7 +51,7 @@
  * (`@joe-p/algosdk`). Either form now trips assertion (2) above and would need
  * this gate updated deliberately — that friction is the point.
  *
- * This happened for real, mid-branch, on PERA-4653 (task 9's build gate
+ * This happened for real, mid-branch, on (task 9's build gate
  * caught it): four packages drifted back to `algosdk@3.6.0` one commit after
  * a single resolution had been verified, breaking the app at a `pnpm build`
  * type-check boundary (`AlgoAmount` from two structurally distinct

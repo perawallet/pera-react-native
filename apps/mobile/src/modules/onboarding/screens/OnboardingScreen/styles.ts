@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
-import { type EdgeInsets } from 'react-native-safe-area-context'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 const HEADER_IMAGE_SCREEN_RATIO = 1 / 4
 

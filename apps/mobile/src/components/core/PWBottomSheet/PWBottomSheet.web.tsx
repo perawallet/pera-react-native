@@ -69,9 +69,10 @@ export const PWBottomSheet = ({
     children,
     enableCloseOnBackdropPress = true,
     // snapPoints/enablePanDownToClose/enableContentPanningGesture/
-    // autoCreateContainer are part of the shared props contract but
-    // intentionally unused here: pan gestures don't exist on web and the
-    // modal adapter always creates its own container.
+    // autoCreateContainer/avoidKeyboard are part of the shared props contract
+    // but intentionally unused here: pan gestures don't exist on web, the modal
+    // adapter always creates its own container, and the browser handles the
+    // soft keyboard itself.
 }: PWBottomSheetProps): React.JSX.Element | null => {
     const { height } = useWindowDimensions()
     const maxHeight = Math.round(height * SHEET_MAX_RATIO)

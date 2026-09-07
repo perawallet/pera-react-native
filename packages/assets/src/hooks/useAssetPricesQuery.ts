@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { type AssetPrices } from '../models'
+import type { AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useStableIdList } from '@perawallet/wallet-core-shared'

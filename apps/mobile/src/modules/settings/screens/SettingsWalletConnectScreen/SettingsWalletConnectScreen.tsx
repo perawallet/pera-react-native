@@ -12,7 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { Dialog } from '@rneui/themed'
-import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
 
 import {

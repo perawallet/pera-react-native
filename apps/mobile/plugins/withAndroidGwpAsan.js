@@ -55,5 +55,4 @@ function setGwpAsanMode(androidManifest) {
   return androidManifest;
 }
 
-module.exports = withAndroidGwpAsan;
-module.exports.setGwpAsanMode = setGwpAsanMode;
+module.exports = Object.assign(withAndroidGwpAsan, { setGwpAsanMode });

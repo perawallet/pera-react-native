@@ -148,22 +148,39 @@ export const useSettingsSecurityScreen =
                     })
 
                     if (!result.ok) {
-                        // A weak (class-2) biometric can't be bound — guide the
-                        // user to enroll a fingerprint rather than showing the
+                        // Targeted guidance per failure: a weak (class-2)
+                        // biometric can't be bound (enroll a fingerprint); an
+                        // 'unconfirmed' level is a temporary lockout the user
+                        // clears with the device passcode; everything else is the
                         // generic "couldn't authenticate" error.
-                        const isWeakBiometric =
+                        const toast =
                             result.reason === 'weak-biometric'
-                        showToast({
-                            title: isWeakBiometric
-                                ? t('settings.security.biometric_weak_title')
-                                : t('settings.security.biometric_error_title'),
-                            body: isWeakBiometric
-                                ? t('settings.security.biometric_weak_message')
-                                : t(
-                                      'settings.security.biometric_error_message',
-                                  ),
-                            type: 'error',
-                        })
+                                ? {
+                                      title: t(
+                                          'settings.security.biometric_weak_title',
+                                      ),
+                                      body: t(
+                                          'settings.security.biometric_weak_message',
+                                      ),
+                                  }
+                                : result.reason === 'unconfirmed'
+                                  ? {
+                                        title: t(
+                                            'settings.security.biometric_unconfirmed_title',
+                                        ),
+                                        body: t(
+                                            'settings.security.biometric_unconfirmed_message',
+                                        ),
+                                    }
+                                  : {
+                                        title: t(
+                                            'settings.security.biometric_error_title',
+                                        ),
+                                        body: t(
+                                            'settings.security.biometric_error_message',
+                                        ),
+                                    }
+                        showToast({ ...toast, type: 'error' })
                     }
                     return result.ok
                 } else {

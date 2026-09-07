@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { PWView } from '@components/core'
 import { useStyles } from './styles'

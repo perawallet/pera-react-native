@@ -17,6 +17,8 @@ import {
     resolveImportAccountType,
     setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { Networks } from '@perawallet/wallet-core-config'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
 
@@ -98,6 +100,9 @@ describe('useImportAccountOptionsScreen', () => {
         Platform.OS = 'ios'
         mockRequestBottomSheet.mockResolvedValue(undefined)
         mockQuantumFlag.enabled = false
+        vi.mocked(useNetwork).mockReturnValue({
+            network: Networks.mainnet,
+        } as ReturnType<typeof useNetwork>)
     })
 
     afterEach(() => {
@@ -459,6 +464,63 @@ describe('useImportAccountOptionsScreen', () => {
             expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
                 accountType: 'quantum',
             })
+        })
+    })
+
+    describe('non-Pera-backed networks', () => {
+        it.each([Networks.betanet, Networks.custom])(
+            'disables the Pera Web option with the network-unavailable reason on %s',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(() =>
+                    useImportAccountOptionsScreen(),
+                )
+
+                const peraWebOption = result.current.options.find(
+                    o => o.testID === 'import_account_options_pera_web_button',
+                )!
+
+                expect(peraWebOption.isDisabled).toBe(true)
+                expect(peraWebOption.descriptionKey).toBe(
+                    'common.network_unavailable.body',
+                )
+            },
+        )
+
+        it('keeps the other options untouched on a non-Pera-backed network', () => {
+            vi.mocked(useNetwork).mockReturnValue({
+                network: Networks.betanet,
+            } as ReturnType<typeof useNetwork>)
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const otherOptions = result.current.options.filter(
+                o => o.testID !== 'import_account_options_pera_web_button',
+            )
+
+            expect(otherOptions.every(o => o.isDisabled === undefined)).toBe(
+                true,
+            )
+        })
+
+        it('enables the Pera Web option with its original description on mainnet', () => {
+            vi.mocked(useNetwork).mockReturnValue({
+                network: Networks.mainnet,
+            } as ReturnType<typeof useNetwork>)
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const peraWebOption = result.current.options.find(
+                o => o.testID === 'import_account_options_pera_web_button',
+            )!
+
+            expect(peraWebOption.isDisabled).toBe(false)
+            expect(peraWebOption.descriptionKey).toBe(
+                'onboarding.import_account_options.pera_web_description',
+            )
         })
     })
 })

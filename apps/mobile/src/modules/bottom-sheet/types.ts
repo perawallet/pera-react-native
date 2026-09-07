@@ -22,6 +22,8 @@ export type BottomSheetOptions = {
     enableContentPanningGesture?: boolean
     onBackdropPress?: () => void
     autoCreateContainer?: boolean
+    /** Forwarded to `PWBottomSheetProps.avoidKeyboard`. Defaults to true. */
+    avoidKeyboard?: boolean
 }
 
 export type BottomSheetRequest = {

@@ -81,7 +81,7 @@ const renderAlgo25ImportFromOnboarding = () =>
 
 // Drives the user from the Onboarding screen into the import-options bottom
 // sheet. The intermediate ImportAccountOptions screen was introduced in
-// PERA-3268 — tapping "Import account" no longer opens the sheet directly.
+// — tapping "Import account" no longer opens the sheet directly.
 const openImportOptionsSheet = async () => {
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>
@@ -201,6 +201,34 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 ALGO25_TEST_ADDRESS,
             )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the Algo25 word slots are rendered on iOS, then every slot requests the ASCII-capable keyboard so an IME cannot enter its composing state',
+        async () => {
+            renderAlgo25ImportFromOnboarding()
+
+            await openImportOptionsSheet()
+            await waitFor(() =>
+                screen.getByTestId('import_options_algo25_button'),
+            )
+            fireEvent.click(screen.getByTestId('import_options_algo25_button'))
+
+            await advanceThroughImportInfo()
+
+            await waitFor(() =>
+                screen.getByTestId('import_account_word_input_24'),
+            )
+
+            for (let idx = 0; idx < 25; idx++) {
+                expect(
+                    screen
+                        .getByTestId(`import_account_word_input_${idx}`)
+                        .getAttribute('keyboardType'),
+                ).toBe('ascii-capable')
+            }
         },
         SLOW_TEST_TIMEOUT_MS,
     )

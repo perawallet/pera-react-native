@@ -38,6 +38,7 @@ export const routeCapabilities: RouteCapabilities = {
     pushNotificationSettings: true, // FCM web push via the background SW
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
+    accountDrawer: false, // no edge-swipe in a popup; the bottom-sheet switcher stays
     storeRating: false, // permanently off: no store review flow
     // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
     // awkward with a mouse), so the slide/tap choice would be a no-op here.

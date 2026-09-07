@@ -55,10 +55,10 @@ import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
+    ALGO25_TEST_MNEMONIC_INDICES,
     ALGO25_TEST_MNEMONIC_WORDS,
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24,
+    HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
     deriveTestHDAddress,
 } from './__fixtures__/onboarding'
@@ -104,7 +104,7 @@ const seedAlgo25Account = async (): Promise<WalletAccount> => {
     let key: Algo25KeyResult | null = null
     await waitFor(async () => {
         key = await kms.current.createAlgo25Key({
-            mnemonic: ALGO25_TEST_MNEMONIC,
+            mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
         expect(key).not.toBeNull()
     })
@@ -138,7 +138,7 @@ const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     let rootKey: HDWalletKeyResult | null = null
     await waitFor(async () => {
         rootKey = await kms.current.createHDWalletKey({
-            mnemonic: HD_TEST_MNEMONIC_24,
+            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
         })
         expect(rootKey).not.toBeNull()
     })

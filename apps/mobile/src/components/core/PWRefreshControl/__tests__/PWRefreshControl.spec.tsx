@@ -34,7 +34,7 @@ vi.mock('react-native', async importOriginal => {
 describe('PWRefreshControl', () => {
     // Android's ScrollView renders a refresh control by cloning the element and
     // passing the scroll view itself as children. Swallowing them drops the whole
-    // list from the tree — the crash behind PERA-4678/4681/4679.
+    // list from the tree — the crash behind/4681/4679.
     it('forwards children through to the underlying control', () => {
         render(
             <PWRefreshControl

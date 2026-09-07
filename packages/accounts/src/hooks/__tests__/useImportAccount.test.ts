@@ -26,6 +26,9 @@ import algosdk from 'algosdk'
 import { createHash } from 'crypto'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import {
+    indicesToAlgo25Seed,
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
     quantumAddressCandidates,
@@ -45,6 +48,9 @@ const CANONICAL_ADDRESS =
     'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
 const LEGACY_ADDRESS =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+const TEST_MNEMONIC_INDICES = mnemonicWordsToIndices(TEST_MNEMONIC.split(' '))!
+// The algo25/HD KMS hooks are mocked, so any 25-entry buffer will do there.
+const DUMMY_INDICES = new Uint16Array(25)
 
 const server = setupServer()
 
@@ -208,7 +214,7 @@ describe('useImportAccount', () => {
         kmsMock.createQuantumKey.mockImplementation(
             async (params?: {
                 id?: string
-                mnemonic?: string
+                mnemonicIndices?: Uint16Array
                 derivation?: string
                 reuseSeedId?: string
             }) => {
@@ -245,7 +251,6 @@ describe('useImportAccount', () => {
             keyId: 'WALLET1',
             rootKey: new Uint8Array(96).fill(1),
             entropy: new Uint8Array(32).fill(2),
-            mnemonic: 'test mnemonic',
         })
     })
 
@@ -254,7 +259,6 @@ describe('useImportAccount', () => {
             keyId: 'WALLET1',
             rootKey: new Uint8Array(96).fill(1),
             entropy: new Uint8Array(32).fill(2),
-            mnemonic: 'test mnemonic',
         })
 
         const { result } = renderHook(() => useImportAccount())
@@ -262,7 +266,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: 'test mnemonic',
+                mnemonicIndices: DUMMY_INDICES,
                 type: 'hdWallet',
             })
         })
@@ -286,7 +290,7 @@ describe('useImportAccount', () => {
         await act(async () => {
             await expect(
                 result.current({
-                    mnemonic: 'invalid mnemonic',
+                    mnemonicIndices: DUMMY_INDICES,
                     type: 'hdWallet',
                 }),
             ).rejects.toThrow('Invalid mnemonic')
@@ -313,13 +317,13 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: 'test mnemonic',
+                mnemonicIndices: DUMMY_INDICES,
                 type: 'algo25',
             })
         })
 
         expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
-            mnemonic: 'test mnemonic',
+            mnemonicIndices: DUMMY_INDICES,
         })
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
         expect(imported.type).toBe('algo25')
@@ -352,14 +356,14 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: 'test mnemonic',
+                mnemonicIndices: DUMMY_INDICES,
                 type: 'algo25',
             })
         })
 
         expect(kmsMock.createAlgo25Key).toHaveBeenCalledTimes(1)
         expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
-            mnemonic: 'test mnemonic',
+            mnemonicIndices: DUMMY_INDICES,
         })
         expect(kmsMock.getKey).not.toHaveBeenCalled()
         expect(imported.address).toBe('CORRECT_ADDRESS')
@@ -378,7 +382,7 @@ describe('useImportAccount', () => {
         await act(async () => {
             await expect(
                 result.current({
-                    mnemonic: 'test mnemonic',
+                    mnemonicIndices: DUMMY_INDICES,
                     type: 'algo25',
                 }),
             ).rejects.toThrow('Import failed')
@@ -403,9 +407,15 @@ describe('useImportAccount', () => {
         // Two back-to-back imports, no re-render between them — mirrors the
         // Pera Web / ASB import loop.
         await act(async () => {
-            await result.current({ mnemonic: 'a', type: 'algo25' })
+            await result.current({
+                mnemonicIndices: DUMMY_INDICES,
+                type: 'algo25',
+            })
             await expect(
-                result.current({ mnemonic: 'a', type: 'algo25' }),
+                result.current({
+                    mnemonicIndices: DUMMY_INDICES,
+                    type: 'algo25',
+                }),
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
 
@@ -423,13 +433,13 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
 
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
-            mnemonic: TEST_MNEMONIC,
+            mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_CANONICAL,
             reuseSeedId: undefined,
         })
@@ -451,9 +461,15 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await result.current({ mnemonic: TEST_MNEMONIC, type: 'quantum' })
+            await result.current({
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
+                type: 'quantum',
+            })
             await expect(
-                result.current({ mnemonic: TEST_MNEMONIC, type: 'quantum' }),
+                result.current({
+                    mnemonicIndices: TEST_MNEMONIC_INDICES,
+                    type: 'quantum',
+                }),
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
 
@@ -499,7 +515,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
@@ -510,7 +526,7 @@ describe('useImportAccount', () => {
         // leg was never attempted.
         expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(1)
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
-            mnemonic: TEST_MNEMONIC,
+            mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_CANONICAL,
             reuseSeedId: undefined,
         })
@@ -535,7 +551,10 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await expect(
-            result.current({ mnemonic: TEST_MNEMONIC, type: 'quantum' }),
+            result.current({
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
+                type: 'quantum',
+            }),
         ).rejects.toBeInstanceOf(DuplicateAccountError)
 
         // Nothing was minted at all — the only candidate ("neither exists"
@@ -563,7 +582,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
@@ -592,7 +611,10 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await result.current({ mnemonic: TEST_MNEMONIC, type: 'quantum' })
+            await result.current({
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
+                type: 'quantum',
+            })
         })
 
         expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(2)
@@ -626,7 +648,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
@@ -635,7 +657,7 @@ describe('useImportAccount', () => {
         expect(imported[0].address).toBe(LEGACY_ADDRESS)
         expect(imported[0].keyPairId).toBe('QSEED1-quantum')
         expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
-            mnemonic: TEST_MNEMONIC,
+            mnemonicIndices: TEST_MNEMONIC_INDICES,
             derivation: PQ_DERIVATION_LEGACY,
             reuseSeedId: undefined,
         })
@@ -665,7 +687,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
@@ -695,7 +717,7 @@ describe('useImportAccount', () => {
         let imported: any
         await act(async () => {
             imported = await result.current({
-                mnemonic: TEST_MNEMONIC,
+                mnemonicIndices: TEST_MNEMONIC_INDICES,
                 type: 'quantum',
             })
         })
@@ -712,6 +734,7 @@ describe('useImportAccount', () => {
         // in the store — not just that the mocks were wired differently.
         const generated = algosdk.generateAccount()
         const mnemonic = algosdk.secretKeyToMnemonic(generated.sk)
+        const mnemonicIndices = mnemonicWordsToIndices(mnemonic.split(' '))!
 
         const [canonical, legacy] = quantumAddressCandidates(
             algosdk.seedFromMnemonic(mnemonic),
@@ -728,7 +751,11 @@ describe('useImportAccount', () => {
         )
 
         kmsMock.createAlgo25Key.mockImplementation(
-            async ({ mnemonic: m }: { mnemonic: string }) => ({
+            async ({
+                mnemonicIndices: idx,
+            }: {
+                mnemonicIndices: Uint16Array
+            }) => ({
                 seedKey: {
                     id: 'A25SEED',
                     type: 'seed',
@@ -736,12 +763,20 @@ describe('useImportAccount', () => {
                     extractable: true,
                     metadata: { scheme: SeedScheme.Algo25 },
                 },
-                address: algosdk.mnemonicToSecretKey(m).addr.toString(),
+                address: algosdk
+                    .mnemonicToSecretKey(
+                        Array.from(idx, mnemonicIndexToWord).join(' '),
+                    )
+                    .addr.toString(),
             }),
         )
         kmsMock.createQuantumKey.mockImplementation(
-            async ({ mnemonic: m }: { mnemonic: string }) => {
-                const seed = algosdk.seedFromMnemonic(m)
+            async ({
+                mnemonicIndices: idx,
+            }: {
+                mnemonicIndices: Uint16Array
+            }) => {
+                const seed = indicesToAlgo25Seed(idx)
                 return {
                     seedKey: {
                         id: 'QSEED1',
@@ -764,8 +799,11 @@ describe('useImportAccount', () => {
         let asAlgo25: any
         let asQuantum: any
         await act(async () => {
-            asAlgo25 = await result.current({ mnemonic, type: 'algo25' })
-            asQuantum = await result.current({ mnemonic, type: 'quantum' })
+            asAlgo25 = await result.current({ mnemonicIndices, type: 'algo25' })
+            asQuantum = await result.current({
+                mnemonicIndices,
+                type: 'quantum',
+            })
         })
 
         expect(asAlgo25.type).toBe('algo25')
@@ -779,6 +817,7 @@ describe('useImportAccount', () => {
     test('repeated quantum imports of the same mnemonic derive the same address', async () => {
         const generated = algosdk.generateAccount()
         const mnemonic = algosdk.secretKeyToMnemonic(generated.sk)
+        const mnemonicIndices = mnemonicWordsToIndices(mnemonic.split(' '))!
 
         // The pre-mint duplicate filter compares against the SAME candidate
         // addresses the probe derives, so the mock must return those same
@@ -819,9 +858,9 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await result.current({ mnemonic, type: 'quantum' })
+            await result.current({ mnemonicIndices, type: 'quantum' })
             await expect(
-                result.current({ mnemonic, type: 'quantum' }),
+                result.current({ mnemonicIndices, type: 'quantum' }),
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
         // Discriminate the quantum path: the first import went through

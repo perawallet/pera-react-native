@@ -86,8 +86,8 @@ export type PendingWalletConnectHandoff = {
      */
     proposerAddress?: string
     /**
-     * Timestamp of registration. Anchors the client-side handoff deadline
-     * (PERA-4819); persisted, so a resumed-but-stale handoff self-expires on
+     * Timestamp of registration. Anchors the client-side handoff deadline;
+     * persisted, so a resumed-but-stale handoff self-expires on
      * relaunch instead of resuming a dead poll.
      */
     registeredAt: number

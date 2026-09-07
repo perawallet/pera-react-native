@@ -24,7 +24,7 @@
  * but yield an EMPTY hostname, so they're reported as unresolved rather than
  * rendered as a blank label. A page can reach those via `location.href`, and a
  * blank origin line under a page-chosen title is worse than an explicit
- * "unknown" — the caller supplies that copy (PERA-4665).
+ * "unknown" — the caller supplies that copy.
  */
 const OPAQUE_ORIGIN_SCHEMES = [
     'about:',

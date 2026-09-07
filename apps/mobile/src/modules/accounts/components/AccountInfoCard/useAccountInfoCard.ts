@@ -23,7 +23,7 @@ import {
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useAccountTypeLabel,
     type AccountTypeLabel,

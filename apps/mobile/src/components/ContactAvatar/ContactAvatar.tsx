@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Contact } from '@perawallet/wallet-core-contacts'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { PWIcon, type PWIconSize, PWImage, PWView } from '@components/core'
 import { useStyles, type ContactAvatarVariant } from './styles'
 

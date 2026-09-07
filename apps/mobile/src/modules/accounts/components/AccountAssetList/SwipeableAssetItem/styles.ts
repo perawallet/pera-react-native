@@ -27,5 +27,6 @@ export const useStyles = makeStyles(theme => ({
         width: DEFAULT_SWIPE_ACTION_WIDTH,
         borderRadius: theme.spacing.sm,
         marginVertical: theme.spacing.lg,
+        marginLeft: theme.spacing.lg,
     },
 }))

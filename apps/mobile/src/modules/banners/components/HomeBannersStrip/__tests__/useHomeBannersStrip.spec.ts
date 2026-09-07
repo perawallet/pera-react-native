@@ -110,7 +110,7 @@ describe('useHomeBannersStrip', () => {
     })
 
     // Auto-opening moved to the prompt container, which orders it against the
-    // terms gate and the PIN nudge instead of racing them (PERA-4874). What
+    // terms gate and the PIN nudge instead of racing them. What
     // matters here is that the strip never opens anything by itself again —
     // the queueing rules are covered by useBannerPrompt's own tests.
     it.each([

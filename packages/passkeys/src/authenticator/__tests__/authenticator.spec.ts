@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { sha256 } from '@noble/hashes/sha2'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import {
     InvalidStateError,
@@ -312,7 +312,7 @@ describe('createCredential', () => {
         expect(Array.from(actual)).toEqual(
             Array.from(expectedAttestationObject),
         )
-        // Sanity: still the CBOR "none" map (map prefix 0xa3, per Task 1 spec).
+        // Sanity: still the CBOR "none" map (map prefix 0xa3).
         expect(actual[0]).toBe(0xa3)
     })
 

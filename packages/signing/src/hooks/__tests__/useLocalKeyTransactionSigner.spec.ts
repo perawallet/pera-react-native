@@ -263,7 +263,7 @@ describe('useLocalKeyTransactionSigner', () => {
         expect(signed[0].sig).toEqual(new Uint8Array([42]))
     })
 
-    test('signs large batches in chunks (yielding between) preserving order [PERA-3353]', async () => {
+    test('signs large batches in chunks (yielding between) preserving order', async () => {
         mockIsAlgo25Account.mockImplementation(acc => acc.type === 'algo25')
         // One signature per encoded tx in each batch.
         mockSignTransactionsWithKey.mockImplementation(

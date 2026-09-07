@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import {
-    type BaseStoreState,
-    type Network,
-    type Nullable,
+import type {
+    BaseStoreState,
+    Network,
+    Nullable,
 } from '@perawallet/wallet-core-shared'
 
 export type LastRefreshedRounds = Partial<Record<Network, Nullable<number>>>

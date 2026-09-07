@@ -11,8 +11,13 @@
  */
 
 import { renderHook } from '@test-utils/render'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { Decimal } from 'decimal.js'
+import {
+    isCollectible,
+    isPureNft,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { useSendFundsStore } from '@modules/transactions/hooks'
 import { useSendFundsContent } from '../useSendFundsContent'
 
@@ -25,6 +30,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(() => ({
         data: new Map([['123', { assetId: '123', name: 'TestToken' }]]),
+        isFetched: true,
     })),
     isCollectible: vi.fn(() => false),
     isPureNft: vi.fn(() => false),
@@ -82,5 +88,73 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
         // Assert
         expect(useSendFundsStore.getState().destination).toBe(OLD_RECIPIENT)
         expect(useSendFundsStore.getState().amount?.toString()).toBe('42')
+    })
+})
+
+describe('useSendFundsContent — deterministic initial route', () => {
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+        vi.clearAllMocks()
+
+        // clearAllMocks wipes call history but keeps mockReturnValue overrides,
+        // so re-seed the settled defaults every run to stop a per-test override
+        // leaking into the next.
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([[ASA_ID, { assetId: ASA_ID, name: 'TestToken' }]]),
+            isFetched: true,
+        })
+        ;(isCollectible as Mock).mockReturnValue(false)
+        ;(isPureNft as Mock).mockReturnValue(false)
+    })
+
+    it('is ready immediately when opened without a preselected asset', () => {
+        const { result } = renderHook(() => useSendFundsContent(undefined))
+
+        expect(result.current.isReady).toBe(true)
+    })
+
+    it('stays not-ready until the asset query settles, then reveals the flow', () => {
+        // Cold cache: the asset query has not resolved yet.
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map(),
+            isFetched: false,
+        })
+
+        const { result, rerender } = renderHook(() =>
+            useSendFundsContent(ASA_ID),
+        )
+
+        // Holding closed so SendFundsRoutes doesn't mount its navigator (and lock
+        // in an initial route) off an unresolved asset.
+        expect(result.current.isReady).toBe(false)
+        // The asset-scoped store setup still runs deterministically.
+        expect(useSendFundsStore.getState().canSelectAsset).toBe(false)
+        expect(useSendFundsStore.getState().selectedAssetId).toBe(ASA_ID)
+
+        // Query settles.
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([[ASA_ID, { assetId: ASA_ID, name: 'TestToken' }]]),
+            isFetched: true,
+        })
+        rerender()
+
+        expect(result.current.isReady).toBe(true)
+    })
+
+    it('prefills the amount to 1 for a pure NFT once the asset has settled', () => {
+        ;(isCollectible as Mock).mockReturnValue(true)
+        ;(isPureNft as Mock).mockReturnValue(true)
+
+        const { result } = renderHook(() => useSendFundsContent(ASA_ID))
+
+        expect(result.current.isReady).toBe(true)
+        expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
+    })
+
+    it('does not prefill an amount for a non-collectible asset', () => {
+        const { result } = renderHook(() => useSendFundsContent(ASA_ID))
+
+        expect(result.current.isReady).toBe(true)
+        expect(useSendFundsStore.getState().amount).toBeUndefined()
     })
 })

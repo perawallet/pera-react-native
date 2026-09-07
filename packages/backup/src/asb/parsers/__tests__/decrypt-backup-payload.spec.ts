@@ -16,23 +16,25 @@ import {
     encodeToBase64,
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
-import { backupMnemonicToKey, generateBackupCipherKey } from '../../crypto'
+import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
+import { backupIndicesToKey, generateBackupCipherKey } from '../../crypto'
 import { AsbErrorReason, AsbImportError } from '../../errors'
 import { AsbAccountKind, type AsbBackupEnvelope } from '../../models'
 import { decryptBackupPayload } from '../decrypt-backup-payload'
 
 const RECOVERY_MNEMONIC =
     'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+const RECOVERY_INDICES = mnemonicWordsToIndices(RECOVERY_MNEMONIC.split(' '))!
 
 // Helper: produce a valid ARC-35 envelope for the given plaintext + mnemonic.
 // Mirrors what the iOS/Android creators do: secretbox-encrypt, prepend nonce,
 // base64 the result, embed in the JSON envelope.
 const buildEnvelope = (
     plaintext: object,
-    mnemonic: string,
+    indices: Uint16Array,
     overrides?: Partial<AsbBackupEnvelope>,
 ): AsbBackupEnvelope => {
-    const seed = backupMnemonicToKey(mnemonic)
+    const seed = backupIndicesToKey(indices)
     const key = generateBackupCipherKey(seed)
     const nonce = nacl.randomBytes(24)
     // jsdom's TextEncoder returns a Uint8Array from a different realm than
@@ -71,10 +73,10 @@ describe('decryptBackupPayload', () => {
                 provider_name: 'Pera Wallet',
                 device_id: 'dev-abc',
             },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
 
-        const result = decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
 
         expect(result.providerName).toBe('Pera Wallet')
         expect(result.deviceId).toBe('dev-abc')
@@ -103,10 +105,10 @@ describe('decryptBackupPayload', () => {
                     },
                 ],
             },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
 
-        const result = decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].kind).toBe(AsbAccountKind.Watch)
         expect(result.accounts[0].privateKey).toBeNull()
@@ -131,18 +133,20 @@ describe('decryptBackupPayload', () => {
                     },
                 ],
             },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
 
-        const result = decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0].kind).toBe(AsbAccountKind.Single)
     })
 
-    it('reports InvalidRecoveryKey when the mnemonic itself is malformed', () => {
-        const envelope = buildEnvelope({ accounts: [] }, RECOVERY_MNEMONIC)
+    it('reports InvalidRecoveryKey when the recovery key is malformed', () => {
+        const envelope = buildEnvelope({ accounts: [] }, RECOVERY_INDICES)
+        const corrupted = mnemonicWordsToIndices(RECOVERY_MNEMONIC.split(' '))!
+        corrupted[11] = 0 // breaks the BIP-39 checksum
         try {
-            decryptBackupPayload(envelope, 'not even a valid phrase')
+            decryptBackupPayload(envelope, corrupted)
             throw new Error('expected throw')
         } catch (e) {
             expect(e).toBeInstanceOf(AsbImportError)
@@ -163,12 +167,15 @@ describe('decryptBackupPayload', () => {
                     },
                 ],
             },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
 
         // A different valid 12-word phrase (also a known BIP-39 vector).
-        const wrong =
-            'legal winner thank year wave sausage worth useful legal winner thank yellow'
+        const wrong = mnemonicWordsToIndices(
+            'legal winner thank year wave sausage worth useful legal winner thank yellow'.split(
+                ' ',
+            ),
+        )!
         try {
             decryptBackupPayload(envelope, wrong)
             throw new Error('expected throw')
@@ -183,10 +190,10 @@ describe('decryptBackupPayload', () => {
     it('reports MalformedPayload when the plaintext lacks an accounts array', () => {
         const envelope = buildEnvelope(
             { provider_name: 'no accounts here' },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
         try {
-            decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+            decryptBackupPayload(envelope, RECOVERY_INDICES)
             throw new Error('expected throw')
         } catch (e) {
             expect(e).toBeInstanceOf(AsbImportError)
@@ -199,10 +206,10 @@ describe('decryptBackupPayload', () => {
     it('reports MalformedPayload when no rows survive validation', () => {
         const envelope = buildEnvelope(
             { accounts: [null, { foo: 'bar' }] },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
         try {
-            decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+            decryptBackupPayload(envelope, RECOVERY_INDICES)
             throw new Error('expected throw')
         } catch (e) {
             expect((e as AsbImportError).reason).toBe(
@@ -222,7 +229,7 @@ describe('decryptBackupPayload', () => {
                     suite: 'HMAC-SHA256:sodium_secretbox_easy',
                     ciphertext: '!!!not base64!!!',
                 },
-                RECOVERY_MNEMONIC,
+                RECOVERY_INDICES,
             )
             throw new Error('expected throw')
         } catch (e) {
@@ -250,10 +257,10 @@ describe('decryptBackupPayload', () => {
                     },
                 ],
             },
-            RECOVERY_MNEMONIC,
+            RECOVERY_INDICES,
         )
 
-        const result = decryptBackupPayload(envelope, RECOVERY_MNEMONIC)
+        const result = decryptBackupPayload(envelope, RECOVERY_INDICES)
         // Confirm the inner ciphertext bytes were exactly 24 + 16 + 64-byte plaintext
         // wouldn't be useful here; just check it decoded successfully.
         expect(decodeFromBase64(envelope.ciphertext).length).toBeGreaterThan(24)

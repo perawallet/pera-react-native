@@ -16,7 +16,7 @@ import { useFeeWarning } from '../useFeeWarning'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,

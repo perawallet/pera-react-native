@@ -26,7 +26,7 @@ import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { type PeraCardStackParamList } from '../../routes/types'
+import type { PeraCardStackParamList } from '../../routes/types'
 
 export type UseCardForgotPasswordNewPasswordScreenResult = {
     control: Control<PasswordSetFormValues>

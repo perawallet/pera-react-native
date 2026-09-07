@@ -115,4 +115,16 @@ describe('useCardAddFundsSwap', () => {
         const failure = await result.current.executeSwap()
         expect(failure).toEqual({ kind: 'error', message: 'boom' })
     })
+
+    it('surfaces a refused rebuild instead of silently cancelling', async () => {
+        mockQuotes.allQuotes = [QUOTE]
+        mockExecute.mockResolvedValue({ kind: 'verifying-previous' })
+
+        const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
+        const outcome = await result.current.executeSwap()
+
+        // `cancelled` renders nothing, so the user taps Confirm and watches
+        // the screen do nothing at all.
+        expect(outcome).toEqual({ kind: 'verifying' })
+    })
 })

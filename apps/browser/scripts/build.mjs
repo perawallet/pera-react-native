@@ -32,9 +32,12 @@ const mobileDir = path.resolve(root, '../mobile')
 const dist = path.join(root, 'dist')
 
 const SURFACES = ['popup', 'expanded', 'approval', 'offscreen']
-// Popup density: 0.9 zoom reflows the 360px viewport against a 375px design baseline
+// Popup: 423.53x705.89 CSS layout at 0.85 zoom = a 360x600 physical popup
+// (Chrome's height cap). zoom scales the declared box and Chrome sizes the
+// popup window to rendered content, so declaring 360x600 directly would
+// shrink the real popup to 306x510.
 const POPUP_CSS =
-    '<style>html,body{width:360px;height:600px;margin:0;overflow:hidden}html{zoom:0.9}#root{width:100%;height:100%}</style>'
+    '<style>html,body{width:423.53px;height:705.89px;margin:0;overflow:hidden}html{zoom:0.85}#root{width:100%;height:100%}</style>'
 // Web-only, all surfaces: react-native-web renders <Text> as selectable HTML
 // (native RN text isn't selectable), so a click-drag over any label selects
 // text instead of feeling like a native drag/scroll gesture. `user-select:

@@ -1,4 +1,4 @@
-name: Jira Drift
+name: Jira / Drift Report
 
 # Every stage of the ticket sync exits 0 by design, so that ticket bookkeeping can
 # never break a push, a merge or a release. The cost of that choice is silence: a

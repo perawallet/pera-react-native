@@ -18,6 +18,7 @@ import {
     redactSensitiveUrl,
     type LogContext,
 } from '../logging'
+import { AppError, ErrorCategory, ErrorSeverity } from '../../errors/base'
 
 describe('logging', () => {
     beforeEach(() => {
@@ -914,6 +915,140 @@ describe('logging', () => {
                 expect(serialized).not.toContain('abandon')
                 expect(serialized).not.toContain('deadbeef')
                 expect(serialized).toBe('{}')
+            })
+        })
+
+        describe('expected-error downgrade', () => {
+            const expectedError = () =>
+                new AppError('offline', {
+                    severity: ErrorSeverity.MEDIUM,
+                    category: ErrorCategory.NETWORK,
+                    expected: true,
+                })
+
+            test('routes an expected error to console.warn, not console.error', () => {
+                logger.error(expectedError())
+                expect(console.warn).toHaveBeenCalled()
+                expect(console.error).not.toHaveBeenCalled()
+            })
+
+            test('reports an expected error with severity "expected"', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error(expectedError())
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'expected' }),
+                )
+            })
+
+            test('force bypasses the downgrade', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error(expectedError(), undefined, { force: true })
+                expect(console.error).toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'error' }),
+                )
+            })
+
+            test('critical is never downgraded', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.critical(expectedError())
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'critical' }),
+                )
+            })
+
+            test('an unexpected error still reports at error severity', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error(new Error('real defect'))
+                expect(console.error).toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'error' }),
+                )
+            })
+
+            test('warn still reports nothing', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.warn('just a warning')
+                expect(errorReporter).not.toHaveBeenCalled()
+            })
+
+            test('an expected error is downgraded even when context is present', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error(expectedError(), { step: 'sync' })
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'expected' }),
+                )
+            })
+
+            // Most call sites log a constant string with the throwable in
+            // context, so the classifier has to reach into it for the policy to
+            // apply anywhere but the handful of sites that pass the error first.
+            test('downgrades a string message carrying an expected error in context', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error('An error has occurred:', {
+                    error: expectedError(),
+                })
+                expect(console.warn).toHaveBeenCalled()
+                expect(console.error).not.toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'expected' }),
+                )
+            })
+
+            // The algod/indexer shape: AbortSignal.timeout() rejects with a
+            // DOMException the query cache logs as `message, { error }`.
+            test('downgrades a context TimeoutError that is not an AppError', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                const timeout = new Error('The operation timed out')
+                timeout.name = 'TimeoutError'
+                logger.error('An error has occurred:', { error: timeout })
+                expect(console.warn).toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'expected' }),
+                )
+            })
+
+            test('an unexpected error in context still reports at error severity', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error('Something broke', { error: new Error('defect') })
+                expect(console.error).toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'error' }),
+                )
+            })
+
+            test('force bypasses the downgrade for a context error too', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.error(
+                    'An error has occurred:',
+                    { error: expectedError() },
+                    { force: true },
+                )
+                expect(console.error).toHaveBeenCalled()
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'error' }),
+                )
+            })
+
+            test('critical is never downgraded by a context error', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                logger.critical('An error has occurred:', {
+                    error: expectedError(),
+                })
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({ severity: 'critical' }),
+                )
             })
         })
     })

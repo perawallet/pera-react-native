@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type TextStyle, type StyleProp } from 'react-native'
+import type { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
 import { PWButton, PWText } from '@components/core'
 

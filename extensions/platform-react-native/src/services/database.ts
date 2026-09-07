@@ -134,7 +134,7 @@ export class RNDatabaseService implements DatabaseService {
 
     // Second connection for the drizzle proxy's reads: under WAL, readers
     // and the writer proceed independently, so a burst of 10k-row reads
-    // can't queue small writes behind it (PERA-4953). expo-sqlite otherwise
+    // can't queue small writes behind it. expo-sqlite otherwise
     // hands back the same cached connection for the same name.
     private async getOrOpenRead(name: string): Promise<SQLiteDatabase> {
         let db = this.readDatabases.get(name)
@@ -151,7 +151,7 @@ export class RNDatabaseService implements DatabaseService {
 
 // WAL lets readers proceed while the sync loop writes, NORMAL drops the
 // per-commit fsync WAL makes redundant, and the busy timeout turns "database
-// is locked" throws under concurrent access into short waits (PERA-4953).
+// is locked" throws under concurrent access into short waits.
 // journal_mode persists in the DB file but is idempotent; the other two are
 // per-connection and must run on every connection.
 async function applyOpenPragmas(db: SQLiteDatabase): Promise<void> {

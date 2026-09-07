@@ -14,9 +14,9 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     isAlgoAssetId,
     ALGO_ASSET_ID,

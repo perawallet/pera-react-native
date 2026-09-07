@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { type PromptViewProps } from '@modules/prompts/models'
+import type { PromptViewProps } from '@modules/prompts/models'
 import { TermsAcceptanceView } from './TermsAcceptanceView'
 
 /** Prompt-queue id for the Terms & Conditions re-acceptance prompt. */

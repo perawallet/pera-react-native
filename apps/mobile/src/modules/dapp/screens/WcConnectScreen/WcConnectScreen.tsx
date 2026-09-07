@@ -40,7 +40,7 @@ import {
     PWView,
 } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@modules/walletconnect/components/ConnectionView/styles'

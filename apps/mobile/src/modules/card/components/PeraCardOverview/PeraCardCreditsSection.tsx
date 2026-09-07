@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { PWIcon, PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'

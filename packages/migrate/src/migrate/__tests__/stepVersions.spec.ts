@@ -34,7 +34,7 @@ describe('stepVersions', () => {
         for (const step of ALL_MIGRATION_STEPS) {
             expect(resolved[step]).toBe(1)
         }
-        // accounts (v2, PERA-4655) and deviceIdentifiers (v3, PERA-4670)
+        // accounts (v2) and deviceIdentifiers (v3)
         // are the only steps with a target above 1; a legacy sentinel user
         // is synthesized at version 1 for every step, so those are the
         // only ones left pending.

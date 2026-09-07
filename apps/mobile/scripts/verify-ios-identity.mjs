@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Prebuild-assert gate for WB-1 / WB-6. Generates a production iOS project and
+// Prebuild-assert gate. Generates a production iOS project and
 // asserts the literal acceptance-criteria values in the emitted native files.
 // Run from CI (iOS production workflow) or locally before submission. Requires
 // the Expo iOS toolchain + network; NOT part of `vitest run`.
@@ -108,7 +108,7 @@ for (const domain of [
 ]) {
     assert(entitlements.includes(domain), `associated-domain ${domain} not found`)
 }
-// 4b. Info.plist — all six native-parity URL schemes registered (WB-8).
+// 4b. Info.plist — all six native-parity URL schemes registered.
 for (const scheme of [
     'perawallet',
     'algorand',

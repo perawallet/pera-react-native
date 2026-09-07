@@ -214,7 +214,7 @@ describe('createLocalKeyStrategy', () => {
             )
         })
 
-        test('signs a quantum account through the shared local-key path (PQ-023 / PERA-4653)', async () => {
+        test('signs a quantum account through the shared local-key path', async () => {
             // Quantum accounts are no longer swept into a separate strategy —
             // createQuantumStrategy/quantumSignerActor are deleted. The
             // signature scheme (plain sig vs. pqsig) is resolved inside the

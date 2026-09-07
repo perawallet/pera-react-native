@@ -277,6 +277,26 @@ describe('useSwapToAssetSelectionList', () => {
             expect(mockSetQueryData).toHaveBeenCalledOnce()
         })
 
+        it('seeds the query cache when the cached entry is an empty array', () => {
+            // A DB-only useAssetsQuery for an unheld asset caches [] with
+            // staleTime Infinity; treating that as "already cached" made the
+            // default USDC receive asset permanently unselectable.
+            mockGetQueryData.mockReturnValue([])
+
+            const { result } = renderHook(() =>
+                useSwapToAssetSelectionList(defaultParams),
+            )
+            const usdc = result.current.items.find(
+                i => i.dexAsset.assetId === '31566704',
+            )!
+
+            act(() => {
+                result.current.handleAssetSelected(usdc)
+            })
+
+            expect(mockSetQueryData).toHaveBeenCalledOnce()
+        })
+
         it('does not seed the query cache when the asset is already cached', () => {
             mockGetQueryData.mockReturnValue([{ assetId: '31566704' }])
 

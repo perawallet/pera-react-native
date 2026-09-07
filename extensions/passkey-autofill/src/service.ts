@@ -116,6 +116,16 @@ export class PasskeyAutofillService {
     }
 
     /**
+     * Reads the same slot {@link setHdRootKeyId} writes. Unlike
+     * {@link getMainKeyId} this getter exists on every shipped native build,
+     * so it is the one probe that can tell whether the native side still
+     * holds a parent id at all.
+     */
+    getHdRootKeyId(): Promise<string | null> {
+        return this.invoke<string | null>('getHdRootKeyId', [], null)
+    }
+
+    /**
      * Android-only. On iOS the system Credential Provider Extension is wired
      * through entitlements rather than intent actions, so this no-ops.
      */

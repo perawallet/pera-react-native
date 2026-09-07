@@ -12,7 +12,7 @@
 
 // SWAP: joe-p native Falcon-1024 (`@joe-p/react-native-falcon`, a nitro C++
 // HybridObject). Seam A on-device implementation — replace alongside the WASM
-// provider with the official PQ crypto lib per docs/QUANTUM_PQ_INTEGRATION.md.
+// provider when an official PQ crypto lib exists.
 //
 // This file lives INSIDE the Seam A dir (`crypto/pq/`), so importing the native
 // module here does NOT breach the two-seam PQ-library firewall

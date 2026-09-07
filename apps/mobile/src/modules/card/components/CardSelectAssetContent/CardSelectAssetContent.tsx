@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { PWView } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'

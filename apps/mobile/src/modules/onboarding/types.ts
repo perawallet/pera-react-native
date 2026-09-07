@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type IconName, type PWBadgeProps } from '@components/core'
+import type { IconName, PWBadgeProps } from '@components/core'
 
 export type AccountOption = {
     testID: string

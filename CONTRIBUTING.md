@@ -1,23 +1,15 @@
 # Contributing to Pera Wallet
 
-Welcome! We're glad you're here. This guide will help you get started with contributing to the Pera Wallet React Native project.
+## Getting started
 
-## Getting Started
-
-1. **Setup**: Follow the [README](README.md) for prerequisites and installation
-2. **Initialize**: Run `pnpm install` then `pnpm run setup` (installs Git hooks)
-3. **Explore**: Read [Architecture](docs/ARCHITECTURE.md) to understand the codebase
-
-## Core Values
-
-- **Reusability** — Build flexible, reusable components and patterns
-- **Clean Code** — Self-documenting code; comments explain _why_, not _what_
-- **Concise Docs** — Keep documentation accurate but brief
-- **Separation** — Business logic in `packages/*`, UI in `apps/mobile`
+1. Follow the [README](README.md) for prerequisites and installation.
+2. Run `pnpm install`, then `pnpm run setup` to install the Git hooks.
+3. Read [Architecture](docs/ARCHITECTURE.md) before your first change; it explains the split between
+   `packages/*` and `apps/mobile` that most review comments come back to.
 
 ## Branching
 
-Use the format `<your-name>/<feature-or-fix>`:
+`<your-name>/<feature-or-fix>`:
 
 ```
 john/add-login-screen
@@ -26,7 +18,7 @@ sarah/fix-balance-display
 
 ## Commits
 
-We use [Conventional Commits](https://www.conventionalcommits.org/):
+[Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 feat(accounts): add account import functionality
@@ -35,9 +27,7 @@ docs: update testing guide
 refactor(hooks): simplify useAccountBalance
 ```
 
-Common prefixes:
-
-| Prefix     | Use For                                          |
+| Prefix     | For                                              |
 | ---------- | ------------------------------------------------ |
 | `feat`     | New features                                     |
 | `fix`      | Bug fixes                                        |
@@ -46,38 +36,23 @@ Common prefixes:
 | `test`     | Adding or updating tests                         |
 | `chore`    | Build, tooling, or maintenance                   |
 
-## Pull Requests
+## Pull requests
 
-- Target the `main` branch
-- Ensure all tests pass
-- Use **Squash Merge** when merging
-- Fill out the PR template
+Target `main`, fill out the PR template, and squash-merge. All tests must pass.
 
-## Before Submitting
-
-Run these checks locally:
+Run the checks locally first. The pre-push hook runs them anyway, but catching a failure before you
+push is faster:
 
 ```sh
 pnpm pre-push   # Lint, format, copyright, i18n
 pnpm test       # Run all tests
 ```
 
-The pre-push hook runs these automatically, but catching issues early is faster.
+## What reviewers look for
 
-## Essential Reading
+Business logic belongs in `packages/*` and UI in `apps/mobile`. Components and patterns should be
+reusable rather than one-off. Code should say what it does on its own, with comments reserved for
+the why (see [Style Guide](docs/STYLE_GUIDE.md)). Documentation should be accurate and short.
 
-Before making changes, review the documentation in [docs/](docs/):
-
-- **Architecture** — Understand packages vs mobile app separation
-- **Folder Structure** — Know where to put different types of code
-- **Naming Conventions** — Follow consistent naming patterns
-
-## Getting Help
-
-If you have questions:
-
-1. Check the documentation in `docs/`
-2. Search existing issues and PRs
-3. Ask in the team chat/discussion
-
-Thank you for contributing!
+[Code Layout](docs/CODE_LAYOUT.md) answers most placement and naming questions before they become
+review comments.

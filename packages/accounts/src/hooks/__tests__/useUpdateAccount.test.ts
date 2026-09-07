@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useUpdateAccount } from '../useUpdateAccount'
-import { WalletAccount } from '../../models'
+import type { WalletAccount } from '../../models'
 
 // Mock store
 const mockAccounts: WalletAccount[] = [

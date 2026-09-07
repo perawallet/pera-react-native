@@ -12,9 +12,12 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import { mnemonicFromSeed } from 'algosdk'
-import { algo25SeedToIndices } from '../algo25-utils'
-import { mnemonicWordsToIndices } from '../mnemonic-indices'
+import { mnemonicFromSeed, seedFromMnemonic } from 'algosdk'
+import { algo25SeedToIndices, indicesToAlgo25Seed } from '../algo25-utils'
+import {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+} from '../mnemonic-indices'
 
 describe('algo25SeedToIndices', () => {
     const seeds: Record<string, Uint8Array> = {
@@ -46,5 +49,69 @@ describe('algo25SeedToIndices', () => {
         expect(() => algo25SeedToIndices(new Uint8Array(31))).toThrow(
             RangeError,
         )
+    })
+})
+
+describe('indicesToAlgo25Seed', () => {
+    const seeds: Record<string, Uint8Array> = {
+        incrementing: Uint8Array.from(
+            { length: 32 },
+            (_, i) => (i * 13 + 5) & 0xff,
+        ),
+        'all-zero': new Uint8Array(32),
+        'all-ff': new Uint8Array(32).fill(0xff),
+    }
+
+    test.each(Object.entries(seeds))(
+        'round-trips algo25SeedToIndices for %s seed',
+        (_label, seed) => {
+            expect(
+                Array.from(indicesToAlgo25Seed(algo25SeedToIndices(seed))),
+            ).toEqual(Array.from(seed))
+        },
+    )
+
+    test.each(Object.entries(seeds))(
+        'matches the seedFromMnemonic word path for %s seed',
+        (_label, seed) => {
+            const indices = algo25SeedToIndices(seed)
+            const viaWords = seedFromMnemonic(
+                Array.from(indices, mnemonicIndexToWord).join(' '),
+            )
+            expect(Array.from(indicesToAlgo25Seed(indices))).toEqual(
+                Array.from(viaWords),
+            )
+        },
+    )
+
+    test('rejects a corrupted checksum word', () => {
+        const indices = algo25SeedToIndices(new Uint8Array(32).fill(1))
+        indices[24] = (indices[24] + 1) & 0x7ff
+        expect(() => indicesToAlgo25Seed(indices)).toThrow(/checksum/)
+    })
+
+    test('rejects a flipped data word (checksum no longer matches)', () => {
+        const indices = algo25SeedToIndices(new Uint8Array(32).fill(1))
+        indices[0] = (indices[0] + 1) & 0x7ff
+        expect(() => indicesToAlgo25Seed(indices)).toThrow(/checksum/)
+    })
+
+    test('rejects a word count other than 25', () => {
+        expect(() => indicesToAlgo25Seed(new Uint16Array(24))).toThrow(
+            RangeError,
+        )
+    })
+
+    test('rejects an out-of-range index', () => {
+        const indices = algo25SeedToIndices(new Uint8Array(32))
+        indices[0] = 2048
+        expect(() => indicesToAlgo25Seed(indices)).toThrow(RangeError)
+    })
+
+    test('does not consume or zero the caller-supplied indices', () => {
+        const indices = algo25SeedToIndices(new Uint8Array(32).fill(9))
+        const snapshot = Array.from(indices)
+        indicesToAlgo25Seed(indices)
+        expect(Array.from(indices)).toEqual(snapshot)
     })
 })

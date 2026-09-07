@@ -12,7 +12,7 @@
 
 import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useInvalidateAssetPrices } from '../useInvalidateAssetPrices'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'

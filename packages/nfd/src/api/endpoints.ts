@@ -15,6 +15,7 @@ import {
     logger,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import {
     nfdNamesListResponseSchema,
@@ -41,6 +42,9 @@ export const fetchNfdNamesForAddress = async (
     params: FetchNfdNamesForAddressParams,
 ): Promise<NfdName[]> => {
     const { address, network, signal } = params
+
+    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
+    if (!isPeraBackedNetwork(network)) return []
 
     const response = await queryClient<NfdNamesListApiResponse>({
         backend: 'pera',
@@ -72,6 +76,9 @@ export const fetchNfdBulkRead = async (
 ): Promise<NfdBulkResult[]> => {
     const { addresses, network, signal } = params
 
+    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
+    if (!isPeraBackedNetwork(network)) return []
+
     const response = await queryClient<NfdBulkReadApiResponse>({
         backend: 'pera',
         network,
@@ -102,6 +109,9 @@ export const fetchNfdSearch = async (
     params: FetchNfdSearchParams,
 ): Promise<NfdSearchResult[]> => {
     const { name, network, signal } = params
+
+    // No Pera backend on betanet/custom: callers already treat [] as "no NFD match".
+    if (!isPeraBackedNetwork(network)) return []
 
     const response = await queryClient<NfdSearchApiResponse>({
         backend: 'pera',

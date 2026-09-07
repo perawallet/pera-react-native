@@ -23,6 +23,7 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
+import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card/sheet-options'
 import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
 import {
     isValidAlgorandAddress,
@@ -109,7 +110,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
      * separate OS window above that root. The trailing `onSuccess?.()` below is
      * what dismisses the Modal, so awaiting a handler that itself waits on a
      * sheet pins the camera open on top of UI the user can neither see nor
-     * reach — it reads as a freeze rather than an error (PERA-4744).
+     * reach — it reads as a freeze rather than an error.
      *
      * Every sheet-opening case must dispatch through here instead of `await`.
      * WalletConnect is the one deliberate exception: the scanner observes its
@@ -407,15 +408,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }
-                    void requestByType(
-                        'bidali',
-                        {},
-                        {
-                            size: 'modal',
-                            enablePanDownToClose: true,
-                            autoCreateContainer: false,
-                        },
-                    )
+                    void requestByType('bidali', {}, BIDALI_SHEET_OPTIONS)
                     break
                 }
 

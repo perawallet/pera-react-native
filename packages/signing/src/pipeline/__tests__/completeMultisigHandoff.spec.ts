@@ -241,9 +241,10 @@ describe('completeMultisigHandoff', () => {
         expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
     })
 
-    test('unknown submit outcome: reports and fails, but leaves the live request alone', async () => {
+    test('retains the handoff and skips decline/onFailed on unknown-outcome', async () => {
         // The group may be confirming — declining would cancel a request for a
-        // transaction that lands moments later.
+        // transaction that lands moments later, and a failure status would flip
+        // a landed swap. Reconciliation settles the retained handoff instead.
         deps.submit.mockRejectedValue(
             new SubmissionError(
                 ['TXID'],
@@ -254,14 +255,17 @@ describe('completeMultisigHandoff', () => {
 
         await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
 
+        expect(deps.removeHandoff).not.toHaveBeenCalled()
         expect(deps.decline).not.toHaveBeenCalled()
-        expect(deps.reportError).toHaveBeenCalled()
-        // Deliberate: the backend still gets a terminal status. Correcting it later
-        // is reconciliation, which is PERA-4588's scope.
-        expect(deps.onFailed).toHaveBeenCalled()
+        expect(deps.onFailed).not.toHaveBeenCalled()
+        // The deterministic tx ids make the retained handoff crash-safe.
+        expect(deps.recordSubmitted).toHaveBeenCalledWith(['TXID'])
+        expect(deps.onSubmitted).not.toHaveBeenCalled()
+        // A possibly-landed transaction must not alarm the user as a failure.
+        expect(deps.reportError).not.toHaveBeenCalled()
     })
 
-    test('definitive node rejection: still declines', async () => {
+    test('still removes the handoff and fails on a definitive node rejection', async () => {
         deps.submit.mockRejectedValue(
             new SubmissionError(
                 ['TXID'],
@@ -272,7 +276,10 @@ describe('completeMultisigHandoff', () => {
 
         await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
 
-        expect(deps.decline).toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        expect(deps.decline).toHaveBeenCalledTimes(1)
+        expect(deps.onFailed).toHaveBeenCalledTimes(1)
+        expect(deps.recordSubmitted).not.toHaveBeenCalled()
     })
 
     test('failure before the POST: still declines', async () => {

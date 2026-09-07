@@ -47,7 +47,7 @@ const stubProjectQuery = (project: PeraProject) =>
         data: project,
     } as unknown as UseProjectByUrlQueryResult)
 
-describe('useSourceMetadataView — verified-badge gating (PERA-4715)', () => {
+describe('useSourceMetadataView — verified-badge gating', () => {
     it('suppresses the verified badge without a verifiedOrigin (WalletConnect)', () => {
         stubProjectQuery(verifiedTinyman)
 

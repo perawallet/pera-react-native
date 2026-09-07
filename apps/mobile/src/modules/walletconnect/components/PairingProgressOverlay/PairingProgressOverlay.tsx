@@ -22,8 +22,7 @@ import { useStyles } from './styles'
  * Full-screen "connecting" scrim for deep-link-initiated WC pairings. The
  * OS deep link gives the user no other feedback for the whole outcome wait
  * (up to 15s) — without this, a slow pairing is indistinguishable from the
- * tap having done nothing (mirror of the QR path's handling overlay,
- * PERA-4748).
+ * tap having done nothing (mirror of the QR path's handling overlay).
  */
 export const PairingProgressOverlay = () => {
     const isPairing = usePairingProgressStore(state => state.pendingCount > 0)

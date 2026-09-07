@@ -34,6 +34,10 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             marginTop: theme.spacing.xxs,
         },
+        pendingVerifying: {
+            color: theme.colors.warningText,
+            marginTop: theme.spacing.xxs,
+        },
         amount,
         amountPositive: {
             color: theme.colors.positive,

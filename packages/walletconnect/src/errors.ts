@@ -99,6 +99,7 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
             originalError,
             {
                 retryable: true,
+                expected: true,
                 messageKey: 'errors.walletconnect.connection_timeout_body',
             },
         )
@@ -121,6 +122,7 @@ export class WalletConnectBridgeConnectionError extends WalletConnectError {
             originalError,
             {
                 retryable: true,
+                expected: true,
                 messageKey: 'errors.walletconnect.bridge_connection_body',
             },
         )

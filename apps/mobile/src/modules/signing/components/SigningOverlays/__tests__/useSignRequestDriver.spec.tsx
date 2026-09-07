@@ -182,7 +182,7 @@ describe('useSignRequestDriver', () => {
     })
 
     // App-lock behavior is NOT tested here: the hold lives in
-    // BottomSheetManager's usePresentableRequests (PERA-4743, centralized),
+    // BottomSheetManager's usePresentableRequests, centralized there,
     // so this driver requests unconditionally while locked.
 
     it('re-opens the sheet after the host unmounts mid-display', () => {

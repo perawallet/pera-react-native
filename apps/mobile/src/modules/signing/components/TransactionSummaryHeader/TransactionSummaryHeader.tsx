@@ -21,7 +21,7 @@ import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 import { AppCallSummaryHeader } from './AppCallSummaryHeader'
 import { GenericSummaryHeader } from './GenericSummaryHeader'
-import { type SignRequestSource } from '@perawallet/wallet-core-signing'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { SourceMetadataBadge } from '../SourceMetadataBadge'
 
 export type TransactionSummaryHeaderProps = {

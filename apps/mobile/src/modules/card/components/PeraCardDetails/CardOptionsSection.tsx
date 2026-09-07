@@ -15,7 +15,7 @@ import { PWDivider, PWText, PWView } from '@components/core'
 import AppleWalletIcon from '@assets/icons/apple-wallet.svg'
 import GooglePayIcon from '@assets/icons/google-pay.svg'
 import { useLanguage } from '@hooks/useLanguage'
-import { type WalletPlatform } from '../WalletInstructionsSheet'
+import type { WalletPlatform } from '../WalletInstructionsSheet'
 import { CardOptionRow } from './CardOptionRow'
 import { useStyles } from './styles'
 

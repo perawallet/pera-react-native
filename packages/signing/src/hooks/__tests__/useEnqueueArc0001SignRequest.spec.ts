@@ -458,7 +458,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
     })
 
-    // --- PQ-017: quantum fee override ---
+    // ---: quantum fee override ---
 
     describe('quantum fee override', () => {
         it('encodeTransactionRaw round-trips the resolver decode (unmodified txn re-encodes to the original wire bytes)', () => {
@@ -630,7 +630,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         })
     })
 
-    // --- PQ-017: fee-adjustment delivery failure ---
+    // ---: fee-adjustment delivery failure ---
 
     describe('fee-adjustment delivery failure', () => {
         it('wraps a respondWithResult rejection in FeeAdjustmentDeliveryError when the request carries feeAdjustments', async () => {

@@ -14,9 +14,40 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable max-lines */
 import { vi, afterEach } from 'vitest'
-// import '@testing-library/jest-native/extend-expect'
 
 const store = new Map<string, string>()
+
+// react-native accepts `style` as an array and flattens it natively; a DOM
+// element does not. React DOM walks the prop with for..in, so an array arrives
+// as style["0"], which jsdom >= 29 rejects with a strict-mode TypeError where
+// jsdom 27 silently no-opped it.
+//
+// Patched here rather than at each mock because ~60 of the component mocks
+// below spread `...props` straight into a DOM tag, so any of them can carry the
+// array form and the next one added would reintroduce the break. Narrow on
+// purpose: only a lowercase (DOM) tag with an actually-array style is rewritten
+// — composite components still receive the array, which is what react-native
+// contracts promise them. The mocks all `require('react')`, so they share the
+// module object patched here, and this runs before any vi.mock factory does.
+const flattenMockStyle = (style: any): any => {
+    if (!style || !Array.isArray(style)) return style
+    return style.reduce(
+        (merged: any, entry: any) =>
+            Object.assign(merged, flattenMockStyle(entry)),
+        {},
+    )
+}
+
+const reactModule = require('react')
+const createElementWithFlatStyle = reactModule.createElement
+reactModule.createElement = (type: any, props: any, ...children: any[]) =>
+    typeof type === 'string' && props && Array.isArray(props.style)
+        ? createElementWithFlatStyle(
+              type,
+              { ...props, style: flattenMockStyle(props.style) },
+              ...children,
+          )
+        : createElementWithFlatStyle(type, props, ...children)
 
 // Mock platform driver to prevent "No platform driver configured" errors
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
@@ -481,6 +512,15 @@ vi.mock('@components/core', () => {
                 : null,
         PWDivider: () =>
             React.createElement('hr', { 'data-testid': 'PWDivider' }),
+        // Passthrough: the drawer panel is closed in every flow test, and
+        // rendering its content anyway would put a second copy of the account
+        // list into the tree for screen queries to trip over.
+        PWDrawer: ({ children }: any) => children,
+        // Renders every page inline, matching the react-native-pager-view mock
+        // it replaced — flow tests reach across pages (fund form, then history)
+        // without driving a swipe.
+        PWPager: ({ children }: any) =>
+            React.createElement('div', { 'data-testid': 'PWPager' }, children),
         PWHeader: ({ title, children, testID, ...props }: any) =>
             React.createElement(
                 'div',
@@ -1943,8 +1983,31 @@ vi.mock('react-native-gesture-handler', () => {
         Simultaneous: (...gestures: any[]) => gestures[0],
         Exclusive: (...gestures: any[]) => gestures[0],
     }
+    // The v3 hook API. PWPager uses it so nested swipeables can reference its
+    // handler tag, which the deprecated builder only assigns on attach — too
+    // late for a descendant to read. A stable object is all the tree needs here.
+    let nextHandlerTag = 1
+    const createHookGesture = () => ({
+        handlerTag: nextHandlerTag++,
+        type: 'PanGestureHandler',
+        config: {},
+        gestureRelations: {
+            simultaneousHandlers: [],
+            waitFor: [],
+            blocksHandlers: [],
+        },
+    })
+
     return {
         Gesture,
+        usePanGesture: createHookGesture,
+        useNativeGesture: createHookGesture,
+        useTapGesture: createHookGesture,
+        // Composition: PWPager runs one pan per direction so nested content can
+        // defer only the direction it needs. The tree just needs a gesture back.
+        useCompetingGestures: (...gestures: any[]) => gestures[0],
+        useExclusiveGestures: (...gestures: any[]) => gestures[0],
+        useSimultaneousGestures: (...gestures: any[]) => gestures[0],
         GestureDetector: ({ children }: any) => children,
         GestureHandlerRootView: MockView,
         Swipeable: MockView,
@@ -1988,11 +2051,6 @@ vi.mock('react-native-gesture-handler', () => {
         RefreshControl: MockView,
     }
 })
-
-vi.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon')
-vi.mock('react-native-vector-icons/Ionicons', () => 'Icon')
-vi.mock('react-native-vector-icons/FontAwesome', () => 'Icon')
-vi.mock('react-native-vector-icons/FontAwesome5', () => 'Icon')
 
 vi.mock('react-native-tab-view', () => ({
     TabView: () => null,
@@ -2370,6 +2428,16 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { toBytes, decodeBytesToText } = await vi.importActual<
         typeof import('../../packages/shared/src/utils/bytes')
     >('../../packages/shared/src/utils/bytes')
+
+    // Same reasoning again: expected.ts only imports the AppError type from
+    // base.ts, so pulling in the real classifier is side-effect free. Its
+    // `instanceof AppError` check targets the real class, not this mock's
+    // hand-rolled one, but every caller here has already exhausted the
+    // AppError/SubmissionError/NoConnectionError branches by the time it is
+    // reached, so it only ever sees plain Errors.
+    const { isExpectedError } = await vi.importActual<
+        typeof import('../../packages/shared/src/errors/expected')
+    >('../../packages/shared/src/errors/expected')
 
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
@@ -2775,6 +2843,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         mutationDefaults: { throwOnError: false, networkMode: 'always' },
         assertOnline: vi.fn(),
         NoConnectionError,
+        isExpectedError,
     }
 })
 
@@ -2854,6 +2923,7 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
         apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
             slippage.mul(100).toString(),
         useProvidersQuery: vi.fn(() => ({ data: [] })),
+        useSwapHistoryInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
 
@@ -3430,6 +3500,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_duress_pin: 'enable_duress_pin',
         onramp_currency_decimals: 'onramp_currency_decimals',
         enable_quantum_accounts: 'enable_quantum_accounts',
+        enable_quantum_swap: 'enable_quantum_swap',
         enable_gift_cards: 'enable_gift_cards',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',

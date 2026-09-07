@@ -42,7 +42,7 @@ export const PQ_DERIVATION_CANONICAL = 'pqk1'
  * `algokey pq` does, so the mnemonic restores a different account elsewhere.
  * `pqk1` is the canonical `SHA512_256("PQK" || scheme || entropy)`. Both are
  * supported permanently: a legacy address may be the `auth-addr` of accounts
- * rekeyed to it, so its key can never be retired. See PERA-4972.
+ * rekeyed to it, so its key can never be retired.
  */
 export type PQDerivation =
     | typeof PQ_DERIVATION_LEGACY

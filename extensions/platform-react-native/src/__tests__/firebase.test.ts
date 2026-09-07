@@ -129,7 +129,7 @@ describe('RNFirebaseService', () => {
             // `settings`/`defaultConfig` properties instead dispatched the fetch
             // first, and native setDefaults then reset the config database and
             // cancelled the in-flight request — so no fetch ever succeeded and
-            // every key served its bundled default (PERA-4836).
+            // every key served its bundled default.
             it('completes both native config writes before fetching', async () => {
                 const order: string[] = []
                 mockSetConfigSettings.mockImplementationOnce(async () => {
@@ -396,7 +396,7 @@ describe('RNFirebaseService', () => {
         })
 
         // The FCM payload names these differently from /v1/notifications; reading
-        // only the REST spelling left every multisig push unroutable (PERA-4934).
+        // only the REST spelling left every multisig push unroutable.
         describe('push payload field mapping', () => {
             const openPayloadFor = async (
                 data: Record<string, unknown>,

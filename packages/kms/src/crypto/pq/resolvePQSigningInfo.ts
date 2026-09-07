@@ -70,8 +70,7 @@ export const resolveSeedKeyFrom = (
  * and signer selection must never be able to disagree: if they did, this
  * would return `null`, the caller would sign the un-digested
  * `encodeTransaction(txn)` bytes, and the keystore would still route to the
- * real Falcon signer — silently re-creating the exact un-digested-signing bug
- * PERA-4653 closed.
+ * real Falcon signer, silently re-creating the un-digested-signing bug.
  *
  * The child's `type` is still cross-checked as a consistency guard. A
  * mismatch THROWS rather than falling back to the ed25519 path — silent

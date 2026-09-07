@@ -18,8 +18,7 @@ import { NumberPad } from '../NumberPad'
 // The global setup stubs the @components/core barrel with a guard-less
 // <button>, which would let the rapid-repeat test pass even without
 // allowRapidPress. Use the real PWTouchableOpacity so it can't; the rest
-// stay stubs (unmocking the whole barrel drags in react-native-ratings,
-// which ships unparseable JSX).
+// stay stubs.
 vi.mock('@components/core', async () => {
     const { PWTouchableOpacity } = await vi.importActual<
         typeof import('@components/core/PWTouchableOpacity')

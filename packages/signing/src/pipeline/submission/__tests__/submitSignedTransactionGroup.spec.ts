@@ -106,7 +106,7 @@ describe('submitSignedTransactionGroup', () => {
         it('treats "transaction already in ledger" as success and returns the local txIds', async () => {
             // A duplicate rejection is proof the transaction is committed —
             // e.g. a retry after the first submit's response was lost. It
-            // must resolve as success, not surface as a failure (PERA-4896).
+            // must resolve as success, not surface as a failure.
             const algokit = makeRejectingAlgokit(
                 new Error(
                     `TransactionPool.Remember: transaction already in ledger: ${DUPLICATE_TX_ID}`,

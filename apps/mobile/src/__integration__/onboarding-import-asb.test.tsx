@@ -136,6 +136,37 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
     })
 
     it(
+        'Given the recovery-key word slots are rendered on iOS, then every slot requests the ASCII-capable keyboard so an IME cannot enter its composing state',
+        async () => {
+            vi.mocked(File.pickFileAsync).mockResolvedValueOnce(
+                fakeFileFor(buildSingleAccountAsbBackup()),
+            )
+
+            renderAsbImportFromOnboarding()
+            await enterAsbFlow()
+
+            fireEvent.click(
+                screen.getByTestId('asb_import_backup_pick_file_button'),
+            )
+            await waitForButtonEnabled('asb_import_backup_continue_button')
+            fireEvent.click(
+                screen.getByTestId('asb_import_backup_continue_button'),
+            )
+
+            await waitFor(() => screen.getByTestId('asb_import_key_word_0'))
+
+            for (let idx = 0; idx < ASB_RECOVERY_MNEMONIC_WORDS.length; idx++) {
+                expect(
+                    screen
+                        .getByTestId(`asb_import_key_word_${idx}`)
+                        .getAttribute('keyboardType'),
+                ).toBe('ascii-capable')
+            }
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given a valid backup file picked from disk and the correct recovery key, the single account lands in the wallet',
         async () => {
             vi.mocked(File.pickFileAsync).mockResolvedValueOnce(

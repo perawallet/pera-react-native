@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWalletConnectProvider } from './useWalletConnectProvider'

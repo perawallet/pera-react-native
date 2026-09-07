@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { type WalletConnectSessionRequest } from '../models'
+import type { WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 import { SESSION_REQUEST_TTL_MS } from '../constants'
 

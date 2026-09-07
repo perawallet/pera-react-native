@@ -29,7 +29,9 @@ const acquireCaptureLock = (tag: string): void => {
     activeHolders += 1
     if (activeHolders !== 1) return
     void preventScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
-        logger.error(
+        // The Expo module or Android's FLAG_SECURE refusing is a device
+        // condition, not a defect we can fix from here.
+        logger.warn(
             'usePreventScreenCapture: failed to prevent screen capture',
             { tag, error: err instanceof Error ? err.message : String(err) },
         )
@@ -40,7 +42,9 @@ const releaseCaptureLock = (tag: string): void => {
     activeHolders = Math.max(0, activeHolders - 1)
     if (activeHolders !== 0) return
     void allowScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
-        logger.error(
+        // The Expo module or Android's FLAG_SECURE refusing is a device
+        // condition, not a defect we can fix from here.
+        logger.warn(
             'usePreventScreenCapture: failed to re-allow screen capture',
             { tag, error: err instanceof Error ? err.message : String(err) },
         )
@@ -50,7 +54,8 @@ const releaseCaptureLock = (tag: string): void => {
 // Blocks screenshots and screen recordings while the mounting component is
 // alive (or while `enabled` is true), re-enabling capture on unmount or when
 // `enabled` flips back to false. Fails open (permission denied) rather than
-// bricking the caller — errors are logged so we notice them in crash reports.
+// bricking the caller. A refusal is a device condition, so it is logged at
+// `warn` and deliberately never reported as a crash-reporting non-fatal.
 // The `tag` only labels the caller in those logs; the native lock is shared
 // and ref-counted (see above), so overlapping callers never double-lock it.
 //

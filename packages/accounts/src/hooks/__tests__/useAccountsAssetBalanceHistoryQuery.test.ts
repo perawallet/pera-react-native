@@ -17,7 +17,7 @@ import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalance
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { WalletAccount } from '../../models'
+import type { WalletAccount } from '../../models'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({

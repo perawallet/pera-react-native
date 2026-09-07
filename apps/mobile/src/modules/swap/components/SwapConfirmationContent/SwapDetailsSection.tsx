@@ -43,7 +43,12 @@ export const SwapDetailsSection = ({
         <PWView style={styles.detailsSection}>
             <DetailRow label={t('swap.quote.rate')}>
                 <PWView style={styles.rateValueRow}>
-                    <PWText style={styles.detailValue}>{rateDisplay}</PWText>
+                    <PWText
+                        style={styles.detailValue}
+                        testID='swap-confirm-rate'
+                    >
+                        {rateDisplay}
+                    </PWText>
                     <PWView style={styles.rateIcon}>
                         <PWIcon
                             name='swap'
@@ -56,27 +61,32 @@ export const SwapDetailsSection = ({
                 <SwapProviderDisplay
                     providerName={quote.provider}
                     providerDisplayName={quote.providerDisplayName}
+                    testID='swap-confirm-provider'
                 />
             </DetailRow>
             <DetailRow
                 label={t('swap.quote.slippage_tolerance')}
+                testID='swap-confirm-slippage'
                 value={slippageDisplay}
                 valueStyle={styles.detailValue}
                 info={t('swap.info.slippage_tolerance')}
             />
             <DetailRow
                 label={t('swap.quote.price_impact')}
+                testID='swap-confirm-price-impact'
                 value={priceImpactDisplay}
                 valueStyle={priceImpactStyle}
                 info={t('swap.info.price_impact')}
             />
             <DetailRow
                 label={t('swap.quote.minimum_received')}
+                testID='swap-confirm-min-received'
                 value={minimumReceivedDisplay}
                 valueStyle={styles.detailValue}
             />
             <DetailRow
                 label={t('swap.quote.pera_fee')}
+                testID='swap-confirm-pera-fee'
                 value={peraFeeDisplay}
                 valueStyle={styles.detailValue}
             />

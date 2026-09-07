@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
 import { isChainIdAcceptable } from '../utils/chain'
 import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
@@ -22,8 +22,8 @@ const accept: GateResult = { ok: true }
 
 // An undefined session chain id means the wallet has no record of the session
 // the dapp is using (wiped storage, re-onboarded wallet) — a dapp-visible
-// wrong-network message there sends users chasing the wrong problem
-// (PERA-4958). Keep it distinct from a genuine chain mismatch.
+// wrong-network message there sends users chasing the wrong problem.
+// Keep it distinct from a genuine chain mismatch.
 const SESSION_NOT_FOUND_REASON =
     'session not found — please disconnect and reconnect the dapp'
 

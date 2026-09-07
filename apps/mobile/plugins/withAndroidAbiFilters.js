@@ -95,6 +95,7 @@ function addDebugAbiFilter(buildGradle, abis = getDebugAbis()) {
   return patched;
 }
 
-module.exports = withAndroidAbiFilters;
-module.exports.addDebugAbiFilter = addDebugAbiFilter;
-module.exports.getDebugAbis = getDebugAbis;
+module.exports = Object.assign(withAndroidAbiFilters, {
+  addDebugAbiFilter,
+  getDebugAbis,
+});

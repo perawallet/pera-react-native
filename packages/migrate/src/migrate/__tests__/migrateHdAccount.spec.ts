@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../legacyKeyConversion', () => ({
-    hdWalletEntropyToMnemonic: vi.fn(() => 'mock mnemonic'),
+    hdWalletEntropyToIndices: vi.fn(() => new Uint16Array(24).fill(1)),
 }))
 
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
@@ -23,7 +23,7 @@ import type {
     LegacyHDWallet,
 } from '@perawallet/wallet-extension-platform'
 import { migrateHdAccount } from '../migrateHdAccount'
-import { hdWalletEntropyToMnemonic } from '../legacyKeyConversion'
+import { hdWalletEntropyToIndices } from '../legacyKeyConversion'
 import type { ImportedHdRoot, MigrateAccountArgs } from '../types'
 
 const buildKey = (overrides: Partial<LegacyHDKey> = {}): LegacyHDKey => ({
@@ -104,8 +104,10 @@ const buildArgs = (
 }
 
 beforeEach(() => {
-    vi.mocked(hdWalletEntropyToMnemonic).mockClear()
-    vi.mocked(hdWalletEntropyToMnemonic).mockReturnValue('mock mnemonic')
+    vi.mocked(hdWalletEntropyToIndices).mockClear()
+    vi.mocked(hdWalletEntropyToIndices).mockReturnValue(
+        new Uint16Array(24).fill(1),
+    )
 })
 
 describe('migrateHdAccount', () => {
@@ -186,11 +188,11 @@ describe('migrateHdAccount', () => {
 
         await migrateHdAccount(args)
 
-        expect(hdWalletEntropyToMnemonic).toHaveBeenCalledTimes(1)
+        expect(hdWalletEntropyToIndices).toHaveBeenCalledTimes(1)
         expect(createHDWalletKey).toHaveBeenCalledTimes(1)
         expect(createHDWalletKey).toHaveBeenCalledWith({
             id: 'wallet-1',
-            mnemonic: 'mock mnemonic',
+            mnemonicIndices: expect.objectContaining({ length: 24 }),
         })
         expect(importedHdRoots.get('wallet-1')).toEqual({
             seedKeyId: 'kp-id',
@@ -218,7 +220,7 @@ describe('migrateHdAccount', () => {
         await migrateHdAccount(args)
 
         expect(createHDWalletKey).not.toHaveBeenCalled()
-        expect(hdWalletEntropyToMnemonic).not.toHaveBeenCalled()
+        expect(hdWalletEntropyToIndices).not.toHaveBeenCalled()
         expect(createHdWalletAccount).toHaveBeenCalledWith({
             seedKeyId: 'wallet-1',
             account: 3,
@@ -241,11 +243,11 @@ describe('migrateHdAccount', () => {
 
         expect(createHDWalletKey).toHaveBeenCalledWith({
             id: 'wallet-1',
-            mnemonic: 'mock mnemonic',
+            mnemonicIndices: expect.objectContaining({ length: 24 }),
         })
     })
 
-    it('reuses the cached HD root without re-deriving the mnemonic', async () => {
+    it('reuses the cached HD root without re-deriving the indices', async () => {
         const createHDWalletKey = vi.fn()
         const importedHdRoots = new Map<string, ImportedHdRoot>([
             ['wallet-1', { seedKeyId: 'cached-id' }],
@@ -258,7 +260,7 @@ describe('migrateHdAccount', () => {
 
         await migrateHdAccount(args)
 
-        expect(hdWalletEntropyToMnemonic).not.toHaveBeenCalled()
+        expect(hdWalletEntropyToIndices).not.toHaveBeenCalled()
         expect(createHDWalletKey).not.toHaveBeenCalled()
     })
 

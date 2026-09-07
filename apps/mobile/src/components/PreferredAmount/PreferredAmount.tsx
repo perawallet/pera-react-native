@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     CurrencyAmount,
     type CurrencyAmountProps,
 } from '@components/CurrencyAmount'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferredAmount } from './usePreferredAmount'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 /**
  * How precisely a preferred-currency value (fiat or ALGO) is rendered:

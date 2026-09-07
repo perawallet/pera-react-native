@@ -11,11 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { AccountAssetItemView } from '@modules/assets/components'
-import { type PWTouchableOpacityProps } from '@components/core'
-import { type Nullable } from '@perawallet/wallet-core-shared'
-import { type RampToken } from '@perawallet/wallet-core-onramp'
+import type { PWTouchableOpacityProps } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildAccountBalanceFromRampToken } from './buildAccountBalanceFromRampToken'
 
 export type OnrampAssetItemViewProps = {

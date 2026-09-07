@@ -17,11 +17,14 @@ import {
 } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
 import { useHandleInboxItemPress } from '@modules/messages/hooks'
+import { useNetworkStatus } from '@modules/network'
 
 export type UseInboxScreenResult = {
     inboxItems: InboxItem[]
     isPending: boolean
     isRefetching: boolean
+    isError: boolean
+    isOffline: boolean
     isAwaitingRegistration: boolean
     isUnavailableOnNetwork: boolean
     refetch: () => void
@@ -47,6 +50,8 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     const {
         data: inboxItems,
         isPending,
+        isPaused,
+        isError,
         isRefetching,
         refetch,
         isUnavailableOnNetwork,
@@ -54,6 +59,13 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     useCleanupDuplicateMultisigInvitations()
     const handleInboxItemPress = useHandleInboxItemPress()
     const isRegistrationPending = useIsDeviceRegistrationPending()
+    const { hasInternet } = useNetworkStatus()
+
+    // Offline wins over a stale error: a paused, uncached fetch means there is
+    // nothing to show yet, and an error surfacing while genuinely offline is
+    // the same "nothing to show" situation — not a dead Retry. Mirrors the
+    // charts / staking contract (docs/OFFLINE_PAUSED_STATE.md).
+    const isOffline = isPaused || (isError && !hasInternet)
     // Registration can never complete on a network with no Pera backend, so
     // don't let that state masquerade as "still awaiting registration".
     const isAwaitingRegistration =
@@ -65,6 +77,8 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         inboxItems: inboxItems ?? [],
         isPending,
         isRefetching,
+        isError,
+        isOffline,
         isAwaitingRegistration,
         isUnavailableOnNetwork,
         refetch: () => void refetch(),

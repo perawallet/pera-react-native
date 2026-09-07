@@ -80,8 +80,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    MNEMONIC_WORDLIST: [
+const { MOCK_WORDLIST } = vi.hoisted(() => ({
+    MOCK_WORDLIST: [
         'abandon',
         'ability',
         'able',
@@ -105,6 +105,23 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         'alpha',
         'crisp',
     ],
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    MNEMONIC_WORDLIST: MOCK_WORDLIST,
+    // Same contract as the real codec, over the mocked wordlist: null when
+    // any word is unknown, indices otherwise.
+    mnemonicWordsToIndices: (words: string[]) => {
+        const out = new Uint16Array(words.length)
+        for (let i = 0; i < words.length; i++) {
+            const index = MOCK_WORDLIST.indexOf(words[i])
+            if (index < 0) return null
+            out[i] = index
+        }
+        return out
+    },
+    zeroBytes: (...buffers: Array<Uint16Array | null>) =>
+        buffers.forEach(buffer => buffer?.fill(0)),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -525,6 +542,13 @@ describe('useImportAccountScreen', () => {
 
             const { result } = renderHook(() => useImportAccountScreen())
 
+            act(() => {
+                result.current.updateWord(
+                    new Array(24).fill('abandon').join(' '),
+                    0,
+                )
+            })
+
             await act(async () => {
                 result.current.handleImportAccount()
                 // Allow deferred microtask + promise chain to resolve
@@ -558,8 +582,7 @@ describe('useImportAccountScreen', () => {
 
         it('forwards the explicit quantum type to importAccount', async () => {
             mockImportAccount.mockResolvedValue({ type: 'quantum' })
-            const words = Array.from({ length: 25 }, (_, i) => `word${i}`)
-            const mnemonic = words.join(' ')
+            const mnemonic = new Array(25).fill('abandon').join(' ')
 
             const { result } = renderHook(() => useImportAccountScreen())
 
@@ -573,7 +596,7 @@ describe('useImportAccountScreen', () => {
             })
 
             expect(mockImportAccount).toHaveBeenCalledWith({
-                mnemonic,
+                mnemonicIndices: expect.any(Uint16Array),
                 type: 'quantum',
             })
         })
@@ -599,8 +622,7 @@ describe('useImportAccountScreen', () => {
 
         it('forwards the explicit algo25 type to importAccount and uses generic copy', async () => {
             mockImportAccount.mockResolvedValue({ type: 'algo25' })
-            const words = Array.from({ length: 25 }, (_, i) => `word${i}`)
-            const mnemonic = words.join(' ')
+            const mnemonic = new Array(25).fill('abandon').join(' ')
 
             const { result } = renderHook(() => useImportAccountScreen())
 
@@ -614,7 +636,7 @@ describe('useImportAccountScreen', () => {
             })
 
             expect(mockImportAccount).toHaveBeenCalledWith({
-                mnemonic,
+                mnemonicIndices: expect.any(Uint16Array),
                 type: 'algo25',
             })
             expect(result.current.titleKey).toBe(
@@ -655,7 +677,19 @@ describe('useImportAccountScreen', () => {
         })
 
         it('submits the normalized mnemonic when the user typed it capitalized', async () => {
-            mockImportAccount.mockResolvedValue({ type: 'algo25' })
+            // Snapshot at call time: the hook zeroes the index buffer in its
+            // finally, so inspecting the stored mock arg would see zeros.
+            let submitted: number[] | null = null
+            mockImportAccount.mockImplementation(
+                async ({
+                    mnemonicIndices,
+                }: {
+                    mnemonicIndices: Uint16Array
+                }) => {
+                    submitted = Array.from(mnemonicIndices)
+                    return { type: 'algo25' }
+                },
+            )
             const { result } = renderHook(() => useImportAccountScreen())
             const capitalized = VALID_25_WORDS.map(
                 w => w.charAt(0).toUpperCase() + w.slice(1),
@@ -668,10 +702,9 @@ describe('useImportAccountScreen', () => {
                 await new Promise(resolve => setTimeout(resolve, 0))
             })
 
-            expect(mockImportAccount).toHaveBeenCalledWith({
-                mnemonic: VALID_25_WORDS.join(' '),
-                type: 'algo25',
-            })
+            expect(submitted).toEqual(
+                VALID_25_WORDS.map(w => MOCK_WORDLIST.indexOf(w)),
+            )
         })
     })
 })

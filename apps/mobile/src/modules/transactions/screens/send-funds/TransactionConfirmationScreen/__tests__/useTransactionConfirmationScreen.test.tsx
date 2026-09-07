@@ -397,7 +397,7 @@ describe('useTransactionConfirmationScreen', () => {
         })
 
         // The ledger allows leaving a receiver at exactly 0 — a zero-amount
-        // note payment to an empty account is valid (PERA-4968).
+        // note payment to an empty account is valid.
         it('does not flag a zero-amount send that leaves an empty recipient at zero', () => {
             setupAlgoSend(new Decimal('0'))
             ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({

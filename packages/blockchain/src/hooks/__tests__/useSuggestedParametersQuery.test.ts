@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, afterEach, Mock } from 'vitest'
+import {
+    describe,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type Mock,
+} from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import {
     QueryClient,
@@ -97,7 +105,7 @@ describe('useSuggestedParametersQuery', () => {
         expect(result.current.error).toBe(mockError)
     })
 
-    describe('offline behavior (PERA-4579)', () => {
+    describe('offline behavior', () => {
         afterEach(() => {
             onlineManager.setOnline(true)
         })
@@ -122,7 +130,7 @@ describe('useSuggestedParametersQuery', () => {
         })
     })
 
-    describe('freshness (PERA-4579)', () => {
+    describe('freshness', () => {
         test('serves cache within the TTL and refetches once stale', async () => {
             vi.useFakeTimers()
             try {

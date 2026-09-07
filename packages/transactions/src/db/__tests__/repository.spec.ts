@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     runMigrations,
@@ -24,8 +25,11 @@ import {
     getTransactionHistory,
     getLatestTransactionRoundTime,
     getCloseRowsMissingCloseAmount,
+    getSwapRowsMissingAssetFacts,
+    persistResolvedSwapAssetFacts,
     updateTransactionCloseAmount,
 } from '../repository'
+import { TransactionsSchema } from '../schema'
 
 describe('transaction repository', () => {
     let db: Database
@@ -62,6 +66,105 @@ describe('transaction repository', () => {
         interpretedMeaning: null,
         balanceImpacts: [],
         ...overrides,
+    })
+
+    // The syncer only fetches transactions newer than the newest cached one,
+    // so a row that captured the backend's `asset(0)` placeholder is never
+    // refetched — the read path is the only place it can be repaired.
+    it('overrides a cached ALGO balance-impact placeholder on read', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    txType: 'appl',
+                    balanceImpacts: [
+                        {
+                            assetId: '0',
+                            unitName: 'asset(0)',
+                            fractionDecimals: 0,
+                            amount: new Decimal(-3000),
+                        },
+                    ],
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        expect(result[0].balanceImpacts[0]).toEqual({
+            assetId: '0',
+            unitName: 'ALGO',
+            fractionDecimals: 6,
+            amount: new Decimal(-3000),
+        })
+    })
+
+    it('overrides a cached ALGO asset-summary placeholder on read', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    asset: {
+                        assetId: '0',
+                        name: '',
+                        unitName: 'asset(0)',
+                        decimals: 0,
+                    },
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        expect(result[0].asset?.unitName).toBe('ALGO')
+        expect(result[0].asset?.decimals).toBe(6)
+    })
+
+    // A cached swap row can carry no ids, no unit names and no decimals.
+    // Nothing can recover the names, but decimals must default to 6: 0 would
+    // inflate the amounts by six orders of magnitude.
+    it('defaults swap decimals for rows cached without them', async () => {
+        const legacyDetail = {
+            assetInId: null,
+            assetInUnitName: '',
+            assetOutId: null,
+            assetOutUnitName: '',
+            amountIn: new Decimal(1000000),
+            amountOut: new Decimal(5000000),
+        }
+
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    swapGroupDetail:
+                        legacyDetail as TransactionHistoryItem['swapGroupDetail'],
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        expect(result[0].swapGroupDetail?.assetInDecimals).toBe(6)
+        expect(result[0].swapGroupDetail?.assetOutDecimals).toBe(6)
     })
 
     it('inserts and retrieves transactions', async () => {
@@ -333,18 +436,20 @@ describe('transaction repository', () => {
 
     it('round-trips nested objects correctly', async () => {
         const asset = {
-            assetId: 100,
+            assetId: '100',
             name: 'Test',
             unitName: 'TST',
             decimals: 2,
         }
         const swapGroupDetail = {
-            assetInId: 0,
+            assetInId: '0',
             assetInUnitName: 'ALGO',
-            assetOutId: 100,
+            assetInDecimals: 6,
+            assetOutId: '100',
             assetOutUnitName: 'TST',
-            amountIn: '1000',
-            amountOut: '500',
+            assetOutDecimals: 2,
+            amountIn: new Decimal(1000),
+            amountOut: new Decimal(500),
         }
         const interpretedMeaning = {
             title: 'Swap ALGO for TST',
@@ -558,5 +663,166 @@ describe('transaction repository', () => {
         })
 
         expect(result).toBeNull()
+    })
+
+    describe('getSwapRowsMissingAssetFacts', () => {
+        const legacySwapDetail = {
+            assetInId: null,
+            assetInUnitName: '',
+            assetOutId: null,
+            assetOutUnitName: '',
+            amountIn: new Decimal(1000000),
+            amountOut: new Decimal(5000000),
+        } as unknown as TransactionHistoryItem['swapGroupDetail']
+
+        const healedSwapDetail = {
+            assetInId: '0',
+            assetInUnitName: 'ALGO',
+            assetInDecimals: 6,
+            assetOutId: '31566704',
+            assetOutUnitName: 'USDC',
+            assetOutDecimals: 6,
+            amountIn: new Decimal(1000000),
+            amountOut: new Decimal(5000000),
+        }
+
+        it('lists swap rows whose persisted detail has no per-side decimals', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                network: 'mainnet',
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows).toEqual([{ id: 'STALE', roundTime: 1700000000 }])
+        })
+
+        it('ignores rows that already carry decimals', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'HEALED', swapGroupDetail: healedSwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                network: 'mainnet',
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows).toEqual([])
+        })
+
+        it('lists only the rows linked to the given account', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'MINE', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'THEIRS', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT2',
+                network: 'mainnet',
+            })
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                network: 'mainnet',
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows.map(row => row.id)).toEqual(['MINE'])
+        })
+
+        it('survives a row whose stored detail is not valid JSON', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'BROKEN', swapGroupDetail: legacySwapDetail }),
+                    makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+            await db
+                .update(TransactionsSchema)
+                .set({ swapGroupDetailJson: 'not json at all' })
+                .where(eq(TransactionsSchema.id, 'BROKEN'))
+                .run()
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                network: 'mainnet',
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows.map(row => row.id).sort()).toEqual(['BROKEN', 'STALE'])
+        })
+
+        it('stops listing a row once its resolved facts are persisted', async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'STALE', swapGroupDetail: legacySwapDetail }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+
+            await persistResolvedSwapAssetFacts({
+                db,
+                network: 'mainnet',
+                ids: ['STALE'],
+            })
+
+            expect(
+                await getSwapRowsMissingAssetFacts({
+                    db,
+                    network: 'mainnet',
+                    accountAddress: 'ACCT1',
+                }),
+            ).toEqual([])
+
+            const [row] = await getTransactionHistory({
+                db,
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+            expect(row.swapGroupDetail?.assetInDecimals).toBe(6)
+        })
+
+        it('ignores non-swap rows', async () => {
+            await upsertTransactions({
+                db,
+                items: [makeTx({ id: 'PLAIN' })],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+
+            const rows = await getSwapRowsMissingAssetFacts({
+                db,
+                network: 'mainnet',
+                accountAddress: 'ACCT1',
+            })
+
+            expect(rows).toEqual([])
+        })
     })
 })

@@ -12,27 +12,9 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [
-        dts({
-            include: ['src'],
-            exclude: [
-                '**/__tests__/**',
-                '**/*.test.ts',
-                '**/*.test.tsx',
-                '**/{handlers,*-handlers}.ts',
-            ],
-            afterDiagnostic: diagnostics => {
-                if (diagnostics.length > 0) {
-                    throw new Error(
-                        `TypeScript declaration generation failed with ${diagnostics.length} error(s)`,
-                    )
-                }
-            },
-        }),
-    ],
+    plugins: [],
     build: {
         lib: {
             // The `protocol` entry moved out to

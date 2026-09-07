@@ -12,7 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { Linking } from 'react-native'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useSelectedAccountAddress,
     useAccountsStore,

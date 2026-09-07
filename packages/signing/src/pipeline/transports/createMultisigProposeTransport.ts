@@ -94,12 +94,12 @@ export type CreateDraftSignRequestFn = (
 
 /**
  * Two flows:
- *  - **In-app**: `type: 'async'` — the backend collects signatures and
- *    eventually broadcasts.
- *  - **External handoff**: `type: 'sync'` — the backend collects signatures but
- *    the WALLET delivers the assembled bytes to the dApp. The transport
- *    registers a pending handoff in {@link walletConnectHandoffs}, and an
- *    app-side resolver polls for threshold-met and fires the callback.
+ * - **In-app**: `type: 'async'` — the backend collects signatures and
+ * eventually broadcasts.
+ * - **External handoff**: `type: 'sync'` — the backend collects signatures but
+ * the WALLET delivers the assembled bytes to the dApp. The transport
+ * registers a pending handoff in {@link walletConnectHandoffs}, and an
+ * app-side resolver polls for threshold-met and fires the callback.
  *
  *
  * `capturedNetwork` is re-checked before submission, so a mid-flow network
@@ -197,8 +197,7 @@ export const createMultisigProposeTransport = (
                 // wiring (handoff registration, onProposed) can't attach here.
                 // Stash the source and the validated preconditions so the
                 // bootstrap propose can wire delivery under the real id;
-                // without this a sync record is stranded at `ready` forever
-                // (PERA-4987).
+                // without this a sync record is stranded at `ready` forever.
                 draftProposeContexts.set(draftLocalId, {
                     source,
                     msigMetadata: msig,

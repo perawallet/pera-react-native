@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-// Quantum accounts have no dedicated signing path since PQ-006/PERA-4653:
+// Quantum accounts have no dedicated signing path:
 // `useLocalKeyTransactionSigner` handles them like any other local key and
 // yields an ordinary `SignedTransaction` carrying `pqsig` instead of `sig`.
 //
 // A local send self-submits through the callback transport rather than algod,
 // so this asserts the pqsig-bearing transaction reaches the request's `approve`
 // callback and that no algod broadcast ever happens. Submission over the algod
-// transport is covered by submit-quantum-broadcast.test.tsx (PQ-019).
+// transport is covered by submit-quantum-broadcast.test.tsx.
 
 import {
     afterAll,
@@ -74,7 +74,7 @@ import {
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
-    QUANTUM_TEST_MNEMONIC,
+    QUANTUM_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/quantum'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -98,7 +98,7 @@ const seedQuantumSender = async (): Promise<WalletAccount> => {
     let keyResult: QuantumKeyResult | null = null
     await waitFor(async () => {
         keyResult = await kms.current.createQuantumKey({
-            mnemonic: QUANTUM_TEST_MNEMONIC,
+            mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
         })
         expect(keyResult).not.toBeNull()
     })
@@ -129,7 +129,7 @@ const renderSendConfirmationStack = () =>
         ],
     })
 
-describe('send from quantum account (PQ-015)', () => {
+describe('send from quantum account', () => {
     beforeAll(async () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()

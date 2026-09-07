@@ -12,7 +12,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useNavigationLock } from '../useNavigationLock'
 
 type BeforeRemoveListener = (e: { preventDefault: () => void }) => void

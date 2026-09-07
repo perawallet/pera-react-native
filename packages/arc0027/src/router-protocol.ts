@@ -15,7 +15,7 @@
 // separate "response" message shape on this scope — DAPP_RESPONSE_SCOPE is
 // reserved for a future push-style notification (e.g. account changed) and
 // unused by the request/response round trip itself.
-import { type Arc0027RequestEnvelope } from './types'
+import type { Arc0027RequestEnvelope } from './types'
 
 export const DAPP_RELAY_SCOPE = 'pera-dapp-relay' as const
 export const DAPP_RESPONSE_SCOPE = 'pera-dapp-response' as const

@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
         overflow: 'hidden',
-        marginTop: theme.spacing.lg,
+        marginTop: theme.spacing.sm,
     },
     toolbar: {
         flexShrink: 0,
@@ -34,33 +34,10 @@ export const useStyles = makeStyles(theme => ({
         overflow: 'hidden',
     },
     titleSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        flexShrink: 1,
-        minWidth: 0,
-        overflow: 'hidden',
+        paddingTop: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.xl,
     },
-    selectHeader: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
-    },
-    selectTitle: {
-        minWidth: 0,
-    },
-    selectDescription: {
-        color: theme.colors.textGray,
-        minWidth: 0,
-    },
-    accountTrigger: {
-        flexGrow: 0,
-        flexShrink: 1,
-        minWidth: 0,
-        maxWidth: '100%',
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        paddingVertical: theme.spacing.xs,
+    infoIcon: {
+        marginRight: theme.spacing.lg,
     },
 }))

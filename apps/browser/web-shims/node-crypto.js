@@ -23,9 +23,8 @@
 // the browser's SubtleCrypto (async PBKDF2). This shim replaces react-native-quick-crypto
 // which bundles react-native-worklets and throws __fbBatchedBridgeConfig on eval.
 
-import { sha256 } from '@noble/hashes/sha256'
-import { sha512, sha512_256 } from '@noble/hashes/sha512'
-import { hmac } from '@noble/hashes/hmac'
+import { sha256, sha512, sha512_256 } from '@noble/hashes/sha2.js'
+import { hmac } from '@noble/hashes/hmac.js'
 
 // ---------------------------------------------------------------------------
 // Helpers

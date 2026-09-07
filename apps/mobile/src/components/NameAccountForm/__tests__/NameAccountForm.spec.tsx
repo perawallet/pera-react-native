@@ -18,9 +18,8 @@ import { NameAccountForm, type NameAccountFormProps } from '../NameAccountForm'
 
 // RNE's <Input> doesn't mount its `rightIcon` under react-native-web/jsdom, so
 // the clear button never reaches the DOM through the real PWInput. Stub the
-// layout components (importing the full barrel pulls in react-native-ratings,
-// which vite can't transform here) but keep the real PWTouchableIcon so the
-// keyboard-dismiss behavior is exercised end to end.
+// layout components but keep the real PWTouchableIcon so the keyboard-dismiss
+// behavior is exercised end to end.
 vi.mock('@components/core', async () => {
     const { PWTouchableIcon } = await vi.importActual<
         typeof import('@components/core/PWTouchableIcon')

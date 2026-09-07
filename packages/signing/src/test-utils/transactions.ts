@@ -13,7 +13,7 @@
 import { Address, Transaction, TransactionType } from 'algosdk'
 
 // Shared fixture for specs that must exercise genuine algosdk Transactions:
-// hand-built literals with SDK-shaped fields are exactly what let PERA-4506
+// hand-built literals with SDK-shaped fields are exactly what let
 // ship as dead code, because v3 keeps type-specific fields (receiver, amount,
 // closeRemainderTo, ...) under `payment`/`assetTransfer`, not at the top level.
 export const TEST_SUGGESTED_PARAMS = {

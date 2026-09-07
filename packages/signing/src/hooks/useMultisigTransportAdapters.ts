@@ -272,7 +272,7 @@ export const useMultisigTransportAdapters =
                     // so the sync-flow delivery wiring the immediate-propose
                     // path does at create time happens here instead. Without
                     // it a `sync` record has no deliverer anywhere and the
-                    // backend holds it at `ready` forever (PERA-4987).
+                    // backend holds it at `ready` forever.
                     const context = draftProposeContexts.take(signRequestId)
                     if (context) {
                         const { source, msigMetadata } = context

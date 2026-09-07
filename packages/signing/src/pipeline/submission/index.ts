@@ -22,6 +22,7 @@ export {
     submitAndAutoRefresh,
     submitAndAutoRefreshCore,
     type SubmitAndAutoRefreshCoreInput,
+    type SubmitAndAutoRefreshOptions,
 } from './submitAndAutoRefresh'
 export {
     setOnConfirmedHandler,

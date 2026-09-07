@@ -38,7 +38,7 @@ const NOT_ADJUSTED: UseFeeAdjustmentResult = {
 
 /**
  * Surfaces the fee raises the signing pipeline applied to a dApp's
- * transactions (today's only rule: the post-quantum minimum, PQ-017). Fees
+ * transactions (today's only rule: the post-quantum minimum). Fees
  * are stored in µAlgo on the sign request and exposed here as ALGO
  * `Decimal`s ready for display.
  *

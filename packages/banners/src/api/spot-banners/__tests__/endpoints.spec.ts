@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSpotBanners, closeSpotBanner } from '../endpoints'
 

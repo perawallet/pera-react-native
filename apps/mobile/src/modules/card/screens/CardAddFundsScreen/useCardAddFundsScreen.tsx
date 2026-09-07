@@ -23,19 +23,19 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { type Maybe, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import {
     CardFundingUnavailableError,
     useDepositToCardMutation,
 } from '@perawallet/wallet-core-card'
 import { useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
 import { useCardComingSoonToast } from '../../hooks'
-import { type PeraCardFlowParamList } from '../../routes/types'
+import type { PeraCardFlowParamList } from '../../routes/types'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
 

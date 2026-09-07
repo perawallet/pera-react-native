@@ -29,7 +29,7 @@ const FALCON_CHILD_TYPE = 'falcon-1024'
 /**
  * Tags every pre-existing Falcon child with the derivation that produced it.
  *
- * Quantum children minted before PERA-4972 fed Falcon the raw algo25 entropy
+ * Quantum children minted before fed Falcon the raw algo25 entropy
  * rather than `SHA512_256("PQK" || scheme || entropy)`. Both mappings are
  * supported permanently — a legacy address may be the `auth-addr` of accounts
  * rekeyed to it, so its key can never be retired — which means the repair path

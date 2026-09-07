@@ -34,7 +34,7 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
  * the event loop. HD signing re-derives the child key and runs Ed25519 per
  * transaction synchronously, so signing a large batch (up to 1000) in one
  * burst starves the JS thread — the slide-to-confirm loading state never
- * paints and the whole UI freezes until it finishes (PERA-3353). Yielding
+ * paints and the whole UI freezes until it finishes. Yielding
  * between chunks lets React commit the loading state and gives the UI thread
  * frames. Lower = smoother UI but more total overhead; tune as needed.
  */

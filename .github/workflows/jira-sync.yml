@@ -1,4 +1,4 @@
-name: Jira Sync
+name: Jira / Ticket Sync
 
 # Keeps the PERA ticket's status in step with where the code actually is:
 #

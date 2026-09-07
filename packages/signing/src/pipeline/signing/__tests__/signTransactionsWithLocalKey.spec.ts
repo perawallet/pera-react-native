@@ -147,7 +147,7 @@ describe('signTransactionsWithLocalKey', () => {
         )
 
         // The PQ path signs `bytesToSign()` directly; reaching for the
-        // encoder here would be the double-hash PERA-4643 closed.
+        // encoder here would be the double-hash closed.
         expect(encodeTransaction).not.toHaveBeenCalled()
     })
 

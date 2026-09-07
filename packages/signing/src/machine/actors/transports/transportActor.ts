@@ -11,7 +11,7 @@
  */
 
 import { fromPromise } from 'xstate'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     SigningResult,
     SourceMetadata,

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'

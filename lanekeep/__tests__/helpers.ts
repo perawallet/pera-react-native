@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) Pera Wallet. All rights reserved.
+ */
+
+import { execFile } from 'node:child_process'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
+
+const REPO_ROOT = resolve(import.meta.dirname, '../..')
+const BIN = join(REPO_ROOT, 'node_modules/.bin/lanekeep')
+
+export interface Violation {
+    ruleId: string
+    file: string
+    line: number
+    column: number
+    message: string
+}
+
+/** The shape `lanekeep check --format json` actually emits, ahead of the flatter `Violation`. */
+interface RawViolation {
+    rule_id: string
+    location: {
+        file: string
+        position: { line: number; column: number }
+    }
+    message: string
+}
+
+/**
+ * Runs one rule over the fixture directory and returns its violations, sorted.
+ *
+ * The fixtures live inside the repo but must not be scanned by the real config,
+ * so the run uses a generated config in a temp directory pointing back at them.
+ */
+export async function runRule(
+    rulePath: string,
+    fixtureGlob: string,
+): Promise<Violation[]> {
+    const dir = await mkdtemp(join(tmpdir(), 'lanekeep-fixture-'))
+    try {
+        const config = {
+            include: [fixtureGlob],
+            exclude: [],
+            namespaces: ['pera'],
+            // lanekeep's rule loader only accepts a path `./`- or `../`-prefixed,
+            // resolved against the project-root argument passed to `check`; an
+            // absolute path is rejected and fails the whole run opaquely.
+            rules: [rulePath.startsWith('.') ? rulePath : `./${rulePath}`],
+        }
+        const configPath = join(dir, 'lanekeep.json')
+        await writeFile(configPath, JSON.stringify(config, null, 2))
+
+        // Exit code 1 means violations were found, which is the normal case
+        // here; only exit 2 is a tool error worth surfacing.
+        const { stdout } = await execFileAsync(
+            BIN,
+            ['check', REPO_ROOT, '--config', configPath, '--format', 'json'],
+            { maxBuffer: 32 * 1024 * 1024 },
+        ).catch((err: { code?: number; stdout?: string; stderr?: string }) => {
+            if (err.code === 1 && err.stdout !== undefined) {
+                return { stdout: err.stdout }
+            }
+            throw new Error(`lanekeep failed: ${err.stderr ?? 'unknown'}`)
+        })
+
+        const parsed = JSON.parse(stdout) as { violations: RawViolation[] }
+        return parsed.violations
+            .map(v => ({
+                ruleId: v.rule_id,
+                file: v.location.file,
+                line: v.location.position.line,
+                column: v.location.position.column,
+                message: v.message,
+            }))
+            .sort(
+                (a, b) =>
+                    a.file.localeCompare(b.file) ||
+                    a.line - b.line ||
+                    a.column - b.column,
+            )
+    } finally {
+        await rm(dir, { recursive: true, force: true })
+    }
+}
+
+/**
+ * `file:line` pairs, the form assertions read most clearly. Strips to the
+ * basename, so fixture filenames must stay unique across `__tests__/fixtures/`
+ * subdirectories or two unrelated violations will collide on the same key.
+ */
+export const locations = (violations: Violation[]): string[] =>
+    violations.map(v => `${v.file.split('/').pop()}:${v.line}`)

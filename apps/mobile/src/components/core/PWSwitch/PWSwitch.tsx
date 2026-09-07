@@ -13,7 +13,7 @@
 import { Switch as RNESwitch } from '@rneui/themed'
 import { getTestProps } from '@utils/test-id-helper'
 
-import { type StyleProp, type ViewStyle } from 'react-native'
+import type { StyleProp, ViewStyle } from 'react-native'
 
 export type PWSwitchProps = {
     value: boolean

@@ -23,7 +23,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useContactForm } from '@modules/contacts/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type UseEditParticipantScreenResult = {
     address: string

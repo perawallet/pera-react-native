@@ -12,7 +12,7 @@
 
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

@@ -32,8 +32,8 @@ import {
     isArc0027Request,
     parseReference,
 } from './codec'
-import { type DappPermissionStore } from './permissions'
-import { type DiscoverInfo } from './router-protocol'
+import type { DappPermissionStore } from './permissions'
+import type { DiscoverInfo } from './router-protocol'
 
 export interface Arc0027ApprovalOpener {
     openEnable(ctx: {

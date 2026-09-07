@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { Transaction, computeGroupID } from 'algosdk'
 import {
     bytesEqual,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { PWImage, PWSkeleton, PWText, PWView } from '@components/core'

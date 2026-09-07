@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Prebuild-assert gate for WB-2 / WB-7. Generates a production Android project,
+// Prebuild-assert gate. Generates a production Android project,
 // runs the Gradle manifest merger so library-contributed permissions resolve,
 // then asserts the literal acceptance-criteria values in the merged manifest +
 // build.gradle. Run from CI (Android production workflow) or locally before
@@ -26,7 +26,7 @@ const androidRoot = join(mobileRoot, 'android')
 
 const APP_ID = 'com.algorand.android'
 
-// PERA-4451: the committed versionCode floor. Prebuild here runs without
+// the committed versionCode floor. Prebuild here runs without
 // BUILD_NUMBER, so the merged manifest versionCode must equal exactly the base.
 const { versionCodeBase } = JSON.parse(
     readFileSync(join(mobileRoot, 'package.json'), 'utf8'),
@@ -198,7 +198,7 @@ assert(
     /android:fullBackupContent="@xml\/pera_backup_rules"/.test(manifest),
     'fullBackupContent not wired',
 )
-// 4b. Deep-link continuity (WB-8) — custom schemes + autoVerify App Links.
+// 4b. Deep-link continuity — custom schemes + autoVerify App Links.
 for (const scheme of [
     'perawallet',
     'algorand',
@@ -223,7 +223,7 @@ for (const path of ['/qr/perawallet/', '/qr/perawallet-wc/']) {
     )
 }
 
-// 4c. Versioning floor (PERA-4451) — read from the merged manifest.
+// 4c. Versioning floor — read from the merged manifest.
 const versionCodeMatch = manifest.match(/android:versionCode="(\d+)"/)
 assert(
     versionCodeMatch !== null,

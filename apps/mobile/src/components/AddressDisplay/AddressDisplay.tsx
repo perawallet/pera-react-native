@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import {
     type IconName,
     PWIcon,
@@ -25,7 +25,7 @@ import { ContactAvatar } from '@components/ContactAvatar'
 import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { type SvgProps } from 'react-native-svg'
+import type { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 import {
     useAddressDisplay,

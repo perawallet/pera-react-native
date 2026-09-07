@@ -20,8 +20,8 @@ import {
 } from '@algorandfoundation/keystore-core'
 
 // Guards the premise of the whole migration: that the official library ships a
-// Falcon generator we can hand custody to. If this fails, the quantum tasks are
-// not buildable and the bump should stop at Task 3.
+// Falcon generator we can hand custody to. If this fails, quantum custody is
+// not buildable on this version and the bump should stop.
 describe('keystore-core Falcon surface', () => {
     it('advertises Falcon-1024 as a shim-able algorithm', () => {
         expect(FALCON_ALGORITHM).toBe('Falcon-1024')

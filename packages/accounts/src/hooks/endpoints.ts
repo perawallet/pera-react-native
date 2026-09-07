@@ -19,9 +19,9 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 
-import {
-    type AccountAssetBalanceHistoryResponse,
-    type AccountBalanceHistoryResponse,
+import type {
+    AccountAssetBalanceHistoryResponse,
+    AccountBalanceHistoryResponse,
 } from '../models'
 import { HOLDINGS_PAGE_LIMIT } from '../constants'
 

@@ -52,7 +52,7 @@ export const ConnectionViewHeader = ({
     // spoofable, so it can never mint the `verified` checkmark: a WalletConnect
     // request has no platform-observed origin, so `resolveDisplayableVerificationTier`
     // suppresses the positive tier here. A `suspicious` hit is still surfaced —
-    // fail-loud — so a known-scam URL can't hide (PERA-4715).
+    // fail-loud — so a known-scam URL can't hide.
     const { data: project } = useProjectByUrlQuery({
         url: request.peerMeta.url,
         isEnabled: !!request.peerMeta.url,

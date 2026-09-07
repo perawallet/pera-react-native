@@ -19,7 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { type RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { SearchInput } from '@components/SearchInput'

@@ -783,6 +783,17 @@ describe('useAccountOptions', () => {
             })
         })
 
+        it('navigates to RekeyToQuantum intro when the sheet resolves to quantum', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+
+            await pressRekey(algo25Account)
+
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToQuantum', {
+                screen: 'RekeyToQuantumIntro',
+                params: { sourceAddress: algo25Account.address },
+            })
+        })
+
         it('does not navigate when the type sheet is dismissed', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
 
@@ -1046,7 +1057,7 @@ describe('useAccountOptions', () => {
             expect(mockShowToast).not.toHaveBeenCalled()
         })
 
-        // R3 (PERA-4585 residual): docs/OFFLINE_PAUSED_STATE.md says screens
+        // docs/OFFLINE_PAUSED_STATE.md says screens
         // should use the pending flag to disable the control rather than let
         // a tap silently resolve `false`. This row now does.
         it('disables the toggle-notifications option while a toggle for this address is pending', () => {

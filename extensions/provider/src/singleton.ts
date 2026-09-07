@@ -137,6 +137,11 @@ export const clearKeystore = async (): Promise<void> => {
     await keystore.clear?.()
 }
 
+export type KeystoreReconcileResult = {
+    /** `k/`-prefixed storage keys whose records were present but undecodable. */
+    failedIds: string[]
+}
+
 /**
  * Re-seeds the store to pick up out-of-process writes. The Android passkey
  * credential provider runs in its own process and writes straight to the MMKV
@@ -149,12 +154,18 @@ export const clearKeystore = async (): Promise<void> => {
  * No master key and no biometric prompt: the driver keeps metadata in the `k/`
  * bucket as plaintext and only material under `m/` is sealed.
  */
-export const reconcileKeystore = async (): Promise<void> => {
-    const keys = readPersistedKeys()
+export const reconcileKeystore = async (): Promise<KeystoreReconcileResult> => {
+    const { keys, failedIds } = readPersistedKeys()
 
-    if (keys.length === 0) return
+    // Deliberately stale-over-empty: MMKV is multi-process, and replacing the
+    // reactive keys with [] here would render an empty wallet on a transient
+    // or spurious empty read — which is what prompts users to wipe and
+    // re-onboard on top of keys still on disk. In-process deletion flows
+    // update the store through the engine, so they never rely on this pass.
+    if (keys.length === 0) return { failedIds }
 
     keystoreStore.setState(state => ({ ...state, keys }))
+    return { failedIds }
 }
 
 /**
@@ -245,8 +256,34 @@ export const runQuantumMaterialRepair = (
         },
     })
 
+/**
+ * The engine refused to hydrate because specific metadata records would not
+ * decode. Distinguished from other bootstrap failures so the app can show a
+ * data-integrity message (and support gets record ids) instead of a generic
+ * "try again" that can never succeed.
+ */
+export class KeystoreHydrationError extends Error {
+    readonly failedIds: string[]
+    readonly cause: unknown
+
+    constructor(failedIds: string[], cause: unknown) {
+        super(
+            `keystore hydration failed: undecodable metadata record(s): ${failedIds.join(', ')}`,
+        )
+        this.name = 'KeystoreHydrationError'
+        this.failedIds = failedIds
+        this.cause = cause
+    }
+}
+
 export type KeystoreMaintenanceResult = {
     repair: QuantumMaterialRepairResult
+    /**
+     * `k/`-prefixed storage keys the reconcile passes skipped as undecodable.
+     * Non-fatal for this session, but the engine's strict hydration will fail
+     * on these exact records at the next cold start — report them.
+     */
+    failedDecodeIds: string[]
 }
 
 /**
@@ -282,16 +319,30 @@ export type KeystoreMaintenanceResult = {
 export const runKeystoreMaintenance = async (
     deps: QuantumMaterialRepairDependencies,
 ): Promise<KeystoreMaintenanceResult> => {
-    await keystore.ready
+    try {
+        await keystore.ready
+    } catch (err) {
+        // The engine's hydration error is a bare parse failure with no record
+        // id. Re-scan the metadata bucket with the tolerant reader to name the
+        // records that caused it; when none are undecodable the failure has
+        // some other cause (migration, shim) and must surface untranslated.
+        const { failedIds } = readPersistedKeys()
+        if (failedIds.length > 0) {
+            throw new KeystoreHydrationError(failedIds, err)
+        }
+        throw err
+    }
 
-    await reconcileKeystore()
+    const failedDecodeIds = new Set((await reconcileKeystore()).failedIds)
 
     const repair = await runQuantumMaterialRepair(deps)
     if (repair.repaired > 0 || repair.failed > 0) {
-        await reconcileKeystore()
+        for (const id of (await reconcileKeystore()).failedIds) {
+            failedDecodeIds.add(id)
+        }
     }
 
-    return { repair }
+    return { repair, failedDecodeIds: [...failedDecodeIds] }
 }
 
 /**

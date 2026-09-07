@@ -30,9 +30,9 @@
 import React from 'react'
 import { Linking } from 'react-native'
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
-import {
-    type AlgorandPermission,
-    type WalletConnectSessionRequest,
+import type {
+    AlgorandPermission,
+    WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'

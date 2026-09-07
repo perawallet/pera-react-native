@@ -12,19 +12,19 @@
 
 import { Decimal } from 'decimal.js'
 import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
-import {
-    type PeraAssetType,
-    type PeraAssetVerificationTier,
-    type PeraAsset,
-    type PeraCollectible,
-    type CollectibleMediaType,
-    type CollectibleStandard,
+import type {
+    PeraAssetType,
+    PeraAssetVerificationTier,
+    PeraAsset,
+    PeraCollectible,
+    CollectibleMediaType,
+    CollectibleStandard,
 } from '../../models'
-import {
-    type AssetResponse,
-    type CollectibleResponse,
-    type IndexerAssetResponse,
-    type PublicAssetResponse,
+import type {
+    AssetResponse,
+    CollectibleResponse,
+    IndexerAssetResponse,
+    PublicAssetResponse,
 } from './schema'
 
 const MODEL_EXTENSIONS = new Set(['glb', 'gltf', 'usdz'])

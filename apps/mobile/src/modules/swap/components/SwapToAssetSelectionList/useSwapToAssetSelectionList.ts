@@ -122,7 +122,12 @@ export const useSwapToAssetSelectionList = ({
             // immediately after selection, even for unowned assets that aren't
             // in the local asset database yet.
             const queryKey = getAssetsQueryKey([assetId], network)
-            if (!queryClient.getQueryData(queryKey)) {
+            // An empty array counts as "not cached": the DB-only assets query
+            // caches [] (staleTime Infinity) for an asset the account doesn't
+            // hold, and skipping the seed then leaves the selector unable to
+            // display the selection — permanently, for the default pair.
+            const cached = queryClient.getQueryData<PeraAsset[]>(queryKey)
+            if (!cached || cached.length === 0) {
                 const peraAsset: PeraAsset = {
                     assetId,
                     decimals: item.dexAsset.decimals ?? 0,

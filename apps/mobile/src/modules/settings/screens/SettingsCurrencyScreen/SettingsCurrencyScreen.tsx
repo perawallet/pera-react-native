@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { Trans } from 'react-i18next'
-import { type Currency } from '@perawallet/wallet-core-currencies'
+import type { Currency } from '@perawallet/wallet-core-currencies'
 
 import {
     PWScreen,

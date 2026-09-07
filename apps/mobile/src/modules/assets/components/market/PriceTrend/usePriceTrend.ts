@@ -12,10 +12,7 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import {
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import {
     type AssetPriceHistoryItem,
@@ -36,7 +33,7 @@ type UsePriceTrendResult = {
      * True when there is nothing truthful to show: the price fetch is
      * offline-paused with no data (fresh or persisted), or the active
      * network has no Pera backend at all. Rendering would fake a 0.00%
-     * trend (PERA-4581).
+     * trend.
      */
     isHidden: boolean
 }

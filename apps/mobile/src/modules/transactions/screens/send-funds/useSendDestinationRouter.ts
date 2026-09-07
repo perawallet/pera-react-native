@@ -23,7 +23,7 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
-import { type StackNavigationProp } from '@react-navigation/stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -76,7 +76,7 @@ export const useSendDestinationRouter = () => {
 
     // ARC-59 needs the router contract + Pera backend, which only exist on
     // Pera-backed networks. Block the route up front instead of landing the
-    // user on a summary screen that can never load (PERA-4923).
+    // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
         if (getArc59Config(network) === null) {
             showToast({

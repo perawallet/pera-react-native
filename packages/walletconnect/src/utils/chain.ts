@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type Network } from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import { AlgorandChainId } from '../models'
 import { getExpectedChainId } from './expectedChainId'
 

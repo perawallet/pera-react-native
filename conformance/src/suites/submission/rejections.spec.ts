@@ -104,7 +104,7 @@ describe('typed rejection paths conformance', () => {
         expect(error.message).toContain(`tried to spend ${amount / 1000n}mA)`)
 
         const algodError = toAlgodError(error)
-        // Was a FINDING (PERA-4908, found in e6d5d5f2f): OVERSPEND_RE
+        // Was a FINDING : OVERSPEND_RE
         // required the legacy "MicroAlgos:{Raw:N}" debug format. algod
         // 5.0.0-stable renders this as a unit-suffixed figure instead
         // ("MicroAlgos:300mA"), so the regex never matched and a real
@@ -262,7 +262,7 @@ describe('typed rejection paths conformance', () => {
         )
 
         const algodError = toAlgodError(error)
-        // FINDING (PERA-4908), STILL OPEN — recorded as a follow-up, not
+        // FINDING, STILL OPEN — recorded as a follow-up, not
         // fixed in this PR: no matcher in parseAlgodMessage.ts recognizes
         // "inconsistent group values" (algod's group-hash mismatch text), so
         // this real rejection falls through to unknown_node_error. There is
@@ -323,7 +323,7 @@ describe('typed rejection paths conformance', () => {
         expect(txn.lastValid).toBe(lastValid)
 
         const algodError = toAlgodError(error)
-        // Was a FINDING (PERA-4908, found in e6d5d5f2f): EXPIRED_TXN_RE
+        // Was a FINDING : EXPIRED_TXN_RE
         // required a single dash between the two round numbers ("outside of
         // A-B"). algod 5.0.0-stable's actual message uses a double dash
         // ("outside of A--B", asserted above), so the regex never matched

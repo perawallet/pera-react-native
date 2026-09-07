@@ -41,7 +41,7 @@ describe('buildBidaliUrl (web)', () => {
         )
     })
 
-    // Task 3's content script (bidali-main.ts) parses this param back out with
+    // The content script (bidali-main.ts) parses this param back out with
     // `new URLSearchParams(window.location.search)`, which decodes `+` as a
     // space. encodeURIComponent never emits a bare `+` (it escapes it to
     // %2B), so the two are always compatible — prove it end to end instead

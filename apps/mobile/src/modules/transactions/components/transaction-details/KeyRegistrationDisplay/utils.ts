@@ -21,7 +21,7 @@ import { encodeToBase64 } from '@perawallet/wallet-core-shared'
  *
  * `nonParticipation` is NOT the offline flag — it means "never participate
  * again", and a plain de-registration leaves it false. Branching on it alone
- * labelled every offline keyreg "Online" (PERA-4976).
+ * labelled every offline keyreg "Online".
  */
 export const getKeyRegType = (tx: PeraDisplayableTransaction): KeyRegType => {
     const keyreg = tx.keyregTransaction

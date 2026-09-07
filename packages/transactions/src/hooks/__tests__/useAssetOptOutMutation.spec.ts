@@ -130,7 +130,7 @@ describe('useAssetOptOutMutation', () => {
             network: 'testnet',
         })
         // Scoped, not balances-only: the holdings delete must refresh every
-        // staleTime-Infinity account read (PERA-4845).
+        // staleTime-Infinity account read.
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
         expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
             'SENDER',
@@ -181,7 +181,7 @@ describe('useAssetOptOutMutation', () => {
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
-    // PERA-4922: algod rejects an underfunded Falcon group outright
+    // algod rejects an underfunded Falcon group outright
     // (`txgroup with 1mA fees is less than 3mA`), so the built group must go
     // through the fee calculator before it is signed.
     it('submits the fee-raised group returned by the minimum-fee calculator', async () => {

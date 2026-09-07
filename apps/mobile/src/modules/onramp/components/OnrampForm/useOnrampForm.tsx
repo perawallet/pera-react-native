@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { type Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useOnramp,
     parseRampAmount,
@@ -20,7 +20,7 @@ import {
     type RampQuote,
     type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { ONRAMP_AMOUNT_ERROR_DEBOUNCE_TIME } from '@constants/ui'
 import { getXoLimitViolation, isMeldPair } from './onrampFormHelpers'

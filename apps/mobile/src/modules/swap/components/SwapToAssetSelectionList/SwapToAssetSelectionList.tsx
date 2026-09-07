@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
 import {

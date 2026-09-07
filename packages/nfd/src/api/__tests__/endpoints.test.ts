@@ -188,4 +188,59 @@ describe('fetchNfdSearch', () => {
         expect(result).toEqual([])
         expect(loggerMock.warn).toHaveBeenCalled()
     })
+
+    test('still calls queryClient on testnet', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { count: 0, results: [] },
+        })
+
+        await fetchNfdSearch({ name: 'alice', network: 'testnet' })
+
+        expect(queryClientMock).toHaveBeenCalled()
+    })
+})
+
+describe('non-Pera-backed networks', () => {
+    beforeEach(() => {
+        queryClientMock.mockReset()
+    })
+
+    test.each(['betanet', 'custom'] as const)(
+        'fetchNfdBulkRead returns [] without calling queryClient on %s',
+        async network => {
+            const result = await fetchNfdBulkRead({
+                addresses: ['ADDR1'],
+                network,
+            })
+
+            expect(result).toEqual([])
+            expect(queryClientMock).not.toHaveBeenCalled()
+        },
+    )
+
+    test.each(['betanet', 'custom'] as const)(
+        'fetchNfdSearch returns [] without calling queryClient on %s',
+        async network => {
+            const result = await fetchNfdSearch({
+                name: 'alice',
+                network,
+            })
+
+            expect(result).toEqual([])
+            expect(queryClientMock).not.toHaveBeenCalled()
+        },
+    )
+
+    test.each(['betanet', 'custom'] as const)(
+        'fetchNfdNamesForAddress returns [] without calling queryClient on %s',
+        async network => {
+            const result = await fetchNfdNamesForAddress({
+                address: 'ADDR1',
+                network,
+            })
+
+            expect(result).toEqual([])
+            expect(queryClientMock).not.toHaveBeenCalled()
+        },
+    )
 })

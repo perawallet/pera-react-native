@@ -11,7 +11,7 @@
  */
 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
-import { type ParamListBase } from '@react-navigation/native'
+import type { ParamListBase } from '@react-navigation/native'
 import { makeStyles } from '@rneui/themed'
 import { PWTabBar } from './PWTabBar'
 
@@ -44,6 +44,10 @@ export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
                         tabBarHidden ? null : <PWTabBar {...tabBarProps} />
                     }
                     style={styles.navigator}
+                    // material-top-tabs defaults to 'firstRoute': Android back
+                    // on a non-first tab hops to the first tab instead of
+                    // dismissing the pushed screen hosting the tabs.
+                    backBehavior='none'
                     screenOptions={{
                         sceneStyle: styles.scene,
                         ...screenOptions,

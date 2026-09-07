@@ -209,7 +209,7 @@ export const BalanceLineChart = <T,>({
             }
             // Offline must not masquerade as loading: a paused query reports
             // isPending forever, so it needs its own surface or the spinner
-            // never yields and retry is unreachable (PERA-4581).
+            // never yields and retry is unreachable.
             case 'offline': {
                 return (
                     <EmptyView
