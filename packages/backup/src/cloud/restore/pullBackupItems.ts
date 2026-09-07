@@ -12,7 +12,7 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import { logger } from '@perawallet/wallet-core-shared'
-import { fetchDelta, fetchManifest, readItems } from '../api'
+import { fetchManifest, readItems } from '../api'
 import {
     parseAddressPayload,
     parseContactPayload,
@@ -25,13 +25,11 @@ import {
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
-    DeltaOperation,
     isContactItemKey,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
     type ContactBackupPayload,
-    type DeltaEntry,
     type DeviceId,
     type FetchedItem,
     type ManifestItem,
@@ -86,21 +84,26 @@ const chunk = <T>(items: T[], size: number): T[][] => {
     return out
 }
 
-/** Keys of the active items that should be read and restored. Contacts are in
- *  here because the restore is their only way home: it seeds `lastSyncedSeq`
- *  from the manifest, so no later delta ever mentions an item that was already
- *  in the backup when the device joined. */
-const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
-    deltas
+/** Keys of the active items that should be read and restored. Read from the
+ *  manifest and never from a `from_seq=0` delta: once changelog retention has
+ *  pruned anything, seq 0 is itself out of the window and the delta call fails
+ *  permanently — which would make every restore of a busy backup fail with it.
+ *
+ *  Contacts are in here because the restore is their only way home: it seeds
+ *  `lastSyncedSeq` from the manifest, so no later delta ever mentions an item
+ *  that was already in the backup when the device joined. */
+const selectWantedKeys = (
+    manifestItems: Record<BackupItemKey, ManifestItem>,
+): BackupItemKey[] =>
+    Object.entries(manifestItems)
         .filter(
-            d =>
-                d.op === DeltaOperation.UPSERT &&
-                d.status === BackupItemStatus.ACTIVE &&
-                (d.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
-                    d.key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
-                    d.key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)),
+            ([key, item]) =>
+                item.status === BackupItemStatus.ACTIVE &&
+                (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)),
         )
-        .map(d => d.key)
+        .map(([key]) => key)
 
 const readItemsInBatches = async (
     network: Network,
@@ -225,9 +228,8 @@ export const pullBackupItems = async ({
     encryptionKey,
 }: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
     const manifest = await fetchManifest(network, backupId, deviceId)
-    const deltas = await fetchDelta(network, backupId, deviceId, 0)
 
-    const wantedKeys = selectWantedKeys(deltas)
+    const wantedKeys = selectWantedKeys(manifest.items)
     const items = await readItemsInBatches(
         network,
         backupId,

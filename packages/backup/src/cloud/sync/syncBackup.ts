@@ -11,19 +11,14 @@
  */
 
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
-import {
-    batchUpsertItems,
-    deleteItem,
-    fetchDelta,
-    fetchManifest,
-    readItems,
-} from '../api'
+import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import type { Manifest, SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'
+import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
 import type { LocalSnapshot, SyncEngineDeps } from './types'
 
@@ -87,11 +82,10 @@ export const syncBackup = async (
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const deltas = await fetchDelta(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        next.lastSyncedSeq,
+    const { deltas } = await fetchDeltaOrRebuild(
+        deps,
+        next,
+        async () => manifest,
     )
     next = await applyDeltas({
         state: next,

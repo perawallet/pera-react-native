@@ -32,7 +32,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { UpsertResult } from '../../api'
+import { FromSeqTooOldError, UpsertResult } from '../../api'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -99,6 +99,53 @@ describe('syncBackup', () => {
         const next = await syncBackup(deps(), state)
         expect(fetchDelta).not.toHaveBeenCalled()
         expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
+    // Retention pruned past this device's cursor. The manifest is the only
+    // description of the backup left, so the sync has to converge on it instead
+    // of failing here forever.
+    it('rebuilds from the manifest when the cursor has been pruned', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                'accounts/W': {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'r',
+                    lastSeq: 97,
+                },
+            },
+        })
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+        const state = createEmptySyncState('b')
+        state.lastSyncedSeq = 3
+        state.lastKnownBackupHash = 'stale'
+        state.items['accounts/W'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: contentHash(
+                canonicalJson({
+                    type: 'watch',
+                    address: 'W',
+                    customName: 'Watcher',
+                }),
+            ),
+            localUpdatedAt: 1,
+        }
+
+        const next = await syncBackup(deps(), state)
+
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(next.lastSyncedSeq).toBe(100)
+        expect(next.lastKnownBackupHash).toBe('g')
+        expect(readItems).not.toHaveBeenCalled()
+        expect(batchUpsertItems).not.toHaveBeenCalled()
     })
 
     it('pulls deltas and pushes the new local account on a first sync', async () => {

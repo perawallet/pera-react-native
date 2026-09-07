@@ -33,6 +33,22 @@ const backupId = 'did:pera:ADDR'
 const enc = (key: string, plaintext: string) =>
     encryptItemPayload(plaintext, { encryptionKey: encKey, backupId, key })
 
+const active = (ver: number, hash: string, lastSeq: number) => ({
+    type: 'ACCOUNT',
+    ver,
+    status: 'ACTIVE',
+    hash,
+    lastSeq,
+})
+
+const pull = () =>
+    pullBackupItems({
+        network: 'mainnet',
+        backupId,
+        deviceId: 'device-1',
+        encryptionKey: encKey,
+    })
+
 describe('pullBackupItems', () => {
     beforeEach(() => {
         fetchManifest.mockReset()
@@ -44,28 +60,11 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 10,
-            items: {},
+            items: {
+                'accounts/QADDR': active(1, 'h1', 9),
+                'secrets/QADDR': active(1, 'h2', 10),
+            },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 9,
-                key: 'accounts/QADDR',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h1',
-            },
-            {
-                seq: 10,
-                key: 'secrets/QADDR',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h2',
-            },
-        ])
         readItems.mockResolvedValue([
             {
                 key: 'accounts/QADDR',
@@ -91,12 +90,7 @@ describe('pullBackupItems', () => {
             },
         ])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
 
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0]).toMatchObject({
@@ -111,28 +105,11 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 10,
-            items: {},
+            items: {
+                'accounts/ADDR': active(1, 'h1', 9),
+                'secrets/ADDR': active(1, 'h2', 10),
+            },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 9,
-                key: 'accounts/ADDR',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h1',
-            },
-            {
-                seq: 10,
-                key: 'secrets/ADDR',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h2',
-            },
-        ])
         readItems.mockResolvedValue([
             {
                 key: 'accounts/ADDR',
@@ -158,12 +135,7 @@ describe('pullBackupItems', () => {
             },
         ])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
 
         expect(result.lastSeq).toBe(10)
         expect(result.backupGlobalHash).toBe('sha256:global')
@@ -176,71 +148,63 @@ describe('pullBackupItems', () => {
         expect(result.skipped).toHaveLength(0)
     })
 
+    // Retention prunes the changelog, and once it has, `from_seq=0` is rejected
+    // like any other cursor behind the window — so a restore that read the
+    // delta stream would fail permanently on exactly the busiest backups.
+    it('reads the manifest alone, never the changelog', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 1,
+            items: { 'accounts/A': active(1, 'h', 1) },
+        })
+        readItems.mockResolvedValue([])
+
+        await pull()
+
+        expect(fetchDelta).not.toHaveBeenCalled()
+        expect(readItems).toHaveBeenCalledWith(
+            'mainnet',
+            backupId,
+            'device-1',
+            ['accounts/A'],
+        )
+    })
+
     it('skips (does not throw) an item that fails to decrypt', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: {},
+            items: { 'accounts/BAD': active(1, 'h', 1) },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 1,
-                key: 'accounts/BAD',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h',
-            },
-        ])
         readItems.mockResolvedValue([
             { key: 'accounts/BAD', ver: 1, hash: 'h', payload: 'bm90LXZhbGlk' },
         ])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
+
         expect(result.accounts).toHaveLength(0)
         expect(result.skipped).toEqual([
             { key: 'accounts/BAD', reason: 'decrypt' },
         ])
     })
 
-    it('ignores DELETE deltas and IGNORED items (no read calls)', async () => {
+    it('ignores IGNORED items (no read calls)', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 2,
-            items: {},
-        })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 1,
-                key: 'accounts/A',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'DELETE',
-                hash: null,
+            items: {
+                'accounts/B': {
+                    type: 'ACCOUNT',
+                    ver: 1,
+                    status: 'IGNORED',
+                    hash: 'h',
+                    lastSeq: 2,
+                },
             },
-            {
-                seq: 2,
-                key: 'accounts/B',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'IGNORED',
-                op: 'UPSERT',
-                hash: 'h',
-            },
-        ])
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
         })
+
+        const result = await pull()
+
         expect(readItems).not.toHaveBeenCalled()
         expect(result.accounts).toHaveLength(0)
     })
@@ -249,19 +213,8 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: {},
+            items: { 'accounts/P': active(1, 'h', 1) },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 1,
-                key: 'accounts/P',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h',
-            },
-        ])
         readItems.mockResolvedValue([
             {
                 key: 'accounts/P',
@@ -270,12 +223,9 @@ describe('pullBackupItems', () => {
                 payload: enc('accounts/P', '{not json'),
             },
         ])
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+
+        const result = await pull()
+
         expect(result.accounts).toHaveLength(0)
         expect(result.skipped).toEqual([{ key: 'accounts/P', reason: 'parse' }])
     })
@@ -284,28 +234,14 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: {},
+            items: { 'accounts/A': active(1, 'h', 1) },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 1,
-                key: 'accounts/A',
-                type: 'ACCOUNT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h',
-            },
-        ])
         readItems.mockResolvedValue([
             { key: 'unknown/FOO', ver: 1, hash: 'h', payload: 'AAAA' },
         ])
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+
+        const result = await pull()
+
         expect(result.accounts).toHaveLength(0)
         expect(result.skipped).toEqual([
             { key: 'unknown/FOO', reason: 'missing-address' },
@@ -319,28 +255,23 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 4,
-            items: {},
+            items: {
+                'contacts/CADDR': {
+                    type: 'CONTACT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 3,
+                },
+                'contacts/GONE': {
+                    type: 'CONTACT',
+                    ver: 2,
+                    status: 'IGNORED',
+                    hash: 'h2',
+                    lastSeq: 4,
+                },
+            },
         })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 3,
-                key: 'contacts/CADDR',
-                type: 'CONTACT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h1',
-            },
-            {
-                seq: 4,
-                key: 'contacts/GONE',
-                type: 'CONTACT',
-                ver: 2,
-                status: 'IGNORED',
-                op: 'DELETE',
-                hash: 'h2',
-            },
-        ])
         readItems.mockResolvedValue([
             {
                 key: 'contacts/CADDR',
@@ -357,12 +288,7 @@ describe('pullBackupItems', () => {
             },
         ])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
 
         expect(readItems).toHaveBeenCalledWith(
             'mainnet',
@@ -380,29 +306,21 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 3,
-            items: {},
-        })
-        fetchDelta.mockResolvedValue([
-            {
-                seq: 3,
-                key: 'contacts/CADDR',
-                type: 'CONTACT',
-                ver: 1,
-                status: 'ACTIVE',
-                op: 'UPSERT',
-                hash: 'h1',
+            items: {
+                'contacts/CADDR': {
+                    type: 'CONTACT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 3,
+                },
             },
-        ])
+        })
         readItems.mockResolvedValue([
             { key: 'contacts/CADDR', ver: 1, hash: 'h1', payload: 'AAAA' },
         ])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
 
         expect(result.contacts).toEqual([])
         expect(result.skipped).toEqual([
@@ -423,13 +341,7 @@ describe('pullBackupItems manifest pass-through', () => {
             backupGlobalHash: 'sha256:global',
             lastSeq: 4,
             items: {
-                'accounts/A': {
-                    type: 'ACCOUNT',
-                    ver: 2,
-                    status: 'ACTIVE',
-                    hash: 'h1',
-                    lastSeq: 3,
-                },
+                'accounts/A': active(2, 'h1', 3),
                 'accounts/GONE': {
                     type: 'ACCOUNT',
                     ver: 5,
@@ -441,16 +353,16 @@ describe('pullBackupItems manifest pass-through', () => {
         })
         // Only the ACTIVE key is downloaded; the tombstone still has to be
         // tracked or the next push offers it to the server as brand new.
-        fetchDelta.mockResolvedValue([])
         readItems.mockResolvedValue([])
 
-        const result = await pullBackupItems({
-            network: 'mainnet',
-            backupId,
-            deviceId: 'device-1',
-            encryptionKey: encKey,
-        })
+        const result = await pull()
 
+        expect(readItems).toHaveBeenCalledWith(
+            'mainnet',
+            backupId,
+            'device-1',
+            ['accounts/A'],
+        )
         expect(Object.keys(result.manifestItems)).toEqual([
             'accounts/A',
             'accounts/GONE',

@@ -14,13 +14,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchDelta = vi.fn()
+const fetchManifest = vi.fn()
 const readItems = vi.fn()
 vi.mock('../../api', async importOriginal => ({
     ...(await importOriginal<object>()),
     fetchDelta: (...a: unknown[]) => fetchDelta(...a),
+    fetchManifest: (...a: unknown[]) => fetchManifest(...a),
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
+import { FromSeqTooOldError } from '../../api'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -46,6 +49,7 @@ const deps = () => ({
 describe('pullBackupDeltas', () => {
     beforeEach(() => {
         fetchDelta.mockReset()
+        fetchManifest.mockReset()
         readItems.mockReset()
     })
 
@@ -73,6 +77,36 @@ describe('pullBackupDeltas', () => {
         const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
         expect(next.lastSyncedSeq).toBe(0)
         expect(readItems).not.toHaveBeenCalled()
+    })
+
+    // Retention pruned the window this device's cursor pointed into. Without
+    // the manifest rebuild the cursor never moves again and every later pull
+    // fails the same way.
+    it('rebuilds from the manifest when the cursor has been pruned', async () => {
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                'accounts/X': {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'h',
+                    lastSeq: 97,
+                },
+            },
+        })
+        readItems.mockResolvedValue([])
+
+        const next = await pullBackupDeltas(deps(), {
+            ...createEmptySyncState('b'),
+            lastSyncedSeq: 3,
+        })
+
+        expect(next.lastSyncedSeq).toBe(100)
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(next.items['accounts/X'].knownVer).toBe(1)
     })
 
     it('records the pull as a successful sync', async () => {
