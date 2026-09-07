@@ -12,7 +12,9 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import type { MutableRefObject } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { PWFlatListRef } from '@components/core'
 
 // Mutable global-selection state + fixtures must be hoisted so the vi.mock
 // factory (hoisted above imports) can reference them safely.
@@ -29,6 +31,10 @@ const mockCardState = vi.hoisted(() => ({
     connectedFundingSourceAddress: null as string | null,
 }))
 const mockPeraCardFlag = vi.hoisted(() => ({ enabled: true }))
+const mockSortState = vi.hoisted(() => ({
+    sortMode: 'manual' as string,
+    manualAccountOrder: [] as string[],
+}))
 
 vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
@@ -39,7 +45,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountValueTotalsQuery: () => ({ accountValueTotals: new Map() }),
     useSortedAccounts: (accounts: unknown[]) => ({
         sortedAccounts: accounts,
-        sortMode: 'manual',
+        sortMode: mockSortState.sortMode,
+        manualAccountOrder: mockSortState.manualAccountOrder,
     }),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: mockState.globalSelected,
@@ -67,6 +74,23 @@ const baseProps = () => ({
     onAddAccount: vi.fn(),
     onOpenSort: vi.fn(),
 })
+
+const attachListRef = (listRef: MutableRefObject<PWFlatListRef | null>) => {
+    const scrollToOffset = vi.fn()
+    listRef.current = {
+        scrollToOffset,
+        scrollToIndex: vi.fn(),
+        scrollToEnd: vi.fn(),
+    }
+    return scrollToOffset
+}
+
+// The reset is deferred a frame so it lands after FlashList's own layout pass.
+const flushFrame = async () => {
+    await act(async () => {
+        await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    })
+}
 
 describe('useAccountMenu selection', () => {
     beforeEach(() => {
@@ -215,5 +239,71 @@ describe('useAccountMenu pera card row', () => {
         expect(
             result.current.listItems.every(item => item.kind === 'account'),
         ).toBe(true)
+    })
+})
+
+// The drawer stays mounted under the sort sheet, so a committed sort reorders
+// the on-screen list in place and has to land the user back at the top.
+describe('useAccountMenu scroll reset on sort commit', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockState.globalSelected = 'ADDR_A'
+        mockSortState.sortMode = 'alphabeticalAsc'
+        mockSortState.manualAccountOrder = []
+    })
+
+    it('does not scroll on the first render', async () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+        const scrollToOffset = attachListRef(result.current.flatListRef)
+
+        await flushFrame()
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
+    })
+
+    it('scrolls to the top when the sort mode changes', async () => {
+        const { result, rerender } = renderHook(() =>
+            useAccountMenu(baseProps()),
+        )
+        const scrollToOffset = attachListRef(result.current.flatListRef)
+
+        mockSortState.sortMode = 'balanceDesc'
+        rerender()
+        await flushFrame()
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: 0,
+            animated: false,
+        })
+    })
+
+    it('scrolls to the top when the manual order is recommitted', async () => {
+        mockSortState.sortMode = 'manual'
+        mockSortState.manualAccountOrder = ['ADDR_A', 'ADDR_B']
+        const { result, rerender } = renderHook(() =>
+            useAccountMenu(baseProps()),
+        )
+        const scrollToOffset = attachListRef(result.current.flatListRef)
+
+        mockSortState.manualAccountOrder = ['ADDR_B', 'ADDR_A']
+        rerender()
+        await flushFrame()
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: 0,
+            animated: false,
+        })
+    })
+
+    it('does not scroll on re-renders that keep the same sort', async () => {
+        const { result, rerender } = renderHook(() =>
+            useAccountMenu(baseProps()),
+        )
+        const scrollToOffset = attachListRef(result.current.flatListRef)
+
+        rerender()
+        await flushFrame()
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
     })
 })
