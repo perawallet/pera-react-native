@@ -40,7 +40,12 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    KeyNotFoundError,
+    useKMS,
+    type Algo25KeyResult,
+} from '@perawallet/wallet-core-kms'
 
 import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
@@ -682,6 +687,130 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the keystore reports the signing key missing, when the user confirms the send, then the toast carries the KMS copy, nothing is submitted, and the flow returns to Confirm',
+        async () => {
+            const sender = await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+            // The seed resolves (View Passphrase works) but the child's
+            // signing material does not — the on-device shape this guards.
+            vi.spyOn(getProvider().key.store, 'sign').mockRejectedValue(
+                new KeyNotFoundError(sender.keyPairId ?? 'child'),
+            )
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSendConfirmationStack()
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+            fireEvent.click(confirmButton)
+
+            // Notifier is captured with raw i18n keys: showNotification receives
+            // the key, and the Notifier component translates it.
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            title: 'errors.signing.title',
+                            description: 'errors.kms.key_not_found',
+                        }),
+                    )
+                },
+                { timeout: 10_000 },
+            )
+            expect(sendSpy).not.toHaveBeenCalled()
+            expect(screen.queryByTestId('send_success')).toBeFalsy()
+            // Back on Confirm with the sender intact.
+            await waitFor(() => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            })
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                sender.address,
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the keystore throws an untyped error while signing, when the user confirms the send, then the toast carries the signing-specific copy rather than the generic banner',
+        async () => {
+            const sender = await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+            // What keystore-core raises for a child whose sealed material
+            // cannot be used: a plain Error, no i18n key of its own.
+            vi.spyOn(getProvider().key.store, 'sign').mockRejectedValue(
+                new Error('key child does not hold key bytes'),
+            )
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSendConfirmationStack()
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            title: 'errors.signing.title',
+                            description: 'errors.signing.local_key_failed',
+                        }),
+                    )
+                },
+                { timeout: 10_000 },
+            )
+            expect(sendSpy).not.toHaveBeenCalled()
+            expect(screen.queryByTestId('send_success')).toBeFalsy()
+            // Back on Confirm with the sender intact.
+            await waitFor(() => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            })
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                sender.address,
             )
         },
         SLOW_TEST_TIMEOUT_MS,
