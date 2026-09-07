@@ -821,7 +821,9 @@
             "session_request_expired_body": "Esta solicitação de conexão expirou. Inicie uma nova conexão pelo dApp e tente novamente."
         },
         "signing": {
-            "title": "Ocorreu um erro ao processar a solicitação de assinatura"
+            "title": "Ocorreu um erro ao processar a solicitação de assinatura",
+            "local_key_failed": "A chave de assinatura desta conta não pôde ser usada neste dispositivo. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "cannot_sign": "Esta conta não pode assinar neste dispositivo. Tente novamente e entre em contato com o suporte se o problema persistir."
         },
         "webview": {
             "invalid_method": "Método inválido {{method}}",

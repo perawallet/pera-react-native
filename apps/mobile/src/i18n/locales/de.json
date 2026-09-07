@@ -813,7 +813,9 @@
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
         },
         "signing": {
-            "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten"
+            "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
+            "local_key_failed": "Der Signaturschlüssel für dieses Konto konnte auf diesem Gerät nicht verwendet werden. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "cannot_sign": "Dieses Konto kann auf diesem Gerät nicht signieren. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
         },
         "webview": {
             "invalid_method": "Ungültige Methode {{method}}",

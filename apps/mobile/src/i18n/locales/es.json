@@ -821,7 +821,9 @@
             "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo."
         },
         "signing": {
-            "title": "Error al procesar la solicitud de firma"
+            "title": "Error al procesar la solicitud de firma",
+            "local_key_failed": "No se pudo usar la clave de firma de esta cuenta en este dispositivo. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
+            "cannot_sign": "Esta cuenta no puede firmar en este dispositivo. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa."
         },
         "webview": {
             "invalid_method": "Método no válido {{method}}",

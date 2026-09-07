@@ -821,7 +821,9 @@
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {
-            "title": "An error occurred processing the signing request"
+            "title": "An error occurred processing the signing request",
+            "local_key_failed": "The signing key for this account couldn't be used on this device. Please try again and contact support if the issue persists.",
+            "cannot_sign": "This account can't sign on this device. Please try again and contact support if the issue persists."
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
