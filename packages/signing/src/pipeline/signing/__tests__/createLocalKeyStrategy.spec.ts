@@ -14,7 +14,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createLocalKeyStrategy } from '../createLocalKeyStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { AppError, logger } from '@perawallet/wallet-core-shared'
+import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import { KeyNotFoundError } from '@perawallet/wallet-core-kms'
 import { SigningError, SIGNING_ERROR_KEYS } from '../../errors'
 
@@ -477,6 +477,57 @@ describe('createLocalKeyStrategy', () => {
                 await makeStrategy().sign(makeTransactionGroup(), algo25Account)
 
                 expect(errorSpy).not.toHaveBeenCalled()
+            })
+
+            test('leaves a request-validation cause key-less and unreported', async () => {
+                signTransactions.mockRejectedValue(
+                    new AppError('bad request', {
+                        category: ErrorCategory.VALIDATION,
+                    }),
+                )
+
+                const error = await makeStrategy()
+                    .sign(makeTransactionGroup(), algo25Account)
+                    .catch((e: unknown) => e)
+
+                expect(error).toBeInstanceOf(SigningError)
+                expect(
+                    (error as SigningError).metadata.messageKey,
+                ).toBeUndefined()
+                expect(errorSpy).not.toHaveBeenCalled()
+            })
+
+            test('keeps a request-validation cause that declares its own key', async () => {
+                signTransactions.mockRejectedValue(
+                    new AppError('bad request', {
+                        category: ErrorCategory.VALIDATION,
+                        messageKey: 'errors.validation.generic',
+                    }),
+                )
+
+                const error = await makeStrategy()
+                    .sign(makeTransactionGroup(), algo25Account)
+                    .catch((e: unknown) => e)
+
+                expect((error as SigningError).metadata.messageKey).toBe(
+                    'errors.validation.generic',
+                )
+                expect(errorSpy).not.toHaveBeenCalled()
+            })
+
+            test('forwards params only alongside the cause key', async () => {
+                signTransactions.mockRejectedValue(
+                    new AppError('internal', { params: { signer: 'ADDR' } }),
+                )
+
+                const error = await makeStrategy()
+                    .sign(makeTransactionGroup(), algo25Account)
+                    .catch((e: unknown) => e)
+
+                expect((error as SigningError).metadata.messageKey).toBe(
+                    SIGNING_ERROR_KEYS.localKeyFailed,
+                )
+                expect((error as SigningError).metadata.params).toBeUndefined()
             })
         })
     })

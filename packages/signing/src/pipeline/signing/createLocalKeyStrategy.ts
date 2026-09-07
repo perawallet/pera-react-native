@@ -21,6 +21,7 @@ import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     AppError,
     encodeToBase64,
+    ErrorCategory,
     isRetryableError,
     logger,
     toError,
@@ -165,22 +166,29 @@ export const createLocalKeyStrategy = (
                 const cause = toError(error)
                 const causeMetadata =
                     cause instanceof AppError ? cause.metadata : undefined
+                // ARC-60 and arbitrary-data validation run inside this try:
+                // a malformed request is the dApp's fault, never a key fault.
+                const isRequestFault =
+                    causeMetadata?.category === ErrorCategory.VALIDATION
+                const causeKey = causeMetadata?.messageKey
                 const signingError = new SigningError(cause.message, cause, {
                     retryable: isRetryableError(cause),
-                    // A KMS fault already names itself; wrapping must not
-                    // demote it to the generic banner.
                     messageKey:
-                        causeMetadata?.messageKey ??
-                        SIGNING_ERROR_KEYS.localKeyFailed,
-                    params: causeMetadata?.params,
+                        causeKey ??
+                        (isRequestFault
+                            ? undefined
+                            : SIGNING_ERROR_KEYS.localKeyFailed),
+                    params: causeKey ? causeMetadata?.params : undefined,
                 })
-                // The toast never shows the reason, so without this report a
-                // keystore fault is indistinguishable from a network one.
-                logger.error('Local-key signing failed', {
-                    error: cause,
-                    accountType: account.type,
-                    dataType: group.data.type,
-                })
+                if (!isRequestFault) {
+                    // The toast never shows the reason, so without this report
+                    // a keystore fault is indistinguishable from a network one.
+                    logger.error('Local-key signing failed', {
+                        error: cause,
+                        accountType: account.type,
+                        dataType: group.data.type,
+                    })
+                }
                 callbacks?.onError?.(signingError)
                 throw signingError
             }
