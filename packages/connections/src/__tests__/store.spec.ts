@@ -12,7 +12,11 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { clearAllStores } from '@perawallet/wallet-core-shared'
-import { hydrateConnectionsStore, useConnectionsStore } from '../store'
+import {
+    hydrateConnectionsStore,
+    isConnectionAlive,
+    useConnectionsStore,
+} from '../store'
 import type {
     Connection,
     ConnectionStoreAPI,
@@ -154,6 +158,33 @@ describe('connections store', () => {
         expect(useConnectionsStore.getState()).toMatchObject({
             connections: [],
             isHydrated: false,
+        })
+    })
+
+    describe('isConnectionAlive', () => {
+        it('reports a connection alive only while the hydrated mirror holds its id', () => {
+            useConnectionsStore
+                .getState()
+                .setConnections([connection('client-1')])
+
+            expect(isConnectionAlive('client-1')).toBe(true)
+            expect(isConnectionAlive('client-9')).toBe(false)
+        })
+
+        // A dead answer cancels the user's sign request outright, so before
+        // the mirror has hydrated the only safe answer is alive.
+        it('reports alive for any id while the mirror has not hydrated yet', () => {
+            expect(isConnectionAlive('client-1')).toBe(true)
+        })
+
+        it('reads the store per call rather than a snapshot', () => {
+            useConnectionsStore.getState().setConnections([connection('a')])
+            expect(isConnectionAlive('a')).toBe(true)
+
+            useConnectionsStore.getState().setConnections([connection('b')])
+
+            expect(isConnectionAlive('a')).toBe(false)
+            expect(isConnectionAlive('b')).toBe(true)
         })
     })
 })

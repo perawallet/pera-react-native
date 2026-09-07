@@ -12,9 +12,6 @@
 
 import type { Nullable } from '../utils/types'
 
-/**
- * Error severity levels
- */
 export enum ErrorSeverity {
     LOW = 'low',
     MEDIUM = 'medium',
@@ -22,9 +19,6 @@ export enum ErrorSeverity {
     CRITICAL = 'critical',
 }
 
-/**
- * Error categories for classification
- */
 export enum ErrorCategory {
     NETWORK = 'network',
     VALIDATION = 'validation',
@@ -50,9 +44,6 @@ export const messageKeysFor = (base: string): ErrorMessageKeys => ({
     bodyKey: `${base}.body`,
 })
 
-/**
- * Metadata attached to every error
- */
 export interface ErrorMetadata {
     severity: ErrorSeverity
     category: ErrorCategory
@@ -81,10 +72,6 @@ export interface ErrorMetadata {
     expected?: boolean
 }
 
-/**
- * Base error class for all application errors
- * Extends Error with structured metadata for logging and user feedback
- */
 export class AppError extends Error {
     public readonly metadata: ErrorMetadata
     public readonly timestamp: Date
@@ -100,7 +87,6 @@ export class AppError extends Error {
         this.timestamp = new Date()
         this.originalError = originalError
 
-        // Merge with defaults
         this.metadata = {
             severity: ErrorSeverity.MEDIUM,
             category: ErrorCategory.UNKNOWN,
@@ -109,7 +95,7 @@ export class AppError extends Error {
             ...metadata,
         }
 
-        // Capture stack trace (V8 extension available in Node.js and most JS engines)
+        // `captureStackTrace` is a V8 extension; absent on other engines.
         const ErrorWithStackTrace = Error as typeof Error & {
             captureStackTrace?: (
                 target: object,
@@ -121,16 +107,10 @@ export class AppError extends Error {
         }
     }
 
-    /**
-     * Check if error is minor (LOW severity)
-     */
     isMinor(): boolean {
         return this.metadata.severity === ErrorSeverity.LOW
     }
 
-    /**
-     * Check if error should be reported to Crashlytics
-     */
     shouldReport(): boolean {
         return (
             this.metadata.severity === ErrorSeverity.HIGH ||
@@ -138,9 +118,6 @@ export class AppError extends Error {
         )
     }
 
-    /**
-     * Serialize error for logging
-     */
     toJSON() {
         return {
             name: this.name,
@@ -153,7 +130,6 @@ export class AppError extends Error {
     }
 }
 
-/** Checks if an error has the retryable flag set. */
 export const isRetryableError = (error: Nullable<Error>): boolean => {
     if (!error || !(error instanceof AppError)) return false
     return error.metadata.retryable === true

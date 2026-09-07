@@ -14,15 +14,8 @@ import { create } from 'zustand'
 import type WalletConnect from '@perawallet/walletconnect'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
-/**
- * Observable state for the connector registry.
- *
- * Not persisted — `WalletConnect` instances aren't serializable and the
- * tombstone set is only meaningful within a session lifetime. In-flight
- * readiness promises and the handler binder are NOT held here; those are
- * transient runtime artifacts kept at module scope in
- * {@link ../connection/connectorRegistry.ts}.
- */
+// Not persisted: `WalletConnect` instances are not serializable and tombstones
+// only mean anything within one session lifetime.
 type State = {
     connectors: Record<string, WalletConnect>
     tombstones: ReadonlySet<string>

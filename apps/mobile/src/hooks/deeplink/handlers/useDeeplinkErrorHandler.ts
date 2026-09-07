@@ -84,15 +84,9 @@ const MESSAGE_KEYS: Record<Variant, { title: string; body: string }> = {
 }
 
 /**
- * Surfaces a deeplink failure to the user via the in-app toast notifier.
- *
- * Stacking caveat: react-native-notifier renders into a `NotifierRoot` in
- * the React tree, so any toast fired while the QR scanner's RN `Modal`
- * is still open is obscured by the Modal's native window. Defer the
- * toast by a tick so the Modal close animation completes first — by then
- * the dispatcher's `onSuccess` / `onError` callback has already
- * triggered `props.onClose` on the scanner, the Modal is dismissing,
- * and the toast lands on the screen the user came from.
+ * react-native-notifier renders into a `NotifierRoot` in the React tree, so a
+ * toast fired while the QR scanner's RN `Modal` is still open is hidden behind
+ * the Modal's native window. Deferring a tick lets the Modal start closing first.
  */
 const TOAST_DEFER_MS = 400
 

@@ -179,12 +179,7 @@ const arc60Payload = (overrides: Record<string, unknown> = {}) => ({
 
 describe('gateSignDataRequest', () => {
     // algo_signData's wire envelope is `{ id, params: <arc60 object> }` — a
-    // single object, unlike algo_signTxn's `[[...]]` array-of-arrays. Mobile's
-    // handleSignData/handleArc60SignData (packages/walletconnect/src/hooks/
-    // useWalletConnectHandlers.ts) confirm this: handleSignData routes to the
-    // ARC-60 path only when `!Array.isArray(params)`, and
-    // handleArc60SignData passes `payload.params` straight into
-    // `arc60PayloadSchema.safeParse` with no `[0][0]` indexing.
+    // single object, unlike algo_signTxn's `[[...]]` array-of-arrays.
 
     it('accepts a well-formed ARC-60 params object', () => {
         const result = gateSignDataRequest({

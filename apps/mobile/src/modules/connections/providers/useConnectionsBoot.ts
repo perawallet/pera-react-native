@@ -12,7 +12,8 @@
 
 import { useEffect, useRef } from 'react'
 import {
-    hydrateConnectionsStore,
+    bootConnections,
+    setActiveConnectionRegistry,
     type ConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
@@ -20,19 +21,9 @@ import { logger } from '@perawallet/wallet-core-shared'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the legacy v1 import is a boot step of the composition root, not a protocol decision
 import { importLegacyConnections } from '@perawallet/wallet-core-walletconnect'
 import { getKeystore, getProvider } from '@perawallet/wallet-extension-provider'
-import { setActiveConnectionRegistry } from '../activeRegistry'
 
-/**
- * Boots the registry in the one order that is safe: keystore ready, migration
- * gate closed, legacy import, `registry.initialize()`, mirror hydration.
- *
- * `importLegacyConnections` reads the keystore's reactive store synchronously
- * and reports "absent" before hydration; it and `migrateWalletConnect` both
- * dedupe against a `store.list()` snapshot, so the migration gate keeps them
- * from running concurrently; and a handler restored before the import has
- * written its records reports zero sessions, which reconciliation would then
- * delete.
- */
+// The importer and `migrateWalletConnect` both dedupe against a `store.list()`
+// snapshot, so the migration gate is what keeps them from running concurrently.
 export const useConnectionsBoot = (registry: ConnectionRegistry): void => {
     // The duress wipe runs above this provider and cannot reach the context
     // (see `activeRegistry`). An effect, so StrictMode's mount/unmount/mount
@@ -53,37 +44,29 @@ export const useConnectionsBoot = (registry: ConnectionRegistry): void => {
 
         let cancelled = false
 
-        void (async () => {
-            try {
-                await getKeystore().ready
-                if (cancelled) return
-
-                try {
-                    await importLegacyConnections({
-                        storage: getProvider().keyValueStorage,
-                        store: getProvider().connections.store,
-                    })
-                } catch (error) {
-                    // Crash-resumable: the importer upserts as it goes and
-                    // retries the remainder next launch, so one bad record
-                    // must not strand every other handler's restore.
-                    logger.error(
-                        'Legacy WalletConnect import failed; the remaining records retry next launch',
-                        { error },
-                    )
+        void bootConnections({
+            registry,
+            store: getProvider().connections.store,
+            keystoreReady: getKeystore().ready,
+            importLegacy: () =>
+                importLegacyConnections({
+                    storage: getProvider().keyValueStorage,
+                    store: getProvider().connections.store,
+                }),
+            isCancelled: () => cancelled,
+        }).then(
+            teardown => {
+                // Cleanup may have run between hydration and this settling.
+                if (cancelled) {
+                    teardown()
+                    return
                 }
-                if (cancelled) return
-
-                await registry.initialize()
-                if (cancelled) return
-
-                hydrateTeardownRef.current = hydrateConnectionsStore(
-                    getProvider().connections.store,
-                )
-            } catch (error) {
+                hydrateTeardownRef.current = teardown
+            },
+            (error: unknown) => {
                 logger.error('Connections registry boot failed', { error })
-            }
-        })()
+            },
+        )
 
         return () => {
             cancelled = true

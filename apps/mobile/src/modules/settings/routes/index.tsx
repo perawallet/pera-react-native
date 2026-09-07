@@ -32,7 +32,7 @@ import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/Set
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import type { NavigatorScreenParams } from '@react-navigation/native'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'

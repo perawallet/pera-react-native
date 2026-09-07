@@ -15,7 +15,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { useConnectionsSettingsScreen } from '../useConnectionsSettingsScreen'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
 
 const mockRequestBottomSheet = vi.fn()

@@ -86,8 +86,8 @@ export default defineConfig({
             {
                 // `@perawallet/walletconnect` (WC v1 fork) opens a relay
                 // socket on construction — no good in jsdom. Route every
-                // consumer (including the deep
-                // `@perawallet/wallet-core-walletconnect` hooks) through a
+                // consumer (including `@perawallet/wallet-core-walletconnect`'s
+                // v1 handler) through a
                 // stub class that captures `on()` handlers and
                 // `approveSession()` calls so integration tests can drive the
                 // pairing flow end-to-end. The stub also exports

@@ -100,7 +100,13 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     importLegacyConnections: mockImport,
     createWalletConnectV1Handler: () => ({ kind: 'walletconnect-v1' }),
 }))
-vi.mock('@perawallet/wallet-core-connections', () => ({
+// Partial: the boot sequence, the active-registry accessor and the scope
+// matcher run for real; only the registry itself and the signing adapter are
+// stubbed.
+vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-connections')
+    >()),
     createConnectionRegistry: () => ({
         register: vi.fn(),
         initialize: mockInitialize,
@@ -121,7 +127,6 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
         },
     }),
     useConnectionSigningAdapter: vi.fn(),
-    hydrateConnectionsStore: vi.fn(() => () => {}),
 }))
 
 const showToast = vi.fn()
@@ -169,7 +174,10 @@ let keystoreReady: Promise<void> = Promise.resolve()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        connections: { store: {} },
+        // Just enough store for the real mirror hydration to subscribe to.
+        connections: {
+            store: { list: async () => [], subscribe: () => () => {} },
+        },
         keyValueStorage: {},
     }),
     getKeystore: () => ({
@@ -177,7 +185,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const { getActiveConnectionRegistry } = await import('../../activeRegistry')
+const { getActiveConnectionRegistry } =
+    await import('@perawallet/wallet-core-connections')
 const { useConnectionsProvider } = await import('../useConnectionsProvider')
 
 /** Flushes pending microtasks without asserting anything ran. */
@@ -412,7 +421,7 @@ describe('useConnectionsProvider', () => {
                 requestBottomSheet.mock.calls[0],
             )
 
-            // Mirrors `ConnectionView`'s Cancel button: the sheet closes
+            // Mirrors the approval view's Cancel button: the sheet closes
             // locally even when notifying the peer fails, so the caller's
             // rejection is expected here, not swallowed by this test.
             await expect(wrapped.reject('user cancelled')).rejects.toThrow(
@@ -518,10 +527,8 @@ describe('useConnectionsProvider', () => {
             expect(body).toBe(i18n.t('errors.connections.no_handler'))
         })
 
-        // `useWalletConnectProvider` scoped `connectionError` to its connector
-        // and removed that pending request, closing the sheet. Without this the
-        // approval sheet sits over a dead connection and Connect only fails
-        // with the retryable delivery toast.
+        // Without this the approval sheet sits over a dead connection and
+        // Connect only fails with the retryable delivery toast.
         it('closes the open proposal sheet when an error arrives for its connection', () => {
             renderHook(() => useConnectionsProvider())
             proposalSubscription.listener?.(makeProposal('p1', 'client-1'))

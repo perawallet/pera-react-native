@@ -10,25 +10,9 @@
  limitations under the License
  */
 
-// The extension's WalletConnect connect-approval surface: the web twin of
-// @modules/walletconnect's ConnectionView. Replaces the ARC-0027
-// EnableRequestScreen that previously served `wc-connect` requests, which asked
-// the same question with a different (and much plainer) face.
-//
-// A twin rather than a reuse, by owner decision (2026-07-30) — phase one leaves
-// the mobile component alone and a later phase factors both onto one shared
-// consent view. What forces a twin today: ConnectionView approves through
-// `useWalletConnect`'s own approveSession, and no extension surface may own a
-// connector (offscreen does, enforced by webConnectorOwnership.test.ts — whose
-// scan is a literal source match, so spelling that call form out even in a
-// comment would flag this file). Approve/reject here travel back over the
-// approval bridge instead.
-//
-// VISUAL FIDELITY comes from importing the approval stylesheet ConnectionView
-// itself uses — not from copied values — and from keeping this element tree aligned with it. The
-// two differences are deliberate: no `inBottomSheet` on the list (this is a
-// top-level approval document, not a sheet) and the verified-requester row in
-// the header. __tests__/visualFidelity.spec.ts fails if the trees drift.
+// approve/reject travel over the approval bridge, not a connector this surface
+// may not own. Imports ConnectionApprovalView's stylesheet; the deliberate
+// differences are no `inBottomSheet` on the list and the verified-requester row.
 import React from 'react'
 import {
     PWButton,
@@ -44,8 +28,6 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
-// Same split as WcConnectHeader: shared visuals come from ConnectionView's
-// stylesheet, and only what mobile has no counterpart for lives locally.
 import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
 import { useWcConnectScreen } from './useWcConnectScreen'
@@ -55,7 +37,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
     const localStyles = useLocalStyles()
     const { t } = useLanguage()
     const {
-        request,
+        peer,
+        permissions,
         requesterOrigin,
         isRequesterOriginDistinct,
         accounts,
@@ -90,7 +73,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         </PWTouchableOpacity>
     )
 
-    if (isLoading || !request) {
+    if (isLoading || !peer) {
         return <FullScreenLoadingView />
     }
 
@@ -104,7 +87,8 @@ export const WcConnectScreen = (): React.JSX.Element => {
                 extraData={{ selected }}
                 ListHeaderComponent={
                     <WcConnectHeader
-                        request={request}
+                        peer={peer}
+                        permissions={permissions}
                         requesterOrigin={requesterOrigin}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
                     />

@@ -14,9 +14,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     calculateBackoff,
     deferToNextCycle,
+    isPromiseLike,
     mapWithConcurrency,
     withTimeout,
 } from '../async'
+
+describe('isPromiseLike', () => {
+    it('recognises anything with a callable then, not only native promises', () => {
+        expect(isPromiseLike(Promise.resolve(1))).toBe(true)
+        expect(isPromiseLike({ then: () => {} })).toBe(true)
+    })
+
+    it('rejects plain values, null and objects whose then is not callable', () => {
+        expect(isPromiseLike('id')).toBe(false)
+        expect(isPromiseLike(undefined)).toBe(false)
+        expect(isPromiseLike(null)).toBe(false)
+        expect(isPromiseLike({ then: 'later' })).toBe(false)
+    })
+})
 
 describe('deferToNextCycle', () => {
     beforeEach(() => {

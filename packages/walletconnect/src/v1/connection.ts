@@ -25,10 +25,9 @@ export type WalletConnectV1Metadata = {
     /** The v1 wire value, including the 4160 "any Algorand chain" wildcard. */
     chainId: number
     /**
-     * JSON-RPC id of the approved handshake, used to recognise the bridge
-     * replaying it after a socket flap. Optional only for records predating
-     * it; importers must carry it, or every replay raises a spurious "repeat
-     * connection request" error.
+     * JSON-RPC id of the approved handshake, used to recognise the bridge replaying
+     * it after a socket flap. Importers must carry it, or every replay raises a
+     * spurious "repeat connection request" error.
      */
     handshakeId?: number
     /** Approved methods (`algo_signTxn`, …). Absent reads as "unknown", never as "none". */

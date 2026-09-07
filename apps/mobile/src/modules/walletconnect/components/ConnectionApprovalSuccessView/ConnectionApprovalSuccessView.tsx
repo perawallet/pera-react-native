@@ -20,12 +20,7 @@ export type ConnectionApprovalSuccessViewProps = {
     connection: Connection
 }
 
-/**
- * Post-approval "connected" sheet, driven by the approved `Connection`.
- * Visually identical to `ConnectionSuccessContent` — the legacy,
- * session-request-driven screen the old provider still renders — kept as a
- * separate component so that one stays untouched.
- */
+/** Post-approval "connected" sheet, driven by the approved `Connection`. */
 export const ConnectionApprovalSuccessView = ({
     connection,
 }: ConnectionApprovalSuccessViewProps) => {

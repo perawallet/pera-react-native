@@ -12,9 +12,8 @@
 
 // The shipped connections path: `ConnectionsProvider` → the registry → the
 // WalletConnect v1 handler → `ConnectionApprovalView` → the signing adapter.
-// `walletconnect-pair.test.tsx` and `wc-sign.test.tsx` cover the same ground
-// through `WalletConnectProvider`, which `apps/browser` still runs but
-// `RootComponent` no longer mounts.
+// `connections-origin.test.tsx` covers what the pairing origin does after
+// approval and `connections-quantum-fee.test.tsx` the quantum fee override.
 //
 // Only the bottom-level `@perawallet/walletconnect` transport is stubbed (via
 // vitest resolve.alias); the provider, registry, handler, approval sheet and
@@ -34,6 +33,7 @@ import {
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { Address, Transaction, TransactionType } from 'algosdk'
+import { http, HttpResponse } from 'msw'
 import {
     decodeSignedTransaction,
     encodeTransaction,
@@ -68,9 +68,16 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import {
+    usePreferences,
+    useSettingsStore,
+} from '@perawallet/wallet-core-settings'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
-import type { ConnectionRegistry } from '@perawallet/wallet-core-connections'
+import {
+    useConnectionRegistry,
+    type ConnectionRegistryClient,
+} from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     decodeFromBase64,
@@ -80,14 +87,13 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import {
-    ConnectionsProvider,
-    useConnectionRegistry,
-} from '@modules/connections'
+import { ConnectionsProvider } from '@modules/connections'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { UserPreferences } from '@constants/user-preferences'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
@@ -104,8 +110,25 @@ const OTHER_ACCOUNT: WalletAccount = {
     name: 'DeFi',
 }
 
+// No key behind it: the approval gate only asks which account TYPE is selected.
+const QUANTUM_ACCOUNT: WalletAccount = {
+    id: 'conn-q',
+    type: AccountTypes.quantum,
+    address: QUANTUM_TEST_ADDRESS,
+    keyPairId: 'conn-q-key',
+    name: 'Falcon',
+}
+
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const SLIDE_TEST_ID = 'signing-confirm-slide'
+const QUANTUM_DAPP_WARNING_TEST_ID = 'quantum-dapp-warning-sheet'
+
+// Canonical testnet genesis hash — the active network in these tests is
+// mainnet, so a transaction carrying this hash must be rejected before signing.
+// Re-wrapped so it is the same realm algosdk's constructor validates against.
+const TESTNET_GENESIS_HASH = new Uint8Array(
+    decodeFromBase64('SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='),
+)
 
 // 'in-app' suppresses the post-approval success sheet, which would otherwise
 // sit over the surface the next sheet needs.
@@ -113,7 +136,7 @@ const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
 // The registry lives inside the provider, so the only honest way to start a
 // pairing is the hook every real caller uses.
-const captured: { registry: Optional<ConnectionRegistry> } = {
+const captured: { registry: Optional<ConnectionRegistryClient> } = {
     registry: undefined,
 }
 const RegistryProbe = () => {
@@ -275,6 +298,7 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     afterEach(async () => {
         await getProvider().connections.store.clear()
         useAccountsStore.getState().setAccounts([])
+        useRemoteConfigStore.getState().resetState()
     })
 
     it(
@@ -496,6 +520,80 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         SLOW_TEST_TIMEOUT_MS,
     )
 
+    it(
+        'Given an established session, when the dApp fires algo_signTxn with no params, then the request is rejected as a malformed sign request before anything is enqueued',
+        async () => {
+            await mountProvider()
+            const connector = await pairAndHandshake('Garbage dApp')
+            await approveViaUi(SIGNING_ACCOUNT.name as string)
+            await waitForStoredConnection(connector.clientId)
+
+            const requestId = 9002
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [],
+                })
+            })
+
+            await waitFor(() => {
+                expect(connector.rejectRequestCalls).toHaveLength(1)
+            })
+            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+            expect(connector.rejectRequestCalls[0].error?.name).toBe(
+                'WalletConnectSignRequestError',
+            )
+            expect(connector.approveRequestCalls).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a quantum account is selected, when the user taps Connect, then the warning sheet appears once even on a double tap, and Cancel rejects the session without persisting it',
+        async () => {
+            await useRemoteConfigStore.persist.rehydrate()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_quantum_accounts', true)
+            // The acknowledgement is a persisted preference on a singleton
+            // store, so a prior test's Continue would hide the warning here.
+            useSettingsStore
+                .getState()
+                .deletePreference(
+                    UserPreferences.quantumDappWarningAcknowledged,
+                )
+            useAccountsStore
+                .getState()
+                .setAccounts([SIGNING_ACCOUNT, QUANTUM_ACCOUNT])
+            await mountProvider()
+            const connector = await pairAndHandshake('Quantum dApp')
+
+            await approveViaUi(QUANTUM_ACCOUNT.name as string)
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                ).toBeTruthy()
+            })
+            // The sheet's own request is still pending, so this lands while
+            // `confirmQuantumDappUsage`'s await is genuinely unresolved.
+            fireEvent.click(findButton('common.connect.label')!)
+            expect(
+                screen.getAllByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+            ).toHaveLength(1)
+
+            fireEvent.click(findButton('quantum.dapp_warning.cancel')!)
+
+            await waitFor(() => {
+                expect(connector.rejectSessionCalls).toBe(1)
+            })
+            expect(connector.approveSessionCalls).toHaveLength(0)
+            expect(await getProvider().connections.store.list()).toEqual([])
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
     // Own suite because the success path is the only one that reaches the
     // signing pipeline: it needs a real key in the keystore, algod for
     // suggested params and the asset database the review sheet reads. The
@@ -532,6 +630,9 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                 .spyOn(getProvider().key.store, 'sign')
                 .mockResolvedValue(VISIBLE_SIGNATURE)
             server.use(
+                // The review sheet looks the peer's url up in the projects
+                // API; left unmocked it is a real network round-trip.
+                http.get('*/v1/projects/', () => HttpResponse.json([])),
                 mockAlgodTransactionParams({
                     response: { fee: 1000, 'min-fee': 1000 },
                 }),
@@ -624,6 +725,74 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                     ),
                 ).toBe(true)
                 expect(connector.rejectRequestCalls).toHaveLength(0)
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given a mainnet session, when the dApp requests a signature over a transaction carrying the testnet genesis hash, then the peer is rejected for the genesis-hash mismatch and no signature is produced',
+            async () => {
+                // The chain-id gate passes (the session IS mainnet); this is
+                // the analyzer's own safety net, reached only through the
+                // signing pipeline. The sender is the session's account so the
+                // resolver places the transaction in `toSign` — an empty
+                // toSign short-circuits before analysis.
+                const signer = await seedAlgo25Signer()
+                await mountProviderWithSigning()
+                const connector = await pairAndHandshake('Foreign-chain dApp', {
+                    origin: IN_APP_ORIGIN,
+                })
+                await approveViaUi(signer.name as string)
+                await waitForStoredConnection(connector.clientId)
+
+                const foreign = new Transaction({
+                    type: TransactionType.pay,
+                    sender: Address.fromString(signer.address),
+                    suggestedParams: {
+                        fee: 1000n,
+                        minFee: 1000n,
+                        flatFee: true,
+                        firstValid: 1000n,
+                        lastValid: 2000n,
+                        genesisID: 'testnet-v1.0',
+                        genesisHash: TESTNET_GENESIS_HASH,
+                    },
+                    paymentParams: {
+                        receiver: Address.fromString(HD_TEST_ADDRESS),
+                        amount: 1_000_000n,
+                    },
+                })
+                const requestId = 9404
+                act(() => {
+                    connector.fire('algo_signTxn', null, {
+                        id: requestId,
+                        method: 'algo_signTxn',
+                        params: [
+                            [
+                                {
+                                    txn: encodeToBase64(
+                                        encodeTransactionRaw(foreign),
+                                    ),
+                                },
+                            ],
+                        ],
+                    })
+                })
+
+                await waitFor(
+                    () => {
+                        expect(connector.rejectRequestCalls).toHaveLength(1)
+                    },
+                    { timeout: 15_000 },
+                )
+                expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+                // Pinned to the cause so an unrelated rejection cannot pass
+                // vacuously.
+                expect(connector.rejectRequestCalls[0].error?.name).toBe(
+                    'GenesisHashMismatchError',
+                )
+                expect(connector.approveRequestCalls).toHaveLength(0)
+                expect(signSpy).not.toHaveBeenCalled()
             },
             SLOW_TEST_TIMEOUT_MS,
         )

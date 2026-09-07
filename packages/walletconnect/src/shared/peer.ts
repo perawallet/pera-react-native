@@ -24,10 +24,8 @@ const readTrimmed = (
 ): string | undefined => readString(source, key)?.trim() || undefined
 
 /**
- * The one reading of a WalletConnect peer's self-description (`peerMeta` on
- * v1, `proposer.metadata` on v2) into a `ConnectionPeer`. Neither protocol
- * validates it, so every field is type-checked rather than trusted, and a
- * peer with nothing usable is still nameable rather than refused.
+ * Neither protocol validates the peer's self-description, so every field is
+ * type-checked, and a peer with nothing usable is still nameable rather than refused.
  */
 export const toPeer = (peerMeta: unknown): ConnectionPeer => {
     if (typeof peerMeta !== 'object' || peerMeta === null) {

@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-/**
- * Creates the offscreen document if absent. Only the service worker may call
- * chrome.offscreen; UI contexts request it via the DB_CONTROL_SCOPE message.
- */
+// Only the service worker may call chrome.offscreen; UI contexts request it via
+// the DB_CONTROL_SCOPE message.
 export const ensureOffscreenDocument = async (): Promise<void> => {
     if (await chrome.offscreen.hasDocument()) return
     try {

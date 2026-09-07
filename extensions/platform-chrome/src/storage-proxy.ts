@@ -10,17 +10,10 @@
  limitations under the License
  */
 
-// Offscreen documents expose ONLY chrome.runtime — chrome.storage is not
-// available there (developer.chrome.com/docs/extensions/reference/api/offscreen).
-// But the offscreen surface needs the same KV state as every other context:
-// zustand persist reads accounts/network/polling through
-// ChromeKeyValueStorageService, which is backed by chrome.storage.local. So
-// the service worker (full API access) proxies storage over runtime
-// messaging: startStorageProxyHost() serves get/set/remove and relays
-// onChanged broadcasts; installOffscreenStorageShim() installs a promise-only
-// chrome.storage.local lookalike backed by that host. Only the `local` area
-// and the ops the offscreen boot path uses are proxied — vault/session code
-// never runs in the offscreen document.
+// Offscreen documents expose only chrome.runtime, yet zustand persist there reads
+// through ChromeKeyValueStorageService (chrome.storage.local), so the service
+// worker proxies storage over runtime messaging. Only the `local` area and the ops
+// the offscreen boot path uses are proxied: vault/session code never runs offscreen.
 
 import { isTrustedExtensionPageSender } from './trusted-sender'
 
@@ -51,9 +44,7 @@ export type StorageChangedBroadcast = {
 type ChangeListener = (changes: StorageChanges, areaName: string) => void
 
 /**
- * Service-worker side: answers storage proxy messages against the real
- * chrome.storage.local and relays every onChanged event to the offscreen
- * document. Must be registered at the SW's top level so message delivery
+ * Must be registered at the service worker's top level so message delivery
  * wakes a sleeping worker with the listener already in place.
  */
 export const startStorageProxyHost = (
@@ -63,11 +54,8 @@ export const startStorageProxyHost = (
         (message, sender, sendResponse) => {
             const msg = message as StorageProxyMessage | undefined
             if (msg?.scope !== STORAGE_PROXY_SCOPE) return undefined
-            // The storage proxy has exactly one legitimate client: the
-            // offscreen document (the only context without native
-            // chrome.storage). Content scripts will eventually share this
-            // onMessage listener with every extension page — refuse anyone
-            // else before touching chrome.storage.local on their behalf.
+            // The only legitimate client is the offscreen document; content
+            // scripts share this onMessage listener, so refuse everyone else.
             if (
                 !isTrustedExtensionPageSender(sender, chromeLike) ||
                 sender?.url !== chromeLike.runtime.getURL('offscreen.html')
@@ -126,11 +114,8 @@ export const startStorageProxyHost = (
 }
 
 /**
- * Offscreen-document side: installs a chrome.storage lookalike (promise-only
- * `local` area + `onChanged`) proxied through the service worker. No-op when
- * chrome.storage already exists (every non-offscreen context). MUST run
- * before anything reads chrome.storage — the web bootstrap installs it before
- * hydratePlatform()/hydrateKeystoreStorage().
+ * No-op when chrome.storage already exists (every non-offscreen context).
+ * MUST run before anything reads chrome.storage.
  */
 export const installOffscreenStorageShim = (
     chromeLike: typeof chrome = chrome,

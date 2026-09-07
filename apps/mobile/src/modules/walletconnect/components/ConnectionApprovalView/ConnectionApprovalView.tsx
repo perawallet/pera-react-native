@@ -30,12 +30,6 @@ export type ConnectionApprovalViewProps = {
     proposal: ConnectionProposal
 }
 
-/**
- * Approves or declines one inbound `ConnectionProposal`. Every action goes
- * through `proposal.approve` / `proposal.reject`, so this screen carries no
- * protocol branching and no registry lookup. `ConnectionView` is the legacy
- * sibling the browser extension still renders.
- */
 export const ConnectionApprovalView = ({
     proposal,
 }: ConnectionApprovalViewProps) => {

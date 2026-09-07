@@ -22,15 +22,8 @@ export type UseConnectionApprovalSuccessViewResult = {
     handleReturnToDapp: () => void
 }
 
-/**
- * Drives the post-approval success sheet from the approved `Connection`.
- *
- * The new-stack sibling of `useConnectionSuccessContent`, which reads the
- * one-shot pairing context out of `useReturnToDappStore` keyed by clientId.
- * Here the handler wrote the origin into the record at approval, so the
- * record — not a transient store entry — is the source: it survives a
- * relaunch, and it is the same field the signing flow's hand-off reads.
- */
+// The origin comes off the record the handler wrote at approval, not a transient
+// store entry: it survives a relaunch and is the field the signing hand-off reads.
 export const useConnectionApprovalSuccessView = (
     connection: Connection,
 ): UseConnectionApprovalSuccessViewResult => {

@@ -18,9 +18,6 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
-/**
- * Base walletconnect error
- */
 export class WalletConnectError extends AppError {
     constructor(
         message: string,
@@ -79,17 +76,9 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
 }
 
 /**
- * The WalletConnect bridge socket could not be (re)opened in time to
- * deliver a signed payload to the dApp.
- *
- * WalletConnect v1's socket transport silently queues outgoing messages
- * when its WebSocket is down (no throw, no callback), so a signed
- * transaction handed back over a dead socket is lost while the UI still
- * reports success. The connector registry recreates a fresh socket and
- * throws this error if it cannot open in time — making the signing
- * pipeline surface an honest failure instead. Marked `retryable` so the
- * signing machine offers a Retry: a later attempt often lands once the
- * socket reconnects.
+ * v1 silently queues outgoing messages into a dead WebSocket, so the registry
+ * throws this when a recreated socket cannot open in time. `retryable` because
+ * a later attempt often lands once the socket reconnects.
  */
 export class WalletConnectConnectionTimeoutError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
@@ -107,12 +96,9 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
 }
 
 /**
- * The bridge WebSocket failed repeatedly before a pairing handshake
- * completed — the dApp's session_request can never arrive on this socket.
- * Surfaced scoped to the pairing connector so the outcome waiter fails
- * fast with honest copy instead of burning its full budget in silence.
- * A single transport error is never surfaced (the transport retries on
- * its own); see the `transport_error` binding in `useWalletConnect`.
+ * Repeated transport failures before a handshake completed; a single flap is
+ * never surfaced since the transport retries itself. Scoped to the pairing so
+ * the outcome waiter fails fast instead of burning its full budget in silence.
  */
 export class WalletConnectBridgeConnectionError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
@@ -129,11 +115,7 @@ export class WalletConnectBridgeConnectionError extends WalletConnectError {
     }
 }
 
-/**
- * A queued session request outlived `SESSION_REQUEST_TTL_MS` before the
- * user acted on it — the dApp's side of the handshake has expired, so
- * approving it can only produce a fake "Connected!".
- */
+/** The dApp's side of the handshake has expired, so approving can only produce a fake "Connected!". */
 export class WalletConnectSessionRequestExpiredError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
         super(
@@ -148,13 +130,8 @@ export class WalletConnectSessionRequestExpiredError extends WalletConnectError 
 }
 
 /**
- * Read the originating connector's `clientId` off a surfaced WalletConnect
- * error, if one was stamped on it (see `surfaceError`). `connectionError` is a
- * single shared store field written from several connectors, so consumers that
- * only care about a specific pairing/session (the QR pairing waiter, the
- * provider's pending-request cleanup) use this to ignore errors that belong to
- * a different connector. Reads structurally so it works for both
- * {@link WalletConnectError} and raw `Error`s that were tagged.
+ * Errors fan out from several connectors, so consumers scoped to one pairing use
+ * this to ignore the rest. Reads structurally so a tagged raw `Error` works too.
  */
 export const getConnectionErrorClientId = (
     error: Nullable<Error>,

@@ -18,11 +18,8 @@ const store = new Map<string, Uint8Array>()
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: vi.fn(
         async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
-            // Matches the real commitSecret's internal-copy semantics
-            // (packages/kms/src/storage/secrets.ts): it never zeroes the
-            // caller's buffer, only its own copy. secrets.ts now zeroes its
-            // own `bytes` after this call, so aliasing the same reference
-            // here (instead of copying) would corrupt the stored value.
+            // The real commitSecret copies; secrets.ts zeroes `bytes` right
+            // after, so aliasing the reference here would corrupt the value.
             store.set(id, new Uint8Array(bytes))
         },
     ),
@@ -37,48 +34,120 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 const {
     commitSessionKey,
-    removeSessionKey,
+    createKeystoreSessionKeyStore,
+    createStorageSessionKeyStore,
     sessionKeySecretRef,
-    withSessionKey,
 } = await import('../secrets')
 
 describe('v1 session key storage', () => {
-    beforeEach(() => {
-        store.clear()
-        vi.clearAllMocks()
-    })
-
     it('namespaces the secret ref by client id', () => {
         expect(sessionKeySecretRef('abc')).toBe('wc1-session-key:abc')
     })
 
-    it('round-trips a hex session key', async () => {
-        await commitSessionKey('abc', 'deadbeef')
+    describe('keystore store', () => {
+        const keys = createKeystoreSessionKeyStore()
 
-        expect(await withSessionKey('abc', key => key)).toBe('deadbeef')
+        beforeEach(() => {
+            store.clear()
+            vi.clearAllMocks()
+        })
+
+        it('round-trips a hex session key', async () => {
+            await keys.commit('abc', 'deadbeef')
+
+            expect(keys.has('abc')).toBe(true)
+            expect(await keys.read('abc')).toBe('deadbeef')
+        })
+
+        it('reads null for an unknown client id rather than throwing', async () => {
+            expect(keys.has('missing')).toBe(false)
+            expect(await keys.read('missing')).toBeNull()
+        })
+
+        it('is idempotent — a second commit does not duplicate', async () => {
+            const first = await keys.commit('abc', 'deadbeef')
+            const second = await keys.commit('abc', 'deadbeef')
+
+            expect(first).toBe(second)
+            expect(first).toBe('wc1-session-key:abc')
+            // Map.set on an existing key never changes size, so only the call
+            // count proves the hasSecret guard ran.
+            expect(commitSecret).toHaveBeenCalledTimes(1)
+        })
+
+        it('removes cleanly', async () => {
+            await keys.commit('abc', 'deadbeef')
+            await keys.remove('abc')
+
+            expect(await keys.read('abc')).toBeNull()
+        })
+
+        it('commitSessionKey is the keystore commit', async () => {
+            const ref = await commitSessionKey('abc', 'deadbeef')
+
+            expect(ref).toBe('wc1-session-key:abc')
+            expect(await keys.read('abc')).toBe('deadbeef')
+        })
     })
 
-    it('returns null for an unknown client id rather than throwing', async () => {
-        expect(await withSessionKey('missing', key => key)).toBeNull()
-    })
+    describe('storage store', () => {
+        const makeStorage = () => {
+            const map = new Map<string, string>()
+            return {
+                map,
+                trim: vi.fn(),
+                getItem: (k: string) => map.get(k) ?? null,
+                setItem: (k: string, v: string) => void map.set(k, v),
+                removeItem: (k: string) => void map.delete(k),
+            }
+        }
 
-    it('is idempotent — a second commit does not duplicate', async () => {
-        const first = await commitSessionKey('abc', 'deadbeef')
-        const second = await commitSessionKey('abc', 'deadbeef')
+        it('round-trips a session key under the secret ref', async () => {
+            const storage = makeStorage()
+            const keys = createStorageSessionKeyStore(storage)
 
-        expect(first).toBe(second)
-        expect(store.size).toBe(1)
-        // `store.size` alone can't distinguish "guard skipped the second
-        // write" from "guard doesn't exist" — Map.set on an existing key
-        // never changes size either way. The call count is the assertion
-        // that actually proves the hasSecret guard ran.
-        expect(commitSecret).toHaveBeenCalledTimes(1)
-    })
+            const ref = await keys.commit('abc', 'deadbeef')
 
-    it('removes cleanly', async () => {
-        await commitSessionKey('abc', 'deadbeef')
-        await removeSessionKey('abc')
+            expect(ref).toBe('wc1-session-key:abc')
+            expect(storage.map.get('wc1-session-key:abc')).toBe('deadbeef')
+            expect(keys.has('abc')).toBe(true)
+            expect(await keys.read('abc')).toBe('deadbeef')
+        })
 
-        expect(await withSessionKey('abc', key => key)).toBeNull()
+        it('reports an absent key as missing', async () => {
+            const keys = createStorageSessionKeyStore(makeStorage())
+
+            expect(keys.has('missing')).toBe(false)
+            expect(await keys.read('missing')).toBeNull()
+        })
+
+        it('does not overwrite an already committed key', async () => {
+            const storage = makeStorage()
+            const keys = createStorageSessionKeyStore(storage)
+
+            await keys.commit('abc', 'deadbeef')
+            await keys.commit('abc', 'cafebabe')
+
+            expect(await keys.read('abc')).toBe('deadbeef')
+        })
+
+        it('remove deletes the key and trims the append log', async () => {
+            const storage = makeStorage()
+            const keys = createStorageSessionKeyStore(storage)
+            await keys.commit('abc', 'deadbeef')
+
+            await keys.remove('abc')
+
+            expect(keys.has('abc')).toBe(false)
+            expect(storage.trim).toHaveBeenCalledTimes(1)
+        })
+
+        it('remove tolerates a persistence with no trim', async () => {
+            const { trim: _trim, ...storage } = makeStorage()
+            const keys = createStorageSessionKeyStore(storage)
+            await keys.commit('abc', 'deadbeef')
+
+            await expect(keys.remove('abc')).resolves.toBeUndefined()
+        })
     })
 })

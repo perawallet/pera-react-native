@@ -102,7 +102,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-const { useConnectionSigningAdapter } = await import('../signing-adapter')
+const { enqueueInboundRequest, useConnectionSigningAdapter } =
+    await import('../signing-adapter')
 
 // Two accounts distinct from every other fixture in this file (default
 // `authorizedAccounts` below is `['AAAA']`), so a mutant that hardcodes a
@@ -799,6 +800,43 @@ describe('useConnectionSigningAdapter', () => {
                 ]),
             ).rejects.toThrow('socket dead')
         })
+    })
+
+    // The browser's approval window has no hook to mount: it reconstructs the
+    // message and calls the function directly.
+    it('enqueues through the pure function with explicit deps, no hook mounted', () => {
+        const message = {
+            kind: 'request' as const,
+            connectionId: 'c1',
+            correlationId: '7',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: {
+                type: 'sign-transactions' as const,
+                group: [{ txn: 'b64' }],
+            },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        }
+
+        enqueueInboundRequest(message, {
+            resolveArc0001: mockResolve,
+            enqueueArc0001: mockEnqueue,
+            addSignRequest: mockAddSignRequest,
+            removeSignRequest: mockRemoveSignRequest,
+            accounts: [],
+        })
+
+        expect(mockResolve).toHaveBeenCalledWith(expect.anything(), {
+            authorizedAddresses: new Set(['AAAA']),
+        })
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                transportId: 'c1',
+                sourceMetadata: PEER,
+            }),
+        )
     })
 
     it('unsubscribes on unmount', () => {

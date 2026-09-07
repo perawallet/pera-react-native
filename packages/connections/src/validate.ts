@@ -32,14 +32,10 @@ type RawRequest = Extract<RawInboundMessage, { kind: 'request' }>
 type Answering = Pick<RawRequest, 'respond' | 'reject'>
 
 /**
- * A request is answerable exactly once. The transport errors on a duplicate
- * response id and the signing pipeline has several exit paths that each
- * believe they own the answer, so the guard lives here as an invariant
- * rather than as a courtesy every handler re-implements. A delivery that
- * REJECTS releases the guard: nothing reached the peer, and that rejection is
- * how the pipeline learns the failure is retryable. A refused second answer is
- * a wallet programming error, so it is logged and thrown to the caller but
- * never routed to the user-facing error channel.
+ * The transport errors on a duplicate response id and the pipeline has several
+ * exit paths that each believe they own the answer. A rejected delivery
+ * releases the guard (nothing reached the peer); a second answer is a wallet
+ * bug, thrown to the caller and never routed to the user-facing error channel.
  */
 const answerOnce = (raw: RawRequest): Answering => {
     let answered = false
@@ -116,10 +112,8 @@ export const validateRawMessage = (
         })
     }
 
-    // ARC-60 (object) and the legacy shape (array) are structurally
-    // disjoint, so discriminating on the RAW input before parsing keeps each
-    // schema's own field-path breadcrumb intact — a `z.union` of the two
-    // collapses every failure to one root-level `invalid_union` issue.
+    // Discriminate on the raw input rather than `z.union`, which collapses
+    // every failure to one root-level `invalid_union` issue.
     if (Array.isArray(rawOperation.params)) {
         const parsed = legacyArbitraryDataSchema.safeParse(rawOperation.params)
         if (!parsed.success) {
@@ -134,9 +128,7 @@ export const validateRawMessage = (
         return accepted(raw, { type: 'sign-data', payload: parsed.data })
     }
 
-    // The ARC-60 wire shape, its size cap and the `authenticatorData` decode
-    // all live in `@perawallet/wallet-core-signing`, shared with the in-app
-    // webview bridge so the two transports cannot drift.
+    // Shared with the in-app webview bridge so the two transports cannot drift.
     let payload: Arc60SignableData
     try {
         const { stdSigData, metadata } = parseArc60WireRequest(

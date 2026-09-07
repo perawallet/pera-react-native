@@ -22,8 +22,7 @@ import { isChainIdAcceptable } from '../shared/chain'
 import { readString } from '../shared/read'
 
 // The session-level check proves only the session's network; a dApp can stamp
-// a foreign `chainId` on an individual legacy entry. `chainId` is a v1 wire
-// concept, so this stays out of the neutral layer.
+// a foreign `chainId` on an individual legacy entry.
 export const legacyItemChainIdsAcceptable = (
     params: unknown[],
     network: Network,

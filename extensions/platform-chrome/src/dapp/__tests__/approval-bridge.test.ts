@@ -1204,16 +1204,19 @@ describe('ApprovalWindowBridge', () => {
         expect(chromeLike.windows.remove).not.toHaveBeenCalled()
     })
 
-    it('opens a wc-connect approval and resolves with the approved addresses', async () => {
+    it('opens a connection-proposal approval and resolves with the approved addresses', async () => {
         const { chromeLike, created, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openWcConnect({
+        const decision = bridge.openConnectionProposal({
             requestId: 'req-wc-1',
             origin: 'https://dapp.example',
-            clientId: 'client-1',
-            chainId: 416001,
+            proposalId: 'proposal-1',
+            connectionKind: 'walletconnect-v1',
+            peer: { name: 'dApp', url: 'https://dapp.example' },
+            requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+            expiresAt: 1,
         })
         await flush()
         expect(created[0].url).toContain('approval.html?requestId=req-wc-1')
@@ -1227,15 +1230,14 @@ describe('ApprovalWindowBridge', () => {
             trustedSender,
         )
         expect(approval).toMatchObject({
-            kind: 'wc-connect',
-            clientId: 'client-1',
-            chainId: 416001,
+            kind: 'connection-proposal',
+            proposalId: 'proposal-1',
+            connectionKind: 'walletconnect-v1',
         })
 
-        // A wc-connect decision settles through the SAME generic
-        // resolve-approval message every other approval kind uses
-        // (EnableRequestScreen → useDappRequest.approve → resolveApproval)
-        // — there is no dedicated wc-connect resolver.
+        // A proposal decision settles through the SAME generic
+        // resolve-approval message every other approval kind uses — there is
+        // no dedicated proposal resolver.
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
@@ -1249,46 +1251,50 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toEqual({ approvedAddresses: ['AAAA'] })
     })
 
-    it('opens a wc-sign approval and resolves with the signed result', async () => {
+    it('opens a connection-request approval and resolves with the signed result', async () => {
         const { chromeLike, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openWcSign({
+        const decision = bridge.openConnectionRequest({
             requestId: 'req-wc-2',
             origin: 'https://dapp.example',
-            clientId: 'client-1',
-            wcRequestId: 42,
-            method: 'algo_signTxn',
-            payload: { id: 42, params: [[{ txn: 'dHhu' }]] },
+            connectionId: 'client-1',
+            correlationId: '42',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
         })
         await flush()
 
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-wc-sign',
+                kind: 'resolve-connection-request',
                 requestId: 'req-wc-2',
-                result: ['c3R4bg=='],
+                result: { type: 'sign-transactions', signed: ['c3R4bg=='] },
             },
             trustedSender,
         )
 
-        expect(await decision).toEqual({ result: ['c3R4bg=='] })
+        expect(await decision).toEqual({
+            result: { type: 'sign-transactions', signed: ['c3R4bg=='] },
+        })
     })
 
-    it('rejects a wc-sign approval when its window is closed by the user', async () => {
+    it('rejects a connection-request approval when its window is closed by the user', async () => {
         const { chromeLike, closeWindow } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openWcSign({
+        const decision = bridge.openConnectionRequest({
             requestId: 'req-wc-3',
             origin: 'https://dapp.example',
-            clientId: 'client-1',
-            wcRequestId: 43,
-            method: 'algo_signTxn',
-            payload: { id: 43, params: [[{ txn: 'dHhu' }]] },
+            connectionId: 'client-1',
+            correlationId: '43',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
         })
         await flush()
         closeWindow(100)
@@ -1421,22 +1427,23 @@ describe('ApprovalWindowBridge', () => {
 })
 
 // A decision message settles whatever requestId it names. Without a kind
-// check, a `resolve-approval` carrying a wc-sign requestId resolved that
-// promise with `{approvedAddresses: []}`, and the WC router then posted a
-// SUCCESSFUL algo_signTxn response whose result was undefined.
+// check, a `resolve-approval` carrying a connection-request id resolved that
+// promise with `{approvedAddresses: []}`, and the host then posted a
+// SUCCESSFUL response whose result was undefined.
 describe('decision/approval kind matching', () => {
     it('refuses a decision that cannot settle the pending approval', async () => {
         const { chromeLike, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openWcSign({
+        const decision = bridge.openConnectionRequest({
             requestId: 'req-mismatch',
             origin: 'https://dapp.example',
-            clientId: 'client-1',
-            wcRequestId: 7,
-            method: 'algo_signTxn',
-            payload: {},
+            connectionId: 'client-1',
+            correlationId: '7',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
         })
         await flush()
 
@@ -1452,7 +1459,7 @@ describe('decision/approval kind matching', () => {
 
         expect(res).toEqual({
             ok: false,
-            error: "'resolve-approval' cannot settle a 'wc-sign' approval",
+            error: "'resolve-approval' cannot settle a 'connection-request' approval",
         })
 
         // The approval is untouched and still settles correctly on its own
@@ -1460,13 +1467,15 @@ describe('decision/approval kind matching', () => {
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-wc-sign',
+                kind: 'resolve-connection-request',
                 requestId: 'req-mismatch',
-                result: ['signed'],
+                result: { type: 'sign-transactions', signed: ['signed'] },
             },
             trustedSender,
         )
-        expect(await decision).toEqual({ result: ['signed'] })
+        expect(await decision).toEqual({
+            result: { type: 'sign-transactions', signed: ['signed'] },
+        })
     })
 
     it('still allows a decision valid for the approval kind', async () => {
@@ -1499,13 +1508,14 @@ describe('decision/approval kind matching', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openWcSign({
+        const decision = bridge.openConnectionRequest({
             requestId: 'req-any',
             origin: 'https://dapp.example',
-            clientId: 'client-1',
-            wcRequestId: 8,
-            method: 'algo_signTxn',
-            payload: {},
+            connectionId: 'client-1',
+            correlationId: '8',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
         })
         await flush()
 

@@ -11,10 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    CONNECTION_DEEPLINK_OUTCOME_TIMEOUT_MS,
-    CONNECTION_LATE_PAIRING_GRACE_MS,
-} from '@perawallet/wallet-core-connections'
+import { CONNECTION_DEEPLINK_OUTCOME_TIMEOUT_MS } from '@perawallet/wallet-core-connections'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { ConnectionOriginSource } from '@perawallet/wallet-extension-connections'
 import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPairing'
@@ -49,7 +46,7 @@ export type WalletConnectDeeplinkHandler = (
  * decision, and both renameable without touching this sequence.
  */
 export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
-    const { pair, watchLateOutcome, describeUri } = useConnectionPairing()
+    const { pair, describeUri } = useConnectionPairing()
     const { hideToast } = useToast()
     const showError = useDeeplinkErrorHandler()
 
@@ -119,20 +116,14 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
                 })
                 onError?.()
                 // A late answer within the grace still opens the sheet, so
-                // the stale toast has to go; past it the watch abandons the
-                // pairing itself.
-                if (result.pairingId) {
-                    void watchLateOutcome(
-                        result.pairingId,
-                        CONNECTION_LATE_PAIRING_GRACE_MS,
-                    ).then(lateOutcome => {
-                        if (lateOutcome.type === 'proposal') hideToast()
-                    })
-                }
+                // the stale toast has to go.
+                void result.lateOutcome?.then(lateOutcome => {
+                    if (lateOutcome.type === 'proposal') hideToast()
+                })
                 return false
             }
             return true
         },
-        [pair, watchLateOutcome, describeUri, showError, hideToast],
+        [pair, describeUri, showError, hideToast],
     )
 }

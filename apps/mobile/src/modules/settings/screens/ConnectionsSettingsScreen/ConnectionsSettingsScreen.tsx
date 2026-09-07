@@ -105,9 +105,8 @@ export const ConnectionsSettingsScreen = () => {
         scannerState,
     } = useConnectionsSettingsScreen()
 
-    // Mirrors SettingsWalletConnectScreen's split entry point: the header
-    // icon covers "add another connection" once the list is non-empty, and
-    // the empty state's own button covers the first one — never both at once.
+    // The header icon covers "add another" once the list is non-empty and the
+    // empty state's button covers the first; never both at once.
     useNavigationHeader({
         right:
             connections.length > 0 ? (

@@ -25,16 +25,11 @@ import type {
 import { createConnectionRegistry } from '../registry'
 
 /**
- * The peer's side of a pairing, so the suite can drive a handler end to end
- * without knowing its wire format. Each call may deliver asynchronously; the
- * suite yields a macrotask after it.
+ * The peer's side of a pairing, so the suite can drive a handler without
+ * knowing its wire format. Delivery may be async; the suite yields a macrotask after each call.
  */
 export interface HandlerContractPeer {
-    /**
-     * Send the session proposal on the pairing `pair()` resolved with — with
-     * no id for a handler that has no URI pairing, which surfaces proposals
-     * without a `pair()` call to correlate them to.
-     */
+    /** No id for a handler without URI pairing, whose proposals have no `pair()` to correlate to. */
     propose(pairingId?: string): void
     /** Send a sign-transactions request the handler will accept. */
     request(connectionId: string): void
@@ -53,18 +48,13 @@ export interface HandlerContractUriFixtures {
 }
 
 export interface HandlerContractFixtures {
-    /**
-     * Present exactly when the handler declares `canHandleUri`/`pair`. An
-     * origin-identified kind has no URI and omits this; the URI cases are
-     * then not run.
-     */
+    /** Present exactly when the handler declares `canHandleUri`/`pair`; the URI cases are skipped without it. */
     uri?: HandlerContractUriFixtures
     /** Accounts to approve a proposal for; defaults to one placeholder. */
     accounts?: string[]
     /**
      * Enables the registry round-trip cases. Independent of `uri`: a
-     * proposal-only handler runs them too, with the origin cases — the only
-     * ones that need a `pair()` to carry an origin — skipped.
+     * proposal-only handler runs them too, minus the origin cases.
      */
     peer?: HandlerContractPeer
 }
@@ -93,11 +83,8 @@ const flush = (): Promise<void> =>
     new Promise(resolve => setTimeout(resolve, 0))
 
 /**
- * In-memory `ConnectionStoreAPI` for handler and registry specs. Seedable
- * because the store is NOT kind-scoped — the real persisted store holds every
- * kind's records under one key, and each handler is responsible for narrowing
- * to its own `kind` on entry — so a spec can prove a handler actually filters
- * rather than merely not crashing over an empty list.
+ * Seedable because the persisted store is not kind-scoped, so a spec can prove
+ * a handler filters to its own `kind` rather than merely surviving an empty list.
  */
 export const memoryStore = (seed: Connection[] = []): ConnectionStoreAPI => {
     let items = [...seed]
@@ -121,10 +108,8 @@ const noopContext = (seed: Connection[] = []): ConnectionHandlerContext => ({
 })
 
 /**
- * The contract every connection handler must satisfy. Run it from each
- * handler's own spec file. This suite is what makes a third connection kind
- * cheap, and what proves the interface is not secretly WalletConnect-shaped:
- * a handler with no URI runs it with no `uri` fixtures and must pass.
+ * Run from each handler's own spec. A handler with no URI runs it without `uri`
+ * fixtures and must pass; that is what keeps the interface from being WalletConnect-shaped.
  */
 export const runHandlerContractTests = (
     name: string,
@@ -138,9 +123,8 @@ export const runHandlerContractTests = (
             expect(makeHandler().kind).toBeTruthy()
         })
 
-        // Intrinsic, not against the fixtures: a handler that declared two of
-        // the three would otherwise reach the registry, where `pair` routes on
-        // `canHandleUri` and every error-level log goes through `describeUri`.
+        // Intrinsic, not against the fixtures: `pair` routes on `canHandleUri`
+        // and every error-level log goes through `describeUri`.
         it('declares canHandleUri, pair and describeUri together or not at all', () => {
             const handler = makeHandler()
             const declared = [
@@ -263,12 +247,8 @@ export const runHandlerContractTests = (
                 return uri
             }
 
-            /**
-             * Pairs when there is a URI to pair from, has the peer propose,
-             * and approves. A proposal-only handler skips straight to the
-             * proposal — there is no pairing to correlate, which is why
-             * `propose` takes no id there.
-             */
+            // A proposal-only handler has no pairing to correlate, which is why
+            // `propose` takes no id there.
             const approveOne = async (origin?: ConnectionOrigin) => {
                 const store = memoryStore()
                 const handler = makeHandler()
@@ -319,8 +299,7 @@ export const runHandlerContractTests = (
 
                 const match = restored.find(c => c.id === connection.id)
                 expect(match).toBeDefined()
-                // Only a URI pairing can carry an origin in: `pair(uri, opts)`
-                // is where it enters.
+                // Only a URI pairing can carry an origin in, via `pair(uri, opts)`.
                 expect(match?.origin).toEqual(uri ? ORIGIN : undefined)
                 await registry.teardown()
             })

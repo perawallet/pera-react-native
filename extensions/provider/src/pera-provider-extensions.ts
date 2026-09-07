@@ -41,25 +41,15 @@ import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs
 export type { ProviderOptions }
 
 /**
- * Structural shape of the Ledger BLE-transport registration extension.
- * Native's `WithLedgerExtension` (@perawallet/wallet-extension-ledger-react-native)
- * and web's `WithLedgerWebBleExtension` (@perawallet/wallet-extension-ledger-web-ble)
- * both satisfy this shape — accept the provider's `hardwareWalletRegistry`,
- * register a transport provider as a side effect, and add no new properties
- * to the provider instance. Kept structural/abstract (no concrete import of
- * either Ledger package) so this file doesn't pull platform-specific code
- * into the shared type.
+ * Satisfied by both the native and web Ledger BLE extensions: takes the
+ * provider's `hardwareWalletRegistry`, registers a transport as a side effect,
+ * adds no properties. Structural so this shared type imports neither Ledger package.
  */
 export type LedgerBleExtension = (provider: {
     hardwareWalletRegistry: HardwareWalletRegistry
 }) => object
 
-/**
- * Structural shape of the Ledger USB-transport registration extension.
- * Native's `WithLedgerUsbExtension` (@perawallet/wallet-extension-ledger-react-native-usb)
- * and web's `WithLedgerWebUsbExtension` (@perawallet/wallet-extension-ledger-web-usb)
- * both satisfy this shape — see {@link LedgerBleExtension}.
- */
+/** USB counterpart of {@link LedgerBleExtension}, satisfied by both native and web USB extensions. */
 export type LedgerUsbExtension = (provider: {
     hardwareWalletRegistry: HardwareWalletRegistry
 }) => object
@@ -77,13 +67,8 @@ export type PeraExtensions = readonly [
 ]
 
 /**
- * Shared public shape of the composed Pera Wallet Provider: data migrations,
- * platform services, Ledger hardware wallet (native or web transport),
- * keystore, and passkey autofill. `pera-provider.ts` (native) and
- * `pera-provider.web.ts` (web) each build their own concrete
- * `Provider.withExtensions([...])` value with their own concrete Ledger
- * imports, but both reference this single type so the two files can't drift
- * apart on the provider's public shape.
+ * `pera-provider.ts` and `pera-provider.web.ts` both reference this single type
+ * so they cannot drift apart on the provider's public shape.
  */
 export type PeraProvider = Provider<PeraExtensions> &
     MigrationsExtension &

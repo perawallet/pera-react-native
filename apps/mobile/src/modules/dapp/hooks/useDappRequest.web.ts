@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-// Approval-window side of the dapp approval bridge: reads the
-// requestId the SW put on the popup's URL (ApprovalWindowBridge.openEnable),
-// fetches the pending approval over runtime messaging, and resolves it by
-// posting resolve-approval/reject-approval back to the same bridge. Goes
-// through platform-chrome's approval-client accessors rather than the
-// ambient `chrome` global directly — apps/mobile's oxlint config forbids
-// that (no-restricted-globals).
+// Goes through platform-chrome's approval-client accessors: apps/mobile's
+// oxlint forbids the ambient `chrome` global.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     getCurrentApproval,
@@ -33,11 +28,9 @@ type UseDappRequestResult = {
     approve: (addresses: string[]) => Promise<void>
     reject: () => Promise<void>
     /**
-     * Set when a decision could not be handed back to the bridge — in
-     * practice because MV3 evicted the service worker while the user was
-     * deliberating, taking its in-memory pending map with it. The window
-     * deliberately stays open in that case: the dApp was never answered, and
-     * closing would report a success that did not happen.
+     * Set when a decision could not reach the bridge (MV3 evicted the service
+     * worker and its pending map while the user deliberated). The window stays
+     * open: the dApp was never answered, and closing would report a success.
      */
     deliveryError: boolean
 }
@@ -50,10 +43,8 @@ export const useDappRequest = (): UseDappRequestResult => {
     const [approval, setApproval] = useState<PendingApproval | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [deliveryError, setDeliveryError] = useState(false)
-    // Guards the pagehide reject: set inside approve()/reject() so a window
-    // close after an explicit decision doesn't fire a redundant reject. Not
-    // an issue if it did (the SW's finish() is single-settle/idempotent) but
-    // there's no reason to send the extra message.
+    // Set inside approve()/reject() so a window close after an explicit
+    // decision doesn't send a redundant pagehide reject.
     const settledRef = useRef(false)
 
     useEffect(() => {

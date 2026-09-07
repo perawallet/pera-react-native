@@ -238,7 +238,7 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
 // Pairing itself (handing the URI to the registry, scoping the wait to this
 // pairing's answer) is covered by `useConnectionPairing`'s own spec — the
 // deeplink tests only pin which outcome drives which callback.
-const { mockPair, mockWatchLateOutcome, mockDescribeUri } = vi.hoisted(() => ({
+const { mockPair, mockDescribeUri } = vi.hoisted(() => ({
     mockPair: vi.fn(
         async (
             _uri: string,
@@ -250,11 +250,9 @@ const { mockPair, mockWatchLateOutcome, mockDescribeUri } = vi.hoisted(() => ({
             type: string
             error?: Error
             pairingId?: string
+            lateOutcome?: Promise<{ type: string }>
         }> => ({ type: 'session' }),
     ),
-    mockWatchLateOutcome: vi.fn(async (): Promise<{ type: string }> => ({
-        type: 'timeout',
-    })),
     // The claiming handler's own redaction, as the registry hands it back.
     mockDescribeUri: vi.fn((_uri: string): Record<string, string | null> => ({
         topic: 'topic',
@@ -265,7 +263,6 @@ const { mockPair, mockWatchLateOutcome, mockDescribeUri } = vi.hoisted(() => ({
 vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
     useConnectionPairing: () => ({
         pair: mockPair,
-        watchLateOutcome: mockWatchLateOutcome,
         describeUri: mockDescribeUri,
     }),
 }))
@@ -429,7 +426,6 @@ describe('useDeepLink', () => {
         mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
         mockPair.mockResolvedValue({ type: 'session' })
-        mockWatchLateOutcome.mockResolvedValue({ type: 'timeout' })
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
@@ -926,8 +922,8 @@ describe('useDeepLink', () => {
             mockPair.mockResolvedValueOnce({
                 type: 'timeout',
                 pairingId: 'pairing-client',
+                lateOutcome: Promise.resolve({ type: 'proposal' }),
             })
-            mockWatchLateOutcome.mockResolvedValueOnce({ type: 'proposal' })
             const { result } = renderHook(() => useDeepLink())
 
             await act(async () => {
@@ -942,10 +938,6 @@ describe('useDeepLink', () => {
                 await Promise.resolve()
             })
 
-            expect(mockWatchLateOutcome).toHaveBeenCalledWith(
-                'pairing-client',
-                60_000,
-            )
             expect(mockHideToast).toHaveBeenCalledTimes(1)
         })
 
@@ -955,8 +947,8 @@ describe('useDeepLink', () => {
             mockPair.mockResolvedValueOnce({
                 type: 'timeout',
                 pairingId: 'pairing-client',
+                lateOutcome: Promise.resolve({ type: 'timeout' }),
             })
-            mockWatchLateOutcome.mockResolvedValueOnce({ type: 'timeout' })
             const { result } = renderHook(() => useDeepLink())
 
             await act(async () => {

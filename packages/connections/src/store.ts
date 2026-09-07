@@ -17,15 +17,13 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
+    ConnectionId,
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
 
 type State = {
     connections: Connection[]
-    /**
-     * False until the first snapshot lands. An empty mirror before that is
-     * indistinguishable from a wallet with no dApps.
-     */
+    /** False until the first snapshot lands; an empty mirror before that looks like a wallet with no dApps. */
     isHydrated: boolean
 }
 type Actions = {
@@ -39,14 +37,9 @@ const STORE_NAME = 'connections-store'
 const initialState: State = { connections: [], isHydrated: false }
 
 /**
- * UI-facing mirror of the extension's persisted store, kept for screens that
- * follow the repo's zustand convention (granular selectors, `resetState`).
- *
- * Deliberately NOT `persist`-backed. `extensions/connections` already owns
- * durability for these records; wiring `persist` here would create a second
- * copy with its own hydration timeline racing the extension's — the exact
- * hazard this project's design already works around. This store is a
- * read-through mirror, never a source of truth. Do not add `persist`.
+ * Read-through mirror of the extension's persisted store, never a source of
+ * truth. Do not add `persist`: `extensions/connections` owns durability, and a
+ * second copy would race its hydration timeline.
  */
 export const useConnectionsStore = create<ConnectionsStore>(set => ({
     ...initialState,
@@ -54,9 +47,8 @@ export const useConnectionsStore = create<ConnectionsStore>(set => ({
     resetState: () => set(initialState),
 }))
 
-// A wipe must clear the mirror too: left alone it keeps `isHydrated: true`
-// over a frozen snapshot until the provider reboots. Nothing to clear from
-// storage — the extension store owns durability.
+// A wipe must clear the mirror too, or it keeps `isHydrated: true` over a
+// frozen snapshot until the provider reboots. The extension store owns storage.
 registerStore({
     name: STORE_NAME,
     clearStorage: () => {},
@@ -69,20 +61,9 @@ export const hydrateConnectionsStore = (
 ): (() => void) => {
     const { setConnections } = useConnectionsStore.getState()
 
-    // Subscribe BEFORE requesting the initial list, and guard the initial
-    // list's apply behind two flags. `list()` is async: if a mutation lands
-    // (and notifies synchronously, as most in-memory/test doubles do) while
-    // that promise is still in flight, its resolution can settle AFTER the
-    // mutation's own notification and clobber newer state with a stale
-    // snapshot — `initialListIsStale` covers that case. Separately, if the
-    // CALLER tears down before the initial `list()` resolves (React
-    // StrictMode's synchronous mount/cleanup/mount is exactly this shape),
-    // there may be no intervening mutation to flip that flag at all — the
-    // pending `.then` would otherwise fire after teardown and write a stale
-    // snapshot into the module-singleton store even though the caller
-    // believes tracking has stopped. `stopped` covers that case
-    // independently: it is set only by the returned teardown, never by a
-    // subscription update.
+    // Subscribe before the initial `list()`: a mutation notifying while it is
+    // in flight would otherwise be clobbered by the stale snapshot. `stopped`
+    // covers a teardown before it resolves (StrictMode mount/cleanup/mount).
     let stopped = false
     let initialListIsStale = false
     const unsubscribe = api.subscribe(connections => {
@@ -96,4 +77,15 @@ export const hydrateConnectionsStore = (
         stopped = true
         unsubscribe()
     }
+}
+
+/**
+ * The persisted record decides whether a session exists; socket state is
+ * irrelevant since a reconnect keeps the record. A dead answer cancels the
+ * user's sign request outright, so before hydration the only safe answer is alive.
+ */
+export const isConnectionAlive = (connectionId: ConnectionId): boolean => {
+    const { connections, isHydrated } = useConnectionsStore.getState()
+    if (!isHydrated) return true
+    return connections.some(connection => connection.id === connectionId)
 }

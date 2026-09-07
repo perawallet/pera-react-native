@@ -12,11 +12,3 @@
 
 export { ConnectionsProvider } from './ConnectionsProvider'
 export type { ConnectionsProviderProps } from './ConnectionsProvider'
-// From the context module, so that a consumer importing it BY PATH keeps the
-// v1 handler, the migration and the approval sheets out of its graph. This
-// barrel also exports `ConnectionsProvider`, so importing through it pulls
-// them in regardless.
-export {
-    useConnectionRegistry,
-    useOptionalConnectionRegistry,
-} from './connectionRegistryContext'

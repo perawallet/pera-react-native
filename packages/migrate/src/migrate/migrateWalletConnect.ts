@@ -57,11 +57,8 @@ const parseSessionMeta = (json: string): ParsedSessionMeta => {
 }
 
 /**
- * A legacy record reconstructed and validated, ready to become a
- * `WalletConnectV1Connection` once its session key has been committed to the
- * keystore. No secret material lives past this point without a
- * `secretRef` — `key` here is the raw session key, held only long enough to
- * hand to `commitSessionKey`.
+ * `key` is the raw session key, held only long enough to hand to
+ * `commitSessionKey`; nothing past that carries secret material without a `secretRef`.
  */
 type ReconstructedLegacySession = {
     clientId: string
@@ -133,11 +130,7 @@ const toConnection = (
         key,
         chainId,
         accounts,
-        // Omitted (not defaulted to 0) when the legacy record has no
-        // handshakeId — see `WalletConnectV1Metadata.handshakeId` and
-        // `importLegacyConnections.ts`'s `reconstructRecord` for the same
-        // convention. The v1 handler's replay guard tests
-        // `!== undefined`, so a real, carried id must survive untouched.
+        // Omitted rather than defaulted to 0: the v1 handler's replay guard tests `!== undefined`.
         handshakeId:
             typeof legacy.handshakeId === 'number'
                 ? legacy.handshakeId
@@ -148,18 +141,10 @@ const toConnection = (
 }
 
 /**
- * Imports v1 sessions exported from the legacy native (iOS/Android) apps
- * directly into the connections model, moving each session key into the
- * keystore behind a `secretRef` — no session key ever reaches the written
- * record. This is the first-run counterpart to
- * `packages/walletconnect/src/migration/importLegacyConnections.ts`, which
- * migrates the RN app's own persisted `wallet-connect-store` blob; the two
- * inputs differ but the records they produce are field-for-field
- * consistent.
- *
- * Only sessions whose every account has already been migrated are imported —
- * a connection authorised for an address the wallet does not yet hold would
- * be unusable and, worse, misleading.
+ * Native-app (iOS/Android) session exports; each session key goes into the
+ * keystore behind a `secretRef`. Only sessions whose every account has already
+ * been migrated are imported: one authorised for an address the wallet does not
+ * hold would be unusable and misleading.
  */
 export const migrateWalletConnect = async (
     sessions: LegacyWalletConnectV1Session[],
@@ -182,18 +167,9 @@ export const migrateWalletConnect = async (
             .map(connection => connection.metadata.handshakeTopic),
     )
 
-    // A genuine I/O failure (commitSessionKey or store.upsert throwing —
-    // storage write failure, quota, serialization) is NOT a deliberate skip
-    // and must never be folded into `result.skipped`: this function's only
-    // caller (`runExtrasMigration.ts`'s `walletConnect` step) reports success
-    // to `runMigration.ts` whenever nothing escapes, which stamps the step
-    // complete and permanently excludes it from every future run
-    // (`pendingStepsFromVersions`). Swallowing a write failure here would
-    // orphan an already-committed session key — `commitSessionKey` can
-    // succeed and `store.upsert` can still fail — with no record ever
-    // referencing it, and no retry path, ever. So: keep attempting every
-    // remaining session (one bad one must not strand the rest), but rethrow
-    // once the whole batch is done whenever any attempt genuinely failed.
+    // An I/O failure must not be folded into `skipped`: the caller stamps the
+    // step complete whenever nothing escapes, which would orphan an already
+    // committed session key with no retry path. Attempt the rest, then rethrow.
     let firstFailure: Error | null = null
 
     for (const session of sessions) {
@@ -239,12 +215,8 @@ export const migrateWalletConnect = async (
                     ...(reconstructed.handshakeId !== undefined
                         ? { handshakeId: reconstructed.handshakeId }
                         : {}),
-                    // The native export carries no per-session method list, so
-                    // the settings detail screen would show an empty
-                    // permissions panel where a blob-migrated session shows a
-                    // full one. `ALL_PERMISSIONS` is the same fallback the v1
-                    // handler applies to a handshake that names none, and the
-                    // legacy native apps gated no method per session.
+                    // The native export has no per-session method list and the
+                    // legacy apps gated none; this is the v1 handler's fallback too.
                     permissions: [...ALL_PERMISSIONS],
                 },
             }

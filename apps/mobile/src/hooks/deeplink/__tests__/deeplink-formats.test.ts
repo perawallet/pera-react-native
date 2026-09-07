@@ -238,7 +238,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
     useConnectionPairing: () => ({
         pair: mockConnect,
-        watchLateOutcome: vi.fn(async () => ({ type: 'timeout' })),
         describeUri: vi.fn(() => ({ topic: 'topic' })),
     }),
 }))

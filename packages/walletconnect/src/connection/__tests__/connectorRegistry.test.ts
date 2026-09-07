@@ -26,7 +26,6 @@ import {
     clearConnectorHandlerBinder,
     waitForPairingSocketOpen,
 } from '../connectorRegistry'
-import { useWalletConnectStore } from '../../store'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
@@ -99,7 +98,6 @@ describe('connectorRegistry', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         __resetRegistryForTests()
-        useWalletConnectStore.getState().resetState()
     })
 
     afterEach(() => {
@@ -128,24 +126,6 @@ describe('connectorRegistry', () => {
 
             expect(connected.transportClose).not.toHaveBeenCalled()
             expect(getConnector('c1')).toBe(connected)
-        })
-
-        it('tears down a pending pairing regardless of what the legacy store lists', () => {
-            // Reading the legacy store here is what used to instantiate it on
-            // the migration launch, re-persisting the plaintext session keys
-            // the importer had just deleted. `connected` already says
-            // everything the lookup did.
-            const pending = makeConnector('c1')
-            pending.connected = false
-            registerConnector('c1', pending)
-            useWalletConnectStore
-                .getState()
-                .setWalletConnectConnections([{ clientId: 'c1' }])
-
-            abandonPairing('c1')
-
-            expect(pending.transportClose).toHaveBeenCalledTimes(1)
-            expect(getConnector('c1')).toBeUndefined()
         })
 
         it('is a no-op for an unknown clientId', () => {

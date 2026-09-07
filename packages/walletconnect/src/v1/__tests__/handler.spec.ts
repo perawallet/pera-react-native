@@ -31,6 +31,7 @@ import {
     type RawInboundMessage,
 } from '@perawallet/wallet-core-connections'
 import { createWalletConnectV1Handler } from '../handler'
+import type { WalletConnectV1SessionKeyStore } from '../secrets'
 import {
     __resetRegistryForTests,
     getConnector,
@@ -41,11 +42,20 @@ import { toPeer } from '../../shared/peer'
 // shared implementation rather than carrying its own.
 vi.mock('../../shared/peer', { spy: true })
 
-// Map-backed rather than the fixed stubs the brief sketched, so a test can
-// seed or read a session key. Behaviour is a strict superset: the map starts
-// empty, so `hasSecret` is still false and `withSecret` still resolves null
-// everywhere the contract suite looks.
+// Backs the kms mock; only the default-store test reaches it.
 const secrets = vi.hoisted(() => new Map<string, Uint8Array>())
+
+// The injected store every other test uses, so a test can seed or read a key.
+const keys = new Map<string, string>()
+const sessionKeys: WalletConnectV1SessionKeyStore = {
+    commit: vi.fn(async (clientId: string, key: string) => {
+        if (!keys.has(clientId)) keys.set(clientId, key)
+        return `wc1-session-key:${clientId}`
+    }),
+    has: clientId => keys.has(clientId),
+    read: async clientId => keys.get(clientId) ?? null,
+    remove: async clientId => void keys.delete(clientId),
+}
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: vi.fn(
@@ -103,9 +113,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 // react-native ships untranspiled Flow, so every spec in this package that
-// reaches it has to stand one in (see utils/__tests__/app-state.spec.ts and
-// hooks/__tests__/useWalletConnectReconnect.spec.ts). `initialize` starts the
-// foreground reconnect sweep, which subscribes to AppState.
+// reaches it has to stand one in (see utils/__tests__/app-state.spec.ts).
+// `initialize` starts the foreground reconnect sweep, which subscribes to
+// AppState.
 vi.mock('react-native', () => ({
     AppState: {
         currentState: 'active',
@@ -236,14 +246,18 @@ const connectorFor = (clientId: string) => {
 
 describe('walletconnect v1 handler contract', () => {
     beforeEach(() => {
-        secrets.clear()
+        keys.clear()
         wc.FakeConnector.instances.length = 0
         __resetRegistryForTests()
     })
 
     runHandlerContractTests(
         'walletconnect-v1',
-        () => createWalletConnectV1Handler({ getNetwork: testGetNetwork }),
+        () =>
+            createWalletConnectV1Handler({
+                getNetwork: testGetNetwork,
+                sessionKeys,
+            }),
         {
             uri: {
                 valid: V1_URI,
@@ -293,6 +307,7 @@ describe('walletconnect v1 handler specifics', () => {
         expect(
             createWalletConnectV1Handler({
                 getNetwork: testGetNetwork,
+                sessionKeys,
             }).canHandleUri('wc:topic@1?key=beef'),
         ).toBe(false)
     })
@@ -300,6 +315,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('reports the topic and bridge origin but never the key', () => {
         const described = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         }).describeUri(V1_URI)
 
         expect(described).toEqual({
@@ -311,6 +327,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('treats the 4160 wildcard as matching every network', () => {
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         const connection = {
             id: 'c1',
@@ -337,6 +354,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('binds a specific chainId to exactly one network', () => {
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         const connection = {
             id: 'c1',
@@ -366,6 +384,7 @@ describe('walletconnect v1 handler specifics', () => {
         // delegates to the exhaustive EXPECTED_CHAIN_ID_BY_NETWORK record.
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         const at = (chainId: number) => ({
             id: 'c1',
@@ -394,6 +413,7 @@ describe('walletconnect v1 handler specifics', () => {
     it('rejects a request whose chain id is missing rather than guessing', () => {
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         const connection = {
             id: 'c1',
@@ -470,6 +490,7 @@ describe('walletconnect v1 handler behaviour', () => {
         }
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         await handler.initialize(context)
         return {
@@ -518,6 +539,7 @@ describe('walletconnect v1 handler behaviour', () => {
 
     beforeEach(() => {
         secrets.clear()
+        keys.clear()
         wc.FakeConnector.instances.length = 0
         __resetRegistryForTests()
         vi.clearAllMocks()
@@ -632,7 +654,7 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(onError).toHaveBeenCalled()
     })
 
-    it('persists an approved session and moves its key into the keystore', async () => {
+    it('persists an approved session and moves its key into the session key store', async () => {
         const { connector, records } = await connect(['AAAA', 'BBBB'])
 
         const [record] = await records()
@@ -656,9 +678,37 @@ describe('walletconnect v1 handler behaviour', () => {
             accounts: ['AAAA', 'BBBB'],
         })
         // The record is UI-safe by construction — the key lives only in the
-        // keystore, behind `secretRef`.
+        // session key store, behind `secretRef`.
         expect(JSON.stringify(record)).not.toContain('a-session-key')
+        expect(sessionKeys.has(connector.clientId)).toBe(true)
+        expect(sessionKeys.commit).toHaveBeenCalledWith(
+            connector.clientId,
+            'a-session-key',
+        )
+    })
+
+    it('stores session keys in the keystore when no store is injected', async () => {
+        const store = memoryStore()
+        const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
+        const handler = createWalletConnectV1Handler({
+            getNetwork: testGetNetwork,
+        })
+        await handler.initialize({
+            store,
+            onProposal,
+            onMessage: vi.fn(),
+            onDisconnected: vi.fn(),
+            onError: vi.fn(),
+        })
+        await handler.pair(V1_URI)
+        const connector = lastConnector()
+        connector.emit('session_request', null, handshake(4160))
+        await flush()
+
+        await onProposal.mock.calls[0][0].approve(['AAAA'])
+
         expect(secrets.has(`wc1-session-key:${connector.clientId}`)).toBe(true)
+        expect(keys.size).toBe(0)
     })
 
     it('refuses to approve a proposal that has already expired', async () => {
@@ -802,10 +852,7 @@ describe('walletconnect v1 handler behaviour', () => {
     })
 
     it('does not restore inside initialize; the registry runs restore', async () => {
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
 
         await setup([SEEDED])
 
@@ -819,7 +866,10 @@ describe('walletconnect v1 handler behaviour', () => {
         // than consuming the one answer.
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
-            createWalletConnectV1Handler({ getNetwork: testGetNetwork }),
+            createWalletConnectV1Handler({
+                getNetwork: testGetNetwork,
+                sessionKeys,
+            }),
         )
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
         const onMessage = vi.fn<(message: InboundMessage) => void>()
@@ -872,11 +922,8 @@ describe('walletconnect v1 handler behaviour', () => {
         )
     })
 
-    it('rebuilds a stored session from its keystore-held session key', async () => {
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+    it('rebuilds a stored session from its stored session key', async () => {
+        keys.set('c1', 'restored-key')
 
         const { handler } = await setup([SEEDED])
         const restored = await handler.restore()
@@ -899,10 +946,7 @@ describe('walletconnect v1 handler behaviour', () => {
         // StrictMode's mount/unmount/mount) leaves live connectors holding the
         // previous instance's closures — whose context is null. Unrepaired, an
         // inbound request is answered to nobody and reported to nobody.
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const first = await setupRestored([SEEDED])
         const connector = lastConnector()
         connector.connected = true
@@ -943,10 +987,7 @@ describe('walletconnect v1 handler behaviour', () => {
     it('reports a session whose connector could not be rebuilt as inactive', async () => {
         // Settings renders `status` as the user-visible Connected badge, so
         // leaving `active` on a session with no socket makes the list lie.
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const broken: Connection = {
             ...SEEDED,
             metadata: { ...SEEDED.metadata, bridge: 'not-a-bridge' },
@@ -961,10 +1002,7 @@ describe('walletconnect v1 handler behaviour', () => {
     })
 
     it('disconnecting kills the session and clears the key, connector and record', async () => {
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const { handler, records } = await setupRestored([SEEDED])
         const connector = lastConnector()
         connector.connected = true
@@ -973,15 +1011,12 @@ describe('walletconnect v1 handler behaviour', () => {
 
         expect(connector.killSession).toHaveBeenCalled()
         expect(getConnector('c1')).toBeUndefined()
-        expect(secrets.has('wc1-session-key:c1')).toBe(false)
+        expect(sessionKeys.has('c1')).toBe(false)
         expect(await records()).toEqual([])
     })
 
     it('routes a peer-initiated disconnect through the registry', async () => {
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const { onDisconnected } = await setupRestored([SEEDED])
 
         lastConnector().emit('disconnect', null, null)
@@ -989,7 +1024,7 @@ describe('walletconnect v1 handler behaviour', () => {
 
         expect(onDisconnected).toHaveBeenCalledWith('c1')
         expect(getConnector('c1')).toBeUndefined()
-        expect(secrets.has('wc1-session-key:c1')).toBe(false)
+        expect(sessionKeys.has('c1')).toBe(false)
     })
 
     it('ignores the bridge replaying the handshake it already approved', async () => {
@@ -1010,6 +1045,7 @@ describe('walletconnect v1 handler behaviour', () => {
         // which vitest fails the file for, so this test is the guard.
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         await handler.pair(V1_URI)
 
@@ -1098,7 +1134,10 @@ describe('walletconnect v1 handler behaviour', () => {
     it('networksFor expands the 4160 wildcard and pins an explicit chain id', () => {
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
-            createWalletConnectV1Handler({ getNetwork: testGetNetwork }),
+            createWalletConnectV1Handler({
+                getNetwork: testGetNetwork,
+                sessionKeys,
+            }),
         )
         const at = (chainId: number): Connection => ({
             ...SEEDED,
@@ -1119,7 +1158,10 @@ describe('walletconnect v1 handler behaviour', () => {
         // store; `matchesNetwork` must not be the place they blow up.
         const registry = createConnectionRegistry({ store: memoryStore() })
         registry.register(
-            createWalletConnectV1Handler({ getNetwork: testGetNetwork }),
+            createWalletConnectV1Handler({
+                getNetwork: testGetNetwork,
+                sessionKeys,
+            }),
         )
         const { metadata: _metadata, ...noMetadata } = SEEDED
 
@@ -1171,10 +1213,7 @@ describe('walletconnect v1 handler behaviour', () => {
     })
 
     it('builds one connector per session when restore runs concurrently', async () => {
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const { handler } = await setup([SEEDED])
 
         await Promise.all([handler.restore(), handler.restore()])
@@ -1188,6 +1227,7 @@ describe('walletconnect v1 handler behaviour', () => {
     it('re-initialising without a teardown replaces the sweep instead of stacking it', async () => {
         const handler = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
+            sessionKeys,
         })
         const context: ConnectionHandlerContext = {
             store: memoryStore(),
@@ -1211,10 +1251,7 @@ describe('walletconnect v1 handler behaviour', () => {
     it('marks a revived session active again', async () => {
         // Settings renders `status` as the Connected badge; a session that
         // was inactive on the last boot and has a socket now must say so.
-        secrets.set(
-            'wc1-session-key:c1',
-            new TextEncoder().encode('restored-key'),
-        )
+        keys.set('c1', 'restored-key')
         const { handler, records } = await setup([
             { ...SEEDED, status: 'inactive' },
         ])

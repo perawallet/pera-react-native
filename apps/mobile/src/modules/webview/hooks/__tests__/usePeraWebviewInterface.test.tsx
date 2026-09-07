@@ -21,13 +21,15 @@ import {
 } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
-import { resetConnectionPairingStateForTesting } from '@modules/connections/hooks/useConnectionPairing'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import { CONNECTION_LATE_PAIRING_GRACE_MS } from '@perawallet/wallet-core-connections'
+import {
+    CONNECTION_LATE_PAIRING_GRACE_MS,
+    resetConnectionPairingStateForTesting,
+} from '@perawallet/wallet-core-connections'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent } from '@analytics'
 
@@ -62,7 +64,14 @@ vi.mock('react-native-notifier', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    // The pairing sequence's timeout and promise guards, real: both modules
+    // are side-effect free and a stand-in would prove nothing about timing.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/shared/src/utils/async')
+    >('../../../../../../../packages/shared/src/utils/async')),
+    toError: (error: unknown) =>
+        error instanceof Error ? error : new Error(String(error)),
     logger: {
         debug: vi.fn(),
         warn: vi.fn(),
@@ -327,7 +336,10 @@ const answerPairing = (
     }
 }
 
-vi.mock('@modules/connections/providers/connectionRegistryContext', () => ({
+vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-connections')
+    >()),
     useOptionalConnectionRegistry: () => ({
         pair: mockConnect,
         abandonPairing: mockAbandonPairing,
@@ -351,10 +363,13 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => {
     class MockBridgeConnectionError extends Error {}
     return {
         WalletConnectBridgeConnectionError: MockBridgeConnectionError,
-        // Real values from packages/walletconnect/src/shared/constants.ts.
-        WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+        // Real value from packages/walletconnect/src/shared/constants.ts.
         WC_DELIVERY_TIMEOUT_MS: 8000,
-        WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
+        parseWalletConnectUri: vi.fn((uri: string) =>
+            uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
+                ? { uri: uri.replace('perawallet-wc:', 'wc:') }
+                : null,
+        ),
     }
 })
 
@@ -394,20 +409,6 @@ vi.mock('@hooks/useDeepLink', () => ({
 vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
-
-vi.mock('@hooks/deeplink/walletconnect-parser', () => {
-    return {
-        parseWalletConnectUri: vi.fn((uri: string) =>
-            uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
-                ? {
-                      type: 'WALLET_CONNECT',
-                      sourceUrl: uri,
-                      uri: uri.replace('perawallet-wc:', 'wc:'),
-                  }
-                : null,
-        ),
-    }
-})
 
 const { mockUseLanguage } = vi.hoisted(() => ({
     mockUseLanguage: vi.fn(),

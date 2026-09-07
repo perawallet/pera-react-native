@@ -29,7 +29,7 @@ import { useWebView } from '@modules/webview'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 export type UseSettingsWalletConnectDetailsScreenResult = {
     preferredIcon: Optional<string>

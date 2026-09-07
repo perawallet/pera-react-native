@@ -19,8 +19,7 @@
             },
             "network_mismatch": "Esta transacción es para una red de Algorand distinta a la red activa de tu wallet. Cambia de red en los ajustes y vuelve a intentarlo.",
             "unsupported_message": "Este sitio envió una solicitud de firma de mensaje que Pera no puede procesar. La solicitud se ha rechazado.",
-            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta.",
-            "no_session": "Esta conexión ya no es válida. Vuelve a conectar el sitio y inténtalo de nuevo."
+            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta."
         },
         "passkey": {
             "create": {
@@ -2838,7 +2837,7 @@
             "error_sheet_title": "Error",
             "error_sheet_body": "Tu solicitud de WalletConnect ha fallado con el siguiente error:",
             "error_sheet_retry": "Vuelve a intentarlo desde la dApp donde iniciaste la solicitud.",
-            "error_network_mismatch": "Esta app ha pedido conectarse en {{requested}}, pero tu wallet está en {{active}}. Cambia de red en los ajustes y vuelve a intentarlo.",
+            "error_network_mismatch": "Esta app ha pedido conectarse en otra red, pero tu wallet está en {{active}}. Cambia de red en los ajustes y vuelve a intentarlo.",
             "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum."
         },
         "connection": {
@@ -2858,7 +2857,6 @@
             "delete_all_title": "Eliminar todas las sesiones",
             "delete_all_body": "¿Seguro que quieres eliminar todas las sesiones? Esto eliminará todas tus sesiones activas y te desconectará de todas las apps conectadas.",
             "disconnect_failed_title": "No se pudo desconectar",
-            "unknown_peer": "Desconocido",
             "version": "Esta sesión usa WalletConnect V{{version}}",
             "connected_accounts": "Conectado con",
             "permissions": "Permisos avanzados",

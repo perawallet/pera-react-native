@@ -38,18 +38,14 @@ import { getPreferredDappIcon } from '../../utils/dapp-icon'
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
     /**
-     * Every network this proposal may be used on — a handler-resolved list
-     * (v1's 4160 "any Algorand chain" wildcard already expanded), not a
-     * single wire chain id. `'custom'` is filtered from the badge row: it
-     * names a runtime-configurable node slot, not a network a user picks, so
-     * it carries no translated label.
+     * Handler-resolved list (v1's 4160 wildcard already expanded), not a wire chain
+     * id. `'custom'` is filtered from the badge row: it names a runtime-configurable
+     * node slot with no translated label.
      */
     networks: Network[]
     /**
-     * Wire method strings (e.g. v1's `algo_signTxn`). Translated via the same
-     * three known keys `PermissionItem` uses; anything unrecognised falls
-     * back to the raw string rather than throwing, since a future handler's
-     * methods need not match v1's.
+     * Wire method strings (e.g. `algo_signTxn`); unrecognised ones fall back to
+     * the raw string since another handler's methods need not match v1's.
      */
     methods: string[]
 }
@@ -70,20 +66,15 @@ export const ConnectionApprovalViewHeader = ({
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 
-    // The registry is looked up by the peer-asserted URL. That key is
-    // spoofable, so it can never mint the `verified` checkmark: a connection
-    // proposal has no platform-observed origin, so
-    // `resolveDisplayableVerificationTier` suppresses the positive tier here.
-    // A `suspicious` hit is still surfaced — fail-loud — so a known-scam URL
-    // can't hide.
+    // The registry is keyed by the peer-asserted URL, which is spoofable, so it
+    // can never mint the `verified` checkmark; `resolveDisplayableVerificationTier`
+    // suppresses the positive tier. A `suspicious` hit is still surfaced.
     const { data: project } = useProjectByUrlQuery({
         url: peer.url,
         isEnabled: !!peer.url,
     })
 
-    // A connection proposal never carries a verifiedOrigin, so this only ever
-    // resolves to a `suspicious` warning or nothing — never a spoofed
-    // checkmark.
+    // Never a spoofed checkmark: only a `suspicious` warning or nothing.
     const verificationTier = resolveDisplayableVerificationTier(
         project,
         undefined,
@@ -102,15 +93,8 @@ export const ConnectionApprovalViewHeader = ({
     return (
         <PWView style={styles.headerContainer}>
             <PWView style={styles.networksContainer}>
-                {/*
-                 * Deliberate, not drift: the legacy header special-cases
-                 * `AlgorandChainId.all` (v1's wildcard) to show exactly
-                 * mainnet + testnet, hardcoded. Here, `networks` is already
-                 * the resolved set the wildcard is genuinely valid on
-                 * (`networksForChainId`), and betanet is a real network it
-                 * grants — showing it is more accurate than the legacy
-                 * special-case, not a mismatch to fix.
-                 */}
+                {/* `networks` is already the resolved set a v1 wildcard is valid on,
+                    so betanet is a real granted network here, not a badge to special-case away. */}
                 {networks
                     .filter(network => network !== 'custom')
                     .map(network => (

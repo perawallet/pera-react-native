@@ -74,9 +74,8 @@ type UseDeepLinkResult = {
     buildDeeplink: (input: BuildDeeplinkInput) => string
 }
 
-// Pure — hoisted so consumers get a stable identity. Effects in
-// `useDeeplinkListener` depend on it; a per-render arrow tore down and
-// re-registered the `Linking` subscription on every render of every layout.
+// Hoisted for a stable identity: `useDeeplinkListener`'s effects depend on it,
+// and a per-render arrow re-registers the `Linking` subscription every render.
 const isValidDeepLink = (url: string): boolean => {
     if (isValidAlgorandAddress(url)) return true
     return parseDeeplink(url) !== null
@@ -103,18 +102,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const connectWalletConnect = useWalletConnectDeeplink()
 
     /**
-     * Runs a handler that opens its own bottom sheet, deliberately WITHOUT
-     * awaiting it.
-     *
-     * Sheets render at the app root; the QR scanner is a native `<Modal>` in a
-     * separate OS window above that root. The trailing `onSuccess?.()` below is
-     * what dismisses the Modal, so awaiting a handler that itself waits on a
-     * sheet pins the camera open on top of UI the user can neither see nor
-     * reach — it reads as a freeze rather than an error.
-     *
-     * Every sheet-opening case must dispatch through here instead of `await`.
-     * WalletConnect is the one deliberate exception: the scanner observes its
-     * outcome to re-arm on a rejected handshake.
+     * Runs a sheet-opening handler WITHOUT awaiting it. Sheets render at the app
+     * root and the QR scanner is a native `<Modal>` above it that only the trailing
+     * `onSuccess?.()` dismisses, so awaiting pins the camera over UI the user cannot
+     * reach. WalletConnect is the one exception: the scanner observes its outcome to re-arm.
      */
     const dispatchDetached = (
         run: Promise<unknown>,
@@ -141,11 +132,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
         const parsedData = parseDeeplink(url)
 
         if (!parsedData) {
-            // A recognized-but-unsupported Pera deeplink (e.g. an app-action
-            // this build doesn't handle) stays silent, mirroring the QR
-            // scanner which quietly re-arms on codes it doesn't recognize.
-            // Only input that isn't aimed at Pera at all is treated as
-            // malformed and surfaces the invalid-URL toast.
+            // A recognized-but-unsupported Pera deeplink stays silent, like the QR
+            // scanner re-arming on unknown codes; only input not aimed at Pera at
+            // all surfaces the invalid-URL toast.
             if (!isPeraOwnedDeeplink(url)) {
                 errorToast(
                     t('errors.deeplink.invalid_url_title'),
@@ -271,14 +260,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.ASSET_OPT_IN: {
-                    // A bare `assetId` link carries no account, so the handler
-                    // prompts the user to pick one; if the link names an
-                    // address it's used directly. The handler also confirms,
-                    // executes the opt-in, and surfaces already-opted-in /
-                    // insufficient-balance as readable errors — it owns its own
-                    // success/error toasts, so there is no outcome the scanner
-                    // needs to observe. Detached (see `dispatchDetached`)
-                    // because it awaits its own sheets.
+                    // A bare `assetId` link carries no account, so the handler prompts
+                    // for one. It owns its own confirm, execution and toasts, so nothing
+                    // needs observing; detached because it awaits its own sheets.
                     dispatchDetached(
                         optInAsset({
                             assetId: parsedData.assetId,
@@ -345,14 +329,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    // Mirrors native's feature-gate: the PeraCard navigator is
-                    // only registered when the remote-config flag is on, so a
-                    // deeplink to it is a no-op while the feature is hidden.
-                    // The `path` carries no destination yet (parity with the
-                    // unused Staking path), so we land on the card intro.
-                    // `onError` (not a bare return): the QR scanner locks
-                    // until one of its callbacks fires — dropping the link
-                    // silently would freeze it. Same below for SELL.
+                    // The PeraCard navigator is only registered when the remote-config
+                    // flag is on. `onError`, not a bare return: the QR scanner locks
+                    // until one of its callbacks fires. Same below for SELL.
                     if (!isPeraCardEnabled || !routeCapabilities.peraCard) {
                         onError?.()
                         return
@@ -395,12 +374,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SELL: {
-                    // Native Sell flows route through the Bidali gift-card
-                    // marketplace (iOS BidaliFlowCoordinator, Android
-                    // navToBidaliNavigation). Open the same Bidali sheet
-                    // the Menu's "Buy Gift Card" panel button opens so we
-                    // inherit the bidaliProvider JS bridge wiring.
-                    // Same gate as that Menu button.
+                    // The same Bidali sheet and gate as the Menu's "Buy Gift Card"
+                    // button, inheriting its bidaliProvider JS bridge wiring.
                     if (!isGiftCardsEnabled) {
                         onError?.()
                         return
@@ -422,10 +397,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
-                    // `onError` rather than a bare return, same as the
-                    // PeraCard/Sell gates above: the QR scanner stays locked
-                    // until one of its callbacks fires, so dropping the link
-                    // silently would freeze it.
+                    // `onError` rather than a bare return: the QR scanner stays
+                    // locked until one of its callbacks fires.
                     if (!routeCapabilities.sharedAccounts) {
                         onError?.()
                         return
@@ -453,11 +426,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.LIQUID_AUTH: {
                     if (parsedData.variant === 'fido') {
-                        // A FIDO request derives its P256 key from the HD root,
-                        // so an HD account must exist — otherwise register has
-                        // nothing to derive from and assert has nothing to sign
-                        // with. Block the hand-off and explain rather than
-                        // dead-ending in the OS flow.
+                        // A FIDO request derives its P256 key from the HD root, so
+                        // without an HD account register has nothing to derive from and
+                        // assert nothing to sign with. Explain rather than dead-end in the OS flow.
                         const hasHDWallet = useAccountsStore
                             .getState()
                             .accounts.some(
@@ -472,15 +443,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
-                        // A FIDO request (register or assert) needs device
-                        // authentication the OS credential provider can use: a
-                        // strong biometric OR a device credential (PIN / pattern
-                        // / password). The provider is configured
-                        // `strongOrCredential`, so any enrolled lock works; only
-                        // a device with no screen lock at all dead-ends (register
-                        // saves an unprotected key, assert can't satisfy the
-                        // prompt). Block the hand-off and explain instead of
-                        // failing silently.
+                        // The credential provider is configured `strongOrCredential`, so
+                        // any enrolled lock works; only a device with no screen lock
+                        // dead-ends (register saves an unprotected key, assert can't prompt).
                         const securityLevel = await getBiometricSecurityLevel()
                         if (!hasStrongBiometricOrCredential(securityLevel)) {
                             void requestByType('passkey-biometric-required', {})
@@ -490,10 +455,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
 
-                        // Hand the fido:// URL back to the OS — iOS routes it
-                        // to the registered AutoFill Credential Provider
-                        // extension, Android to the Credential Manager.
-                        // Mirrors pera-ios's QRScannerViewController.liquidAuth.
+                        // Hand the fido:// URL back to the OS: iOS routes it to the
+                        // AutoFill Credential Provider extension, Android to the Credential Manager.
                         try {
                             await Linking.openURL(parsedData.url)
                         } catch (err) {
@@ -509,9 +472,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             return
                         }
                     } else {
-                        // TODO(liquid-auth): wire the comms-protocol handler
-                        // here once the signaling channel client lands. Until
-                        // then we just log so devs can see scans coming in.
+                        // TODO(liquid-auth): wire the comms-protocol handler here.
                         logger.info('liquid:// deeplink received', {
                             url: parsedData.sourceUrl,
                         })
@@ -529,10 +490,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
-                    // Reset the Home tab to its stack root (AccountDetails) so a
-                    // HOME deeplink actually returns home even when the user is
-                    // deep in the Home stack (e.g. viewing an asset). Navigating
-                    // to the root screen pops any screens pushed on top of it.
+                    // Reset the Home tab to its stack root so a HOME deeplink returns
+                    // home even from deep in the Home stack.
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
                         params: { screen: 'AccountDetails' },
@@ -543,11 +502,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
             onSuccess?.()
         } catch (error) {
-            // Don't log the raw `url` here: a PERA_WEB_IMPORT payload carries
-            // the 32-byte secretbox `encryptionKey` and a RECOVER_ADDRESS
-            // payload carries a mnemonic. Log only the parsed type. The error
-            // sheet likewise never receives the url — `showError` has no field
-            // that could carry it.
+            // Never log the raw `url`: a PERA_WEB_IMPORT payload carries the secretbox
+            // `encryptionKey` and a RECOVER_ADDRESS payload a mnemonic. Log only the
+            // parsed type; `showError` has no field that could carry the url either.
             logger.error(error as Error, { type: parsedData.type })
             showError({
                 variant: 'generic',
@@ -560,8 +517,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
     // Latest-ref: the impl closes over this render's hook values, the
     // returned wrapper stays identity-stable so listener effects don't
-    // resubscribe on every render (same pattern as `useWalletConnect`'s
-    // handler refs).
+    // resubscribe on every render.
     const handleDeepLinkRef = useRef(handleDeepLinkImpl)
     handleDeepLinkRef.current = handleDeepLinkImpl
     const handleDeepLink = useCallback<HandleDeepLink>(

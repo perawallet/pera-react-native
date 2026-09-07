@@ -10,37 +10,12 @@
  limitations under the License
  */
 
-// Static backstop for the core property this task establishes: on web, the
-// offscreen document (apps/browser/src/offscreen/walletconnect/wcHost.ts) is
-// the SOLE owner of WalletConnect connectors — no other module may
-// construct, register, or bind one.
-//
-// I-3: this used to be a blocklist — it only grepped `.web.ts`/`.web.tsx`
-// files under apps/mobile/src for a literal `useWalletConnect(` call. A
-// reviewer proved the hole by adding a `useWalletConnect(...)` call to
-// apps/mobile/src/modules/dapp/hooks/useDappRequest.ts — the extension's own
-// approval surface, unambiguously web-reachable — and it went entirely
-// undetected: that file is neither a `.web` twin nor one of the six
-// grandfathered call sites the old test happened to name. Any new shared
-// hook consumed by a web surface lands in that unguarded category by
-// default, which is the worst kind of blind spot for an architecture whose
-// central claim is "everything outside a short allowlist is safe by
-// construction." The old scan also never covered packages/*/src, and being
-// purely textual it would miss `import { useWalletConnect as useWC }` or a
-// re-export.
-//
-// Fixed by inverting the check: scan every non-test source file under
-// apps/mobile/src AND packages/*/src for any connector-ownership call, and
-// assert the offender set EQUALS an explicit allowlist. A new file that
-// constructs/registers/binds a connector is now a failure by default,
-// not invisible by default.
-//
-// The scan is textual, and textual cuts both ways: it can miss an aliased
-// import (acknowledged above), and it can also fire on prose that merely
-// *names* one of the four patterns — a doc comment explaining why a session
-// key can't be zeroed, for instance, mentions `new WalletConnect(` without
-// constructing one. `stripComments` removes line and block comments before
-// matching so documenting the API doesn't fail the guard.
+// Static backstop: on web the offscreen document is the SOLE owner of
+// WalletConnect connectors; on native the v1 handler is. An allowlist, not a
+// blocklist: the offender set must EQUAL the allowlist, so a new owner fails by
+// default (a blocklist keyed on `.web` twins misses a shared hook consumed by a
+// web surface). The scan is textual and comments are stripped first, so prose
+// that merely names a pattern doesn't fail the guard.
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, sep } from 'node:path'
@@ -55,17 +30,13 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 // service worker, content scripts, and the offscreen HTML entry) and every
 // extensions/*/src (platform-chrome et al.) — both web-reachable by
 // construction, exactly the category this allowlist exists to guard.
-// Scanning them too (confirmed zero legitimate owners live there today, so
-// ALLOWED_CONNECTOR_OWNERS itself is unchanged) closes that gap.
 const APPS_BROWSER_SRC_ROOT = join(REPO_ROOT, 'apps', 'browser', 'src')
 const EXTENSIONS_ROOT = join(REPO_ROOT, 'extensions')
 
 // The four call shapes that create or bind a live WC v1 connector.
 // `\b...\(` (not just the bare name) so this doesn't false-positive on a
-// similarly-named export — `useWalletConnectPairing(`,
-// `useWalletConnectSessionsControl(`, `useWalletConnectStore(`,
-// `useWalletConnectSessionRequests(` all have more characters between
-// `useWalletConnect` and `(` and so don't match.
+// similarly-named export such as `useWalletConnectDeeplink(`, which has more
+// characters between `useWalletConnect` and `(` and so doesn't match.
 const CONNECTOR_OWNERSHIP_PATTERNS = [
     /\bnew WalletConnect\(/,
     /\bregisterConnector\(/,
@@ -173,47 +144,18 @@ const toRepoRelativePosixPath = (path: string): string =>
     relative(REPO_ROOT, path).split(sep).join('/')
 
 // The complete, explicit set of files permitted to own a WalletConnect v1
-// connector. Enumerated by hand against the actual call sites for each
-// pattern, not copied from any prior claim about what "should" be here:
-//   - the native provider hook and native ConnectionView (the two mobile UI
-//     surfaces that legitimately drive a connector directly);
-//   - the native halves of the two shared hooks this task's web twins pair
-//     with (their web halves deliberately do NOT appear here);
-//   - the offscreen host, the sole owner on web;
-//   - packages/walletconnect's own internals — the hook the native halves
-//     above delegate to, the two connection-layer modules that
-//     construct/register the real SDK class, and the v1 connection handler
-//     itself, which is the connector owner under this architecture (it calls
-//     `registerConnector`/`setConnectorHandlerBinder` to hand a connector to
-//     the registry). On web it may only ever be instantiated from the
-//     offscreen document, never the service worker or a content script —
-//     that's this allowlist's whole claim for `wcHost.ts` above. Today
-//     nothing on web instantiates it at all (the offscreen host still talks
-//     to the v1 SDK directly, not through this handler), so that constraint
-//     is unenforced rather than honored; a follow-up plan that wires this
-//     handler into apps/browser must instantiate it only from the offscreen
-//     document, or add a guard here that catches otherwise.
+// connector: the two connection-layer modules that construct/register the
+// real SDK class, and the v1 connection handler, which hands a connector to
+// the registry via `registerConnector`/`setConnectorHandlerBinder`. On web
+// the handler is instantiated only from the offscreen document, never the
+// service worker or a content script; no UI-realm module may own one.
 const ALLOWED_CONNECTOR_OWNERS = [
-    'apps/mobile/src/modules/walletconnect/providers/useWalletConnectProvider.tsx',
-    'apps/mobile/src/modules/walletconnect/components/ConnectionView/ConnectionView.tsx',
-    'apps/mobile/src/modules/walletconnect/hooks/useWalletConnectPairing.ts',
-    'apps/mobile/src/modules/walletconnect/hooks/useWalletConnectSessionsControl.ts',
-    'apps/browser/src/offscreen/walletconnect/wcHost.ts',
-    'packages/walletconnect/src/hooks/useWalletConnect.ts',
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
     'packages/walletconnect/src/v1/handler.ts',
 ].sort()
 
 describe('web connector ownership', () => {
-    it('ConnectionView.web.tsx does not exist (its only reachable trigger was a UI-realm connector offscreen never saw)', () => {
-        const path = join(
-            MOBILE_SRC_ROOT,
-            'modules/walletconnect/components/ConnectionView/ConnectionView.web.tsx',
-        )
-        expect(existsSync(path)).toBe(false)
-    })
-
     it('every file that constructs, registers, or binds a WalletConnect connector is on the explicit allowlist — nothing more, nothing less', () => {
         const scanRoots = [
             MOBILE_SRC_ROOT,

@@ -16,22 +16,10 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { WalletConnectSignRequestError } from './errors'
 
-// The ARC-60 wire shape + size cap now live in the signing package, shared
-// with the in-app webview bridge so the two transports can't drift. These
-// re-exports preserve the existing `../schema` import surface and the WC
-// dApp-facing error contract (`WalletConnectSignRequestError`).
-
-/**
- * Sole source of truth for the ARC-60 `algo_signData` wire shape; re-exported
- * from {@link arc60WireSchema} in the signing package.
- */
+/** The signing package's {@link arc60WireSchema}, shared with the in-app webview bridge so the transports cannot drift. */
 export const arc60PayloadSchema = arc60WireSchema
 
-/**
- * Rejects an oversized ARC-60 request before parse/canonify. Delegates to the
- * shared signing check and re-wraps its error so the WC bridge keeps surfacing
- * a {@link WalletConnectSignRequestError} to the dApp.
- */
+/** Re-wraps the shared signing check so the dApp keeps receiving a {@link WalletConnectSignRequestError}. */
 export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
     try {
         assertArc60WireRequestWithinLimits(rawParams)

@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { WALLET_OPERATION_TYPES } from '../models'
+import { WALLET_OPERATION_TYPES, matchesScope } from '../models'
 
 describe('wallet operation vocabulary', () => {
     it('is closed to the two ARC-defined operations', () => {
@@ -22,5 +22,35 @@ describe('wallet operation vocabulary', () => {
             'sign-transactions',
             'sign-data',
         ])
+    })
+})
+
+describe('matchesScope', () => {
+    it('matches on the pairing id or the connection id, whichever the scope names', () => {
+        expect(matchesScope({ pairingId: 'p1' }, { pairingId: 'p1' })).toBe(
+            true,
+        )
+        expect(
+            matchesScope({ connectionId: 'c1' }, { connectionId: 'c1' }),
+        ).toBe(true)
+        expect(matchesScope({ pairingId: 'p1' }, { pairingId: 'p2' })).toBe(
+            false,
+        )
+    })
+
+    // A pairing and the connection it becomes share an id on v1 only, so the
+    // two fields are never compared against each other.
+    it('never matches a pairing id against a connection id', () => {
+        expect(
+            matchesScope({ pairingId: 'same' }, { connectionId: 'same' }),
+        ).toBe(false)
+        expect(
+            matchesScope({ connectionId: 'same' }, { pairingId: 'same' }),
+        ).toBe(false)
+    })
+
+    it('does not match an empty scope or an empty subject', () => {
+        expect(matchesScope({ pairingId: 'p1' }, {})).toBe(false)
+        expect(matchesScope({}, { pairingId: 'p1' })).toBe(false)
     })
 })

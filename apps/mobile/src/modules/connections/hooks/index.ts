@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-export type {
-    ConnectionPairingOptions,
-    ConnectionPairingResult,
-    UseConnectionPairingResult,
-} from './connectionPairingModel'
-export { useConnectionPairing } from './useConnectionPairing'
+export {
+    useConnectionPairing,
+    type UseConnectionPairingResult,
+} from './useConnectionPairing'

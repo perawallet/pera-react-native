@@ -11,21 +11,18 @@
  */
 
 import { useEffect } from 'react'
-import type { ConnectionRegistry } from '@perawallet/wallet-core-connections'
+import type { ConnectionRegistryClient } from '@perawallet/wallet-core-connections'
+import { isFeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import { scannerNotifier } from '@components/QRScannerView'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { isFeeAdjustmentDeliveryError } from '@modules/walletconnect/utils/fee-adjustment-error'
 import type { ProposalQueueHandle } from './useProposalQueue'
 
-/**
- * Toasts registry errors and closes the approval sheet of the connection
- * that failed. Copy goes through `resolveErrorCopy`: an error's `message` is
- * developer English written for the peer and the logs.
- */
+// Copy goes through `resolveErrorCopy`: an error's `message` is developer
+// English written for the peer and the logs.
 export const useConnectionErrorToasts = (
-    registry: ConnectionRegistry,
+    registry: ConnectionRegistryClient,
     proposals: ProposalQueueHandle,
 ): void => {
     const { showToast } = useToast()

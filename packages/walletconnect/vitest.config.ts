@@ -87,13 +87,6 @@ export default defineConfig({
                 __dirname,
                 '../connections/src/testing/handler-contract.ts',
             ),
-            // Same reason as `/testing`, plus: the pairing-outcome module is
-            // a leaf, so a spec can read its budgets without the barrel
-            // dragging in the signing adapter and react-native-mmkv.
-            '@perawallet/wallet-core-connections/pairingOutcome': path.resolve(
-                __dirname,
-                '../connections/src/pairingOutcome.ts',
-            ),
             '@perawallet/wallet-core-connections': path.resolve(
                 __dirname,
                 '../connections/src/index.ts',

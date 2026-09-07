@@ -36,13 +36,8 @@ const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, string> = {
 }
 
 /**
- * A registry or validation-boundary failure.
- *
- * `message` is developer English and is what reaches the remote peer (the
- * zod field-path breadcrumb, the failing kind); it must never carry
- * wallet-private data. What the USER sees comes from `metadata.messageKey`,
- * which `resolveErrorCopy` translates — an `AppError` without one falls back
- * to generic copy and its `message` stays log-only.
+ * `message` reaches the remote peer, so it must never carry wallet-private
+ * data; the user sees `metadata.messageKey` via `resolveErrorCopy` instead.
  */
 export class ConnectionsError extends AppError {
     public readonly code: ConnectionsErrorCode

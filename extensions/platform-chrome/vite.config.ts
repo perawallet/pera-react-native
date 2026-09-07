@@ -20,12 +20,16 @@ export default defineConfig({
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
                 bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
+                'remote-registry': resolve(__dirname, 'src/remote-registry.ts'),
             },
             formats: ['es'],
         },
         rollupOptions: {
             external: [
                 '@perawallet/wallet-core-arc0027',
+                '@perawallet/wallet-core-connections',
+                '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-connections',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-passkeys/webauthn',
                 '@perawallet/wallet-extension-platform',

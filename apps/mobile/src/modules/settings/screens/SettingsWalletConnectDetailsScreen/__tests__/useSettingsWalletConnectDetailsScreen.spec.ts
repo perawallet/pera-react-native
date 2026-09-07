@@ -13,7 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 const mocks = vi.hoisted(() => ({
     revoke: vi.fn(),

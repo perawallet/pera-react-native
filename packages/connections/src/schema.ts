@@ -15,12 +15,9 @@ import { arc0001SignTxnRequestSchema } from '@perawallet/wallet-core-blockchain'
 import { MAX_DATA_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
 
 /**
- * ARC-0001 request: one entry per transaction slot. The shape is the
- * resolver's own schema, not a copy: zod strips what it does not declare and
- * a strict object rejects what it does not recognise, so any divergence here
- * would silently disarm one of the resolver's refusals — a dropped `msig` or
- * `stxn` turns a 4200 into an ordinary signing sheet, and a stripped unknown
- * key turns a 4300 into a signable group.
+ * The resolver's own schema, not a copy: zod strips undeclared keys, so any
+ * divergence would silently disarm a resolver refusal (a dropped `msig` turns
+ * a 4200 into an ordinary signing sheet).
  */
 export const arc0001GroupSchema = arc0001SignTxnRequestSchema.min(1)
 

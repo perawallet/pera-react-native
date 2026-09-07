@@ -59,11 +59,9 @@ export type RootComponentProps = {
     fcmToken: Nullable<string>
 }
 
-// These overlays render outside the main content's error boundary and host
-// signing/multisig/swap (money) flows, so an unhandled render-throw here
-// would unwind the whole app. Contain it: log the crash and render nothing
-// while the fallback schedules a boundary reset (see OverlayErrorFallback)
-// so the overlays come back instead of staying dead until app restart.
+// These overlays host signing/multisig/swap (money) flows outside the main
+// content's error boundary, so an unhandled render-throw would unwind the whole
+// app. Contain it; OverlayErrorFallback schedules a reset so they come back.
 const handleOverlayError = (error: string | Error) => {
     logger.critical(error, { source: 'RootOverlaysErrorBoundary' })
 }
@@ -112,10 +110,8 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     {/* After WebViewOverlay so a deep-link pairing scrim
                         paints above the in-app browser too. */}
                     <PairingProgressOverlay />
-                    {/* Blocking prompts (T&C re-acceptance, PIN setup) paint
-                        above the navigator and the tab bar. Inside
-                        AutoLockGuard's children so the lock overlay still
-                        hides them. */}
+                    {/* Blocking prompts paint above the navigator and tab bar, but
+                        inside AutoLockGuard's children so the lock still hides them. */}
                     <PromptContainer />
                 </GestureHandlerRootView>
             </PWView>
@@ -136,9 +132,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const appStatePlatform = useRef(getAppStatePlatform()).current
 
     // The Zustand `accounts` array gets a new reference on every store write
-    // (incl. background sync ticks). Effects that only care about the *set* of
-    // accounts must depend on a stable scalar, otherwise they re-fire on every
-    // tick and the sync service re-arms in a tight loop.
+    // (incl. sync ticks); depending on it directly re-arms the sync service in a
+    // tight loop, so effects key on a stable scalar instead.
     const addresses = useMemo(
         () => accounts?.map(account => account.address) ?? [],
         [accounts],
@@ -148,11 +143,9 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const { isChecking, needsMigration } = useNeedsMigration()
     const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
-    // Accounts added mid-session (import/create/watch/discovery) get an
-    // immediate fetch + asset/price enrichment — the gated background poll
-    // never picks up an account whose activity predates its checkpoint.
-    // Gated on migration like DeviceRegistrar below: syncing before the
-    // migrated device id lands caches favorites as false.
+    // Accounts added mid-session get an immediate fetch: the background poll never
+    // picks up an account whose activity predates its checkpoint. Gated on
+    // migration because syncing before the migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
@@ -219,10 +212,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>
                     {/* The app's single connection registry: it owns every
-                        handler's lifecycle, so exactly one may be mounted.
-                        Replaces WalletConnectProvider, which owned the v1
-                        connectors directly — mounting both would give two
-                        owners to the same sockets. */}
+                        handler's lifecycle, so exactly one may be mounted. */}
                     <ConnectionsProvider>
                         <RootContentContainer fcmToken={fcmToken} />
                     </ConnectionsProvider>
@@ -236,10 +226,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     </ErrorBoundary>
                 </AutoLockGuard>
             </BottomSheetModalProvider>
-            {/* Global offline indicator. Mounted as the LAST node in the root
-                tree so it paints above navigation, bottom-sheet modals, and the
-                AutoLockGuard PIN overlay (which itself uses zIndex.max). Order
-                here is load-bearing — keep <OfflineBanner /> last. */}
+            {/* LAST node in the root tree so it paints above navigation, sheet
+                modals and the AutoLockGuard PIN overlay (zIndex.max). Keep it last. */}
             <OfflineBanner />
         </>
     )

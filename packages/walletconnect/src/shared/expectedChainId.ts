@@ -14,19 +14,10 @@ import { Networks, type Network } from '@perawallet/wallet-core-shared'
 import { AlgorandChainId } from '../models'
 
 /**
- * A `Record`, not a fallback ladder, so adding a network to `Network` fails
- * TypeScript here instead of silently defaulting to whatever the last `? :`
- * branch resolved to.
- *
- * `custom` (LocalNet, fnet, a private node) has no registered CAIP id of its
- * own, so it borrows TestNet's — a dApp needs *some* id to establish a session
- * at all. Borrowing is safe: the dApp then builds transactions with that
- * chain's genesis hash and `assertTransactionsMatchNetwork` rejects the
- * mismatch loudly at submit time. This table decides which session is waved
- * through and how it's labelled, never what gets signed.
- *
- * `AlgorandChainId.all` (`4160`) is separate and checked first at every call
- * site.
+ * A `Record`, not a fallback ladder, so a new `Network` fails TypeScript here
+ * instead of silently defaulting. `custom` borrows TestNet's id because a dApp
+ * needs some CAIP id to open a session at all; `assertTransactionsMatchNetwork`
+ * still rejects a genesis mismatch at submit time, so this never decides what gets signed.
  */
 export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<Network, AlgorandChainId> = {
     [Networks.mainnet]: AlgorandChainId.mainnet,

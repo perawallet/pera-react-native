@@ -24,11 +24,6 @@ import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
 
-/**
- * Owns the one registry for the app's lifetime: creates it, registers the
- * WalletConnect v1 handler, and composes the boot sequence, the approval
- * queue, the error toasts and the signing adapter around it.
- */
 export const useConnectionsProvider = (): ConnectionRegistry => {
     const registryRef = useRef<ConnectionRegistry | null>(null)
     if (!registryRef.current) {

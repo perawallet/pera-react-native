@@ -21,8 +21,7 @@ import { createWalletConnectConnector } from '../createConnector'
 vi.mock('@perawallet/walletconnect', () => ({ default: vi.fn() }))
 
 // `../../constants` re-exports signing limits from this package, whose
-// import chain pulls in react-native-mmkv (unavailable under jsdom) — same
-// workaround as `sessionOutcome.test.ts`.
+// import chain pulls in react-native-mmkv (unavailable under jsdom).
 vi.mock('@perawallet/wallet-core-signing', () => ({
     MAX_DATA_SIGN_REQUESTS: 10,
     MAX_TRANSACTION_SIGN_REQUESTS: 64,

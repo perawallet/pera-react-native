@@ -13,15 +13,8 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * Shared by both WalletConnect protocol implementations: reading a `wc:` URI
- * is the one thing v1 and v2 must agree on, since the registry decides which
- * handler owns a URI purely from what these two functions report.
- */
-
-/**
- * Log-safe identifiers for a `wc:` pairing URI. Never returns the URI itself:
- * v1's `key=` and v2's `symKey=` are the pairing secret, and error-level log
- * context ships to the crash reporter. Topic and bridge origin are visible in
+ * Never returns the URI: `key=`/`symKey=` are the pairing secret and error logs
+ * ship to the crash reporter. Topic and bridge origin are already visible in
  * plaintext to the public bridge server, so they are safe.
  */
 export const walletConnectLogContext = (

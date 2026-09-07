@@ -198,8 +198,8 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
     // Wait for the re-arm, NOT a fixed window. This dispatch only fails once
-    // useWalletConnectPairing.web's `waitForPairOutcome` gives up after
-    // WC_SESSION_OUTCOME_TIMEOUT_MS (8s), so the 3s sleep this replaces
+    // the registry's pairing-outcome wait gives up after
+    // CONNECTION_OUTCOME_TIMEOUT_MS (8s), so the 3s sleep this replaces
     // returned with the pairing still in flight and let the rest of the file
     // run on top of it. Two things then went wrong, both silently:
     //
@@ -301,8 +301,8 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     // hard-coding the bridge socket's own failure timing.
     await discoverPage.waitForTimeout(3000)
 
-    // ConnectionView has no testID, so its unique header copy stands in for
-    // "no approval sheet appeared".
+    // The approval sheet has no testID, so its unique header copy stands in
+    // for "no approval sheet appeared".
     await expect(
         discoverPage.getByText('SELECT ACCOUNTS', { exact: true }),
     ).not.toBeVisible()
@@ -390,8 +390,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // sheet open, and QRScannerContent.web's `handlingRef` synchronous
         // double-fire guard from the last of those dispatches (an
         // unreachable-bridge connect() attempt) can still be latched — it
-        // only clears when that deep-link path settles, up to
-        // useWalletConnectPairing.web's WC_PAIR_TIMEOUT_MS (~10s) ceiling.
+        // only clears when that deep-link path settles, up to the pairing
+        // outcome budget's ceiling (~10s).
         // A fill+submit into a still-latched instance is silently swallowed,
         // so close the sheet (the backdrop press unmounts QRScannerContent.web
         // — PWBottomSheet.web only renders children while `isRendered`, which
@@ -424,13 +424,13 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
 
         // The real product path: paste the URI into QRScannerContent.web's
         // field exactly as a user would, rather than dispatching a
-        // `pera-wc-control` pair message directly. This is what drives
-        // QRScannerContent.web -> useDeepLink -> useWalletConnectPairing.web
-        // -> offscreen.
+        // `pera-connections-control` pair message directly. This is what drives
+        // QRScannerContent.web -> useDeepLink -> useConnectionPairing (remote
+        // registry) -> offscreen.
         await fillPasteInput(page, uri)
         await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
-        // useWalletConnectPairing.web's `pair` control message is now in
+        // The remote registry's `pair` control message is now in
         // flight to offscreen; offscreen constructs the wallet-side
         // connector, subscribes, and — once the fake bridge flushes the
         // queued wc_sessionRequest createSession() published before the
@@ -452,7 +452,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         }
 
         // 'wc-connect' renders WcConnectScreen — the web twin of mobile's
-        // ConnectionView — not the ARC-0027 EnableRequestScreen
+        // ConnectionApprovalView — not the ARC-0027 EnableRequestScreen
         // (DappRequestRoutes.web.tsx).
         await expect(
             approvalPage.getByTestId('wc-connect-peer-name'),

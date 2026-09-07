@@ -29,15 +29,16 @@ const mockDisconnect = vi.fn()
 const mockNetworksFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a' ? ['mainnet', 'testnet'] : ['testnet'],
 )
-vi.mock('@modules/connections', () => ({
+// Partial: the read model runs for real, the store and registry are stubbed.
+vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-connections')
+    >()),
+    useConnectionsStore: vi.fn(),
     useConnectionRegistry: () => ({
         disconnect: mockDisconnect,
         networksFor: mockNetworksFor,
     }),
-}))
-
-vi.mock('@perawallet/wallet-core-connections', () => ({
-    useConnectionsStore: vi.fn(),
 }))
 
 const connectionA: Connection = {

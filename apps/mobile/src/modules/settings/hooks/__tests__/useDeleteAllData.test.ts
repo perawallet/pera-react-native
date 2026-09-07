@@ -64,17 +64,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 
-// The platform-split legacy sweep: a no-op on native, the browser's real
-// session teardown on web (see `useLegacySessionsWipe`). Mocked here so the
-// wipe's ordering and its independent guards are asserted whichever twin the
-// platform resolves.
-const mockDeleteAllSessions = vi.fn().mockResolvedValue(undefined)
-vi.mock('../useLegacySessionsWipe', () => ({
-    useLegacySessionsWipe: () => ({
-        deleteAllSessions: mockDeleteAllSessions,
-    }),
-}))
-
 // `useOptionalConnectionRegistry` returns `null` when `ConnectionsProvider`
 // isn't mounted above the caller — the duress wipe's real situation, since
 // `AutoLockGuard` sits above it. Tests that need a live registry override
@@ -88,7 +77,7 @@ const mockUseOptionalConnectionRegistry = vi.fn<
 const mockGetActiveConnectionRegistry = vi.fn<
     () => Pick<ConnectionRegistry, 'disconnectAll'> | null
 >(() => null)
-vi.mock('@modules/connections', () => ({
+vi.mock('@perawallet/wallet-core-connections', () => ({
     useOptionalConnectionRegistry: () => mockUseOptionalConnectionRegistry(),
     getActiveConnectionRegistry: () => mockGetActiveConnectionRegistry(),
 }))
@@ -153,7 +142,6 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockClearKeystore).toHaveBeenCalledTimes(1)
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(mockSavePin).toHaveBeenCalledWith(null)
         // Wipe must empty the live DB in place — never close/delete/reopen the
@@ -336,25 +324,10 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
-    it('should continue if WalletConnect disconnect fails', async () => {
-        mockDeleteAllSessions.mockRejectedValueOnce(
-            new Error('WC disconnect error'),
-        )
-
-        const { result } = renderHook(() => useDeleteAllData())
-
-        await act(async () => {
-            await result.current.deleteAllData()
-        })
-
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
-        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-    })
-
     // The duress wipe runs from `AutoLockGuard`, which sits ABOVE
     // `ConnectionsProvider`, so this is a real production path. The registry
-    // sweep must be skipped without throwing, and the rest of the wipe
-    // (including the legacy WalletConnect sweep) must still run.
+    // sweep must be skipped without throwing, and the rest of the wipe must
+    // still run.
     it('skips the registry sweep and still completes the wipe when no connection registry is mounted', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
@@ -363,7 +336,6 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDisconnectAll).not.toHaveBeenCalled()
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })
 
@@ -466,12 +438,10 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
     })
 
-    // Mirrors "should continue if WalletConnect disconnect fails": the two
-    // sweeps are independently guarded, so a failure in either must not skip
-    // the rest of the wipe — nor the OTHER sweep.
+    // Independently guarded: an unreachable peer must not skip the rest of
+    // the wipe.
     it('continues the wipe when the connection registry sweep fails', async () => {
         mockUseOptionalConnectionRegistry.mockReturnValue({
             disconnectAll: mockDisconnectAll,
@@ -484,28 +454,6 @@ describe('useDeleteAllData', () => {
             await result.current.deleteAllData()
         })
 
-        expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
-        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-    })
-
-    // The inverse of the above: a failing legacy sweep must not skip the
-    // registry sweep either — each guard is independent of the other.
-    it('still runs the registry sweep when the legacy WalletConnect sweep fails', async () => {
-        mockUseOptionalConnectionRegistry.mockReturnValue({
-            disconnectAll: mockDisconnectAll,
-        })
-        mockDeleteAllSessions.mockRejectedValueOnce(
-            new Error('WC disconnect error'),
-        )
-
-        const { result } = renderHook(() => useDeleteAllData())
-
-        await act(async () => {
-            await result.current.deleteAllData()
-        })
-
-        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
         expect(mockDisconnectAll).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
     })

@@ -16,7 +16,6 @@ import type WebView from 'react-native-webview'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
-import { CONNECTION_LATE_PAIRING_GRACE_MS } from '@perawallet/wallet-core-connections'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     type Arc0001SignTxnsOpts,
@@ -72,9 +71,9 @@ import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPa
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { parseWalletConnectUri } from '@perawallet/wallet-core-walletconnect'
 import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
 import {
     isSupportedBridgeMethod,
@@ -171,7 +170,7 @@ export const usePeraWebviewInterface = (
     const { t, currentLanguage } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
-    const { pair, describeUri, watchLateOutcome } = useConnectionPairing()
+    const { pair, describeUri } = useConnectionPairing()
     const resolveArc0001 = useArc0001Resolver()
     const enqueueSignRequest = useEnqueueArc0001SignRequest()
     const { handleDeepLink } = useDeepLink()
@@ -952,17 +951,8 @@ export const usePeraWebviewInterface = (
                         'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
                         webview,
                     )
-                    // The page has its error and cannot be un-told, but the
-                    // pairing is still bound: a late answer within the grace
-                    // opens the approval sheet, and past it the watch
-                    // abandons the pairing so a reviving bridge cannot pop a
-                    // ghost sheet over the page.
-                    if (result.pairingId) {
-                        void watchLateOutcome(
-                            result.pairingId,
-                            CONNECTION_LATE_PAIRING_GRACE_MS,
-                        )
-                    }
+                    // The page cannot be un-told; `pair` keeps watching the
+                    // grace and abandons the pairing itself.
                 }
                 // 'session': the peer answered with a proposal, so the
                 // approval sheet is on its way and the page hears back
@@ -975,15 +965,7 @@ export const usePeraWebviewInterface = (
                 // only on the fact that a handshake was reached.
             })()
         },
-        [
-            pair,
-            describeUri,
-            watchLateOutcome,
-            hadRequiredParams,
-            webview,
-            hasInternet,
-            sourceUrl,
-        ],
+        [pair, describeUri, hadRequiredParams, webview, hasInternet, sourceUrl],
     )
 
     const onBackPressed = useCallback(() => {

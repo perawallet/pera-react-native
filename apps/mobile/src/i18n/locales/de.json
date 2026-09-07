@@ -19,8 +19,7 @@
             },
             "network_mismatch": "Diese Transaktion ist für ein anderes Algorand-Netzwerk als das aktive Netzwerk deines Wallets bestimmt. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "unsupported_message": "Diese Website hat eine Anfrage zum Signieren einer Nachricht gesendet, die Pera nicht verarbeiten kann. Die Anfrage wurde abgelehnt.",
-            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern.",
-            "no_session": "Diese Verbindung ist nicht mehr gültig. Verbinde die Website erneut und versuche es noch einmal."
+            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern."
         },
         "passkey": {
             "create": {
@@ -2831,7 +2830,7 @@
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
             "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind.",
             "networks_betanet": "Betanet",
-            "error_network_mismatch": "Diese App wollte sich mit {{requested}} verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut."
+            "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut."
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -2849,7 +2848,6 @@
             "delete_body": "Möchtest du diese Sitzung wirklich löschen?  Dadurch wird deine aktive Sitzung entfernt und die Verbindung zur verbundenen App getrennt.",
             "delete_all_title": "Alle Sitzungen löschen",
             "delete_all_body": "Möchtest du wirklich alle Sitzungen löschen?  Dadurch werden alle deine aktiven Sitzungen entfernt und die Verbindung zu allen verbundenen Apps getrennt.",
-            "unknown_peer": "Unbekannt",
             "version": "Diese Sitzung verwendet WalletConnect V{{version}}",
             "connected_accounts": "Verbunden mit",
             "permissions": "Erweiterte Berechtigungen",

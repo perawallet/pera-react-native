@@ -19,8 +19,7 @@
             },
             "network_mismatch": "Esta transação é de uma rede Algorand diferente da rede ativa na sua wallet. Troque de rede em Configurações e tente novamente.",
             "unsupported_message": "Este site enviou uma solicitação de assinatura de mensagem que a Pera não consegue processar. A solicitação foi recusada.",
-            "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta.",
-            "no_session": "Esta conexão não é mais válida. Reconecte o site e tente novamente."
+            "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta."
         },
         "passkey": {
             "create": {
@@ -2861,7 +2860,7 @@
             "error_sheet_title": "Erro",
             "error_sheet_body": "Sua solicitação do WalletConnect falhou com o seguinte erro:",
             "error_sheet_retry": "Tente novamente voltando ao dApp onde você iniciou a solicitação.",
-            "error_network_mismatch": "Este app pediu para conectar em {{requested}}, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
+            "error_network_mismatch": "Este app pediu para conectar em outra rede, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum."
         },
         "connection": {
@@ -2881,7 +2880,6 @@
             "delete_all_title": "Excluir todas as sessões",
             "delete_all_body": "Tem certeza de que quer excluir todas as sessões? Isso vai remover todas as suas sessões ativas e desconectar você de todos os apps conectados.",
             "disconnect_failed_title": "Não foi possível desconectar",
-            "unknown_peer": "Desconhecido",
             "version": "Esta sessão usa o WalletConnect V{{version}}",
             "connected_accounts": "Conectado com",
             "permissions": "Permissões avançadas",

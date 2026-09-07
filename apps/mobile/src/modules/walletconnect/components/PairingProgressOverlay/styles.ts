@@ -13,10 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    // A plain absolute view, deliberately NOT an RN Modal: a Modal's native
-    // window would paint above the AutoLockGuard PIN screen and block
-    // unlock while a pairing runs behind the lock (same reasoning as the
-    // QR scanner's hand-rolled handling overlay).
+    // Deliberately NOT an RN Modal: its native window would paint above the
+    // AutoLockGuard PIN screen and block unlock while a pairing runs behind the lock.
     overlay: {
         alignItems: 'center',
         justifyContent: 'center',

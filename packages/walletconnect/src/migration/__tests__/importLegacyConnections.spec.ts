@@ -11,23 +11,20 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { WalletConnectV1SessionKeyStore } from '../../v1/secrets'
 
+// Backs the kms mock; only the default-store test reaches it.
 const secrets = new Map<string, Uint8Array>()
-const commitSecret = vi.fn(
-    async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
-        secrets.set(id, bytes)
-    },
-)
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    commitSecret,
+    commitSecret: vi.fn(
+        async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
+            secrets.set(id, new Uint8Array(bytes))
+        },
+    ),
     hasSecret: vi.fn((id: string) => secrets.has(id)),
     withSecret: vi.fn(async () => null),
     removeSecret: vi.fn(async () => {}),
-    // secrets.ts's commitSessionKey zeroes its encoded byte buffer after
-    // handing a copy to commitSecret (see v1/__tests__/secrets.spec.ts for
-    // the same mock convention) — omitting this export here would throw the
-    // moment a fresh key is committed.
     zeroBytes: vi.fn((bytes: Uint8Array) => bytes.fill(0)),
 }))
 
@@ -40,6 +37,21 @@ const { LEGACY_STORE_KEY, importLegacyConnections } =
 const { createConnectionStore } =
     await import('@perawallet/wallet-extension-connections')
 const { toPeer } = await import('../../shared/peer')
+
+// The injected store every other test uses; `commit` is a spy so a test can
+// make it fail or lie.
+const keys = new Map<string, string>()
+const defaultCommit = async (clientId: string, key: string) => {
+    if (!keys.has(clientId)) keys.set(clientId, key)
+    return `wc1-session-key:${clientId}`
+}
+const commit = vi.fn(defaultCommit)
+const sessionKeys: WalletConnectV1SessionKeyStore = {
+    commit,
+    has: clientId => keys.has(clientId),
+    read: async clientId => keys.get(clientId) ?? null,
+    remove: async clientId => void keys.delete(clientId),
+}
 
 /** A 64-hex v1 session key, distinct per leading character of `seed`. */
 const hexKey = (seed: string) =>
@@ -80,7 +92,9 @@ const makeStorage = () => {
 describe('importLegacyConnections', () => {
     beforeEach(() => {
         secrets.clear()
-        commitSecret.mockClear()
+        keys.clear()
+        commit.mockReset()
+        commit.mockImplementation(defaultCommit)
         vi.mocked(toPeer).mockClear()
     })
 
@@ -88,7 +102,9 @@ describe('importLegacyConnections', () => {
         const storage = makeStorage()
         const store = createConnectionStore({ storage })
 
-        expect(await importLegacyConnections({ storage, store })).toEqual({
+        expect(
+            await importLegacyConnections({ storage, store, sessionKeys }),
+        ).toEqual({
             imported: 0,
             skipped: 0,
         })
@@ -99,11 +115,29 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a', 'b']))
         const store = createConnectionStore({ storage })
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 2, skipped: 0 })
-        expect(secrets.has('wc1-session-key:a')).toBe(true)
+        expect(commit).toHaveBeenCalledWith('a', hexKey('a'))
+        expect(sessionKeys.has('a')).toBe(true)
         expect(await store.list()).toHaveLength(2)
+    })
+
+    it('commits to the keystore when no store is injected', async () => {
+        const storage = makeStorage()
+        storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
+        const store = createConnectionStore({ storage })
+
+        const result = await importLegacyConnections({ storage, store })
+
+        expect(result).toEqual({ imported: 1, skipped: 0 })
+        expect(secrets.has('wc1-session-key:a')).toBe(true)
+        expect(keys.size).toBe(0)
+        expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
     })
 
     it('keeps clientId as the connection id so transportId stays stable', async () => {
@@ -111,7 +145,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         expect((await store.list())[0].id).toBe('a')
     })
@@ -131,7 +165,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         const [connection] = await store.list()
         expect(connection.lastActiveAt).toBe(
@@ -147,7 +181,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         const [connection] = await store.list()
         expect(connection.lastActiveAt).toBe(connection.createdAt)
@@ -158,7 +192,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         expect(JSON.stringify(await store.list())).not.toContain(hexKey('a'))
     })
@@ -168,7 +202,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         expect(toPeer).toHaveBeenCalledTimes(1)
         expect((await store.list())[0].peer).toEqual({
@@ -189,13 +223,17 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         expect((await store.list()).map(connection => connection.id)).toEqual([
             'b',
         ])
-        expect(secrets.has('wc1-session-key:a')).toBe(false)
+        expect(sessionKeys.has('a')).toBe(false)
         expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
     })
 
@@ -216,7 +254,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         expect((await store.list())[0].metadata?.permissions).toEqual([
             'algo_signTxn',
@@ -258,7 +296,11 @@ describe('importLegacyConnections', () => {
             },
         })
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         const a = (await store.list()).find(connection => connection.id === 'a')
@@ -268,7 +310,7 @@ describe('importLegacyConnections', () => {
             origin,
         })
         // Its key still has to be in the keystore before the blob may go.
-        expect(secrets.has('wc1-session-key:a')).toBe(true)
+        expect(sessionKeys.has('a')).toBe(true)
         expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
     })
 
@@ -277,7 +319,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
         expect(storage.trim).toHaveBeenCalled()
@@ -299,7 +341,11 @@ describe('importLegacyConnections', () => {
         )
         const store = createConnectionStore({ storage })
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 1, skipped: 1 })
         // Blob deletion is gated on zero UNATTEMPTED records, not zero skips:
@@ -313,27 +359,27 @@ describe('importLegacyConnections', () => {
         const store = createConnectionStore({ storage })
 
         // Simulate a crash after the first record: commit fails on the second.
-        commitSecret.mockImplementationOnce(
-            async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
-                secrets.set(id, bytes)
-            },
-        )
-        commitSecret.mockImplementationOnce(async () => {
+        commit.mockImplementationOnce(defaultCommit)
+        commit.mockImplementationOnce(async () => {
             throw new Error('process died')
         })
         await expect(
-            importLegacyConnections({ storage, store }),
+            importLegacyConnections({ storage, store, sessionKeys }),
         ).rejects.toThrow()
 
         // The blob survives the crash — this is the property that makes the
         // migration resumable rather than destructive.
         expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         // 'a' landed in pass one and is left alone; only 'b' is imported now.
         expect(result).toEqual({ imported: 1, skipped: 1 })
-        expect(secrets.size).toBe(2)
+        expect(keys.size).toBe(2)
         expect(await store.list()).toHaveLength(2)
     })
 
@@ -352,7 +398,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         const [connection] = await store.list()
         expect(connection.metadata?.handshakeId).toBe(42)
@@ -368,7 +414,11 @@ describe('importLegacyConnections', () => {
         )
         const store = createConnectionStore({ storage })
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 0, skipped: 0 })
         expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
@@ -380,17 +430,13 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a', 'bad', 'c']))
         const store = createConnectionStore({ storage })
 
-        commitSecret.mockImplementation(
-            async ({ id, bytes }: { id: string; bytes: Uint8Array }) => {
-                if (id === 'wc1-session-key:bad') {
-                    throw new Error('permanently broken')
-                }
-                secrets.set(id, bytes)
-            },
-        )
+        commit.mockImplementation(async (clientId, key) => {
+            if (clientId === 'bad') throw new Error('permanently broken')
+            return defaultCommit(clientId, key)
+        })
 
         await expect(
-            importLegacyConnections({ storage, store }),
+            importLegacyConnections({ storage, store, sessionKeys }),
         ).rejects.toThrow()
 
         const ids = (await store.list()).map(connection => connection.id)
@@ -406,11 +452,17 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
         const store = createConnectionStore({ storage })
 
-        // Commit "succeeds" but the secret is not actually retrievable
+        // Commit "succeeds" but the key is not actually retrievable
         // afterwards — the defensive case the verification step exists for.
-        commitSecret.mockImplementationOnce(async () => {})
+        commit.mockImplementationOnce(
+            async clientId => `wc1-session-key:${clientId}`,
+        )
 
-        const result = await importLegacyConnections({ storage, store })
+        const result = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
 
         expect(result).toEqual({ imported: 1, skipped: 0 })
         expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
@@ -433,7 +485,7 @@ describe('importLegacyConnections', () => {
         storage.setItem(LEGACY_STORE_KEY, JSON.stringify(blob))
         const store = createConnectionStore({ storage })
 
-        await importLegacyConnections({ storage, store })
+        await importLegacyConnections({ storage, store, sessionKeys })
 
         const connections = await store.list()
         const a = connections.find(connection => connection.id === 'a')

@@ -17,6 +17,7 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
+import type { ConnectionPersistence } from '@perawallet/wallet-extension-connections'
 
 const PREFIX = 'wc1-session-key:'
 
@@ -26,46 +27,63 @@ const decoder = new TextDecoder()
 export const sessionKeySecretRef = (clientId: string): string =>
     `${PREFIX}${clientId}`
 
+export interface WalletConnectV1SessionKeyStore {
+    /** Idempotent; resolves with the `secretRef` to persist on the record. */
+    commit(clientId: string, key: string): Promise<string>
+    has(clientId: string): boolean
+    read(clientId: string): Promise<string | null>
+    remove(clientId: string): Promise<void>
+}
+
 /**
- * Store a v1 session key as a keystore `secret-key` entry.
- *
- * This fixes AT-REST exposure — the key is otherwise plaintext in MMKV. It
- * does not fix in-memory exposure: `session.key` is a hex string and
- * `new WalletConnect({ session })` retains it for the socket's lifetime, and
- * JS strings cannot be zeroed. The encoded byte buffer created here, unlike
- * the string, is zeroed once `commitSecret` has taken its own copy.
- *
- * Idempotent, so the migration importer can safely re-run after a crash.
+ * Keys live as keystore `secret-key` entries. This fixes at-rest exposure
+ * only: `session.key` is a hex string the connector retains for the socket's
+ * lifetime, and JS strings cannot be zeroed. The encoded buffer here can be,
+ * once `commitSecret` has taken its own copy.
  */
-export const commitSessionKey = async (
+export const createKeystoreSessionKeyStore =
+    (): WalletConnectV1SessionKeyStore => ({
+        commit: async (clientId, key) => {
+            const id = sessionKeySecretRef(clientId)
+            if (!hasSecret(id)) {
+                const bytes = encoder.encode(key)
+                try {
+                    await commitSecret({ id, bytes })
+                } finally {
+                    zeroBytes(bytes)
+                }
+            }
+            return id
+        },
+        has: clientId => hasSecret(sessionKeySecretRef(clientId)),
+        read: clientId =>
+            withSecret(sessionKeySecretRef(clientId), bytes =>
+                decoder.decode(bytes),
+            ),
+        remove: async clientId => {
+            await removeSecret(sessionKeySecretRef(clientId))
+        },
+    })
+
+// The extension's offscreen document has no vault and revives sockets before
+// unlock, so this holds the key in plaintext KV: the posture the legacy blob had.
+export const createStorageSessionKeyStore = (
+    storage: ConnectionPersistence,
+): WalletConnectV1SessionKeyStore => ({
+    commit: async (clientId, key) => {
+        const id = sessionKeySecretRef(clientId)
+        if (storage.getItem(id) === null) storage.setItem(id, key)
+        return id
+    },
+    has: clientId => storage.getItem(sessionKeySecretRef(clientId)) !== null,
+    read: async clientId => storage.getItem(sessionKeySecretRef(clientId)),
+    remove: async clientId => {
+        storage.removeItem(sessionKeySecretRef(clientId))
+        storage.trim?.()
+    },
+})
+
+export const commitSessionKey = (
     clientId: string,
     key: string,
-): Promise<string> => {
-    const id = sessionKeySecretRef(clientId)
-    if (!hasSecret(id)) {
-        const bytes = encoder.encode(key)
-        try {
-            await commitSecret({ id, bytes })
-        } finally {
-            zeroBytes(bytes)
-        }
-    }
-    return id
-}
-
-/**
- * Run `handler` with the session key. `withSecret` zeroes the byte copy
- * afterwards; the decoded string is the caller's responsibility and cannot be
- * scrubbed. Resolves `null` when no secret is stored.
- */
-export const withSessionKey = async <T>(
-    clientId: string,
-    handler: (key: string) => T | Promise<T>,
-): Promise<T | null> =>
-    withSecret(sessionKeySecretRef(clientId), bytes =>
-        handler(decoder.decode(bytes)),
-    )
-
-export const removeSessionKey = async (clientId: string): Promise<void> => {
-    await removeSecret(sessionKeySecretRef(clientId))
-}
+): Promise<string> => createKeystoreSessionKeyStore().commit(clientId, key)

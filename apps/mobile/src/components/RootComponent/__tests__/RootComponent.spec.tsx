@@ -43,15 +43,6 @@ vi.mock('@modules/connections', () => ({
         <div data-testid='connections-provider'>{children}</div>
     ),
 }))
-// Not imported by RootComponent any more. Kept mocked so that if the mount is
-// ever reverted, the legacy provider shows up in the tree and the
-// "exactly one provider" assertion below fails loudly instead of silently
-// passing on a passthrough.
-vi.mock('@modules/walletconnect/providers/WalletConnectProvider', () => ({
-    WalletConnectProvider: ({ children }: React.PropsWithChildren) => (
-        <div data-testid='legacy-walletconnect-provider'>{children}</div>
-    ),
-}))
 vi.mock('@modules/walletconnect/components/PairingProgressOverlay', () => ({
     PairingProgressOverlay: () => null,
 }))
@@ -233,8 +224,8 @@ describe('RootComponent PromptContainer mount point', () => {
 // The registry provider owns every connection handler's lifecycle: pairing,
 // the approval and success sheets, the reconnect sweep, and the legacy-session
 // migration all hang off this one mount. Nothing else in the app asserts it,
-// so reverting `RootComponent` to the legacy provider — or moving the mount
-// out from around the app content — has to fail here or it fails nowhere.
+// so moving the mount out from around the app content has to fail here or it
+// fails nowhere.
 describe('RootComponent connections provider mount point', () => {
     beforeEach(() => {
         vi.useFakeTimers()
@@ -261,13 +252,5 @@ describe('RootComponent connections provider mount point', () => {
         expect(
             provider.contains(screen.getByTestId('terms-acceptance-prompt')),
         ).toBe(true)
-    })
-
-    it('does not also mount the legacy WalletConnectProvider', () => {
-        render(<RootComponent fcmToken={null} />)
-
-        // Both own the v1 connectors' handler binder; whichever registered
-        // last wins and the other's sessions go deaf to dApp requests.
-        expect(screen.queryByTestId('legacy-walletconnect-provider')).toBeNull()
     })
 })

@@ -217,11 +217,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
                 sign: vi.fn(),
             },
         },
-        // Real (not mocked) store, backed by the same in-memory `store` map
-        // as `keyValueStorage` above — matches production, where
-        // `WithConnections` persists through `provider.keyValueStorage`.
-        // First real consumer is `ConnectionsProvider`
-        // (apps/mobile/src/modules/connections).
+        // Real store over the same in-memory map as `keyValueStorage`, matching
+        // production where `WithConnections` persists through `provider.keyValueStorage`.
         connections: {
             store: require('@perawallet/wallet-extension-connections').createConnectionStore(
                 {
@@ -242,11 +239,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
             children,
         usePeraProvider: () => providerValue,
-        // Keystore hydration always completes before `RootComponent` (and
-        // therefore `ConnectionsProvider`) ever mounts — see
-        // `useAppBootstrap.ts`'s `keystoreBranch` and `App.tsx`'s
-        // `bootstrapped` gate — so an already-resolved promise is the
-        // faithful stand-in here.
+        // Keystore hydration completes before `RootComponent` (and so
+        // `ConnectionsProvider`) mounts, so an already-resolved promise is faithful.
         getKeystore: () => ({ ready: Promise.resolve() }),
     }
 })
@@ -2780,6 +2774,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),
+        isPromiseLike: (value: unknown) =>
+            typeof value === 'object' &&
+            value !== null &&
+            'then' in value &&
+            typeof value.then === 'function',
         // Mirrors the real semantics (packages/shared/src/utils/async.ts):
         // reject with rejectWith(operation, ms) after `ms`, clear the timer
         // when the promise settles. Ledger timeout tests drive this with
@@ -2890,47 +2889,21 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
     })),
 }))
 
-// Mock @perawallet/wallet-core-walletconnect
-vi.mock('@perawallet/wallet-core-walletconnect', () => {
-    // Minimal stateful twin of the real store's dappOrigins slice so
-    // consumers that reach it via `useWalletConnectStore.getState()`
-    // (signing-completed driver, WC provider) work without each spec
-    // re-mocking the package.
-    type MockDappOrigin = { browserName?: string; createdAt: number }
-    const storeState = {
-        walletConnectConnections: [] as unknown[],
-        sessionRequests: [] as unknown[],
-        connectionError: null as unknown,
-        dappOrigins: {} as Record<string, MockDappOrigin>,
-        setDappOrigin: (clientId: string, origin: Record<string, unknown>) => {
-            storeState.dappOrigins = {
-                ...storeState.dappOrigins,
-                [clientId]: {
-                    ...origin,
-                    createdAt: Date.now(),
-                } as MockDappOrigin,
-            }
-        },
-        removeDappOrigin: (clientId: string) => {
-            const { [clientId]: _removed, ...rest } = storeState.dappOrigins
-            storeState.dappOrigins = rest
-        },
-        pruneDappOrigins: (retainedClientIds: string[]) => {
-            const retained = new Set(retainedClientIds)
-            storeState.dappOrigins = Object.fromEntries(
-                Object.entries(storeState.dappOrigins).filter(([clientId]) =>
-                    retained.has(clientId),
-                ),
-            )
-        },
-    }
-    const useWalletConnectStore = vi.fn() as ReturnType<typeof vi.fn> & {
-        getState: () => typeof storeState
-    }
-    useWalletConnectStore.getState = () => storeState
+vi.mock('@perawallet/wallet-core-walletconnect', async () => {
+    // The deep-link parser is a pure leaf the app needs for real. Loaded by path:
+    // the package barrel registers stores at module-eval, which every spec's
+    // minimal shared mock would then have to satisfy.
+    const {
+        isWalletConnectFocusHint,
+        isWalletConnectScheme,
+        parseWalletConnectUri,
+    } = await vi.importActual<
+        typeof import('../../packages/walletconnect/src/shared/deeplink')
+    >('../../packages/walletconnect/src/shared/deeplink')
     return {
-        useWalletConnect: vi.fn(() => ({ connections: [] })),
-        useWalletConnectStore,
+        isWalletConnectFocusHint,
+        isWalletConnectScheme,
+        parseWalletConnectUri,
         AlgorandChainId: {
             MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
             TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',

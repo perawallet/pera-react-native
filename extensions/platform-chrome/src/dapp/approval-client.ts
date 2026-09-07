@@ -10,23 +10,18 @@
  limitations under the License
  */
 
-// Approval-window (popup UI) side of the approval bridge
-// (ApprovalWindowBridge.handleMessage): a typed chrome.runtime.sendMessage
-// wrapper so apps/mobile — which is barred by oxlint's
-// no-restricted-globals rule from touching the ambient `chrome` global
-// directly — has a package-level accessor to go through instead, same as
-// every other chrome API surface it needs.
+// apps/mobile is barred (oxlint no-restricted-globals) from touching the ambient
+// `chrome` global, so it reaches the approval bridge through this typed wrapper.
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { WireWalletOperationResult } from '../connections/protocol'
 import { DAPP_APPROVAL_SCOPE, type PendingApproval } from './approval-bridge'
 
 const isPendingApproval = (value: unknown): value is PendingApproval =>
     typeof value === 'object' && value !== null && 'origin' in value
 
 /**
- * Thrown when a decision could not be handed back to the bridge. The caller
- * must NOT close its window on this: the dApp has not been answered, and
- * closing would tell the user they approved something that was never
- * delivered.
+ * The caller must NOT close its window on this: the dApp has not been answered,
+ * and closing would show the user a success that was never delivered.
  */
 export class ApprovalDeliveryError extends Error {
     constructor(kind: string, detail: string) {
@@ -36,15 +31,9 @@ export class ApprovalDeliveryError extends Error {
 }
 
 /**
- * Sends a decision and asserts the bridge accepted it.
- *
- * Why this is not optional: `ApprovalWindowBridge.pending` lives in
- * service-worker memory, and MV3 evicts the worker while an approval window
- * sits idle (an open window emits no events to keep it alive). A user who
- * deliberates past that point clicks Approve, the bridge answers
- * `{ok: false, error: 'unknown request'}` — and every caller here used to
- * discard that and close the window, so the user saw a successful signature
- * the dApp never received.
+ * `ApprovalWindowBridge.pending` lives in service-worker memory and MV3 evicts
+ * an idle worker while an approval window sits open, so a late Approve gets
+ * `{ok: false, error: 'unknown request'}`. That must surface, not close the window.
  */
 const deliverDecision = async (
     kind: string,
@@ -118,10 +107,11 @@ export const resolveSignMessage = async (
 ): Promise<void> =>
     deliverDecision('resolve-sign-message', { requestId, signature })
 
-export const resolveWcSign = async (
+export const resolveConnectionRequest = async (
     requestId: string,
-    result: unknown,
-): Promise<void> => deliverDecision('resolve-wc-sign', { requestId, result })
+    result: WireWalletOperationResult,
+): Promise<void> =>
+    deliverDecision('resolve-connection-request', { requestId, result })
 
 export const resolvePasskey = async (
     requestId: string,
@@ -129,10 +119,8 @@ export const resolvePasskey = async (
 ): Promise<void> =>
     deliverDecision('resolve-passkey', { requestId, credential })
 
-// `reason` is a WebAuthn-ish error name ('declined' for an explicit user
-// decline, or an Error.name like 'SecurityError'/'InvalidStateError' from a
-// failed authenticator ceremony) — never leave the request unsettled, see
-// usePasskeyApproval.
+// `reason` is 'declined' for an explicit user decline, otherwise the Error.name
+// of the failed authenticator ceremony (e.g. 'SecurityError'). Never leave the request unsettled.
 export const rejectPasskey = async (
     requestId: string,
     reason: string,

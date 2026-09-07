@@ -14,8 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const handleAutoLockAlarmMock = vi.fn().mockResolvedValue(undefined)
 const ensureOffscreenDocumentMock = vi.fn().mockResolvedValue(undefined)
-const installWcApprovalRouterMock = vi.fn()
-const installWcHeartbeatMock = vi.fn()
+const installConnectionsApprovalRouterMock = vi.fn()
+const installConnectionsHeartbeatMock = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
@@ -36,7 +36,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     PasskeyRouter: class {
         listen = vi.fn()
     },
-    WC_CONTROL_SCOPE: 'pera-wc-control',
+    CONNECTIONS_CONTROL_SCOPE: 'pera-connections-control',
     // connect-modal-pair.ts (pulled in transitively via ../index) imports
     // this guard directly — omitting it here is a trap: it's only touched
     // once a test actually delivers a message through the SW's listeners,
@@ -70,10 +70,10 @@ vi.mock('../network', () => ({
     parseActiveNetwork: vi.fn(),
 }))
 
-vi.mock('../walletconnect', () => ({
-    WC_HEARTBEAT_ALARM: 'pera-wc-heartbeat',
-    installWcApprovalRouter: installWcApprovalRouterMock,
-    installWcHeartbeat: installWcHeartbeatMock,
+vi.mock('../connections', () => ({
+    CONNECTIONS_HEARTBEAT_ALARM: 'pera-connections-heartbeat',
+    installConnectionsApprovalRouter: installConnectionsApprovalRouterMock,
+    installConnectionsHeartbeat: installConnectionsHeartbeatMock,
 }))
 
 type AlarmListener = (alarm: chrome.alarms.Alarm) => void
@@ -118,7 +118,9 @@ describe('background/index onAlarm routing', () => {
     })
 
     it('does not forward the heartbeat alarm to handleAutoLockAlarm', () => {
-        const alarm = { name: 'pera-wc-heartbeat' } as chrome.alarms.Alarm
+        const alarm = {
+            name: 'pera-connections-heartbeat',
+        } as chrome.alarms.Alarm
         onAlarmListener(alarm)
 
         expect(handleAutoLockAlarmMock).not.toHaveBeenCalled()
@@ -133,13 +135,15 @@ describe('background/index onAlarm routing', () => {
         const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         const boom = new Error('offscreen creation failed')
         ensureOffscreenDocumentMock.mockRejectedValueOnce(boom)
-        const alarm = { name: 'pera-wc-heartbeat' } as chrome.alarms.Alarm
+        const alarm = {
+            name: 'pera-connections-heartbeat',
+        } as chrome.alarms.Alarm
 
         expect(() => onAlarmListener(alarm)).not.toThrow()
 
         await vi.waitFor(() => {
             expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('wc heartbeat'),
+                expect.stringContaining('connections heartbeat'),
                 boom,
             )
         })

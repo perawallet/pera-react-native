@@ -22,40 +22,20 @@ export const PERA_CLIENT_META = {
 export const ALL_PERMISSIONS = Object.values(AlgorandPermission)
 
 /**
- * How long to wait for a WalletConnect bridge socket to (re)open before a
- * delivery attempt is treated as failed.
- *
- * iOS suspends the socket while the app is backgrounded; on return the
- * connector registry recreates it and waits up to this budget for the
- * `transport_open` event before throwing a
- * `WalletConnectConnectionTimeoutError`.
+ * Budget for a bridge socket to (re)open before a delivery is treated as failed;
+ * iOS suspends the socket while backgrounded and the registry recreates it on return.
  */
 export const WC_DELIVERY_TIMEOUT_MS = 8000
 
 /**
- * How long a queued session request stays approvable. dApps time out
- * their side of the WC v1 handshake much sooner, so a request that sat
- * in the queue through an outage must expire rather than pop a sheet
- * whose approval would be queued into a dead socket.
+ * dApps time out their side of the v1 handshake much sooner, so a request that
+ * sat through an outage must expire rather than pop a sheet whose approval
+ * would be queued into a dead socket.
  */
 export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
-
-/**
- * The pairing budget under its legacy name, for the browser's offscreen host
- * (`wcHost.ts`) and `useWalletConnectPairing`. Must equal
- * `CONNECTION_OUTCOME_TIMEOUT_MS` in `@perawallet/wallet-core-connections`
- * (pinned by `__tests__/pairingBudget.spec.ts`): the host's leak-prevention
- * timer has to outlive every caller's wait. A literal rather than a re-export
- * so this leaf module does not pull the connections barrel into every legacy
- * importer's graph.
- */
-export const WC_SESSION_OUTCOME_TIMEOUT_MS = 8000
 
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,
-    // Hard cap on the serialized size of an ARC-60 `algo_signData` request.
-    // Canonical definition lives in the signing package alongside the shared
-    // wire schema; re-exported here for existing WC importers.
     ARC60_MAX_REQUEST_BYTES,
 } from '@perawallet/wallet-core-signing'

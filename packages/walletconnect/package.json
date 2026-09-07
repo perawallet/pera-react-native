@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
@@ -34,12 +33,9 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@types/node": "catalog:",
-    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

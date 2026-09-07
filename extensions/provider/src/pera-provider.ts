@@ -28,20 +28,8 @@ import type {
 
 export type PeraProvider = PeraProviderShape
 
-/**
- * The Pera Wallet Provider with platform services, Ledger hardware wallet,
- * keystore, passkey autofill, and the connection store. Instances include
- * all platform service properties (analytics, keyValueStorage, etc.) via
- * the build-time resolved platform driver extension, the Ledger extension
- * for hardware wallet support, the keystore extension for cryptographic key
- * management, the passkey autofill service exposed at
- * `provider.passkeyAutofill`, and the connection store exposed at
- * `provider.connections.store`.
- *
- * Native/RN build — see `pera-provider.web.ts` for the web twin (Web
- * Bluetooth/WebHID Ledger transports instead of the RN ones), which Metro
- * resolves in its place for web bundles.
- */
+// Metro resolves `pera-provider.web.ts` in its place for web bundles; keep the
+// two extension arrays in the same order.
 export const PeraProvider: {
     new (
         config: ProviderOptions,

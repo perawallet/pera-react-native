@@ -11,27 +11,14 @@
  */
 
 import { type PropsWithChildren } from 'react'
+import { ConnectionRegistryContext } from '@perawallet/wallet-core-connections'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { ConnectionRegistryContext } from './connectionRegistryContext'
 import { useConnectionsProvider } from './useConnectionsProvider'
-
-export {
-    useConnectionRegistry,
-    useOptionalConnectionRegistry,
-} from './connectionRegistryContext'
 
 export type ConnectionsProviderProps = {} & PropsWithChildren
 
-/**
- * Supplies the registry `useConnectionsProvider` owns to descendants via
- * `useConnectionRegistry`; the boot order lives in `useConnectionsBoot`.
- *
- * `WalletConnectErrorBoundary` is a generic render-crash guard with
- * WalletConnect-flavoured copy, which fits while v1 is the only handler.
- * `WalletConnectProvider` must not be mounted alongside this: the same v1
- * connectors would have two owners.
- */
+// `WalletConnectErrorBoundary` is a generic render-crash guard with WalletConnect-flavoured copy.
 export function ConnectionsProvider({ children }: ConnectionsProviderProps) {
     const { t } = useLanguage()
     const registry = useConnectionsProvider()

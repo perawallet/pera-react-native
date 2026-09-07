@@ -54,10 +54,6 @@ const WalletConnectErrorFallback = ({
     )
 }
 
-/**
- * Error boundary for walletconnect-related flows
- * Displays walletconnect-specific error messages
- */
 export const WalletConnectErrorBoundary: React.FC<
     WalletConnectErrorBoundaryProps
 > = ({ children, t }) => {

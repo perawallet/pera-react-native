@@ -19,8 +19,7 @@
             },
             "network_mismatch": "Bu işlem, cüzdanının etkin ağından farklı bir Algorand ağı için. Ayarlardan ağı değiştir ve tekrar dene.",
             "unsupported_message": "Bu site, Pera’nın işleyemediği bir mesaj imzalama isteği gönderdi. İstek reddedildi.",
-            "unauthorized_signer": "Bu site, o hesap için imza talep etmeye yetkili değil.",
-            "no_session": "Bu bağlantı artık geçerli değil. Siteyi yeniden bağla ve tekrar dene."
+            "unauthorized_signer": "Bu site, o hesap için imza talep etmeye yetkili değil."
         },
         "passkey": {
             "create": {
@@ -2838,7 +2837,7 @@
             "error_sheet_title": "Hata",
             "error_sheet_body": "WalletConnect isteğin şu hatayla başarısız oldu:",
             "error_sheet_retry": "İsteği başlattığın dApp’e geri dönerek tekrar dene.",
-            "error_network_mismatch": "Bu uygulama {{requested}} ağında bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
+            "error_network_mismatch": "Bu uygulama farklı bir ağda bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir."
         },
         "connection": {
@@ -2858,7 +2857,6 @@
             "delete_all_title": "Tüm oturumları sil",
             "delete_all_body": "Tüm oturumları silmek istediğinden emin misin? Bu işlem etkin tüm oturumlarını kaldırır ve bağlı tüm uygulamalarla bağlantını keser.",
             "disconnect_failed_title": "Bağlantı kesilemedi",
-            "unknown_peer": "Bilinmiyor",
             "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
             "connected_accounts": "Bağlı hesaplar",
             "permissions": "Gelişmiş izinler",

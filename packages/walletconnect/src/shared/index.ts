@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-// Genuinely shared between WalletConnect v1 and v2: reading a bare `wc:` URI
-// (the deep-link wrappers are unwrapped by the mobile parser before a URI
-// reaches this package), PERA_CLIENT_META, the peer reader, the error
-// taxonomy and the ARC-60 wire schema. Neither protocol implementation may
-// import the other directly — see lanekeep's `pera/no-cross-protocol-imports`.
+// Shared between v1 and v2, which may never import each other directly
+// (lanekeep `pera/no-cross-protocol-imports`).
 
 export * from './constants'
+export * from './deeplink'
 export * from './errors'
 export * from './schema'
 export * from './chain'

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import {
     toComparableTime,
     toUnifiedConnection,
@@ -56,10 +56,9 @@ describe('toComparableTime', () => {
         )
     })
 
-    // `WalletConnectConnection.createdAt` is typed `Date` but persisted via
-    // `createJSONStorage` with no reviver, so every rehydrated record
-    // carries an ISO string at runtime. `?.getTime()` does not guard a
-    // string — this is the exact value shape that used to throw.
+    // A `Date` persisted via `createJSONStorage` with no reviver rehydrates
+    // as an ISO string. `?.getTime()` does not guard a string — this is the
+    // exact value shape that used to throw.
     it('does not throw on a rehydrated string, unlike a bare .getTime() call', () => {
         expect(() => toComparableTime('2026-01-01T00:00:00.000Z')).not.toThrow()
         expect(toComparableTime('2026-01-01T00:00:00.000Z')).toBe(

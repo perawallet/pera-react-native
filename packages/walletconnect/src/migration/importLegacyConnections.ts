@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { hasSecret } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     ConnectionOrigin,
@@ -26,7 +25,10 @@ import {
     WALLET_CONNECT_V1_KIND,
     type WalletConnectV1Connection,
 } from '../v1/connection'
-import { commitSessionKey } from '../v1/secrets'
+import {
+    createKeystoreSessionKeyStore,
+    type WalletConnectV1SessionKeyStore,
+} from '../v1/secrets'
 
 export const LEGACY_STORE_KEY = 'wallet-connect-store'
 
@@ -34,7 +36,6 @@ export const LEGACY_STORE_KEY = 'wallet-connect-store'
 // decrypt a frame, so committing it would only preserve an unrevivable session.
 const SESSION_KEY_PATTERN = /^[0-9a-f]{64}$/i
 
-/** A record reconstructed from the legacy blob, ready to become a `Connection`. */
 type ReconstructedLegacySession = {
     clientId: string
     sessionKey: string
@@ -106,9 +107,8 @@ const reconstructRecord = (
         ? parsedCreatedAt
         : Date.now()
 
-    // Settings sorts on `lastActiveAt`; defaulting it would re-sort the whole
-    // list. Both timestamps are ISO strings on the blob: `createJSONStorage`
-    // has no `Date` reviver, so the model's `Date` is a runtime string here.
+    // Settings sorts on `lastActiveAt`; defaulting it would re-sort the list.
+    // Both timestamps are ISO strings on the blob (`createJSONStorage` has no `Date` reviver).
     const lastActiveAtValue = top.lastActiveAt
     const parsedLastActiveAt =
         typeof lastActiveAtValue === 'string'
@@ -190,17 +190,17 @@ const originFor = (
 }
 
 /**
- * Imports v1 sessions from the legacy `wallet-connect-store` blob, moving each
- * session key into the keystore. The blob is the sole copy of every key, so
- * deleting it is the last step and every step before it is idempotent; a
- * re-run after a crash converges. Must run after keystore hydration:
- * `hasSecret` answers `false`, not "wait", before it.
+ * The blob is the sole copy of every key, so deleting it is the last step and
+ * every step before it is idempotent; a re-run after a crash converges. Must run
+ * after keystore hydration: `has` answers `false`, not "wait", before it.
  */
 export const importLegacyConnections = async (options: {
     storage: ConnectionPersistence
     store: ConnectionStoreAPI
+    sessionKeys?: WalletConnectV1SessionKeyStore
 }): Promise<{ imported: number; skipped: number }> => {
     const { storage, store } = options
+    const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()
 
     // Read raw: instantiating the legacy zustand store would re-persist the plaintext keys.
     const raw = storage.getItem(LEGACY_STORE_KEY)
@@ -232,7 +232,7 @@ export const importLegacyConnections = async (options: {
     // permanently failing record cannot strand every record after it.
     let unattempted = 0
     let firstFailure: Error | null = null
-    const importedSecretRefs: string[] = []
+    const committedClientIds: string[] = []
     const presentIds = new Set((await store.list()).map(({ id }) => id))
 
     for (const record of records) {
@@ -243,17 +243,16 @@ export const importLegacyConnections = async (options: {
         }
 
         try {
-            const secretRef = await commitSessionKey(
+            const secretRef = await sessionKeys.commit(
                 reconstructed.clientId,
                 reconstructed.sessionKey,
             )
 
-            // The app may have updated a record an earlier pass wrote (status,
-            // origin, lastActiveAt); the blob's copy is stale. Its key is still
-            // verified below before the blob may go.
+            // The app may have updated a record an earlier pass wrote, so the
+            // blob's copy is stale. Its key is still verified below before the blob may go.
             if (presentIds.has(reconstructed.clientId)) {
                 skipped += 1
-                importedSecretRefs.push(secretRef)
+                committedClientIds.push(reconstructed.clientId)
                 continue
             }
 
@@ -286,7 +285,7 @@ export const importLegacyConnections = async (options: {
             presentIds.add(connection.id)
 
             imported += 1
-            importedSecretRefs.push(secretRef)
+            committedClientIds.push(reconstructed.clientId)
         } catch (error) {
             unattempted += 1
             firstFailure ??=
@@ -301,8 +300,8 @@ export const importLegacyConnections = async (options: {
     // Deletion is gated on every committed key being readable back, not on
     // zero skips: a permanently malformed row must not keep the plaintext
     // blob on disk forever, but a lost key must.
-    const unverified = importedSecretRefs.filter(
-        secretRef => !hasSecret(secretRef),
+    const unverified = committedClientIds.filter(
+        clientId => !sessionKeys.has(clientId),
     )
     if (unverified.length > 0) {
         logger.warn(

@@ -37,10 +37,8 @@ type UseEnableRequestScreenResult = {
     deliveryError: boolean
 }
 
-// Default selection seed: the active account, if it's actually signable
-// (present in useSigningAccounts()'s list) — a watch-only active account
-// falls back to no default selection rather than pre-checking a row that
-// can't be granted.
+// A watch-only active account yields no default selection rather than
+// pre-checking a row that can't be granted.
 const initialSelection = (
     activeAddress: string | null | undefined,
     accounts: WalletAccount[],
@@ -72,11 +70,12 @@ export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
     }, [])
 
     // Browser-verified origin of the tab that asked us to pair, present only
-    // for page-initiated wc-connect. Distinct from `origin`, which for a WC
-    // handshake is the peer's SELF-ASSERTED peerMeta url — the user needs to
-    // see which one is which.
+    // for a page-initiated proposal. Distinct from `origin`, which for a
+    // proposal is the peer's SELF-ASSERTED url.
     const requesterOrigin =
-        approval?.kind === 'wc-connect' ? approval.requesterOrigin : undefined
+        approval?.kind === 'connection-proposal'
+            ? approval.requesterOrigin
+            : undefined
 
     const canConnect = selected.size > 0
 
@@ -90,15 +89,10 @@ export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
     }, [reject])
 
     const origin = approval?.origin ?? ''
-    // For `wc-connect` this is the dApp's self-asserted `peerMeta.url` — an
-    // attacker can set it to any domain, e.g. a bank's, while the same
-    // request is truthfully stamped with a completely different
-    // `requesterOrigin`. Qualified so it reads as a claim rather than a fact.
-    // For ARC-0027 `enable`, `origin` IS browser-verified (there is no
-    // separate `requesterOrigin` to distinguish it from), so it is rendered
-    // plain — qualifying it here would be misleading, not cautious.
+    // A proposal's `origin` is the peer's self-asserted url, so it reads as
+    // a claim; an ARC-0027 `enable` origin is browser-verified and stays plain.
     const originLabel =
-        approval?.kind === 'wc-connect'
+        approval?.kind === 'connection-proposal'
             ? t('dapp.enable.peer_origin_claim', { origin })
             : origin
 

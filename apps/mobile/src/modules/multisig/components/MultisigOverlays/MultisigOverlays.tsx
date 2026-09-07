@@ -23,9 +23,9 @@ import {
     deliverReject,
     deliverRejectInBackground,
 } from '@perawallet/wallet-core-walletconnect'
+import { isConnectionAlive } from '@perawallet/wallet-core-connections'
 import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
-import { useMultisigPeerLiveness } from './useMultisigPeerLiveness'
 import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
 
 export const MultisigOverlays = () => {
@@ -36,10 +36,6 @@ export const MultisigOverlays = () => {
     return null
 }
 
-/**
- * RN + i18n shell over `useWalletConnectHandoffResolver`: pauses polling while
- * the app is backgrounded and builds the localized message bag.
- */
 const useResolverWiring = (): void => {
     const { t } = useTranslation()
 
@@ -67,8 +63,7 @@ const useResolverWiring = (): void => {
     )
 
     // Answers the dApp for a handoff resumed after an app kill, keyed by the
-    // persisted clientId / payloadId (the in-memory closures are gone). Static —
-    // the WalletConnect primitives resolve the live connector by clientId.
+    // persisted clientId / payloadId since the in-memory closures are gone.
     const delivery = useMemo<HandoffPeerDelivery>(
         () => ({
             deliverResult: (clientId, payloadId, result) =>
@@ -85,8 +80,6 @@ const useResolverWiring = (): void => {
         [],
     )
 
-    const isPeerSessionAlive = useMultisigPeerLiveness()
-
     const markUndelivered = useUndeliveredSignRequestsStore(
         store => store.markUndelivered,
     )
@@ -95,7 +88,8 @@ const useResolverWiring = (): void => {
         isAppActive,
         messages,
         delivery,
-        isPeerSessionAlive,
+        // A v1 clientId IS the connection record's id.
+        isPeerSessionAlive: isConnectionAlive,
         onUndeliverable: markUndelivered,
     })
 }

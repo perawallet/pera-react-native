@@ -23,18 +23,13 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
-import type { ConnectionSettingsRow } from '@modules/settings/hooks/connectionSettingsReadModel'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { useStyles } from './styles'
 
 export type ConnectionSettingsItemProps = {
     connection: ConnectionSettingsRow
 }
 
-/**
- * One row of the connections settings list, over the transport-agnostic
- * `ConnectionSettingsRow`. Replaces `WalletConnectSessionItem`, which read a
- * legacy `WalletConnectConnection` straight off the old store.
- */
 export const ConnectionSettingsItem = ({
     connection,
 }: ConnectionSettingsItemProps) => {

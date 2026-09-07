@@ -16,39 +16,15 @@ import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { reconnectAllConnectors } from '../connection'
 import { getAppStatePlatform, isForegroundTransition } from '../utils/app-state'
 
-// Trailing delay before sweeping after an offline→online edge, so a
-// flapping link (captive portal, cell handover) collapses into one sweep
-// once connectivity actually settles.
+// Trailing delay after an offline→online edge, so a flapping link (captive
+// portal, cell handover) collapses into one sweep once connectivity settles.
 const NETWORK_RECONNECT_DEBOUNCE_MS = 1000
 
 /**
- * Reconnects WalletConnect bridge sockets whenever a dead socket may need
- * reviving: on background→foreground transitions and on network regain.
- * Returns a teardown.
- *
- * Pera is on WalletConnect v1, where each session owns a single bridge
- * WebSocket and the SDK cannot revive it on its own:
- *
- * - The OS suspends the socket while the app is backgrounded, and v1's
- *   transport then silently queues outgoing messages into the dead socket
- *   — so a signed response handed back after backgrounding never reaches
- *   the dApp. The foreground sweep mirrors Pera Android's
- *   `ApplicationStatusObserver` reconnect.
- * - v1's own network-regain reconnect is dead code in React Native (its
- *   NetworkMonitor binds `window` 'online' events RN never emits), so a
- *   drop-and-regain while the app stays foregrounded leaves every session
- *   socket dead. The network sweep subscribes to `onlineManager` — fed by
- *   the reachability-aware network status listener at app root — and
- *   fires on each offline→online edge, debounced so going offline again
- *   inside the window cancels the pending sweep.
- *
- * Both triggers run the same `reconnectAllConnectors` sweep. Re-entrancy
- * is safe: concurrent sweeps share per-connector recreations via
- * `ensureConnectorReady`'s in-flight map.
- *
- * This is v1-specific machinery, which is why it lives in the v1 handler's
- * lifecycle rather than in a React hook: v2's relay owns its own heartbeat,
- * and a connector's listeners outlive any component that could host them.
+ * The OS suspends each session's socket while backgrounded, and v1's own
+ * network-regain reconnect is dead code in React Native (its NetworkMonitor
+ * binds `window` 'online' events RN never emits), so both edges are swept here.
+ * Re-entrant: concurrent sweeps share recreations via `ensureConnectorReady`.
  */
 export const startReconnectSweep = (): (() => void) => {
     const platform = getAppStatePlatform()
@@ -80,8 +56,7 @@ export const startReconnectSweep = (): (() => void) => {
         wasOnline = isOnline
 
         if (!isOnline) {
-            // Sweeping into a dead link is pointless — wait for the next
-            // online edge.
+            // Sweeping into a dead link is pointless; wait for the next online edge.
             clearPendingSweep()
             return
         }

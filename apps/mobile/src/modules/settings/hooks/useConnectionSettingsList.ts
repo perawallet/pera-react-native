@@ -11,38 +11,35 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useConnectionsStore } from '@perawallet/wallet-core-connections'
+import {
+    sortConnectionSettingsRows,
+    toConnectionSettingsRow,
+    useConnectionRegistry,
+    useConnectionsStore,
+    type ConnectionSettingsRow,
+} from '@perawallet/wallet-core-connections'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
-import { useConnectionRegistry } from '@modules/connections'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    toConnectionSettingsRow,
-    sortConnectionSettingsRows,
-    type ConnectionSettingsRow,
-    type UseConnectionSettingsListResult,
-} from './connectionSettingsReadModel'
 
-export type {
-    ConnectionSettingsRow,
-    UseConnectionSettingsListResult,
-} from './connectionSettingsReadModel'
+export type UseConnectionSettingsListResult = {
+    connections: ConnectionSettingsRow[]
+    /** False while the mirror is still filling; an empty list then means "not loaded", not "none". */
+    isHydrated: boolean
+    /** Fire-and-forget: failures surface as a toast, never to the caller. */
+    handleRevoke: (id: ConnectionId) => void
+    /** Awaited variant: the detail screen only navigates back once the peer is genuinely gone. */
+    revoke: (id: ConnectionId) => Promise<void>
+    /**
+     * Rejects only if the sweep itself could not start; an unreachable peer never
+     * aborts the rest. Awaited because the "delete all" dialog spins until it settles.
+     */
+    revokeAll: () => Promise<void>
+    keyExtractor: (item: ConnectionSettingsRow) => string
+}
 
-/**
- * Settings read path over `Connection` records: mirrors `useConnectionsStore`
- * into the settings read model and revokes through `registry.disconnect`.
- *
- * The abstraction-native replacement for the WalletConnect half of
- * `useConnectionsSettingsScreen`'s `UnifiedConnection` union and for
- * `SettingsWalletConnectScreen`'s `useWalletConnectSessionsControl()` read.
- *
- * `useConnectionRegistry` throws outside `ConnectionsProvider` by design, so
- * this is only safe to render from a descendant of it — which every settings
- * screen is on native. The browser extension mounts no provider and keeps its
- * sessions in the legacy store, so it resolves `useConnectionSettingsList.web`
- * instead; the two agree on `ConnectionSettingsRow` and nothing above them
- * branches on platform.
- */
+// `useConnectionRegistry` throws outside `ConnectionsProvider` by design, so
+// this only renders below it.
 export const useConnectionSettingsList =
     (): UseConnectionSettingsListResult => {
         const storedConnections = useConnectionsStore(

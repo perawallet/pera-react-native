@@ -15,10 +15,8 @@ import { AlgorandChainId } from '../models'
 import { getExpectedChainId } from './expectedChainId'
 
 /**
- * Whether an inbound chain id is usable on `network`. WC v1 dApps may send
- * the wildcard 4160 ("any Algorand chain"), which is always acceptable; an
- * explicit chain id must match the active network exactly. A missing chain
- * id is rejected — we never guess which network a request was meant for.
+ * The 4160 wildcard ("any Algorand chain") is always acceptable; an explicit id
+ * must match exactly. A missing chain id is rejected rather than guessed.
  */
 export const isChainIdAcceptable = (
     chainId: number | undefined,

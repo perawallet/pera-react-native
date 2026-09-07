@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { Optional } from '@perawallet/wallet-core-shared'
-import type { ConnectionRegistry } from './registry'
+import { isPromiseLike, type Optional } from '@perawallet/wallet-core-shared'
+import type { ConnectionRegistryClient } from './registry'
 
 /** Default budget for the peer's answer once the transport is up. */
 export const CONNECTION_OUTCOME_TIMEOUT_MS = 8000
@@ -23,10 +23,8 @@ export const CONNECTION_OUTCOME_TIMEOUT_MS = 8000
 export const CONNECTION_DEEPLINK_OUTCOME_TIMEOUT_MS = 15_000
 
 /**
- * How long a timed-out pairing is still watched for a late answer before it
- * is abandoned. A handler keeps its listeners bound for the full request TTL,
- * so a straggler would otherwise pop an approval sheet minutes after the user
- * was told the pairing failed.
+ * A handler keeps its listeners bound for the full request TTL, so a straggler
+ * would otherwise pop an approval sheet minutes after the pairing was reported failed.
  */
 export const CONNECTION_LATE_PAIRING_GRACE_MS = 60_000
 
@@ -36,7 +34,7 @@ export type ConnectionPairingOutcome =
     | { type: 'timeout' }
 
 type PairingOutcomeSource = Pick<
-    ConnectionRegistry,
+    ConnectionRegistryClient,
     'subscribeToProposals' | 'subscribeToErrors'
 >
 
@@ -46,19 +44,9 @@ type SeenEvent = {
 }
 
 /**
- * Resolves once the peer answers one pairing — with a proposal, an error, or
- * neither within `timeoutMs`. Proposals and errors fan out from every live
- * connection, so only events scoped to `pairingId` count.
- *
- * Accepts the pending `registry.pair()` promise so the watch is armed before
- * the transport comes up: v1 opens its socket inside the connector
- * constructor and an answer can land before the pairing id is known. Events
- * seen in that window are buffered and matched by id once it is, never
- * assumed to be ours. The budget starts on call, and a rejected pairing
- * promise rejects this too.
- *
- * Without an id (a caller that was handed none) nothing can be attributed, so
- * only the timeout settles it.
+ * Only events scoped to `pairingId` count, since proposals and errors fan out
+ * from every live connection. Accepts the pending `pair()` promise because v1
+ * can answer before the id is known; events seen meanwhile are buffered and matched by id.
  */
 export const waitForPairingOutcome = (
     registry: PairingOutcomeSource,
@@ -122,9 +110,3 @@ export const waitForPairingOutcome = (
             identify(pairingId)
         }
     })
-
-const isPromiseLike = <T>(value: T | PromiseLike<T>): value is PromiseLike<T> =>
-    typeof value === 'object' &&
-    value !== null &&
-    'then' in value &&
-    typeof value.then === 'function'

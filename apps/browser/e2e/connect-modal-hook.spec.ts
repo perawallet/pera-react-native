@@ -15,7 +15,7 @@
 // transport of its own) still gets an injected "Connect With Pera Extension"
 // row, and clicking it carries a REAL WalletConnect v1 handshake from the
 // dApp's own client, through the content-script bridge, to the service
-// worker, to the offscreen WC host, to the approval surface, and back.
+// worker, to the offscreen connections host, to the approval surface, and back.
 //
 // Reuses fixtures/fake-wc-bridge.mjs (see walletconnect.spec.ts's "offscreen
 // ownership of a real WC v1 session" block) rather than a second hand-rolled
@@ -34,7 +34,7 @@
 //   '.pera-wallet-connect-modal-desktop-mode__default-view'
 //   (apps/browser/src/content/connect-modal-row.ts:33)
 // - Approval screen testIDs (WcConnectScreen, the web twin of mobile's
-//   ConnectionView): 'wc-connect-peer-name', 'wc-connect-connect',
+//   ConnectionApprovalView): 'wc-connect-peer-name', 'wc-connect-connect',
 //   'wc-connect-cancel' and the requester-origin line
 //   'wc-connect-requester-origin' + its verified marker
 //   'wc-connect-requester-verified-badge'

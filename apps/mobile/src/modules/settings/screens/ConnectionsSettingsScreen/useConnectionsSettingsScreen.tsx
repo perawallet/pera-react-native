@@ -35,10 +35,9 @@ export type {
 export const useConnectionsSettingsScreen =
     (): UseConnectionsSettingsScreenResult => {
         const { t } = useLanguage()
-        // The registry-backed half. Its `handleRevoke` is fire-and-forget with
-        // its own failure toast, so this screen wraps it in the confirmation
-        // sheet below rather than handing it to the row directly — a straight
-        // swap would turn revoke into a single unguarded tap.
+        // `handleRevoke` is fire-and-forget with its own toast, so it is wrapped in
+        // the confirmation sheet rather than handed to the row: a straight swap
+        // would make revoke a single unguarded tap.
         const {
             connections: connectionRows,
             isHydrated,
@@ -57,9 +56,8 @@ export const useConnectionsSettingsScreen =
         )
 
         const connections = useMemo(() => {
-            // ARC-0027 dapp permissions are not `Connection` records — they
-            // keep their own store until that migration lands — so the two
-            // sources are unioned here rather than merged upstream.
+            // ARC-0027 dapp permissions are not `Connection` records and keep their
+            // own store, so the two sources are unioned here.
             const unified: UnifiedConnection[] = [
                 ...connectionRows.map(row =>
                     toUnifiedConnection(row, revokeConnection),

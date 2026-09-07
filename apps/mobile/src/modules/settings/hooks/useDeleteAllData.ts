@@ -11,6 +11,10 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    getActiveConnectionRegistry,
+    useOptionalConnectionRegistry,
+} from '@perawallet/wallet-core-connections'
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -21,13 +25,8 @@ import {
     getProvider,
     clearKeystore,
 } from '@perawallet/wallet-extension-provider'
-import {
-    getActiveConnectionRegistry,
-    useOptionalConnectionRegistry,
-} from '@modules/connections'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useLegacySessionsWipe } from './useLegacySessionsWipe'
 
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
@@ -39,10 +38,8 @@ export const clearAccountsStore = () => {
 type UseDeleteAllDataResult = {
     deleteAllData: () => Promise<void>
     /**
-     * Same destructive sequence as `deleteAllData`, exposed without the
-     * settings-flow modal coupling so other paths (notably the duress wipe)
-     * can reuse it. Skips no steps — caller is responsible for any post-wipe
-     * routing (e.g. clearAccountsStore + provisioning a decoy account).
+     * The same destructive sequence without the settings-flow modal coupling,
+     * for the duress wipe. The caller owns any post-wipe routing.
      */
     wipeAllUserData: () => Promise<void>
 }
@@ -52,11 +49,8 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
     const { savePin } = usePinCode()
-    const { deleteAllSessions } = useLegacySessionsWipe()
-    // Non-throwing on purpose: this hook runs from `AutoLockGuard`'s duress
-    // path, which sits above `ConnectionsProvider`, and from the browser
-    // extension, which mounts no provider at all. Step 5's `store.clear()` is
-    // what keeps the wipe complete when there is no registry to sweep with.
+    // Non-throwing: `AutoLockGuard`'s duress path runs above
+    // `ConnectionsProvider`; step 5 falls back to the published registry.
     const contextRegistry = useOptionalConnectionRegistry()
 
     const wipeAllUserData = useCallback(async () => {
@@ -67,9 +61,8 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await queryClient.cancelQueries()
         }
 
-        // 2. Delete all cryptographic keys from keystore (this includes both
-        // the regular PIN record and the duress PIN record, since both are
-        // stored as canonical secret-key entries).
+        // 2. Delete every keystore key; the regular and duress PIN records are
+        // both canonical secret-key entries.
         if (keys) {
             await Promise.allSettled(
                 Array.from(keys.values()).map(async k => {
@@ -87,14 +80,10 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to clear keystore', { error: e })
         }
 
-        // 4. Clear the native passkey-autofill mirror. The credential
-        // providers keep their own copy of the master key, parent key id, and
-        // stored credentials (iOS app-group UserDefaults + keychain, Android
-        // MMKV) — none of it dies with the keystore. Trap: on Android,
-        // `clearCredentials` wipes the ENTIRE shared "keystore" MMKV
-        // (`PASSKEYS_MMKV_ID`), not just passkey records — only safe inside
-        // this full wipe, where step 3 already destroyed that data. Never
-        // call it from a selective flow.
+        // 4. Clear the native passkey-autofill mirror: the credential providers
+        // keep their own copy of the master key and credentials, which does not
+        // die with the keystore. Trap: on Android `clearCredentials` wipes the
+        // ENTIRE shared keystore MMKV, only safe here where step 3 already destroyed it.
         try {
             await getProvider().passkeyAutofill.clearCredentials()
         } catch (e) {
@@ -112,31 +101,9 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             }
         }
 
-        // 5. Disconnect peers before wiping store data. Every sweep runs and
-        // is independently guarded, so one failing (an unreachable peer, a
-        // registry not mounted above this call site) can never skip the rest:
-        //   - Legacy WalletConnect: `deleteAllSessions` serves the browser
-        //     extension, whose sessions live in the legacy store. Its native
-        //     twin is a no-op — see `useLegacySessionsWipe`.
-        //   - The connection registry: `disconnectAll()` notifies each peer
-        //     and removes its record. `useDeleteAllData` is also called from
-        //     `AutoLockGuard`, which sits ABOVE `ConnectionsProvider` in
-        //     `RootComponent`, so the duress wipe sees no context and falls
-        //     back to the module-level accessor the provider publishes to.
-        //     Read at wipe time, not at render: the provider may not have
-        //     mounted when `AutoLockGuard` first rendered.
-        //   - The connections store itself: `clear()` is the backstop for
-        //     when there is genuinely no registry (the browser extension) —
-        //     and unlike the legacy store, these records are not in the
-        //     `clearAllStores` registry, so nothing else would remove them.
-        try {
-            await deleteAllSessions()
-        } catch (e) {
-            logger.error('Failed to disconnect WalletConnect sessions', {
-                error: e,
-            })
-        }
-
+        // 5. Notify peers, then drop their records. Read at wipe time: the provider
+        // may not have mounted when `AutoLockGuard` first rendered. `clear()` is
+        // the backstop; these records are not in `clearAllStores`.
         const registry = contextRegistry ?? getActiveConnectionRegistry()
         if (registry) {
             try {
@@ -164,12 +131,9 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         // 7. Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        // 8. Empty every table on the live connection. We deliberately do NOT
-        // close + delete + reopen the database: tearing the native connection
-        // down while the sync service (or any other caller) still has a
-        // statement in flight frees the sqlite3 handle out from under it and
-        // crashes libexpo-sqlite.so with a SIGSEGV. Clearing in place keeps the
-        // handle valid; expo-sqlite serializes the deletes behind in-flight work.
+        // 8. Empty every table in place; never close + delete + reopen. Tearing the
+        // connection down while the sync service has a statement in flight frees
+        // the sqlite3 handle under it and SIGSEGVs libexpo-sqlite.so.
         try {
             await clearDatabase()
         } catch (e) {
@@ -193,15 +157,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             queryClient.removeQueries()
         }
         getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
-    }, [
-        queryClient,
-        keys,
-        deleteKey,
-        savePin,
-        deleteDevices,
-        deleteAllSessions,
-        contextRegistry,
-    ])
+    }, [queryClient, keys, deleteKey, savePin, deleteDevices, contextRegistry])
 
     return { deleteAllData: wipeAllUserData, wipeAllUserData }
 }

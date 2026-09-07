@@ -30,22 +30,9 @@ export type UseConnectionApprovalViewResult = {
     handleCancel: () => Promise<void>
 }
 
-/**
- * Drives `ConnectionApprovalView` from a protocol-agnostic
- * `ConnectionProposal`: every action goes straight through
- * `proposal.approve` / `proposal.reject`, so the screen carries no
- * `useWalletConnect`, no v1/v2 branching and no registry lookup of its own.
- *
- * The sibling of the legacy, `WalletConnectSessionRequest`-driven
- * `ConnectionView`, which is what `useWalletConnectProvider` renders — still
- * the browser extension's approval screen. It ports the same three
- * approval-time behaviours: the quantum-dApp warning gate, session analytics,
- * and a retry-friendly delivery-failure toast.
- *
- * Showing the success sheet is deliberately NOT here: it belongs to whoever
- * outlives this sheet, and it reads the origin the handler wrote into the
- * record at approval. See `useProposalQueue`.
- */
+// Every action goes straight through `proposal.approve` / `proposal.reject`, so
+// the screen carries no protocol branching. The success sheet is deliberately
+// NOT shown here: it belongs to whoever outlives this sheet (see `useProposalQueue`).
 export const useConnectionApprovalView = (
     proposal: ConnectionProposal,
 ): UseConnectionApprovalViewResult => {
@@ -54,15 +41,9 @@ export const useConnectionApprovalView = (
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
-    // Guards both handlers below against a double-tap reaching `proposal`
-    // twice. Connect has an async gap BEFORE `isConnecting` flips true (the
-    // quantum-warning sheet is awaited first — see `handleConnect`), so
-    // `isLoading`/`isDisabled` alone can't close it; Cancel has no
-    // state-driven disabling at all. A second `proposal.reject`/`approve`
-    // call while the first is still in flight is exactly the shape that
-    // reached `useConnectionsProvider`'s stale-settle bug — a single ref
-    // shared by both handlers closes it at the source rather than relying on
-    // the provider alone.
+    // Guards both handlers against a double-tap reaching `proposal` twice:
+    // Connect has an async gap before `isConnecting` flips (the quantum-warning
+    // await) and Cancel has no state-driven disabling at all.
     const isHandlingRef = useRef(false)
 
     const handleAccountPress = useCallback((address: string) => {
@@ -73,10 +54,8 @@ export const useConnectionApprovalView = (
         )
     }, [])
 
-    // Shared by the Cancel button and `handleConnect`'s quantum-cancel
-    // branch — callers that already hold `isHandlingRef` (i.e.
-    // `handleConnect`) call this directly rather than through `handleCancel`,
-    // which would otherwise see the guard held and no-op.
+    // Callers already holding `isHandlingRef` (`handleConnect`) call this
+    // directly; `handleCancel` would see the guard held and no-op.
     const rejectProposal = useCallback(
         async (reason?: string) => {
             trackEvent(WalletConnectEvent.SessionRejected, {
@@ -108,12 +87,9 @@ export const useConnectionApprovalView = (
         if (isHandlingRef.current) return
         isHandlingRef.current = true
         try {
-            // The peer's side of the handshake expires long before a queued
-            // approval reaches this button — approving it here can only
-            // fake-succeed. Decline instead of silently doing nothing, so
-            // the proposal (and any sheet driven by it) still settles.
-            // Checked before the quantum warning so an already-dead
-            // proposal never bothers the user with it.
+            // The peer's side of the handshake expires long before a queued approval
+            // reaches this button, so approving can only fake-succeed; decline so the
+            // proposal still settles. Before the quantum warning: a dead proposal never shows it.
             if (Date.now() > proposal.expiresAt) {
                 try {
                     await proposal.reject('expired')
@@ -126,10 +102,8 @@ export const useConnectionApprovalView = (
                 return
             }
 
-            // Before approve runs, so a 'cancel' can't leave a
-            // half-approved connection behind. This await is the async gap
-            // `isHandlingRef` exists to cover — `isConnecting` doesn't flip
-            // true until after it.
+            // Before approve, so a 'cancel' can't leave a half-approved connection;
+            // this await is the async gap `isHandlingRef` covers.
             const decision = await confirmQuantumDappUsage(selectedAccounts)
             if (decision === 'cancel') {
                 await rejectProposal()
@@ -149,8 +123,7 @@ export const useConnectionApprovalView = (
             } catch (error) {
                 // Delivery failure (dead socket that couldn't be revived,
                 // etc.): keep the sheet open so Connect can simply be
-                // retried, exactly like `ConnectionView` — this
-                // deliberately does not reject the proposal.
+                // retried — this deliberately does not reject the proposal.
                 logger.error('Failed to approve a connection proposal', {
                     error,
                 })

@@ -10,15 +10,9 @@
  limitations under the License
  */
 
-// ONLY the verified-requester row lives here. Everything this screen shares
-// with mobile's ConnectionView — header, permissions panel, account rows,
-// footer buttons — comes from the shared approval stylesheet
-// (@modules/walletconnect/components/connection-approval/styles), imported
-// rather than copied, so the two cannot drift on spacing or colour.
-//
-// The requester row has no counterpart there: mobile pairs by QR or deeplink,
-// so it has no browser-verified requesting tab to attribute. These values match
-// EnableRequestScreen's, which is where this row was introduced.
+// Only the verified-requester row lives here; everything shared with
+// ConnectionApprovalView comes from its stylesheet so the two cannot drift.
+// Mobile pairs by QR or deeplink, so it has no requesting tab to attribute.
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
@@ -30,11 +24,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
-    // Distinct from the peer-asserted url above: this is the browser-verified
-    // requester. Uses `textMain`, NOT `verifiedBannerContent` — at `caption`
-    // (11px) that colour only clears 3.82:1 against `theme.colors.background`
-    // in light mode, below WCAG AA's 4.5:1 for that size. It stays reserved for
-    // the badge below, whose icon+label pairing carries the meaning.
+    // `textMain`, NOT `verifiedBannerContent`: at `caption` (11px) that colour
+    // only clears 3.82:1 against the light background, below WCAG AA's 4.5:1.
+    // It stays reserved for the badge below.
     requesterOrigin: {
         color: theme.colors.textMain,
     },
@@ -46,10 +38,8 @@ export const useStyles = makeStyles(theme => ({
     verifiedBadgeText: {
         color: theme.colors.verifiedBannerContent,
     },
-    // Also has no mobile counterpart: mobile's approve-delivery failure is a
-    // toast over a sheet that stays open for an in-place retry, whereas this
-    // window has lost the service worker's pending entry and can only tell the
-    // user to start the request again from the site.
+    // No mobile counterpart: this window has lost the service worker's pending
+    // entry and can only tell the user to start the request again from the site.
     deliveryError: {
         color: theme.colors.negative,
         textAlign: 'center',

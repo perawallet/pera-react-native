@@ -82,7 +82,10 @@ import {
     toWireResult,
     type WcRequest,
 } from './wire'
-import { commitSessionKey, removeSessionKey, withSessionKey } from './secrets'
+import {
+    createKeystoreSessionKeyStore,
+    type WalletConnectV1SessionKeyStore,
+} from './secrets'
 import { startReconnectSweep } from './reconnectSweep'
 
 // The 4160 wildcard expands to every network, and TestNet's id also covers `custom`.
@@ -94,21 +97,19 @@ const networksForChainId = (chainId: number): Network[] =>
 export type CreateWalletConnectV1HandlerOptions = {
     /**
      * Injected rather than read from a store: a store default would drag the
-     * blockchain package into every importer's module graph, `apps/browser`
-     * included.
+     * blockchain package into every importer's module graph, `apps/browser` included.
      */
     getNetwork: () => Network
+    /** Defaults to the keystore; the extension's offscreen document has none. */
+    sessionKeys?: WalletConnectV1SessionKeyStore
 }
 
-/**
- * WalletConnect v1 as one implementation of {@link ConnectionHandler}. v1 is
- * one bridge WebSocket per session, so this handler owns N connectors (in
- * `../connection`'s registry) rather than a single shared relay.
- */
+// v1 is one bridge WebSocket per session, so this handler owns N connectors rather than one relay.
 export const createWalletConnectV1Handler = (
     options: CreateWalletConnectV1HandlerOptions,
 ): WalletConnectV1Handler => {
     const { getNetwork } = options
+    const sessionKeys = options.sessionKeys ?? createKeystoreSessionKeyStore()
 
     let context: Nullable<ConnectionHandlerContext> = null
     let stopSweep: Nullable<() => void> = null
@@ -228,11 +229,8 @@ export const createWalletConnectV1Handler = (
             kind: 'request',
             connectionId: connection.id,
             correlationId: String(requestId),
-            // Becomes ARC-0001's `authorizedAddresses`: what stops a session
-            // approved for account A signing for B.
             authorizedAccounts: connection.accounts,
-            // The approval-time snapshot, not the live `peerMeta` a dApp can
-            // overwrite afterwards; it is the anti-spoofing `sourceMetadata`.
+            // The approval-time snapshot, not the live `peerMeta` a dApp can overwrite afterwards.
             peer: connection.peer,
             rawOperation: { type: input.type, params: input.params },
             respond: result =>
@@ -249,7 +247,6 @@ export const createWalletConnectV1Handler = (
         })
     }
 
-    /** Shared prologue for both signing methods. */
     const openRequest = async (
         connector: WalletConnect,
         method: string,
@@ -358,9 +355,8 @@ export const createWalletConnectV1Handler = (
         const { request, connection } = opened
         const network = getNetwork()
 
-        // `gateSignDataRequest` rejects the legacy array shape outright (the
-        // browser extension never had it), so that branch gets only the
-        // shared chain check; the registry validates its payload.
+        // `gateSignDataRequest` rejects the legacy array shape outright, so that
+        // branch gets only the chain check; the registry validates its payload.
         const verdict: GateResult = Array.isArray(request.params)
             ? isChainIdAcceptable(connection.metadata.chainId, network) &&
               legacyItemChainIdsAcceptable(request.params, network)
@@ -413,7 +409,7 @@ export const createWalletConnectV1Handler = (
             accounts: input.accounts,
         })
 
-        const secretRef = await commitSessionKey(
+        const secretRef = await sessionKeys.commit(
             input.clientId,
             connector.session.key,
         )
@@ -447,10 +443,9 @@ export const createWalletConnectV1Handler = (
         return connection
     }
 
-    // The SDK's `rejectSession` fires 'disconnect' synchronously (our listener
-    // forgets the connector) and leaves the transport open, so a lookup finds
-    // nothing: tear the captured connector down by reference, or a late
-    // `session_request` pops a ghost approval sheet minutes later.
+    // `rejectSession` fires 'disconnect' synchronously (which forgets the
+    // connector) yet leaves the transport open, so tear the captured connector
+    // down by reference or a late `session_request` pops a ghost approval sheet.
     const abandonDeclinedPairing = (
         clientId: string,
         connector: Nullable<WalletConnect>,
@@ -603,7 +598,7 @@ export const createWalletConnectV1Handler = (
     const forgetSession = async (id: ConnectionId): Promise<void> => {
         // Tombstoned so an in-flight socket recovery aborts instead of resurrecting the peer.
         forgetConnector(id)
-        await removeSessionKey(id).catch((secretError: unknown) => {
+        await sessionKeys.remove(id).catch((secretError: unknown) => {
             logger.warn('[WC v1] failed to remove a stored session key', {
                 connectionId: id,
                 error: secretError,
@@ -701,10 +696,9 @@ export const createWalletConnectV1Handler = (
         return updated
     }
 
-    // After a provider remount a surviving connector still holds the previous
-    // handler instance's closures (context null), so it is rebound, not rebuilt.
-    // Synchronous on purpose: `revive` relies on no yield between this check
-    // and `registerConnector`.
+    // After a provider remount a surviving connector holds the previous handler's
+    // closures, so it is rebound, not rebuilt. Synchronous on purpose: `revive`
+    // relies on no yield between this check and `registerConnector`.
     const rebindLive = (id: ConnectionId): boolean => {
         const live = getConnector(id)
         if (!live) return false
@@ -717,10 +711,7 @@ export const createWalletConnectV1Handler = (
     ): Promise<WalletConnectV1Connection> => {
         if (rebindLive(connection.id)) return asStatus(connection, 'active')
 
-        const key = await withSessionKey(
-            connection.id,
-            sessionKey => sessionKey,
-        )
+        const key = await sessionKeys.read(connection.id)
 
         // Re-checked after the await, or two overlapping restores build two sockets.
         if (rebindLive(connection.id)) return asStatus(connection, 'active')

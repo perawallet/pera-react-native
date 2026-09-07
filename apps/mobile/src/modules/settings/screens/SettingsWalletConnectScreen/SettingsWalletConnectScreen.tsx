@@ -12,6 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { Dialog } from '@rneui/themed'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 import {
     PWButton,
@@ -28,10 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ConnectionSettingsItem } from '@modules/settings/components/ConnectionSettingsItem'
-import {
-    useConnectionSettingsList,
-    type ConnectionSettingsRow,
-} from '@modules/settings/hooks/useConnectionSettingsList'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import { useStyles } from './styles'
 
 const renderItem = ({ item }: { item: ConnectionSettingsRow }) => (
@@ -40,8 +38,7 @@ const renderItem = ({ item }: { item: ConnectionSettingsRow }) => (
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
-    // main's error surfacing, kept; this branch's connector-free hook, kept —
-    // no UI surface may own a WC connector on the extension.
+    // No UI surface may own a WC connector on the extension.
     const { showError } = useErrorToast()
     const { connections, isHydrated, revokeAll, keyExtractor } =
         useConnectionSettingsList()
@@ -67,13 +64,8 @@ export const SettingsWalletConnectScreen = () => {
         setIsLoading(true)
         void revokeAll()
             .catch((error: unknown) => {
-                // Partial failure is possible and looks different per source.
-                // `registry.disconnectAll` settles every peer independently,
-                // so the surviving rows simply stay on screen. The web twin's
-                // `deleteAllSessions` runs `Promise.all` over `disconnect()`
-                // calls that each filter one shared stale closure, so the last
-                // resolver wins and an already-killed session can reappear in
-                // the list. Report either way; don't roll back.
+                // Partial failure is possible: `registry.disconnectAll` settles every
+                // peer independently, so surviving rows stay on screen. Report; don't roll back.
                 showError(error, t('common.error.title'))
             })
             .finally(() => {

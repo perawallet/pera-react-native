@@ -34,51 +34,38 @@ import type {
 } from './models'
 import { validateRawMessage } from './validate'
 
-export interface ConnectionRegistry {
-    /**
-     * Throws while the registry is live — from `initialize()` until the next
-     * `teardown()` settles — or for a kind already held.
-     */
-    register(handler: ConnectionHandler): void
-    /**
-     * Initialises every handler, then restores each one and reconciles the
-     * store for its kind: records it no longer reports are removed, reported
-     * ones upserted. Store writes complete before this resolves. Idempotent
-     * — a concurrent call shares the in-flight run — and serialised with
-     * `teardown()`. One handler failing is reported through the error
-     * channel and never blocks the others.
-     */
-    initialize(): Promise<void>
-    teardown(): Promise<void>
-    /**
-     * See {@link ConnectionHandler.pair} — resolves with the pairing id.
-     * Routed to the handler whose `canHandleUri` claims the URI; throws
-     * `'no-handler'` when none does, handlers without URI pairing included.
-     */
+/**
+ * The UI-side surface. {@link ConnectionRegistry}'s host methods belong only to
+ * the composition root; browser-extension UI realms get a remote client.
+ */
+export interface ConnectionRegistryClient {
+    /** Routed to the handler whose `canHandleUri` claims the URI; throws `'no-handler'` when none does. */
     pair(uri: string, opts?: ConnectionPairOptions): Promise<string>
-    /**
-     * Routed to the handler that issued `pairingId` from `pair()`. A no-op
-     * for an id this registry never issued, or a handler that declares no
-     * `abandonPairing`.
-     */
+    /** No-op for an id this registry never issued or a handler without `abandonPairing`. */
     abandonPairing(pairingId: string): void
-    /**
-     * The claiming handler's {@link ConnectionHandler.describeUri}; an empty
-     * record when nothing claims the URI. Never contains the URI itself.
-     */
+    /** Empty when nothing claims the URI. Never contains the URI itself. */
     describeUri(uri: string): Record<string, string | null>
-    /**
-     * Every network the connection's handler accepts it on. Empty for a kind
-     * with no registered handler.
-     */
+    /** Empty for a kind with no registered handler. */
     networksFor(connection: Connection): Network[]
     disconnect(id: ConnectionId): Promise<void>
     disconnectAll(): Promise<void>
     subscribeToProposals(listener: (p: ConnectionProposal) => void): () => void
-    subscribeToMessages(listener: (m: InboundMessage) => void): () => void
     subscribeToErrors(
         listener: (error: Error, scope?: ConnectionErrorScope) => void,
     ): () => void
+}
+
+export interface ConnectionRegistry extends ConnectionRegistryClient {
+    /** Throws while live (from `initialize()` until the next `teardown()` settles) or for a kind already held. */
+    register(handler: ConnectionHandler): void
+    /**
+     * Store reconciliation completes before this resolves. Idempotent (a
+     * concurrent call shares the in-flight run) and serialised with `teardown()`;
+     * one handler failing is reported on the error channel and never blocks the others.
+     */
+    initialize(): Promise<void>
+    teardown(): Promise<void>
+    subscribeToMessages(listener: (m: InboundMessage) => void): () => void
 }
 
 export const createConnectionRegistry = (options: {
@@ -86,27 +73,23 @@ export const createConnectionRegistry = (options: {
 }): ConnectionRegistry => {
     const { store } = options
     const handlers = new Map<ConnectionKind, ConnectionHandler>()
-    // Which handler issued each live pairing id, so `abandonPairing` can be
-    // routed without the id carrying its protocol. Pruned on abandon; an
-    // approved or forgotten pairing's entry costs one map slot until then.
+    // Which handler issued each pairing id, so `abandonPairing` can route
+    // without the id carrying its protocol.
     const pairings = new Map<string, ConnectionHandler>()
     const proposalListeners = new Set<(p: ConnectionProposal) => void>()
     const messageListeners = new Set<(m: InboundMessage) => void>()
     const errorListeners = new Set<
         (e: Error, scope?: ConnectionErrorScope) => void
     >()
-    // Each is the whole lifecycle promise, so the two chain on each other
-    // instead of overlapping. `isLive` spans from `initialize()` until the
-    // next `teardown()` settles, covering the window in which `initializing`
-    // is already cleared — a handler registered there would be torn down
-    // without ever initialising.
+    // Whole lifecycle promises, so the two chain rather than overlap. `isLive`
+    // outlasts `initializing`: a handler registered after it clears but before
+    // teardown settles would otherwise be torn down without ever initialising.
     let initializing: Nullable<Promise<void>> = null
     let tearingDown: Nullable<Promise<void>> = null
     let isLive = false
 
-    // A throwing subscriber must not abort the fan-out to every remaining
-    // subscriber, nor propagate into the relay/socket callback that invoked
-    // the handler context method in the first place.
+    // A throwing subscriber must not abort the fan-out or propagate into the
+    // handler's relay/socket callback.
     const emitError = (error: Error, scope?: ConnectionErrorScope): void => {
         for (const listener of errorListeners) {
             try {
@@ -119,11 +102,8 @@ export const createConnectionRegistry = (options: {
         }
     }
 
-    // `reject` is handler-supplied transport code: it can reject its returned
-    // promise OR throw synchronously (e.g. an invariant check before its first
-    // `await`). Both are swallowed here — a broken peer must not blow out of
-    // the registry's `onMessage`, which runs inside the handler's own
-    // relay/socket listener.
+    // `reject` may reject or throw synchronously; either escaping would blow
+    // out of the handler's own relay/socket listener.
     const rejectToPeer = (raw: RawInboundMessage, error: Error): void => {
         if (raw.kind !== 'request') return
         try {
@@ -153,10 +133,8 @@ export const createConnectionRegistry = (options: {
             }
         },
         onMessage: (raw: RawInboundMessage) => {
-            // Validation lives HERE, not in the handler: no subscriber may
-            // ever see an unvalidated payload, and a parse failure is
-            // answered through the handler's own `reject` so the peer gets a
-            // real error rather than a timeout.
+            // Validation lives here so no subscriber sees an unvalidated payload;
+            // a parse failure is answered so the peer gets an error, not a timeout.
             const validated = validateRawMessage(raw)
             if (!validated.ok) {
                 rejectToPeer(raw, validated.error)
@@ -221,9 +199,8 @@ export const createConnectionRegistry = (options: {
         return handler
     }
 
-    // Per kind, so a handler's `restore()` can only ever remove records of
-    // its own kind, and a handler that reports a foreign record cannot write
-    // it either.
+    // Per kind, so a handler's `restore()` can neither remove nor write
+    // records of another kind.
     const reconcile = async (
         kind: ConnectionKind,
         reported: Connection[],
@@ -299,10 +276,9 @@ export const createConnectionRegistry = (options: {
             const mine: Promise<void> = settled
                 .then(runTeardown)
                 .finally(() => {
-                    // Only the current teardown may go quiet, and only when no
-                    // initialize() is queued: an older one settling reads a
-                    // newer teardown's cleared `initializing` while the
-                    // initialize between them is still pending.
+                    // Only the current teardown may go quiet, and only with no
+                    // initialize() queued: an older one settling would read a
+                    // newer teardown's cleared `initializing`.
                     if (tearingDown === mine && initializing === null) {
                         isLive = false
                     }
