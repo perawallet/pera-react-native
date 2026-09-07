@@ -115,9 +115,8 @@ export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
 export const getKeystore = (): ReactNativeKeyStore => keystore
 
 /**
- * Where wallet-domain packages register hooks to intercept keystore operations.
- * `wrap` fully replaces one — kms uses it to route `type: 'algo25'` signing
- * through tweetnacl.
+ * Where wallet-domain packages can register hooks to intercept keystore
+ * operations: `before`, `after`, `error`, or `wrap` to replace one outright.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
