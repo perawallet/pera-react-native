@@ -211,6 +211,59 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
     )
 
     it(
+        'Given the recipient-info lookup is still in flight, when the confirmation screen mounts, then the confirm button is disabled but not in the loading state',
+        async () => {
+            await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // Hold the recipient lookup open so its pending window is
+            // observable; on release the resolver returns undefined, which
+            // falls through to the default receiver handler from beforeEach.
+            let releaseRecipientInfo!: () => void
+            const recipientInfoGate = new Promise<void>(resolve => {
+                releaseRecipientInfo = resolve
+            })
+            server.use(
+                http.get(`*/v2/accounts/${RECEIVER_ADDRESS}`, async () => {
+                    await recipientInfoGate
+                    return undefined
+                }),
+            )
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+
+            // The pending lookup blocks interaction, but must not put the
+            // button into the yellow in-flight phase — that phase renders
+            // instantly on mount and caused the cold-start loading flash.
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            expect(confirmButton.disabled).toBe(true)
+            expect(confirmButton.getAttribute('data-loading')).toBe('false')
+
+            releaseRecipientInfo()
+
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+            expect(confirmButton.getAttribute('data-loading')).toBe('false')
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given the confirmation screen is mounted with no destination, when the user taps confirm, then an error toast is raised and submission does not happen',
         async () => {
             await seedAlgo25Sender()

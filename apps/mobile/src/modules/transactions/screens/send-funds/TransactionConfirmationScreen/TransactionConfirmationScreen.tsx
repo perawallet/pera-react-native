@@ -78,7 +78,7 @@ export const TransactionConfirmationScreen = () => {
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
-                        isLoading={isRecipientInfoPending || isSigning}
+                        isLoading={isSigning}
                         isDisabled={
                             isRecipientBelowMbr || isRecipientInfoPending
                         }
