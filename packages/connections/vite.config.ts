@@ -19,10 +19,6 @@ export default defineConfig({
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
-                'testing/handler-contract': resolve(
-                    __dirname,
-                    'src/testing/handler-contract.ts',
-                ),
                 // Its own entry so a consumer can read the pairing budgets
                 // without the barrel dragging in the signing adapter.
                 pairingOutcome: resolve(__dirname, 'src/pairingOutcome.ts'),

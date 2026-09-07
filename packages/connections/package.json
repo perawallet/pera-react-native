@@ -9,10 +9,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./testing": {
-      "types": "./dist/testing/handler-contract.d.ts",
-      "default": "./dist/testing/handler-contract.js"
-    },
     "./pairingOutcome": {
       "types": "./dist/pairingOutcome.d.ts",
       "default": "./dist/pairingOutcome.js"

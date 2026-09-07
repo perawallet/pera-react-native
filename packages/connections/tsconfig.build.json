@@ -17,6 +17,7 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/handlers.ts",
-    "**/*-handlers.ts"
+    "**/*-handlers.ts",
+    "**/testing/**"
   ]
 }
