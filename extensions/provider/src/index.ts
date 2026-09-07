@@ -26,6 +26,11 @@ export {
     passkeyMainKeyId,
 } from './keystore/passkeyMainKey'
 export {
+    setEngineKeySource,
+    resolveEngineKey,
+    type EngineKeySource,
+} from './keystore/engineKeySource'
+export {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,
 } from './keystore/migrationsLedger'
