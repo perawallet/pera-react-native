@@ -625,6 +625,16 @@
             "turn_off": "Bulut yedeklemeyi kapat",
             "turn_off_description": "Verileri buluta eşitlemeyi durdur"
         },
+        "sync_devices": {
+            "title": "Diğer cihazlarla eşitle",
+            "description": "Bu QR kodunu diğer cihazınla tara, sonra eşitlemeye başlamak için az önce belirlediğin kodu gir.",
+            "warning": "Bu QR kodunun fotoğrafı yeterli zamanla kırılabilir. Kimsenin fotoğrafını çekmesine izin verme ve 6 haneli kodunu paylaşma.",
+            "error": "Bu cihazda eşitleme QR kodu oluşturulamadı."
+        },
+        "encryption_code": {
+            "setup_title": "Bu QR kodunu korumak için 6 haneli bir kod belirle",
+            "confirm_title": "Kodunu tekrar gir"
+        },
         "accounts": {
             "title": "Hesaplar",
             "review_title": "İncelenecek hesaplar",
@@ -706,9 +716,10 @@
             "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene."
         },
         "restore": {
-            "sheet_title": "Yedeklemeden geri yükle",
-            "sheet_description": "Hesaplarını bu cihazda geri yüklemek için 12 kelimelik yedekleme ifadeni ve şifreleme anahtarını gir.",
-            "sheet_continue": "Devam et",
+            "sheet_title": "Yedeklemeyi geri yükle/al",
+            "sheet_description": "QR kodu tarayarak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
+            "sheet_scan": "QR kodu tara",
+            "sheet_manual": "Bilgileri manuel gir",
             "passphrase_title": "Yedekleme ifadeni gir",
             "passphrase_continue": "Devam et",
             "too_many_words_title": "Geçersiz yedekleme ifadesi",
@@ -725,6 +736,16 @@
             "success": "Yedekleme geri yüklendi",
             "partial_success": "{{count}} hesap geri yüklenemedi.",
             "partial_success_one": "{{count}} hesap geri yüklenemedi."
+        },
+        "restore_scan": {
+            "title": "QR kodu tara",
+            "instructions": "Diğer cihazında Bulut yedekleme ekranını aç, “Diğer cihazlarla eşitle” seçeneğini seç ve gösterilen kodu tara.",
+            "scan_button": "Kamerayı aç",
+            "code_title": "6 haneli kodu gir",
+            "invalid_qr_title": "Bu bir yedekleme QR kodu değil",
+            "invalid_qr_body": "Diğer cihazında “Diğer cihazlarla eşitle” seçeneğinin gösterdiği kodu tara.",
+            "unsupported_version_title": "Devam etmek için Pera’yı güncelle",
+            "unsupported_version_body": "Bu QR kodu, Pera’nın daha yeni bir sürümüyle oluşturulmuş."
         }
     },
     "common": {

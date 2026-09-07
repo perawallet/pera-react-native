@@ -625,6 +625,16 @@
             "turn_off": "Désactiver la sauvegarde cloud",
             "turn_off_description": "Arrêter de synchroniser les données vers le cloud"
         },
+        "sync_devices": {
+            "title": "Synchroniser avec d’autres appareils",
+            "description": "Scannez ce QR code avec votre autre appareil, puis saisissez le code que vous venez de choisir pour lancer la synchronisation.",
+            "warning": "Une photo de ce QR code peut être déchiffrée avec suffisamment de temps. Ne laissez personne le photographier et ne partagez pas votre code à 6 chiffres.",
+            "error": "Le QR code de synchronisation n’a pas pu être créé sur cet appareil."
+        },
+        "encryption_code": {
+            "setup_title": "Choisissez un code à 6 chiffres pour protéger ce QR code",
+            "confirm_title": "Saisissez à nouveau votre code"
+        },
         "accounts": {
             "title": "Comptes",
             "review_title": "Comptes à vérifier",
@@ -706,9 +716,10 @@
             "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer."
         },
         "restore": {
-            "sheet_title": "Restaurer depuis une sauvegarde",
-            "sheet_description": "Saisissez votre phrase de sauvegarde de 12 mots et votre clé de chiffrement pour restaurer vos comptes sur cet appareil.",
-            "sheet_continue": "Continuer",
+            "sheet_title": "Restaurer/récupérer une sauvegarde",
+            "sheet_description": "Restaurez votre sauvegarde en scannant un QR code ou en saisissant vos identifiants manuellement.",
+            "sheet_scan": "Scanner le QR code",
+            "sheet_manual": "Saisir les informations manuellement",
             "passphrase_title": "Saisissez votre phrase de sauvegarde",
             "passphrase_continue": "Continuer",
             "too_many_words_title": "Phrase de sauvegarde invalide",
@@ -725,6 +736,16 @@
             "success": "Sauvegarde restaurée",
             "partial_success": "{{count}} comptes n’ont pas pu être restaurés.",
             "partial_success_one": "{{count}} compte n’a pas pu être restauré."
+        },
+        "restore_scan": {
+            "title": "Scanner le QR code",
+            "instructions": "Ouvrez Sauvegarde cloud sur votre autre appareil, choisissez « Synchroniser avec d’autres appareils », puis scannez le code affiché.",
+            "scan_button": "Ouvrir l’appareil photo",
+            "code_title": "Saisissez le code à 6 chiffres",
+            "invalid_qr_title": "Ce n’est pas un QR code de sauvegarde",
+            "invalid_qr_body": "Scannez le code affiché par « Synchroniser avec d’autres appareils » sur votre autre appareil.",
+            "unsupported_version_title": "Mettez Pera à jour pour continuer",
+            "unsupported_version_body": "Ce QR code a été créé avec une version plus récente de Pera."
         }
     },
     "common": {

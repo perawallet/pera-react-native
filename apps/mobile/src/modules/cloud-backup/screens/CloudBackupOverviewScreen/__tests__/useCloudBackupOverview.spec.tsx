@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import {
     useCloudBackupStore,
     useBackupSyncStateStore,
@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
-import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupOverview } from '../useCloudBackupOverview'
 
@@ -45,14 +44,13 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: (v: string) => `truncated(${v})`,
 }))
-vi.mock('@perawallet/wallet-core-security', () => ({
-    usePinCode: vi.fn(),
-}))
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: vi.fn(),
 }))
 vi.mock('@modules/security', () => ({
-    PinEditContent: () => null,
+    useRequirePinVerification: () => ({
+        requirePinVerification: requirePinVerificationMock,
+    }),
 }))
 vi.mock('../../../components/BackupCredentialsSheet', () => ({
     BackupCredentialsSheet: () => null,
@@ -61,10 +59,18 @@ vi.mock('../../../components/TurnOffBackupSheet', () => ({
     TurnOffBackupSheet: () => null,
 }))
 
-const { disableBackupMock, removeBackupMock, syncNowMock } = vi.hoisted(() => ({
+const {
+    disableBackupMock,
+    removeBackupMock,
+    syncNowMock,
+    showSyncQrMock,
+    requirePinVerificationMock,
+} = vi.hoisted(() => ({
     disableBackupMock: vi.fn(),
     removeBackupMock: vi.fn(),
     syncNowMock: vi.fn(),
+    showSyncQrMock: vi.fn(),
+    requirePinVerificationMock: vi.fn(),
 }))
 vi.mock('../../../hooks', () => ({
     useDisableCloudBackup: () => ({
@@ -79,9 +85,11 @@ vi.mock('../../../hooks', () => ({
         syncNow: syncNowMock,
         isSyncing: false,
     }),
+    useSyncDevicesQr: () => ({
+        showSyncQr: showSyncQrMock,
+    }),
 }))
 
-const mockCheckPinEnabled = vi.fn()
 const mockRequestBottomSheet = vi.fn()
 
 type SyncStateFixture = {
@@ -153,13 +161,11 @@ const mockStores = (opts: {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    ;(usePinCode as unknown as Mock).mockReturnValue({
-        checkPinEnabled: mockCheckPinEnabled,
-    })
     ;(useBottomSheet as unknown as Mock).mockReturnValue({
         request: mockRequestBottomSheet,
     })
-    mockCheckPinEnabled.mockResolvedValue(false)
+    requirePinVerificationMock.mockResolvedValue(true)
+    showSyncQrMock.mockResolvedValue(undefined)
     mockRequestBottomSheet.mockResolvedValue(undefined)
 })
 
@@ -300,16 +306,13 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(true)
-        mockRequestBottomSheet
-            .mockResolvedValueOnce('turnOff') // turn off sheet choice
-            .mockResolvedValueOnce(true) // PIN verification
+        mockRequestBottomSheet.mockResolvedValueOnce('turnOff')
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
 
-        expect(mockCheckPinEnabled).toHaveBeenCalledTimes(1)
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(disableBackupMock).toHaveBeenCalledTimes(1)
     })
 
@@ -320,10 +323,7 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(true)
-        mockRequestBottomSheet
-            .mockResolvedValueOnce('turnOffAndRemove') // turn off sheet choice
-            .mockResolvedValueOnce(true) // PIN verification
+        mockRequestBottomSheet.mockResolvedValueOnce('turnOffAndRemove')
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
@@ -339,13 +339,12 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValueOnce(undefined) // dismissed
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
 
-        expect(mockCheckPinEnabled).not.toHaveBeenCalled()
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(disableBackupMock).not.toHaveBeenCalled()
     })
@@ -357,7 +356,8 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(false)
+        // The gate resolves true with no sheet of its own when no PIN is set.
+        requirePinVerificationMock.mockResolvedValue(true)
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressCredentialAddress()
@@ -372,15 +372,15 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(true)
-        mockRequestBottomSheet
-            .mockResolvedValueOnce(true)
-            .mockResolvedValueOnce(undefined)
+        requirePinVerificationMock.mockResolvedValue(true)
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressCredentialAddress()
 
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(
+            requirePinVerificationMock.mock.invocationCallOrder[0],
+        ).toBeLessThan(mockRequestBottomSheet.mock.invocationCallOrder[0])
     })
 
     test('does not open the credentials sheet when PIN verification fails', async () => {
@@ -390,12 +390,27 @@ describe('useCloudBackupOverview', () => {
             accounts: [],
             contacts: [],
         })
-        mockCheckPinEnabled.mockResolvedValue(true)
-        mockRequestBottomSheet.mockResolvedValueOnce(false)
+        requirePinVerificationMock.mockResolvedValue(false)
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressCredentialAddress()
 
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    test('opens the sync QR flow instead of forcing a sync', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        await act(() => result.current.onPressSyncDevices())
+
+        expect(showSyncQrMock).toHaveBeenCalledTimes(1)
+        expect(syncNowMock).not.toHaveBeenCalled()
     })
 })

@@ -625,6 +625,16 @@
             "turn_off": "Turn Off Cloud Backup",
             "turn_off_description": "Stop syncing data to the cloud"
         },
+        "sync_devices": {
+            "title": "Sync with other devices",
+            "description": "Use your other device to scan this QR code, then enter the code you just chose to begin syncing.",
+            "warning": "A photo of this QR can be broken open given time. Don’t let anyone photograph it, and don’t share your 6-digit code.",
+            "error": "Couldn’t create a sync QR code on this device."
+        },
+        "encryption_code": {
+            "setup_title": "Choose a 6-digit code to protect this QR",
+            "confirm_title": "Re-enter your code"
+        },
         "accounts": {
             "title": "Accounts",
             "review_title": "Accounts to review",
@@ -706,9 +716,10 @@
             "error": "Couldn’t remove Cloud Backup. Please try again."
         },
         "restore": {
-            "sheet_title": "Restore from backup",
-            "sheet_description": "Enter your 12-word backup phrase and your encryption key to restore your accounts on this device.",
-            "sheet_continue": "Continue",
+            "sheet_title": "Restore/Retrieve a Backup",
+            "sheet_description": "Restore your backup by scanning a QR code or entering your credentials manually.",
+            "sheet_scan": "Scan QR Code",
+            "sheet_manual": "Enter Details Manually",
             "passphrase_title": "Enter your backup phrase",
             "passphrase_continue": "Continue",
             "too_many_words_title": "Invalid backup phrase",
@@ -725,6 +736,16 @@
             "success": "Backup restored",
             "partial_success": "{{count}} accounts couldn’t be restored.",
             "partial_success_one": "{{count}} account couldn’t be restored."
+        },
+        "restore_scan": {
+            "title": "Scan QR Code",
+            "instructions": "Open Cloud Backup on your other device, choose “Sync with other devices”, and scan the code it shows.",
+            "scan_button": "Open Camera",
+            "code_title": "Enter the 6-digit code",
+            "invalid_qr_title": "Not a backup QR code",
+            "invalid_qr_body": "Scan the code shown by “Sync with other devices” on your other device.",
+            "unsupported_version_title": "Update Pera to continue",
+            "unsupported_version_body": "This QR code was made by a newer version of Pera."
         }
     },
     "common": {

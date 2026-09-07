@@ -51,12 +51,24 @@ describe('useCloudBackupScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CloudBackupSetup')
     })
 
-    it('opens the restore sheet and navigates to the passphrase screen on continue', async () => {
-        mockRequest.mockResolvedValue('continue')
+    it('navigates to the scanner when the sheet returns scan', async () => {
+        mockRequest.mockResolvedValue('scan')
         const { result } = renderHook(() => useCloudBackupScreen())
 
         await act(async () => {
-            result.current.handleRestoreBackup()
+            await result.current.handleRestoreBackup()
+        })
+
+        expect(mockRequest).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('CloudBackupRestoreScan')
+    })
+
+    it('navigates to manual entry when the sheet returns manual', async () => {
+        mockRequest.mockResolvedValue('manual')
+        const { result } = renderHook(() => useCloudBackupScreen())
+
+        await act(async () => {
+            await result.current.handleRestoreBackup()
         })
 
         expect(mockRequest).toHaveBeenCalled()
@@ -65,16 +77,14 @@ describe('useCloudBackupScreen', () => {
         )
     })
 
-    it('does not navigate when the sheet is dismissed', async () => {
+    it('navigates nowhere when the sheet is dismissed', async () => {
         mockRequest.mockResolvedValue(undefined)
         const { result } = renderHook(() => useCloudBackupScreen())
 
         await act(async () => {
-            result.current.handleRestoreBackup()
+            await result.current.handleRestoreBackup()
         })
 
-        expect(mockNavigate).not.toHaveBeenCalledWith(
-            'CloudBackupRestorePassphrase',
-        )
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

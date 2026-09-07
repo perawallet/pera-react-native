@@ -22,7 +22,7 @@ import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupScreenResult = {
     handleSetUpBackup: () => void
-    handleRestoreBackup: () => void
+    handleRestoreBackup: () => Promise<void>
 }
 
 export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
@@ -34,16 +34,17 @@ export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
         navigation.navigate('CloudBackupSetup')
     }, [navigation])
 
-    const handleRestoreBackup = useCallback(() => {
-        void (async () => {
-            const result = await requestBottomSheet<RestoreBackupSheetResult>({
-                contents: <RestoreBackupSheet />,
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (result === 'continue') {
-                navigation.navigate('CloudBackupRestorePassphrase')
-            }
-        })()
+    const handleRestoreBackup = useCallback(async () => {
+        const result = await requestBottomSheet<RestoreBackupSheetResult>({
+            contents: <RestoreBackupSheet />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (!result) return
+        navigation.navigate(
+            result === 'scan'
+                ? 'CloudBackupRestoreScan'
+                : 'CloudBackupRestorePassphrase',
+        )
     }, [requestBottomSheet, navigation])
 
     return { handleSetUpBackup, handleRestoreBackup }

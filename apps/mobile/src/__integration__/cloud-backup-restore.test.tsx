@@ -53,8 +53,10 @@ import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
-import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
+// The stack's own registration, not the bare screen: the terminal exit lives
+// there, and a hand-rolled wrapper here would let it rot unnoticed.
+import { CloudBackupRestoreEncryptionKeyRoute } from '@modules/cloud-backup/routes'
 
 import {
     BACKUP_MNEMONIC,
@@ -77,7 +79,7 @@ const renderCloudBackupFlow = () =>
             },
             {
                 name: 'CloudBackupRestoreEncryptionKey',
-                component: CloudBackupRestoreEncryptionKeyScreen,
+                component: CloudBackupRestoreEncryptionKeyRoute,
             },
             {
                 name: 'CloudBackupOverview',
@@ -98,7 +100,7 @@ const typeBackupWords = (words: string[]) => {
 const runRestoreFlow = async () => {
     fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
     fireEvent.click(
-        await screen.findByTestId('cloud_backup_restore_sheet_continue'),
+        await screen.findByTestId('cloud_backup_restore_sheet_manual'),
     )
 
     await waitFor(() => screen.getByTestId('cloud_backup_restore_word_input_0'))

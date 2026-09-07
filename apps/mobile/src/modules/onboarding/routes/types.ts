@@ -133,6 +133,8 @@ export type ImportFlowParamList = {
         failedCount: number
     }
     CloudBackupRestorePassphrase: undefined
+    CloudBackupRestoreEncryptionKey: undefined
+    CloudBackupRestoreScan: undefined
 }
 
 export type OnboardingStackParamList = ImportFlowParamList & {

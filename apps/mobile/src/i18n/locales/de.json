@@ -617,6 +617,16 @@
             "turn_off": "Cloud-Backup deaktivieren",
             "turn_off_description": "Keine Daten mehr in die Cloud synchronisieren"
         },
+        "sync_devices": {
+            "title": "Mit anderen Geräten synchronisieren",
+            "description": "Scanne diesen QR-Code mit deinem anderen Gerät und gib dann den soeben gewählten Code ein, um mit der Synchronisierung zu beginnen.",
+            "warning": "Ein Foto dieses QR-Codes lässt sich mit genug Zeit knacken. Lass niemanden ihn fotografieren und teile deinen 6-stelligen Code nicht.",
+            "error": "Auf diesem Gerät konnte kein QR-Code zur Synchronisierung erstellt werden."
+        },
+        "encryption_code": {
+            "setup_title": "Wähle einen 6-stelligen Code zum Schutz dieses QR-Codes",
+            "confirm_title": "Gib deinen Code erneut ein"
+        },
         "accounts": {
             "title": "Konten",
             "review_title": "Zu prüfende Konten",
@@ -698,9 +708,10 @@
             "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut."
         },
         "restore": {
-            "sheet_title": "Aus Backup wiederherstellen",
-            "sheet_description": "Gib deine 12-Wort-Backup-Phrase und deinen Verschlüsselungsschlüssel ein, um deine Konten auf diesem Gerät wiederherzustellen.",
-            "sheet_continue": "Weiter",
+            "sheet_title": "Backup wiederherstellen/abrufen",
+            "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",
+            "sheet_scan": "QR-Code scannen",
+            "sheet_manual": "Details manuell eingeben",
             "passphrase_title": "Gib deine Backup-Phrase ein",
             "passphrase_continue": "Weiter",
             "too_many_words_title": "Ungültige Backup-Phrase",
@@ -717,6 +728,16 @@
             "success": "Backup wiederhergestellt",
             "partial_success": "{{count}} Konten konnten nicht wiederhergestellt werden.",
             "partial_success_one": "{{count}} Konto konnte nicht wiederhergestellt werden."
+        },
+        "restore_scan": {
+            "title": "QR-Code scannen",
+            "instructions": "Öffne Cloud-Backup auf deinem anderen Gerät, wähle „Mit anderen Geräten synchronisieren“ und scanne den angezeigten Code.",
+            "scan_button": "Kamera öffnen",
+            "code_title": "Gib den 6-stelligen Code ein",
+            "invalid_qr_title": "Kein Backup-QR-Code",
+            "invalid_qr_body": "Scanne den Code, den „Mit anderen Geräten synchronisieren“ auf deinem anderen Gerät anzeigt.",
+            "unsupported_version_title": "Aktualisiere Pera, um fortzufahren",
+            "unsupported_version_body": "Dieser QR-Code wurde mit einer neueren Version von Pera erstellt."
         }
     },
     "common": {

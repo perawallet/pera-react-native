@@ -187,7 +187,7 @@ export const CloudBackupOverviewScreen = () => {
                                 'cloud_backup.overview.sync_devices_description',
                             )}
                             showChevron
-                            onPress={onPressSyncDevices}
+                            onPress={() => void onPressSyncDevices()}
                             testID='cloud_backup_overview_sync_devices'
                         />
                         <OverviewRow

@@ -44,7 +44,7 @@ export const CloudBackupScreen = () => {
                     titleWeight='h3'
                     title={t('cloud_backup.main.restore_title')}
                     description={t('cloud_backup.main.restore_description')}
-                    onPress={handleRestoreBackup}
+                    onPress={() => void handleRestoreBackup()}
                     testID='cloud_backup_restore_option'
                 />
             </PWView>

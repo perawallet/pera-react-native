@@ -23,13 +23,12 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
-import { usePinCode } from '@perawallet/wallet-core-security'
 import {
     formatDatetime,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { PinEditContent } from '@modules/security'
+import { useRequirePinVerification } from '@modules/security'
 import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
 import {
     TurnOffBackupSheet,
@@ -39,6 +38,7 @@ import {
     useDisableCloudBackup,
     useBackupSync,
     useRemoveCloudBackup,
+    useSyncDevicesQr,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -56,7 +56,7 @@ type UseCloudBackupOverviewResult = {
     onPressContacts: () => void
     onPressCredentialAddress: () => Promise<void>
     onPressCredentialInfo: () => void
-    onPressSyncDevices: () => void
+    onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
 }
 
@@ -78,13 +78,14 @@ const STATUS_TO_BADGE: Record<BackupSyncStatus, SyncBadge | null> = {
 }
 
 export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
-    const { checkPinEnabled } = usePinCode()
+    const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
     const { disableBackup } = useDisableCloudBackup()
     const { removeBackup } = useRemoveCloudBackup()
-    const { syncNow, isSyncing } = useBackupSync()
+    const { isSyncing } = useBackupSync()
+    const { showSyncQr } = useSyncDevicesQr()
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
@@ -138,22 +139,8 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         [navigation],
     )
 
-    const verifyPinIfEnabled = useCallback(async (): Promise<boolean> => {
-        const pinEnabled = await checkPinEnabled()
-        if (!pinEnabled) return true
-        const verified = await requestBottomSheet<boolean>({
-            contents: <PinEditContent mode='verify' />,
-            options: {
-                size: 'full',
-                enablePanDownToClose: false,
-                enableCloseOnBackdropPress: false,
-            },
-        })
-        return verified === true
-    }, [checkPinEnabled, requestBottomSheet])
-
     const onPressCredentialAddress = useCallback(async () => {
-        if (!(await verifyPinIfEnabled())) return
+        if (!(await requirePinVerification())) return
 
         await requestBottomSheet({
             contents: <BackupCredentialsSheet />,
@@ -163,7 +150,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [verifyPinIfEnabled, requestBottomSheet])
+    }, [requirePinVerification, requestBottomSheet])
 
     const onPressTurnOff = useCallback(async () => {
         const choice = await requestBottomSheet<TurnOffBackupChoice>({
@@ -171,7 +158,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!choice) return
-        if (!(await verifyPinIfEnabled())) return
+        if (!(await requirePinVerification())) return
 
         switch (choice) {
             case 'turnOff': {
@@ -187,11 +174,12 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 return exhaustiveCheck
             }
         }
-    }, [requestBottomSheet, verifyPinIfEnabled, disableBackup, removeBackup])
-
-    const onPressSyncDevices = useCallback(() => {
-        void syncNow()
-    }, [syncNow])
+    }, [
+        requestBottomSheet,
+        requirePinVerification,
+        disableBackup,
+        removeBackup,
+    ])
 
     return {
         syncStatus: STATUS_TO_BADGE[status],
@@ -205,7 +193,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressContacts,
         onPressCredentialAddress,
         onPressCredentialInfo: noop,
-        onPressSyncDevices,
+        onPressSyncDevices: showSyncQr,
         onPressTurnOff,
     }
 }

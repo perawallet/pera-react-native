@@ -15,13 +15,20 @@ import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { getTestProps } from '@utils/test-id-helper'
 import { Pressable } from 'react-native'
 import { PinEditView, type PinEntryMode } from '../PinEditView'
-import type { SavePinHandlerResult } from '../PinEditView/usePinEditView'
+import type { PinConfirmedResult } from '../PinEditView/usePinEditView'
 import { useStyles } from './styles'
 
 export type PinEditContentProps = {
     mode: PinEntryMode
     testID?: string
-    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
+    onPinConfirmed?: (pin: string) => Promise<PinConfirmedResult>
+    /**
+     * Overrides the `setup` step's title, not the toolbar's. Ignored in the
+     * verify modes.
+     */
+    title?: string
+    /** Overrides the `confirm` step's title. */
+    confirmTitle?: string
 }
 
 /**
@@ -33,7 +40,9 @@ export type PinEditContentProps = {
 export const PinEditContent = ({
     mode,
     testID,
-    savePinHandler,
+    onPinConfirmed,
+    title,
+    confirmTitle,
 }: PinEditContentProps) => {
     const styles = useStyles()
     const { resolve, dismiss } = useBottomSheetResult<boolean>()
@@ -58,7 +67,9 @@ export const PinEditContent = ({
             <PinEditView
                 mode={mode}
                 onSuccess={() => resolve(true)}
-                savePinHandler={savePinHandler}
+                onPinConfirmed={onPinConfirmed}
+                title={title}
+                confirmTitle={confirmTitle}
             />
         </PWView>
     )

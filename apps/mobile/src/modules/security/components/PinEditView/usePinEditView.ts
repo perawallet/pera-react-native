@@ -18,7 +18,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
-export type SavePinHandlerResult =
+export type PinConfirmedResult =
     | { ok: true }
     | { ok: false; reason: 'matches-regular-pin' }
 
@@ -26,12 +26,20 @@ type UsePinEditViewParams = {
     mode: PinEntryMode
     onSuccess?: () => void
     /**
-     * Overrides the default `savePin(pin)` call at the end of a setup→confirm
-     * flow. Use to set up a secondary PIN (e.g. the duress PIN) that needs
-     * additional validation. Returning `{ ok: false }` shows the standard
-     * error animation and resets the flow back to `setup`.
+     * Takes over from the default `savePin(pin)` at the end of a setup→confirm
+     * flow: the caller decides what the confirmed code is for, whether that is
+     * persisting it elsewhere (the duress PIN) or never persisting it at all.
+     * Returning `{ ok: false }` shows the standard error animation and resets
+     * the flow back to `setup`.
      */
-    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
+    onPinConfirmed?: (pin: string) => Promise<PinConfirmedResult>
+    /**
+     * Overrides the `setup` step's title. Use when the code being collected
+     * is not the app PIN, so the two never read as the same thing.
+     */
+    title?: string
+    /** Overrides the `confirm` step's title. */
+    confirmTitle?: string
 }
 
 type UsePinEditViewResult = {
@@ -48,7 +56,9 @@ const isVerifyMode = (mode: Nullable<PinEntryMode>): boolean =>
 export const usePinEditView = ({
     mode,
     onSuccess,
-    savePinHandler,
+    onPinConfirmed,
+    title: titleOverride,
+    confirmTitle,
 }: UsePinEditViewParams): UsePinEditViewResult => {
     const { t } = useLanguage()
     const {
@@ -69,10 +79,10 @@ export const usePinEditView = ({
     const title = useMemo(() => {
         switch (currentMode) {
             case 'setup': {
-                return t('security.pin.setup_title')
+                return titleOverride ?? t('security.pin.setup_title')
             }
             case 'confirm': {
-                return t('security.pin.confirm_title')
+                return confirmTitle ?? t('security.pin.confirm_title')
             }
             case 'verify': {
                 return t('security.pin.verify_title')
@@ -84,7 +94,7 @@ export const usePinEditView = ({
                 return ''
             }
         }
-    }, [currentMode, t])
+    }, [currentMode, t, titleOverride, confirmTitle])
 
     // Auto-prompt biometrics when entering a verification step. The user's
     // security settings drive which factor is used: if biometrics is enabled,
@@ -167,16 +177,16 @@ export const usePinEditView = ({
                 }
                 case 'confirm': {
                     if (pin === storedPin) {
-                        if (savePinHandler) {
-                            const result = await savePinHandler(pin)
+                        if (onPinConfirmed) {
+                            const result = await onPinConfirmed(pin)
                             if (result.ok) {
                                 setHasError(false)
                                 onSuccess?.()
                             } else {
-                                // Save was rejected by the handler — most
-                                // common case is the duress PIN matching the
-                                // regular PIN. Reset back to setup so the
-                                // user re-enters from scratch.
+                                // Rejected by the handler — most common
+                                // case is the duress PIN matching the regular
+                                // PIN. Reset back to setup so the user
+                                // re-enters from scratch.
                                 setStoredPin('')
                                 setCurrentMode('setup')
                                 setHasError(true)
@@ -226,7 +236,7 @@ export const usePinEditView = ({
             handleFailedAttempt,
             resetFailedAttempts,
             onSuccess,
-            savePinHandler,
+            onPinConfirmed,
         ],
     )
 

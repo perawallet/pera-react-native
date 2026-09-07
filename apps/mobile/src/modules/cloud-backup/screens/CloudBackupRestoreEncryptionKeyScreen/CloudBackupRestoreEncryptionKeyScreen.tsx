@@ -21,7 +21,14 @@ import { useStyles } from './styles'
 
 const SCREEN_CAPTURE_TAG = 'cloud-backup-restore-key'
 
-export const CloudBackupRestoreEncryptionKeyScreen = () => {
+export type CloudBackupRestoreEncryptionKeyScreenProps = {
+    /** Where to go once the keys are in; see `useRestoreOutcome`. */
+    onDone: () => void
+}
+
+export const CloudBackupRestoreEncryptionKeyScreen = ({
+    onDone,
+}: CloudBackupRestoreEncryptionKeyScreenProps) => {
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const styles = useStyles()
     const {
@@ -31,7 +38,7 @@ export const CloudBackupRestoreEncryptionKeyScreen = () => {
         canRestore,
         handleKeyChange,
         handleRestore,
-    } = useCloudBackupRestoreEncryptionKeyScreen()
+    } = useCloudBackupRestoreEncryptionKeyScreen({ onDone })
 
     return (
         <>

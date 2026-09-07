@@ -32,6 +32,10 @@ import { DeeplinkType } from '@hooks/deeplink/types'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
+    RestoreBackupSheet,
+    type RestoreBackupSheetResult,
+} from '@modules/cloud-backup'
+import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
@@ -148,7 +152,7 @@ export const useImportAccountOptionsScreen =
 
         // Restoring over a device that already holds a backup would replace
         // the local backup identity, orphaning what this device pushed.
-        const handleImportCloudBackup = useCallback(() => {
+        const handleImportCloudBackup = useCallback(async () => {
             if (isCloudBackupConfigured) {
                 errorToast(
                     t(
@@ -161,8 +165,23 @@ export const useImportAccountOptionsScreen =
                 return
             }
 
-            navigation.push('CloudBackupRestorePassphrase')
-        }, [isCloudBackupConfigured, errorToast, t, navigation])
+            const result = await requestBottomSheet<RestoreBackupSheetResult>({
+                contents: <RestoreBackupSheet />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (!result) return
+            navigation.push(
+                result === 'scan'
+                    ? 'CloudBackupRestoreScan'
+                    : 'CloudBackupRestorePassphrase',
+            )
+        }, [
+            isCloudBackupConfigured,
+            errorToast,
+            t,
+            requestBottomSheet,
+            navigation,
+        ])
 
         const handleImportQuantum = useCallback(() => {
             navigation.push('ImportAccount', { accountType: 'quantum' })
@@ -250,7 +269,7 @@ export const useImportAccountOptionsScreen =
                               descriptionKey:
                                   'onboarding.import_account_options.cloud_backup_description',
                               leftIcon: 'cloud-download' as IconName,
-                              onPress: handleImportCloudBackup,
+                              onPress: () => void handleImportCloudBackup(),
                           },
                       ]
                     : []),

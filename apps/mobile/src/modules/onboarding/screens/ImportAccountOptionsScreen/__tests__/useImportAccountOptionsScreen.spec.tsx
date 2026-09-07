@@ -20,7 +20,10 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { DeeplinkType } from '@hooks/deeplink/types'
-import { useImportAccountOptionsScreen } from '../useImportAccountOptionsScreen'
+import {
+    useImportAccountOptionsScreen,
+    type UseImportAccountOptionsScreenResult,
+} from '../useImportAccountOptionsScreen'
 
 const mockPush = vi.fn()
 const mockGoBack = vi.fn()
@@ -103,6 +106,22 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         selector: (state: { isConfigured: () => boolean }) => unknown,
     ) => selector({ isConfigured: () => mockCloudBackupState.isConfigured }),
 }))
+
+vi.mock('@modules/cloud-backup', () => ({
+    RestoreBackupSheet: () => null,
+}))
+
+const pressCloudBackupOption = async (result: {
+    current: UseImportAccountOptionsScreenResult
+}) => {
+    const option = result.current.options.find(
+        o => o.testID === 'import_account_options_cloud_backup_button',
+    )!
+
+    await act(async () => {
+        await option.onPress()
+    })
+}
 
 describe('useImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
@@ -505,42 +524,54 @@ describe('useImportAccountOptionsScreen', () => {
             )
         })
 
-        it('navigates to the backup passphrase screen on press', () => {
+        it('pushes the scanner when the restore sheet returns scan', async () => {
             mockCloudBackupFlag.enabled = true
+            mockRequestBottomSheet.mockResolvedValue('scan')
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const cloudBackupOption = result.current.options.find(
-                o => o.testID === 'import_account_options_cloud_backup_button',
-            )!
+            await pressCloudBackupOption(result)
 
-            act(() => {
-                cloudBackupOption.onPress()
-            })
+            expect(mockPush).toHaveBeenCalledWith('CloudBackupRestoreScan')
+        })
+
+        it('pushes manual entry when the restore sheet returns manual', async () => {
+            mockCloudBackupFlag.enabled = true
+            mockRequestBottomSheet.mockResolvedValue('manual')
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressCloudBackupOption(result)
 
             expect(mockPush).toHaveBeenCalledWith(
                 'CloudBackupRestorePassphrase',
             )
         })
 
-        it('shows an error instead of navigating when a backup is already configured on this device', () => {
+        it('pushes nothing when the restore sheet is dismissed', async () => {
+            mockCloudBackupFlag.enabled = true
+            mockRequestBottomSheet.mockResolvedValue(undefined)
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressCloudBackupOption(result)
+
+            expect(mockPush).not.toHaveBeenCalled()
+        })
+
+        it('shows an error without opening the sheet when a backup is already configured on this device', async () => {
             mockCloudBackupFlag.enabled = true
             mockCloudBackupState.isConfigured = true
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const cloudBackupOption = result.current.options.find(
-                o => o.testID === 'import_account_options_cloud_backup_button',
-            )!
-
-            act(() => {
-                cloudBackupOption.onPress()
-            })
+            await pressCloudBackupOption(result)
 
             expect(mockErrorToast).toHaveBeenCalledWith(
                 'onboarding.import_account_options.cloud_backup_already_enabled_title',
                 'onboarding.import_account_options.cloud_backup_already_enabled_body',
             )
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
             expect(mockPush).not.toHaveBeenCalled()
         })
     })

@@ -625,6 +625,16 @@
             "turn_off": "Desativar o backup na nuvem",
             "turn_off_description": "Parar de sincronizar dados com a nuvem"
         },
+        "sync_devices": {
+            "title": "Sincronizar com outros dispositivos",
+            "description": "Escaneie este código QR com seu outro dispositivo e digite o código que você acabou de escolher para começar a sincronizar.",
+            "warning": "Uma foto deste QR pode ser decifrada com tempo suficiente. Não deixe ninguém fotografá-lo e não compartilhe seu código de 6 dígitos.",
+            "error": "Não foi possível criar o código QR de sincronização neste dispositivo."
+        },
+        "encryption_code": {
+            "setup_title": "Escolha um código de 6 dígitos para proteger este QR",
+            "confirm_title": "Digite novamente seu código"
+        },
         "accounts": {
             "title": "Contas",
             "review_title": "Contas para revisar",
@@ -706,9 +716,10 @@
             "error": "Não foi possível excluir o backup na nuvem. Tente novamente."
         },
         "restore": {
-            "sheet_title": "Restaurar de um backup",
-            "sheet_description": "Digite sua frase de backup de 12 palavras e sua chave de criptografia para restaurar suas contas neste dispositivo.",
-            "sheet_continue": "Continuar",
+            "sheet_title": "Restaurar/recuperar um backup",
+            "sheet_description": "Restaure seu backup escaneando um código QR ou digitando suas credenciais manualmente.",
+            "sheet_scan": "Escanear código QR",
+            "sheet_manual": "Inserir dados manualmente",
             "passphrase_title": "Digite sua frase de backup",
             "passphrase_continue": "Continuar",
             "too_many_words_title": "Frase de backup inválida",
@@ -725,6 +736,16 @@
             "success": "Backup restaurado",
             "partial_success": "Não foi possível restaurar {{count}} contas.",
             "partial_success_one": "Não foi possível restaurar {{count}} conta."
+        },
+        "restore_scan": {
+            "title": "Escanear código QR",
+            "instructions": "Abra Backup na nuvem no seu outro dispositivo, escolha “Sincronizar com outros dispositivos” e escaneie o código exibido.",
+            "scan_button": "Abrir a câmera",
+            "code_title": "Digite o código de 6 dígitos",
+            "invalid_qr_title": "Não é um código QR de backup",
+            "invalid_qr_body": "Escaneie o código exibido por “Sincronizar com outros dispositivos” no seu outro dispositivo.",
+            "unsupported_version_title": "Atualize a Pera para continuar",
+            "unsupported_version_body": "Este código QR foi criado por uma versão mais recente da Pera."
         }
     },
     "common": {
