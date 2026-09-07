@@ -19,6 +19,27 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
+ * Bodies live under `errors.signing` next to the existing title so the app
+ * layer resolves both from one key family.
+ */
+export const SIGNING_ERROR_KEYS = {
+    title: 'errors.signing.title',
+    localKeyFailed: 'errors.signing.local_key_failed',
+    cannotSign: 'errors.signing.cannot_sign',
+} as const
+
+export type SigningErrorOptions = {
+    retryable?: boolean
+    /**
+     * i18n body key. Set by the local-key strategy from the cause (a KMS
+     * error) or its own fallback; left unset by the hardware/multisig
+     * paths, which keep the generic banner they have today.
+     */
+    messageKey?: string
+    params?: Record<string, unknown>
+}
+
+/**
  * Base pipeline error
  */
 export class PipelineError extends AppError {
@@ -63,6 +84,8 @@ export class CannotSignError extends PipelineError {
                 : `Cannot sign with account ${address}`,
             undefined,
             {
+                messageKey: SIGNING_ERROR_KEYS.cannotSign,
+                titleKey: SIGNING_ERROR_KEYS.title,
                 params: { address, reason },
             },
         )
@@ -113,10 +136,17 @@ export class SigningError extends PipelineError {
     constructor(
         message: string,
         originalError?: Error,
-        options?: { retryable?: boolean },
+        options?: SigningErrorOptions,
     ) {
         super(`Signing failed: ${message}`, originalError, {
             retryable: options?.retryable ?? true,
+            ...(options?.messageKey
+                ? {
+                      messageKey: options.messageKey,
+                      titleKey: SIGNING_ERROR_KEYS.title,
+                      params: options.params,
+                  }
+                : {}),
         })
     }
 }
