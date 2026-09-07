@@ -297,8 +297,8 @@
     "accounts": {
         "legacyQuantum": {
             "title": "Sobre tu cuenta Quantum",
-            "body": "Descubrimos, lamentablemente, un problema en la versión 7.1.0 con la forma en que se deriva la dirección de las cuentas Quantum a partir de tus 25 palabras, lo que la hace incompatible con otras herramientas.\n\nTus fondos están seguros y tu cuenta funciona con normalidad.\n\nSin embargo, para evitar problemas de compatibilidad, te recomendamos crear una nueva cuenta Quantum y mover tus fondos, para que tu frase de recuperación funcione en todas partes.\n\nLamentamos las molestias y te agradecemos tu comprensión.",
-            "bodyWithDependents": "Descubrimos, lamentablemente, un problema en la versión 7.1.0 con la forma en que se deriva la dirección de las cuentas Quantum a partir de tus 25 palabras, lo que la hace incompatible con otras herramientas.\n\nTus fondos están seguros y tu cuenta funciona con normalidad.\n\nOtra cuenta tiene un rekey a esta, así que todavía no te alejes de ella: por ahora es su única firmante. Sin embargo, para evitar problemas de compatibilidad, te recomendamos crear una nueva cuenta Quantum y mover tus fondos en cuanto hayas hecho el rekey de la otra cuenta, para que tu frase de recuperación funcione en todas partes.\n\nLamentamos las molestias y te agradecemos tu comprensión.",
+            "body": "Descubrimos, lamentablemente, un problema en la versión 7.1.0 con la forma en que se deriva la dirección de las cuentas Quantum a partir de tus 25 palabras, lo que la hace incompatible con otras herramientas.\n\nTus fondos están seguros y tu cuenta funciona con normalidad.\n\nSin embargo, para evitar problemas de compatibilidad, te recomendamos crear una nueva cuenta Quantum y mover tus fondos, para que tu passphrase de recuperación funcione en todas partes.\n\nLamentamos las molestias y te agradecemos tu comprensión.",
+            "bodyWithDependents": "Descubrimos, lamentablemente, un problema en la versión 7.1.0 con la forma en que se deriva la dirección de las cuentas Quantum a partir de tus 25 palabras, lo que la hace incompatible con otras herramientas.\n\nTus fondos están seguros y tu cuenta funciona con normalidad.\n\nOtra cuenta tiene un rekey a esta, así que todavía no te alejes de ella: por ahora es su única firmante. Sin embargo, para evitar problemas de compatibilidad, te recomendamos crear una nueva cuenta Quantum y mover tus fondos en cuanto hayas hecho el rekey de la otra cuenta, para que tu passphrase de recuperación funcione en todas partes.\n\nLamentamos las molestias y te agradecemos tu comprensión.",
             "markerLabel": "Sobre esta cuenta Quantum",
             "dismiss": "Entendido"
         }
@@ -462,9 +462,9 @@
             "title": "Mantenla en secreto. Mantenla a salvo.",
             "description": "Confirma que reconoces lo siguiente:",
             "row_screen": "Nadie puede ver mi pantalla.",
-            "row_share": "Me arriesgo a perder todos mis fondos si comparto mi frase de recuperación con alguien.",
-            "row_lose": "Mis fondos se perderán de forma permanente si pierdo mi frase de recuperación y pierdo el acceso a mi wallet.",
-            "row_pera": "Los empleados de Pera NUNCA me pedirán mi frase de recuperación.",
+            "row_share": "Me arriesgo a perder todos mis fondos si comparto mi passphrase de recuperación con alguien.",
+            "row_lose": "Mis fondos se perderán de forma permanente si pierdo mi passphrase de recuperación y pierdo el acceso a mi wallet.",
+            "row_pera": "Los empleados de Pera NUNCA me pedirán mi passphrase de recuperación.",
             "cta_reveal": "Mostrar passphrase",
             "cta_cancel": "Cancelar"
         },
@@ -1539,23 +1539,23 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Selecciona tu tipo de mnemónica",
+            "title": "Selecciona tu tipo de passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet que te permite derivar cuentas nuevas, todas con la misma mnemónica",
+                "description": "Wallet que te permite derivar cuentas nuevas, todas con la misma passphrase",
                 "chip": "nuevo"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Formato antiguo, específico del ecosistema Algorand",
                 "chip": "antiguo",
-                "mnemonic_info": "Claves mnemónicas de 25 palabras"
+                "mnemonic_info": "Passphrase de 25 palabras"
             },
-            "mnemonic_info": "Claves mnemónicas de 24 palabras"
+            "mnemonic_info": "Passphrase de 24 palabras"
         },
         "import_info": {
             "title": "Recuperar una wallet de Algorand",
-            "body": "En los siguientes pasos introducirás tu passphrase de recuperación para recuperar una wallet de Algorand. Ten tu frase de recuperación a mano antes de empezar.",
+            "body": "En los siguientes pasos introducirás tu passphrase de recuperación para recuperar una wallet de Algorand. Ten tu passphrase de recuperación a mano antes de empezar.",
             "button": "Recuperar una wallet de Algorand"
         },
         "import_account": {
@@ -1648,7 +1648,7 @@
             "watch_address_option_title": "Observar una dirección",
             "watch_address_option_description": "Sigue la actividad de una dirección de Algorand introduciéndola",
             "create_universal_wallet_option_title": "Crear una Universal Wallet",
-            "create_universal_wallet_option_description": "Wallet que te permite derivar cuentas nuevas, todas con la misma mnemónica de 24 palabras",
+            "create_universal_wallet_option_description": "Wallet que te permite derivar cuentas nuevas, todas con la misma passphrase de 24 palabras",
             "create_algo25_option_title": "Crear una cuenta Algo25",
             "create_algo25_option_description": "Formato antiguo, específico de Algorand",
             "quantum_account_option_title": "Añadir cuenta Quantum",
@@ -1884,7 +1884,7 @@
                 "learn_more": "Más información",
                 "expect_label": "Qué esperar",
                 "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave de la nueva cuenta.",
-                "expect_2": "Haz una copia de seguridad de la frase de recuperación de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_2": "Haz una copia de seguridad de la passphrase de recuperación de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
                 "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
                 "expect_4": "Si más adelante cierras esta cuenta, el rekey se elimina. Si vuelves a enviar fondos a la dirección, el control regresa a la clave original y no a la cuenta que estás configurando ahora.",
                 "cta": "Iniciar proceso"
@@ -1922,7 +1922,7 @@
                 "learn_more": "Más información",
                 "expect_label": "Qué esperar",
                 "expect_1": "Las futuras transacciones de esta cuenta solo podrán firmarse con la clave post-cuántica de la cuenta cuántica.",
-                "expect_2": "Haz una copia de seguridad de la frase de recuperación de 25 palabras de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
+                "expect_2": "Haz una copia de seguridad de la passphrase de recuperación de 25 palabras de esa cuenta antes de continuar. Si la pierdes, pierdes la capacidad de firmar por esta cuenta, aunque todo lo demás siga intacto.",
                 "expect_3": "La dirección, los saldos y la configuración de tu cuenta no cambiarán.",
                 "expect_4": "Las futuras transacciones pagarán una comisión de red mínima más alta, y volver a hacer rekey a una cuenta estándar requerirá a su vez una transacción firmada con la clave cuántica.",
                 "cta": "Iniciar proceso"
@@ -2821,8 +2821,8 @@
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "success_sheet_return_to_dapp": "Volver a {{name}}",
             "success_sheet_return_to_dapp_generic": "Volver a la dApp",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "networks_betanet": "Betanet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Tu solicitud de WalletConnect ha fallado con el siguiente error:",

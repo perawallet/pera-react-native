@@ -297,8 +297,8 @@
     "accounts": {
         "legacyQuantum": {
             "title": "About your quantum account",
-            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
-            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery passphrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery passphrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
             "markerLabel": "About this quantum account",
             "dismiss": "Got it"
         }
@@ -462,9 +462,9 @@
             "title": "Keep it secret. Keep it safe.",
             "description": "Confirm and acknowledge the following:",
             "row_screen": "Nobody can see my screen.",
-            "row_share": "I risk losing all my funds if I share my Recovery Phrase with anyone.",
-            "row_lose": "My funds are permanently lost if I lose my Recovery Phrase and lose access to my wallet.",
-            "row_pera": "Pera employees will NEVER ask for my Recovery Phrase.",
+            "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
+            "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
+            "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
             "cta_reveal": "Reveal Passphrase",
             "cta_cancel": "Cancel"
         },
@@ -1539,23 +1539,23 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Select your mnemonic type",
+            "title": "Select your passphrase type",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you derive new accounts, all using the same mnemonic",
+                "description": "Wallet that lets you derive new accounts, all using the same passphrase",
                 "chip": "new"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Legacy format that is specific to Algorand ecosystem",
                 "chip": "legacy",
-                "mnemonic_info": "25 words mnemonic keys"
+                "mnemonic_info": "25-word passphrase"
             },
-            "mnemonic_info": "24 words mnemonic keys"
+            "mnemonic_info": "24-word passphrase"
         },
         "import_info": {
             "title": "Recover an Algorand Wallet",
-            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery phrase handy before you begin.",
+            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery passphrase handy before you begin.",
             "button": "Recover an Algorand Wallet"
         },
         "import_account": {
@@ -1648,7 +1648,7 @@
             "watch_address_option_title": "Watch an Address",
             "watch_address_option_description": "Monitor an Algorand address by providing its address",
             "create_universal_wallet_option_title": "Create a Universal Wallet",
-            "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24 word mnemonic",
+            "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24-word passphrase",
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "quantum_account_option_title": "Add Quantum Account",
@@ -1884,7 +1884,7 @@
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
                 "expect_1": "Future transactions for this account can only be signed by the new account's key.",
-                "expect_2": "Back up that account's recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_2": "Back up that account's recovery passphrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
                 "expect_3": "Your account's address, balances, and configuration will not change.",
                 "expect_4": "If you close out this account later, the rekey is removed. Funding the address again restores control to the original key, not the account you're setting up now.",
                 "cta": "Start process"
@@ -1922,7 +1922,7 @@
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
                 "expect_1": "Future transactions for this account can only be signed by the quantum account's post-quantum key.",
-                "expect_2": "Back up that account's 25-word recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_2": "Back up that account's 25-word recovery passphrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
                 "expect_3": "Your account's address, balances, and configuration will not change.",
                 "expect_4": "Future transactions will pay a higher minimum network fee, and rekeying back to a standard account will itself require a quantum-signed transaction.",
                 "cta": "Start process"
@@ -2821,8 +2821,8 @@
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",
             "success_sheet_return_to_dapp_generic": "Return to the dApp",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "networks_betanet": "Betanet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
