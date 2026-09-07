@@ -307,6 +307,70 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
+// Locks the same way the auto-lock alarm does: the service worker drops the
+// session master key. The approval surface is behind VaultGate, so a locked
+// vault must show the unlock form and never the signing review; unlocking in
+// place must then let the very same request through.
+test('a locked vault shows the unlock form instead of the signing review, and signs once unlocked', async () => {
+    // MV3 may have terminated the worker by now; wait for it the way
+    // beforeAll does rather than dereferencing undefined.
+    let [serviceWorker] = context.serviceWorkers()
+    if (!serviceWorker) {
+        serviceWorker = await context.waitForEvent('serviceworker')
+    }
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.session.remove('vault:master-key')
+    })
+
+    const expectedGenesisHash = getNetworkConfig(Networks.mainnet).genesisHash
+    const unsignedTxnB64 = buildUnsignedPaymentTxn(
+        grantedAddress,
+        expectedGenesisHash,
+        'mainnet-v1.0',
+    )
+    await dappPage.evaluate(txn => window.signTxns([{ txn }]), unsignedTxnB64)
+    const { approvalPage, approvalErrors } = await openApprovalPopup()
+    expectApprovalSurfaceUrl(approvalPage)
+
+    await expect(approvalPage.getByTestId('unlock-password-input')).toBeVisible(
+        {
+            timeout: 20_000,
+        },
+    )
+    await expect(approvalPage.getByTestId('signing-confirm-slide')).toHaveCount(
+        0,
+    )
+
+    await approvalPage.getByTestId('unlock-password-input').fill(PASSWORD)
+    await approvalPage.getByTestId('unlock-submit').click()
+
+    const confirmControl = approvalPage.getByTestId('signing-confirm-slide')
+    await expect(confirmControl).toBeVisible({ timeout: 20_000 })
+    await confirmControl.click()
+    await confirmControl.click()
+
+    await expect
+        .poll(
+            async () =>
+                (await dappPage.locator('#sign-result').textContent()) ||
+                (await dappPage.locator('#sign-error').textContent()) ||
+                '',
+            { timeout: 20_000 },
+        )
+        .not.toBe('')
+    expect(
+        await dappPage.locator('#sign-error').textContent(),
+        'the wallet declined the sign request',
+    ).toBe('')
+    const signResult = JSON.parse(
+        (await dappPage.locator('#sign-result').textContent()) ?? '{}',
+    ) as { stxns?: string[] }
+    expect(signResult.stxns?.length).toBe(1)
+
+    expect(approvalErrors, 'approval popup threw an uncaught error').toEqual([])
+    expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
+})
+
 test('closing the approval popup rejects with MethodCanceledError', async () => {
     const expectedGenesisHash = getNetworkConfig(Networks.mainnet).genesisHash
     const unsignedTxnB64 = buildUnsignedPaymentTxn(
