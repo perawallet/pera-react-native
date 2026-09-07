@@ -151,7 +151,7 @@ export const useAccountValueTotalsQuery = (
                 // all — `null`, not 0. Pricing 10 ALGO at $0.00 is the fake
                 // number the offline epic forbids. Networks with no Pera
                 // backend are excluded: a zero rate is the deliberate answer
-                // there (PERA-4928), not a missing one.
+                // there, not a missing one.
                 const usdValue =
                     usdAlgoPrice.isZero() &&
                     !algoAmount.isZero() &&

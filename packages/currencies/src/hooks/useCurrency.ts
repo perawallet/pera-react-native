@@ -65,7 +65,7 @@ export const useCurrency = (): UseCurrencyResult => {
 
     // A zero rate normally means "not synced yet" — no real currency trades at
     // 0 against USD. But on a network with no Pera backend the API layer
-    // synthesizes a zero rate on purpose so fiat renders as 0 (PERA-4928), and
+    // synthesizes a zero rate on purpose so fiat renders as 0, and
     // that is a resolved answer, not an absence. Treating it as pending there
     // would swap those networks' 0 for a placeholder while fully online.
     const isZeroRateUnresolved = isPeraBackedNetwork(network)

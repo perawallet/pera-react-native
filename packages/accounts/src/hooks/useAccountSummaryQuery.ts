@@ -102,7 +102,7 @@ export const useAccountSummaryQuery = (
         // Valuing held ALGO needs that rate, so a never-synced install (no
         // price rows) can't express the USD total at all — `null`, not 0.
         // Networks with no Pera backend are excluded: a zero rate is the
-        // deliberate answer there (PERA-4928), not a missing one.
+        // deliberate answer there, not a missing one.
         // See useAccountValueTotalsQuery, which derives this identically.
         const portfolioUsdValue =
             usdAlgoPrice.isZero() &&
