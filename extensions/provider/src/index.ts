@@ -30,6 +30,7 @@ export {
     resolveEngineKey,
     type EngineKeySource,
 } from './keystore/engineKeySource'
+export type { ResealReport } from './keystore/resealTypes'
 export {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,
