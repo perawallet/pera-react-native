@@ -112,6 +112,7 @@ describe('createLocalKeyStrategy', () => {
     let signTransactions: ReturnType<typeof vi.fn>
     let signArbitraryData: ReturnType<typeof vi.fn>
     let signArc60: ReturnType<typeof vi.fn>
+    let errorSpy: ReturnType<typeof vi.spyOn>
 
     beforeEach(() => {
         signTransactions = vi
@@ -145,6 +146,13 @@ describe('createLocalKeyStrategy', () => {
             .mockImplementation(
                 (account: WalletAccount) => account.type === 'quantum',
             )
+        errorSpy = vi
+            .spyOn(logger, 'error')
+            .mockImplementation(() => undefined)
+    })
+
+    afterEach(() => {
+        errorSpy.mockRestore()
     })
 
     const makeStrategy = () =>
@@ -397,18 +405,9 @@ describe('createLocalKeyStrategy', () => {
         })
 
         describe('failure reporting', () => {
-            let errorSpy: ReturnType<typeof vi.spyOn>
-
             beforeEach(() => {
-                errorSpy = vi
-                    .spyOn(logger, 'error')
-                    .mockImplementation(() => undefined)
                 mocks.hasSigningKeys.mockReturnValue(true)
                 mocks.isAlgo25Account.mockReturnValue(true)
-            })
-
-            afterEach(() => {
-                errorSpy.mockRestore()
             })
 
             test('forwards a KMS cause key so the toast names the key fault', async () => {
