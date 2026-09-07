@@ -702,9 +702,11 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             useSendFundsStore.getState().setSendMode('normal')
             // The seed resolves (View Passphrase works) but the child's
             // signing material does not — the on-device shape this guards.
-            vi.spyOn(getProvider().key.store, 'sign').mockRejectedValue(
-                new KeyNotFoundError(sender.keyPairId ?? 'child'),
-            )
+            const signSpy = vi
+                .spyOn(getProvider().key.store, 'sign')
+                .mockRejectedValue(
+                    new KeyNotFoundError(sender.keyPairId ?? 'child'),
+                )
             const sendSpy = vi.fn(() =>
                 HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
             )
@@ -751,6 +753,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 sender.address,
             )
+            signSpy.mockRestore()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -765,9 +768,11 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             useSendFundsStore.getState().setSendMode('normal')
             // What keystore-core raises for a child whose sealed material
             // cannot be used: a plain Error, no i18n key of its own.
-            vi.spyOn(getProvider().key.store, 'sign').mockRejectedValue(
-                new Error('key child does not hold key bytes'),
-            )
+            const signSpy = vi
+                .spyOn(getProvider().key.store, 'sign')
+                .mockRejectedValue(
+                    new Error('key child does not hold key bytes'),
+                )
             const sendSpy = vi.fn(() =>
                 HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
             )
@@ -812,6 +817,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 sender.address,
             )
+            signSpy.mockRestore()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
