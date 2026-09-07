@@ -298,6 +298,49 @@ describe('resealLegacyMaterialWith', () => {
         )
     })
 
+    it('re-mints a leftover child on a later run after the legacy key is gone', async () => {
+        const db = await openDatabase('keystore', factory)
+        const seed = (await db.get<MaterialRecord>(MATERIAL_STORE, 'seed-1'))!
+        if (seed.kind !== 'bytes') throw new Error('fixture')
+        seed.ciphertext[0] ^= 0xff
+        await db.put(MATERIAL_STORE, seed)
+        db.close()
+
+        const firstReport = await resealLegacyMaterialWith(deps())
+
+        expect(firstReport.legacyKeyRemoved).toBe(true)
+        expect(firstReport.unrecoverable).toEqual(['seed-1', 'sign-1'])
+        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('cryptokey')
+        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+
+        await keystore.import(
+            {
+                id: 'seed-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: Uint8Array.from(SEED),
+                metadata: { scheme: 'algo25' },
+            },
+            'raw',
+        )
+
+        const secondReport = await resealLegacyMaterialWith(deps())
+
+        expect(secondReport).toEqual({
+            resealed: 0,
+            reminted: 1,
+            unrecoverable: [],
+            legacyKeyRemoved: false,
+        })
+        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('bytes')
+        expect(await readMaterial(factory, MASTER_KEY_ID)).toBeUndefined()
+        await expect(
+            keystore.sign('sign-1', Uint8Array.of(1)),
+        ).resolves.toHaveLength(64)
+    })
+
     it('removes only the legacy key from a profile whose records are all engine-sealed', async () => {
         await resealLegacyMaterialWith(deps())
         // `driver.clear()` preserves the reserved id, so a wipe between the

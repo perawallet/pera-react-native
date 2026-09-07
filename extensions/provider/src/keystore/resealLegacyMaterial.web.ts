@@ -111,12 +111,12 @@ const remintChild = async (
         safeWarn(`keystore seed ${parentKeyId} did not export`)
         return
     }
-    if (!ArrayBuffer.isView(seed)) {
+    if (!(seed instanceof Uint8Array)) {
         report.unrecoverable.push(record.id)
         safeWarn(`keystore seed ${parentKeyId} did not export`)
         return
     }
-    const seedBytes = seed as Uint8Array
+    const seedBytes = seed
     try {
         // Same id and fields as the original mint. Only `parentKeyId` is
         // carried over: core spreads caller metadata last, so passing the
@@ -153,6 +153,11 @@ const remintChild = async (
  *
  * `bytes` records go first — re-minting a child reads its parent seed through
  * the engine, which opens under the engine key.
+ *
+ * Phase two arms on its own evidence (a leftover `cryptokey` record), not on
+ * the legacy record's presence: a child whose re-mint fails on one run (a
+ * corrupt parent seed, a lock mid-sweep) must still be reachable on the next
+ * one, even after the legacy record — which phase two never reads — is gone.
  */
 export const resealLegacyMaterialWith = async (
     deps: ResealDeps,
@@ -171,22 +176,30 @@ export const resealLegacyMaterialWith = async (
             MATERIAL_STORE,
             MASTER_KEY_ID,
         )
-        if (!legacy || legacy.kind !== 'cryptokey') return report
-
-        const engineKey = await deps.resolveEngineKey()
+        const legacyKey =
+            legacy?.kind === 'cryptokey' ? legacy.privateKey : null
         const records = await db.getAll<MaterialRecord>(MATERIAL_STORE, [
             MASTER_KEY_ID,
         ])
-        for (const record of records) {
-            if (record.kind === 'bytes') {
-                await resealBytes(
-                    deps,
-                    db,
-                    engineKey,
-                    legacy.privateKey,
-                    record,
-                    report,
-                )
+        const hasCryptoKeyChild = records.some(
+            record => record.kind === 'cryptokey',
+        )
+        // A fully migrated profile costs one get and one getAll per unlock.
+        if (!legacyKey && !hasCryptoKeyChild) return report
+
+        const engineKey = await deps.resolveEngineKey()
+        if (legacyKey) {
+            for (const record of records) {
+                if (record.kind === 'bytes') {
+                    await resealBytes(
+                        deps,
+                        db,
+                        engineKey,
+                        legacyKey,
+                        record,
+                        report,
+                    )
+                }
             }
         }
         for (const record of records) {
@@ -194,10 +207,12 @@ export const resealLegacyMaterialWith = async (
                 await remintChild(deps, db, record, report)
             }
         }
-        // Everything it could open has been re-sealed; an unrecoverable
-        // record is no reason to keep a key that cannot open it either.
-        await db.delete(MATERIAL_STORE, MASTER_KEY_ID)
-        report.legacyKeyRemoved = true
+        if (legacyKey) {
+            // Everything it could open has been re-sealed; an unrecoverable
+            // record is no reason to keep a key that cannot open it either.
+            await db.delete(MATERIAL_STORE, MASTER_KEY_ID)
+            report.legacyKeyRemoved = true
+        }
         return report
     } finally {
         db.close()

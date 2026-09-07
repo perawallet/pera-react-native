@@ -17,6 +17,8 @@
  * close a cycle), so the dependency runs the other way. Platform-neutral file
  * on purpose — a `.web.ts`-only export does not typecheck through the
  * package index, which `tsc` resolves against the non-platform files.
+ * `resolveEngineKey` zeroes the returned array after import, so a source
+ * must return a fresh copy on every call.
  */
 export type EngineKeySource = () => Promise<Uint8Array>
 
