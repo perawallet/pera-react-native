@@ -822,8 +822,8 @@
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",
-            "local_key_failed": "La clé de signature de ce compte n'a pas pu être utilisée sur cet appareil. Veuillez réessayer et contacter l'assistance si le problème persiste.",
-            "cannot_sign": "Ce compte ne peut pas signer sur cet appareil. Veuillez réessayer et contacter l'assistance si le problème persiste."
+            "local_key_failed": "La clé de signature de ce compte n’a pas pu être utilisée sur cet appareil. Veuillez réessayer et contacter l’assistance si le problème persiste.",
+            "cannot_sign": "Ce compte ne peut pas signer sur cet appareil. Veuillez réessayer et contacter l’assistance si le problème persiste."
         },
         "webview": {
             "invalid_method": "Méthode invalide : {{method}}",
