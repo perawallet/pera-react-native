@@ -90,8 +90,8 @@ describe('createIndexedDBDriver with a masterKey provider', () => {
         ).rejects.toBe(locked)
     })
 
-    it('ready settles without the provider', async () => {
-        const provider = vi.fn(async () => aesKey())
+    it('ready does not call the provider', async () => {
+        const provider = vi.fn<() => Promise<CryptoKey>>()
         const driver = createIndexedDBDriver({
             host: subtle,
             indexedDB: new IDBFactory(),
@@ -112,5 +112,31 @@ describe('createIndexedDBDriver with a masterKey provider', () => {
         expect((await readMaterial(factory, MASTER_KEY_ID))?.kind).toBe(
             'cryptokey',
         )
+    })
+
+    it('never consults the provider for cryptokey material or metadata paths', async () => {
+        const provider = vi.fn<() => Promise<CryptoKey>>()
+        const driver = createIndexedDBDriver({
+            host: subtle,
+            indexedDB: new IDBFactory(),
+            masterKey: provider,
+        })
+        await driver.ready
+        const privateKey = await aesKey()
+
+        await driver.put('ck', { kind: 'cryptokey', privateKey })
+        await driver.use('ck', undefined, m => m.kind)
+        await driver.putMeta({
+            id: 'ck',
+            type: 'raw',
+            algorithm: 'AES-GCM',
+            extractable: false,
+        })
+        await driver.getMeta('ck')
+        await driver.listMeta()
+        await driver.remove('ck')
+        await driver.clear()
+
+        expect(provider).not.toHaveBeenCalled()
     })
 })
