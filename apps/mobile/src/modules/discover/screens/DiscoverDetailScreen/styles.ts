@@ -10,17 +10,23 @@
  limitations under the License
  */
 
-import { useRoute, type RouteProp } from '@react-navigation/native'
-import {
-    useDiscoverWebView,
-    type UseDiscoverWebViewResult,
-} from '@modules/discover/hooks'
-import type { TabBarStackParamList } from '@routes/tabbar'
+import { makeStyles } from '@rneui/themed'
 
-export type UseDiscoverScreenResult = UseDiscoverWebViewResult
-
-export const useDiscoverScreen = (): UseDiscoverScreenResult => {
-    const route = useRoute<RouteProp<TabBarStackParamList, 'Discover'>>()
-
-    return useDiscoverWebView(route.params?.path)
-}
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        webview: {
+            flexGrow: 1,
+            backgroundColor: theme.colors.background,
+        },
+        loadingContainer: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.background,
+        },
+    }
+})
