@@ -18,6 +18,7 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
     vi,
 } from 'vitest'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
@@ -707,6 +708,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 .mockRejectedValue(
                     new KeyNotFoundError(sender.keyPairId ?? 'child'),
                 )
+            onTestFinished(() => signSpy.mockRestore())
             const sendSpy = vi.fn(() =>
                 HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
             )
@@ -753,7 +755,6 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 sender.address,
             )
-            signSpy.mockRestore()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -773,6 +774,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 .mockRejectedValue(
                     new Error('key child does not hold key bytes'),
                 )
+            onTestFinished(() => signSpy.mockRestore())
             const sendSpy = vi.fn(() =>
                 HttpResponse.json({ txId: 'UNREACHED' }, { status: 200 }),
             )
@@ -817,7 +819,6 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 sender.address,
             )
-            signSpy.mockRestore()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
