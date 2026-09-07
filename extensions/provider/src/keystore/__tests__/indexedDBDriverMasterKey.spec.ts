@@ -82,9 +82,9 @@ describe('createIndexedDBDriver with a masterKey provider', () => {
         expect(provider).toHaveBeenCalledTimes(2)
 
         provider.mockRejectedValue(locked)
-        await expect(
-            driver.use('k1', undefined, () => undefined),
-        ).rejects.toBe(locked)
+        await expect(driver.use('k1', undefined, () => undefined)).rejects.toBe(
+            locked,
+        )
         await expect(
             driver.put('k2', { kind: 'bytes', bytes: Uint8Array.of(1) }),
         ).rejects.toBe(locked)
@@ -105,7 +105,10 @@ describe('createIndexedDBDriver with a masterKey provider', () => {
 
     it('keeps the auto-generated key when no provider is supplied', async () => {
         const factory = new IDBFactory()
-        const driver = createIndexedDBDriver({ host: subtle, indexedDB: factory })
+        const driver = createIndexedDBDriver({
+            host: subtle,
+            indexedDB: factory,
+        })
 
         await driver.ready
 

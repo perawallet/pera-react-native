@@ -27,7 +27,9 @@ import {
 // that is under test and the Ed25519 path below runs on the host Subtle.
 vi.mock('@algorandfoundation/keystore-core', async importOriginal => {
     const original =
-        await importOriginal<typeof import('@algorandfoundation/keystore-core')>()
+        await importOriginal<
+            typeof import('@algorandfoundation/keystore-core')
+        >()
     return { ...original, createDefaultShims: () => [] }
 })
 
@@ -57,8 +59,22 @@ const ed25519PublicKey = async (seed: Uint8Array): Promise<Uint8Array> => {
     const pkcs8 = new Uint8Array(48)
     pkcs8.set(
         Uint8Array.of(
-            0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65,
-            0x70, 0x04, 0x22, 0x04, 0x20,
+            0x30,
+            0x2e,
+            0x02,
+            0x01,
+            0x00,
+            0x30,
+            0x05,
+            0x06,
+            0x03,
+            0x2b,
+            0x65,
+            0x70,
+            0x04,
+            0x22,
+            0x04,
+            0x20,
         ),
     )
     pkcs8.set(seed, 16)
@@ -71,7 +87,10 @@ const ed25519PublicKey = async (seed: Uint8Array): Promise<Uint8Array> => {
     )
     const jwk = await globalThis.crypto.subtle.exportKey('jwk', key)
     return Uint8Array.from(
-        Buffer.from(String(jwk.x).replace(/-/g, '+').replace(/_/g, '/'), 'base64'),
+        Buffer.from(
+            String(jwk.x).replace(/-/g, '+').replace(/_/g, '/'),
+            'base64',
+        ),
     )
 }
 
@@ -105,6 +124,15 @@ const importAlgo25 = async (
     )
 }
 
+const freshKeystore = async (): Promise<
+    ReturnType<typeof createPeraKeystore>
+> => {
+    const keystore = createPeraKeystore(deps())
+    await keystore.ready
+    await importAlgo25(keystore)
+    return keystore
+}
+
 describe('createPeraKeystore (web)', () => {
     let unlocked: boolean
 
@@ -118,10 +146,7 @@ describe('createPeraKeystore (web)', () => {
     })
 
     it('never writes __keystore.master__ and stores the Ed25519 child as sealed bytes', async () => {
-        const keystore = createPeraKeystore(deps())
-        await keystore.ready
-
-        await importAlgo25(keystore)
+        const keystore = await freshKeystore()
 
         expect(await materialKind(MASTER_KEY_ID)).toBeUndefined()
         expect(await materialKind('seed-1')).toBe('bytes')
@@ -129,9 +154,8 @@ describe('createPeraKeystore (web)', () => {
     })
 
     it('signs with the byte-stored child', async () => {
-        const keystore = createPeraKeystore(deps())
-        await keystore.ready
-        await importAlgo25(keystore)
+        const keystore = await freshKeystore()
+        expect(await materialKind('sign-1')).toBe('bytes')
         const data = Uint8Array.of(1, 2, 3)
 
         const signature = await keystore.sign('sign-1', data)
@@ -156,15 +180,13 @@ describe('createPeraKeystore (web)', () => {
     // The source's own error class must reach the caller untouched: the UI
     // routes on `instanceof VaultLockedError`.
     it('rejects every material operation with the source error while locked', async () => {
-        const keystore = createPeraKeystore(deps())
-        await keystore.ready
-        await importAlgo25(keystore)
+        const keystore = await freshKeystore()
         const secretId = await keystore.secrets!.put('pin', { id: 'pin' })
         unlocked = false
 
-        await expect(keystore.sign('sign-1', Uint8Array.of(1))).rejects.toBeInstanceOf(
-            TestVaultLockedError,
-        )
+        await expect(
+            keystore.sign('sign-1', Uint8Array.of(1)),
+        ).rejects.toBeInstanceOf(TestVaultLockedError)
         await expect(keystore.export('seed-1')).rejects.toBeInstanceOf(
             TestVaultLockedError,
         )
@@ -187,22 +209,25 @@ describe('createPeraKeystore (web)', () => {
     })
 
     it('locking mid-session stops the next operation without a restart', async () => {
-        const keystore = createPeraKeystore(deps())
-        await keystore.ready
-        await importAlgo25(keystore)
+        const keystore = await freshKeystore()
         await keystore.sign('sign-1', Uint8Array.of(1))
 
         unlocked = false
-        await expect(keystore.sign('sign-1', Uint8Array.of(1))).rejects.toBeInstanceOf(
-            TestVaultLockedError,
-        )
+        await expect(
+            keystore.sign('sign-1', Uint8Array.of(1)),
+        ).rejects.toBeInstanceOf(TestVaultLockedError)
 
         unlocked = true
-        await expect(keystore.sign('sign-1', Uint8Array.of(1))).resolves.toHaveLength(64)
+        await expect(
+            keystore.sign('sign-1', Uint8Array.of(1)),
+        ).resolves.toHaveLength(64)
     })
 
     it('flips nativeCryptoKey off with and without a before gate', async () => {
-        const gated = createPeraKeystore({ ...deps(), before: Promise.resolve() })
+        const gated = createPeraKeystore({
+            ...deps(),
+            before: Promise.resolve(),
+        })
         await gated.ready
         await importAlgo25(gated)
         expect(await materialKind('sign-1')).toBe('bytes')

@@ -33,9 +33,7 @@ describe('engineKeySource', () => {
     it('rejects with a wiring error while no source is registered', async () => {
         const { resolveEngineKey } = await load()
 
-        await expect(resolveEngineKey()).rejects.toThrow(
-            /setEngineKeySource/,
-        )
+        await expect(resolveEngineKey()).rejects.toThrow(/setEngineKeySource/)
     })
 
     it('imports the source bytes as a non-extractable AES-GCM key and wipes them', async () => {
