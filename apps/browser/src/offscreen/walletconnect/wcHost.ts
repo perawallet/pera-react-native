@@ -177,9 +177,10 @@ const describeError = (error: unknown): string =>
  * keeps its bridge socket after the popup closes.
  *
  * Signing never happens here — the vault is deliberately absent from this
- * context. Gate survivors are forwarded to the service worker, which opens
- * an approval surface; that surface signs and the decision comes back as a
- * `deliver` control message.
+ * context. An engine object still exists here through the provider singleton,
+ * but with no key source it cannot open material. Gate survivors are forwarded
+ * to the service worker, which opens an approval surface; that surface signs
+ * and the decision comes back as a `deliver` control message.
  */
 export const startWcHost = (deps: WcHostDeps): WcHost => {
     /**

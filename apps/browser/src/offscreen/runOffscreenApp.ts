@@ -131,6 +131,8 @@ export const runOffscreenApp = async (): Promise<void> => {
     // closes. Signing never happens in this context — the vault is
     // deliberately absent — so gate survivors are forwarded to the service
     // worker via `sendWcApprovalRequest`, which opens an approval surface.
+    // (an engine object is still constructed here through the provider
+    // singleton, but with no engine key source it cannot open material)
     const wcHost = startWcHost({
         network: () => useNetworkStore.getState().network,
         knownAddresses: () =>

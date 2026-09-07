@@ -11,6 +11,7 @@
  */
 
 import { SESSION_MASTER_KEY } from '../storage-keys'
+import { VaultLockedError } from '../errors'
 
 export { SESSION_MASTER_KEY }
 
@@ -58,4 +59,14 @@ export const clearSessionMasterKey = async (): Promise<void> => {
 export const hasSessionMasterKey = async (): Promise<boolean> => {
     const stored = await chrome.storage.session.get(SESSION_MASTER_KEY)
     return typeof stored[SESSION_MASTER_KEY] === 'string'
+}
+
+export const requireSessionMasterKey = async (): Promise<Uint8Array> => {
+    const key = await getSessionMasterKey()
+    if (!key) {
+        throw new VaultLockedError(
+            'Vault is locked. Unlock it before using the keystore.',
+        )
+    }
+    return key
 }
