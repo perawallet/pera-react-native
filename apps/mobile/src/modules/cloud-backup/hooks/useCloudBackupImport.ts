@@ -42,7 +42,13 @@ import {
     generateMultisigAddress,
     isValidAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
-import { hdDerivedKeyId, hexToBytes, useKMS } from '@perawallet/wallet-core-kms'
+import {
+    hdDerivedKeyId,
+    hexToBytes,
+    mnemonicWordsToIndices,
+    useKMS,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 
 type ImportFailure = ImportSummary['failed'][number]
@@ -189,10 +195,18 @@ const importFromMnemonic = async (
     if (!secretsPayload || secretsPayload.type !== type) {
         throw new Error(`${type} account missing mnemonic secret`)
     }
-    const result = await importAccount({
-        mnemonic: secretsPayload.mnemonic,
-        type,
-    })
+    const mnemonicIndices = mnemonicWordsToIndices(
+        secretsPayload.mnemonic.split(' '),
+    )
+    if (!mnemonicIndices) {
+        throw new Error(`${type} account has an unreadable mnemonic secret`)
+    }
+    let result
+    try {
+        result = await importAccount({ mnemonicIndices, type })
+    } finally {
+        zeroBytes(mnemonicIndices)
+    }
     const returned = Array.isArray(result) ? result : [result]
     // `hdWallet` is the only import type that resolves to a pending handle
     // instead of accounts, and it never reaches this path.
