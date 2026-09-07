@@ -57,7 +57,6 @@ const makeHandler = (
 const ORIGIN: ConnectionOrigin = {
     source: 'external-browser',
     browserName: 'safari',
-    createdAt: 1_700_000_000_000,
 }
 
 const makeConnection = (overrides: Partial<Connection> = {}): Connection => ({
