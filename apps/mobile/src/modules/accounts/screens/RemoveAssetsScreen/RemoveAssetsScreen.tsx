@@ -20,7 +20,7 @@ import {
     PWView,
     type PWFlatListRef,
 } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -105,6 +105,7 @@ export const RemoveAssetsScreen = () => {
                         onConfirm={handleRemoveSelected}
                         isLoading={isRemoving}
                         isDisabled={selectedAssetIds.size === 0 || isRemoving}
+                        style={CONFIRM_ACTION_LAYOUT}
                         testID='remove_assets_confirm_slide'
                     />
                 ) : undefined

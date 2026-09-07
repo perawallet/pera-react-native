@@ -118,8 +118,8 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.negative,
         },
         confirmButton: {
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.xxl,
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.xxl,
         },
     }
 })

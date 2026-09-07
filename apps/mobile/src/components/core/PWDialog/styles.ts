@@ -12,10 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
-import type { EdgeInsets } from 'react-native-safe-area-context'
+import { CONTROL_MAX_WIDTH_DP } from '@constants/ui'
+import { isLargeScreen } from '@utils/screen'
 
-const DIALOG_MAX_WIDTH = 560
-const LARGE_SCREEN_WIDTH = 600
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 type StyleProps = {
     width: number
@@ -26,10 +26,9 @@ type StyleProps = {
 
 export const useStyles = makeStyles(
     (theme, { width, height, insets, maxHeightRatio }: StyleProps) => {
-        const horizontalMargin =
-            width >= LARGE_SCREEN_WIDTH
-                ? theme.spacing['3xl']
-                : theme.spacing.xl
+        const horizontalMargin = isLargeScreen(width, height)
+            ? theme.spacing['3xl']
+            : theme.spacing.xl
         const availableHeight = height - insets.top - insets.bottom
 
         return {
@@ -37,7 +36,10 @@ export const useStyles = makeStyles(
                 backgroundColor: theme.colors.backdropModalBg,
             },
             overlay: {
-                width: Math.min(width - horizontalMargin * 2, DIALOG_MAX_WIDTH),
+                width: Math.min(
+                    width - horizontalMargin * 2,
+                    CONTROL_MAX_WIDTH_DP,
+                ),
                 maxWidth: '100%',
                 maxHeight: Math.round(availableHeight * maxHeightRatio),
                 borderRadius: theme.borderRadius.lg,

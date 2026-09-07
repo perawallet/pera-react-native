@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWText, PWView } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
@@ -32,7 +32,7 @@ export const SigningActionButtons = () => {
     } = useSigningActionButtons()
 
     return (
-        <PWView style={styles.container}>
+        <PWView style={[styles.container, CONFIRM_ACTION_LAYOUT]}>
             {cannotSignNotice ? (
                 <PWView
                     style={styles.cannotSignNotice}
