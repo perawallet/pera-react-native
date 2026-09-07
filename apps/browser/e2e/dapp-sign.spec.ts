@@ -358,14 +358,13 @@ test('a locked vault shows the unlock form instead of the signing review, and si
             { timeout: 20_000 },
         )
         .not.toBe('')
-    expect(
-        await dappPage.locator('#sign-error').textContent(),
-        'the wallet declined the sign request',
-    ).toBe('')
+    const signError = await dappPage.locator('#sign-error').textContent()
+    expect(signError, 'the wallet declined the sign request').toBe('')
     const signResult = JSON.parse(
         (await dappPage.locator('#sign-result').textContent()) ?? '{}',
     ) as { stxns?: string[] }
     expect(signResult.stxns?.length).toBe(1)
+    expect(signResult.stxns?.[0]).toBeTruthy()
 
     expect(approvalErrors, 'approval popup threw an uncaught error').toEqual([])
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
