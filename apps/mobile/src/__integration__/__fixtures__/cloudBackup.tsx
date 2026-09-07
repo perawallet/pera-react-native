@@ -28,8 +28,8 @@ import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 import {
     ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
-    HD_TEST_MNEMONIC_24,
+    ALGO25_TEST_MNEMONIC_INDICES,
+    HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
 
 // argon2 → HKDF → keystore reveal → AES-256-GCM on every round-trip, so the
@@ -62,7 +62,7 @@ export const BACKUP_SALT = Buffer.from(new Uint8Array(16).fill(7)).toString(
 export const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     const key = await kms.current.createAlgo25Key({
-        mnemonic: ALGO25_TEST_MNEMONIC,
+        mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
     })
     expect(key).not.toBeNull()
     const account: WalletAccount = {
@@ -84,7 +84,7 @@ export const seedHDWalletAccounts = async (): Promise<{
 }> => {
     const { result: kms } = renderHook(() => useKMS())
     const seed = await kms.current.createHDWalletKey({
-        mnemonic: HD_TEST_MNEMONIC_24,
+        mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
     })
     expect(seed).not.toBeNull()
     const seedKeyId = seed!.seedKey.id ?? ''
