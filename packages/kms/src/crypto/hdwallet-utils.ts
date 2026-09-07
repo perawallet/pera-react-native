@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { pbkdf2, createHash, randomBytes } from 'crypto'
+import { pbkdf2, randomBytes } from 'crypto'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { entropyToMnemonic as entropyToMnemonicLib } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
@@ -118,9 +118,6 @@ export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
         )
     }
     const checksumBitCount = entropyBits / ENTROPY_BITS_PER_CHECKSUM_BIT // 4..8
-    // `@noble/hashes`, not Node's `createHash`: the built bundles stub the
-    // `crypto` module to `{}`, so a dist consumer without a host-level crypto
-    // alias (metro / the web shims) would get `undefined` here.
     const checksum = sha256(entropy)[0] >> (BITS_PER_BYTE - checksumBitCount)
 
     const indices = new Uint16Array(
@@ -189,9 +186,7 @@ export const indicesToEntropy = (indices: Uint16Array): Uint8Array => {
     }
 
     // The bits left in the accumulator are exactly the checksum.
-    const expected =
-        createHash('sha256').update(entropy).digest()[0] >>
-        (BITS_PER_BYTE - checksumBitCount)
+    const expected = sha256(entropy)[0] >> (BITS_PER_BYTE - checksumBitCount)
     if ((acc & ((1 << checksumBitCount) - 1)) !== expected) {
         zeroBytes(entropy)
         throw new Error('Invalid BIP39 mnemonic checksum')
