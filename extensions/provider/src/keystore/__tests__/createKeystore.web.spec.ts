@@ -238,4 +238,25 @@ describe('createPeraKeystore (web)', () => {
         await importAlgo25(ungated)
         expect(await materialKind('sign-1')).toBe('bytes')
     })
+
+    it('rejects every material operation with the wiring error while no source is registered', async () => {
+        vi.resetModules()
+        const fresh = await import('../createKeystore.web')
+        const keystore = fresh.createPeraKeystore(deps())
+        await keystore.ready
+
+        await expect(
+            keystore.import(
+                {
+                    id: 'seed-3',
+                    type: 'seed',
+                    algorithm: 'raw',
+                    extractable: true,
+                    keyUsages: ['deriveKey', 'deriveBits'],
+                    privateKey: Uint8Array.from(SEED),
+                },
+                'raw',
+            ),
+        ).rejects.toThrow(/setEngineKeySource/)
+    })
 })

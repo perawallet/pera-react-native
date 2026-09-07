@@ -27,7 +27,6 @@ export {
 } from './keystore/passkeyMainKey'
 export {
     setEngineKeySource,
-    resolveEngineKey,
     type EngineKeySource,
 } from './keystore/engineKeySource'
 export type { ResealReport } from './keystore/resealTypes'

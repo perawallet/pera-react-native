@@ -12,6 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 
 // surface values the real module uses
 type Surface = 'popup' | 'expanded' | 'approval'
@@ -502,5 +503,28 @@ describe('useWebAppShell', () => {
             'resealLegacyMaterial',
             'initializeDatabase',
         ])
+    })
+
+    it('logs unrecoverable ids from the re-seal report through logger.warn', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.resealLegacyMaterial.mockResolvedValue({
+            resealed: 1,
+            reminted: 1,
+            unrecoverable: ['k1'],
+            legacyKeyRemoved: true,
+        })
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ ids: ['k1'] }),
+        )
+
+        warnSpy.mockRestore()
     })
 })

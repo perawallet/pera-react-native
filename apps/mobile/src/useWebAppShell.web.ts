@@ -128,7 +128,18 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             // Profiles written before the vault sealed material hold records
             // under the driver's old auto-generated key; nothing may open
             // material before they move.
-            await resealLegacyMaterial()
+            const resealReport = await resealLegacyMaterial()
+            if (resealReport.unrecoverable.length > 0) {
+                logger.warn('Keystore records unrecoverable after re-seal', {
+                    ids: resealReport.unrecoverable,
+                })
+            }
+            if (resealReport.resealed > 0 || resealReport.reminted > 0) {
+                logger.info('Keystore records re-sealed', {
+                    resealed: resealReport.resealed,
+                    reminted: resealReport.reminted,
+                })
+            }
             await initializeDatabase(getProvider().database)
             await seedAlgoAsset(getDatabase())
             initializeSyncService({
