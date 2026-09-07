@@ -146,9 +146,7 @@ describe('createLocalKeyStrategy', () => {
             .mockImplementation(
                 (account: WalletAccount) => account.type === 'quantum',
             )
-        errorSpy = vi
-            .spyOn(logger, 'error')
-            .mockImplementation(() => undefined)
+        errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => undefined)
     })
 
     afterEach(() => {
@@ -443,9 +441,7 @@ describe('createLocalKeyStrategy', () => {
             })
 
             test('keeps an AppError cause without a key on the local-key body', async () => {
-                signTransactions.mockRejectedValue(
-                    new AppError('internal', {}),
-                )
+                signTransactions.mockRejectedValue(new AppError('internal', {}))
 
                 const error = await makeStrategy()
                     .sign(makeTransactionGroup(), algo25Account)
@@ -478,10 +474,7 @@ describe('createLocalKeyStrategy', () => {
             test('does not report a successful sign', async () => {
                 signTransactions.mockResolvedValue([])
 
-                await makeStrategy().sign(
-                    makeTransactionGroup(),
-                    algo25Account,
-                )
+                await makeStrategy().sign(makeTransactionGroup(), algo25Account)
 
                 expect(errorSpy).not.toHaveBeenCalled()
             })
