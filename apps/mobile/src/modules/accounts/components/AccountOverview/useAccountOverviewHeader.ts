@@ -26,7 +26,8 @@ import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewHeaderResult = {
     portfolioAlgoValue: Decimal
-    portfolioPreferredValue: Decimal
+    /** `null` while the preferred-currency rate is unresolved — renders as a placeholder, not 0. */
+    portfolioPreferredValue: Nullable<Decimal>
     /** False while held assets are still enriching — the total is still settling. */
     isBalanceComplete: boolean
     isPending: boolean

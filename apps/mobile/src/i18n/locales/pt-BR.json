@@ -262,6 +262,8 @@
         "transaction_list": {
             "title": "Transações",
             "empty_body": "Nenhuma transação encontrada",
+            "offline_empty_title": "Você está offline",
+            "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "filter": "Filtrar",
             "csv": "CSV"
         },

@@ -33,6 +33,11 @@ import {
 import { Networks } from '@perawallet/wallet-core-config'
 
 const mockRequestBottomSheet = vi.fn()
+const mockUseNetworkStatus = vi.hoisted(() => vi.fn())
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: mockUseNetworkStatus,
+}))
+
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
 }))
@@ -117,6 +122,7 @@ describe('useAssetTransactionList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNavigate.mockReset()
+        mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
         mockRefreshAccounts.mockResolvedValue(undefined)
         vi.mocked(getSyncService).mockReturnValue({
             refreshAccounts: mockRefreshAccounts,
@@ -272,6 +278,46 @@ describe('useAssetTransactionList', () => {
 
             expect(result.current.isInitialLoad).toBe(true)
             expect(result.current.isEmpty).toBe(false)
+        })
+
+        it('distinguishes an empty offline history from a genuine empty one', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: false })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isEmpty).toBe(true)
+            expect(result.current.isOfflineEmpty).toBe(true)
+        })
+
+        it('reports an empty online history as a genuine empty history', () => {
+            mockUseNetworkStatus.mockReturnValue({ hasInternet: true })
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetched: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isEmpty).toBe(true)
+            expect(result.current.isOfflineEmpty).toBe(false)
         })
     })
 

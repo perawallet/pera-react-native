@@ -262,6 +262,8 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "Aucune transaction trouvée",
+            "offline_empty_title": "Vous êtes hors ligne",
+            "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "filter": "Filtrer",
             "csv": "CSV"
         },
