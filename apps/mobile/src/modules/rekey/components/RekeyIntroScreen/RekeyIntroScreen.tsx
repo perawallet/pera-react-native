@@ -62,10 +62,14 @@ export const RekeyIntroScreen = ({
                 />
             }
         >
+            {/* Bundled asset over a placeholder that already matches it: any
+                fade or spinner during decode only manufactures a flash. */}
             <PWImage
                 source={heroImage}
                 style={styles.hero}
                 resizeMode='cover'
+                transition={false}
+                showLoadingIndicator={false}
             />
 
             <PWView style={styles.body}>
