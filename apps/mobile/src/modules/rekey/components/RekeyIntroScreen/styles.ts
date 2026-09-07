@@ -11,12 +11,16 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { palette } from '@theme/colors'
 
 export const useStyles = makeStyles(theme => ({
     hero: {
         width: '100%',
         aspectRatio: 2,
-        backgroundColor: theme.colors.systemElements,
+        // The hero JPEG is dark in both themes, so the decode placeholder must
+        // match the artwork, not a theme token — an inverted token (white in
+        // dark mode) flashes the banner on every cold mount.
+        backgroundColor: palette.gray[900],
     },
     body: {
         paddingHorizontal: theme.spacing.xl,
