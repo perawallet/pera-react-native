@@ -34,8 +34,9 @@ an error message. Addresses and transaction hashes are safe to log.
 Key material lives in the keystore and nowhere else: `@algorandfoundation/react-native-keystore` on
 native; on the browser extension, `@algorandfoundation/keystore-web`'s IndexedDB store, with every
 record sealed under the master key that the `extensions/keystore-chrome` vault releases only while
-unlocked. It never goes into `keyValueStorage`, a Zustand store, or React state that outlives the
-operation.
+unlocked. A profile written before this layout reaches that state only at its first unlock on the
+new build, when the re-seal sweep runs. It never goes into `keyValueStorage`, a Zustand store, or
+React state that outlives the operation.
 
 Validate user input and API responses before acting on them. Keep secrets in `.env`, not in source.
 
