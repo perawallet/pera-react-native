@@ -12,9 +12,11 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { Text } from 'react-native'
-import { render, screen } from '@test-utils/render'
+import { ThemeProvider } from '@rneui/themed'
+import { render, renderHook, screen, testTheme } from '@test-utils/render'
 
 import { PWPager } from '../PWPager'
+import { usePWPager } from '../usePWPager'
 
 // The pan is reanimated worklets writing shared values, which this environment
 // stubs out, and `onLayout` is ResizeObserver-driven under react-native-web so
@@ -52,5 +54,34 @@ describe('PWPager', () => {
 
         expect(screen.getByText('Page B')).toBeTruthy()
         expect(onIndexChange).not.toHaveBeenCalled()
+    })
+
+    // Locks the width formula only. That a page outside the track's rect loses
+    // its native scroll gesture is Android framework behaviour no JS test can
+    // reach, so the symptom itself stays device-verified.
+    it('spans the track across every page rather than a single one', () => {
+        const { result } = renderHook(
+            () =>
+                usePWPager({
+                    children: [
+                        <Text key='a'>Page A</Text>,
+                        <Text key='b'>Page B</Text>,
+                        <Text key='c'>Page C</Text>,
+                    ],
+                    index: 0,
+                    onIndexChange: vi.fn(),
+                    drawerWidth: 0,
+                    drawerEdgeWidth: 24,
+                    isSwipeEnabled: true,
+                }),
+            {
+                wrapper: ({ children }) => (
+                    <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+                ),
+            },
+        )
+        const { track, page } = result.current.styles
+
+        expect(track.width).toBe(page.width * 3)
     })
 })
