@@ -279,6 +279,25 @@ describe('resealLegacyMaterialWith', () => {
         expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain('1234')
     })
 
+    it('keeps the sweep going past an unrecoverable parent seed and still removes the legacy key', async () => {
+        const db = await openDatabase('keystore', factory)
+        const seed = (await db.get<MaterialRecord>(MATERIAL_STORE, 'seed-1'))!
+        if (seed.kind !== 'bytes') throw new Error('fixture')
+        seed.ciphertext[0] ^= 0xff
+        await db.put(MATERIAL_STORE, seed)
+        db.close()
+
+        const report = await resealLegacyMaterialWith(deps())
+
+        expect(report.unrecoverable).toEqual(['seed-1', 'sign-1'])
+        expect(report.legacyKeyRemoved).toBe(true)
+        expect(await opensUnderEngine(factory, 'pin')).toBe(true)
+        expect((await readMaterial(factory, 'sign-1'))?.kind).toBe('cryptokey')
+        expect(vi.mocked(safeWarn).mock.calls.join(' ')).not.toContain(
+            String.fromCharCode(...SEED),
+        )
+    })
+
     it('removes only the legacy key from a profile whose records are all engine-sealed', async () => {
         await resealLegacyMaterialWith(deps())
         // `driver.clear()` preserves the reserved id, so a wipe between the

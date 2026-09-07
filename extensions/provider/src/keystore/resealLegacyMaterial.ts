@@ -12,8 +12,6 @@
 
 import type { ResealDeps, ResealReport } from './resealTypes'
 
-export type { ResealDeps, ResealReport } from './resealTypes'
-
 /**
  * Native twin of the web sweep: the React Native driver has never held an
  * auto-generated engine key, so there is nothing to move. Zeroed rather than

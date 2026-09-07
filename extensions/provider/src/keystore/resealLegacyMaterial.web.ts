@@ -24,8 +24,6 @@ import {
 import { safeWarn } from './migrations/safeLog'
 import type { ResealDeps, ResealReport } from './resealTypes'
 
-export type { ResealDeps, ResealReport } from './resealTypes'
-
 const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
     a.length === b.length && a.every((value, i) => value === b[i])
 
@@ -37,6 +35,7 @@ const tryOpen = async (
     try {
         return await open(subtle, key, record)
     } catch {
+        // Did not open under this key. With a valid key this is an
         // AES-GCM authentication failure: sealed under a different key.
         return null
     }
@@ -90,19 +89,34 @@ const remintChild = async (
 ): Promise<void> => {
     const key = await db.get<Key>(METADATA_STORE, record.id)
     const parentKeyId = key?.metadata?.parentKeyId
-    if (!key || !key.publicKey || typeof parentKeyId !== 'string') {
+    if (
+        !key ||
+        !key.publicKey ||
+        key.type !== 'ed25519' ||
+        typeof parentKeyId !== 'string'
+    ) {
         report.unrecoverable.push(record.id)
         safeWarn(
             `keystore child ${record.id} has no parent seed to re-mint from`,
         )
         return
     }
-    const seed = (await deps.keystore.export(parentKeyId)).privateKey
+    let seed: unknown
+    try {
+        seed = (await deps.keystore.export(parentKeyId)).privateKey
+    } catch {
+        // An unrecoverable parent is a per-record diagnostic, not a reason to
+        // abandon the sweep before the legacy key goes.
+        report.unrecoverable.push(record.id)
+        safeWarn(`keystore seed ${parentKeyId} did not export`)
+        return
+    }
     if (!ArrayBuffer.isView(seed)) {
         report.unrecoverable.push(record.id)
         safeWarn(`keystore seed ${parentKeyId} did not export`)
         return
     }
+    const seedBytes = seed as Uint8Array
     try {
         // Same id and fields as the original mint. Only `parentKeyId` is
         // carried over: core spreads caller metadata last, so passing the
@@ -115,15 +129,18 @@ const remintChild = async (
                 algorithm: 'EdDSA',
                 extractable: false,
                 keyUsages: ['sign', 'verify'],
-                privateKey: seed,
+                privateKey: seedBytes,
                 publicKey: key.publicKey,
                 metadata: { parentKeyId },
             },
             'raw',
         )
         report.reminted += 1
+    } catch {
+        report.unrecoverable.push(record.id)
+        safeWarn(`keystore child ${record.id} did not re-mint`)
     } finally {
-        seed.fill(0)
+        seedBytes.fill(0)
     }
 }
 

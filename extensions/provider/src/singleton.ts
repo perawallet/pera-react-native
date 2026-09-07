@@ -150,7 +150,7 @@ export const resealLegacyMaterial = (): Promise<ResealReport> =>
     resealLegacyMaterialWith({
         keystore,
         resolveEngineKey,
-        subtle: globalThis.crypto.subtle,
+        subtle,
         indexedDB: globalThis.indexedDB,
         databaseName: 'keystore',
     })

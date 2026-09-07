@@ -15,7 +15,7 @@ import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keyst
 export type ResealReport = {
     resealed: number
     reminted: number
-    /** Ids that open under neither key — never their contents. */
+    /** Ids the sweep could not move — never their contents. */
     unrecoverable: string[]
     legacyKeyRemoved: boolean
 }
