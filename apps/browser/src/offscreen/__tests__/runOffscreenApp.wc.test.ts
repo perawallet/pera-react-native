@@ -142,6 +142,14 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER: 'fee-adjusted',
     FeeAdjustmentDeliveryError: class FeeAdjustmentDeliveryError extends Error {},
 }))
+// The offscreen document never registers an engine key source, so a
+// keystore `ready` that never settles must not block boot. Only a direct
+// await in runOffscreenApp.ts is caught here: the signing-store import chain
+// that constructs the engine is mocked out wholesale in this file.
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystore: vi.fn(() => ({ ready: new Promise<void>(() => {}) })),
+    getProvider: vi.fn(() => ({})),
+}))
 
 describe('runOffscreenApp WC wiring', () => {
     beforeEach(() => {
@@ -374,5 +382,11 @@ describe('runOffscreenApp WC wiring', () => {
 
             expect(sendWcErrorNotice).not.toHaveBeenCalled()
         })
+    })
+
+    it('boots without awaiting keystore.ready', async () => {
+        const { runOffscreenApp } = await import('../runOffscreenApp')
+
+        await expect(runOffscreenApp()).resolves.toBeUndefined()
     })
 })
