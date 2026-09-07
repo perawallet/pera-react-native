@@ -10,35 +10,23 @@
  limitations under the License
  */
 
-import { argon2 } from 'crypto'
+import type { Argon2idConfig } from '../models'
+import { argon2idDerive } from './argon2id'
 import { ARGON2ID_CONFIG } from './constants'
-
-const KIB_PER_MIB = 1024
 
 /**
  * Derives the backup master key (`K_master`) via Argon2id from the
  * mnemonic-derived password and the setup salt. This is the root of the cloud
  * backup key hierarchy and is unrelated to the wallet's HD root seed; it exists
  * only to derive the backup child keys and is never persisted.
+ *
+ * `config` defaults to this build's `ARGON2ID_CONFIG`. Pass one only when the
+ * backup was created under different parameters and they travelled with it —
+ * a sync QR carries its own; deriving under the wrong ones yields a different
+ * `backupId` and reads as bad credentials.
  */
 export const deriveBackupMasterKey = (
     password: Uint8Array,
     salt: Uint8Array,
-): Promise<Uint8Array> =>
-    new Promise((resolve, reject) => {
-        argon2(
-            'argon2id',
-            {
-                message: password,
-                nonce: salt,
-                parallelism: ARGON2ID_CONFIG.parallelism,
-                tagLength: ARGON2ID_CONFIG.outputLength,
-                memory: ARGON2ID_CONFIG.memoryCost * KIB_PER_MIB,
-                passes: ARGON2ID_CONFIG.timeCost,
-            },
-            (error, result) => {
-                if (error) reject(error)
-                else resolve(new Uint8Array(result))
-            },
-        )
-    })
+    config: Argon2idConfig = ARGON2ID_CONFIG,
+): Promise<Uint8Array> => argon2idDerive(password, salt, config)

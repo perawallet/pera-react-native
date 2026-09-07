@@ -126,6 +126,29 @@ describe('restoreCloudBackup', () => {
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
     })
 
+    test('derives under the argon2id config it was given, not the build defaults', async () => {
+        const argon2id = {
+            timeCost: 4,
+            memoryCost: 128,
+            parallelism: 2,
+            outputLength: 32,
+        }
+
+        await restoreCloudBackup({ ...params(), argon2id })
+
+        expect(deriveBackupKeysMock).toHaveBeenCalledWith(
+            expect.objectContaining({ argon2id }),
+        )
+    })
+
+    test('leaves the config unset when the caller has none', async () => {
+        await restoreCloudBackup(params())
+
+        expect(deriveBackupKeysMock).toHaveBeenCalledWith(
+            expect.objectContaining({ argon2id: undefined }),
+        )
+    })
+
     test('adopts the manifest versions, so the first push after a restore is not refused', async () => {
         const { syncState } = await restoreCloudBackup(params())
 

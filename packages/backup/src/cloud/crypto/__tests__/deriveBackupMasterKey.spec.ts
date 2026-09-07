@@ -108,6 +108,35 @@ describe('deriveBackupMasterKey', () => {
         expect(result).toEqual(output)
     })
 
+    test('derives under a supplied config instead of the canonical one', async () => {
+        argon2Mock.mockImplementation((_algorithm, _params, callback) => {
+            callback(null, new Uint8Array(32))
+        })
+
+        await deriveBackupMasterKey(
+            new TextEncoder().encode('pw'),
+            new Uint8Array([1, 2, 3, 4]),
+            {
+                timeCost: 4,
+                memoryCost: 128,
+                parallelism: 2,
+                outputLength: 32,
+            },
+        )
+
+        expect(argon2Mock).toHaveBeenCalledWith(
+            'argon2id',
+            expect.objectContaining({
+                parallelism: 2,
+                tagLength: 32,
+                // Still MiB → KiB on the caller-supplied config.
+                memory: 131_072,
+                passes: 4,
+            }),
+            expect.any(Function),
+        )
+    })
+
     test('rejects when argon2 reports an error', async () => {
         argon2Mock.mockImplementation((_algorithm, _params, callback) => {
             callback(new Error('argon2 failed'), Buffer.alloc(0))

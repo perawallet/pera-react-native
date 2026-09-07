@@ -141,8 +141,12 @@ describe('item payload crypto', () => {
 
     it('fails when the payload is shorter than IV + tag', () => {
         // 4 raw bytes — far below the 12-byte IV + 16-byte tag minimum.
-        expect(() => decryptItemPayload('AAAAAA==', ctx)).toThrow(
-            DecryptItemPayloadError,
-        )
+        const decrypt = () => decryptItemPayload('AAAAAA==', ctx)
+
+        expect(decrypt).toThrow(DecryptItemPayloadError)
+        // The specific message survives the aesGcm boundary only through the
+        // reason discriminant, so pin it: rewording either side would
+        // otherwise silently degrade this to the generic failure.
+        expect(decrypt).toThrow('Payload too short')
     })
 })

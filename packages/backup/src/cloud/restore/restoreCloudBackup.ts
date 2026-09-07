@@ -16,6 +16,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import { createEmptySyncState, trackedItemsFromManifest } from '../models'
 import type {
+    Argon2idConfig,
     BackupId,
     ContactBackupPayload,
     DeviceId,
@@ -52,6 +53,9 @@ type RestoreCloudBackupParams = {
     mnemonic: string[]
     /** Base64 salt the UI calls the "encryption key". */
     salt: string
+    /** Defaults to this build's `ARGON2ID_CONFIG`. A sync QR carries the
+     *  parameters its backup was created under, so that path passes them. */
+    argon2id?: Argon2idConfig
     deviceId: DeviceId
     network: Network
     /** Decrypted remote accounts → wallet. Hook-bound (needs KMS), so the app
@@ -139,12 +143,13 @@ const syncStateFromPull = (
 const deriveKeys = async (
     mnemonic: string[],
     salt: string,
+    argon2id?: Argon2idConfig,
 ): Promise<BackupKeys> => {
     // Lazy import keeps tweetnacl/@noble/argon2 out of the startup module graph.
     const { deriveBackupKeys } = await import('../crypto')
 
     try {
-        return await deriveBackupKeys({ mnemonic, salt })
+        return await deriveBackupKeys({ mnemonic, salt, argon2id })
     } catch (error) {
         // The phrase and the salt are the only inputs, and a truncated paste of
         // the salt throws out of `decodeFromBase64` — so a derive failure here
@@ -161,6 +166,7 @@ const deriveKeys = async (
 export const restoreCloudBackup = async ({
     mnemonic,
     salt,
+    argon2id,
     deviceId,
     network,
     importAccounts,
@@ -169,6 +175,7 @@ export const restoreCloudBackup = async ({
     const { backupId, encryptionKey, authSecretKey } = await deriveKeys(
         mnemonic,
         salt,
+        argon2id,
     )
 
     try {

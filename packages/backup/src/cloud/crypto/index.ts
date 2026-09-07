@@ -39,3 +39,17 @@ export {
     decryptItemPayload,
     DecryptItemPayloadError,
 } from './itemPayload'
+export { AesGcmOpenError } from './aesGcm'
+export {
+    BACKUP_SYNC_QR_TYPE,
+    BACKUP_SYNC_QR_VERSION,
+    BackupSyncQrError,
+    BackupSyncQrUnsupportedVersionError,
+    encryptBackupSyncQr,
+    decryptBackupSyncQr,
+    parseBackupSyncQrEnvelope,
+} from './syncQrPayload'
+export type {
+    BackupSyncQrContents,
+    BackupSyncQrEnvelope,
+} from './syncQrPayload'
