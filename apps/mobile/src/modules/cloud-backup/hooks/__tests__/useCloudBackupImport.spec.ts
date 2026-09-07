@@ -34,6 +34,7 @@ const {
     hdDerivedKeyIdMock,
     callOrder,
     DuplicateAccountError,
+    MOCK_WORDLIST,
 } = vi.hoisted(() => {
     class DuplicateAccountError extends Error {
         constructor(address: string) {
@@ -58,6 +59,14 @@ const {
         hdDerivedKeyIdMock: vi.fn(() => 'derived-key-id'),
         callOrder: [] as string[],
         DuplicateAccountError,
+        MOCK_WORDLIST: [
+            'abandon',
+            'ability',
+            'able',
+            'about',
+            'above',
+            'absent',
+        ],
     }
 })
 
@@ -108,6 +117,15 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-kms', () => ({
     hdDerivedKeyId: hdDerivedKeyIdMock,
     hexToBytes: (hex: string) => new Uint8Array(hex.length / 2),
+    // Mirrors the real null-on-unknown-word contract, so the fixtures below
+    // exercise both the happy path and the reject path.
+    mnemonicWordsToIndices: (words: string[]) => {
+        const indices = words.map(word => MOCK_WORDLIST.indexOf(word))
+        return indices.includes(-1) ? null : new Uint16Array(indices)
+    },
+    zeroBytes: (...buffers: Array<Uint8Array | Uint16Array | null>) => {
+        for (const buffer of buffers) buffer?.fill(0)
+    },
     useKMS: () => ({
         keys: seedKeysState.value,
         hasSeedWithEntropy: hasSeedWithEntropyMock,
@@ -137,6 +155,14 @@ const renderImport = () => renderHook(() => useCloudBackupImport()).result
 const A_HEX_96 = 'aa'.repeat(96)
 const ENTROPY_HEX = 'bb'.repeat(32)
 
+// Snapshot at call time: the hook zeroes the index buffer in its `finally`,
+// so inspecting the stored mock arg would only ever see zeros.
+let submittedIndices: number[] | null = null
+const captureIndices = (args: { mnemonicIndices?: Uint16Array }) => {
+    if (args.mnemonicIndices)
+        submittedIndices = Array.from(args.mnemonicIndices)
+}
+
 const watchAccount = (address: string): PulledAccount => ({
     address,
     addressPayload: { type: 'watch', address, customName: null },
@@ -148,6 +174,7 @@ beforeEach(() => {
     storeState.accounts = []
     idCounter = 0
     callOrder.length = 0
+    submittedIndices = null
     seedKeysState.value = new Map()
     hasSeedWithEntropyMock.mockReturnValue(false)
     isValidAlgorandAddressMock.mockReturnValue(true)
@@ -156,11 +183,14 @@ beforeEach(() => {
     setAccountsMock.mockImplementation((next: { address: string }[]) => {
         storeState.accounts = next
     })
-    importAccountMock.mockImplementation(async () => {
-        const account = { address: 'ALGO25_ADDR', type: 'algo25' }
-        storeState.accounts = [...storeState.accounts, account]
-        return account
-    })
+    importAccountMock.mockImplementation(
+        async (args: { mnemonicIndices?: Uint16Array }) => {
+            captureIndices(args)
+            const account = { address: 'ALGO25_ADDR', type: 'algo25' }
+            storeState.accounts = [...storeState.accounts, account]
+            return account
+        },
+    )
 })
 
 describe('useCloudBackupImport', () => {
@@ -175,12 +205,16 @@ describe('useCloudBackupImport', () => {
                     address: 'ALGO25_ADDR',
                     customName: 'My Algo25',
                 },
-                secretsPayload: { type: 'algo25', mnemonic: 'word word word' },
+                secretsPayload: {
+                    type: 'algo25',
+                    mnemonic: 'abandon ability able',
+                },
             },
         ])
 
+        expect(submittedIndices).toEqual([0, 1, 2])
         expect(importAccountMock).toHaveBeenCalledWith({
-            mnemonic: 'word word word',
+            mnemonicIndices: expect.any(Uint16Array),
             type: 'algo25',
         })
         expect(updateAccountMock).toHaveBeenCalledWith(
@@ -193,14 +227,17 @@ describe('useCloudBackupImport', () => {
     test('imports a quantum account through the same mnemonic primitive, counting both derivations', async () => {
         // The quantum import path probes on chain and can adopt BOTH the
         // canonical and legacy derivations off one mnemonic.
-        importAccountMock.mockImplementation(async () => {
-            const accounts = [
-                { address: 'PQ_CANONICAL', type: 'quantum' },
-                { address: 'PQ_LEGACY', type: 'quantum' },
-            ]
-            storeState.accounts = [...storeState.accounts, ...accounts]
-            return accounts
-        })
+        importAccountMock.mockImplementation(
+            async (args: { mnemonicIndices?: Uint16Array }) => {
+                captureIndices(args)
+                const accounts = [
+                    { address: 'PQ_CANONICAL', type: 'quantum' },
+                    { address: 'PQ_LEGACY', type: 'quantum' },
+                ]
+                storeState.accounts = [...storeState.accounts, ...accounts]
+                return accounts
+            },
+        )
         const { current } = renderImport()
 
         const summary = await current.importAccounts([
@@ -211,12 +248,16 @@ describe('useCloudBackupImport', () => {
                     address: 'PQ_CANONICAL',
                     customName: 'My PQ',
                 },
-                secretsPayload: { type: 'quantum', mnemonic: 'pq words here' },
+                secretsPayload: {
+                    type: 'quantum',
+                    mnemonic: 'about above absent',
+                },
             },
         ])
 
+        expect(submittedIndices).toEqual([3, 4, 5])
         expect(importAccountMock).toHaveBeenCalledWith({
-            mnemonic: 'pq words here',
+            mnemonicIndices: expect.any(Uint16Array),
             type: 'quantum',
         })
         // The name belongs to the backed-up address, not to the sibling
@@ -241,6 +282,27 @@ describe('useCloudBackupImport', () => {
                     customName: null,
                 },
                 secretsPayload: null,
+            },
+        ])
+
+        expect(importAccountMock).not.toHaveBeenCalled()
+        expect(summary.imported).toBe(0)
+        expect(summary.failed).toHaveLength(1)
+        expect(summary.failed[0].address).toBe('ALGO25_ADDR')
+    })
+
+    test('records a mnemonic that is not in the wordlist as failed', async () => {
+        const { current } = renderImport()
+
+        const summary = await current.importAccounts([
+            {
+                address: 'ALGO25_ADDR',
+                addressPayload: {
+                    type: 'algo25',
+                    address: 'ALGO25_ADDR',
+                    customName: null,
+                },
+                secretsPayload: { type: 'algo25', mnemonic: 'not a word' },
             },
         ])
 
