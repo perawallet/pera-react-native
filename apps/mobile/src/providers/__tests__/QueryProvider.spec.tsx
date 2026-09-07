@@ -90,6 +90,41 @@ describe('queryClient mutation error policy', () => {
         )
     })
 
+    it('logs the status and url of an HTTP mutation failure so the dev log is readable', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        // A 4xx is not transient, so it must reach the central logger with the
+        // flat fields; the raw Error alone prints as an empty string there.
+        const httpError = Object.assign(new Error('Bad Request'), {
+            name: 'HTTPError',
+            response: { status: 400, url: 'https://escrow.test/api/approvals' },
+        })
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationKey: ['http-failure'],
+                    mutationFn: () => Promise.reject(httpError),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).toHaveBeenCalledWith(
+            'Mutation failed:',
+            expect.objectContaining({
+                name: 'HTTPError',
+                message: 'Bad Request',
+                status: 400,
+                url: 'https://escrow.test/api/approvals',
+                mutationKey: ['http-failure'],
+            }),
+        )
+    })
+
     it('skips central error logging for transient network failures', async () => {
         const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
 
@@ -183,7 +218,11 @@ describe('queryClient query error policy', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
             'An error has occurred:',
-            expect.objectContaining({ error: expect.any(Error) }),
+            expect.objectContaining({
+                error: expect.any(Error),
+                name: 'Error',
+                message: 'boom',
+            }),
         )
     })
 })
