@@ -46,7 +46,7 @@ export const resolveEngineKey = async (): Promise<CryptoKey> => {
         }
         return await globalThis.crypto.subtle.importKey(
             'raw',
-            bytes,
+            bytes as BufferSource,
             { name: 'AES-GCM' },
             false,
             ['encrypt', 'decrypt'],
