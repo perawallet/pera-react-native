@@ -15,6 +15,7 @@ import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60SignableData,
     PeraArbitraryDataMessage,
+    SourceType,
 } from '@perawallet/wallet-core-signing'
 import type {
     Connection,
@@ -90,6 +91,14 @@ type MessageBase = {
     connectionId: ConnectionId
     /** Handler-scoped and opaque (WalletConnect id, DIDComm `thid`, ...). Do not parse it. */
     correlationId: string
+    /**
+     * How the signing pipeline labels this request's origin — it drives
+     * `isInteractiveSource`/`isExternalCallbackSource` membership, the signing
+     * sheet's per-source branch and analytics. The HANDLER declares it, so a
+     * new transport reaches the pipeline without the neutral layer knowing it
+     * exists.
+     */
+    sourceType: SourceType
     /**
      * Becomes ARC-0001's `authorizedAddresses`. Carried on the message rather
      * than looked up downstream: a store lookup could race a concurrent disconnect.

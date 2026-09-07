@@ -11,13 +11,8 @@
  */
 
 import type { IClientMeta } from '@perawallet/walletconnect'
-import {
-    encodeToBase64,
-    type Network,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import type { WalletOperationResult } from '@perawallet/wallet-core-connections'
 import { isChainIdAcceptable } from '../shared/chain'
 import { readString } from '../shared/read'
 
@@ -81,12 +76,6 @@ export const toClientMeta = (peer: ConnectionPeer): IClientMeta => ({
     description: peer.description ?? '',
     icons: peer.icons ?? [],
 })
-
-/** The WC v1 wire form of an operation result. */
-export const toWireResult = (result: WalletOperationResult): unknown =>
-    result.type === 'sign-transactions'
-        ? result.signed
-        : result.signatures.map(signature => encodeToBase64(signature))
 
 export const readErrorDetail = (payload: unknown): Nullable<string> => {
     if (typeof payload !== 'object' || payload === null) return null

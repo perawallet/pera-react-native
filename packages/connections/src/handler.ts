@@ -81,6 +81,13 @@ export interface ConnectionHandler<
     matchesNetwork(connection: TConnection, network: Network): boolean
 
     /**
+     * The methods this connection was approved for, as the settings panel
+     * lists them. Handler-declared because the key is kind-specific — v1
+     * stored `permissions`, v2 stores `methods`.
+     */
+    methodsFor(connection: TConnection): string[]
+
+    /**
      * Log-safe identifiers for a pairing URI. Must not include the URI: v1's
      * `key=` and v2's `symKey=` are pairing secrets and error logs ship to the crash reporter.
      */

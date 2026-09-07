@@ -43,6 +43,14 @@ if [ "${APP_ENV:-}" == "production" ]; then
       exit 1
     fi
   done
+
+  # An opaque relay credential rather than a URL, so it has no staging variant
+  # to detect — but the v2 relay rejects a client without one, and by launch the
+  # artifact is already signed. Never echo the value.
+  if [ -z "${REOWN_PROJECT_ID:-}" ]; then
+    echo "ERROR: REOWN_PROJECT_ID is unset in a production build — WalletConnect v2 could not pair." >&2
+    exit 1
+  fi
 fi
 
 echo "Generating configuration from environment variables..."
@@ -123,6 +131,10 @@ append_config "FIREBASE_VAPID_KEY" "firebaseVapidKey" "string"
 # GA4 Measurement Protocol + Sentry (browser extension analytics/crash reporting)
 append_config "GA_MEASUREMENT_API_SECRET" "gaMeasurementApiSecret" "string"
 append_config "SENTRY_DSN" "sentryDsn" "string"
+
+# Reown Cloud project id for the WalletConnect v2 relay. A public client
+# identifier, not a secret, but absent from open-source builds.
+append_config "REOWN_PROJECT_ID" "reownProjectId" "string"
 
 # Build channel (development | staging | production)
 append_config "APP_ENV" "appEnvironment" "string"

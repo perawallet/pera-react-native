@@ -273,6 +273,7 @@ describe('env-loader', () => {
             firebaseAppId: 'base-app-id',
             firebaseMeasurementId: 'G-BASE',
             firebaseVapidKey: 'base-vapid-key',
+            reownProjectId: 'test-project-id',
             gaMeasurementApiSecret: 'base-ga-secret',
             sentryDsn: 'https://base@o0.ingest.sentry.io/0',
             mainnetExplorerUrl: 'https://explorer.example.com',

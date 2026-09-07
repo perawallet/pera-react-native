@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./v2": {
+      "types": "./dist/v2/index.d.ts",
+      "default": "./dist/v2/index.js"
     }
   },
   "scripts": {
@@ -19,14 +23,20 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-extension-connections": "workspace:*",
+    "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/walletconnect": "catalog:",
+    "@reown/walletkit": "catalog:",
     "@tanstack/react-query": "catalog:",
+    "@walletconnect/core": "catalog:",
+    "@walletconnect/utils": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
     "zod": "catalog:",

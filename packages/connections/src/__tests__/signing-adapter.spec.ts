@@ -29,6 +29,7 @@ import type {
     Arc60SignableData,
     ExternalSignTxnTransport,
     PeraArbitraryDataMessage,
+    SourceType,
 } from '@perawallet/wallet-core-signing'
 import type { InboundMessage, RawInboundMessage } from '../models'
 import type { ConnectionRegistry } from '../registry'
@@ -134,10 +135,12 @@ const PEER = {
 const signDataMessage = (
     payload: Arc60SignableData | PeraArbitraryDataMessage[],
     authorizedAccounts: string[] = ['AAAA'],
+    sourceType: SourceType = 'walletconnect',
 ) => ({
     kind: 'request' as const,
     connectionId: 'c1',
     correlationId: '9',
+    sourceType,
     authorizedAccounts,
     peer: PEER,
     operation: { type: 'sign-data' as const, payload },
@@ -164,6 +167,7 @@ const makeRegistry = () => {
         abandonPairing: vi.fn(),
         describeUri: vi.fn(() => ({})),
         networksFor: vi.fn(() => []),
+        methodsFor: vi.fn(() => []),
         subscribeToProposals: vi.fn(() => () => {}),
         subscribeToMessages: listener => {
             emit = listener
@@ -196,6 +200,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -215,6 +220,30 @@ describe('useConnectionSigningAdapter', () => {
         )
     })
 
+    it('forwards the source type the handler declared', () => {
+        // `'webview'` is a SourceType no WalletConnect handler declares, so
+        // an adapter deciding this for itself cannot pass.
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            sourceType: 'webview',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject: vi.fn(),
+        })
+
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ sourceType: 'webview' }),
+        )
+    })
+
     it('binds the request to the connection approved accounts', () => {
         // Without this, a session approved for account A could sign for
         // account B. `authorizedAddresses` is the guarantee; it must reach
@@ -226,6 +255,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA', 'BBBB'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -247,6 +277,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -273,6 +304,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -461,6 +493,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -494,6 +527,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
@@ -531,6 +565,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request' as const,
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: {
@@ -564,6 +599,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request',
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: [PAYMENT_TXN_SENDER],
             peer: PEER,
             rawOperation: {
@@ -612,6 +648,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request' as const,
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: {
@@ -641,6 +678,7 @@ describe('useConnectionSigningAdapter', () => {
             kind: 'request' as const,
             connectionId: 'c1',
             correlationId: '7',
+            sourceType: 'walletconnect' as const,
             authorizedAccounts: ['AAAA'],
             peer: PEER,
             operation: {
@@ -685,6 +723,33 @@ describe('useConnectionSigningAdapter', () => {
                     // anti-spoofing dApp identity shown on the signing sheet.
                     sourceMetadata: PEER,
                 }),
+            )
+        })
+
+        it('stamps the ARC-60 request with the source type the handler declared', () => {
+            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+
+            send(
+                signDataMessage(
+                    {
+                        type: 'arc60',
+                        stdSigData: {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            domain: 'example.com',
+                            authenticatorData: new Uint8Array([1, 2, 3]),
+                        },
+                        metadata: { scope: 1, encoding: 'base64' },
+                    },
+                    [PRIMARY_SIGNER],
+                    'webview',
+                ),
+            )
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({ sourceType: 'webview' }),
             )
         })
 
@@ -883,6 +948,7 @@ describe('useConnectionSigningAdapter', () => {
                 kind: 'request' as const,
                 connectionId: 'c1',
                 correlationId: '9',
+                sourceType: 'walletconnect' as const,
                 authorizedAccounts: [PRIMARY_SIGNER, REKEYED_SIGNER],
                 peer: PEER,
                 operation: {
@@ -934,6 +1000,7 @@ describe('useConnectionSigningAdapter', () => {
                 kind: 'request' as const,
                 connectionId: 'c1',
                 correlationId: '9',
+                sourceType: 'walletconnect' as const,
                 authorizedAccounts: [PRIMARY_SIGNER],
                 peer: PEER,
                 operation: {
@@ -966,6 +1033,7 @@ describe('useConnectionSigningAdapter', () => {
     it('enqueues through the pure function with explicit deps, no hook mounted', () => {
         const message = {
             kind: 'request' as const,
+            sourceType: 'walletconnect' as const,
             connectionId: 'c1',
             correlationId: '7',
             authorizedAccounts: ['AAAA'],

@@ -11,13 +11,17 @@
  */
 
 // The shipped connections path: `ConnectionsProvider` → the registry → the
-// WalletConnect v1 handler → `ConnectionApprovalView` → the signing adapter.
-// `connections-origin.test.tsx` covers what the pairing origin does after
-// approval and `connections-quantum-fee.test.tsx` the quantum fee override.
+// WalletConnect v1 and v2 handlers → `ConnectionApprovalView` → the signing
+// adapter. Both protocols are covered here; `connections-origin.test.tsx`
+// covers what the pairing origin does after approval and
+// `connections-quantum-fee.test.tsx` the quantum fee override.
 //
-// Only the bottom-level `@perawallet/walletconnect` transport is stubbed (via
-// vitest resolve.alias); the provider, registry, handler, approval sheet and
-// signing adapter are all production code.
+// Only the bottom-level transports are stubbed (via vitest resolve.alias):
+// `@perawallet/walletconnect` for v1, `@reown/walletkit` for v2. Everything
+// above them — provider, registry, both handlers, approval sheet, signing
+// adapter — is production code, which is what makes the v2 cases below the
+// acceptance test for the abstraction: registering a second protocol touched
+// the provider's `register` calls and nothing else.
 
 import React, { useEffect, useRef } from 'react'
 import {
@@ -63,6 +67,17 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
+import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
+// The v2 handler's own fixtures, reached by path: the WalletKit fake is a
+// test-only module and must never gain a package export the prod-bundle guard
+// would then have to police.
+import {
+    makeProposal,
+    makeRequest,
+    TESTNET_CHAIN_ID,
+    TOPIC as V2_SESSION_TOPIC,
+    V2_URI,
+} from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
 import {
     AccountTypes,
     useAccountsStore,
@@ -75,6 +90,7 @@ import {
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 import {
+    resetConnectionPairingStateForTesting,
     useConnectionRegistry,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
@@ -87,6 +103,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useDeepLink } from '@hooks/useDeepLink'
 import { ConnectionsProvider } from '@modules/connections'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
@@ -94,6 +111,21 @@ import { UserPreferences } from '@constants/user-preferences'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+
+// v2 has no anonymous mode: with no Reown project id the handler reports
+// itself unavailable and builds no client at all. `generated-env.ts` is
+// gitignored and carries one only where the secret is in the environment, so
+// the flow would pass or fail by machine. Everything else in the module stays
+// real.
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-config')
+    >('@perawallet/wallet-core-config')
+    return {
+        ...actual,
+        config: { ...actual.config, reownProjectId: 'integration-project-id' },
+    }
+})
 
 const SIGNING_ACCOUNT: WalletAccount = {
     id: 'conn-a',
@@ -136,11 +168,24 @@ const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
 // The registry lives inside the provider, so the only honest way to start a
 // pairing is the hook every real caller uses.
-const captured: { registry: Optional<ConnectionRegistryClient> } = {
+type DeepLinkDispatch = ReturnType<typeof useDeepLink>['handleDeepLink']
+const captured: {
+    registry: Optional<ConnectionRegistryClient>
+    handleDeepLink: Optional<DeepLinkDispatch>
+} = {
     registry: undefined,
+    handleDeepLink: undefined,
 }
 const RegistryProbe = () => {
     captured.registry = useConnectionRegistry()
+    return null
+}
+
+// The scanner's front door: `useQRScannerView` hands a scanned string to this
+// exact function, and it is the parser — not the registry — that decides
+// whether a v2 URI ever reaches a handler.
+const DeepLinkProbe = () => {
+    captured.handleDeepLink = useDeepLink().handleDeepLink
     return null
 }
 
@@ -166,12 +211,14 @@ const mountProvider = async () => {
         <>
             <ConnectionsProvider>
                 <RegistryProbe />
+                <DeepLinkProbe />
             </ConnectionsProvider>
             <BottomSheetManager />
         </>,
     )
     await waitFor(() => {
         expect(captured.registry).toBeTruthy()
+        expect(captured.handleDeepLink).toBeTruthy()
     })
 }
 
@@ -280,10 +327,53 @@ const waitForStoredConnection = async (clientId: string) => {
     })
 }
 
+// A long budget on purpose: the client only appears at the END of the boot
+// sequence — keystore hydration, the migration gate, the legacy import — which
+// takes well over `waitFor`'s default second when the whole integration project
+// is running in parallel.
+const waitForWalletKit = (): Promise<FakeWalletKit> =>
+    waitFor(
+        () => {
+            const client = walletKitStub.last()
+            if (!client) throw new Error('WalletKit was never initialised')
+            return client
+        },
+        { timeout: 15_000 },
+    )
+
+/**
+ * The v2 counterpart of `pairAndHandshake`: pairs on a `wc:…@2` URI and
+ * delivers the proposal the relay would. The client only exists once the boot
+ * sequence has reached `registry.initialize()`, and v2 has no session before
+ * then — unlike v1, whose connector is built by `pair` itself.
+ */
+const pairAndProposeV2 = async (): Promise<FakeWalletKit> => {
+    const walletKit = await waitForWalletKit()
+    await act(async () => {
+        await captured.registry!.pair(V2_URI, { origin: IN_APP_ORIGIN })
+    })
+    act(() => {
+        walletKit.emit('session_proposal', makeProposal())
+    })
+    return walletKit
+}
+
+/** The JSON-RPC frame the handler put on the wire, narrowed to its result. */
+const signedSlotsFrom = (walletKit: FakeWalletKit): Nullable<string>[] => {
+    expect(walletKit.respondSessionRequest).toHaveBeenCalledTimes(1)
+    const [{ topic, response }] = walletKit.respondSessionRequest.mock.calls[0]
+    expect(topic).toBe(V2_SESSION_TOPIC)
+    if (!('result' in response)) {
+        throw new Error('the peer was answered with an error, not a signature')
+    }
+    return response.result as Nullable<string>[]
+}
+
 describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     beforeEach(async () => {
         resetTestKeystore()
         walletConnectClientStub.reset()
+        walletKitStub.reset()
         captured.registry = undefined
         useAccountsStore
             .getState()
@@ -292,6 +382,9 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             .getState()
             .setSelectedAccountAddress(SIGNING_ACCOUNT.address)
         await getProvider().connections.store.clear()
+        // The front-door dispatcher dedupes concurrent pairings by topic in
+        // module state, and every v2 case here pairs on the same URI.
+        resetConnectionPairingStateForTesting()
         vi.clearAllMocks()
     })
 
@@ -323,6 +416,43 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
             // The session key never reaches the record — it lives in the
             // keystore behind `secretRef`.
             expect(stored[0].accounts).toEqual([SIGNING_ACCOUNT.address])
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a v2 URI arrives at the deeplink front door, when the dApp proposes, then the approval sheet opens and the session is persisted',
+        async () => {
+            // Every other v2 case starts at `registry.pair`, which skips the
+            // parser — and the parser is what a scanned or OS-delivered URI
+            // meets first. A v2 URI carries no `bridge=`, so a parser that
+            // requires one turns the whole handler into unreachable code and
+            // the user into an invalid-URL toast.
+            await mountProvider()
+            const walletKit = await waitForWalletKit()
+
+            const dispatched = captured.handleDeepLink!(V2_URI, false, 'qr')
+            await waitFor(() => {
+                expect(walletKit.pair).toHaveBeenCalledTimes(1)
+            })
+            act(() => {
+                walletKit.emit('session_proposal', makeProposal())
+            })
+            // Resolves on the peer's answer, well before the user decides.
+            await act(async () => {
+                await dispatched
+            })
+
+            await approveViaUi(SIGNING_ACCOUNT.name as string)
+
+            await waitForStoredConnection(V2_SESSION_TOPIC)
+            expect(walletKit.approveSession).toHaveBeenCalledTimes(1)
+            const stored =
+                await getProvider().connections.store.get(V2_SESSION_TOPIC)
+            expect(stored?.accounts).toEqual([SIGNING_ACCOUNT.address])
+            // The scanner's source, carried from the dispatcher through the
+            // registry onto the record.
+            expect(stored?.origin?.source).toBe('qr')
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -792,6 +922,118 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
                     'GenesisHashMismatchError',
                 )
                 expect(connector.approveRequestCalls).toHaveLength(0)
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given a dApp pairs on a v2 URI, when the user approves and the dApp requests a signature, then the peer is answered on the session topic with a signed transaction',
+            async () => {
+                // The whole design's acceptance claim: the same provider,
+                // registry, approval sheet, signing adapter and ARC-0001
+                // resolver, over a protocol whose pairing topic is not its
+                // session topic and whose chain ids are CAIP-2 — and the only
+                // app file that had to learn about it is the one that calls
+                // `register`.
+                const signer = await seedAlgo25Signer()
+                await mountProviderWithSigning()
+                const walletKit = await pairAndProposeV2()
+
+                await approveViaUi(signer.name as string)
+                // The record is keyed by the SESSION topic, which the pairing
+                // topic in `V2_URI` is not.
+                await waitForStoredConnection(V2_SESSION_TOPIC)
+
+                const requested = buildPaymentTransaction({
+                    sender: signer.address,
+                    receiver: HD_TEST_ADDRESS,
+                    amount: 1_000_000n,
+                })
+                const requestedTxn = encodeToBase64(
+                    encodeTransactionRaw(requested),
+                )
+                const requestId = 9505
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id: requestId,
+                            // ARC-0025 puts the ARC-0001 group in the first
+                            // positional slot.
+                            params: [[{ txn: requestedTxn }]],
+                        }),
+                    )
+                })
+
+                await waitFor(
+                    () => {
+                        expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                    },
+                    { timeout: 15_000 },
+                )
+                fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+
+                await waitFor(
+                    () => {
+                        expect(
+                            walletKit.respondSessionRequest,
+                        ).toHaveBeenCalled()
+                    },
+                    { timeout: 15_000 },
+                )
+                const result = signedSlotsFrom(walletKit)
+                expect(result).toHaveLength(1)
+                const carrier = result[0]
+                if (!carrier) throw new Error('the peer got no signed slot')
+
+                const signed = decodeSignedTransaction(
+                    decodeFromBase64(carrier),
+                )
+                expect(signed.sig).toEqual(VISIBLE_SIGNATURE)
+                expect(
+                    rawTransactionsMatch(
+                        [requestedTxn],
+                        [encodeToBase64(encodeTransactionRaw(signed.txn))],
+                    ),
+                ).toBe(true)
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given an approved v2 session, when the dApp requests a signature on a chain it was not approved for, then the peer is refused and nothing is offered to sign',
+            async () => {
+                // A v2 session can hold several chains at once, so the guard
+                // is not "is this my session" but "is this the chain the
+                // wallet is on" — a mainnet dApp must not get a testnet group
+                // signed while the wallet shows mainnet.
+                const signer = await seedAlgo25Signer()
+                await mountProviderWithSigning()
+                const walletKit = await pairAndProposeV2()
+                await approveViaUi(signer.name as string)
+                await waitForStoredConnection(V2_SESSION_TOPIC)
+
+                const requestId = 9606
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id: requestId,
+                            chainId: TESTNET_CHAIN_ID,
+                        }),
+                    )
+                })
+
+                await waitFor(() => {
+                    expect(walletKit.respondSessionRequest).toHaveBeenCalled()
+                })
+                const [{ response }] =
+                    walletKit.respondSessionRequest.mock.calls[0]
+                expect(response).toMatchObject({ id: requestId })
+                expect('result' in response).toBe(false)
+                // Refused before the registry ever validated the payload, so
+                // no review sheet and no key access.
+                expect(screen.queryByTestId(SLIDE_TEST_ID)).toBeNull()
                 expect(signSpy).not.toHaveBeenCalled()
             },
             SLOW_TEST_TIMEOUT_MS,

@@ -501,6 +501,17 @@ jobs:
         if: steps.changes.outputs.affected == 'true'
         run: pnpm --filter browser bundle
 
+      # The browser registers no v2 handler; WalletKit must never enter its
+      # bundle. Checked here rather than tools/check-prod-bundle.sh because
+      # apps/browser/dist does not exist yet when that script runs in the
+      # Build job — only this job's `Bundle extension` step produces it.
+      # `test -d` first: grep over a missing directory exits non-zero, which
+      # the negation turns into a pass — the guard would go quiet exactly when
+      # the bundle step it depends on failed to produce anything.
+      - name: Guard against WalletKit leaking into the browser bundle
+        if: steps.changes.outputs.affected == 'true'
+        run: test -d apps/browser/dist && ! grep -rlE "walletkit|@reown" apps/browser/dist
+
       # Keyed on the lockfile hash (same idiom as the node_modules/build-artifact
       # caches above) since @playwright/test is pinned via a semver range, not an
       # exact version. `playwright install` is idempotent, so a stale/missing

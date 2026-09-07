@@ -112,6 +112,9 @@ export const useSignRequestApprovalScreen =
                 // the neutral adapter's input from the wire.
                 const message: InboundMessage = {
                     kind: 'request',
+                    // The offscreen host answers only WalletConnect kinds; a
+                    // future transport must carry its own label over the wire.
+                    sourceType: 'walletconnect',
                     connectionId: approval.connectionId,
                     correlationId: approval.correlationId,
                     authorizedAccounts: approval.authorizedAccounts,

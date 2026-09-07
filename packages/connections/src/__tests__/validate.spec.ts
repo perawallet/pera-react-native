@@ -22,6 +22,7 @@ const request = (
     kind: 'request',
     connectionId: 'c1',
     correlationId: '1',
+    sourceType: 'walletconnect',
     authorizedAccounts: ['AAAA'],
     peer: { name: 'Test dApp' },
     rawOperation: { type, params },

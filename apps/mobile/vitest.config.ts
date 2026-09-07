@@ -99,6 +99,26 @@ export default defineConfig({
                 ),
             },
             {
+                // v2's transport, same reasoning: `useConnectionsProvider`
+                // registers the WalletConnect v2 handler, so every suite that
+                // mounts `ConnectionsProvider` would otherwise build a real
+                // WalletKit and dial the Reown relay. One stub module serves
+                // both specifiers — the handler's only imports are
+                // `WalletKit`, `Core` and `EXPIRER_EVENTS`.
+                find: '@reown/walletkit',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/walletkit-stub.ts',
+                ),
+            },
+            {
+                find: '@walletconnect/core',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/walletkit-stub.ts',
+                ),
+            },
+            {
                 find: 'react',
                 replacement: path.resolve(__dirname, './node_modules/react'),
             },
@@ -390,6 +410,17 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/contacts/src/index.ts',
+                ),
+            },
+            {
+                // Ahead of the package root, which would otherwise match
+                // this specifier as a prefix and resolve it to
+                // `…/src/index.ts/v2`. The v2 handler has no barrel export —
+                // that is what keeps @reown/walletkit out of `apps/browser`.
+                find: '@perawallet/wallet-core-walletconnect/v2',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/walletconnect/src/v2/index.ts',
                 ),
             },
             {

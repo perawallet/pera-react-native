@@ -948,7 +948,7 @@ export const usePeraWebviewInterface = (
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                        'No response from the dApp. The session may be expired or the dApp may be unreachable.',
                         webview,
                     )
                     // The page cannot be un-told; `pair` keeps watching the

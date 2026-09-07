@@ -13,14 +13,25 @@
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * Never returns the URI: `key=`/`symKey=` are the pairing secret and error logs
- * ship to the crash reporter. Topic and bridge origin are already visible in
+ * Shared by both WalletConnect protocol implementations: reading a `wc:` URI
+ * is the one thing v1 and v2 must agree on, since the registry decides which
+ * handler owns a URI purely from what these two functions report.
+ */
+
+/** The topic of a `wc:<topic>@<version>` URI, in both protocols' encoding. */
+export const walletConnectUriTopic = (uri: string): Nullable<string> =>
+    /^wc:([^@?#]+)@/.exec(uri)?.[1] ?? null
+
+/**
+ * Log-safe identifiers for a `wc:` pairing URI. Never returns the URI itself:
+ * v1's `key=` and v2's `symKey=` are the pairing secret, and error-level log
+ * context ships to the crash reporter. Topic and bridge origin are visible in
  * plaintext to the public bridge server, so they are safe.
  */
 export const walletConnectLogContext = (
     uri: string,
 ): { topic: Nullable<string>; bridgeOrigin: Nullable<string> } => {
-    const topic = /^wc:([^@?#]+)@/.exec(uri)?.[1] ?? null
+    const topic = walletConnectUriTopic(uri)
     const bridgeValue = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
     let bridgeOrigin: Nullable<string> = null
     if (bridgeValue) {

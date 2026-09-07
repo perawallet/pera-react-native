@@ -194,8 +194,28 @@ console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
 
+// AsyncStorage is not a Pera dependency and must never become one: it would
+// be a second, unencrypted persistence layer beside MMKV. The specifier
+// arrives anyway because @walletconnect/keyvaluestorage's react-native entry
+// requires it at module scope and @walletconnect/core loads that entry even
+// when Core({ storage }) supplies our own store — so it is aliased to a stub
+// whose every member throws (metro-shims/async-storage.ts).
+const asyncStoragePackage = '@react-native-async-storage/async-storage';
+const asyncStorageStub = path.resolve(projectRoot, 'metro-shims/async-storage.ts');
+
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
+    // First branch on purpose: every early return below is a path this swap
+    // would otherwise miss, and the package is banned on web as well as
+    // native, so no platform guard either. Deep imports are redirected too —
+    // resolving one to the real package would defeat the whole alias.
+    if (
+        moduleName === asyncStoragePackage ||
+        moduleName.startsWith(asyncStoragePackage + '/')
+    ) {
+        return { filePath: asyncStorageStub, type: 'sourceFile' };
+    }
+
     // Strip Vite ?raw suffix so Metro can find the actual file
     if (moduleName.endsWith('?raw')) {
         const cleanName = moduleName.slice(0, -4);

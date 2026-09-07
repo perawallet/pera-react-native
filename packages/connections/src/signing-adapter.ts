@@ -168,7 +168,7 @@ const enqueueArc60Request = (
         id: generateOrderedUniqueId(),
         type: 'arc60',
         transport: 'callback',
-        sourceType: 'walletconnect',
+        sourceType: message.sourceType,
         transportId: message.connectionId,
         sourceMetadata: message.peer,
         stdSigData,
@@ -196,7 +196,8 @@ const enqueueArc60Request = (
     addSignRequest(signRequest)
 }
 
-// Chain id is a v1 wire concept the v1 handler checks before the message gets here.
+// Chain id is out of scope: a v1 wire concept only the legacy v1 hook path
+// checked per item, and nothing downstream of here reads `item.chainId`.
 const legacyDataItemViolation = (
     item: PeraArbitraryDataMessage,
     authorizedAccounts: string[],
@@ -249,7 +250,7 @@ const enqueueLegacyDataRequest = (
         id: generateOrderedUniqueId(),
         type: 'arbitrary-data',
         transport: 'callback',
-        sourceType: 'walletconnect',
+        sourceType: message.sourceType,
         transportId: message.connectionId,
         sourceMetadata: message.peer,
         data: items,
@@ -305,8 +306,8 @@ export type EnqueueInboundRequestDeps = {
 
 /**
  * Pure over its deps so the browser's approval window, which has no hook realm,
- * can call it directly. A non-WalletConnect transport should carry its own
- * `sourceType` on the message rather than this adapter hardcoding one.
+ * can call it directly. The handler declares the message's `sourceType`, so a
+ * new transport reaches the pipeline without this adapter knowing it exists.
  */
 export const enqueueInboundRequest = (
     message: InboundMessage,
@@ -333,7 +334,7 @@ export const enqueueInboundRequest = (
         // `enqueue` can still reject past its own handling (re-encoding a
         // fee-adjusted group); un-caught that is an unanswered peer.
         deps.enqueueArc0001(resolved, {
-            sourceType: 'walletconnect',
+            sourceType: message.sourceType,
             transportId: message.connectionId,
             // Serializable id so a multisig sync-flow handoff can answer this
             // exact request after an app kill.

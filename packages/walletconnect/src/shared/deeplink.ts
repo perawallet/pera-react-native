@@ -150,9 +150,12 @@ export const parseWalletConnectUri = (
         }
     }
 
-    // A bridge-less URI is a focus hint, not a pairing; the WC client throws
-    // "Invalid or missing bridge url parameter value" on it.
-    if (!/[?&]bridge=[^&]+/.test(wcUri)) {
+    // Which params a pairing URI must carry is per-protocol — v1 needs
+    // `bridge=`, v2 `symKey=` — so that check belongs to each handler's
+    // `canHandleUri`, and a URI nobody claims surfaces as a failed pairing.
+    // The one wc-schemed shape that is not a pairing attempt at all is the
+    // return-to-wallet focus hint, which must stay silent.
+    if (isWalletConnectFocusHint(wcUri)) {
         return null
     }
 

@@ -61,6 +61,7 @@ const makeFakeRegistry = () => {
         teardown: vi.fn(async () => {}),
         pair: vi.fn(async () => 'pairing-1'),
         abandonPairing: vi.fn(),
+        methodsFor: vi.fn(() => []),
         describeUri: vi.fn(() => ({})),
         networksFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
@@ -124,6 +125,7 @@ const makeRequest = (
     overrides: Partial<InboundRequest> = {},
 ): InboundRequest => ({
     kind: 'request',
+    sourceType: 'walletconnect',
     connectionId: 'conn-1',
     correlationId: '7',
     authorizedAccounts: ['ADDR1'],

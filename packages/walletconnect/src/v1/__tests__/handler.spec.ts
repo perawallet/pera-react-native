@@ -767,6 +767,8 @@ describe('walletconnect v1 handler behaviour', () => {
         const message = asRequest(onMessage.mock.calls[0][0])
         expect(message.connectionId).toBe(connector.clientId)
         expect(message.correlationId).toBe('7')
+        // The handler declares this; the neutral layer no longer assumes it.
+        expect(message.sourceType).toBe('walletconnect')
         // The property that stops a session approved for A signing for B.
         expect(message.authorizedAccounts).toEqual(['BBBB', 'CCCC'])
         expect(message.rawOperation).toEqual({
