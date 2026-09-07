@@ -297,8 +297,8 @@
     "accounts": {
         "legacyQuantum": {
             "title": "À propos de votre compte Quantum",
-            "body": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nCependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds, afin que votre phrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
-            "bodyWithDependents": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nUn autre compte a un rekey vers celui-ci, ne vous en éloignez donc pas pour le moment — il en est actuellement l’unique signataire. Cependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds une fois le rekey de l’autre compte effectué, afin que votre phrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
+            "body": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nCependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds, afin que votre passphrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
+            "bodyWithDependents": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nUn autre compte a un rekey vers celui-ci, ne vous en éloignez donc pas pour le moment — il en est actuellement l’unique signataire. Cependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds une fois le rekey de l’autre compte effectué, afin que votre passphrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
             "markerLabel": "À propos de ce compte Quantum",
             "dismiss": "Compris"
         }
@@ -462,9 +462,9 @@
             "title": "Gardez-la secrète. Gardez-la en sécurité.",
             "description": "Confirmez et reconnaissez les points suivants :",
             "row_screen": "Personne ne peut voir mon écran.",
-            "row_share": "Je risque de perdre tous mes fonds si je partage ma phrase de récupération avec qui que ce soit.",
-            "row_lose": "Mes fonds sont définitivement perdus si je perds ma phrase de récupération et l’accès à mon wallet.",
-            "row_pera": "Les employés de Pera ne me demanderont JAMAIS ma phrase de récupération.",
+            "row_share": "Je risque de perdre tous mes fonds si je partage ma passphrase de récupération avec qui que ce soit.",
+            "row_lose": "Mes fonds sont définitivement perdus si je perds ma passphrase de récupération et l’accès à mon wallet.",
+            "row_pera": "Les employés de Pera ne me demanderont JAMAIS ma passphrase de récupération.",
             "cta_reveal": "Afficher la passphrase",
             "cta_cancel": "Annuler"
         },
@@ -795,7 +795,7 @@
             "generic": "Les données ne semblent pas valides.",
             "invalid_address": "L’adresse ne semble pas valide : {{address}}",
             "invalid_amount": "Le montant ne semble pas valide : {{amount}}",
-            "invalid_mnemonic": "La phrase de récupération ne semble pas valide.",
+            "invalid_mnemonic": "La passphrase de récupération ne semble pas valide.",
             "required_field": "Un champ obligatoire est manquant : {{field}}"
         },
         "transaction": {
@@ -1537,23 +1537,23 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Sélectionnez votre type de phrase mnémonique",
+            "title": "Sélectionnez votre type de passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet qui vous permet de dériver de nouveaux comptes, tous à partir de la même phrase mnémonique",
+                "description": "Wallet qui vous permet de dériver de nouveaux comptes, tous à partir de la même passphrase",
                 "chip": "nouveau"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Format historique spécifique à l’écosystème Algorand",
                 "chip": "historique",
-                "mnemonic_info": "Clés mnémoniques de 25 mots"
+                "mnemonic_info": "Passphrase de 25 mots"
             },
-            "mnemonic_info": "Clés mnémoniques de 24 mots"
+            "mnemonic_info": "Passphrase de 24 mots"
         },
         "import_info": {
             "title": "Récupérer un wallet Algorand",
-            "body": "Au cours des étapes suivantes, vous saisirez votre passphrase de récupération pour récupérer un wallet Algorand. Gardez votre phrase de récupération à portée de main avant de commencer.",
+            "body": "Au cours des étapes suivantes, vous saisirez votre passphrase de récupération pour récupérer un wallet Algorand. Gardez votre passphrase de récupération à portée de main avant de commencer.",
             "button": "Récupérer un wallet Algorand"
         },
         "import_account": {
@@ -1646,7 +1646,7 @@
             "watch_address_option_title": "Suivre une adresse",
             "watch_address_option_description": "Suivez l’activité d’une adresse Algorand en indiquant son adresse",
             "create_universal_wallet_option_title": "Créer un Universal Wallet",
-            "create_universal_wallet_option_description": "Wallet qui vous permet de dériver de nouveaux comptes, tous à partir de la même phrase mnémonique de 24 mots",
+            "create_universal_wallet_option_description": "Wallet qui vous permet de dériver de nouveaux comptes, tous à partir de la même passphrase de 24 mots",
             "create_algo25_option_title": "Créer un compte Algo25",
             "create_algo25_option_description": "Format historique spécifique à Algorand",
             "quantum_account_option_title": "Ajouter un compte Quantum",
@@ -1882,7 +1882,7 @@
                 "learn_more": "En savoir plus",
                 "expect_label": "Ce qui va se passer",
                 "expect_1": "Les futures transactions de ce compte ne pourront être signées qu’avec la clé du nouveau compte.",
-                "expect_2": "Sauvegardez la phrase de récupération de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
+                "expect_2": "Sauvegardez la passphrase de récupération de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
                 "expect_3": "L’adresse, les soldes et la configuration de votre compte ne changeront pas.",
                 "expect_4": "Si vous clôturez ce compte plus tard, le rekey est supprimé. Si l’adresse est de nouveau approvisionnée, le contrôle revient à la clé d’origine, et non au compte que vous configurez maintenant.",
                 "cta": "Démarrer"
@@ -1920,7 +1920,7 @@
                 "learn_more": "En savoir plus",
                 "expect_label": "Ce qui va se passer",
                 "expect_1": "Les futures transactions de ce compte ne pourront être signées qu’avec la clé post-quantique du compte quantique.",
-                "expect_2": "Sauvegardez la phrase de récupération de 25 mots de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
+                "expect_2": "Sauvegardez la passphrase de récupération de 25 mots de ce compte avant de continuer. La perdre, c’est perdre la possibilité de signer pour ce compte, même si tout le reste demeure intact.",
                 "expect_3": "L’adresse, les soldes et la configuration de votre compte ne changeront pas.",
                 "expect_4": "Les futures transactions seront soumises à des frais de réseau minimum plus élevés, et un rekey ultérieur vers un compte standard nécessitera lui-même une transaction signée avec la clé quantique.",
                 "cta": "Démarrer"
@@ -2819,8 +2819,8 @@
             "success_sheet_body": "Veuillez retourner dans {{name}} pour continuer et terminer votre opération. Vous trouverez toutes les sessions connectées dans la page de paramètres dédiée.",
             "success_sheet_return_to_dapp": "Retourner dans {{name}}",
             "success_sheet_return_to_dapp_generic": "Retourner dans la dApp",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "networks_betanet": "Betanet",
             "error_sheet_title": "Erreur",
             "error_sheet_body": "Votre demande WalletConnect a échoué avec l’erreur suivante :",
