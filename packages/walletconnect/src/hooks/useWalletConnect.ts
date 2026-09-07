@@ -531,7 +531,9 @@ export const useWalletConnect = (
         // flap is routine — but a repeat failure on a connector with no
         // established session means the pairing handshake cannot complete,
         // and the outcome waiter should fail fast rather than sit out its
-        // full budget in silence.
+        // full budget in silence. Surfaced exactly once: the transport
+        // retries forever, and surfacing every retry loops the error toast
+        // for as long as the device stays offline.
         let transportErrorCount = 0
         connector.on('transport_error', () => {
             logger.warn('[WC] transport error', {
@@ -544,7 +546,7 @@ export const useWalletConnect = (
                 return
             }
             transportErrorCount += 1
-            if (transportErrorCount < 2) {
+            if (transportErrorCount !== 2) {
                 return
             }
             surfaceError(

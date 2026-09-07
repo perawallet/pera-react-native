@@ -100,6 +100,22 @@ describe('useWalletConnectPairing (native)', () => {
         expect(outcome).toEqual({ type: 'error', error: rejectionError })
     })
 
+    it('abandons the errored pairing connector so its transport stops retrying', async () => {
+        // The WC v1 transport recreates its socket forever; a connector left
+        // registered after a failed handshake keeps re-surfacing bridge
+        // errors (a toast every ~2s in airplane mode) until the app dies.
+        mockConnect.mockResolvedValue('pairing-client')
+        mockWaitForSessionOutcome.mockResolvedValue({
+            type: 'error',
+            error: new Error('bridge unreachable'),
+        })
+        const { result } = renderHook(() => useWalletConnectPairing())
+
+        await result.current.pair('wc:123')
+
+        expect(mockAbandonPairing).toHaveBeenCalledWith('pairing-client')
+    })
+
     it('uses the default 8s outcome budget when no override is given', async () => {
         mockConnect.mockResolvedValue('pairing-client')
         mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
@@ -137,6 +153,9 @@ describe('useWalletConnectPairing (native)', () => {
             type: 'timeout',
             clientId: 'pairing-client',
         })
+        // Abandoning here would break the late-session grace the deeplink
+        // handler runs on timed-out pairings.
+        expect(mockAbandonPairing).not.toHaveBeenCalled()
     })
 
     describe('pairing socket fail-fast', () => {
