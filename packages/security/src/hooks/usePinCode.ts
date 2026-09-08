@@ -89,7 +89,7 @@ export const usePinCode = (): UsePinCodeResult => {
         state => state.setAutoLockStartedAt,
     )
 
-    const { disableBiometrics, refreshBiometricsBinding } = useBiometrics()
+    const { disableBiometrics } = useBiometrics()
 
     const isLockedOut = useMemo(
         () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
@@ -187,12 +187,8 @@ export const usePinCode = (): UsePinCodeResult => {
                 await writeRecord(record)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
-                // Re-bind the biometric blob to the new PinRecord bytes so
-                // its content matches `PIN_RECORD_KEY_ID`. Critically, this
-                // does NOT write the raw PIN — that previously meant a
-                // 6-digit cleartext PIN sat in the keystore alongside the
-                // PBKDF2-hashed record, defeating the hashing.
-                await refreshBiometricsBinding()
+                // Nothing to re-bind: the biometric blob holds a random token, not a copy of
+                // the PIN record, so a new PIN neither invalidates nor needs to touch it.
             } else {
                 await removeSecret(PIN_RECORD_KEY_ID)
                 await removeSecret(DURESS_PIN_RECORD_KEY_ID)
@@ -212,7 +208,6 @@ export const usePinCode = (): UsePinCodeResult => {
             writeRecord,
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,
-            refreshBiometricsBinding,
             disableBiometrics,
         ],
     )

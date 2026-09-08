@@ -61,11 +61,14 @@ vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
 }))
 
+const biometricsMocks = vi.hoisted(() => ({
+    disableBiometrics: vi.fn(),
+}))
+
 vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
-        disableBiometrics: vi.fn(),
-        refreshBiometricsBinding: vi.fn(),
+        disableBiometrics: biometricsMocks.disableBiometrics,
     })),
 }))
 
@@ -239,48 +242,25 @@ describe('usePinCode', () => {
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     }, 30_000)
 
-    test('savePin re-binds biometric storage when biometrics are enabled', async () => {
-        const refreshBiometricsBinding = vi.fn()
-        const disableBiometrics = vi.fn()
-        const { useBiometrics } = await import('../useBiometrics')
-        vi.mocked(useBiometrics).mockReturnValue({
-            checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            refreshBiometricsBinding,
-            disableBiometrics,
-            checkBiometricsAvailable: vi.fn(),
-            enableBiometrics: vi.fn(),
-            authenticateWithBiometrics: vi.fn(),
-            isEnabled: true,
-            isAvailable: true,
-        })
+    test('leaves biometrics untouched when the PIN changes', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 
         const { result } = renderHook(() => usePinCode())
 
-        await act(async () => {
-            await result.current.savePin('123456')
-        })
+        await act(() => result.current.savePin('123456'))
 
-        expect(refreshBiometricsBinding).toHaveBeenCalled()
-        // Critical: the raw PIN bytes must never be passed anywhere — the
-        // bug we fixed was savePin writing `encoder.encode(pin)` into the
-        // biometric blob, which puts cleartext PIN in the keystore.
-        expect(refreshBiometricsBinding).not.toHaveBeenCalledWith(
-            expect.any(Uint8Array),
-        )
-    }, 30_000)
+        expect(biometricsMocks.disableBiometrics).not.toHaveBeenCalled()
+    })
 
     test('savePin(null) removes the PIN and disables biometrics when enabled', async () => {
-        const refreshBiometricsBinding = vi.fn()
         const disableBiometrics = vi.fn()
         const { useBiometrics } = await import('../useBiometrics')
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            refreshBiometricsBinding,
             disableBiometrics,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),
-            authenticateWithBiometrics: vi.fn(),
+            unlockWithBiometrics: vi.fn(),
             isEnabled: true,
             isAvailable: true,
         })
@@ -306,11 +286,10 @@ describe('usePinCode', () => {
         const { useBiometrics } = await import('../useBiometrics')
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
-            refreshBiometricsBinding: vi.fn(),
             disableBiometrics,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),
-            authenticateWithBiometrics: vi.fn(),
+            unlockWithBiometrics: vi.fn(),
             isEnabled: false,
             isAvailable: true,
         })
