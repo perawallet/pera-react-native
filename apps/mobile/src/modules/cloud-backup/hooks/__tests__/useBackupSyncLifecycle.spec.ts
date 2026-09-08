@@ -37,8 +37,11 @@ const {
 vi.mock('@perawallet/wallet-core-backup', () => ({
     initializeBackupSyncManager: initializeMock,
     getBackupSyncManager: () => managerMock,
+    useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),
     useCloudBackupStore: (select: (state: unknown) => unknown) =>
         select({ backupId: backupIdRef.current }),
+    useResolveHdSeedForBackup: () => resolveHdMock,
+    useResolveMnemonicForBackup: () => resolveMnemonicMock,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -55,18 +58,6 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
     useIsCloudBackupEnabled: isEnabledMock,
-}))
-
-vi.mock('../useCloudBackupImport', () => ({
-    useCloudBackupImport: () => ({ importAccounts: importAccountsMock }),
-}))
-
-vi.mock('../useResolveHdSeedForBackup', () => ({
-    useResolveHdSeedForBackup: () => resolveHdMock,
-}))
-
-vi.mock('../useResolveMnemonicForBackup', () => ({
-    useResolveMnemonicForBackup: () => resolveMnemonicMock,
 }))
 
 import { useBackupSyncLifecycle } from '../useBackupSyncLifecycle'

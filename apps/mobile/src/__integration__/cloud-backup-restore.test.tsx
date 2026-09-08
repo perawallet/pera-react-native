@@ -34,9 +34,12 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    useCloudBackupImport,
     useCloudBackupStore,
     useBackupSyncStateStore,
     useCloudBackupRestoreDraftStore,
+    useResolveHdSeedForBackup,
+    useResolveMnemonicForBackup,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -46,11 +49,6 @@ import {
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 
-import {
-    useCloudBackupImport,
-    useResolveHdSeedForBackup,
-    useResolveMnemonicForBackup,
-} from '@modules/cloud-backup'
 import { CloudBackupScreen } from '@modules/cloud-backup/screens/CloudBackupScreen'
 import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'

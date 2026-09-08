@@ -11,13 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import type { SerializeMnemonicResolver } from '@perawallet/wallet-core-backup'
 import {
     BACKUP_ACCESS_DOMAIN,
     mnemonicIndexToWord,
     useKMS,
 } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import type { SerializeMnemonicResolver } from '../sync/types'
 
 /** Resolves null when the phrase is unavailable, which skips that account
  *  rather than backing it up without its secret. Words are materialized only

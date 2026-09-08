@@ -15,7 +15,10 @@ import { AppState } from 'react-native'
 import {
     getBackupSyncManager,
     initializeBackupSyncManager,
+    useCloudBackupImport,
     useCloudBackupStore,
+    useResolveHdSeedForBackup,
+    useResolveMnemonicForBackup,
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
@@ -28,9 +31,6 @@ import {
     getPollingTransitionAction,
     isActiveAppState,
 } from '@utils/app-state'
-import { useCloudBackupImport } from './useCloudBackupImport'
-import { useResolveHdSeedForBackup } from './useResolveHdSeedForBackup'
-import { useResolveMnemonicForBackup } from './useResolveMnemonicForBackup'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']

@@ -29,8 +29,11 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    useCloudBackupImport,
     useCloudBackupStore,
     useBackupSyncStateStore,
+    useResolveHdSeedForBackup,
+    useResolveMnemonicForBackup,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -38,11 +41,6 @@ import {
     decryptItemPayload,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
-import {
-    useCloudBackupImport,
-    useResolveHdSeedForBackup,
-    useResolveMnemonicForBackup,
-} from '@modules/cloud-backup'
 
 import {
     BACKUP_MNEMONIC,
