@@ -43,8 +43,13 @@ export type AccountMenuProps = {
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
-    const { listItems, selectedAccountAddress, sortMode, handleTap } =
-        useAccountMenu(props)
+    const {
+        listItems,
+        selectedAccountAddress,
+        sortMode,
+        flatListRef,
+        handleTap,
+    } = useAccountMenu(props)
     const {
         onAddAccount,
         onOpenSort,
@@ -89,6 +94,14 @@ export const AccountMenu = (props: AccountMenuProps) => {
         <PWView style={styles.container}>
             <PWView style={styles.mainContent}>
                 <PWFlatList<AccountMenuListItem>
+                    ref={flatListRef}
+                    // FlashList v2 anchors the viewport on the first visible
+                    // row and re-applies that anchor on every data change. A
+                    // re-sort keeps every row and moves all of them, so the
+                    // anchor dragged the user to wherever their old top row —
+                    // usually the selected account — now lived. Nothing ever
+                    // prepends here, so anchoring has nothing to protect.
+                    maintainVisibleContentPosition={{ disabled: true }}
                     data={listItems}
                     extraData={sortMode}
                     keyExtractor={item =>

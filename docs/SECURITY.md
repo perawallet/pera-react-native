@@ -32,41 +32,34 @@ Private keys, mnemonics and passwords never appear in a log, a crash report, an 
 an error message. Addresses and transaction hashes are safe to log.
 
 Key material lives in the keystore and nowhere else: `@algorandfoundation/react-native-keystore` on
-native, the vault in `extensions/keystore-chrome` on the browser extension. It never goes into
-`keyValueStorage`, a Zustand store, or React state that outlives the operation.
+native; on the browser extension, `@algorandfoundation/keystore-web`'s IndexedDB store, with every
+record sealed under the master key that the `extensions/keystore-chrome` vault releases only while
+unlocked. A profile written before this layout reaches that state only at its first unlock on the
+new build, when the re-seal sweep runs. It never goes into `keyValueStorage`, a Zustand store, or
+React state that outlives the operation.
 
 Validate user input and API responses before acting on them. Keep secrets in `.env`, not in source.
 
 ## Known limitation: changing the vault password does not rotate the key
 
 On the browser extension, `changePassword` re-wraps the same 32-byte master key under a key derived
-from the new password. It changes who can open the vault going forward. It does not change what is
-inside it.
+from the new password. That master key is also the key every keystore record is sealed under, so a
+password change changes who can open the vault going forward and nothing about what is inside it.
 
-So it is not a remedy for a suspected compromise. An attacker who already extracted the master key,
-or who holds a copy of the old `vault:wrapped-master-key` blob together with the old password, is
-unaffected by a password change. The passkey (PRF) blob likewise keeps wrapping the unchanged key,
-which is correct for continuity but means that path is not invalidated either.
+An attacker holding a copy of the old `vault:wrapped-master-key` blob together with the old password
+decrypts _their_ copy with _their_ blob, and any later copy of the profile's IndexedDB opens under the
+same master key. A password change is therefore not a remedy for a leaked password. The passkey (PRF)
+blob likewise keeps wrapping the unchanged key.
 
-**Rotating the master key would not fix this either, so don't build it.** Re-wrapping under a fresh
-master key re-encrypts the _same plaintext_: the entries hold the actual private keys and seeds, and
-those values do not change. Work the cases through and the benefit disappears.
+Rotation — a fresh master key, every record re-sealed under it, both blobs re-wrapped — would close
+that case. It is not built. Until it is, the remedy for a leaked password is to move the funds to a
+new wallet.
 
-- An attacker who read the master key out of `chrome.storage.session` also had the plaintext at that
-  moment (they needed the ciphertexts to use it, and both live in the same profile). They already
-  have the private keys; re-wrapping copies they've taken achieves nothing.
-- An attacker holding a stale storage dump plus the old password decrypts _their_ copy with _their_
-  blob. Nothing we do to ours touches theirs.
-- Rotation only helps if someone holds the master key but not the ciphertexts and expects to obtain
-  them later, which needs them to have read session storage but not local storage in the same
-  profile. That is not a realistic split.
-
-Key rotation is valuable when a wrapping key can leak while the data stays sealed. That does not
-apply here: the master key only ever exists in memory alongside the plaintext it protects, so a
-master-key compromise implies a plaintext compromise.
-
-The only real remedy is to change the private keys, meaning generate a new wallet and move the
-funds. Advise that, not a password change and not rotation.
+What the vault defends: a cold attacker holding a copy of the browser profile and no password (an
+infostealer, a backup, a shared machine). Only Argon2id's cost stands between them and the material.
+What it does not defend: a script running in the extension's own origin while the vault is unlocked
+— a compromised dependency, XSS in an approval page, an open devtools session — which can read the
+session key from `chrome.storage.session` and use it directly.
 
 ## Supply chain
 

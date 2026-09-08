@@ -26,6 +26,11 @@ export {
     passkeyMainKeyId,
 } from './keystore/passkeyMainKey'
 export {
+    setEngineKeySource,
+    type EngineKeySource,
+} from './keystore/engineKeySource'
+export type { ResealReport } from './keystore/resealTypes'
+export {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,
 } from './keystore/migrationsLedger'

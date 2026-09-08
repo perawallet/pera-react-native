@@ -67,6 +67,7 @@ export const PeraCardBalanceSection = ({
                 <CurrencyAmount
                     value={balance}
                     currency={currency}
+                    assetId={null}
                     precision='compact'
                     symbolPosition='end'
                     variant='h1'

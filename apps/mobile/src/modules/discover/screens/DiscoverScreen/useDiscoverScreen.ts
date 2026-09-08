@@ -10,42 +10,17 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { logger } from '@perawallet/wallet-core-shared'
-import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
+import {
+    useDiscoverWebView,
+    type UseDiscoverWebViewResult,
+} from '@modules/discover/hooks'
 import type { TabBarStackParamList } from '@routes/tabbar'
 
-const joinDiscoverPath = (baseUrl: string, path?: string): string => {
-    if (!path) return baseUrl
-    if (!isSafeRelativePath(path)) {
-        logger.warn('DiscoverScreen: ignoring unsafe path param', { path })
-        return baseUrl
-    }
-    const normalizedBase = baseUrl.endsWith('/')
-        ? baseUrl.slice(0, -1)
-        : baseUrl
-    const normalizedPath = path.startsWith('/') ? path : `/${path}`
-    return `${normalizedBase}${normalizedPath}`
-}
-
-export type UseDiscoverScreenResult = {
-    url: string
-    isReady: boolean
-}
+export type UseDiscoverScreenResult = UseDiscoverWebViewResult
 
 export const useDiscoverScreen = (): UseDiscoverScreenResult => {
     const route = useRoute<RouteProp<TabBarStackParamList, 'Discover'>>()
-    const { isChecking, needsMigration } = useNeedsMigration()
 
-    // hold the Discover WebView until the migration gate settles.
-    // The Discover web app reads the device id once on load; loading it before
-    // the migrated device id is written would fetch favorites with no id and
-    // never retry. Gating on migration completion (not device-id presence)
-    // avoids blocking users who legitimately have no id.
-    const isReady = !(isChecking || needsMigration)
-    const url = joinDiscoverPath(config.discoverBaseUrl, route.params?.path)
-
-    return { url, isReady }
+    return useDiscoverWebView(route.params?.path)
 }

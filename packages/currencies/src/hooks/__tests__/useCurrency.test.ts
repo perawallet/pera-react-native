@@ -131,7 +131,7 @@ describe('services/currencies/hooks', () => {
             expect(converted).toEqual(new Decimal(85))
         })
 
-        it('returns 0 when data is pending', () => {
+        it('returns null while the preferred-currency rate is pending', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
                     preferredCurrency: 'EUR',
@@ -148,10 +148,10 @@ describe('services/currencies/hooks', () => {
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toBeNull()
         })
 
-        it('handles undefined usdPrice gracefully', () => {
+        it('returns null when the resolved rate is missing', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
                     preferredCurrency: 'EUR',
@@ -168,10 +168,10 @@ describe('services/currencies/hooks', () => {
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toBeNull()
         })
 
-        it('handles empty usdPrice string gracefully', () => {
+        it('returns null when the resolved rate is zero', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
                     preferredCurrency: 'EUR',
@@ -188,7 +188,69 @@ describe('services/currencies/hooks', () => {
             const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toBeNull()
+        })
+
+        it('passes an unknown USD amount through as unknown', () => {
+            // An unpriced total is unknown, not zero. Converting it must not
+            // manufacture a number even when the rate itself is fine.
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'EUR' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: new Decimal('0.85') },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency())
+
+            expect(result.current.usdToPreferred(null)).toBeNull()
+        })
+
+        it('reports isRatePending while the fiat rate is unresolved', () => {
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'EUR' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: undefined,
+                isPending: true,
+            })
+
+            const { result } = renderHook(() => useCurrency())
+
+            expect(result.current.isRatePending).toBe(true)
+        })
+
+        it('clears isRatePending once the fiat rate resolves', () => {
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'EUR' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: new Decimal('0.85') },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrency())
+
+            expect(result.current.isRatePending).toBe(false)
+        })
+
+        it('never reports isRatePending when the preferred currency is USD', () => {
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'USD' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: undefined,
+                isPending: true,
+            })
+
+            const { result } = renderHook(() => useCurrency())
+
+            expect(result.current.isRatePending).toBe(false)
         })
 
         it('converts with decimal precision', () => {
@@ -250,7 +312,7 @@ describe('services/currencies/hooks', () => {
             expect(converted).toEqual(new Decimal(10))
         })
 
-        it('returns 0 when preferred is ALGO and price is pending', () => {
+        it('returns null when preferred is ALGO and price is pending', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'ALGO' }),
             )
@@ -268,10 +330,30 @@ describe('services/currencies/hooks', () => {
             const { result } = renderHook(() => useCurrency())
 
             const converted = result.current.usdToPreferred(new Decimal(100))
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toBeNull()
         })
 
-        it('returns 0 when preferred is ALGO and price is zero', () => {
+        it('reports isRatePending while the ALGO rate is unresolved', () => {
+            mockUseAppStore.mockImplementation((selector: any) =>
+                selector({ preferredCurrency: 'ALGO' }),
+            )
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: undefined,
+                isPending: false,
+            })
+
+            mockUseAlgoUsdPriceQuery.mockReturnValue({
+                data: undefined,
+                isPending: true,
+            })
+
+            const { result } = renderHook(() => useCurrency())
+
+            expect(result.current.isRatePending).toBe(true)
+        })
+
+        it('returns null when preferred is ALGO and price is zero', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'ALGO' }),
             )
@@ -289,7 +371,7 @@ describe('services/currencies/hooks', () => {
             const { result } = renderHook(() => useCurrency())
 
             const converted = result.current.usdToPreferred(new Decimal(100))
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toBeNull()
         })
 
         it('exposes algoUsdPrice from the query', () => {
@@ -312,7 +394,7 @@ describe('services/currencies/hooks', () => {
             expect(result.current.algoUsdPrice).toEqual(new Decimal('0.15'))
         })
 
-        it('defaults algoUsdPrice to 0 when not loaded', () => {
+        it('leaves algoUsdPrice null until the rate loads', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({ preferredCurrency: 'USD' }),
             )
@@ -324,7 +406,7 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrency())
 
-            expect(result.current.algoUsdPrice).toEqual(new Decimal(0))
+            expect(result.current.algoUsdPrice).toBeNull()
         })
     })
 })

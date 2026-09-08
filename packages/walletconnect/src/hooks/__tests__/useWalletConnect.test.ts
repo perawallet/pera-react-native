@@ -1517,6 +1517,40 @@ describe('useWalletConnect', () => {
             )
         })
 
+        it('surfaces the bridge error only once while the transport keeps retrying', async () => {
+            // The transport recreates its socket forever (~2s cycle) while
+            // offline, re-firing transport_error each cycle. Surfacing more
+            // than once turns one dead pairing into an endless toast loop.
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'pairing-client' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const transportErrorCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'transport_error',
+                )?.[1]
+            expect(transportErrorCallback).toBeDefined()
+
+            const payload = {
+                event: 'transport_error',
+                params: ['Websocket connection failed'],
+            }
+            act(() => {
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+            })
+
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+        })
+
         it('never surfaces transport errors on an established session', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),

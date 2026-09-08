@@ -103,10 +103,10 @@ describe('useWcErrorScreen', () => {
         // sentence that tells the user to switch to the network they are
         // already on. That is the failure worth catching.
         expect(message).not.toBe('walletconnect.request.error_network_mismatch')
-        expect(message).toContain('Testnet')
-        expect(message).toContain('Mainnet')
-        expect(message.indexOf('Testnet')).toBeLessThan(
-            message.indexOf('Mainnet'),
+        expect(message).toContain('TestNet')
+        expect(message).toContain('MainNet')
+        expect(message.indexOf('TestNet')).toBeLessThan(
+            message.indexOf('MainNet'),
         )
         expect(message).not.toContain('{{')
     })

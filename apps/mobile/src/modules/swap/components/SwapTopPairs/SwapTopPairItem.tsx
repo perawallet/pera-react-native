@@ -16,6 +16,7 @@ import { useTheme } from '@rneui/themed'
 import type { TopPairItem } from '@perawallet/wallet-core-swaps'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { useStyles } from './styles'
@@ -39,18 +40,18 @@ export const SwapTopPairItem = ({
         onPress(pair)
     }, [onPress, pair])
 
-    const volumeDisplay = useMemo(
-        () =>
-            formatCurrency(
-                usdToPreferred(new Decimal(pair.volume24hUsd)),
-                1,
-                preferredCurrency,
-                undefined,
-                true,
-                true,
-            ),
-        [pair.volume24hUsd, usdToPreferred, preferredCurrency],
-    )
+    const volumeDisplay = useMemo(() => {
+        const volume = usdToPreferred(new Decimal(pair.volume24hUsd))
+        if (!volume) return UNKNOWN_AMOUNT_PLACEHOLDER
+        return formatCurrency(
+            volume,
+            1,
+            preferredCurrency,
+            undefined,
+            true,
+            true,
+        )
+    }, [pair.volume24hUsd, usdToPreferred, preferredCurrency])
 
     const pairLabel = `${pair.assetA.unitName ?? ''} to ${pair.assetB.unitName ?? ''}`
 

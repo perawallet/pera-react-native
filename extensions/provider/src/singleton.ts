@@ -20,6 +20,9 @@ import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
+import { resolveEngineKey } from './keystore/engineKeySource'
+import { resealLegacyMaterialWith } from './keystore/resealLegacyMaterial'
+import type { ResealReport } from './keystore/resealTypes'
 import {
     PQ_DERIVATION_LEGACY,
     PQ_DERIVATION_CANONICAL,
@@ -112,9 +115,8 @@ export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
 export const getKeystore = (): ReactNativeKeyStore => keystore
 
 /**
- * Where wallet-domain packages register hooks to intercept keystore operations.
- * `wrap` fully replaces one — kms uses it to route `type: 'algo25'` signing
- * through tweetnacl.
+ * Where wallet-domain packages can register hooks to intercept keystore
+ * operations: `before`, `after`, `error`, or `wrap` to replace one outright.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
@@ -136,6 +138,21 @@ export const initializeProvider = (provider: PeraProvider): void => {
 export const clearKeystore = async (): Promise<void> => {
     await keystore.clear?.()
 }
+
+/**
+ * Moves material sealed under keystore-web's old auto-generated key onto the
+ * vault-derived engine key. The web shell runs it right after unlock and
+ * before any other material operation; native has nothing to move and never
+ * calls it, which is why the web globals below are read only on call.
+ */
+export const resealLegacyMaterial = (): Promise<ResealReport> =>
+    resealLegacyMaterialWith({
+        keystore,
+        resolveEngineKey,
+        subtle,
+        indexedDB: globalThis.indexedDB,
+        databaseName: 'keystore',
+    })
 
 export type KeystoreReconcileResult = {
     /** `k/`-prefixed storage keys whose records were present but undecodable. */

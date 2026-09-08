@@ -26,6 +26,7 @@ const lastChildProps = () =>
     vi.mocked(CurrencyAmount).mock.calls.at(-1)?.[0] as
         | {
               currency?: string
+              assetId?: string | null
               precision?: string
               assetDecimals?: number
               showSymbol?: boolean
@@ -45,6 +46,7 @@ describe('AssetAmount', () => {
         )
         expect(lastChildProps()).toMatchObject({
             currency: 'USDC',
+            assetId: '123',
             precision: 'assetFull',
             assetDecimals: 6,
         })
@@ -65,7 +67,7 @@ describe('AssetAmount', () => {
         expect(lastChildProps()?.assetDecimals).toBeUndefined()
     })
 
-    it("passes the 'ALGO' unit (glyph sentinel) and 6 decimals for Algo", () => {
+    it("passes Algo's asset id (the glyph decision) along with its unit and decimals", () => {
         render(
             <AssetAmount
                 asset={{ assetId: '0', unitName: 'ALGO', decimals: 6 }}
@@ -74,11 +76,25 @@ describe('AssetAmount', () => {
         )
         expect(lastChildProps()).toMatchObject({
             currency: 'ALGO',
+            assetId: '0',
             assetDecimals: 6,
         })
     })
 
-    it('falls back to an empty unit and undefined decimals when the asset is missing', () => {
+    it("passes an ALGO-named ASA's real id, so it cannot borrow the glyph", () => {
+        render(
+            <AssetAmount
+                asset={{ assetId: '987654321', unitName: 'ALGO', decimals: 6 }}
+                value={new Decimal('1.5')}
+            />,
+        )
+        expect(lastChildProps()).toMatchObject({
+            currency: 'ALGO',
+            assetId: '987654321',
+        })
+    })
+
+    it("falls back to an empty unit and '' id (asset mode, no glyph) when the asset is missing", () => {
         render(
             <AssetAmount
                 asset={undefined}
@@ -87,6 +103,7 @@ describe('AssetAmount', () => {
         )
         expect(lastChildProps()).toMatchObject({
             currency: '',
+            assetId: '',
             precision: 'assetFull',
             assetDecimals: undefined,
         })

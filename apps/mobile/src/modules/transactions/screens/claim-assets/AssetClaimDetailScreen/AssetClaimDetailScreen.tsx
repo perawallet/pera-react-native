@@ -19,7 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { CopyableText } from '@components/CopyableText'
 import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
@@ -81,7 +81,7 @@ export const AssetClaimDetailScreen = () => {
                             </PWView>
                         </>
                     )}
-                    <PWView style={styles.footer}>
+                    <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>
                         <ConfirmAction
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleClaim}

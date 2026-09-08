@@ -11,6 +11,7 @@
  */
 
 import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '../constants'
+import type { Nullable } from './types'
 
 /**
  * Whether an asset id refers to the native ALGO asset.
@@ -28,6 +29,19 @@ export const isAlgoAssetId = (
 /**
  * Whether a value (currency id, asset unit name, or ramp-token id/symbol) is the
  * native ALGO ticker. The name-based counterpart to {@link isAlgoAssetId}.
+ *
+ * Only for values from trusted sources (settings, first-party backends, ramp
+ * providers). Never decide identity from an on-chain unit name — an ASA can
+ * name itself "ALGO"; use {@link isAlgoAssetId} on the asset id instead.
  */
 export const isAlgoAssetName = (value: string): boolean =>
     value === ALGO_ASSET_NAME
+
+/**
+ * Asset id for a *trusted* display-currency code (a settings/backend value,
+ * never an on-chain unit name): ALGO's id when the code is the ALGO ticker,
+ * else null (a fiat code). Bridges name-keyed trusted sources into the
+ * id-keyed identity that amount renderers require.
+ */
+export const displayCurrencyToAssetId = (code: string): Nullable<string> =>
+    isAlgoAssetName(code) ? ALGO_ASSET_ID : null

@@ -80,6 +80,9 @@ export const usePreferredAmount = (
         if (!sourceAmount) return null
         if (isPending) return null
 
+        // A resolved-but-absent price means the asset genuinely has no market
+        // value, so 0 is honest here. An absent *rate* below is not — that is
+        // a missing conversion, and it renders as a placeholder.
         const resolvedUsdPrice =
             preFetchedUsdPrice ??
             usdPrices?.get(sourceAssetId)?.usdPrice ??
@@ -90,8 +93,7 @@ export const usePreferredAmount = (
             return usdToPreferred(usdValue)
         }
 
-        const rate = fallbackRate?.usdPrice ?? new Decimal(0)
-        return usdValue.mul(rate)
+        return fallbackRate?.usdPrice?.mul(usdValue) ?? null
     }, [
         sourceAmount,
         isPending,

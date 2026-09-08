@@ -2647,6 +2647,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isAlgoAssetId: (assetId: string | number | bigint) =>
             String(assetId) === '0',
         isAlgoAssetName: (value: string) => value === 'ALGO',
+        displayCurrencyToAssetId: (code: string) =>
+            code === 'ALGO' ? '0' : null,
         logger: {
             debug: vi.fn(),
             info: vi.fn(),

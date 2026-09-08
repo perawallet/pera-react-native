@@ -51,6 +51,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { routeCapabilities } from '@routes/capabilities'
+import { toDiscoverTokenDetailPath } from '@modules/discover/utils/tokenDetailPath'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -86,10 +87,10 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     } = useSingleAssetDetailsQuery(asset.assetId)
 
     const openDiscover = () => {
-        // mirror native: deep-link straight to the asset's token detail page
-        navigation.navigate('TabBar', {
-            screen: 'Discover',
-            params: { path: `token-detail/${asset.assetId}` },
+        // Pushed over asset details (not the Discover tab, which swaps in
+        // place and strands the user with no back affordance)
+        navigation.navigate('DiscoverDetail', {
+            path: toDiscoverTokenDetailPath(asset.assetId),
         })
     }
 

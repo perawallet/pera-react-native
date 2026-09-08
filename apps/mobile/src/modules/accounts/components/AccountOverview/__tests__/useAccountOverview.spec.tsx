@@ -19,6 +19,7 @@ const {
     mockSetSelectedAccount,
     mockSetCanSelectAccount,
     mockBalancesPending,
+    mockBalancesPaused,
     mockHistoryPending,
     mockRequestBottomSheet,
     mockRefreshAccounts,
@@ -27,6 +28,7 @@ const {
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
     mockBalancesPending: { value: false },
+    mockBalancesPaused: { value: false },
     mockHistoryPending: { value: false },
     mockRequestBottomSheet: vi.fn(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,6 +77,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
     useAccountSummaryQuery: vi.fn(() => ({
         isPending: mockBalancesPending.value,
+        isPaused: mockBalancesPaused.value,
     })),
     useAccountBalancesHistoryQuery: vi.fn(() => ({
         isPending: mockHistoryPending.value,
@@ -106,6 +109,7 @@ describe('useAccountOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockBalancesPending.value = false
+        mockBalancesPaused.value = false
         mockHistoryPending.value = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
         mockRefreshAccounts.mockResolvedValue(undefined)
@@ -212,6 +216,19 @@ describe('useAccountOverview', () => {
         // Sticky: once cleared, isLoading does not flip back to true.
         mockBalancesPending.value = true
         rerender()
+        expect(result.current.isLoading).toBe(false)
+    })
+
+    it('clears isLoading when the summary read is paused, rather than pinning the screen', () => {
+        // The summary query runs on networkMode 'always' and so never pauses
+        // today. If that ever changes, a paused read must still count as
+        // loaded — otherwise an offline cold start sits in a skeleton forever
+        // over rows that are already in SQLite.
+        mockBalancesPending.value = true
+        mockBalancesPaused.value = true
+
+        const { result } = renderUseAccountOverview()
+
         expect(result.current.isLoading).toBe(false)
     })
 

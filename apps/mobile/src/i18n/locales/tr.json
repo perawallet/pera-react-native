@@ -262,6 +262,8 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "offline_empty_title": "Çevrimdışısın",
+            "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "filter": "Filtrele",
             "csv": "CSV"
         },
@@ -295,8 +297,8 @@
     "accounts": {
         "legacyQuantum": {
             "title": "Quantum hesabın hakkında",
-            "body": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nAncak uyumluluk sorunlarını önlemek için, kurtarma ifadenin her yerde çalışması amacıyla yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
-            "bodyWithDependents": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nBaşka bir hesap bu hesaba rekey yapılmış durumda, bu yüzden şimdilik bu hesabı kullanmayı bırakma — şu anda o hesabın tek imzalayıcısı bu hesap. Ancak uyumluluk sorunlarını önlemek için, diğer hesabın rekey işlemi tamamlandıktan sonra yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz, böylece kurtarma ifaden her yerde çalışır.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "body": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nAncak uyumluluk sorunlarını önlemek için, kurtarma passphrase’inin her yerde çalışması amacıyla yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "bodyWithDependents": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nBaşka bir hesap bu hesaba rekey yapılmış durumda, bu yüzden şimdilik bu hesabı kullanmayı bırakma — şu anda o hesabın tek imzalayıcısı bu hesap. Ancak uyumluluk sorunlarını önlemek için, diğer hesabın rekey işlemi tamamlandıktan sonra yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz, böylece kurtarma passphrase’in her yerde çalışır.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
             "markerLabel": "Bu Quantum hesabı hakkında",
             "dismiss": "Anladım"
         }
@@ -460,9 +462,9 @@
             "title": "Gizli tut. Güvende tut.",
             "description": "Aşağıdakileri onayla ve kabul et:",
             "row_screen": "Ekranımı kimse görmüyor.",
-            "row_share": "Kurtarma ifademi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
-            "row_lose": "Kurtarma ifademi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
-            "row_pera": "Pera çalışanları kurtarma ifademi ASLA istemez.",
+            "row_share": "Kurtarma passphrase’imi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
+            "row_lose": "Kurtarma passphrase’imi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
+            "row_pera": "Pera çalışanları kurtarma passphrase’imi ASLA istemez.",
             "cta_reveal": "Passphrase’i göster",
             "cta_cancel": "İptal"
         },
@@ -819,7 +821,9 @@
             "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene."
         },
         "signing": {
-            "title": "İmzalama isteği işlenirken bir hata oluştu"
+            "title": "İmzalama isteği işlenirken bir hata oluştu",
+            "local_key_failed": "Bu hesabın imza anahtarı bu cihazda kullanılamadı. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "cannot_sign": "Bu hesap bu cihazda imzalayamıyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
         },
         "webview": {
             "invalid_method": "Geçersiz metot: {{method}}",
@@ -1535,23 +1539,23 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Mnemonic türünü seç",
+            "title": "Passphrase türünü seç",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Aynı mnemonic ile yeni hesaplar türetmene olanak tanıyan cüzdan",
+                "description": "Aynı passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
                 "chip": "yeni"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Algorand ekosistemine özgü eski format",
                 "chip": "eski",
-                "mnemonic_info": "25 kelimelik mnemonic anahtarlar"
+                "mnemonic_info": "25 kelimelik passphrase"
             },
-            "mnemonic_info": "24 kelimelik mnemonic anahtarlar"
+            "mnemonic_info": "24 kelimelik passphrase"
         },
         "import_info": {
             "title": "Algorand cüzdanı kurtar",
-            "body": "Sonraki adımlarda, bir Algorand cüzdanını kurtarmak için kurtarma passphrase’ini gireceksin. Başlamadan önce kurtarma ifadeni hazır bulundur.",
+            "body": "Sonraki adımlarda, bir Algorand cüzdanını kurtarmak için kurtarma passphrase’ini gireceksin. Başlamadan önce kurtarma passphrase’ini hazır bulundur.",
             "button": "Algorand cüzdanı kurtar"
         },
         "import_account": {
@@ -1644,7 +1648,7 @@
             "watch_address_option_title": "Adres izle",
             "watch_address_option_description": "Adresini girerek bir Algorand adresini takip et",
             "create_universal_wallet_option_title": "Universal Wallet oluştur",
-            "create_universal_wallet_option_description": "Aynı 24 kelimelik mnemonic ile yeni hesaplar türetmene olanak tanıyan cüzdan",
+            "create_universal_wallet_option_description": "Aynı 24 kelimelik passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
             "create_algo25_option_title": "Algo25 hesabı oluştur",
             "create_algo25_option_description": "Algorand’a özgü eski format",
             "quantum_account_option_title": "Quantum hesabı ekle",
@@ -1880,7 +1884,7 @@
                 "learn_more": "Daha fazla bilgi",
                 "expect_label": "Ne olacak",
                 "expect_1": "Bu hesabın gelecekteki işlemleri yalnızca yeni hesabın anahtarıyla imzalanabilir.",
-                "expect_2": "Devam etmeden önce o hesabın kurtarma ifadesini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
+                "expect_2": "Devam etmeden önce o hesabın kurtarma passphrase’ini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
                 "expect_3": "Hesabının adresi, bakiyeleri ve yapılandırması değişmeyecek.",
                 "expect_4": "Bu hesabı daha sonra kapatırsan rekey kaldırılır. Adrese yeniden fon gönderildiğinde kontrol, şimdi ayarladığın hesaba değil orijinal anahtara döner.",
                 "cta": "Süreci başlat"
@@ -1918,7 +1922,7 @@
                 "learn_more": "Daha fazla bilgi",
                 "expect_label": "Ne olacak",
                 "expect_1": "Bu hesabın gelecekteki işlemleri yalnızca Quantum hesabının post-kuantum anahtarıyla imzalanabilir.",
-                "expect_2": "Devam etmeden önce o hesabın 25 kelimelik kurtarma ifadesini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
+                "expect_2": "Devam etmeden önce o hesabın 25 kelimelik kurtarma passphrase’ini yedekle. Onu kaybetmek, hesapla ilgili her şey aynı kalsa bile bu hesap için imzalama yeteneğini kaybetmek demektir.",
                 "expect_3": "Hesabının adresi, bakiyeleri ve yapılandırması değişmeyecek.",
                 "expect_4": "Gelecekteki işlemler daha yüksek bir minimum ağ ücreti ödeyecek ve daha sonra standart bir hesaba geri rekey yapmak da kuantum imzalı bir işlem gerektirecek.",
                 "cta": "Süreci başlat"
@@ -2855,8 +2859,8 @@
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
             "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",
             "success_sheet_return_to_dapp_generic": "Uygulamaya geri dön",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "networks_betanet": "Betanet",
             "error_sheet_title": "Hata",
             "error_sheet_body": "WalletConnect isteğin şu hatayla başarısız oldu:",

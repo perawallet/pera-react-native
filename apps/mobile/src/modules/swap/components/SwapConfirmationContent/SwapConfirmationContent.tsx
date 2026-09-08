@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { PWDivider, PWSheetLayout, PWText, PWView } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -153,14 +153,16 @@ export const SwapConfirmationContent = ({
                 </PWView>
             )}
 
-            <ConfirmAction
-                title={t('swap.quote.slide_to_confirm')}
-                onConfirm={() => void handleSlideConfirm()}
-                isLoading={isProcessing}
-                isConfirmed={swapStatus === 'success'}
-                style={styles.confirmButton}
-                testID='swap-confirm-slide'
-            />
+            <PWView style={styles.confirmButton}>
+                <ConfirmAction
+                    title={t('swap.quote.slide_to_confirm')}
+                    onConfirm={() => void handleSlideConfirm()}
+                    isLoading={isProcessing}
+                    isConfirmed={swapStatus === 'success'}
+                    style={CONFIRM_ACTION_LAYOUT}
+                    testID='swap-confirm-slide'
+                />
+            </PWView>
         </PWSheetLayout>
     )
 }

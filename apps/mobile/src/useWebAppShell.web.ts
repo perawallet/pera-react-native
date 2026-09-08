@@ -15,10 +15,18 @@ import {
     getCurrentApproval,
     getSurface,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { armAutoLock } from '@perawallet/wallet-extension-keystore-chrome'
+import {
+    armAutoLock,
+    requireSessionMasterKey,
+} from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
-import { getKeystore, getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getKeystore,
+    getProvider,
+    resealLegacyMaterial,
+    setEngineKeySource,
+} from '@perawallet/wallet-extension-provider'
 import {
     getDatabase,
     initializeDatabase,
@@ -33,6 +41,11 @@ import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@providers/QueryProvider'
+
+// The keystore asks for this on every seal and open. Registered here because
+// the provider cannot import the vault, and every surface that opens material
+// mounts this shell before its first operation.
+setEngineKeySource(requireSessionMasterKey)
 
 export type WebShellState =
     | 'resolving'
@@ -109,9 +122,24 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         const bootstrap = async (): Promise<void> => {
             // Mirrors native App.tsx:126-156 minus native-only branches
             // (push token, passkey autofill, splash): keystore first (needs
-            // the unlocked master key), then DB through the offscreen proxy,
-            // then the sync service.
+            // the unlocked master key), then the legacy re-seal, then DB
+            // through the offscreen proxy, then the sync service.
             await getKeystore().ready
+            // Profiles written before the vault sealed material hold records
+            // under the driver's old auto-generated key; nothing may open
+            // material before they move.
+            const resealReport = await resealLegacyMaterial()
+            if (resealReport.unrecoverable.length > 0) {
+                logger.warn('Keystore records unrecoverable after re-seal', {
+                    ids: resealReport.unrecoverable,
+                })
+            }
+            if (resealReport.resealed > 0 || resealReport.reminted > 0) {
+                logger.info('Keystore records re-sealed', {
+                    resealed: resealReport.resealed,
+                    reminted: resealReport.reminted,
+                })
+            }
             await initializeDatabase(getProvider().database)
             await seedAlgoAsset(getDatabase())
             initializeSyncService({

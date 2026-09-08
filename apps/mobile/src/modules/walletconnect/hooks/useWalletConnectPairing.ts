@@ -173,13 +173,21 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
                 }
             }
             const outcome = await outcomePromise
-            // Errored handshakes never reach the success sheet. A timeout
-            // keeps its context: a late session_request may still surface
-            // the request, and the CTA should survive that path.
-            if (options?.origin && outcome.type === 'error') {
-                useReturnToDappStore
-                    .getState()
-                    .clearReturnContext(pairingClientId)
+            // An errored handshake is terminal for this connector (a retry
+            // creates a fresh one), so abandon it outright: its transport
+            // otherwise keeps recreating the socket forever, re-surfacing a
+            // bridge error — and re-toasting — every cycle while offline. A
+            // timeout keeps its connector and context: a late
+            // session_request may still surface the request (the deeplink
+            // handler owns that grace watch), and the CTA should survive
+            // that path.
+            if (outcome.type === 'error') {
+                abandonPairing(pairingClientId)
+                if (options?.origin) {
+                    useReturnToDappStore
+                        .getState()
+                        .clearReturnContext(pairingClientId)
+                }
             }
             return outcome.type === 'timeout'
                 ? { ...outcome, clientId: pairingClientId }

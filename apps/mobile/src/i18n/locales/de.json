@@ -262,6 +262,8 @@
         "transaction_list": {
             "title": "Transaktionen",
             "empty_body": "Keine Transaktionen gefunden",
+            "offline_empty_title": "Du bist offline",
+            "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "filter": "Filter",
             "csv": "CSV"
         },
@@ -811,7 +813,9 @@
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
         },
         "signing": {
-            "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten"
+            "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
+            "local_key_failed": "Der Signaturschlüssel für dieses Konto konnte auf diesem Gerät nicht verwendet werden. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "cannot_sign": "Dieses Konto kann auf diesem Gerät nicht signieren. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
         },
         "webview": {
             "invalid_method": "Ungültige Methode {{method}}",
@@ -1527,19 +1531,19 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Wähle deinen Mnemonic-Typ",
+            "title": "Wähle deinen Passphrase-Typ",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet, mit dem du neue Konten ableiten kannst, die alle denselben Mnemonic verwenden",
+                "description": "Wallet, mit dem du neue Konten ableiten kannst, die alle dieselbe Passphrase verwenden",
                 "chip": "neu"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Legacy-Format, das speziell für das Algorand-Ökosystem gilt",
                 "chip": "legacy",
-                "mnemonic_info": "Mnemonic-Schlüssel mit 25 Wörtern"
+                "mnemonic_info": "Passphrase mit 25 Wörtern"
             },
-            "mnemonic_info": "Mnemonic-Schlüssel mit 24 Wörtern"
+            "mnemonic_info": "Passphrase mit 24 Wörtern"
         },
         "import_info": {
             "title": "Ein Algorand-Wallet wiederherstellen",
@@ -1636,7 +1640,7 @@
             "watch_address_option_title": "Adresse beobachten",
             "watch_address_option_description": "Eine Algorand-Adresse durch Angabe ihrer Adresse überwachen",
             "create_universal_wallet_option_title": "Universal Wallet erstellen",
-            "create_universal_wallet_option_description": "Wallet, mit dem du neue Konten ableiten kannst, die alle denselben 24-Wort-Mnemonic verwenden",
+            "create_universal_wallet_option_description": "Wallet, mit dem du neue Konten ableiten kannst, die alle dieselbe 24-Wort-Passphrase verwenden",
             "create_algo25_option_title": "Algo25-Konto erstellen",
             "create_algo25_option_description": "Legacy-Format, das speziell für Algorand gilt",
             "quantum_account_option_title": "Quantum-Konto hinzufügen",
@@ -2847,8 +2851,8 @@
             "success_sheet_body": "Bitte kehre zu {{name}} zurück, um fortzufahren und deinen Vorgang abzuschließen. Alle verbundenen Sitzungen findest du auf der zugehörigen Einstellungsseite.",
             "success_sheet_return_to_dapp": "Zu {{name}} zurückkehren",
             "success_sheet_return_to_dapp_generic": "Zur dApp zurückkehren",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "error_sheet_title": "Fehler",
             "error_sheet_body": "Deine WalletConnect-Anfrage ist mit folgendem Fehler fehlgeschlagen:",
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
