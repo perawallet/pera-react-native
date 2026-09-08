@@ -16,7 +16,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 // module is evaluated, so they can only see variables declared via
 // vi.hoisted.
 const mocks = vi.hoisted(() => ({
-    keys: [] as Array<{ id: string; type: string }>,
+    keys: [] as Array<{
+        id: string
+        type?: string
+        metadata?: Record<string, unknown>
+    }>,
     generate: vi.fn(),
     remove: vi.fn(),
     exportKey: vi.fn(),
@@ -33,11 +37,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             return { keys: mocks.keys, status: 'idle' as const }
         },
         setState: (
-            updater: (prev: {
-                keys: Array<{ id: string; type: string }>
-                status: 'idle'
-            }) => {
-                keys: Array<{ id: string; type: string }>
+            updater: (prev: { keys: typeof mocks.keys; status: 'idle' }) => {
+                keys: typeof mocks.keys
                 status: 'idle'
             },
         ) => {
@@ -61,7 +62,20 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { commitSecret, hasSecret, removeSecret, withSecret } from '../secrets'
+import {
+    commitSecret,
+    getSecretMetadata,
+    hasSecret,
+    removeSecret,
+    withSecret,
+} from '../secrets'
+
+const setKeys = (
+    keys: { id: string; metadata?: Record<string, unknown> }[],
+) => {
+    mocks.keys.length = 0
+    mocks.keys.push(...keys)
+}
 
 describe('secrets', () => {
     beforeEach(() => {
@@ -257,6 +271,34 @@ describe('secrets', () => {
 
         test('returns false when the id is not in the store', () => {
             expect(hasSecret('missing')).toBe(false)
+        })
+    })
+
+    describe('getSecretMetadata', () => {
+        test('returns the metadata recorded against a secret id', () => {
+            setKeys([
+                { id: 'pera.other', metadata: { kind: 'x' } },
+                {
+                    id: 'pera.biometricPinCode',
+                    metadata: { tokenHash: 'abc123' },
+                },
+            ])
+
+            expect(getSecretMetadata('pera.biometricPinCode')).toEqual({
+                tokenHash: 'abc123',
+            })
+        })
+
+        test('returns null for an id that is not stored', () => {
+            setKeys([{ id: 'pera.other', metadata: { kind: 'x' } }])
+
+            expect(getSecretMetadata('pera.biometricPinCode')).toBeNull()
+        })
+
+        test('returns null when the record carries no metadata', () => {
+            setKeys([{ id: 'pera.biometricPinCode' }])
+
+            expect(getSecretMetadata('pera.biometricPinCode')).toBeNull()
         })
     })
 
