@@ -12,9 +12,9 @@
 
 import {
     BIOMETRIC_BLOB_KEY_ID,
-    BIOMETRIC_BLOB_VERSION,
     BIOMETRIC_TOKEN_HASH_METADATA_KEY,
     createPinRecord,
+    encodeBiometricBlob,
     PIN_RECORD_KEY_ID,
     serializePinRecord,
 } from '@perawallet/wallet-core-security'
@@ -24,16 +24,6 @@ import type {
     LegacyAuth,
     LegacyPreferences,
 } from '@perawallet/wallet-extension-platform'
-
-// Mirrors useBiometrics' `encodeBlob` framing (a leading version byte) so the
-// reconcile that runs on next mount recognizes what this writes.
-const encodeBiometricBlob = (blob: string): Uint8Array => {
-    const body = new TextEncoder().encode(blob)
-    const framed = new Uint8Array(body.length + 1)
-    framed[0] = BIOMETRIC_BLOB_VERSION
-    framed.set(body, 1)
-    return framed
-}
 
 export type AuthMigrationResult = {
     pinMigrated: boolean

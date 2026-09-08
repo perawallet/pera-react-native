@@ -24,7 +24,6 @@ const { commitSecretMock, withSecretMock, biometricsMock } = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-security', () => ({
     PIN_RECORD_KEY_ID: 'pera.pinCode',
     BIOMETRIC_BLOB_KEY_ID: 'pera.biometricPinCode',
-    BIOMETRIC_BLOB_VERSION: 2,
     BIOMETRIC_TOKEN_HASH_METADATA_KEY: 'biometricTokenHash',
     createPinRecord: vi.fn(async (pin: string) => ({
         version: 1,
@@ -35,6 +34,9 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     })),
     serializePinRecord: vi.fn(
         (r: unknown) => `serialized:${JSON.stringify(r)}`,
+    ),
+    encodeBiometricBlob: vi.fn((blob: string) =>
+        new TextEncoder().encode(blob),
     ),
 }))
 
@@ -187,7 +189,9 @@ describe('migrateAuth', () => {
         expect(result.biometricMigrated).toBe(true)
         expect(biometricsMock.armBiometricBinding).toHaveBeenCalled()
         const bioWrite = commitCallFor(BIO_KEY)
-        expect(bioWrite?.[0].bytes).toBeInstanceOf(Uint8Array)
+        // `instanceof Uint8Array` is unreliable under jsdom, whose realm has
+        // its own Uint8Array constructor; ArrayBuffer.isView is realm-agnostic.
+        expect(ArrayBuffer.isView(bioWrite?.[0].bytes)).toBe(true)
         expect(bioWrite?.[0].metadata).toEqual({ biometricTokenHash: 'abc' })
     })
 

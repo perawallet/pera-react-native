@@ -24,10 +24,10 @@ import { useKMSService } from '@perawallet/wallet-core-kms'
 import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     BIOMETRIC_BLOB_KEY_ID,
-    BIOMETRIC_BLOB_VERSION,
     BIOMETRIC_TOKEN_HASH_METADATA_KEY,
     PIN_RECORD_KEY_ID,
 } from '../constants'
+import { decodeBiometricBlob, encodeBiometricBlob } from '../biometricBlob'
 import type { BiometricsDisabledReason } from '../models'
 import { constantTimeEqual, parsePinRecord } from '../pinRecord'
 import { useSecurityStore } from '../store'
@@ -109,21 +109,6 @@ const matchesHash = (token: Uint8Array, expected: string): boolean => {
         encoder.encode(sha256Hex(token)),
         encoder.encode(expected),
     )
-}
-
-const encodeBlob = (blob: string): Uint8Array => {
-    const body = new TextEncoder().encode(blob)
-    const framed = new Uint8Array(body.length + 1)
-    framed[0] = BIOMETRIC_BLOB_VERSION
-    framed.set(body, 1)
-    return framed
-}
-
-// Null for anything this build does not understand, which the caller treats as
-// a blob to be replaced rather than as a decryption failure.
-const decodeBlob = (bytes: Uint8Array): Nullable<string> => {
-    if (bytes.length < 2 || bytes[0] !== BIOMETRIC_BLOB_VERSION) return null
-    return new TextDecoder().decode(bytes.subarray(1))
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
@@ -297,7 +282,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         async (blob: string, tokenHash: string): Promise<void> => {
             await commitSecret({
                 id: BIOMETRIC_BLOB_KEY_ID,
-                bytes: encodeBlob(blob),
+                bytes: encodeBiometricBlob(blob),
                 metadata: { [BIOMETRIC_TOKEN_HASH_METADATA_KEY]: tokenHash },
             })
         },
@@ -456,9 +441,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                     BIOMETRIC_TOKEN_HASH_METADATA_KEY
                 ]
                 // A blob this build cannot frame-check is a pre-binding blob,
-                // and decodeBlob reports that as null rather than letting it
-                // reach the enclave and come back as a decryption error.
-                const blob = await withSecret(BIOMETRIC_BLOB_KEY_ID, decodeBlob)
+                // and decodeBiometricBlob reports that as null rather than
+                // letting it reach the enclave and come back as a decryption
+                // error.
+                const blob = await withSecret(
+                    BIOMETRIC_BLOB_KEY_ID,
+                    decodeBiometricBlob,
+                )
                 if (!blob || typeof expected !== 'string') {
                     await dropOptIn('rebind-required')
                     return { kind: 'mismatch' }
