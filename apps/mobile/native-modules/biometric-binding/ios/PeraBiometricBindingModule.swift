@@ -206,7 +206,22 @@ public class PeraBiometricBindingModule: Module {
       // mount of the lock screen, where a sheet would be a bug.
       let silent = LAContext()
       silent.interactionNotAllowed = true
-      return Self.loadKeyPair(context: silent) != nil ? "valid" : "absent"
+
+      switch Self.copyKeyPair(context: silent).status {
+      case errSecSuccess:
+        return "valid"
+      // Presence, not absence, and the intuitive reading is the wrong one: the
+      // status says the item is there and would need UI to release, which is
+      // the UI this call just refused.
+      case errSecInteractionNotAllowed:
+        return "valid"
+      case errSecItemNotFound:
+        return "absent"
+      // Only 'absent' and 'changed' destroy the opt-in, so an unexpected status
+      // must report the reading it actually is: none.
+      default:
+        return "unavailable"
+      }
     }
 
     AsyncFunction("clearBinding") { () -> Void in
@@ -282,6 +297,14 @@ public class PeraBiometricBindingModule: Module {
   /// retrieval, so this neither prompts nor fails while the key is intact — which
   /// is what makes `checkBinding` silent and the public-key wrap ceremony-free.
   private static func loadKeyPair(context: LAContext? = nil) -> SecKey? {
+    return copyKeyPair(context: context).key
+  }
+
+  /// The status matters to `checkBinding`, which has to tell "no key" apart from
+  /// "could not take a reading".
+  private static func copyKeyPair(
+    context: LAContext? = nil
+  ) -> (status: OSStatus, key: SecKey?) {
     var query: [String: Any] = [
       kSecClass as String: kSecClassKey,
       kSecAttrApplicationTag as String: keyTag,
@@ -292,12 +315,14 @@ public class PeraBiometricBindingModule: Module {
       query[kSecUseAuthenticationContext as String] = context
     }
     var item: CFTypeRef?
-    guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess
-    else { return nil }
+    let status = SecItemCopyMatching(query as CFDictionary, &item)
+    guard status == errSecSuccess else { return (status, nil) }
     // Swift rejects `as?` to a CF type, so the type id is the check: on the
     // unlock path of a wallet, degrading to 'no-binding' beats a crash.
-    guard let item, CFGetTypeID(item) == SecKeyGetTypeID() else { return nil }
-    return (item as! SecKey)
+    guard let item, CFGetTypeID(item) == SecKeyGetTypeID() else {
+      return (status, nil)
+    }
+    return (status, (item as! SecKey))
   }
 
   private static func deleteKeyPair() {
