@@ -22,11 +22,18 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
  * until then unlock silently does not happen, which is worth saying out loud.
  * Only persistent unavailability qualifies — a lockout clears on its own and is
  * never reported here.
+ *
+ * `rebind-required` is a key that is gone rather than superseded: an upgrade
+ * from a build whose blob had no OS-bound key, a restored backup, or a keystore
+ * reset. On iOS it also covers a changed enrollment, because
+ * `.biometryCurrentSet` removes the key rather than marking it unusable and
+ * nothing can tell the two apart without a marker that would outlive the app.
  */
 export type BiometricsDisabledReason =
     | 'enrollment-changed'
     | 'weak-biometric'
     | 'not-available'
+    | 'rebind-required'
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number

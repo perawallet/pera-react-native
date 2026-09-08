@@ -11,24 +11,31 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { createHash } from 'crypto'
 import type {
     BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
     BiometricsAuthenticateResult,
     BiometricType,
+    BiometricUnwrapFailureReason,
 } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
+import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    BIOMETRIC_BLOB_KEY_ID,
+    BIOMETRIC_BLOB_VERSION,
+    BIOMETRIC_TOKEN_HASH_METADATA_KEY,
+    PIN_RECORD_KEY_ID,
+} from '../constants'
 import type { BiometricsDisabledReason } from '../models'
+import { constantTimeEqual, parsePinRecord } from '../pinRecord'
 import { useSecurityStore } from '../store'
 
 /**
  * Why enabling biometrics failed, so callers can show targeted guidance
  * instead of a single generic error.
  *
- * - `no-pin` — no PIN record to wrap; a PIN must be set first.
  * - `unavailable` — the device has no usable biometric hardware/enrollment.
  * - `weak-biometric` — a biometric is enrolled, but only at class-2 ("weak")
  * strength (e.g. Samsung 2D face unlock). Wallet unlock
@@ -41,11 +48,10 @@ import { useSecurityStore } from '../store'
  * during a Face ID lockout the user clears with the device
  * passcode, not from inside the app. The opt-in is left
  * intact so unlock auto-restores once the level does.
- * - `declined` — the user dismissed or failed the OS prompt.
+ * - `declined` — the user dismissed or failed the confirmation ceremony.
  * - `error` — an unexpected failure.
  */
 export type EnableBiometricsFailureReason =
-    | 'no-pin'
     | 'unavailable'
     | 'weak-biometric'
     | 'unconfirmed'
@@ -55,6 +61,12 @@ export type EnableBiometricsFailureReason =
 export type EnableBiometricsResult =
     | { ok: true }
     | { ok: false; reason: EnableBiometricsFailureReason }
+
+export type BiometricUnlockOutcome =
+    | { kind: 'ok' }
+    | { kind: 'locked'; lockoutEndTime: number }
+    | { kind: 'mismatch' }
+    | { kind: 'failed'; reason: BiometricUnwrapFailureReason }
 
 type UseBiometricsResult = {
     isEnabled: boolean
@@ -68,29 +80,61 @@ type UseBiometricsResult = {
     acknowledgeBiometricsDisabled: () => void
     /**
      * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
-     * ("strong") biometric that still matches the enrollment binding recorded at
-     * opt-in. It deletes the blob on the two affirmative reports — a class-2
-     * enrollment, or a changed enrollment set — and on nothing else: a level or
-     * an availability it cannot confirm reports false and keeps the blob, so a
-     * returned false does NOT imply the blob is gone. Callers get the
-     * post-reconciliation answer, consistent with a subsequent call.
+     * ("strong") biometric whose OS-bound key still backs the stored blob. It
+     * deletes the blob on affirmative reports — a class-2 enrollment, or a
+     * key-pair probe reporting `changed`/`absent` — and on nothing else: a
+     * level or a probe result it cannot confirm reports false and keeps the
+     * blob, so a returned false does NOT imply the blob is gone. Callers get
+     * the post-reconciliation answer, consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
-    refreshBiometricsBinding: () => Promise<void>
     enableBiometrics: (
         prompt?: BiometricsAuthenticatePrompt,
     ) => Promise<EnableBiometricsResult>
     disableBiometrics: () => Promise<void>
-    authenticateWithBiometrics: (
+    unlockWithBiometrics: (
         prompt?: BiometricsAuthenticatePrompt,
-    ) => Promise<BiometricsAuthenticateResult>
+    ) => Promise<BiometricUnlockOutcome>
+}
+
+const sha256Hex = (bytes: Uint8Array): string =>
+    bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
+
+// Compared over the encoded hex rather than the raw digests, because
+// `constantTimeEqual` takes bytes and the stored hash arrives as a string.
+const matchesHash = (token: Uint8Array, expected: string): boolean => {
+    const encoder = new TextEncoder()
+    return constantTimeEqual(
+        encoder.encode(sha256Hex(token)),
+        encoder.encode(expected),
+    )
+}
+
+const encodeBlob = (blob: string): Uint8Array => {
+    const body = new TextEncoder().encode(blob)
+    const framed = new Uint8Array(body.length + 1)
+    framed[0] = BIOMETRIC_BLOB_VERSION
+    framed.set(body, 1)
+    return framed
+}
+
+// Null for anything this build does not understand, which the caller treats as
+// a blob to be replaced rather than as a decryption failure.
+const decodeBlob = (bytes: Uint8Array): Nullable<string> => {
+    if (bytes.length < 2 || bytes[0] !== BIOMETRIC_BLOB_VERSION) return null
+    return new TextDecoder().decode(bytes.subarray(1))
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
     const biometricsService = getProvider().biometrics
-    const { commitSecret, withSecret, hasSecret, removeSecret } =
-        useKMSService()
+    const {
+        commitSecret,
+        withSecret,
+        hasSecret,
+        removeSecret,
+        getSecretMetadata,
+    } = useKMSService()
 
     // Shared, not per-hook: Settings, the lock screen and PIN edit all mount
     // their own useBiometrics, and a reconcile that cleared a revoked blob used
@@ -182,19 +226,26 @@ export const useBiometrics = (): UseBiometricsResult => {
         if (level === 'strong') {
             // An enrolled strong biometric is not proof it is the *same* one
             // the user opted in with. Remove-then-re-add never passes through a
-            // state either check above can observe, so the enrollment binding
-            // is the only signal for it. Only an affirmative 'changed' may
-            // destroy the opt-in; 'absent' is every install that opted in
-            // before bindings existed (and everything arriving through the
-            // legacy migration), so adopt the current set instead of forcing a
-            // re-opt-in on upgrade.
+            // state either check above can observe, so the key-pair probe is
+            // the only signal for it. Only 'valid' arms unlock. Both 'changed'
+            // and 'absent' are affirmative reports that the key is unusable,
+            // and the blob is worthless without it — adopting a fresh binding
+            // for 'absent' would leave a blob sealed under a key that no
+            // longer exists, reporting enabled forever while every unlock
+            // burned a real ceremony and then failed.
             const binding = await biometricsService.checkEnrollmentBinding()
             if (binding === 'changed') {
                 await dropOptIn('enrollment-changed')
                 return false
             }
             if (binding === 'absent') {
-                await biometricsService.createEnrollmentBinding()
+                await dropOptIn('rebind-required')
+                return false
+            }
+            if (binding === 'unavailable') {
+                // No reading could be taken. Ambiguity never destroys.
+                setIsEnabled(false)
+                return false
             }
             setIsEnabled(true)
             // Biometric unlock works, so there is nothing left to explain. This
@@ -243,14 +294,11 @@ export const useBiometrics = (): UseBiometricsResult => {
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
     const writeBiometricBlob = useCallback(
-        async (code: Uint8Array): Promise<void> => {
-            // `commitSecret` takes a defensive copy of `code` and zeroes its
-            // own copy after the keystore write completes. The caller still
-            // owns `code` itself — callers in this file pass `pinData`
-            // borrowed from `withSecret`, which zeroes it on return.
+        async (blob: string, tokenHash: string): Promise<void> => {
             await commitSecret({
                 id: BIOMETRIC_BLOB_KEY_ID,
-                bytes: code,
+                bytes: encodeBlob(blob),
+                metadata: { [BIOMETRIC_TOKEN_HASH_METADATA_KEY]: tokenHash },
             })
         },
         [commitSecret],
@@ -261,99 +309,86 @@ export const useBiometrics = (): UseBiometricsResult => {
             prompt?: BiometricsAuthenticatePrompt,
         ): Promise<EnableBiometricsResult> => {
             try {
-                const result = await withSecret(
-                    PIN_RECORD_KEY_ID,
-                    async (pinData): Promise<EnableBiometricsResult> => {
-                        const available =
-                            await biometricsService.checkBiometricsAvailable()
-                        if (!available) {
-                            return { ok: false, reason: 'unavailable' }
-                        }
+                const available =
+                    await biometricsService.checkBiometricsAvailable()
+                if (!available) {
+                    return { ok: false, reason: 'unavailable' }
+                }
 
-                        // Only bind biometrics to a hardware-backed class-3
-                        // ("strong") authenticator. Anything below that fails
-                        // fast, before popping a doomed OS prompt — but the two
-                        // non-strong cases must be handled apart, exactly as the
-                        // reconcile's own branches do.
-                        const level = await biometricsService.getSecurityLevel()
-                        if (level === 'weak') {
-                            // A class-2 ("weak") modality — e.g. Samsung 2D face
-                            // unlock — must not be bound. Drop the opt-in for it,
-                            // just as the reconcile's `weak` branch does: with
-                            // `isEnabled` false the Settings toggle reads OFF, so
-                            // its own delete branch is unreachable and this is the
-                            // only user-driven moment where dropping it is
-                            // unambiguously safe. The reason is recorded, not
-                            // cleared, so the UI can guide the user to enroll a
-                            // fingerprint.
-                            await dropOptIn('weak-biometric')
-                            return { ok: false, reason: 'weak-biometric' }
-                        }
-                        if (level !== 'strong') {
-                            // 'secret' / 'none': a biometric is enrolled but the
-                            // level is ambiguous — iOS reports enrolled-but-
-                            // 'secret' during a Face ID lockout the user can only
-                            // clear with the device passcode. Preserve the opt-in
-                            // (the reconcile's secret/none branch does the same):
-                            // dropping it here would turn a self-clearing lockout
-                            // into a permanent opt-out.
-                            return { ok: false, reason: 'unconfirmed' }
-                        }
+                // Only bind biometrics to a hardware-backed class-3
+                // ("strong") authenticator. Anything below that fails
+                // fast, before popping a doomed OS prompt — but the two
+                // non-strong cases must be handled apart, exactly as the
+                // reconcile's own branches do.
+                const level = await biometricsService.getSecurityLevel()
+                if (level === 'weak') {
+                    // A class-2 ("weak") modality — e.g. Samsung 2D face
+                    // unlock — must not be bound. Drop the opt-in for it,
+                    // just as the reconcile's `weak` branch does: with
+                    // `isEnabled` false the Settings toggle reads OFF, so
+                    // its own delete branch is unreachable and this is the
+                    // only user-driven moment where dropping it is
+                    // unambiguously safe. The reason is recorded, not
+                    // cleared, so the UI can guide the user to enroll a
+                    // fingerprint.
+                    await dropOptIn('weak-biometric')
+                    return { ok: false, reason: 'weak-biometric' }
+                }
+                if (level !== 'strong') {
+                    // 'secret' / 'none': a biometric is enrolled but the
+                    // level is ambiguous — iOS reports enrolled-but-
+                    // 'secret' during a Face ID lockout the user can only
+                    // clear with the device passcode. Preserve the opt-in
+                    // (the reconcile's secret/none branch does the same):
+                    // dropping it here would turn a self-clearing lockout
+                    // into a permanent opt-out.
+                    return { ok: false, reason: 'unconfirmed' }
+                }
 
-                        const authenticated =
-                            await biometricsService.authenticate(prompt)
-                        if (!authenticated.success) {
-                            return { ok: false, reason: 'declined' }
-                        }
+                const armed = await biometricsService.armBiometricBinding()
+                if (!armed) return { ok: false, reason: 'error' }
 
-                        // Before the blob, so the blob is never armed without a
-                        // binding: that combination is the one the reconcile
-                        // adopts, which would bless a set the user never
-                        // approved.
-                        await biometricsService.createEnrollmentBinding()
-
-                        // `writeBiometricBlob` copies the bytes into the keystore;
-                        // the original `pinData` here is zeroed by
-                        // `withSecret`'s finally after this resolves.
-                        await writeBiometricBlob(pinData)
-                        setIsEnabled(true)
-                        setDisabledReason(null)
-                        return { ok: true }
-                    },
+                // The confirmation ceremony IS the unwrap. Proving the OS will
+                // release the token is the only thing that proves unlock will
+                // work later; a prompt that merely returns true proves
+                // nothing, which is the defect this closes.
+                const confirmed = await biometricsService.unwrapBiometricToken(
+                    armed.blob,
+                    prompt,
                 )
-                // `withSecret` resolves null when no PIN record exists to wrap.
-                return result ?? { ok: false, reason: 'no-pin' }
+                if (!confirmed.success) {
+                    // No blob was written, and the reconcile's early return on
+                    // a missing blob would never reach the binding — so it
+                    // has to go now or it is orphaned for good.
+                    await biometricsService.clearEnrollmentBinding()
+                    return { ok: false, reason: 'declined' }
+                }
+
+                try {
+                    if (!matchesHash(confirmed.token, armed.tokenHash)) {
+                        await biometricsService.clearEnrollmentBinding()
+                        return { ok: false, reason: 'error' }
+                    }
+                } finally {
+                    confirmed.token.fill(0)
+                }
+
+                await writeBiometricBlob(armed.blob, armed.tokenHash)
+                setIsEnabled(true)
+                setDisabledReason(null)
+                return { ok: true }
             } catch {
                 return { ok: false, reason: 'error' }
             }
         },
         [
             biometricsService,
-            withSecret,
             writeBiometricBlob,
             setIsEnabled,
             setDisabledReason,
             dropOptIn,
         ],
     )
-
-    // Re-bind the biometric blob to the current PIN_RECORD bytes. Called by
-    // `usePinCode.savePin` after a PIN change. No-op when biometrics aren't
-    // already enabled; never re-prompts the OS biometric sheet (we already
-    // have the user authenticated via PIN at the call site).
-    const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
-        // Reconcile first so a blob whose enrollment is gone is dropped and the
-        // guard below cannot re-arm it. Keyed on the blob surviving rather than
-        // on the return value: the reconcile also returns false while
-        // deliberately keeping a blob it could not confirm, and that one still
-        // has to be re-bound or it would outlive the PIN it mirrors. The
-        // reconcile owns `isEnabled`, so re-binding must not raise it.
-        await checkBiometricsEnabled()
-        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return
-        await withSecret(PIN_RECORD_KEY_ID, async pinData => {
-            await writeBiometricBlob(pinData)
-        })
-    }, [checkBiometricsEnabled, hasSecret, withSecret, writeBiometricBlob])
 
     // The reconcile's drop, minus the explanation: the user did this on
     // purpose, so there is nothing to offer them back.
@@ -369,22 +404,78 @@ export const useBiometrics = (): UseBiometricsResult => {
         setDisabledReason(null)
     }, [disabledReason, setAcknowledgedReason, setDisabledReason])
 
-    const authenticateWithBiometrics = useCallback(
+    const readLockoutEndTime = useCallback(async (): Promise<
+        Nullable<number>
+    > => {
+        const record = await withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
+        const endTime = record?.lockoutEndTime ?? null
+        return endTime !== null && endTime > Date.now() ? endTime : null
+    }, [withSecret])
+
+    const unlockWithBiometrics = useCallback(
         async (
             prompt?: BiometricsAuthenticatePrompt,
-        ): Promise<BiometricsAuthenticateResult> => {
+        ): Promise<BiometricUnlockOutcome> => {
             try {
                 if (!(await checkBiometricsEnabled())) {
-                    return { success: false, reason: 'unavailable' }
+                    return { kind: 'failed', reason: 'unavailable' }
                 }
-                return await biometricsService.authenticate(prompt)
+
+                // The lock screen gates on the store-hydrated lockout flag,
+                // which is still false during a cold start. The record is the
+                // only authority, and biometrics must not outrank a PIN
+                // lockout.
+                const lockoutEndTime = await readLockoutEndTime()
+                if (lockoutEndTime !== null) {
+                    return { kind: 'locked', lockoutEndTime }
+                }
+
+                const expected = getSecretMetadata(BIOMETRIC_BLOB_KEY_ID)?.[
+                    BIOMETRIC_TOKEN_HASH_METADATA_KEY
+                ]
+                // A blob this build cannot frame-check is a pre-binding blob,
+                // and decodeBlob reports that as null rather than letting it
+                // reach the enclave and come back as a decryption error.
+                const blob = await withSecret(BIOMETRIC_BLOB_KEY_ID, decodeBlob)
+                if (!blob || typeof expected !== 'string') {
+                    await dropOptIn('rebind-required')
+                    return { kind: 'mismatch' }
+                }
+
+                const released = await biometricsService.unwrapBiometricToken(
+                    blob,
+                    prompt,
+                )
+                if (!released.success) {
+                    // A declined, cancelled or locked-out ceremony says
+                    // nothing about the key, so the opt-in survives.
+                    return { kind: 'failed', reason: released.reason }
+                }
+
+                try {
+                    if (!matchesHash(released.token, expected)) {
+                        // Only reachable through corruption: the token the OS
+                        // released is not the one that was sealed.
+                        await dropOptIn('rebind-required')
+                        return { kind: 'mismatch' }
+                    }
+                } finally {
+                    released.token.fill(0)
+                }
+
+                return { kind: 'ok' }
             } catch {
-                // The reconcile above reaches the keystore, so guard it here
-                // rather than letting callers catch.
-                return { success: false, reason: 'unknown' }
+                return { kind: 'failed', reason: 'unknown' }
             }
         },
-        [checkBiometricsEnabled, biometricsService],
+        [
+            checkBiometricsEnabled,
+            readLockoutEndTime,
+            getSecretMetadata,
+            withSecret,
+            biometricsService,
+            dropOptIn,
+        ],
     )
 
     return {
@@ -394,10 +485,9 @@ export const useBiometrics = (): UseBiometricsResult => {
         acknowledgeBiometricsDisabled,
         checkBiometricsEnabled,
         checkBiometricsAvailable,
-        refreshBiometricsBinding,
         enableBiometrics,
         disableBiometrics,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
     }
 }
 

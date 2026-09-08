@@ -15,10 +15,17 @@ export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
 export const INITIAL_LOCKOUT_SECONDS = 30
 export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 
-// Keystore lookup ids. Both entries are stored as canonical `secret-key`
-// keystore records via `commitSecret`; the id disambiguates which slot
-// (hashed PIN record vs. biometric blob — the PinRecord bytes mirrored so
-// biometric auth can confirm a PIN exists without re-prompting).
+// Keystore lookup ids. All three are stored as canonical `secret-key` keystore
+// records via `commitSecret`. The biometric blob holds a random unlock token
+// sealed by an OS-bound key; the token's hash rides as record metadata, which
+// lives in the plaintext bucket and so is readable without a decrypt.
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
 export const DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'
+export const BIOMETRIC_TOKEN_HASH_METADATA_KEY = 'biometricTokenHash'
+// Leading byte of the stored blob. Pre-binding blobs held serialized JSON, so
+// they always begin 0x7B and can never be mistaken for this. The reconcile
+// discriminates on the key-pair probe, not on this byte — it is here so an
+// unwrap refuses a blob it does not understand instead of failing as a
+// decryption error.
+export const BIOMETRIC_BLOB_VERSION = 2
