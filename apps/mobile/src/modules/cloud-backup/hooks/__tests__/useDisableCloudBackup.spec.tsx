@@ -10,38 +10,33 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useDisableCloudBackup } from '../useDisableCloudBackup'
+import { renderHook, act } from '@testing-library/react'
 
-const {
-    deleteBackupKeysMock,
-    resetCloudBackupMock,
-    resetSyncStateMock,
-    showToastMock,
-    resetMock,
-} = vi.hoisted(() => ({
-    deleteBackupKeysMock: vi.fn(),
-    resetCloudBackupMock: vi.fn(),
-    resetSyncStateMock: vi.fn(),
-    showToastMock: vi.fn(),
-    resetMock: vi.fn(),
-}))
+/** Only the two callbacks the wrapper supplies; the mutation itself is covered
+ *  by the package's own spec. */
+type MutationCallbacks<TData> = {
+    onSuccess?: (data: TData) => void
+    onError?: (error: Error) => void
+}
+const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
+    () => ({
+        showToastMock: vi.fn(),
+        resetMock: vi.fn(),
+        mutateMock: vi.fn(),
+        capturedOptions: { value: null as MutationCallbacks<void> | null },
+    }),
+)
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset: resetMock }),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    deleteBackupKeys: deleteBackupKeysMock,
-    useCloudBackupStore: (
-        selector: (s: { resetState: () => void }) => unknown,
-    ) => selector({ resetState: resetCloudBackupMock }),
-    useBackupSyncStateStore: (
-        selector: (s: { resetState: () => void }) => unknown,
-    ) => selector({ resetState: resetSyncStateMock }),
+    useDisableCloudBackupMutation: (options: never) => {
+        capturedOptions.value = options
+        return { mutate: mutateMock, isPending: false }
+    },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -52,36 +47,19 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
+import { useDisableCloudBackup } from '../useDisableCloudBackup'
 
 beforeEach(() => {
     vi.clearAllMocks()
+    capturedOptions.value = null
 })
 
 describe('useDisableCloudBackup', () => {
-    test('removes keys, clears local stores, and navigates home on success', async () => {
-        deleteBackupKeysMock.mockResolvedValue(undefined)
+    test('confirms and navigates home once the backup is turned off', () => {
+        renderHook(() => useDisableCloudBackup())
 
-        const { result } = renderHook(() => useDisableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
+        act(() => capturedOptions.value?.onSuccess?.(undefined))
 
-        act(() => {
-            result.current.disableBackup()
-        })
-
-        await waitFor(() => expect(deleteBackupKeysMock).toHaveBeenCalled())
-        await waitFor(() => expect(resetCloudBackupMock).toHaveBeenCalled())
-        expect(resetSyncStateMock).toHaveBeenCalled()
         expect(showToastMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'cloud_backup.turn_off.success',
@@ -94,27 +72,17 @@ describe('useDisableCloudBackup', () => {
         })
     })
 
-    test('keeps local state and shows an error toast when key removal fails', async () => {
-        deleteBackupKeysMock.mockRejectedValue(new Error('keystore down'))
+    test('shows an error toast and stays put when the turn-off fails', () => {
+        renderHook(() => useDisableCloudBackup())
 
-        const { result } = renderHook(() => useDisableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
+        act(() => capturedOptions.value?.onError?.(new Error('keystore down')))
 
-        act(() => {
-            result.current.disableBackup()
-        })
-
-        await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'cloud_backup.turn_off.error',
-                    type: 'error',
-                }),
-            ),
+        expect(showToastMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'cloud_backup.turn_off.error',
+                type: 'error',
+            }),
         )
-        expect(resetCloudBackupMock).not.toHaveBeenCalled()
-        expect(resetSyncStateMock).not.toHaveBeenCalled()
         expect(resetMock).not.toHaveBeenCalled()
     })
 })
