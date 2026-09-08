@@ -69,5 +69,11 @@ export type RouteCapabilities = {
      * their routes/screens/capabilities stay untouched for direct
      * navigation (e.g. WalletConnectSettingsDetails). */
     connectionsSettings: boolean
+    /** The platform can host the password manager: native has an OS
+     * credential provider to fill stored logins into other apps (compiled in
+     * for non-production variants only, see app.config.builder.js), web has
+     * none. Whether the surface is actually shown is a runtime decision —
+     * useIsPasswordManagerEnabled folds in the enable_password_manager remote
+     * flag and the production exclusion. */
     passwordManager: boolean
 }

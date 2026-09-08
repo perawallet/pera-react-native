@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
+import { useIsPasswordManagerEnabled } from '@hooks/useIsPasswordManagerEnabled'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
@@ -22,6 +23,10 @@ vi.mock('@hooks/useLanguage', () => ({
 
 vi.mock('@hooks/useIsLanguageSelectionEnabled', () => ({
     useIsLanguageSelectionEnabled: vi.fn(),
+}))
+
+vi.mock('@hooks/useIsPasswordManagerEnabled', () => ({
+    useIsPasswordManagerEnabled: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -58,7 +63,6 @@ const { mockCapabilities } = vi.hoisted(() => ({
         dappConnections: false,
         rekeyFlows: true,
         connectionsSettings: false,
-        passwordManager: false,
     },
 }))
 
@@ -75,6 +79,7 @@ describe('useSettingsOptions', () => {
             t: mockT,
         })
         ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(false)
+        ;(useIsPasswordManagerEnabled as Mock).mockReturnValue(false)
         Object.assign(mockCapabilities, {
             discoverTab: true,
             swapTab: true,
@@ -94,7 +99,6 @@ describe('useSettingsOptions', () => {
             dappConnections: false,
             rekeyFlows: true,
             connectionsSettings: false,
-            passwordManager: false,
         })
     })
 
@@ -225,8 +229,8 @@ describe('useSettingsOptions', () => {
             })
         })
 
-        it('places Passwords directly below Passkeys when the capability is on', () => {
-            Object.assign(mockCapabilities, { passwordManager: true })
+        it('places Passwords directly below Passkeys when the password manager flag is on', () => {
+            ;(useIsPasswordManagerEnabled as Mock).mockReturnValue(true)
 
             const { result } = renderHook(() => useSettingsOptions())
             const accountItems = result.current.settingsOptions[0].items

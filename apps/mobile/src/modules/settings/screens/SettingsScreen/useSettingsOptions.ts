@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
+import { useIsPasswordManagerEnabled } from '@hooks/useIsPasswordManagerEnabled'
 import { config } from '@perawallet/wallet-core-config'
 import { routeCapabilities } from '@routes/capabilities'
 import type { SettingsStackParamsList } from '../../routes'
@@ -20,6 +21,7 @@ import type { SettingsStackParamsList } from '../../routes'
 export const useSettingsOptions = () => {
     const { t } = useLanguage()
     const isLanguageSelectionEnabled = useIsLanguageSelectionEnabled()
+    const isPasswordManagerEnabled = useIsPasswordManagerEnabled()
 
     const settingsOptions = useMemo(
         () =>
@@ -81,7 +83,7 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
-                        ...(routeCapabilities.passwordManager
+                        ...(isPasswordManagerEnabled
                             ? [
                                   {
                                       route: 'PasswordList' as keyof SettingsStackParamsList,
@@ -181,7 +183,7 @@ export const useSettingsOptions = () => {
                     ],
                 },
             ].filter(section => section.items.length > 0),
-        [t, isLanguageSelectionEnabled],
+        [t, isLanguageSelectionEnabled, isPasswordManagerEnabled],
     )
 
     return {

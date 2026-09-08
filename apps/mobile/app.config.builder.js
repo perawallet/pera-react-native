@@ -528,9 +528,9 @@ function buildAppConfig(env) {
       // Passkey autofill (FIDO2) — system credential provider extension.
       // `providesPasswords` is gated on build variant: production stays
       // passkey-only (ProvidesPasswords false, single-domain
-      // ASCredentialProviderExtensionSupportedDomains). The JS-side
-      // `passwordManager` capability gates the JS surface separately and is
-      // false in every variant.
+      // ASCredentialProviderExtensionSupportedDomains). The JS surface is
+      // gated separately, at runtime, by the enable_password_manager remote
+      // flag, which is off by default in every variant.
       [
         '@algorandfoundation/react-native-passkey-autofill',
         {

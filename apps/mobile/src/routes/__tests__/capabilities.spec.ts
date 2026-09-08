@@ -24,23 +24,22 @@ describe('route capabilities', () => {
         // screen) — all are deliberately off for native, not a
         // current-behavior regression. deepLinkPaste is
         // web-only (native keeps the qrScanner camera instead — the two
-        // flags are mutually exclusive per platform). passwordManager is
-        // a proof of concept with credentials stored only on the device and
-        // unrecoverable if the device is lost, so it must not register
-        // in a shipped build.
+        // flags are mutually exclusive per platform). passwordManager is on
+        // here only in the platform sense (native can host it; the credential
+        // provider is compiled in for non-production variants); the surface
+        // itself ships dark behind the enable_password_manager remote flag and
+        // never opens in production, see useIsPasswordManagerEnabled.
         const {
             vaultSecuritySettings,
             dappConnections,
             connectionsSettings,
             deepLinkPaste,
-            passwordManager,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(dappConnections).toBe(false)
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
-        expect(passwordManager).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
@@ -83,6 +82,9 @@ describe('route capabilities', () => {
             // The unified Connections settings screen supersedes the
             // separate WalletConnect/Connected Sites menu entries on web.
             connectionsSettings: true,
+            // No OS credential provider to fill into on web, so the remote
+            // flag alone must never be able to surface the password manager.
+            passwordManager: false,
         })
     })
 
