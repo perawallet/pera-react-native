@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 
 import { PWButton, PWText } from '@components/core'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -115,6 +116,7 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='USD'
+                            assetId={null}
                             value={new Decimal('1234567.89')}
                             precision='compact'
                             variant='h2'
@@ -126,6 +128,7 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='ALGO'
+                            assetId={ALGO_ASSET_ID}
                             value={new Decimal('42.500000')}
                             precision='assetFull'
                             assetDecimals={6}
@@ -138,6 +141,7 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='USD'
+                            assetId={null}
                             value={new Decimal('0.01')}
                             precision='compact'
                             variant='body'
@@ -149,6 +153,7 @@ registerPreview({
                     node: (
                         <CurrencyAmount
                             currency='USD'
+                            assetId={null}
                             value={new Decimal('0')}
                             precision='compact'
                             variant='body'

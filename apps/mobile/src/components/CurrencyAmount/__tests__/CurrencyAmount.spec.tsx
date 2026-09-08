@@ -24,6 +24,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal(100)}
                 currency='USD'
+                assetId={null}
                 precision='compact'
             />,
         )
@@ -37,6 +38,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={null}
                 currency='USD'
+                assetId={null}
                 precision='compact'
             />,
         )
@@ -48,6 +50,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal(100)}
                 currency='USD'
+                assetId={null}
                 precision='compact'
                 prefix='+'
             />,
@@ -60,6 +63,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal('0.5')}
                 currency='ALGO'
+                assetId='0'
                 precision='preferredFull'
                 sign='-'
             />,
@@ -74,6 +78,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal(1000)}
                 currency='HIPO'
+                assetId='123456'
                 precision='compact'
                 sign='+'
             />,
@@ -88,6 +93,7 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal('0.001')}
                 currency='ALGO'
+                assetId='0'
                 precision='preferredFull'
             />,
         )
@@ -100,7 +106,8 @@ describe('CurrencyAmount', () => {
         render(
             <CurrencyAmount
                 value={new Decimal('8.817812345')}
-                currency='USD'
+                currency='USDC'
+                assetId='31566704'
                 precision='assetFull'
                 assetDecimals={6}
             />,
@@ -116,12 +123,84 @@ describe('CurrencyAmount', () => {
             <CurrencyAmount
                 value={new Decimal('8.817812345')}
                 currency='USD'
+                assetId={null}
                 precision='preferredFull'
             />,
         )
         expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(
             PREFERRED_MAX_PRECISION,
         )
+    })
+})
+
+// Identity spoofing: an ASA's unit name is free-form on chain, so an asset
+// named "ALGO" or "USD" must never borrow the native glyph or a fiat symbol.
+describe('CurrencyAmount identity comes from the asset id, not the unit name', () => {
+    it("never renders the Algo glyph for an ASA whose unit name is 'ALGO'", () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='ALGO'
+                assetId='987654321'
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).not.toContain('¦')
+        // The unit name still shows, as plain text.
+        expect(container.textContent).toContain('ALGO')
+    })
+
+    it("never renders the Algo glyph at the end position for a spoofed 'ALGO' ASA", () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='ALGO'
+                assetId='987654321'
+                precision='compact'
+                symbolPosition='end'
+            />,
+        )
+        expect(container.textContent).not.toContain('¦')
+    })
+
+    it('never asks the formatter to map an asset unit name to a fiat symbol', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='USD'
+                assetId='987654321'
+                precision='compact'
+            />,
+        )
+        // formatCurrency's showSymbol arg is false for every asset amount, so
+        // its USD → $ mapping is unreachable; the unit renders as plain text.
+        expect(vi.mocked(formatCurrency).mock.calls[0][4]).toBe(false)
+    })
+
+    it('still lets a display-currency amount format with its fiat symbol', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='USD'
+                assetId={null}
+                precision='compact'
+            />,
+        )
+        expect(vi.mocked(formatCurrency).mock.calls[0][4]).toBe(true)
+    })
+
+    it('does not render the glyph for an asset whose id is unknown', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='ALGO'
+                assetId=''
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).not.toContain('¦')
     })
 })
 

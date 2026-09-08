@@ -15,13 +15,12 @@ export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
 export const INITIAL_LOCKOUT_SECONDS = 30
 export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 
-// Keystore lookup ids. All three are stored as canonical `secret-key` keystore
-// records via `commitSecret`. The biometric blob holds a random unlock token
-// sealed by an OS-bound key; the token's hash rides as record metadata, which
-// lives in the plaintext bucket and so is readable without a decrypt.
+// Keystore lookup ids. Both live ids are stored as canonical `secret-key`
+// keystore records via `commitSecret`. The biometric blob holds a random unlock
+// token sealed by an OS-bound key; the token's hash rides as record metadata,
+// which lives in the plaintext bucket and so is readable without a decrypt.
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
-export const DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'
 export const BIOMETRIC_TOKEN_HASH_METADATA_KEY = 'biometricTokenHash'
 // Leading byte of the stored blob. Pre-binding blobs held serialized JSON, so
 // they always begin 0x7B and can never be mistaken for this. The reconcile
@@ -29,3 +28,8 @@ export const BIOMETRIC_TOKEN_HASH_METADATA_KEY = 'biometricTokenHash'
 // unwrap refuses a blob it does not understand instead of failing as a
 // decryption error.
 export const BIOMETRIC_BLOB_VERSION = 2
+// v2 kept the duress PIN under this separate id. Key ids live in a plaintext
+// metadata bucket, so the record's mere existence told a device image the
+// duress feature was in use; v3 folds the duress slot into `pera.pinCode`.
+// Referenced only by the migration, which deletes any record found under it.
+export const LEGACY_DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'

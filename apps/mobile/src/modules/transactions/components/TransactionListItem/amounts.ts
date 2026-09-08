@@ -15,7 +15,11 @@ import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    ALGO_ASSET_NAME,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { TransactionBalanceImpact } from '@perawallet/wallet-core-transactions'
 
 /** Maximum number of stacked amounts shown in a list row before overflow. */
@@ -33,7 +37,12 @@ export const safeDecimals = (decimals: number): number =>
 export type AmountDisplay = {
     /** Raw amount value for CurrencyAmount */
     value: Decimal
-    /** Currency code (e.g., 'ALGO', 'USDC') */
+    /**
+     * On-chain asset id ('0' for ALGO, '' when the source row lacks one).
+     * Currency identity is decided from this, never from `currency`.
+     */
+    assetId: string
+    /** On-chain unit name (e.g., 'ALGO', 'USDC') — display text only */
     currency: string
     /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red). Undefined for zero values. */
     prefix?: '+' | '-'
@@ -50,6 +59,7 @@ export const createAlgoAmount = (
 
     return {
         value: absValue,
+        assetId: ALGO_ASSET_ID,
         currency: ALGO_ASSET_NAME,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
@@ -63,6 +73,7 @@ export const createAssetAmount = (
     decimals: number,
     unitName: string,
     isOutgoing: boolean,
+    assetId: string,
 ): AmountDisplay => {
     const absValue = baseUnitsToDisplayUnits(
         amount,
@@ -71,6 +82,7 @@ export const createAssetAmount = (
 
     return {
         value: absValue,
+        assetId,
         currency: unitName,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
@@ -91,6 +103,7 @@ export const createBalanceImpactAmount = (
 
     return {
         value: absValue,
+        assetId: impact.assetId,
         currency: impact.unitName,
         prefix: impact.amount.isZero()
             ? undefined
@@ -108,6 +121,7 @@ export const createSwapAmount = (
     amountOut: Decimal,
     decimals: number,
     unitName: string,
+    assetId: Nullable<string>,
 ): AmountDisplay => {
     const absValue = baseUnitsToDisplayUnits(
         amountOut,
@@ -116,6 +130,8 @@ export const createSwapAmount = (
 
     return {
         value: absValue,
+        // A swap side can arrive without an id; '' fails closed (no glyph).
+        assetId: assetId ?? '',
         currency: unitName,
         prefix: absValue.isZero() ? undefined : '+',
     }

@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
 import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
-import { serializePinRecord } from '../../pinRecord'
+import { PIN_RECORD_VERSION, serializePinRecord } from '../../pinRecord'
 import { useSecurityStore } from '../../store'
 
 const sha256Hex = (bytes: Uint8Array): string =>
@@ -1074,13 +1074,18 @@ describe('useBiometrics', () => {
         // rather than hand it to the enclave and let it come back as a
         // decryption error.
         test('rejects a pre-binding blob at the version-byte guard before it reaches the enclave', async () => {
-            const legacyBlob = serializePinRecord({
-                version: 2,
-                salt: '00'.repeat(16),
-                hash: '00'.repeat(32),
-                failedAttempts: 0,
-                lockoutEndTime: null,
-            })
+            // Hand-rolled rather than built with `serializePinRecord`: what
+            // matters is only that the bytes are the JSON a pre-binding build
+            // wrote, so this must not track the current record's shape.
+            const legacyBlob = new TextEncoder().encode(
+                JSON.stringify({
+                    version: 2,
+                    salt: '00'.repeat(16),
+                    hash: '00'.repeat(32),
+                    failedAttempts: 0,
+                    lockoutEndTime: null,
+                }),
+            )
             kmsMocks.withSecret.mockImplementation(
                 async (_id: string, handler: (b: Uint8Array) => unknown) =>
                     handler(legacyBlob),
@@ -1105,9 +1110,12 @@ describe('useBiometrics', () => {
                     id === PIN_RECORD_KEY_ID
                         ? handler(
                               serializePinRecord({
-                                  version: 2,
+                                  version: PIN_RECORD_VERSION,
                                   salt: '00'.repeat(16),
                                   hash: '00'.repeat(32),
+                                  duressSalt: '00'.repeat(16),
+                                  duressHash: '00'.repeat(32),
+                                  duressEnabled: 0,
                                   failedAttempts: 5,
                                   lockoutEndTime,
                               }),

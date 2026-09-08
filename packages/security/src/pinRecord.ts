@@ -11,12 +11,15 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
 import { pbkdf2, randomBytes } from 'crypto'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
 // replaced before any production rollout. v1 records are treated as invalid.
-export const PIN_RECORD_VERSION = 2
+// v2 kept the duress PIN in a separate keystore record, whose very existence
+// (plaintext key id) and extra hashing cost told a coercer the feature was in
+// use; v3 folds both PINs into this one fixed-shape record.
+export const PIN_RECORD_VERSION = 3
 const SALT_LENGTH_BYTES = 16
 const HASH_LENGTH_BYTES = 32
 // OWASP PBKDF2-SHA256 recommendation, native-backed on both Node and RN
@@ -28,6 +31,16 @@ export type PinRecord = {
     version: typeof PIN_RECORD_VERSION
     salt: string
     hash: string
+    // The duress slot is ALWAYS populated — random bytes when no duress PIN is
+    // set — so the record's shape, field lengths, and per-attempt hashing cost
+    // are identical either way. Neither a device image nor a stopwatch may
+    // reveal whether the feature is in use.
+    duressSalt: string
+    duressHash: string
+    // 0|1 rather than a boolean: JSON `true`/`false` differ in length, and the
+    // keystore ciphertext's size tracks the plaintext's, so a boolean would
+    // leak the flag the random fill exists to hide.
+    duressEnabled: 0 | 1
     failedAttempts: number
     lockoutEndTime: number | null
 }
@@ -67,6 +80,24 @@ const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
         )
     })
 
+const randomHex = (length: number): string => {
+    const bytes = new Uint8Array(randomBytes(length))
+    try {
+        return bytesToHex(bytes)
+    } finally {
+        zeroBytes(bytes)
+    }
+}
+
+export const createEmptyDuressSlot = (): Pick<
+    PinRecord,
+    'duressSalt' | 'duressHash' | 'duressEnabled'
+> => ({
+    duressSalt: randomHex(SALT_LENGTH_BYTES),
+    duressHash: randomHex(HASH_LENGTH_BYTES),
+    duressEnabled: 0,
+})
+
 export const createPinRecord = async (pin: string): Promise<PinRecord> => {
     const salt = new Uint8Array(randomBytes(SALT_LENGTH_BYTES))
     const hash = await hashPin(pin, salt)
@@ -75,11 +106,36 @@ export const createPinRecord = async (pin: string): Promise<PinRecord> => {
             version: PIN_RECORD_VERSION,
             salt: bytesToHex(salt),
             hash: bytesToHex(hash),
+            ...createEmptyDuressSlot(),
             failedAttempts: 0,
             lockoutEndTime: null,
         }
     } finally {
         // Hex copies are now in the record; the raw buffers can go.
+        zeroBytes(salt, hash)
+    }
+}
+
+/**
+ * Returns a copy of `record` with the duress slot armed for `pin`, or — when
+ * `pin` is null — disarmed and re-randomized, so a disarmed slot is
+ * indistinguishable from one that was never armed.
+ */
+export const applyDuressPin = async (
+    record: PinRecord,
+    pin: Nullable<string>,
+): Promise<PinRecord> => {
+    if (!pin) return { ...record, ...createEmptyDuressSlot() }
+    const salt = new Uint8Array(randomBytes(SALT_LENGTH_BYTES))
+    const hash = await hashPin(pin, salt)
+    try {
+        return {
+            ...record,
+            duressSalt: bytesToHex(salt),
+            duressHash: bytesToHex(hash),
+            duressEnabled: 1,
+        }
+    } finally {
         zeroBytes(salt, hash)
     }
 }
@@ -108,6 +164,26 @@ export const verifyPinAgainstRecord = async (
     }
 }
 
+/**
+ * Hashes and compares against the duress slot UNCONDITIONALLY, consulting the
+ * armed flag only to gate the result — a disarmed slot costs exactly the same
+ * work, so timing cannot reveal whether a duress PIN is configured.
+ */
+export const verifyPinAgainstDuressSlot = async (
+    pin: string,
+    record: PinRecord,
+): Promise<boolean> => {
+    const saltBytes = hexToBytes(record.duressSalt)
+    const hashBytes = hexToBytes(record.duressHash)
+    const candidate = await hashPin(pin, saltBytes)
+    try {
+        const matched = constantTimeEqual(candidate, hashBytes)
+        return record.duressEnabled === 1 && matched
+    } finally {
+        zeroBytes(candidate, saltBytes, hashBytes)
+    }
+}
+
 export const serializePinRecord = (record: PinRecord): Uint8Array =>
     encoder.encode(JSON.stringify(record))
 
@@ -120,6 +196,9 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
 
     if (r.version !== PIN_RECORD_VERSION) return false
     if (typeof r.salt !== 'string' || typeof r.hash !== 'string') return false
+    if (typeof r.duressSalt !== 'string' || typeof r.duressHash !== 'string') {
+        return false
+    }
 
     // Validate hex shape + exact length so a corrupted/truncated record is
     // rejected rather than silently treated as a (broken) valid PIN.
@@ -127,6 +206,10 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
         s.length === len && /^[0-9a-f]+$/i.test(s)
     if (!hexOfLength(r.salt, SALT_HEX_LENGTH)) return false
     if (!hexOfLength(r.hash, HASH_HEX_LENGTH)) return false
+    if (!hexOfLength(r.duressSalt, SALT_HEX_LENGTH)) return false
+    if (!hexOfLength(r.duressHash, HASH_HEX_LENGTH)) return false
+
+    if (r.duressEnabled !== 0 && r.duressEnabled !== 1) return false
 
     // failedAttempts: finite, non-negative integer.
     if (

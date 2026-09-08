@@ -732,7 +732,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             fireEvent.click(confirmButton)
 
             // Notifier is captured with raw i18n keys: showNotification receives
-            // the key, and the Notifier component translates it.
+            // the key, and the Notifier component translates it. Matched with
+            // stringContaining because a debug-enabled env (DEBUG_ENABLED=true
+            // in the local .env) appends "\n\nDebug: <raw error>" to the body.
             await waitFor(
                 () => {
                     expect(
@@ -740,7 +742,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     ).toHaveBeenCalledWith(
                         expect.objectContaining({
                             title: 'errors.signing.title',
-                            description: 'errors.kms.key_not_found',
+                            description: expect.stringContaining(
+                                'errors.kms.key_not_found',
+                            ),
                         }),
                     )
                 },
@@ -804,7 +808,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     ).toHaveBeenCalledWith(
                         expect.objectContaining({
                             title: 'errors.signing.title',
-                            description: 'errors.signing.local_key_failed',
+                            description: expect.stringContaining(
+                                'errors.signing.local_key_failed',
+                            ),
                         }),
                     )
                 },

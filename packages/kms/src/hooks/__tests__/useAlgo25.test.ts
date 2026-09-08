@@ -187,6 +187,59 @@ describe('useAlgo25', () => {
             expect(Array.from(child!.publicKey)).toEqual(expectedPublicKey)
         })
 
+        test('zeroes every nacl secretKey it allocates before returning', async () => {
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(7))
+            mockEncodeAddress.mockReturnValue('ADDR')
+            const fromSeedSpy = vi.spyOn(nacl.sign.keyPair, 'fromSeed')
+
+            const { result } = renderHook(() => useAlgo25())
+            await act(async () => {
+                await result.current.createAlgo25Key({
+                    id: 'my-key',
+                    mnemonicIndices: TEST_INDICES,
+                })
+            })
+
+            // Two allocations: algo25SeedToAddress and the sign child. Each
+            // secretKey carries the seed in its first 32 bytes, so an orphaned
+            // one leaves recovery material on the heap after zeroBytes(seed).
+            expect(fromSeedSpy).toHaveBeenCalledTimes(2)
+            for (const call of fromSeedSpy.mock.results) {
+                const keyPair = call.value as nacl.SignKeyPair
+                expect(Array.from(keyPair.secretKey)).toEqual(
+                    new Array(64).fill(0),
+                )
+            }
+            fromSeedSpy.mockRestore()
+        })
+
+        test('zeroes the sign-child secretKey even when its import throws', async () => {
+            mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(7))
+            mockEncodeAddress.mockReturnValue('ADDR')
+            mockKeyStoreImport
+                .mockResolvedValueOnce('my-key')
+                .mockRejectedValueOnce(new Error('boom'))
+            const fromSeedSpy = vi.spyOn(nacl.sign.keyPair, 'fromSeed')
+
+            const { result } = renderHook(() => useAlgo25())
+            await expect(
+                act(async () => {
+                    await result.current.createAlgo25Key({
+                        id: 'my-key',
+                        mnemonicIndices: TEST_INDICES,
+                    })
+                }),
+            ).rejects.toThrow('boom')
+
+            for (const call of fromSeedSpy.mock.results) {
+                const keyPair = call.value as nacl.SignKeyPair
+                expect(Array.from(keyPair.secretKey)).toEqual(
+                    new Array(64).fill(0),
+                )
+            }
+            fromSeedSpy.mockRestore()
+        })
+
         test('does not mint the sign child through generate', async () => {
             mockIndicesToAlgo25Seed.mockReturnValue(new Uint8Array(32).fill(1))
             mockEncodeAddress.mockReturnValue('ADDR')
