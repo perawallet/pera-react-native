@@ -2148,6 +2148,9 @@ importers:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
         version: 9.2.0(algosdk@3.7.0)
+      '@algorandfoundation/xhd-wallet-api':
+        specifier: 'catalog:'
+        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2178,6 +2181,9 @@ importers:
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
       algosdk:
         specifier: 'catalog:'
         version: 3.7.0

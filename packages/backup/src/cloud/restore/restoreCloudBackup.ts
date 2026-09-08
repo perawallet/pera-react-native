@@ -57,6 +57,10 @@ export type RestoreCloudBackupResult = {
     summary: ImportSummary
 }
 
+/** Reads the category off a rejection from {@link restoreCloudBackup}. */
+export const restoreErrorCategoryOf = (error: unknown): RestoreErrorCategory =>
+    error instanceof CloudBackupRestoreError ? error.category : 'UNKNOWN'
+
 const categorize = (error: unknown): RestoreErrorCategory => {
     if (!isPeraNetworkError(error)) return 'UNKNOWN'
     if (error.status === 404) return 'NOT_FOUND'

@@ -10,48 +10,46 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
-    CloudBackupRestoreError,
-    readCloudBackupRestoreMnemonic,
     restoreCloudBackup,
-    useBackupSyncStateStore,
-    useCloudBackupStore,
-    type ImportSummary,
-    type RestoreErrorCategory,
-} from '@perawallet/wallet-core-backup'
+    type RestoreCloudBackupResult,
+} from '../restore/restoreCloudBackup'
+import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
+import { useCloudBackupStore } from '../store/store'
+import { useBackupSyncStateStore } from '../store/syncStateStore'
 import { useCloudBackupImport } from './useCloudBackupImport'
 
-type RestoreParams = { salt: string }
-
-type UseRestoreCloudBackupParams = {
-    onSuccess: (summary: ImportSummary) => void
-    onError: (category: RestoreErrorCategory) => void
+export type RestoreCloudBackupVariables = {
+    /** Base64 salt the UI calls the "encryption key". */
+    salt: string
 }
 
-type UseRestoreCloudBackupResult = {
-    restore: (params: RestoreParams) => void
-    isRestoring: boolean
-}
-
-const categoryOf = (error: unknown): RestoreErrorCategory =>
-    error instanceof CloudBackupRestoreError ? error.category : 'UNKNOWN'
-
-export const useRestoreCloudBackup = ({
-    onSuccess,
-    onError,
-}: UseRestoreCloudBackupParams): UseRestoreCloudBackupResult => {
+/**
+ * Pulls the remote backup for the phrase held in the restore draft and imports
+ * it into the wallet. Rejects with a `CloudBackupRestoreError`; read its
+ * category with `restoreErrorCategoryOf`.
+ */
+export const useRestoreCloudBackupMutation = (
+    options?: UseMutationOptions<
+        RestoreCloudBackupResult,
+        Error,
+        RestoreCloudBackupVariables
+    >,
+) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const { importAccounts } = useCloudBackupImport()
 
-    const mutation = useMutation({
+    return useMutation({
         throwOnError: false,
-        mutationFn: async ({ salt }: RestoreParams) => {
+        mutationFn: async ({
+            salt,
+        }: RestoreCloudBackupVariables): Promise<RestoreCloudBackupResult> => {
             if (!deviceId) {
                 throw new Error('Device ID is unavailable')
             }
@@ -61,21 +59,17 @@ export const useRestoreCloudBackup = ({
             if (!mnemonic) {
                 throw new Error('Cloud backup restore phrase is missing')
             }
-            return restoreCloudBackup({
+            const result = await restoreCloudBackup({
                 mnemonic,
                 salt,
                 deviceId,
                 network,
                 importAccounts,
             })
+            setConfigured({ backupId: result.backupId, salt })
+            setSyncState(result.syncState)
+            return result
         },
-        onSuccess: ({ backupId, syncState, summary }, { salt }) => {
-            setConfigured({ backupId, salt })
-            setSyncState(syncState)
-            onSuccess(summary)
-        },
-        onError: error => onError(categoryOf(error)),
+        ...options,
     })
-
-    return { restore: mutation.mutate, isRestoring: mutation.isPending }
 }

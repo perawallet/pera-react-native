@@ -14,17 +14,19 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    restoreErrorCategoryOf,
     useCloudBackupRestoreDraftStore,
+    useRestoreCloudBackupMutation,
     type ImportSummary,
+    type RestoreCloudBackupResult,
+    type RestoreCloudBackupVariables,
     type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useRestoreCloudBackup } from '../../hooks/useRestoreCloudBackup'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type Translate = ReturnType<typeof useLanguage>['t']
-type Restore = ReturnType<typeof useRestoreCloudBackup>['restore']
 
 const ERROR_KEYS: Record<RestoreErrorCategory, string> = {
     NOT_FOUND: 'cloud_backup.restore.error_not_found',
@@ -79,8 +81,8 @@ const useRestoreDraft = (): RestoreDraft => {
 }
 
 type RestoreOutcome = {
-    onSuccess: (summary: ImportSummary) => void
-    onError: (category: RestoreErrorCategory) => void
+    onSuccess: (result: RestoreCloudBackupResult) => void
+    onError: (error: unknown) => void
 }
 
 const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
@@ -90,7 +92,7 @@ const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
 
     const onSuccess = useCallback(
-        (summary: ImportSummary) => {
+        ({ summary }: RestoreCloudBackupResult) => {
             showToast(outcomeToast(t, summary))
             clearDraft()
             navigation.reset({
@@ -102,8 +104,8 @@ const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
     )
 
     const onError = useCallback(
-        (category: RestoreErrorCategory) =>
-            showToast(failureToast(t, category)),
+        (error: unknown) =>
+            showToast(failureToast(t, restoreErrorCategoryOf(error))),
         [showToast, t],
     )
 
@@ -111,7 +113,7 @@ const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
 }
 
 const useRestoreRunner = (
-    restore: Restore,
+    restore: (variables: RestoreCloudBackupVariables) => void,
     hasMnemonic: boolean,
     salt: string,
 ): (() => void) =>
@@ -135,9 +137,10 @@ export const useCloudBackupRestoreEncryptionKeyScreen =
         const [encryptionKey, setEncryptionKey] = useState('')
         const { hasMnemonic, clearDraft } = useRestoreDraft()
         const outcome = useRestoreOutcome(clearDraft)
-        const { restore, isRestoring } = useRestoreCloudBackup(outcome)
+        const mutation = useRestoreCloudBackupMutation(outcome)
+        const isRestoring = mutation.isPending
         const handleRestore = useRestoreRunner(
-            restore,
+            mutation.mutate,
             hasMnemonic,
             encryptionKey,
         )

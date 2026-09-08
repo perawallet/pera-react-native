@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { CloudBackupRestoreError } from '@perawallet/wallet-core-backup'
 
 const restore = vi.fn()
 const reset = vi.fn()
@@ -20,15 +21,6 @@ const clearDraft = vi.fn()
 let hasMnemonic = true
 let isRestoring = false
 
-vi.mock('../../../hooks/useRestoreCloudBackup', () => ({
-    useRestoreCloudBackup: (cbs: {
-        onSuccess: (s: unknown) => void
-        onError: (c: string) => void
-    }) => {
-        ;(globalThis as Record<string, unknown>).__cbs = cbs
-        return { restore, isRestoring }
-    },
-}))
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset }),
 }))
@@ -46,6 +38,13 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
             mnemonicRawBytes: null,
             clearDraft,
         }),
+    useRestoreCloudBackupMutation: (options: {
+        onSuccess: (result: unknown) => void
+        onError: (error: unknown) => void
+    }) => {
+        ;(globalThis as Record<string, unknown>).__cbs = options
+        return { mutate: restore, isPending: isRestoring }
+    },
 }))
 
 import { useCloudBackupRestoreEncryptionKeyScreen } from '../useCloudBackupRestoreEncryptionKeyScreen'
@@ -94,7 +93,9 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
             onSuccess: (s: unknown) => void
         }
         act(() =>
-            cbs.onSuccess({ imported: 2, skippedDuplicate: 0, failed: [] }),
+            cbs.onSuccess({
+                summary: { imported: 2, skippedDuplicate: 0, failed: [] },
+            }),
         )
         expect(clearDraft).toHaveBeenCalled()
         expect(reset).toHaveBeenCalledWith({
@@ -115,9 +116,9 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     it('shows the mapped error toast on failure', () => {
         renderHook(() => useCloudBackupRestoreEncryptionKeyScreen())
         const cbs = (globalThis as Record<string, unknown>).__cbs as {
-            onError: (c: string) => void
+            onError: (error: unknown) => void
         }
-        act(() => cbs.onError('NOT_FOUND'))
+        act(() => cbs.onError(new CloudBackupRestoreError('NOT_FOUND')))
         expect(showToast).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'cloud_backup.restore.error_not_found',
