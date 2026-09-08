@@ -12,15 +12,28 @@
 
 import {
     BIOMETRIC_BLOB_KEY_ID,
+    BIOMETRIC_BLOB_VERSION,
+    BIOMETRIC_TOKEN_HASH_METADATA_KEY,
     createPinRecord,
     PIN_RECORD_KEY_ID,
     serializePinRecord,
 } from '@perawallet/wallet-core-security'
 import { commitSecret, withSecret } from '@perawallet/wallet-core-kms'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
     LegacyAuth,
     LegacyPreferences,
 } from '@perawallet/wallet-extension-platform'
+
+// Mirrors useBiometrics' `encodeBlob` framing (a leading version byte) so the
+// reconcile that runs on next mount recognizes what this writes.
+const encodeBiometricBlob = (blob: string): Uint8Array => {
+    const body = new TextEncoder().encode(blob)
+    const framed = new Uint8Array(body.length + 1)
+    framed[0] = BIOMETRIC_BLOB_VERSION
+    framed.set(body, 1)
+    return framed
+}
 
 export type AuthMigrationResult = {
     pinMigrated: boolean
@@ -68,11 +81,21 @@ export const migrateAuth = async (
         result.pinMigrated = true
 
         if (preferences.biometricEnabled === true) {
-            await commitSecret({
-                id: BIOMETRIC_BLOB_KEY_ID,
-                bytes: serializePinRecord(record),
-            })
-            result.biometricMigrated = true
+            // Arming needs no ceremony, which is what makes it possible here: there
+            // is no user present to complete one. The reconcile probes the key on the
+            // next mount, so a key that turns out unusable costs a re-opt-in prompt
+            // rather than a broken unlock.
+            const armed = await getProvider().biometrics.armBiometricBinding()
+            if (armed) {
+                await commitSecret({
+                    id: BIOMETRIC_BLOB_KEY_ID,
+                    bytes: encodeBiometricBlob(armed.blob),
+                    metadata: {
+                        [BIOMETRIC_TOKEN_HASH_METADATA_KEY]: armed.tokenHash,
+                    },
+                })
+                result.biometricMigrated = true
+            }
         }
     } finally {
         pinBytes.fill(0)
