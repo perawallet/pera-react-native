@@ -177,10 +177,18 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
 
 **Android hardware variants**
 
-14. StrongBox-backed device (Pixel 3 or newer) and a non-StrongBox device:
+14. **The most important item here.** On an Android 15 or 16 handset (API
+    35/36), enable biometric unlock and confirm the biometric prompt actually
+    appears and the ceremony succeeds. Compare against a pre-API-35 device.
+    Without an explicit MGF1 digest, AndroidKeyStore pins the key to SHA-1 and
+    the SHA-256 OAEP decrypt is rejected at `Cipher.init`, so a regression here
+    means `enableBiometrics` reports "declined" with **no prompt ever shown**
+    and biometric unlock cannot be turned on at all. `adb logcat -s
+PeraBiometricBinding` carries the reason if it fails.
+15. StrongBox-backed device (Pixel 3 or newer) and a non-StrongBox device:
     enable biometrics on each and confirm the RSA pair generates and the
     confirmation ceremony succeeds on both.
-15. On a StrongBox device, re-enroll a fingerprint and confirm **both** the
+16. On a StrongBox device, re-enroll a fingerprint and confirm **both** the
     StrongBox-backed RSA pair and the non-StrongBox AES canary invalidate. If
     only the canary invalidates, `checkBinding` would read `valid` while unlock
     keeps failing with no self-heal — must not happen. Read the
@@ -188,14 +196,14 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
     changed" message is the intended `changed` branch; "set up again" means the
     presence check pre-empted it; a silent toggle-off means the probe reported
     `unavailable` instead.
-16. An API 29–33 handset: those OS versions carry no MGF1 tag on existing keys,
+17. An API 29–33 handset: those OS versions carry no MGF1 tag on existing keys,
     so the digest KeyMaster falls back to is OEM-defined. Confirm the OAEP
     decrypt still succeeds there.
-17. Background the app while the biometric prompt is open, then foreground it
+18. Background the app while the biometric prompt is open, then foreground it
     again: the unwrap must not hang.
-18. Force an arm failure (e.g. fill the keystore) and confirm the failure logs
+19. Force an arm failure (e.g. fill the keystore) and confirm the failure logs
     a diagnosable reason rather than dropping it — arm failures have no other
     way to be debugged from a device.
-19. Run a full release build (`assembleRelease` on Android, a Release scheme on
+20. Run a full release build (`assembleRelease` on Android, a Release scheme on
     iOS) at least once — a debug-only pass does not exercise R8 or Release-only
     code paths like the `LAContext` lifetime above.

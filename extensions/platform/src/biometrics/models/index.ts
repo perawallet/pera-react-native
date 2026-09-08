@@ -38,7 +38,7 @@ export type BiometricsAuthenticatePrompt = {
 }
 
 /**
- * Why an authenticate call failed. Only `system-cancel` (the OS dropping a
+ * Why a biometric ceremony failed. Only `system-cancel` (the OS dropping a
  * prompt without user action, e.g. the app was not active yet) is safe to
  * retry; every other reason is terminal. Android folds its OS cancel into
  * `user-cancel`, so `system-cancel` is effectively iOS-only.
@@ -122,8 +122,9 @@ export type BiometricArmResult = {
  *                   restored backup, or a keystore reset.
  *
  * Everything else is a prompt outcome and carries the same meaning it does for
- * `authenticate`. `system-cancel` in particular must survive: it is the only
- * reason the lock screen retries on, and it exists for the deeplink cold start.
+ * the biometric prompt ceremony. `system-cancel` in particular must survive:
+ * it is the only reason the lock screen retries on, and it exists for the
+ * deeplink cold start.
  */
 export type BiometricUnwrapFailureReason =
     | BiometricsAuthenticateFailureReason

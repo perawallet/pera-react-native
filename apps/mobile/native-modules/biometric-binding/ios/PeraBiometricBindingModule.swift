@@ -30,7 +30,10 @@ internal enum UnwrapError: String {
     switch error.code {
     // `localizedFallbackTitle` is left alone, so iOS offers "Enter Passcode"
     // after a failed attempt; tapping it is the user declining, not a failure.
-    // The split matches AUTH_FAILURE_REASONS on the sibling authenticate path.
+    // userCancel/userFallback both mean the user declined, so both collapse to
+    // `userCancel`; systemCancel/appCancel both mean the OS interrupted with no
+    // user action, so both collapse to `systemCancel` — the JS side only needs
+    // to distinguish "declined" from "retry".
     case .userCancel, .userFallback: self = .userCancel
     case .systemCancel, .appCancel: self = .systemCancel
     case .biometryLockout: self = .lockout
