@@ -13,7 +13,4 @@
 export * from './useEnableCloudBackup'
 export * from './useDisableCloudBackup'
 export * from './useRemoveCloudBackup'
-export * from './useCloudBackupImport'
-export * from './useRestoreCloudBackup'
 export { useBackupSync } from './useBackupSync'
-export { useResolveHdSeedForBackup } from './useResolveHdSeedForBackup'
