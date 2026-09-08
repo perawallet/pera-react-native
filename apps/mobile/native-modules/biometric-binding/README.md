@@ -71,17 +71,36 @@ the key it stands for.
   defaults MGF1 to SHA-1 regardless of `setDigests`, and StrongBox supports
   SHA-256 only, so the default silently diverges from the key spec on one path
   and is rejected outright on the other.
-- StrongBox generation retries without the flag on
-  `StrongBoxUnavailableException`: some devices advertise it and then refuse.
+- The permitted MGF1 digest set is pinned with `setMgf1Digests(DIGEST_SHA256)` on
+  API 35+. Up to 34 the primary digest joins that set implicitly, but from 35 an
+  unspecified set means SHA-1 alone, so every SHA-256 decrypt is refused at
+  `Cipher.init` and StrongBox — which has no SHA-1 — refuses the key at
+  generation. A key minted without the tag can only be re-armed, never repaired.
+- StrongBox generation retries without the flag on `ProviderException`, not just
+  its `StrongBoxUnavailableException` subclass: only
+  `KM_ERROR_HARDWARE_TYPE_UNAVAILABLE` maps to that subclass, while an
+  unsupported digest, padding or key size arrives as the bare superclass and
+  needs the same TEE fallback.
 - An AES key at alias `pera.biometric.enrollment` is the enrollment probe. It
-  holds nothing; its existence _is_ the binding. `Cipher.init` is what makes it a
-  probe: for AES the keystore operation begins there, so it raises
-  `KeyPermanentlyInvalidatedException` with no user interaction, whereas RSA
-  defers the authentication check to `doFinal` and cannot be probed without a
-  ceremony. `UserNotAuthenticatedException` therefore means the key is intact,
-  so `'valid'`.
-- `checkBinding` reports `'absent'` as soon as the RSA pair is missing, because
-  the canary alone says nothing about the key that actually holds the token.
+  holds nothing; its existence _is_ the binding. It is the only probe that can
+  _classify_ an invalidation without a ceremony: `Cipher.init` on the secret key
+  raises `KeyPermanentlyInvalidatedException` directly, whereas reaching the RSA
+  private key means `KeyStore.getEntry`, which converts that same invalidation
+  into an `UnrecoverableKeyException` and loses the distinction between
+  `'changed'` and a key that was never there. `UserNotAuthenticatedException`
+  from the canary therefore means the key is intact, so `'valid'`.
+- `checkBinding` probes the canary before it looks for the RSA pair.
+  `containsAlias` goes through `getKeyMetadata`, which swallows a keystore2
+  `KEY_PERMANENTLY_INVALIDATED` and reports the key as missing, so checking
+  presence first would answer `'absent'` and make `'changed'` unreachable on
+  those devices. A missing RSA pair is still `'absent'`, because the canary alone
+  says nothing about the key that actually holds the token.
+- Everything inside the prompt's `runOnUiThread` block settles the promise,
+  including the guard on `isDestroyed` / `isFinishing` /
+  `supportFragmentManager.isStateSaved`. Past `onSaveInstanceState`,
+  `BiometricPrompt.authenticateInternal` returns without firing any callback, so
+  without that guard the unwrap hangs for the whole unlock cycle and leaks the
+  KeyMint operation.
 - The OS carries the invalidation on both:
   `setInvalidatedByBiometricEnrollment(true)` destroys them when a biometric is
   enrolled or all are removed. Auth-per-use is what binds them to the set rather

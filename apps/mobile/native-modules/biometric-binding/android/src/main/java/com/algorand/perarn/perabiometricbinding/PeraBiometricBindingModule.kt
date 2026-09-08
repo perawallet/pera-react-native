@@ -16,7 +16,6 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
-import android.security.keystore.StrongBoxUnavailableException
 import android.security.keystore.UserNotAuthenticatedException
 import android.util.Base64
 import android.util.Log
@@ -32,6 +31,7 @@ import java.security.KeyFactory
 import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.MessageDigest
+import java.security.ProviderException
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.MGF1ParameterSpec
@@ -63,12 +63,13 @@ private const val LOG_TAG = "PeraBiometricBinding"
  *   JavaScript — decides whether the user is in.
  * - An AES canary at `pera.biometric.enrollment` that holds nothing; its
  *   existence *is* the enrollment binding. It stays because it is the only
- *   non-interactive invalidation probe available: for AES the keystore
- *   operation begins at `Cipher.init`, which raises
- *   `KeyPermanentlyInvalidatedException` with no user present, whereas RSA
- *   defers the authentication check to `doFinal` and so cannot be probed at all
- *   without a ceremony. `UserNotAuthenticatedException` therefore means the key
- *   is intact and merely unauthenticated, which is a valid binding.
+ *   probe that can *classify* an invalidation without a ceremony: `Cipher.init`
+ *   on the secret key raises `KeyPermanentlyInvalidatedException` directly,
+ *   whereas reaching the RSA private key means `KeyStore.getEntry`, which
+ *   converts that same invalidation into an `UnrecoverableKeyException` and
+ *   loses the distinction between 'changed' and a key that was never there.
+ *   `UserNotAuthenticatedException` from the canary therefore means the key is
+ *   intact and merely unauthenticated, which is a valid binding.
  *
  * `setInvalidatedByBiometricEnrollment` is what makes the OS invalidate both
  * when a biometric is enrolled or all of them are removed.
@@ -94,8 +95,12 @@ class PeraBiometricBindingModule : Module() {
         try {
           generator.initialize(unlockKeySpec(strongBox = true))
           generator.generateKeyPair()
-        } catch (e: StrongBoxUnavailableException) {
+        } catch (e: ProviderException) {
           // Declared available on some devices that then refuse it.
+          // `ProviderException`, not just its `StrongBoxUnavailableException`
+          // subclass: only KM_ERROR_HARDWARE_TYPE_UNAVAILABLE maps to that
+          // type, while an unsupported digest, padding or key size arrives as
+          // the bare superclass — and those must fall back to the TEE too.
           Log.w(LOG_TAG, "StrongBox was refused; falling back to the TEE", e)
           generator.initialize(unlockKeySpec(strongBox = false))
           generator.generateKeyPair()
@@ -204,38 +209,41 @@ class PeraBiometricBindingModule : Module() {
         return "unavailable"
       }
 
-    // Ahead of the canary probe, because the canary alone says nothing about the
-    // key that actually holds the token. `containsAlias` never prompts.
-    val hasUnlockKey =
-      try {
-        keyStore.containsAlias(UNLOCK_ALIAS)
-      } catch (t: Throwable) {
-        Log.w(LOG_TAG, "probing the unlock key failed", t)
-        return "unavailable"
-      }
-    if (!hasUnlockKey) return "absent"
-
-    val key =
+    val canary =
       try {
         keyStore.getKey(ALIAS, null) as? SecretKey
       } catch (t: Throwable) {
         Log.w(LOG_TAG, "reading the enrollment canary failed", t)
         return "unavailable"
-      } ?: return "absent"
+      }
 
-    return try {
-      Cipher.getInstance(TRANSFORMATION).init(Cipher.ENCRYPT_MODE, key)
-      "valid"
-    } catch (e: KeyPermanentlyInvalidatedException) {
-      "changed"
-    } catch (e: UserNotAuthenticatedException) {
-      "valid"
-    } catch (t: Throwable) {
-      // Only 'absent' and 'changed' destroy the opt-in, so anything unexpected
-      // must report the reading it actually is: none.
-      Log.w(LOG_TAG, "the enrollment canary probe could not answer", t)
-      "unavailable"
+    // The affirmative 'changed' has to be read before anything can answer
+    // 'absent': `containsAlias` goes through `getKeyMetadata`, which swallows a
+    // keystore2 KEY_PERMANENTLY_INVALIDATED and reports the key as missing, so
+    // probing second would make 'changed' unreachable on those devices and hand
+    // the user the wrong explanation.
+    if (canary != null) {
+      try {
+        Cipher.getInstance(TRANSFORMATION).init(Cipher.ENCRYPT_MODE, canary)
+      } catch (e: KeyPermanentlyInvalidatedException) {
+        return "changed"
+      } catch (e: UserNotAuthenticatedException) {
+        // The key is intact and merely unauthenticated, which is a binding.
+      } catch (t: Throwable) {
+        // Only 'absent' and 'changed' destroy the opt-in, so anything
+        // unexpected must report the reading it actually is: none.
+        Log.w(LOG_TAG, "the enrollment canary probe could not answer", t)
+        return "unavailable"
+      }
     }
+
+    // The canary alone says nothing about the key that actually holds the
+    // token. `containsAlias` never prompts.
+    if (!keyStore.containsAlias(UNLOCK_ALIAS)) return "absent"
+    // And half a binding cannot detect a re-enrollment, so it is not one.
+    if (canary == null) return "absent"
+
+    return "valid"
   }
 
   /** The single place that decides what a binding consists of. */
@@ -313,49 +321,88 @@ class PeraBiometricBindingModule : Module() {
       return
     }
     activity.runOnUiThread {
-      val info =
-        BiometricPrompt.PromptInfo.Builder()
-          .setTitle(prompt["title"] ?: "Authenticate")
-          .setNegativeButtonText(prompt["cancelLabel"] ?: "Cancel")
-          // Matches the bar the opt-in binds at; a class-2 modality must
-          // neither bind nor unlock.
-          .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
-          .build()
-      val biometricPrompt =
-        BiometricPrompt(
-          activity,
-          ContextCompat.getMainExecutor(activity),
-          object : BiometricPrompt.AuthenticationCallback() {
-            // `onAuthenticationFailed` is deliberately not overridden: a single
-            // rejected fingerprint is not terminal, and the prompt stays up
-            // until the user succeeds, cancels or hits the lockout — each of
-            // which arrives through one of the two callbacks below. Rejecting
-            // on it would collapse a retry into a failure.
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-              try {
-                // The cipher carried by the result is the one the TEE
-                // authorised; using any other would defeat the binding.
-                val authorized = result.cryptoObject!!.cipher!!
-                val token = authorized.doFinal(Base64.decode(blob, Base64.NO_WRAP))
-                promise.resolve(token)
-              } catch (e: KeyPermanentlyInvalidatedException) {
-                Log.w(LOG_TAG, "the unlock key was invalidated mid-ceremony", e)
-                promise.reject(CodedException("invalidated", "key invalidated", null))
-              } catch (t: Throwable) {
-                Log.w(LOG_TAG, "decrypting the token failed", t)
-                promise.reject(CodedException("failed", "decrypt failed", null))
-              }
-            }
-
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-              promise.reject(
-                CodedException(promptErrorCode(errorCode), errString.toString(), null),
-              )
-            }
-          },
-        )
-      biometricPrompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
+      // Nothing outside this block can settle the promise any more: the
+      // enclosing try has already returned by the time this runs. An unsettled
+      // promise hangs `unlockWithBiometrics` for the whole cycle and leaks the
+      // KeyMint operation, so every exit here has to reject.
+      try {
+        // `currentActivity` was read on a background thread, so the activity
+        // may have gone since; the BiometricPrompt constructor would throw on
+        // the main thread with no handler and take the wallet down. And past
+        // `onSaveInstanceState` — the user backgrounding the app during the
+        // KMS reads that precede this — `authenticateInternal` logs and
+        // returns without ever firing a callback, which is the hang.
+        if (
+          activity.isDestroyed ||
+          activity.isFinishing ||
+          activity.supportFragmentManager.isStateSaved
+        ) {
+          Log.w(LOG_TAG, "the host activity cannot show a biometric prompt")
+          promise.reject(CodedException("unavailable", "prompt unavailable", null))
+          return@runOnUiThread
+        }
+        showPrompt(activity, prompt, blob, cipher, promise)
+      } catch (t: Throwable) {
+        Log.w(LOG_TAG, "showing the biometric prompt failed", t)
+        promise.reject(CodedException("unavailable", "prompt unavailable", null))
+      }
     }
+  }
+
+  private fun showPrompt(
+    activity: FragmentActivity,
+    prompt: Map<String, String>,
+    blob: String,
+    cipher: Cipher,
+    promise: Promise,
+  ) {
+    val info =
+      BiometricPrompt.PromptInfo.Builder()
+        .setTitle(prompt["title"] ?: "Authenticate")
+        .setNegativeButtonText(prompt["cancelLabel"] ?: "Cancel")
+        // Matches the bar the opt-in binds at; a class-2 modality must neither
+        // bind nor unlock.
+        .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG)
+        .build()
+    val biometricPrompt =
+      BiometricPrompt(
+        activity,
+        ContextCompat.getMainExecutor(activity),
+        object : BiometricPrompt.AuthenticationCallback() {
+          // `onAuthenticationFailed` is deliberately not overridden: a single
+          // rejected fingerprint is not terminal, and the prompt stays up until
+          // the user succeeds, cancels or hits the lockout — each of which
+          // arrives through one of the two callbacks below. Rejecting on it
+          // would collapse a retry into a failure.
+          override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+            try {
+              // The cipher carried by the result is the one the TEE authorised;
+              // using any other would defeat the binding.
+              val authorized = result.cryptoObject!!.cipher!!
+              val token = authorized.doFinal(Base64.decode(blob, Base64.NO_WRAP))
+              promise.resolve(token)
+            } catch (e: KeyPermanentlyInvalidatedException) {
+              Log.w(LOG_TAG, "the unlock key was invalidated mid-ceremony", e)
+              promise.reject(CodedException("invalidated", "key invalidated", null))
+            } catch (t: Throwable) {
+              Log.w(LOG_TAG, "decrypting the token failed", t)
+              promise.reject(CodedException("failed", "decrypt failed", null))
+            }
+          }
+
+          override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+            // The JS side logs only the mapped reason and drops the error, so
+            // everything in promptErrorCode's `failed` bucket — TIMEOUT,
+            // UNABLE_TO_PROCESS, VENDOR, NO_SPACE — would otherwise reach QA
+            // and Crashlytics as the bare word "failed".
+            Log.w(LOG_TAG, "the biometric prompt failed: $errorCode $errString")
+            promise.reject(
+              CodedException(promptErrorCode(errorCode), errString.toString(), null),
+            )
+          }
+        },
+      )
+    biometricPrompt.authenticate(info, BiometricPrompt.CryptoObject(cipher))
   }
 
   private fun unlockKeySpec(strongBox: Boolean): KeyGenParameterSpec {
@@ -369,6 +416,16 @@ class PeraBiometricBindingModule : Module() {
         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
         .setUserAuthenticationRequired(true)
         .setInvalidatedByBiometricEnrollment(true)
+
+    // The permitted MGF1 digest set, which `oaepSpec` has to stay inside. Up to
+    // API 34 the primary digest is added to it implicitly; from 35 an
+    // unspecified set means SHA-1 alone, so every SHA-256 decrypt would be
+    // refused at `Cipher.init` — and StrongBox, which has no SHA-1, would
+    // refuse the key at generation. A key minted without this can only be
+    // re-armed, never repaired.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      builder.setMgf1Digests(KeyProperties.DIGEST_SHA256)
+    }
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       builder.setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG)
