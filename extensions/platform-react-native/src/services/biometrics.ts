@@ -21,7 +21,6 @@ import {
     supportedAuthenticationTypesAsync,
 } from 'expo-local-authentication'
 import { logger } from '@perawallet/wallet-core-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     BiometricArmResult,
     BiometricAvailability,
@@ -261,7 +260,7 @@ export class RNBiometricsService implements BiometricsService {
     // does not yet expose an OS-bound key pair; a later task wires the real
     // Secure Enclave / TEE calls in here. Refuse in the meantime rather than
     // half-implement a security boundary.
-    async armBiometricBinding(): Promise<Nullable<BiometricArmResult>> {
+    async armBiometricBinding(): Promise<BiometricArmResult | null> {
         return null
     }
 

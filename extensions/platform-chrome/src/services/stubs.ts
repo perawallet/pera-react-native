@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AgeGateDeviceCapability,
     AgeGateResult,
@@ -63,7 +62,7 @@ export class ChromeBiometricsService implements BiometricsService {
         return 'unavailable'
     }
     async clearEnrollmentBinding(): Promise<void> {}
-    async armBiometricBinding(): Promise<Nullable<BiometricArmResult>> {
+    async armBiometricBinding(): Promise<BiometricArmResult | null> {
         return null
     }
     async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
