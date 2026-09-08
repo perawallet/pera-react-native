@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-// TODO(card): remove once AB provides the escrow base URL and Baanx ships the
-// Algorand delegation post-approval. Dev-only: installed behind `__DEV__` from
-// App.tsx, so it never ships.
+// TODO(card): remove once Baanx ships the Algorand delegation post-approval
+// and every dev/staging build carries the AB escrow secrets. Dev-only:
+// installed behind `__DEV__` from App.tsx, so it never ships.
 
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getCardTransport,
     resetCardTransport,
@@ -41,12 +42,12 @@ const announce = (path: string): void => {
 }
 
 /**
- * Swaps in a transport that mocks ONLY the routes with no real counterpart
- * yet: Baanx's Algorand delegation post-approval (unshipped) and the AB
- * escrow card routes (creation approval + delegator LSig; AB has not provided
- * a base URL). Every other request, including all Baanx wallet, delegation
- * and transaction routes, goes to the real transport. Returns a disposer that
- * restores the default transport.
+ * Swaps in a transport that mocks ONLY what has no real counterpart on this
+ * build: Baanx's Algorand delegation post-approval (unshipped), and the AB
+ * escrow routes when no escrow base URL is configured. With the escrow URL and
+ * token present those calls go to the real AB service. Every other request
+ * goes to the real transport. Returns a disposer that restores the default
+ * transport.
  */
 export const installCardDevMocks = (): (() => void) => {
     const baseTransport = getCardTransport()
@@ -69,14 +70,25 @@ export const installCardDevMocks = (): (() => void) => {
                 ) as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
-            if (req.method === 'POST' && req.path === ESCROW_APPROVALS_PATH) {
+            const isEscrowConfigured = Boolean(
+                getNetworkConfig(req.network).cardEscrowBaseUrl,
+            )
+            if (
+                !isEscrowConfigured &&
+                req.method === 'POST' &&
+                req.path === ESCROW_APPROVALS_PATH
+            ) {
                 announce(req.path)
                 const data = buildMockEscrowCardCreation(
-                    req.data as { address: string },
+                    req.data as {
+                        address: string
+                        transaction: { hash: string }
+                    },
                 ) as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
             if (
+                !isEscrowConfigured &&
                 req.method === 'POST' &&
                 req.path === ESCROW_DELEGATOR_LSIG_PATH
             ) {

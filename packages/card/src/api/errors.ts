@@ -207,9 +207,9 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
 
 /**
  * AB's `/api/approvals` re-run after a prior success (e.g. an app restart
- * between create and approve, or a re-entered flow). Matched on text like
- * {@link isDuplicateError}: AB's status for this case is unconfirmed, seen
- * live only as a "Card already created" message.
+ * between create and approve). The current AB service replays 200, so this
+ * only matters against an older build that rejected with "Card already
+ * created"; matched on text like {@link isDuplicateError}.
  */
 export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
     /already (created|approved)/i.test(

@@ -10,31 +10,23 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
     applyMockDelegatorLsig,
     buildMockEscrowCardCreation,
-    resetMockEscrow,
 } from '../mockEscrow'
 
 describe('mockEscrow', () => {
-    beforeEach(() => resetMockEscrow())
+    it("echoes the card address and tx hash like AB's approval record", () => {
+        const echo = buildMockEscrowCardCreation({
+            address: 'CARD1',
+            transaction: { hash: 'TX1' },
+        })
 
-    it('returns the SAME card for repeated creation calls from one address', () => {
-        // Mirrors the mutation's resume/reuse semantics: a retry for the same
-        // funding account must land on the already-created card.
-        const first = buildMockEscrowCardCreation({ address: 'ADDR1' })
-        const second = buildMockEscrowCardCreation({ address: 'ADDR1' })
-
-        expect(first.cardAddress).toBe(second.cardAddress)
-        expect(first.cardAddress).toHaveLength(58)
-    })
-
-    it('returns different cards for different addresses', () => {
-        const a = buildMockEscrowCardCreation({ address: 'AAAAAAAA1' })
-        const b = buildMockEscrowCardCreation({ address: 'BBBBBBBB2' })
-
-        expect(a.cardAddress).not.toBe(b.cardAddress)
+        expect(echo).toMatchObject({
+            address: 'CARD1',
+            transaction: { hash: 'TX1' },
+        })
     })
 
     it('echoes the delegator address on the lsig call', () => {

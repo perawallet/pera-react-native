@@ -21,11 +21,11 @@ import {
 
 export type ApproveEscrowCardParams = {
     network: Network
-    /** Funding-source (delegator) address the card was created for. */
-    address: string
+    /** Escrow card address from the backend create-card response. AB keys the approval by the card, not the funding wallet. */
+    cardAddress: string
     /** Settlement currency as AB expects it, e.g. "usdc". */
     currency: string
-    /** ARC-60 SIWA sign data — the SAME proof sent to the backend create-card call. */
+    /** ARC-60 SIWA sign data, the SAME proof sent to the backend create-card call. */
     signData: CardSiwaSignData
     /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
     signature: string
@@ -37,20 +37,25 @@ export type ApproveEscrowCardParams = {
 /**
  * Records the card-creation approval with AB. The on-chain `cardCreate` has
  * already happened via the Pera backend (`api/card-creation`) by the time
- * this is called — this call carries that transaction's `txId` so AB can
- * register/confirm the card in its own systems. `amount` is "0": this call
- * funds nothing.
+ * this is called; AB receives its transaction hash to register the card in
+ * its own systems. `amount` is "0": this call funds nothing.
  *
- * Idempotent: AB rejects a re-run of an already-approved card ("Card already
- * created") instead of replaying the success response. That end state is what
- * this call exists to reach, so it resolves `null` rather than surfacing an
- * error mid-flow.
+ * The body is exactly AB's schema: it rejects unknown fields, so nothing
+ * extra may be added. A re-run replays 200 (idempotent); the already-created
+ * catch keeps an older rejection resolving the same way.
  */
 export const approveEscrowCard = async (
     params: ApproveEscrowCardParams,
 ): Promise<{ cardAddress: string } | null> => {
-    const { network, address, currency, signData, signature, txId, signal } =
-        params
+    const {
+        network,
+        cardAddress,
+        currency,
+        signData,
+        signature,
+        txId,
+        signal,
+    } = params
 
     try {
         const response = await getCardTransport().request({
@@ -59,17 +64,18 @@ export const approveEscrowCard = async (
             method: 'POST',
             path: '/api/approvals',
             data: {
-                address,
+                blockchain: 'algorand',
+                address: cardAddress,
                 currency,
                 amount: '0',
+                transaction: { hash: txId },
                 signData,
                 signature,
-                txId,
-                blockchain: 'algorand',
             },
             signal,
         })
-        return escrowCardApprovalResponseSchema.parse(response.data)
+        const parsed = escrowCardApprovalResponseSchema.parse(response.data)
+        return { cardAddress: parsed.address }
     } catch (error) {
         const apiError = await getCardApiError(error)
         if (isAlreadyCreatedError(apiError)) return null
@@ -116,5 +122,6 @@ export const postDelegatorLsig = async (
         signal,
     })
 
-    return delegatorLsigResponseSchema.parse(response.data)
+    const parsed = delegatorLsigResponseSchema.parse(response.data)
+    return { delegatorAddress: parsed.delegatorAddress ?? delegatorAddress }
 }
