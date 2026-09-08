@@ -27,15 +27,9 @@ export interface ConnectionPeer {
 export type ConnectionOriginSource = 'external-browser' | 'in-app' | 'qr'
 
 /**
- * Where a connection entered the wallet. Post-action sheets key off this:
- * `'external-browser'` gets the "Return to the dApp" hand-off, `'in-app'`
- * (Discover / in-app browser) suppresses the sheets entirely — the dApp is
- * right behind them — and `'qr'` (desktop dApps, pasted links) keeps the
- * plain sheet as the only feedback surface.
- *
- * Lives on the base `Connection`, not a kind's metadata, because origin is
- * kind-agnostic — a future non-WalletConnect transport can arrive the same
- * three ways.
+ * Post-action sheets key off this: `'external-browser'` gets the "Return to the
+ * dApp" hand-off, `'in-app'` suppresses the sheets (the dApp is right behind
+ * them), `'qr'` keeps the plain sheet. On the base record because origin is kind-agnostic.
  */
 export interface ConnectionOrigin {
     source: ConnectionOriginSource
@@ -44,11 +38,8 @@ export interface ConnectionOrigin {
 }
 
 /**
- * A persisted connection to a remote peer.
- *
- * UI-safe by construction: this record NEVER holds secret material. Kinds
- * that need a secret (WalletConnect v1's session key) store it in the
- * keystore and reference it by `secretRef`.
+ * Never holds secret material: a kind that needs one (v1's session key) stores
+ * it in the keystore and references it by `secretRef`.
  */
 export interface Connection {
     id: ConnectionId
@@ -91,11 +82,7 @@ export interface ConnectionStoreAPI {
 const isStringArray = (value: unknown): value is string[] =>
     Array.isArray(value) && value.every(item => typeof item === 'string')
 
-/**
- * Structural guard for records arriving from persistence. Records can be
- * stale or half-migrated, so every read validates rather than trusting the
- * stored shape.
- */
+/** Persisted records can be stale or half-migrated, so every read validates. */
 export const isConnection = (value: unknown): value is Connection => {
     if (value === null || typeof value !== 'object') return false
     const c = value as Record<string, unknown>

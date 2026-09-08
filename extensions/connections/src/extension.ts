@@ -18,11 +18,7 @@ export interface ConnectionsExtension {
     connections: { store: ConnectionStoreAPI }
 }
 
-/**
- * wallet-provider Extension registering the connection store on the
- * provider. Must be composed AFTER the platform extension — it reads
- * `provider.keyValueStorage` for persistence.
- */
+// Must be composed after the platform extension: it reads `provider.keyValueStorage`.
 export const WithConnections: Extension<ConnectionsExtension> = (
     provider: Record<string, unknown>,
 ) => {

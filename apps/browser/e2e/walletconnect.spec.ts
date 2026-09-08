@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-// Smoke test for the WalletConnect settings graph and the Discover hand-off on
-// web. Network access is not assumed: a real WC v1 pairing needs a live bridge,
-// so every assertion here targets a networkless terminal state. Real pairing
-// against a live dApp stays on the manual checklist.
+// The first half is networkless: a real WC v1 pairing needs a live bridge, so
+// every assertion targets a networkless terminal state. The bridge-backed
+// session tests at the bottom spin up a local fake bridge.
 import {
     expect,
     test,
@@ -57,21 +56,10 @@ const GARBAGE_WC_URI = 'wc:garbage-without-bridge'
 
 // Without this, module-eval crashes in the bundle surface as bare selector
 // timeouts with no sign of the real cause.
-/**
- * `qr-paste-input` is a CONTROLLED PWInput, and `submitPasted` reads the React
- * state rather than the DOM node — with `if (!trimmed) return`, so submitting
- * before React commits the change event dispatched by `fill()` is a SILENT
- * no-op. Nothing dispatches, nothing throws, and the test dies much later on
- * whatever it was waiting for. Reopening the sheet widens the window enough to
- * lose it, because `fill()` then lands on a freshly mounted input mid
- * enter-animation.
- *
- * Asserting the value once is not enough: that reads the DOM, which `fill()`
- * has already set, so it can pass while the state update is still pending.
- * Because the input is controlled, a render that never took the change resets
- * the node to empty — so confirming the value again across a frame boundary is
- * what proves React holds it. Never `fill()` this input directly.
- */
+// `qr-paste-input` is a CONTROLLED PWInput and `submitPasted` reads React state,
+// so submitting before React commits `fill()`'s change event is a SILENT no-op.
+// Asserting the value once reads the DOM, which `fill()` already set; re-checking
+// across a frame boundary is what proves React holds it. Never `fill()` this input directly.
 const fillPasteInput = async (targetPage: Page, uri: string): Promise<void> => {
     const input = targetPage.getByTestId('qr-paste-input')
     await expect(input).toBeVisible()
@@ -87,9 +75,8 @@ const fillPasteInput = async (targetPage: Page, uri: string): Promise<void> => {
 }
 
 // Web's age-gate resolves to 'unknown'/'manual', so the first focus of a gated
-// screen offers the self-declaration sheet. The result persists, so only one
-// test pays the cost — but call it at every gated entry point, since slice
-// order isn't guaranteed. WC settings itself is not age-gated; Discover is.
+// screen offers the self-declaration sheet; call this at every gated entry point
+// since slice order isn't guaranteed. Discover is gated, WC settings is not.
 const passAgeGateIfOffered = async (targetPage: Page): Promise<void> => {
     const declaration = targetPage.getByTestId('age-gate-declaration')
     const offered = await declaration
@@ -179,11 +166,9 @@ test('connections settings row renders and the screen shows its empty state', as
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// A valid-but-unreachable URI is accepted by isValidDeepLink and dispatched,
-// then fails via connect()'s timeout or the connector's 'error' event. Both
-// route to onRestart, never onClose — so the scanner sheet staying open is the
-// deterministic half of the terminal state. A failure toast may or may not
-// also appear depending on which path wins, so don't assert on it.
+// A valid-but-unreachable URI is dispatched, then fails via connect()'s timeout
+// or the connector's 'error' event; both route to onRestart, so the scanner
+// staying open is the deterministic terminal state. A toast may or may not appear.
 test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(
@@ -197,26 +182,11 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     await fillPasteInput(page, UNREACHABLE_BRIDGE_WC_URI)
     await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
-    // Wait for the re-arm, NOT a fixed window. This dispatch only fails once
-    // the registry's pairing-outcome wait gives up after
-    // CONNECTION_OUTCOME_TIMEOUT_MS (8s), so the 3s sleep this replaces
-    // returned with the pairing still in flight and let the rest of the file
-    // run on top of it. Two things then went wrong, both silently:
-    //
-    //   - QRScannerContent.web's `handlingRef` stays latched for the whole
-    //     dispatch, so the next test's paste hit `if (handlingRef.current)
-    //     return` and never reached the validity check it exists to prove.
-    //   - When the outcome finally landed, its failure callback ran
-    //     `onRestart()`, which bumps QRScannerView.web's `restartKey` and
-    //     REMOUNTS QRScannerContent, resetting `pastedValue`. Landing between
-    //     a later test's fill and its submit left `submitPasted` reading empty
-    //     state, where `if (!trimmed) return` drops it without a trace — so no
-    //     pairing was dispatched at all and that test died 20s later waiting
-    //     for an approval nothing had requested.
-    //
-    // That re-arm clears the paste field, so an empty input is the observable
-    // proof the dispatch is done. The timeout must clear the 8s outcome budget
-    // on a loaded runner.
+    // Wait for the re-arm, NOT a fixed window: the dispatch only fails once the
+    // pairing-outcome wait gives up (CONNECTION_OUTCOME_TIMEOUT_MS), and a pairing
+    // still in flight keeps QRScannerContent.web's `handlingRef` latched and, on
+    // landing, `onRestart()` remounts the content under a later test's fill. The
+    // re-arm clears the paste field, so an empty input proves the dispatch is done.
     await expect(page.getByTestId('qr-paste-input')).toHaveValue('', {
         timeout: 20_000,
     })
@@ -245,19 +215,12 @@ test('pasting a bridge-less WC URI is rejected and keeps the scanner open', asyn
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// SKIPPED with the Discover tab: it is not registered on web while Discover's
-// feature-gate map lacks a 'web' key. The window.open('wc:...') hook this
-// covers (discover-main.ts) is unchanged. See
-// routes/capabilities.web.ts's discoverTab comment.
-//
-// Runs on its OWN page: visiting Discover on the same page that later opens
-// the WC scanner intermittently surfaces an unrelated price-fetch rejection as
-// an uncaught pageerror. Discover alone never reproduces it.
-//
-// The iframe existing needs no network but a bridge round-trip does, so the
-// real assertion is gated on discover-main.ts having installed
-// `peraMobileInterface` — the same script body that installs the window.open
-// hook this test drives.
+// SKIPPED with the Discover tab, which is not registered on web while Discover's
+// feature-gate map lacks a 'web' key (see capabilities.web.ts). Runs on its OWN
+// page: visiting Discover on the page that later opens the WC scanner
+// intermittently surfaces an unrelated price-fetch rejection as a pageerror. The
+// real assertion is gated on discover-main.ts having installed `peraMobileInterface`,
+// the same script body that installs the window.open('wc:...') hook this drives.
 test.skip('discover hand-off routes an unreachable-bridge WC URI without crashing the shell', async () => {
     const discoverPage = await context.newPage()
     const discoverPageErrors = trackPageErrors(discoverPage)
@@ -310,20 +273,11 @@ test.skip('discover hand-off routes an unreachable-bridge WC URI without crashin
     await discoverPage.close()
 })
 
-// The end-to-end proof the whole headless-WalletConnect design exists for.
-// Everything above this point is deliberately networkless (see
-// the file header); a real paired session and a real inbound sign request
-// need a real WC v1 bridge, so this block spins up a local one
-// (fixtures/fake-wc-bridge.mjs — pub/sub over topics with offline queueing,
-// the same semantics the real Pera bridge implements) and drives the OTHER
-// side of the handshake with the real `@perawallet/walletconnect` client
-// (the same package `createWalletConnectConnector`, packages/walletconnect/
-// src/connection/createConnector.ts, wraps for the wallet side) rather than
-// hand-rolling the WC v1 wire frames or its payload encryption — the dApp
-// role this client plays needs no browser globals (WebSocket/crypto.
-// getRandomValues are both native in Node >= 22; window/localStorage are
-// optional and no-op when absent), so it runs directly in this Playwright
-// test process.
+// A real paired session and a real inbound sign request need a real WC v1
+// bridge, so this block spins up a local one (fixtures/fake-wc-bridge.mjs:
+// pub/sub over topics with offline queueing, like the real Pera bridge) and
+// drives the dApp side with the real `@perawallet/walletconnect` client, which
+// needs no browser globals on Node >= 22 and so runs in this Playwright process.
 test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
     let bridge: Awaited<ReturnType<typeof startFakeBridge>>
     let dappConnector: WalletConnect
@@ -332,9 +286,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
     const openWcApproval = () =>
         openApprovalSurface({ context, page, extensionId })
 
-    // The dApp-side connector's own proof that approveSession actually
-    // reached it over the bridge — resolves with the accounts the wallet
-    // granted, straight off the real WC v1 `connect` event.
+    // The dApp-side connector's own proof that approveSession reached it over the
+    // bridge: resolves with the granted accounts off the real WC v1 `connect` event.
     const waitForConnectorConnect = (
         connector: WalletConnect,
     ): Promise<{ accounts: string[] }> =>
@@ -368,9 +321,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
 
     test('session survives the popup closing', async () => {
         bridge = await startFakeBridge()
-        // No `uri` option: passing `bridge` (and no `uri`) is what makes this
-        // the DAPP/INITIATOR side of the same class the wallet side uses —
-        // see createWalletConnectConnector, which passes `uri` instead.
+        // No `uri` option: passing `bridge` alone makes this the DAPP/INITIATOR
+        // side of the same class the wallet side uses.
         dappConnector = new WalletConnect({
             bridge: bridge.url,
             clientMeta: {
@@ -380,28 +332,19 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
                 icons: [],
             },
         })
-        // Wildcard chainId (4160, AlgorandChainId.all) — isChainIdAcceptable
-        // always accepts it, so pairing doesn't depend on which network the
-        // extension happens to be running against.
+        // Wildcard chainId (4160, AlgorandChainId.all) so pairing doesn't depend
+        // on which network the extension is running against.
         await dappConnector.createSession({ chainId: 4160 })
         const uri = dappConnector.uri
 
-        // The prior two networkless tests in this file leave the scanner
-        // sheet open, and QRScannerContent.web's `handlingRef` synchronous
-        // double-fire guard from the last of those dispatches (an
-        // unreachable-bridge connect() attempt) can still be latched — it
-        // only clears when that deep-link path settles, up to the pairing
-        // outcome budget's ceiling (~10s).
-        // A fill+submit into a still-latched instance is silently swallowed,
-        // so close the sheet (the backdrop press unmounts QRScannerContent.web
-        // — PWBottomSheet.web only renders children while `isRendered`, which
-        // it clears once its close animation finishes) and reopen it fresh,
-        // guaranteeing a new `handlingRef` before this pairs for real.
+        // The networkless tests leave the scanner open with QRScannerContent.web's
+        // `handlingRef` possibly still latched (it clears only when that deep-link
+        // path settles), and a fill+submit into a latched instance is silently
+        // swallowed. Close the sheet (the backdrop press unmounts the content once
+        // the close animation finishes) and reopen it fresh.
         const scannerSheet = page.getByTestId('qr-scanner-sheet')
-        // Retry the backdrop press until the sheet actually unmounts: a single
-        // click can land mid enter-animation or on a nudge that raced over the
-        // backdrop, and a miss here leaves the scanner open so the reopen below
-        // never fires — surfacing as a bare timeout on this test.
+        // Retry the press until the sheet unmounts: a click can land mid
+        // enter-animation, and a miss leaves the scanner open so the reopen never fires.
         for (let attempt = 0; attempt < 5; attempt++) {
             if (!(await scannerSheet.isVisible().catch(() => false))) break
             await dismissPinPromptIfPresent(page)
@@ -422,26 +365,16 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         )
         await expect(scannerSheet).toBeVisible({ timeout: 20_000 })
 
-        // The real product path: paste the URI into QRScannerContent.web's
-        // field exactly as a user would, rather than dispatching a
-        // `pera-connections-control` pair message directly. This is what drives
-        // QRScannerContent.web -> useDeepLink -> useConnectionPairing (remote
-        // registry) -> offscreen.
+        // The real product path: paste the URI as a user would rather than
+        // sending a `pera-connections-control` pair message directly.
         await fillPasteInput(page, uri)
         await clickThroughPinPrompt(page, page.getByTestId('qr-paste-submit'))
 
-        // The remote registry's `pair` control message is now in
-        // flight to offscreen; offscreen constructs the wallet-side
-        // connector, subscribes, and — once the fake bridge flushes the
-        // queued wc_sessionRequest createSession() published before the
-        // wallet ever subscribed — asks the SW for approval, which
-        // registers the pending approval this waits for. Either surface is a
-        // pass: with `page` still open ApprovalWindowBridge's
-        // chrome.action.openPopup() usually succeeds and the entry keeps
-        // surface:'popup', but it legitimately falls back to the window (see
-        // the mechanism note on the window-fallback test below, and
-        // openApprovalSurface). What this test is about is that the session
-        // survives the popup closing, not which surface Chrome gave us.
+        // Offscreen constructs the wallet-side connector and, once the fake bridge
+        // flushes the queued wc_sessionRequest, asks the SW for approval, which
+        // registers the pending approval this waits for. Either surface is a pass:
+        // what matters is that the session survives the popup closing, not which
+        // surface Chrome gave us.
         const { approvalPage, approvalErrors } = await openWcApproval()
         expectApprovalSurfaceUrl(approvalPage)
 
@@ -451,9 +384,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             await approvalPage.getByTestId('unlock-submit').click()
         }
 
-        // 'wc-connect' renders WcConnectScreen — the web twin of mobile's
-        // ConnectionApprovalView — not the ARC-0027 EnableRequestScreen
-        // (DappRequestRoutes.web.tsx).
+        // A proposal renders WcConnectScreen, not the ARC-0027 EnableRequestScreen.
         await expect(
             approvalPage.getByTestId('wc-connect-peer-name'),
         ).toBeVisible({
@@ -484,15 +415,10 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             'approval popup threw an uncaught error',
         ).toEqual([])
 
-        // The moment of truth: close EVERY extension page — the one that
-        // initiated pairing and the approval popup alike — then reopen
-        // popup.html fresh. persistConnection only runs after approveSession
-        // resolves against a live offscreen socket, so the session row still
-        // being listed below proves offscreen wrote that record and the
-        // write survived into a freshly-hydrated surface — not that either
-        // closed page was holding it. Socket *liveness* (offscreen still
-        // subscribed, not just a persisted row) is what the next test
-        // proves, not this assertion.
+        // Close EVERY extension page, then reopen popup.html fresh. The record is
+        // only persisted after approveSession resolves against a live offscreen
+        // socket, so the row still listed proves offscreen wrote it and the write
+        // survived a fresh hydration. Socket *liveness* is what the next test proves.
         for (const openPage of context.pages()) {
             await openPage.close()
         }
@@ -534,10 +460,9 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             freshPopup.getByTestId('connections_settings_screen'),
         ).toBeVisible({ timeout: 20_000 })
 
-        // toUnifiedConnection (connectionsSettingsHelpers.ts) ids a
-        // WalletConnect row `connection-${clientId}`; the clientId is generated
-        // by offscreen and unknown here, so match the prefix. Dapp rows are
-        // `dapp-${origin}`, so the prefix cannot collide.
+        // toUnifiedConnection ids a WalletConnect row `connection-${clientId}`; the
+        // clientId is generated offscreen, so match the prefix. Dapp rows are
+        // `dapp-${origin}`, so no collision.
         const sessionRow = freshPopup.locator(
             '[data-testid^="connection_row_connection-"]',
         )
@@ -546,35 +471,24 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
 
         expect(freshErrors, 'popup threw an uncaught error').toEqual([])
 
-        // The next test closes every page (including this one) before it
-        // runs, so `page` is not read again after this assignment — kept
-        // only so `page` reflects the current live surface if this file is
-        // ever re-sliced to add more tests after this one.
+        // Kept so `page` reflects the live surface if more tests are ever added after this one.
         page = freshPopup
     })
 
-    // With the session from the previous test still alive purely in
-    // offscreen (every extension page was just closed and reopened fresh —
-    // `page` above IS that fresh popup, with no pending approval), the dApp
-    // peer publishes a real algo_signTxn call. Nothing extension-side is
-    // open to receive it except the offscreen document's live bridge
-    // socket, so this is the proof that offscreen — not any UI surface —
-    // received the request and asked the SW to open an approval surface.
+    // With the session alive purely in offscreen (every page was just closed and
+    // reopened), the dApp peer publishes a real algo_signTxn. Only the offscreen
+    // socket can receive it, so this proves offscreen, not a UI surface, asked
+    // the SW for an approval.
     test('a sign request with no surface open opens the approval window', async () => {
         for (const openPage of context.pages()) {
             await openPage.close()
         }
-        // The premise this test depends on: no extension surface is open,
-        // so chrome.action.openPopup() has nothing to attach to (see the
-        // mechanism note below) and the SW must fall back to
-        // chrome.windows.create. Assert it instead of assuming it.
+        // Premise: no extension surface is open, so openPopup() has nothing to
+        // attach to and the SW must fall back to windows.create. Assert it.
         expect(context.pages()).toHaveLength(0)
 
-        // A real, valid unsigned ARC-0001 transaction (self-payment of 0
-        // microAlgos) so the wallet's decoder
-        // (readWalletTransactions -> decodeUnsignedTransaction) has
-        // something genuine to decode, exactly like dapp-sign.spec.ts's
-        // buildUnsignedPaymentTxn.
+        // A real unsigned ARC-0001 transaction (0-microAlgo self-payment) so the
+        // wallet's decoder has something genuine to decode.
         const genesisHash = getNetworkConfig(Networks.mainnet).genesisHash
         const suggestedParams = {
             fee: 1000n,
@@ -595,17 +509,11 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             algosdk.encodeUnsignedTransaction(txn),
         ).toString('base64')
 
-        // Attach the listener BEFORE triggering the request. ApprovalWindowBridge
-        // (approval-bridge.ts) always tries chrome.action.openPopup() first
-        // and only falls back to chrome.windows.create('approval.html?...')
-        // in a plain try/catch — it does not itself check for a user
-        // gesture or an open window. The real variable is Chrome's own
-        // behavior: with every extension page just closed above, openPopup()
-        // has no window to attach to and rejects, so the fallback runs —
-        // unlike the toolbar popup, Playwright CAN observe the resulting
-        // window as a new page. Match on the query string too, not just the
-        // path, so an unrelated page (there should be none — see the
-        // assertion above) can't satisfy this and mask a real failure.
+        // Attach the listener BEFORE triggering the request. With every extension
+        // page closed, openPopup() has nothing to attach to and rejects, so the
+        // bridge falls back to windows.create('approval.html?...'), which Playwright
+        // CAN observe as a new page. Match the query string too so an unrelated
+        // page can't mask a failure.
         const newPagePromise = context.waitForEvent('page', {
             predicate: candidate =>
                 candidate.url().includes('approval.html?requestId='),
@@ -618,12 +526,9 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
                 params: [[{ txn: txnBase64, signers: [approvedAddress] }]],
             })
             .catch(() => {
-                // Deliberately never resolved by this test: completing the
-                // real slide-to-confirm gesture can't be done with
-                // Playwright's synthetic pointer in a programmatically
-                // opened tab (see dapp-sign.spec.ts's identical note) — this
-                // test's assertion is that the approval window opened at
-                // all, not that signing completes end to end.
+                // Deliberately never resolved: the slide-to-confirm gesture can't be
+                // done with Playwright's synthetic pointer in a programmatically
+                // opened tab. The assertion is that the window opened, not that signing completes.
             })
 
         const approvalPage = await newPagePromise
@@ -631,10 +536,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         const approvalErrors = trackPageErrors(approvalPage)
         expect(approvalPage.url()).toContain('approval.html')
 
-        // wc-sign routes to the same SignRequestApprovalScreen as ARC-0027
-        // sign-transactions/sign-message (DappRequestRoutes.web.tsx), which
-        // mounts SignRequestView once the payload decodes and enqueues —
-        // wait on that testID rather than a fixed delay.
+        // Routes to the same SignRequestApprovalScreen as ARC-0027 signing, which
+        // mounts SignRequestView once the payload decodes; wait on that testID.
         await expect(approvalPage.getByTestId('sign-request-view')).toBeVisible(
             { timeout: 20_000 },
         )
@@ -646,16 +549,11 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         await approvalPage.close()
     })
 
-    // Deterministic reproduction of the CI flake this file used to carry: the
-    // offscreen document legitimately dies and gets recreated (a db-worker
-    // death makes runOffscreenApp window.close() it), and the recreated
-    // document registers its WC control listener only late in an async boot —
-    // after DB migrations. A pair control message sent into that window used
-    // to fail fast ("WalletConnect failed" toast ~1s after submit) while the
-    // DB channel's own retry loop kept every screen looking healthy.
-    // sendWcControlMessage now retries within a bounded budget; this closes
-    // the document at the worst possible moment (between fill and submit) and
-    // proves the pairing still lands.
+    // The offscreen document legitimately dies and is recreated (a db-worker
+    // death closes it), and the recreated document registers its control listener
+    // only late in an async boot, after DB migrations. sendConnectionsControlMessage
+    // must retry through that window: this closes the document at the worst
+    // moment (between fill and submit) and proves the pairing still lands.
     test('pairing sent while the offscreen document is recreating still lands', async () => {
         for (const openPage of context.pages()) {
             await openPage.close()
@@ -698,10 +596,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             pairingPage.getByTestId('connections_settings_screen'),
         ).toBeVisible({ timeout: 20_000 })
 
-        // A second dApp-side pairing over the same fake bridge. The previous
-        // connector's approved session lives on wallet-side (revived on the
-        // offscreen reboot below); only its socket is retired here so
-        // afterAll's single transportClose stays sufficient.
+        // A second dApp-side pairing over the same fake bridge; only the previous
+        // connector's socket is retired so afterAll's single transportClose suffices.
         dappConnector.transportClose()
         dappConnector = new WalletConnect({
             bridge: bridge.url,
@@ -715,9 +611,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         await dappConnector.createSession({ chainId: 4160 })
         const uri = dappConnector.uri
 
-        // The list is non-empty by now (the first test's session is
-        // persisted), so the scanner opens from the header's camera icon —
-        // the empty state's connect button is gone with the empty state.
+        // The list is non-empty by now, so the scanner opens from the header's
+        // camera icon rather than the empty state's button.
         await clickThroughPinPrompt(
             pairingPage,
             pairingPage.getByTestId('connections_settings_scan_button'),
@@ -727,11 +622,9 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         })
         await fillPasteInput(pairingPage, uri)
 
-        // Kill the offscreen document AFTER the fill so nothing on this page
-        // has time to trigger its recreation before the submit: the pair
-        // control message must be the send that lands in the recreate+boot
-        // window. closeDocument is the same terminal state as the db-worker
-        // death path, minus the crash.
+        // Kill the offscreen document AFTER the fill so nothing recreates it before
+        // the submit: the pair control message must be the send that lands in the
+        // recreate+boot window. closeDocument is the db-worker death path minus the crash.
         let [serviceWorker] = context.serviceWorkers()
         if (!serviceWorker) {
             serviceWorker = await context.waitForEvent('serviceworker')
@@ -751,9 +644,8 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             pairingPage.getByTestId('qr-paste-submit'),
         )
 
-        // openApprovalSurface polls through `page` — point it at the live
-        // surface first. Reaching the approval at all proves the pair
-        // bridged the recreated document's boot.
+        // openApprovalSurface polls through `page`, so point it at the live surface
+        // first. Reaching the approval at all proves the pair bridged the reboot.
         page = pairingPage
         const { approvalPage, approvalErrors } = await openWcApproval()
 

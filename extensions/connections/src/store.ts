@@ -22,11 +22,7 @@ export const CONNECTIONS_STORAGE_KEY = 'pera.connections.v1'
 
 type Listener = (connections: Connection[]) => void
 
-/**
- * Persisted connection store. Reads validate every record — persisted data
- * can be stale or half-migrated, and a malformed row must not poison the
- * whole list.
- */
+// Reads validate every record so a malformed row cannot poison the whole list.
 export const createConnectionStore = (options: {
     storage: ConnectionPersistence
 }): ConnectionStoreAPI => {
@@ -40,9 +36,8 @@ export const createConnectionStore = (options: {
             const parsed: unknown = JSON.parse(raw)
             return Array.isArray(parsed) ? parsed.filter(isConnection) : []
         } catch {
-            // A corrupt blob is indistinguishable from no blob for our
-            // purposes; the importer will not re-run because its own marker
-            // is separate, so return empty rather than throwing at startup.
+            // A corrupt blob reads as empty rather than throwing at startup; the
+            // importer's marker is separate, so it will not re-run.
             return []
         }
     }

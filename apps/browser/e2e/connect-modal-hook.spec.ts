@@ -10,40 +10,13 @@
  limitations under the License
  */
 
-// The end-to-end proof of the connect-modal-hook feature: a page
-// that renders its OWN @perawallet/connect QR modal (with no extension
-// transport of its own) still gets an injected "Connect With Pera Extension"
-// row, and clicking it carries a REAL WalletConnect v1 handshake from the
-// dApp's own client, through the content-script bridge, to the service
-// worker, to the offscreen connections host, to the approval surface, and back.
-//
-// Reuses fixtures/fake-wc-bridge.mjs (see walletconnect.spec.ts's "offscreen
-// ownership of a real WC v1 session" block) rather than a second hand-rolled
-// bridge, and the real `@perawallet/walletconnect` client as the dApp peer so
-// the handshake and payload encryption are genuine.
-//
-// Selectors are read from the current source, not guessed:
-// - CONNECT_MODAL_WRAPPER_ID = 'pera-wallet-connect-modal-wrapper'
-//   (apps/browser/src/content/connect-modal-uri.ts:19)
-// - INJECTED_ROW_ID = 'pera-extension-injected-row'
-//   (apps/browser/src/content/connect-modal-row.ts:24)
-// - LAUNCH_BUTTON_ID = 'pera-extension-injected-launch-button' — the button
-//   inside the item's expanded panel, which is what actually pairs
-//   (apps/browser/src/content/connect-modal-row.ts)
-// - The accordion container class the row is injected into:
-//   '.pera-wallet-connect-modal-desktop-mode__default-view'
-//   (apps/browser/src/content/connect-modal-row.ts:33)
-// - Approval screen testIDs (WcConnectScreen, the web twin of mobile's
-//   ConnectionApprovalView): 'wc-connect-peer-name', 'wc-connect-connect',
-//   'wc-connect-cancel' and the requester-origin line
-//   'wc-connect-requester-origin' + its verified marker
-//   'wc-connect-requester-verified-badge'
-//   (apps/mobile/src/modules/dapp/screens/WcConnectScreen/WcConnectHeader.tsx)
-// - Requester copy: 'Request came from {{origin}}' / 'Verified tab'
-//   (apps/mobile/src/i18n/locales/en.json, dapp.enable.request_origin /
-//   dapp.enable.requester_verified_label). The peer's own claim is now its
-//   asserted NAME in mobile's headline ('{{name}} wants to connect to your
-//   account', walletconnect.request.title) with its asserted url beneath.
+// End-to-end proof of the connect-modal hook: a page rendering its OWN
+// @perawallet/connect QR modal gets an injected "Connect With Pera Extension"
+// row, and clicking it carries a REAL WC v1 handshake from the dApp's client
+// through the content script, service worker, offscreen host and approval
+// surface. Uses fixtures/fake-wc-bridge.mjs and the real `@perawallet/walletconnect`
+// client as the dApp peer so the handshake and encryption are genuine. Selectors
+// come from apps/browser/src/content/connect-modal-*.ts and WcConnectHeader.tsx.
 import {
     expect,
     test,
@@ -99,10 +72,8 @@ const trackPageErrors = (targetPage: Page): Error[] => {
 }
 
 // PromptContainer's one-time security nudge fires on a wall-clock delay from
-// account creation, per freshly-mounted surface — every e2e run uses a fresh
-// profile, so which surface it lands on is non-deterministic. Copied from
-// walletconnect.spec.ts's dismissPinPromptIfPresent (this suite's
-// convention: per-file copies, not a shared import).
+// account creation per freshly-mounted surface, so which surface it lands on is
+// non-deterministic. Per-file copy by suite convention.
 const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
     const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
     if (await notNow.isVisible().catch(() => false)) {
@@ -111,10 +82,7 @@ const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
 }
 
 // The pin-security-prompt sheet can land as a full-screen backdrop between a
-// visibility wait and the click that follows, intercepting clicks anywhere on
-// the page — copied from walletconnect.spec.ts's clickThroughPinPrompt, which
-// guards the same race for wc-connect-connect/-cancel elsewhere in this
-// suite family.
+// visibility wait and the click that follows, intercepting clicks anywhere.
 const clickThroughPinPrompt = async (
     targetPage: Page,
     locator: Locator,
@@ -128,18 +96,14 @@ const clickThroughPinPrompt = async (
         if (clicked) return
         await dismissPinPromptIfPresent(targetPage)
     }
-    // Bounded, not left to Playwright's unlimited default action timeout: a
-    // locator that's genuinely stuck (e.g. an unrelated overlay left open by
-    // a prior test) should fail this click with a clear timeout instead of
-    // hanging until the whole test's timeout budget is exhausted.
+    // Bounded rather than Playwright's unlimited action timeout, so a genuinely
+    // stuck locator fails with a clear timeout.
     await locator.click({ timeout: 10_000 })
 }
 
-// Serves the SAME fixture markup on a fresh loopback host — content scripts
-// only match http(s), never file:// (manifest.json's `matches`), and Chrome
-// only grants the secure-context exception (crypto.randomUUID etc, used by
-// inject-main.ts) to 'localhost' and '127.0.0.1' specifically — both used
-// here as two genuinely different origins.
+// The SAME fixture markup on a fresh loopback host: content scripts only match
+// http(s), never file://, and Chrome grants the secure-context exception
+// (crypto.randomUUID) only to 'localhost' and '127.0.0.1', which double as two origins.
 const startFixtureServer = (
     host: 'localhost' | '127.0.0.1',
 ): Promise<{ server: http.Server; origin: string }> =>
@@ -158,13 +122,9 @@ const startFixtureServer = (
         })
     })
 
-// Pierces the modal's two OPEN shadow roots from page context —
-// Element.attachShadow with `mode: 'open'` (as the fixture uses) is required
-// for `shadowRoot` to be non-null at all; a closed root would silently make
-// every check below false without ever exercising the watcher. The row lives
-// two shadow roots deep: <pera-wallet-connect-modal> (shadow root #1) >
-// <pera-wallet-modal-desktop-mode> (shadow root #2) — see
-// connect-modal-row.ts's module comment for why.
+// Pierces the modal's two OPEN shadow roots from page context; a closed root
+// would silently make every check below false. The row lives two roots deep:
+// <pera-wallet-connect-modal> > <pera-wallet-modal-desktop-mode>.
 const injectedRowExists = (dappPage: Page): Promise<boolean> =>
     dappPage.evaluate(
         ({ wrapperId, rowId }) => {
@@ -178,9 +138,8 @@ const injectedRowExists = (dappPage: Page): Promise<boolean> =>
         { wrapperId: CONNECT_MODAL_WRAPPER_ID, rowId: INJECTED_ROW_ID },
     )
 
-// Clicks the launch button inside the injected item's expanded panel — NOT the
-// item itself. A header click belongs to the SDK's own accordion handler and
-// deliberately does not pair (see connect-modal-row.ts's buildRowMarkup).
+// The launch button inside the expanded panel, NOT the item header: a header
+// click belongs to the SDK's accordion handler and deliberately does not pair.
 const clickInjectedRow = (dappPage: Page): Promise<void> =>
     dappPage.evaluate(
         ({ wrapperId, launchId }) => {
@@ -205,10 +164,8 @@ const buildFixtureModal = (dappPage: Page, uri: string): Promise<void> =>
         ).showConnectModal(wcUri)
     }, uri)
 
-// Asks the SW (from a trusted extension-page context) whether there is a
-// pending approval right now — null when there is none. Same
-// 'pera-dapp-approval' scope/kind as get-current-approval elsewhere in this
-// suite (see walletconnect.spec.ts's openWcApprovalPopup).
+// Asks the SW (from a trusted extension-page context) whether an approval is
+// pending; null when none.
 const getCurrentApproval = (extensionPage: Page): Promise<unknown> =>
     extensionPage.evaluate(
         scope =>
@@ -237,57 +194,21 @@ const getCurrentApproval = (extensionPage: Page): Promise<unknown> =>
         'pera-dapp-approval',
     )
 
-// get-current-approval only ever reports a `surface: 'popup'` entry (see its
-// own doc comment above), so on its own it cannot prove nothing paired: a
-// pair that routed to the approval.html WINDOW instead — which happens
-// whenever the toolbar-popup attempt rejects, including when this suite's
-// own newly-opened pages (elsewhere in the same `context`) steal focus and
-// dismiss the toolbar popup before its first load completes — would also
-// read back as null. Checking for an open approval.html page closes that
-// gap; together the two checks cover both surfaces.
+// get-current-approval only reports a `surface: 'popup'` entry, so alone it
+// cannot prove nothing paired: a pair routed to the approval.html WINDOW (which
+// happens whenever the popup attempt rejects, e.g. this suite's own pages stealing
+// focus) also reads back null. Checking for an open approval.html page closes the gap.
 const hasApprovalWindowOpen = (): boolean =>
     context.pages().some(p => /approval\.html/.test(p.url()))
 
-// Mirrors walletconnect.spec.ts's openWcApprovalPopup, but races two outcomes
-// instead of trusting a single poll of get-current-approval: the SW may
-// route this request to the toolbar popup OR the approval.html fallback
-// window, and which one wins isn't knowable in advance — chrome.action.
-// openPopup() resolves only once the toolbar popup has completed its first
-// load, and rejects if the popup is dismissed before that happens. In this
-// suite that rejection is routine: other pages this suite opens in the same
-// `context` (e.g. the fallback-window candidates awaited below, or a fresh
-// tab reaching for popup.html) steal focus from the just-opened toolbar
-// popup mid-load, which Chrome treats as dismissing it.
-//
-// Before ApprovalWindowBridge.openViaPopupOrWindow (extensions/
-// platform-chrome/src/dapp/approval-bridge.ts) was fixed, `surface` was
-// marked 'popup' optimistically, BEFORE tryOpenActionPopup's promise had
-// settled, so a single truthy poll wasn't proof the popup surface
-// would still be current a moment later — racing this suite a few dozen
-// times reproduced exactly that: the poll caught the transient 'popup'
-// marking, but by the time a fresh tab reached popup.html the entry had
-// already flipped to 'window' and a real approval.html window had opened
-// instead, which popup.html has no way to discover (get-current-approval
-// only reports the 'popup'-surfaced entry). That's now fixed in production
-// — `surface` only ever becomes 'popup' once the popup has genuinely
-// opened, and stays stable until the approval settles — but which surface
-// wins is still not knowable ahead of time, so this still races: the real
-// fallback window appearing (Playwright CAN observe that, unlike the
-// toolbar popup — see walletconnect.spec.ts's "sign request with no surface
-// open" test), or the popup surface confirmed stable across two reads
-// spaced apart (kept as a defensive check, not a workaround).
-//
-// MUST be called (to register its listeners) BEFORE the click that triggers
-// pairing, not after: the SW registers the pending approval and opens its
-// chosen surface within single-digit milliseconds of receiving the pair
-// message (confirmed by instrumenting the SW directly while diagnosing this
-// suite's flakiness) — comfortably faster than the round trip of an
-// `await dappPage.evaluate(...)` click plus a second `await` back into this
-// helper. Setting up `context.waitForEvent('page', …)` only after the click
-// resolves can miss that page's creation event entirely, since Playwright's
-// event waiters only observe events that fire after they are registered.
-// Returns a thunk to await the outcome, so callers can register first, then
-// click, then await:
+// Races two outcomes rather than trusting one poll of get-current-approval: the
+// SW may route to the toolbar popup OR the approval.html window, and which wins
+// isn't knowable in advance (openPopup() rejects if the popup is dismissed before
+// first load, which other pages this suite opens routinely cause by stealing
+// focus). The window appearing is observable by Playwright; the popup surface is
+// confirmed stable across two spaced reads. MUST be called BEFORE the click that
+// triggers pairing: the SW opens its surface within milliseconds of the pair
+// message, and Playwright event waiters only see events fired after registration.
 //   const awaitApproval = beginWaitingForApproval()
 //   await clickInjectedRow(dappPage)
 //   const { approvalPage } = await awaitApproval()
@@ -295,12 +216,9 @@ const beginWaitingForApproval = (): (() => Promise<{
     approvalPage: Page
     approvalErrors: Error[]
 }>) => {
-    // A brand-new page's `url()` is still 'about:blank' at the instant the
-    // 'page' event fires — `windows.create({ url })` attaches the target
-    // before navigation to that url commits — so a predicate checked once
-    // at event-time can miss the real fallback window entirely. Loop over
-    // every new page instead, waiting for EACH candidate's own navigation
-    // before deciding it doesn't match.
+    // A brand-new page's `url()` is still 'about:blank' when the 'page' event
+    // fires (windows.create attaches the target before navigation commits), so
+    // wait for EACH candidate's own navigation before deciding it doesn't match.
     const windowPagePromise = (async (): Promise<Page> => {
         const deadline = Date.now() + 20_000
         for (;;) {
@@ -336,16 +254,10 @@ const beginWaitingForApproval = (): (() => Promise<{
         return false
     })()
 
-    // Both promises above start running immediately (eagerly), but the
-    // `.then(...)` calls that actually observe them only run once the thunk
-    // below is invoked. If a caller never awaits the thunk at all — e.g. the
-    // test throws between calling beginWaitingForApproval() and clicking —
-    // neither promise would otherwise have any consumer, so a later
-    // rejection (windowPagePromise's 20s timeout throw, most likely) would
-    // surface as a stray unhandled rejection instead of the test's own
-    // (already-failing) error. This no-op catch exists purely as that
-    // consumer; it does not affect the real handling below, since multiple
-    // `.then`/`.catch` calls on the same promise are independent.
+    // The `.then(...)` observers below only attach once the thunk is invoked; if
+    // a caller never awaits it (a test throws between registering and clicking)
+    // a later rejection would surface as a stray unhandled rejection. This no-op
+    // catch is that consumer and does not affect the real handling.
     windowPagePromise.catch(() => {})
     popupConfirmed.catch(() => {})
 
@@ -355,12 +267,9 @@ const beginWaitingForApproval = (): (() => Promise<{
                 windowPage => ({ kind: 'window' as const, windowPage }),
                 () => ({ kind: 'window-timeout' as const }),
             ),
-            // Explicit rejection handler (mirroring windowPagePromise's
-            // above), not just Promise.race's own internal subscription: a
-            // genuine failure here (e.g. getCurrentApproval's evaluate
-            // throwing because `page` closed) must fall through to the
-            // popup path's own assertions and time out there as a clear
-            // test failure, not vanish as a race loser.
+            // Explicit rejection handler, not just Promise.race's subscription: a
+            // genuine failure here must fall through to the popup path's
+            // assertions and time out clearly, not vanish as a race loser.
             popupConfirmed.then(
                 ok => ({ kind: 'popup' as const, ok }),
                 () => ({ kind: 'popup' as const, ok: false }),
@@ -373,10 +282,8 @@ const beginWaitingForApproval = (): (() => Promise<{
             return { approvalPage: outcome.windowPage, approvalErrors }
         }
 
-        // Either the popup surface was confirmed stable, or neither signal
-        // fired (outcome.ok === false / 'window-timeout') — fall through to
-        // the popup path either way and let its own assertions surface a
-        // clear timeout if truly nothing is pending.
+        // Popup confirmed stable, or neither signal fired: fall through to the
+        // popup path either way and let its assertions surface a clear timeout.
         const approvalPage = await context.newPage()
         await approvalPage.setViewportSize({ width: 360, height: 600 })
         const approvalErrors = trackPageErrors(approvalPage)
@@ -386,9 +293,8 @@ const beginWaitingForApproval = (): (() => Promise<{
     }
 }
 
-// The dApp-side connector's own proof that approveSession actually reached
-// it over the bridge — resolves with the accounts the wallet granted,
-// straight off the real WC v1 `connect` event.
+// The dApp-side connector's own proof that approveSession reached it over the
+// bridge: resolves with the granted accounts off the real WC v1 `connect` event.
 const waitForConnectorConnect = (
     connector: WalletConnect,
 ): Promise<{ accounts: string[] }> =>
@@ -413,10 +319,8 @@ const waitForConnectorConnect = (
         })
     })
 
-// Selects an account if none is pre-selected, then asserts Connect is
-// enabled — same defensive pattern as walletconnect.spec.ts / dapp-connect.spec.ts,
-// since useEnableRequestScreen only pre-selects the active account if the
-// account store had already hydrated by mount time.
+// Selects an account if none is pre-selected: useEnableRequestScreen only
+// pre-selects the active account if the store had hydrated by mount time.
 const ensureAccountSelected = async (approvalPage: Page): Promise<void> => {
     const connectButton = approvalPage.getByTestId('wc-connect-connect')
     await expect(connectButton).toBeVisible({ timeout: 20_000 })
@@ -519,30 +423,25 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
 
     await buildFixtureModal(dappPage, uri)
 
-    // The watcher's MutationObserver + its own initial `process()` call race
-    // against the fixture's synchronous DOM build — poll rather than assume
-    // either wins.
+    // The watcher's MutationObserver and its initial `process()` race the
+    // fixture's synchronous DOM build; poll rather than assume either wins.
     await expect
         .poll(() => injectedRowExists(dappPage), {
             timeout: 20_000,
         })
         .toBe(true)
 
-    // Nothing pairs merely because the modal (and the row) exist: no
-    // approval is pending until the row is actually clicked. Checked on
-    // both surfaces — see hasApprovalWindowOpen's doc comment.
+    // Nothing pairs merely because the row exists. Checked on both surfaces
+    // (see hasApprovalWindowOpen).
     expect(await getCurrentApproval(page)).toBeNull()
     expect(hasApprovalWindowOpen()).toBe(false)
 
-    // Registered BEFORE the click — see beginWaitingForApproval's doc
-    // comment on why this ordering matters.
+    // Registered BEFORE the click (see beginWaitingForApproval).
     const awaitApproval = beginWaitingForApproval()
     await clickInjectedRow(dappPage)
 
     const { approvalPage, approvalErrors } = await awaitApproval()
-    // Whichever surface ApprovalWindowBridge chose (the toolbar-popup
-    // discovery path or the approval.html fallback window — see
-    // beginWaitingForApproval's comment), it must be an extension-owned page.
+    // Whichever surface the bridge chose, it must be an extension-owned page.
     expect(approvalPage.url()).toMatch(/^chrome-extension:\/\//)
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -551,20 +450,16 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
         await approvalPage.getByTestId('unlock-submit').click()
     }
 
-    // The dApp's own self-asserted peerMeta.name, in mobile's own headline.
-    // Untrusted: the peer chooses both this and the url shown beneath it, which
-    // is exactly why the browser-verified requester below is rendered
-    // separately and marked as verified.
+    // The peer's self-asserted name and url are untrusted, which is why the
+    // browser-verified requester is rendered separately below.
     const peerName = approvalPage.getByTestId('wc-connect-peer-name')
     await expect(peerName).toBeVisible({ timeout: 20_000 })
     await expect(peerName).toHaveText(
         'Fake Connect-Modal DApp wants to connect to your account',
     )
 
-    // The browser-verified requester — the fixture page's REAL origin,
-    // scheme included — shown distinctly from the line above, plus its
-    // verified marker. This is the coverage gap the task brief calls out:
-    // proving the rendered output, not just the hook.
+    // The browser-verified requester: the fixture page's REAL origin, scheme
+    // included, plus its verified marker.
     const requesterLine = approvalPage.getByTestId(
         'wc-connect-requester-origin',
     )
@@ -583,9 +478,7 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
         approvalPage,
         approvalPage.getByTestId('wc-connect-connect'),
     )
-    // The real proof the handshake crossed the bridge: the dApp-side
-    // client's OWN `connect` event, not anything this test asserted about
-    // the wallet's internal state.
+    // The real proof the handshake crossed the bridge: the dApp-side client's OWN `connect` event.
     const { accounts } = await connected
     expect(accounts.length).toBeGreaterThan(0)
 
@@ -596,11 +489,9 @@ test('the injected row pairs a real WC session, and approving it surfaces the ve
     dappConnector.transportClose()
 })
 
-// The trust-model assertion: the SW stamps `sender.origin` (browser-provided,
-// unforgeable) as `requesterOrigin`, never anything the page itself claims.
-// A second, unrelated origin builds the identical fixture-modal shape and
-// gets ITS OWN real origin reported back — proving the stamping is genuinely
-// per-request, not a fixed/cached value from the first test.
+// The trust-model assertion: the SW stamps browser-provided `sender.origin` as
+// `requesterOrigin`, never anything the page claims. A second origin building
+// the identical fixture gets ITS OWN origin back, proving per-request stamping.
 test('a fabricated modal on a different origin is stamped with THAT origin, not the first', async () => {
     const dappConnector = new WalletConnect({
         bridge: bridge.url,
@@ -630,19 +521,15 @@ test('a fabricated modal on a different origin is stamped with THAT origin, not 
         })
         .toBe(true)
 
-    // (a) The row still requires a click — nothing pairs on mere appearance.
-    // Checked on both surfaces — see hasApprovalWindowOpen's doc comment.
+    // (a) Nothing pairs on mere appearance. Checked on both surfaces.
     expect(await getCurrentApproval(page)).toBeNull()
     expect(hasApprovalWindowOpen()).toBe(false)
 
-    // Registered BEFORE the click — see beginWaitingForApproval's doc
-    // comment on why this ordering matters.
+    // Registered BEFORE the click (see beginWaitingForApproval).
     const awaitApproval = beginWaitingForApproval()
     await clickInjectedRow(dappPage)
 
-    // (b) Once clicked, the approval reports THIS origin as the requester —
-    // not originA (test 1's requester), and not the dApp's own identical
-    // peerMeta.url claim.
+    // (b) Once clicked, the approval reports THIS origin as the requester.
     const { approvalPage, approvalErrors } = await awaitApproval()
 
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
@@ -655,16 +542,11 @@ test('a fabricated modal on a different origin is stamped with THAT origin, not 
         'wc-connect-requester-origin',
     )
     await expect(requesterLine).toBeVisible({ timeout: 20_000 })
-    // Proves per-request stamping, not a cached value from test 1: this is
-    // THIS test's own real origin (originB), not originA reused, and not
-    // the dApp's identical peerMeta.url claim (asserted equal to originB
-    // above already rules out both — a single text node can't equal two
-    // different strings — so no separate `.not.toHaveText(originA)` is
-    // needed).
+    // originB here rules out both originA and the dApp's identical peerMeta.url
+    // claim, so no separate `.not.toHaveText(originA)` is needed.
     await expect(requesterLine).toHaveText(`Request came from ${originB}`)
 
-    // Reject — this test's proof is complete once the requester line is
-    // verified; no need to complete a second real handshake.
+    // Reject: the proof is complete once the requester line is verified.
     await clickThroughPinPrompt(
         approvalPage,
         approvalPage.getByTestId('wc-connect-cancel'),

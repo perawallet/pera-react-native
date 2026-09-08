@@ -73,15 +73,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const { showError } = useErrorToast()
     const { t } = useLanguage()
 
-    // Initialize network status listener (replaces NetworkStatusProvider)
     useNetworkStatusListener()
-
-    // Initialize FCM token (replaces TokenInitializer)
     useTokenListener(fcmToken)
-
-    // Route tapped push notifications through the deeplink dispatcher.
     useNotificationDeeplinkListener()
-
     // Refresh the notification badge/inbox as soon as a foreground push lands.
     useNotificationReceivedListener()
 
