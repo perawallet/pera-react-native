@@ -928,6 +928,37 @@ describe('useBiometrics', () => {
             expect(outcome).toEqual({ ok: false, reason: 'error' })
             expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
         })
+
+        // A successful ceremony proves the key works, but the write that
+        // records it can still fail. Left alone, that would leave the key
+        // armed with no blob pointing at it — invisible to the reconcile's
+        // early return on a missing blob, so it would report enabled
+        // forever while every unlock burned a real ceremony and failed.
+        test('clears the binding when the write fails after a successful ceremony', async () => {
+            const token = new Uint8Array([7, 7, 7])
+            mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
+                true,
+            )
+            mockBiometricsService.getSecurityLevel.mockResolvedValue('strong')
+            mockBiometricsService.armBiometricBinding.mockResolvedValue({
+                blob: 'ct',
+                tokenHash: sha256Hex(token),
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+            kmsMocks.commitSecret.mockRejectedValueOnce(new Error('boom'))
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() => result.current.enableBiometrics())
+
+            expect(outcome).toEqual({ ok: false, reason: 'error' })
+            expect(
+                mockBiometricsService.clearEnrollmentBinding,
+            ).toHaveBeenCalled()
+            expect(result.current.isEnabled).toBe(false)
+        })
     })
 
     describe('checkBiometricsEnabled against the key-pair probe', () => {
