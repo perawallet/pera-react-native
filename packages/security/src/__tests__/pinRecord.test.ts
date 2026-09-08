@@ -13,10 +13,12 @@
 import { describe, test, expect } from 'vitest'
 import {
     PIN_RECORD_VERSION,
+    applyDuressPin,
     constantTimeEqual,
     createPinRecord,
     parsePinRecord,
     serializePinRecord,
+    verifyPinAgainstDuressSlot,
     verifyPinAgainstRecord,
 } from '../pinRecord'
 
@@ -35,6 +37,18 @@ describe('pinRecord', () => {
         expect(a.hash).not.toBe(b.hash)
     }, 30_000)
 
+    test('createPinRecord fills the duress slot with random bytes, flag off', async () => {
+        const a = await createPinRecord('123456')
+        const b = await createPinRecord('123456')
+
+        expect(a.duressEnabled).toBe(0)
+        expect(a.duressSalt).toMatch(/^[0-9a-f]{32}$/)
+        expect(a.duressHash).toMatch(/^[0-9a-f]{64}$/)
+        // Random fill, not a fixed sentinel — two records must differ.
+        expect(a.duressSalt).not.toBe(b.duressSalt)
+        expect(a.duressHash).not.toBe(b.duressHash)
+    }, 30_000)
+
     test('verifyPinAgainstRecord accepts correct PIN and rejects wrong PIN', async () => {
         const record = await createPinRecord('123456')
         await expect(verifyPinAgainstRecord('123456', record)).resolves.toBe(
@@ -45,8 +59,65 @@ describe('pinRecord', () => {
         )
     }, 30_000)
 
-    test('serializePinRecord/parsePinRecord round-trip', async () => {
-        const record = await createPinRecord('000000')
+    test('applyDuressPin arms the duress slot without touching the regular slot', async () => {
+        const base = await createPinRecord('123456')
+        const armed = await applyDuressPin(base, '111111')
+
+        expect(armed.duressEnabled).toBe(1)
+        expect(armed.salt).toBe(base.salt)
+        expect(armed.hash).toBe(base.hash)
+        await expect(verifyPinAgainstRecord('123456', armed)).resolves.toBe(
+            true,
+        )
+        await expect(verifyPinAgainstDuressSlot('111111', armed)).resolves.toBe(
+            true,
+        )
+        await expect(verifyPinAgainstDuressSlot('999999', armed)).resolves.toBe(
+            false,
+        )
+    }, 60_000)
+
+    test('applyDuressPin(null) disarms and re-randomizes the duress slot', async () => {
+        const base = await createPinRecord('123456')
+        const armed = await applyDuressPin(base, '111111')
+        const disarmed = await applyDuressPin(armed, null)
+
+        expect(disarmed.duressEnabled).toBe(0)
+        expect(disarmed.duressSalt).not.toBe(armed.duressSalt)
+        expect(disarmed.duressHash).not.toBe(armed.duressHash)
+        await expect(
+            verifyPinAgainstDuressSlot('111111', disarmed),
+        ).resolves.toBe(false)
+    }, 60_000)
+
+    test('verifyPinAgainstDuressSlot is gated by the flag, not just the hash', async () => {
+        // Even if the slot's hash would match, a disarmed flag means no duress
+        // PIN is configured — the random-fill slot must never grant access.
+        const armed = await applyDuressPin(
+            await createPinRecord('123456'),
+            '111111',
+        )
+        const flagOff = { ...armed, duressEnabled: 0 as const }
+        await expect(
+            verifyPinAgainstDuressSlot('111111', flagOff),
+        ).resolves.toBe(false)
+    }, 60_000)
+
+    test('serialized size is identical whether or not a duress PIN is set', async () => {
+        // The keystore payload is encrypted, but ciphertext length tracks
+        // plaintext length — a size difference would leak the flag.
+        const without = await createPinRecord('123456')
+        const withDuress = await applyDuressPin(without, '111111')
+        expect(serializePinRecord(withDuress).length).toBe(
+            serializePinRecord(without).length,
+        )
+    }, 60_000)
+
+    test('serializePinRecord/parsePinRecord round-trip (duress fields included)', async () => {
+        const record = await applyDuressPin(
+            await createPinRecord('000000'),
+            '111111',
+        )
         const serialized = serializePinRecord({
             ...record,
             failedAttempts: 2,
@@ -58,7 +129,7 @@ describe('pinRecord', () => {
             failedAttempts: 2,
             lockoutEndTime: 1234567890,
         })
-    }, 30_000)
+    }, 60_000)
 
     test('parsePinRecord returns null for invalid or wrong-version data', () => {
         const encoder = new TextEncoder()
@@ -79,6 +150,21 @@ describe('pinRecord', () => {
         ).toBeNull()
     })
 
+    test('parsePinRecord rejects the legacy v2 shape (no duress slot)', async () => {
+        const base = await createPinRecord('000000')
+        const encoder = new TextEncoder()
+        const legacyV2 = {
+            version: 2,
+            salt: base.salt,
+            hash: base.hash,
+            failedAttempts: 0,
+            lockoutEndTime: null,
+        }
+        expect(
+            parsePinRecord(encoder.encode(JSON.stringify(legacyV2))),
+        ).toBeNull()
+    }, 30_000)
+
     test('parsePinRecord rejects out-of-range / non-integer numeric fields', async () => {
         const base = await createPinRecord('000000')
         const encoder = new TextEncoder()
@@ -91,7 +177,7 @@ describe('pinRecord', () => {
         expect(parsePinRecord(bytesWith({ lockoutEndTime: 1.5 }))).toBeNull()
     }, 30_000)
 
-    test('parsePinRecord rejects malformed or wrong-length salt/hash', async () => {
+    test('parsePinRecord rejects malformed or wrong-length salt/hash in either slot', async () => {
         const base = await createPinRecord('000000')
         const encoder = new TextEncoder()
         const bytesWith = (overrides: Record<string, unknown>) =>
@@ -100,6 +186,12 @@ describe('pinRecord', () => {
         // non-hex characters, correct length
         expect(parsePinRecord(bytesWith({ salt: 'z'.repeat(32) }))).toBeNull()
         expect(parsePinRecord(bytesWith({ hash: 'z'.repeat(64) }))).toBeNull()
+        expect(
+            parsePinRecord(bytesWith({ duressSalt: 'z'.repeat(32) })),
+        ).toBeNull()
+        expect(
+            parsePinRecord(bytesWith({ duressHash: 'z'.repeat(64) })),
+        ).toBeNull()
         // valid hex, wrong length
         expect(
             parsePinRecord(bytesWith({ salt: base.salt.slice(0, 30) })),
@@ -107,6 +199,28 @@ describe('pinRecord', () => {
         expect(
             parsePinRecord(bytesWith({ hash: base.hash.slice(0, 62) })),
         ).toBeNull()
+        expect(
+            parsePinRecord(
+                bytesWith({ duressSalt: base.duressSalt.slice(0, 30) }),
+            ),
+        ).toBeNull()
+        expect(
+            parsePinRecord(
+                bytesWith({ duressHash: base.duressHash.slice(0, 62) }),
+            ),
+        ).toBeNull()
+    }, 30_000)
+
+    test('parsePinRecord rejects non-0/1 duressEnabled values', async () => {
+        const base = await createPinRecord('000000')
+        const encoder = new TextEncoder()
+        const bytesWith = (overrides: Record<string, unknown>) =>
+            encoder.encode(JSON.stringify({ ...base, ...overrides }))
+
+        expect(parsePinRecord(bytesWith({ duressEnabled: true }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ duressEnabled: '1' }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ duressEnabled: 2 }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ duressEnabled: -1 }))).toBeNull()
     }, 30_000)
 
     test('constantTimeEqual returns true only for identical byte sequences', () => {
