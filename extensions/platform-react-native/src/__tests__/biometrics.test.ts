@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, it, expect, vi, beforeEach } from 'vitest'
 
 const hasHardwareAsyncMock = vi.hoisted(() => vi.fn())
 const isEnrolledAsyncMock = vi.hoisted(() => vi.fn())
@@ -52,6 +52,8 @@ const bindingMocks = vi.hoisted(() => ({
         checkBinding: ReturnType<typeof vi.fn>
         clearBinding: ReturnType<typeof vi.fn>
         getAvailability: ReturnType<typeof vi.fn>
+        armBinding: ReturnType<typeof vi.fn>
+        unwrapToken: ReturnType<typeof vi.fn>
     } | null,
 }))
 
@@ -60,6 +62,15 @@ vi.mock('expo', () => ({
 }))
 
 import { RNBiometricsService } from '../services/biometrics'
+
+const emptyBindingModule = {
+    createBinding: vi.fn(),
+    checkBinding: vi.fn(),
+    clearBinding: vi.fn(),
+    getAvailability: vi.fn(),
+    armBinding: vi.fn().mockResolvedValue(null),
+    unwrapToken: vi.fn().mockResolvedValue(new Uint8Array()),
+}
 
 describe('RNBiometricsService', () => {
     const service = new RNBiometricsService()
@@ -272,6 +283,7 @@ describe('RNBiometricsService', () => {
 
     describe('enrollment binding', () => {
         const nativeModule = {
+            ...emptyBindingModule,
             createBinding: vi.fn(),
             checkBinding: vi.fn(),
             clearBinding: vi.fn(),
@@ -334,6 +346,7 @@ describe('RNBiometricsService', () => {
 
     describe('getAvailability', () => {
         const nativeModule = {
+            ...emptyBindingModule,
             createBinding: vi.fn(),
             checkBinding: vi.fn(),
             clearBinding: vi.fn(),
@@ -374,6 +387,122 @@ describe('RNBiometricsService', () => {
         test('reports "unknown" when the native module is absent', async () => {
             bindingMocks.module = null
             expect(await service.getAvailability()).toBe('unknown')
+        })
+    })
+
+    describe('armBiometricBinding', () => {
+        it('passes the native ciphertext and hash straight through', async () => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                armBinding: vi
+                    .fn()
+                    .mockResolvedValue({ blob: 'ct', tokenHash: 'ab12' }),
+            }
+
+            const result = await new RNBiometricsService().armBiometricBinding()
+
+            expect(result).toEqual({ blob: 'ct', tokenHash: 'ab12' })
+        })
+
+        it('resolves null when no native module is present', async () => {
+            bindingMocks.module = null
+
+            await expect(
+                new RNBiometricsService().armBiometricBinding(),
+            ).resolves.toBeNull()
+        })
+
+        it('resolves null when the native call throws', async () => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                armBinding: vi
+                    .fn()
+                    .mockRejectedValue(new Error('keystore full')),
+            }
+
+            await expect(
+                new RNBiometricsService().armBiometricBinding(),
+            ).resolves.toBeNull()
+        })
+    })
+
+    describe('unwrapBiometricToken', () => {
+        it('returns the released token on success', async () => {
+            const token = new Uint8Array([1, 2, 3])
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockResolvedValue(token),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+                { title: 'Unlock', cancelLabel: 'Cancel' },
+            )
+
+            expect(result).toEqual({ success: true, token })
+        })
+
+        it('forwards the prompt copy to the native call', async () => {
+            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
+            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
+
+            await new RNBiometricsService().unwrapBiometricToken('ct', {
+                title: 'Unlock Pera',
+                cancelLabel: 'Not now',
+            })
+
+            expect(unwrapToken).toHaveBeenCalledWith('ct', {
+                title: 'Unlock Pera',
+                cancelLabel: 'Not now',
+            })
+        })
+
+        it.each([
+            ['invalidated', 'invalidated'],
+            ['no-binding', 'no-binding'],
+            ['user-cancel', 'user-cancel'],
+            ['system-cancel', 'system-cancel'],
+            ['lockout', 'lockout'],
+            ['unavailable', 'unavailable'],
+            ['failed', 'failed'],
+        ])('maps native code %s to reason %s', async (code, reason) => {
+            const error = new Error('native failure')
+            ;(error as Error & { code?: string }).code = code
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockRejectedValue(error),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+            )
+
+            expect(result).toEqual({ success: false, reason })
+        })
+
+        it('maps an unrecognized native code to unknown', async () => {
+            const error = new Error('native failure')
+            ;(error as Error & { code?: string }).code = 'something-new'
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockRejectedValue(error),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+            )
+
+            expect(result).toEqual({ success: false, reason: 'unknown' })
+        })
+
+        it('reports no-binding when the native module is absent', async () => {
+            bindingMocks.module = null
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+            )
+
+            expect(result).toEqual({ success: false, reason: 'no-binding' })
         })
     })
 })

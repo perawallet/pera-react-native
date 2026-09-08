@@ -31,6 +31,7 @@ import type {
     BiometricsAuthenticateResult,
     BiometricsService,
     BiometricType,
+    BiometricUnwrapFailureReason,
     BiometricUnwrapResult,
 } from '@perawallet/wallet-extension-platform'
 
@@ -42,6 +43,11 @@ interface NativePeraBiometricBinding {
     checkBinding(): Promise<string>
     clearBinding(): Promise<void>
     getAvailability(): Promise<string>
+    armBinding(): Promise<{ blob: string; tokenHash: string } | null>
+    unwrapToken(
+        blob: string,
+        prompt: { title: string; cancelLabel: string },
+    ): Promise<Uint8Array>
 }
 
 const AVAILABILITIES: readonly BiometricAvailability[] = [
@@ -98,6 +104,26 @@ const mapAuthFailureReason = (
     error: string | undefined,
 ): BiometricsAuthenticateFailureReason =>
     (error && AUTH_FAILURE_REASONS[error]) || 'unknown'
+
+const UNWRAP_FAILURE_REASONS = [
+    'invalidated',
+    'no-binding',
+    'user-cancel',
+    'system-cancel',
+    'lockout',
+    'unavailable',
+    'failed',
+] as const satisfies readonly BiometricUnwrapFailureReason[]
+
+// The native side classifies the failure, because only it can tell a destroyed
+// key from a declined prompt. An unrecognized code means a native change this
+// build does not know about, so it degrades rather than guessing.
+const mapUnwrapFailureReason = (
+    error: unknown,
+): BiometricUnwrapFailureReason => {
+    const code = (error as { code?: unknown } | null)?.code
+    return UNWRAP_FAILURE_REASONS.find(reason => reason === code) ?? 'unknown'
+}
 
 // Backed by `expo-local-authentication` (Expo SDK 57), which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
@@ -256,15 +282,41 @@ export class RNBiometricsService implements BiometricsService {
         }
     }
 
-    // The native module underneath (`apps/mobile/native-modules/biometric-binding`)
-    // does not yet expose an OS-bound key pair; a later task wires the real
-    // Secure Enclave / TEE calls in here. Refuse in the meantime rather than
-    // half-implement a security boundary.
     async armBiometricBinding(): Promise<BiometricArmResult | null> {
-        return null
+        const module = getBindingModule()
+        if (!module) return null
+        try {
+            return (await module.armBinding()) ?? null
+        } catch (error) {
+            logger.error('Arming the biometric binding failed', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return null
+        }
     }
 
-    async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
-        return { success: false, reason: 'unavailable' }
+    async unwrapBiometricToken(
+        blob: string,
+        prompt: BiometricsAuthenticatePrompt = {},
+    ): Promise<BiometricUnwrapResult> {
+        const module = getBindingModule()
+        // No module means no key, which is indistinguishable from a key that
+        // was never created — and both are recoverable by re-opting in.
+        if (!module) return { success: false, reason: 'no-binding' }
+        try {
+            const token = await module.unwrapToken(blob, {
+                title: prompt.title ?? 'Authenticate',
+                cancelLabel: prompt.cancelLabel || 'Cancel',
+            })
+            return { success: true, token }
+        } catch (error) {
+            const reason = mapUnwrapFailureReason(error)
+            logger.warn('Biometric unwrap did not succeed', {
+                source: LOG_SOURCE,
+                reason,
+            })
+            return { success: false, reason }
+        }
     }
 }
