@@ -57,10 +57,10 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            // `account` is already the resolved signing account — the auth
-            // account when the request's signer is rekeyed (see
-            // resolveSigningAccount). Leaf check only: it must hold a local
-            // key by the time it reaches KMS.
+            // `account` is the account the dApp named as `signer`. Data
+            // signing never follows a rekey (see resolveSigningAccount), so a
+            // keyless rekeyed signer is refused here, the spec's
+            // ERROR_INVALID_SIGNER, rather than signed for by its auth account.
             if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
@@ -80,12 +80,7 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                 stdSigData.authenticatorData,
             )
 
-            // `hdPath` describes the account the dApp NAMED. When the rekey
-            // fallback picked a different account to sign, that path says
-            // nothing about this key, so checking it would reject a valid
-            // request with a misleading HD-path error.
-            const isResolvedSigner = account.address === stdSigData.signer
-            const hdPath = isResolvedSigner ? stdSigData.hdPath : undefined
+            const { hdPath } = stdSigData
 
             if (isHDWalletAccount(account)) {
                 if (hdPath) {

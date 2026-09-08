@@ -3175,19 +3175,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 !!account?.keyPairId && account?.type !== 'hardware',
         ),
-        // Mirrors the real predicate, rekey hop included: for a rekeyed
-        // signer the auth account decides, and it must be non-multisig with a
-        // local key or hardware.
-        canSignArc60: vi.fn((account: any, accounts: any[] = []) => {
-            const signer = account?.rekeyAddress
-                ? accounts.find((a: any) => a.address === account.rekeyAddress)
-                : account
-            return (
-                !!signer &&
-                signer.type !== 'multisig' &&
-                (!!signer.keyPairId || signer.type === 'hardware')
-            )
-        }),
+        // Mirrors the real predicate: account-local (no rekey hop), non-multisig
+        // with a local key, or hardware.
+        canSignArc60: vi.fn(
+            (account: any) =>
+                !!account &&
+                account.type !== 'multisig' &&
+                (!!account.keyPairId || account.type === 'hardware'),
+        ),
         canSignProgram: vi.fn(
             (account: any) =>
                 account?.type !== 'hardware' &&
