@@ -37,19 +37,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 const mockCheckBiometricsAvailable = vi.fn()
 const mockGetAvailability = vi.fn()
-const mockAuthenticate = vi.fn()
 const mockGetSecurityLevel = vi.fn()
-const mockCreateEnrollmentBinding = vi.fn()
 const mockCheckEnrollmentBinding = vi.fn()
 const mockClearEnrollmentBinding = vi.fn()
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
     getAvailability: mockGetAvailability,
-    authenticate: mockAuthenticate,
     getSecurityLevel: mockGetSecurityLevel,
     getSupportedBiometricType: vi.fn(),
-    createEnrollmentBinding: mockCreateEnrollmentBinding,
     checkEnrollmentBinding: mockCheckEnrollmentBinding,
     clearEnrollmentBinding: mockClearEnrollmentBinding,
     armBiometricBinding: vi.fn().mockResolvedValue(null),
@@ -312,7 +308,6 @@ describe('useBiometrics', () => {
         })
 
         expect(enableResult).toEqual({ ok: false, reason: 'unconfirmed' })
-        expect(mockAuthenticate).not.toHaveBeenCalled()
         // The blob must survive the lockout so unlock recovers on its own.
         expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
         expect(kmsMocks.biometricBytes).not.toBeNull()
@@ -985,19 +980,6 @@ describe('useBiometrics', () => {
                 BIOMETRIC_BLOB_KEY_ID,
             )
             expect(result.current.disabledReason).toBe('rebind-required')
-        })
-
-        test('never adopts a fresh binding for an existing blob', async () => {
-            mockBiometricsService.checkEnrollmentBinding.mockResolvedValue(
-                'absent',
-            )
-
-            const { result } = renderHook(() => useBiometrics())
-            await act(() => result.current.checkBiometricsEnabled())
-
-            expect(
-                mockBiometricsService.createEnrollmentBinding,
-            ).not.toHaveBeenCalled()
         })
 
         test('keeps the blob when the probe cannot answer', async () => {

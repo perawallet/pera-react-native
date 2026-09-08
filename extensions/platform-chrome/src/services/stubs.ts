@@ -21,7 +21,6 @@ import type {
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricType,
-    BiometricsAuthenticateResult,
     BiometricsService,
     BiometricUnwrapResult,
     LegacyMigrationData,
@@ -54,10 +53,6 @@ export class ChromeBiometricsService implements BiometricsService {
     async getSecurityLevel(): Promise<BiometricSecurityLevel> {
         return 'none'
     }
-    async authenticate(): Promise<BiometricsAuthenticateResult> {
-        return { success: false, reason: 'unavailable' }
-    }
-    async createEnrollmentBinding(): Promise<void> {}
     async checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding> {
         return 'unavailable'
     }

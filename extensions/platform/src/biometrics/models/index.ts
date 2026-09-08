@@ -51,10 +51,6 @@ export type BiometricsAuthenticateFailureReason =
     | 'failed'
     | 'unknown'
 
-export type BiometricsAuthenticateResult =
-    | { success: true }
-    | { success: false; reason: BiometricsAuthenticateFailureReason }
-
 /**
  * Whether the biometric set enrolled right now is the one the user opted in
  * with. Neither {@link BiometricsService.checkBiometricsAvailable} nor
@@ -153,15 +149,6 @@ export interface BiometricsService {
      * authenticator, such as the passkey credential provider, must check this.
      */
     getSecurityLevel(): Promise<BiometricSecurityLevel>
-    authenticate(
-        prompt?: BiometricsAuthenticatePrompt,
-    ): Promise<BiometricsAuthenticateResult>
-    /**
-     * Records the currently enrolled biometric set as the bound one. Call after
-     * the opt-in prompt succeeds, and never on its own — a binding without the
-     * secret it guards is meaningless.
-     */
-    createEnrollmentBinding(): Promise<void>
     /**
      * Never prompts: it runs on every mount of the biometrics hook, so it has
      * to be silent.

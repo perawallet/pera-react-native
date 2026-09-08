@@ -64,10 +64,6 @@ const buildServices = (): PlatformServices => {
         async getSecurityLevel() {
             return 'strong'
         },
-        async authenticate() {
-            return { success: true } as const
-        },
-        async createEnrollmentBinding() {},
         async checkEnrollmentBinding() {
             return 'valid' as const
         },

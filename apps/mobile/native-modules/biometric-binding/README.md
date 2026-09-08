@@ -42,11 +42,17 @@ Surface:
   needs no authentication at all.
 - Unwrapping evaluates the `LAContext` policy first and then hands that same
   context to the Keychain lookup via `kSecUseAuthenticationContext`, so there is
-  one ceremony and the key is released against that specific evaluation.
+  one ceremony and the key is released against that specific evaluation. The
+  `LAContext` must be kept alive (`withExtendedLifetime`) across the decrypt:
+  ARC may otherwise release it at its last use, which a Debug build (`-Onone`)
+  masks by holding it to end of scope but a Release build does not, and the
+  failure surfaces as a declined ceremony with no test able to catch it.
 - `checkBinding` can only answer `'valid'` or `'absent'` here. Because the key
   is removed rather than marked unusable, a re-enrollment is indistinguishable
   from a restore or a device upgrade — and all of them are recovered the same
-  way, by opting in again. Android reports `'changed'` distinctly; iOS cannot.
+  way, by opting in again. Android reports `'changed'` distinctly; iOS cannot,
+  so the user-facing copy for `'absent'` is deliberately cause-neutral rather
+  than naming re-enrollment specifically.
 - Nothing is stored outside the key itself. A Keychain item would outlive app
   deletion while the App Group MMKV does not, so it would eventually claim a key
   that is gone.
@@ -111,22 +117,85 @@ the key it stands for.
 
 ## On-device QA
 
-Not reachable from the JS suites, which cover the JS side with mocks, so the
-mechanism itself needs a device. Run `pnpm expo:prebuild:clean` first; a new
-native module is not picked up by an incremental build.
+This module has no automated coverage: the JS suites mock the bridge, so
+everything below only exists as behavior on real hardware. Run
+`pnpm expo:prebuild:clean` first — a new native module is not picked up by an
+incremental build — and run the iOS pass at least once on a **Release** build,
+not just Debug (see the `LAContext` trap above; Debug hides it by construction).
+The Simulator has no real Secure Enclave, so a Simulator pass proves nothing
+about `armBinding` or `unwrapToken`; every step below needs physical hardware.
+
+**Enrollment change, both platforms**
 
 1. Enable biometric unlock, then in device settings delete the enrolled
-   fingerprint and add a different one without reopening Pera. Lock the app: the
-   new fingerprint must not unlock, and Settings must show the toggle off.
+   fingerprint and add a different one without reopening Pera. Lock the app:
+   the new fingerprint must not unlock, and Settings must show the toggle off.
 2. Enroll a _second_ fingerprint alongside the first (Android): same outcome,
    because adding to the set is a change.
-3. Add an alternate Face ID appearance (iOS): also invalidates. Fail-closed and
-   intended, but worth confirming it is not silent.
-4. Upgrade path: with biometrics already enabled before this build, the first
-   launch must keep it enabled (binding adopted), and a re-enrollment after that
-   must then be caught.
-5. Android lockout: fail the fingerprint enough times to lock out, background
-   and reopen. No biometric sheet may appear from the reconcile itself.
-6. Cancel the iOS prompt with the cancel button and again with the side button:
-   the first must reject `user-cancel`, the second `system-cancel`, since the
-   lock screen retries only on the latter.
+3. Add an alternate Face ID appearance (iOS): also invalidates, reported as
+   `absent` on the next mount, and the hook must land on `disabledReason:
+'rebind-required'`.
+4. Remove the device passcode (iOS): the Secure Enclave key is destroyed with
+   it, also reported `absent`.
+
+**Ceremony shape**
+
+5. Opting in shows exactly **one** sheet — the confirmation unwrap immediately
+   after `armBinding`. `armBinding` itself must show none: it wraps to the
+   public key, which needs no ceremony.
+6. Cold start with biometrics already enabled must raise **zero** sheets before
+   the lock screen; the enrollment probe (`checkBinding`) never prompts.
+7. Each unwrap after that shows exactly one sheet. Two means the `LAContext`
+   used for the policy evaluation is not the one reaching the Keychain query.
+8. Cancel an in-progress opt-in ceremony (before confirming): no orphan RSA or
+   AES key must remain — `checkBinding` afterward must read `absent`, not
+   `valid` against a half-created pair.
+
+**Lockout and PIN-only states**
+
+9. Android lockout: fail the fingerprint enough times to lock out, background
+   and reopen. No biometric sheet may appear from the reconcile itself, and the
+   opt-in must remain intact once the lockout clears on its own.
+10. iOS with only a PIN/passcode enrolled (no Face ID/Touch ID, or Face ID
+    temporarily unconfirmed): `getSecurityLevel` reports `'secret'`, and the
+    opt-in must survive rather than being torn down — an unconfirmed level is
+    not the same as a destroyed key.
+11. Cancel the iOS prompt with the cancel button, again with the side button,
+    and again by choosing "Enter Passcode": the first and third must reject
+    `user-cancel`, the second `system-cancel` — the lock screen retries only on
+    `system-cancel`. Fail the ceremony 5 times running to confirm `lockout`.
+
+**Upgrade and legacy paths**
+
+12. Upgrade path: with biometrics already enabled before this build (a
+    pre-binding blob with no key pair behind it), the first launch after
+    upgrading must keep it enabled by re-arming, and a re-enrollment after that
+    must then be caught normally.
+13. Legacy import: arm the binding on the import path, where no user is present
+    to complete a ceremony, and confirm it succeeds — this is the path that
+    depends on the wrap needing only the public key.
+
+**Android hardware variants**
+
+14. StrongBox-backed device (Pixel 3 or newer) and a non-StrongBox device:
+    enable biometrics on each and confirm the RSA pair generates and the
+    confirmation ceremony succeeds on both.
+15. On a StrongBox device, re-enroll a fingerprint and confirm **both** the
+    StrongBox-backed RSA pair and the non-StrongBox AES canary invalidate. If
+    only the canary invalidates, `checkBinding` would read `valid` while unlock
+    keeps failing with no self-heal — must not happen. Read the
+    `disabledReason` copy to see which branch fired: a "biometric settings
+    changed" message is the intended `changed` branch; "set up again" means the
+    presence check pre-empted it; a silent toggle-off means the probe reported
+    `unavailable` instead.
+16. An API 29–33 handset: those OS versions carry no MGF1 tag on existing keys,
+    so the digest KeyMaster falls back to is OEM-defined. Confirm the OAEP
+    decrypt still succeeds there.
+17. Background the app while the biometric prompt is open, then foreground it
+    again: the unwrap must not hang.
+18. Force an arm failure (e.g. fill the keystore) and confirm the failure logs
+    a diagnosable reason rather than dropping it — arm failures have no other
+    way to be debugged from a device.
+19. Run a full release build (`assembleRelease` on Android, a Release scheme on
+    iOS) at least once — a debug-only pass does not exercise R8 or Release-only
+    code paths like the `LAContext` lifetime above.

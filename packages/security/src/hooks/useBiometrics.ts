@@ -15,7 +15,6 @@ import { createHash } from 'crypto'
 import type {
     BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
-    BiometricsAuthenticateResult,
     BiometricType,
     BiometricUnwrapFailureReason,
 } from '@perawallet/wallet-extension-platform'
@@ -502,8 +501,4 @@ export const useBiometrics = (): UseBiometricsResult => {
     }
 }
 
-export type {
-    BiometricType,
-    BiometricsAuthenticateFailureReason,
-    BiometricsAuthenticateResult,
-}
+export type { BiometricType, BiometricsAuthenticateFailureReason }

@@ -14,7 +14,6 @@ import { requireOptionalNativeModule } from 'expo'
 import {
     AuthenticationType,
     SecurityLevel,
-    authenticateAsync,
     getEnrolledLevelAsync,
     hasHardwareAsync,
     isEnrolledAsync,
@@ -26,9 +25,7 @@ import type {
     BiometricAvailability,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
-    BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
-    BiometricsAuthenticateResult,
     BiometricsService,
     BiometricType,
     BiometricUnwrapFailureReason,
@@ -39,7 +36,6 @@ const LOG_SOURCE = 'RNBiometricsService'
 
 /** `apps/mobile/native-modules/biometric-binding`. */
 interface NativePeraBiometricBinding {
-    createBinding(): Promise<boolean>
     checkBinding(): Promise<string>
     clearBinding(): Promise<void>
     getAvailability(): Promise<string>
@@ -81,29 +77,6 @@ const asBinding = (status: string): BiometricEnrollmentBinding =>
     (BINDING_STATUSES as readonly string[]).includes(status)
         ? (status as BiometricEnrollmentBinding)
         : 'unavailable'
-
-// Unmapped errors fall through to 'unknown': iOS returns prefixed strings
-// ("unknown: <code>") and strings outside the TS union. Android folds its OS
-// cancel into 'user_cancel', so 'system-cancel' is iOS-only.
-const AUTH_FAILURE_REASONS: Record<
-    string,
-    BiometricsAuthenticateFailureReason
-> = {
-    user_cancel: 'user-cancel',
-    user_fallback: 'user-cancel',
-    system_cancel: 'system-cancel',
-    app_cancel: 'system-cancel',
-    lockout: 'lockout',
-    not_available: 'unavailable',
-    not_enrolled: 'unavailable',
-    passcode_not_set: 'unavailable',
-    authentication_failed: 'failed',
-}
-
-const mapAuthFailureReason = (
-    error: string | undefined,
-): BiometricsAuthenticateFailureReason =>
-    (error && AUTH_FAILURE_REASONS[error]) || 'unknown'
 
 const UNWRAP_FAILURE_REASONS = [
     'invalidated',
@@ -179,45 +152,6 @@ export class RNBiometricsService implements BiometricsService {
         }
     }
 
-    async authenticate(
-        prompt: BiometricsAuthenticatePrompt = {},
-    ): Promise<BiometricsAuthenticateResult> {
-        try {
-            const result = await authenticateAsync({
-                promptMessage: prompt.title ?? 'Authenticate',
-                cancelLabel: prompt.cancelLabel || 'Cancel',
-                disableDeviceFallback: true,
-                // The single choke point for both enrollment and unlock, so
-                // requiring class-3 means a spoofable "weak" modality can
-                // neither be bound nor used to unlock. Weak-only Android devices
-                // fail the OS prompt and fall back to PIN; iOS ignores this,
-                // since Face ID / Touch ID are always strong.
-                //
-                // Deliberately stricter than the legacy Android app, which uses
-                // BIOMETRIC_WEAK for unlock.
-                biometricsSecurityLevel: 'strong',
-            })
-            if (!result.success) {
-                logger.warn('Biometric authentication did not succeed', {
-                    source: LOG_SOURCE,
-                    error: result.error ?? null,
-                    warning: result.warning ?? null,
-                })
-                return {
-                    success: false,
-                    reason: mapAuthFailureReason(result.error),
-                }
-            }
-            return { success: true }
-        } catch (error) {
-            logger.error('Biometric authentication threw', {
-                source: LOG_SOURCE,
-                error,
-            })
-            return { success: false, reason: 'unknown' }
-        }
-    }
-
     async getAvailability(): Promise<BiometricAvailability> {
         const module = getBindingModule()
         // Without the native module there is no status code to read. 'unknown'
@@ -232,24 +166,6 @@ export class RNBiometricsService implements BiometricsService {
                 error,
             })
             return 'unknown'
-        }
-    }
-
-    async createEnrollmentBinding(): Promise<void> {
-        const module = getBindingModule()
-        if (!module) return
-        try {
-            const created = await module.createBinding()
-            if (!created) {
-                logger.warn('Biometric enrollment binding was not recorded', {
-                    source: LOG_SOURCE,
-                })
-            }
-        } catch (error) {
-            logger.warn('createBinding native call threw', {
-                source: LOG_SOURCE,
-                error,
-            })
         }
     }
 
