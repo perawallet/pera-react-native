@@ -138,29 +138,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isRekeyedAccount: vi.fn(() => false),
     canSignWith: vi.fn(() => true),
     canSignArbitraryData: vi.fn(() => true),
-    // Mirrors the real predicate, including the same `canSignDirectly` key
-    // check: a signer that can sign for itself needs no hop, and a keyless
-    // rekeyed signer falls back to an auth account that must be present,
-    // non-multisig, non-quantum, and itself directly signable.
+    // Mirrors the real predicate's `canSignDirectly` key check. ARC-60 is
+    // signed by the named signer's own key, so the check is account-local and
+    // a rekey is never followed.
     canSignArc60: vi.fn(
-        (
-            account: MockAccount,
-            allAccounts: readonly MockAccount[] = [],
-        ): boolean => {
-            const canSignDirectly = (a: MockAccount | undefined) =>
-                !!a && (!!a.keyPairId || a.type === 'hardware')
-            if (canSignDirectly(account)) return true
-            if (!account?.rekeyAddress) return false
-            const auth = allAccounts.find(
-                a => a.address === account.rekeyAddress,
-            )
-            return (
-                !!auth &&
-                auth.type !== 'multisig' &&
-                auth.type !== 'quantum' &&
-                canSignDirectly(auth)
-            )
-        },
+        (account: MockAccount): boolean =>
+            !!account && (!!account.keyPairId || account.type === 'hardware'),
     ),
     useSigningAccounts: vi.fn(() => [
         {
@@ -1471,11 +1454,10 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
-    it('queues an ARC-60 request whose signer is a keyless rekeyed account', async () => {
-        // In-app-browser counterpart of the WC gate: the dApp names the
-        // connected account, which is rekeyed and holds no key of its own —
-        // the auth account signs, so the request must reach the review sheet
-        // instead of being refused up front.
+    it('rejects an ARC-60 request whose signer is a keyless rekeyed account, even when its auth account holds keys', async () => {
+        // In-app-browser counterpart of the WC gate. An ARC-60 signature
+        // verifies against `signer`'s own pubkey, so the auth key cannot sign
+        // in its place; the request is refused before the review sheet.
         const accounts = await import('@perawallet/wallet-core-accounts')
         vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
             {
@@ -1511,50 +1493,9 @@ describe('usePeraWebviewInterface', () => {
             })
         })
 
-        expect(mockAddSignRequest).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'arc60',
-                stdSigData: expect.objectContaining({
-                    signer: 'rekeyed-addr',
-                }),
-            }),
-        )
-    })
-
-    it('rejects an ARC-60 request whose rekeyed signer has no signable auth account', async () => {
-        const accounts = await import('@perawallet/wallet-core-accounts')
-        vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
-            {
-                address: 'rekeyed-addr',
-                name: 'Rekeyed',
-                type: 'watch',
-                rekeyAddress: 'auth-addr',
-            },
-            { address: 'auth-addr', name: 'Auth', type: 'watch' },
-        ] as never)
-
-        const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true, null),
-        )
-
-        await act(async () => {
-            result.current.handleMessage({
-                id: '14-arc60-stranded',
-                jsonrpc: '2.0',
-                method: 'requestDataSigning',
-                params: {
-                    data: 'AQID',
-                    signer: 'rekeyed-addr',
-                    domain: 'example.com',
-                    authenticatorData: 'YXV0aA==',
-                    metadata: { scope: 1, encoding: 'base64' },
-                },
-            })
-        })
-
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"id":"14-arc60-stranded"'),
+            expect.stringContaining('"id":"14-arc60-rekeyed"'),
         )
     })
 
