@@ -21,4 +21,8 @@ export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 // biometric auth can confirm a PIN exists without re-prompting).
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
 export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
-export const DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'
+// v2 kept the duress PIN under this separate id. Key ids live in a plaintext
+// metadata bucket, so the record's mere existence told a device image the
+// duress feature was in use; v3 folds the duress slot into `pera.pinCode`.
+// Referenced only by the migration, which deletes any record found under it.
+export const LEGACY_DURESS_PIN_RECORD_KEY_ID = 'pera.duressPinCode'
