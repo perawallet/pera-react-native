@@ -17,6 +17,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -156,6 +157,10 @@ export const useSelectFundingTypeSheet =
                 )
                 resolve('applied')
             } catch (error) {
+                logger.error(
+                    `Funding type switch failed: ${error instanceof Error ? error.message : String(error)}`,
+                    { error },
+                )
                 await showError(error)
             } finally {
                 isApplyingRef.current = false

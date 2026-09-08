@@ -54,22 +54,20 @@ export const setOnPeraBackendUnavailable = (
     }
 }
 
-// The dev log transport prints a raw `Error` in context as an empty string, so
-// add the flat fields a reader needs (mirrors the shared request logger). `error`
-// stays for the crash reporter's `context.error` convention. Shape-based: no ky import.
-const describeError = (error: unknown) => {
+// Expo's log forwarder renders any context object that carries a `stack` as a
+// "Call Stack" block and blanks the rest, so name/status/url must ride in the
+// message to be readable in the dev log. `error` stays in context for the crash
+// reporter. Shape-based: no ky import.
+const describeError = (error: unknown): string => {
     const shaped = error as {
         name?: string
-        message?: string
         response?: { status?: number; url?: string }
         request?: { url?: string }
     }
-    return {
-        name: shaped?.name,
-        message: shaped?.message,
-        status: shaped?.response?.status,
-        url: shaped?.response?.url ?? shaped?.request?.url,
-    }
+    const url = shaped?.response?.url ?? shaped?.request?.url
+    return [shaped?.name ?? 'Error', shaped?.response?.status, url]
+        .filter(part => part !== undefined)
+        .join(' ')
 }
 
 const cache = new QueryCache({
@@ -92,10 +90,7 @@ const cache = new QueryCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('An error has occurred:', {
-            error,
-            ...describeError(error),
-        })
+        logger.error(`Query failed: ${describeError(error)}`, { error })
     },
 })
 
@@ -110,9 +105,8 @@ const mutationCache = new MutationCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('Mutation failed:', {
+        logger.error(`Mutation failed: ${describeError(error)}`, {
             error,
-            ...describeError(error),
             mutationKey: mutation.options.mutationKey,
         })
     },

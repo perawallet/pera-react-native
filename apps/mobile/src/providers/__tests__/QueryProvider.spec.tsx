@@ -85,12 +85,12 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed:',
+            'Mutation failed: Error',
             expect.objectContaining({ mutationKey: ['test-mutation'] }),
         )
     })
 
-    it('logs the status and url of an HTTP mutation failure so the dev log is readable', async () => {
+    it('names the error, status and url of an HTTP mutation failure in the log message', async () => {
         const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
 
         // A 4xx is not transient, so it must reach the central logger with the
@@ -113,15 +113,11 @@ describe('queryClient mutation error policy', () => {
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+        // The dev log forwarder blanks stack-bearing context objects, so the
+        // identifying fields must be in the message itself.
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed:',
-            expect.objectContaining({
-                name: 'HTTPError',
-                message: 'Bad Request',
-                status: 400,
-                url: 'https://escrow.test/api/approvals',
-                mutationKey: ['http-failure'],
-            }),
+            'Mutation failed: HTTPError 400 https://escrow.test/api/approvals',
+            expect.objectContaining({ mutationKey: ['http-failure'] }),
         )
     })
 
@@ -217,12 +213,8 @@ describe('queryClient query error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'An error has occurred:',
-            expect.objectContaining({
-                error: expect.any(Error),
-                name: 'Error',
-                message: 'boom',
-            }),
+            'Query failed: Error',
+            expect.objectContaining({ error: expect.any(Error) }),
         )
     })
 })
