@@ -200,6 +200,25 @@ describe('WalletConnect deep-link parser', () => {
             expect(result?.browserName).toBe('Safari')
         })
 
+        it('takes the first uri param when a link repeats it', () => {
+            const result = parseWalletConnectUri(
+                'perawallet-wc://wc?uri=wc:first@1?bridge=https://bridge.example&uri=wc:second@1?bridge=https://evil.example',
+            )
+
+            expect(result?.uri).toBe(
+                'wc:first@1?bridge=https://bridge.example&uri=wc:second@1?bridge=https://evil.example',
+            )
+        })
+
+        it('rejects a link padded with thousands of repeated wrapper params', () => {
+            const padded =
+                'perawallet-wc://wc?' +
+                '&uri=a'.repeat(5000) +
+                '&browser=x'.repeat(5000)
+
+            expect(parseWalletConnectUri(padded)).toBeNull()
+        })
+
         it('keeps a fully-encoded inner URI byte-identical when wrapper params follow', () => {
             const inner = 'wc:t@1?bridge=https://bridge.example&key=abc'
 

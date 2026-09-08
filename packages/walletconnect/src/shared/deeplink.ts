@@ -67,6 +67,35 @@ export const isWalletConnectFocusHint = (url: string): boolean => {
     return !/@\d/.test(beforeQuery)
 }
 
+// Index scans rather than a regex: `[?&]name=` followed by a greedy tail
+// backtracks polynomially, and a deep link is attacker-supplied.
+const readParamTail = (url: string, name: string): string | undefined => {
+    const needle = `${name}=`
+    for (
+        let at = url.indexOf(needle);
+        at !== -1;
+        at = url.indexOf(needle, at + 1)
+    ) {
+        const before = at === 0 ? '' : url[at - 1]
+        if (before !== '?' && before !== '&') continue
+        const value = url.slice(at + needle.length)
+        if (value.length > 0) return value
+    }
+    return undefined
+}
+
+// `&`-prefixed only: @perawallet/connect appends these after the wrapped uri.
+const CONNECT_TRAILERS = ['browser', 'singleAccount', 'selectedAccount']
+
+const dropConnectTrailers = (value: string): string => {
+    let cut = value.length
+    for (const name of CONNECT_TRAILERS) {
+        const at = value.indexOf(`&${name}=`)
+        if (at !== -1 && at < cut) cut = at
+    }
+    return value.slice(0, cut)
+}
+
 /**
  * Unwraps `wc:`, `perawallet-wc:`, `algorand-wc:` and the wrapper forms into
  * the bare `wc:` URI the WalletConnect client takes. Nothing inside is parsed.
@@ -82,16 +111,12 @@ export const parseWalletConnectUri = (
 
     let wcUri = normalizedUrl
     let browserName: string | undefined
-    // Captured to end-of-string, not to the next `&`: hand-rolled dApp redirects
-    // often skip encoding the inner URI, and `[^&]+` would drop its `key=`.
-    const uriMatch = normalizedUrl.match(/[?&]uri=(.+)$/)
-    if (uriMatch) {
-        const bounded = uriMatch[1].replace(
-            /&(?:browser|singleAccount|selectedAccount)=.*$/,
-            '',
-        )
+    // Read to end-of-string, not to the next `&`: hand-rolled dApp redirects
+    // often skip encoding the inner URI, and stopping at `&` would drop its `key=`.
+    const wrappedUri = readParamTail(normalizedUrl, 'uri')
+    if (wrappedUri !== undefined) {
         try {
-            wcUri = decodeURIComponent(bounded)
+            wcUri = decodeURIComponent(dropConnectTrailers(wrappedUri))
         } catch {
             return null
         }
