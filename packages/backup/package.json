@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "@algorandfoundation/algokit-utils": "catalog:",
+        "@algorandfoundation/xhd-wallet-api": "catalog:",
         "@babel/runtime": "catalog:",
         "@noble/hashes": "catalog:",
         "@perawallet/wallet-core-accounts": "workspace:*",
@@ -29,6 +30,7 @@
         "@perawallet/wallet-core-shared": "workspace:*",
         "@perawallet/wallet-extension-provider": "workspace:*",
         "@scure/bip39": "catalog:",
+        "@tanstack/react-query": "catalog:",
         "algosdk": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",

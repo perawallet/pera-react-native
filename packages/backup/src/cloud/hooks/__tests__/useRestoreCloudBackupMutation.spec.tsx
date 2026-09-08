@@ -14,7 +14,10 @@ import React from 'react'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { CloudBackupRestoreError } from '@perawallet/wallet-core-backup'
+import {
+    CloudBackupRestoreError,
+    restoreErrorCategoryOf,
+} from '../../restore/restoreCloudBackup'
 
 const {
     MNEMONIC,
@@ -34,12 +37,18 @@ const {
     deviceIdMock: { value: 'device-123' as string | null },
 }))
 
-vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
+vi.mock('../../restore/restoreCloudBackup', async importOriginal => ({
     ...(await importOriginal<object>()),
     restoreCloudBackup: restoreCloudBackupMock,
+}))
+vi.mock('../../store/draftStore', () => ({
     readCloudBackupRestoreMnemonic: readMnemonicMock,
+}))
+vi.mock('../../store/store', () => ({
     useCloudBackupStore: (sel: (s: unknown) => unknown) =>
         sel({ setConfigured: setConfiguredMock }),
+}))
+vi.mock('../../store/syncStateStore', () => ({
     useBackupSyncStateStore: (sel: (s: unknown) => unknown) =>
         sel({ setSyncState: setSyncStateMock }),
 }))
@@ -54,7 +63,7 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => deviceIdMock.value,
 }))
 
-import { useRestoreCloudBackup } from '../useRestoreCloudBackup'
+import { useRestoreCloudBackupMutation } from '../useRestoreCloudBackupMutation'
 
 const SALT = 'c2FsdA=='
 const SUMMARY = { imported: 2, skippedDuplicate: 0, failed: [] }
@@ -77,22 +86,20 @@ const createWrapper = () => {
 }
 
 const renderRestore = (
-    callbacks: Partial<{
-        onSuccess: (summary: unknown) => void
-        onError: (category: string) => void
+    options: Partial<{
+        onSuccess: (result: unknown) => void
+        onError: (error: unknown) => void
     }> = {},
 ) =>
     renderHook(
         () =>
-            useRestoreCloudBackup({
-                onSuccess: vi.fn(),
-                onError: vi.fn(),
-                ...callbacks,
-            } as Parameters<typeof useRestoreCloudBackup>[0]),
+            useRestoreCloudBackupMutation(
+                options as Parameters<typeof useRestoreCloudBackupMutation>[0],
+            ),
         { wrapper: createWrapper() },
     )
 
-describe('useRestoreCloudBackup', () => {
+describe('useRestoreCloudBackupMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         deviceIdMock.value = 'device-123'
@@ -104,9 +111,9 @@ describe('useRestoreCloudBackup', () => {
         const onSuccess = vi.fn()
         const { result } = renderRestore({ onSuccess })
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
 
-        await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(SUMMARY))
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
         expect(restoreCloudBackupMock).toHaveBeenCalledWith({
             mnemonic: MNEMONIC,
             salt: SALT,
@@ -129,18 +136,16 @@ describe('useRestoreCloudBackup', () => {
                     finish = () => resolve(RESULT)
                 }),
         )
-        const onSuccess = vi.fn()
-        const { result, unmount } = renderRestore({ onSuccess })
+        const { result, unmount } = renderRestore()
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
         await waitFor(() => expect(restoreCloudBackupMock).toHaveBeenCalled())
         unmount()
         await act(async () => finish())
 
         // The accounts are imported by then either way, so the store has to
-        // say so. A `useMutation`-level `onSuccess` runs off the mutation, not
-        // the observer, so unmounting does not skip it — only the per-`mutate`
-        // callbacks would be dropped, and this hook uses none.
+        // say so. The writes sit in the mutation function rather than a
+        // callback, so an unmount cannot skip them.
         await waitFor(() =>
             expect(setConfiguredMock).toHaveBeenCalledWith({
                 backupId: 'did:pera:abc',
@@ -148,31 +153,34 @@ describe('useRestoreCloudBackup', () => {
             }),
         )
         expect(setSyncStateMock).toHaveBeenCalledWith(SYNC_STATE)
-        expect(onSuccess).toHaveBeenCalledWith(SUMMARY)
     })
 
-    test("surfaces the package's category and leaves state unconfigured", async () => {
+    test('rejects with the categorized error and leaves state unconfigured', async () => {
         restoreCloudBackupMock.mockRejectedValue(
             new CloudBackupRestoreError('NOT_FOUND'),
         )
         const onError = vi.fn()
         const { result } = renderRestore({ onError })
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
 
-        await waitFor(() => expect(onError).toHaveBeenCalledWith('NOT_FOUND'))
+        await waitFor(() => expect(onError).toHaveBeenCalled())
+        expect(restoreErrorCategoryOf(onError.mock.calls[0][0])).toBe(
+            'NOT_FOUND',
+        )
         expect(setConfiguredMock).not.toHaveBeenCalled()
         expect(setSyncStateMock).not.toHaveBeenCalled()
     })
 
-    test('falls back to UNKNOWN for an error the package did not categorize', async () => {
+    test('reads UNKNOWN for an error the package did not categorize', async () => {
         restoreCloudBackupMock.mockRejectedValue(new Error('boom'))
         const onError = vi.fn()
         const { result } = renderRestore({ onError })
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
 
-        await waitFor(() => expect(onError).toHaveBeenCalledWith('UNKNOWN'))
+        await waitFor(() => expect(onError).toHaveBeenCalled())
+        expect(restoreErrorCategoryOf(onError.mock.calls[0][0])).toBe('UNKNOWN')
     })
 
     test('reports rather than restores when the device id is unavailable', async () => {
@@ -180,9 +188,9 @@ describe('useRestoreCloudBackup', () => {
         const onError = vi.fn()
         const { result } = renderRestore({ onError })
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
 
-        await waitFor(() => expect(onError).toHaveBeenCalledWith('UNKNOWN'))
+        await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(restoreCloudBackupMock).not.toHaveBeenCalled()
     })
 
@@ -191,9 +199,9 @@ describe('useRestoreCloudBackup', () => {
         const onError = vi.fn()
         const { result } = renderRestore({ onError })
 
-        act(() => result.current.restore({ salt: SALT }))
+        act(() => result.current.mutate({ salt: SALT }))
 
-        await waitFor(() => expect(onError).toHaveBeenCalledWith('UNKNOWN'))
+        await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(restoreCloudBackupMock).not.toHaveBeenCalled()
     })
 
@@ -207,11 +215,11 @@ describe('useRestoreCloudBackup', () => {
         )
         const { result } = renderRestore()
 
-        expect(result.current.isRestoring).toBe(false)
-        act(() => result.current.restore({ salt: SALT }))
-        await waitFor(() => expect(result.current.isRestoring).toBe(true))
+        expect(result.current.isPending).toBe(false)
+        act(() => result.current.mutate({ salt: SALT }))
+        await waitFor(() => expect(result.current.isPending).toBe(true))
 
         await act(async () => finish())
-        await waitFor(() => expect(result.current.isRestoring).toBe(false))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
     })
 })

@@ -12,6 +12,7 @@
 
 export * from './api'
 export * from './credentials'
+export * from './hooks'
 export * from './models'
 export * from './restore'
 export * from './store'
