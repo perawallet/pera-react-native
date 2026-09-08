@@ -2168,7 +2168,8 @@
             "cancel": "Not now",
             "unavailable_title": "Biometrics unavailable",
             "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again.",
-            "body_not-available": "Biometric unlock isn't working because your device has no biometric set up for Pera. Set one up in your device settings, then turn it back on here."
+            "body_not-available": "Biometric unlock isn't working because your device has no biometric set up for Pera. Set one up in your device settings, then turn it back on here.",
+            "body_rebind-required": "Pera needs to set up biometric unlock again on this device. Turn it back on to keep unlocking with biometrics."
         }
     },
     "send_funds": {
