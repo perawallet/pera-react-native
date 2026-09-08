@@ -195,6 +195,16 @@ export default defineConfig({
                 ),
             },
             {
+                // Aliased to source like shared: without it the passwords
+                // screens' specs resolve the package through its dist, so they
+                // only pass on a machine that has already built it.
+                find: '@perawallet/wallet-core-passwords',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/passwords/src/index.ts',
+                ),
+            },
+            {
                 // Replace the throwing production stub with an in-memory test
                 // implementation so flow tests can exercise real platform-aware
                 // code paths (key-value storage, biometrics opt-in, etc.).

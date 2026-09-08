@@ -16,11 +16,12 @@
 // The point is that a login the save path writes is the same record the list
 // and view paths read back — a stub returning canned data would prove nothing.
 //
-// The screens themselves don't consult `routeCapabilities` (only the settings
-// stack's route *registration* does), so mounting them directly through
+// The screens themselves don't consult the enable_password_manager flag (only
+// the settings stack's route *registration* and the Settings row do, see
+// settings-passwords-flag.test.tsx), so mounting them directly through
 // `renderWithNavigation` — the same approach `settings-passkeys.test.tsx`
 // uses for a screen reached from a real registered route — reaches the flow
-// without touching the shipped `passwordManager: false` default.
+// without turning the flag on.
 //
 // PasswordListScreen's "add" button and AddPasswordScreen's "save" button
 // both live in the navigation header (`useNavigationHeader`), which the
@@ -85,6 +86,7 @@ const AddPasswordHost = () => {
         setPassword,
         canSave,
         handleSave,
+        handleGeneratePassword,
     } = useAddPasswordScreen()
     return (
         <>
@@ -103,6 +105,12 @@ const AddPasswordHost = () => {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+            />
+            <PWButton
+                variant='secondary'
+                title='generate'
+                onPress={handleGeneratePassword}
+                testID='password_test_generate_button'
             />
             <PWButton
                 variant='primary'
@@ -169,10 +177,24 @@ describe('Flow: Settings → Passwords', () => {
                 screen.getByTestId('add_password_username_input'),
                 { target: { value: LOGIN.username } },
             )
-            fireEvent.change(
-                screen.getByTestId('add_password_password_input'),
-                { target: { value: LOGIN.password } },
-            )
+
+            // The real generator, reached through the package barrel and the
+            // real hook: it fills the field with a fresh strong password. The
+            // flow then overwrites it with a known value so the reveal step
+            // below can assert an exact match.
+            fireEvent.click(screen.getByTestId('password_test_generate_button'))
+            const passwordInput = screen.getByTestId(
+                'add_password_password_input',
+            ) as HTMLInputElement
+            expect(passwordInput.value).toHaveLength(20)
+            expect(passwordInput.value).toMatch(/[a-z]/)
+            expect(passwordInput.value).toMatch(/[A-Z]/)
+            expect(passwordInput.value).toMatch(/[0-9]/)
+            expect(passwordInput.value).toMatch(/[^a-zA-Z0-9]/)
+
+            fireEvent.change(passwordInput, {
+                target: { value: LOGIN.password },
+            })
             fireEvent.click(screen.getByTestId('password_test_save_button'))
 
             // Save navigates back to the list, which now shows the saved login.

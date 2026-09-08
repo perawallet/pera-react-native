@@ -2502,6 +2502,7 @@
             "username_label": "Username",
             "username_placeholder": "you@example.com",
             "password_label": "Password",
+            "generate_action": "Generate password",
             "note_label": "Note",
             "save_action": "Save",
             "reveal_action": "Reveal password",

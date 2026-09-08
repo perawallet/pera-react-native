@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './storage'
-export * from './identities'
-export * from './generator'
-export * from './hooks'
+export {
+    DEFAULT_PASSWORD_LENGTH,
+    generatePassword,
+    type GeneratePasswordOptions,
+} from './generatePassword'

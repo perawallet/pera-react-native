@@ -12,7 +12,10 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import { useSaveLoginMutation } from '@perawallet/wallet-core-passwords'
+import {
+    generatePassword,
+    useSaveLoginMutation,
+} from '@perawallet/wallet-core-passwords'
 
 export type UseAddPasswordScreenResult = {
     domain: string
@@ -27,6 +30,7 @@ export type UseAddPasswordScreenResult = {
     isSaving: boolean
     error: string | null
     handleSave: () => Promise<void>
+    handleGeneratePassword: () => void
 }
 
 export const useAddPasswordScreen = (): UseAddPasswordScreenResult => {
@@ -54,6 +58,10 @@ export const useAddPasswordScreen = (): UseAddPasswordScreenResult => {
         navigation.goBack()
     }, [canSave, domain, username, password, note, saveLogin, navigation])
 
+    const handleGeneratePassword = useCallback(() => {
+        setPassword(generatePassword())
+    }, [])
+
     return {
         domain,
         username,
@@ -67,5 +75,6 @@ export const useAddPasswordScreen = (): UseAddPasswordScreenResult => {
         isSaving: isPending,
         error: error?.message ?? null,
         handleSave,
+        handleGeneratePassword,
     }
 }

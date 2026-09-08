@@ -33,6 +33,7 @@ export const AddPasswordScreen = () => {
         isSaving,
         error,
         handleSave,
+        handleGeneratePassword,
     } = useAddPasswordScreen()
     // Validation copy only appears after a save was attempted, so an empty
     // field doesn't flash an error the instant the screen opens.
@@ -99,6 +100,15 @@ export const AddPasswordScreen = () => {
                             : undefined
                     }
                 />
+                <PWView style={styles.generateRow}>
+                    <PWButton
+                        variant='linkPositive'
+                        title={t('settings.passwords.generate_action')}
+                        onPress={handleGeneratePassword}
+                        paddingStyle='none'
+                        testID='add_password_generate_button'
+                    />
+                </PWView>
                 <PWInput
                     testID='add_password_note_input'
                     label={t('settings.passwords.note_label')}

@@ -20,10 +20,12 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ goBack }),
 }))
 
-const { saveLogin } = vi.hoisted(() => ({
+const { saveLogin, generatePassword } = vi.hoisted(() => ({
     saveLogin: vi.fn(async () => ({ id: 'pera.login.abc' })),
+    generatePassword: vi.fn(() => 'Gen3rated!Passw0rd'),
 }))
 vi.mock('@perawallet/wallet-core-passwords', () => ({
+    generatePassword,
     useSaveLoginMutation: () => ({
         saveLogin,
         isPending: false,
@@ -64,6 +66,17 @@ describe('useAddPasswordScreen', () => {
             note: null,
         })
         expect(goBack).toHaveBeenCalled()
+    })
+
+    it('fills the password field with a freshly generated password', () => {
+        const { result } = renderHook(() => useAddPasswordScreen())
+        act(() => result.current.setDomain('example.com'))
+
+        act(() => result.current.handleGeneratePassword())
+
+        expect(generatePassword).toHaveBeenCalledTimes(1)
+        expect(result.current.password).toBe('Gen3rated!Passw0rd')
+        expect(result.current.canSave).toBe(true)
     })
 
     it('does not save when the form is incomplete', async () => {

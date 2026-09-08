@@ -21,4 +21,7 @@ export const useStyles = makeStyles(theme => ({
     errorText: {
         color: theme.colors.error,
     },
+    generateRow: {
+        alignItems: 'flex-start',
+    },
 }))
