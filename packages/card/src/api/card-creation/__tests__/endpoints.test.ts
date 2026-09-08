@@ -63,6 +63,8 @@ describe('createCard', () => {
                 route: 'proxy',
                 method: 'POST',
                 path: '/api/v3/baanx/escrow-card',
+                // Minting waits on chain confirmation, so the 10 s default is too short.
+                timeoutMs: 60_000,
                 data: {
                     address: 'FUNDING_ADDR',
                     baanx_user_id: 'baanx-user-1',

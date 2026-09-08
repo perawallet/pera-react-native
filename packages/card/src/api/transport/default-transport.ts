@@ -70,6 +70,7 @@ const proxyRequest = <TData, TVars>(
         signal: req.signal,
         headers: { ...integrityHeaders(), ...req.headers },
         responseType: req.responseType,
+        ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}),
     })
 
 const dispatch = <TData, TVars>(
