@@ -10,72 +10,38 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEnableCloudBackup } from '../useEnableCloudBackup'
+import { renderHook, act } from '@testing-library/react'
 
-const SALT = 'c2FsdA=='
-
-const {
-    MNEMONIC,
-    MNEMONIC_INDICES,
-    enableCloudBackupMock,
-    setConfiguredMock,
-    clearDraftMock,
-    showToastMock,
-    resetMock,
-    draftState,
-} = vi.hoisted(() => ({
-    MNEMONIC: ['abandon', 'ability', 'able'],
-    MNEMONIC_INDICES: Uint16Array.from([0, 1, 2]),
-    enableCloudBackupMock: vi.fn(),
-    setConfiguredMock: vi.fn(),
-    clearDraftMock: vi.fn(),
-    showToastMock: vi.fn(),
-    resetMock: vi.fn(),
-    draftState: {
-        mnemonicIndices: null as Uint16Array | null,
-        salt: null as string | null,
-    },
-}))
+/** Only the two callbacks the wrapper supplies; the mutation itself is covered
+ *  by the package's own spec. */
+type MutationCallbacks<TData> = {
+    onSuccess?: (data: TData) => void
+    onError?: (error: Error) => void
+}
+const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
+    () => ({
+        showToastMock: vi.fn(),
+        resetMock: vi.fn(),
+        mutateMock: vi.fn(),
+        capturedOptions: {
+            value: null as MutationCallbacks<{
+                backupId: string
+                salt: string
+            }> | null,
+        },
+    }),
+)
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset: resetMock }),
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    mnemonicIndexToWord: (index: number) => MNEMONIC[index],
-}))
-
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    enableCloudBackup: enableCloudBackupMock,
-    useCloudBackupDraftStore: (
-        selector: (s: {
-            mnemonicIndices: Uint16Array | null
-            salt: string | null
-            clearDraft: () => void
-        }) => unknown,
-    ) =>
-        selector({
-            mnemonicIndices: draftState.mnemonicIndices,
-            salt: draftState.salt,
-            clearDraft: clearDraftMock,
-        }),
-    useCloudBackupStore: (
-        selector: (s: {
-            setConfigured: (params: { backupId: string; salt: string }) => void
-        }) => unknown,
-    ) => selector({ setConfigured: setConfiguredMock }),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'device-123',
+    useEnableCloudBackupMutation: (options: never) => {
+        capturedOptions.value = options
+        return { mutate: mutateMock, isPending: false }
+    },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -86,96 +52,24 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
+import { useEnableCloudBackup } from '../useEnableCloudBackup'
 
 beforeEach(() => {
     vi.clearAllMocks()
-    draftState.mnemonicIndices = MNEMONIC_INDICES
-    draftState.salt = SALT
+    capturedOptions.value = null
 })
 
 describe('useEnableCloudBackup', () => {
-    test('derives, registers, and persists the configured backup on success', async () => {
-        enableCloudBackupMock.mockResolvedValue({ backupId: 'did:pera:abc' })
+    test('confirms and lands on the overview once the backup registers', () => {
+        renderHook(() => useEnableCloudBackup())
 
-        const { result } = renderHook(() => useEnableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
-
-        act(() => {
-            result.current.enableBackup()
-        })
-
-        await waitFor(() => expect(enableCloudBackupMock).toHaveBeenCalled())
-
-        expect(enableCloudBackupMock).toHaveBeenCalledWith({
-            mnemonic: MNEMONIC,
-            salt: SALT,
-            deviceId: 'device-123',
-            network: 'mainnet',
-        })
-        await waitFor(() =>
-            expect(setConfiguredMock).toHaveBeenCalledWith({
+        act(() =>
+            capturedOptions.value?.onSuccess?.({
                 backupId: 'did:pera:abc',
-                salt: SALT,
+                salt: 'c2FsdA==',
             }),
         )
-        expect(clearDraftMock).toHaveBeenCalled()
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.enable.success',
-                type: 'success',
-            }),
-        )
-        await waitFor(() =>
-            expect(resetMock).toHaveBeenCalledWith({
-                index: 0,
-                routes: [{ name: 'CloudBackupOverview' }],
-            }),
-        )
-    })
 
-    test('completes the success UX when the draft is cleared mid-flight', async () => {
-        let resolveEnable!: (value: { backupId: string }) => void
-        enableCloudBackupMock.mockImplementation(
-            () =>
-                new Promise(resolve => {
-                    resolveEnable = resolve
-                }),
-        )
-
-        const { result, rerender } = renderHook(() => useEnableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
-
-        act(() => {
-            result.current.enableBackup()
-        })
-        await waitFor(() => expect(enableCloudBackupMock).toHaveBeenCalled())
-
-        draftState.mnemonicIndices = null
-        draftState.salt = null
-        rerender()
-
-        await act(async () => {
-            resolveEnable({ backupId: 'did:pera:abc' })
-        })
-
-        await waitFor(() =>
-            expect(setConfiguredMock).toHaveBeenCalledWith({
-                backupId: 'did:pera:abc',
-                salt: SALT,
-            }),
-        )
         expect(showToastMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'cloud_backup.enable.success',
@@ -188,50 +82,17 @@ describe('useEnableCloudBackup', () => {
         })
     })
 
-    test('shows an error toast when the draft is already gone at press time', async () => {
-        draftState.mnemonicIndices = null
-        draftState.salt = null
+    test('shows an error toast and stays put on failure', () => {
+        renderHook(() => useEnableCloudBackup())
 
-        const { result } = renderHook(() => useEnableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
+        act(() => capturedOptions.value?.onError?.(new Error('network down')))
 
-        act(() => {
-            result.current.enableBackup()
-        })
-
-        await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'cloud_backup.enable.error',
-                    type: 'error',
-                }),
-            ),
+        expect(showToastMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'cloud_backup.enable.error',
+                type: 'error',
+            }),
         )
-        expect(enableCloudBackupMock).not.toHaveBeenCalled()
-        expect(setConfiguredMock).not.toHaveBeenCalled()
-    })
-
-    test('shows an error toast and leaves state unconfigured on failure', async () => {
-        enableCloudBackupMock.mockRejectedValue(new Error('network down'))
-
-        const { result } = renderHook(() => useEnableCloudBackup(), {
-            wrapper: createWrapper(),
-        })
-
-        act(() => {
-            result.current.enableBackup()
-        })
-
-        await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'cloud_backup.enable.error',
-                    type: 'error',
-                }),
-            ),
-        )
-        expect(setConfiguredMock).not.toHaveBeenCalled()
         expect(resetMock).not.toHaveBeenCalled()
     })
 })

@@ -10,25 +10,12 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
-import {
-    enableCloudBackup,
-    useCloudBackupDraftStore,
-    useCloudBackupStore,
-} from '@perawallet/wallet-core-backup'
+import { useEnableCloudBackupMutation } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CloudBackupStackParamList } from '../routes/types'
-
-/** Words live only for the caller's turn; the retained form stays the zeroable
- *  index buffer in the draft store. */
-const toMnemonicWords = (indices: Uint16Array): string[] =>
-    Array.from(indices, index => mnemonicIndexToWord(index))
 
 type UseEnableCloudBackupResult = {
     enableBackup: () => void
@@ -40,38 +27,9 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
     const { showToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
-    const mnemonicIndices = useCloudBackupDraftStore(
-        state => state.mnemonicIndices,
-    )
-    const salt = useCloudBackupDraftStore(state => state.salt)
-    const clearDraft = useCloudBackupDraftStore(state => state.clearDraft)
-    const setConfigured = useCloudBackupStore(state => state.setConfigured)
 
-    const mutation = useMutation({
-        throwOnError: false,
-        mutationFn: async () => {
-            if (!mnemonicIndices || !salt) {
-                throw new Error('Cloud backup draft credentials are missing')
-            }
-            if (!deviceId) {
-                throw new Error('Device ID is unavailable')
-            }
-            const { backupId } = await enableCloudBackup({
-                mnemonic: toMnemonicWords(mnemonicIndices),
-                salt,
-                deviceId,
-                network,
-            })
-            // Pin the salt to this attempt: by the time onSuccess runs the
-            // draft may have been cleared (screen unmount, store reset), and
-            // the backup already exists server-side.
-            return { backupId, salt }
-        },
-        onSuccess: ({ backupId, salt: registeredSalt }) => {
-            setConfigured({ backupId, salt: registeredSalt })
-            clearDraft()
+    const mutation = useEnableCloudBackupMutation({
+        onSuccess: () => {
             showToast({
                 title: t('cloud_backup.enable.success'),
                 body: '',
