@@ -28,8 +28,11 @@ internal enum UnwrapError: String {
 
   init(from error: LAError) {
     switch error.code {
-    case .userCancel, .appCancel: self = .userCancel
-    case .systemCancel: self = .systemCancel
+    // `localizedFallbackTitle` is left alone, so iOS offers "Enter Passcode"
+    // after a failed attempt; tapping it is the user declining, not a failure.
+    // The split matches AUTH_FAILURE_REASONS on the sibling authenticate path.
+    case .userCancel, .userFallback: self = .userCancel
+    case .systemCancel, .appCancel: self = .systemCancel
     case .biometryLockout: self = .lockout
     case .biometryNotEnrolled, .biometryNotAvailable: self = .unavailable
     // Includes .authenticationFailed and anything a future iOS adds:
@@ -68,6 +71,7 @@ internal final class UnwrapException: Exception, @unchecked Sendable {
 public class PeraBiometricBindingModule: Module {
   /// The key's identity; there is at most one of these per install.
   private static let keyTag = "pera.biometric.unlock".data(using: .utf8)!
+  private static let logTag = "PeraBiometricBinding"
 
   public func definition() -> ModuleDefinition {
     Name("PeraBiometricBinding")
@@ -78,15 +82,34 @@ public class PeraBiometricBindingModule: Module {
       // Delete first so this is idempotent: a stale key with the same tag makes
       // SecKeyCreateRandomKey fail, and the service layer only logs that.
       Self.deleteKeyPair()
-      guard let privateKey = try? Self.createKeyPair(),
-        let publicKey = SecKeyCopyPublicKey(privateKey)
-      else { return nil }
+
+      let privateKey: SecKey
+      do {
+        privateKey = try Self.createKeyPair()
+      } catch {
+        // Device QA is the only verification this has, and a nil return reads
+        // the same in JS whatever caused it. The reason has to be logged here
+        // or it is lost: no passcode set, no Secure Enclave, denied Face ID.
+        NSLog(
+          "[%@] creating the key pair failed: %@",
+          Self.logTag,
+          error.localizedDescription
+        )
+        return nil
+      }
+
+      guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
+        NSLog("[%@] the new key pair has no readable public half", Self.logTag)
+        Self.deleteKeyPair()
+        return nil
+      }
 
       var token = Data(count: 32)
       let status = token.withUnsafeMutableBytes {
         SecRandomCopyBytes(kSecRandomDefault, 32, $0.baseAddress!)
       }
       guard status == errSecSuccess else {
+        NSLog("[%@] the token RNG failed: %d", Self.logTag, status)
         Self.deleteKeyPair()
         return nil
       }
@@ -101,6 +124,7 @@ public class PeraBiometricBindingModule: Module {
           &error
         ) as Data?
       else {
+        Self.logCFError(error, "wrapping the token failed")
         // A key with no blob to unwrap is orphaned: the reconcile early-returns
         // when there is no blob, so nothing would ever clear it.
         Self.deleteKeyPair()
@@ -136,26 +160,40 @@ public class PeraBiometricBindingModule: Module {
         throw UnwrapException(.failed)
       }
 
-      // Named rather than `Self`, which would capture the module in a closure
-      // the concurrent overload requires to be @Sendable.
-      guard let privateKey = PeraBiometricBindingModule.loadKeyPair(context: context)
-      else {
-        throw UnwrapException(.noBinding)
-      }
+      // `withExtendedLifetime` is load-bearing, not decoration: `context` has no
+      // use after the lookup, ARC is free to release it there, and
+      // `LAContext.deinit` invalidates the evaluated credential. Only optimised
+      // builds do that, so without this the decrypt fails in Release after a
+      // ceremony the user just passed.
+      return try withExtendedLifetime(context) { () -> Data in
+        // Named rather than `Self`, which would capture the module in a closure
+        // the concurrent overload requires to be @Sendable.
+        guard
+          let privateKey = PeraBiometricBindingModule.loadKeyPair(context: context)
+        else {
+          throw UnwrapException(.noBinding)
+        }
 
-      var error: Unmanaged<CFError>?
-      guard
-        let token = SecKeyCreateDecryptedData(
-          privateKey,
-          .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
-          ciphertext as CFData,
-          &error
-        ) as Data?
-      else {
-        // A destroyed key surfaces here, not at retrieval.
-        throw UnwrapException(.invalidated)
+        var error: Unmanaged<CFError>?
+        guard
+          let token = SecKeyCreateDecryptedData(
+            privateKey,
+            .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
+            ciphertext as CFData,
+            &error
+          ) as Data?
+        else {
+          PeraBiometricBindingModule.logCFError(
+            error,
+            "unwrapping the token failed"
+          )
+          // Not the enrollment-change case: that removes the key outright and
+          // is answered by `no-binding` above. Reaching here means the key is
+          // present but its material can no longer be used.
+          throw UnwrapException(.invalidated)
+        }
+        return token
       }
-      return token
     }
 
     AsyncFunction("checkBinding") { () -> String in
@@ -163,7 +201,12 @@ public class PeraBiometricBindingModule: Module {
       // answers here without a prompt. iOS removes the key outright when the
       // enrolled set changes, so a miss cannot be told apart from never having
       // had one — both report absent, and both are recoverable the same way.
-      return Self.loadKeyPair() != nil ? "valid" : "absent"
+      //
+      // `interactionNotAllowed` makes the silence structural: this runs on every
+      // mount of the lock screen, where a sheet would be a bug.
+      let silent = LAContext()
+      silent.interactionNotAllowed = true
+      return Self.loadKeyPair(context: silent) != nil ? "valid" : "absent"
     }
 
     AsyncFunction("clearBinding") { () -> Void in
@@ -251,6 +294,9 @@ public class PeraBiometricBindingModule: Module {
     var item: CFTypeRef?
     guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess
     else { return nil }
+    // Swift rejects `as?` to a CF type, so the type id is the check: on the
+    // unlock path of a wallet, degrading to 'no-binding' beats a crash.
+    guard let item, CFGetTypeID(item) == SecKeyGetTypeID() else { return nil }
     return (item as! SecKey)
   }
 
@@ -259,6 +305,20 @@ public class PeraBiometricBindingModule: Module {
       kSecClass as String: kSecClassKey,
       kSecAttrApplicationTag as String: keyTag,
     ]
-    SecItemDelete(query as CFDictionary)
+    let status = SecItemDelete(query as CFDictionary)
+    // Nothing to delete is the common case, not a failure.
+    if status != errSecSuccess && status != errSecItemNotFound {
+      NSLog("[%@] deleting the key pair failed: %d", logTag, status)
+    }
+  }
+
+  /// Takes the `+1` reference the `Sec*` calls hand back — leaving it would leak
+  /// the `CFError` and throw away the only account of why a device failed.
+  private static func logCFError(_ error: Unmanaged<CFError>?, _ what: String) {
+    guard let cfError = error?.takeRetainedValue() else {
+      NSLog("[%@] %@, with no reason reported", logTag, what)
+      return
+    }
+    NSLog("[%@] %@: %@", logTag, what, (cfError as Error).localizedDescription)
   }
 }
