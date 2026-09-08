@@ -338,6 +338,19 @@ public class PeraBiometricBindingModule: Module {
     if status != errSecSuccess && status != errSecItemNotFound {
       NSLog("[%@] deleting the key pair failed: %d", logTag, status)
     }
+    Self.deleteLegacyEnrollmentBindingItem()
+  }
+
+  /// One-time sweep of the pre-OS-bound-key item: a generic-password digest at
+  /// this service, superseded by the key pair above. Keychain items survive app
+  /// deletion, so an upgrading install never clears it on its own. Its OSStatus
+  /// is ignored — absence is the normal case for anyone who never had it.
+  private static func deleteLegacyEnrollmentBindingItem() {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "pera.biometricEnrollmentBinding",
+    ]
+    SecItemDelete(query as CFDictionary)
   }
 
   /// Takes the `+1` reference the `Sec*` calls hand back — leaving it would leak
