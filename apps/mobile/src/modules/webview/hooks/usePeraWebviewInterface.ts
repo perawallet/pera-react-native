@@ -634,10 +634,7 @@ export const usePeraWebviewInterface = (
                             const account = allAccounts.find(
                                 a => a.address === stdSigData.signer,
                             )
-                            if (
-                                !account ||
-                                !canSignArc60(account, allAccounts)
-                            ) {
+                            if (!account || !canSignArc60(account)) {
                                 sendErrorToWebview(
                                     message.id,
                                     JsonRpcErrorCode.InvalidParams,
