@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
-import { deleteBackupKeys } from '@perawallet/wallet-core-backup'
+import { useDisableCloudBackupMutation } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useCloudBackupTeardown } from './useCloudBackupTeardown'
+import { useGoToCloudBackupHome } from './useGoToCloudBackupHome'
 
 type UseDisableCloudBackupResult = {
     /** Local only — leaves the remote backup intact. */
@@ -25,13 +24,10 @@ type UseDisableCloudBackupResult = {
 export const useDisableCloudBackup = (): UseDisableCloudBackupResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { resetLocalState, goHome } = useCloudBackupTeardown()
+    const goHome = useGoToCloudBackupHome()
 
-    const mutation = useMutation({
-        throwOnError: false,
-        mutationFn: () => deleteBackupKeys(),
+    const mutation = useDisableCloudBackupMutation({
         onSuccess: () => {
-            resetLocalState()
             showToast({
                 title: t('cloud_backup.turn_off.success'),
                 body: '',

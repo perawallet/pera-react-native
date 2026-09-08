@@ -13,31 +13,14 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    useBackupSyncStateStore,
-    useCloudBackupStore,
-} from '@perawallet/wallet-core-backup'
 import type { CloudBackupStackParamList } from '../routes/types'
 
-type UseCloudBackupTeardownResult = {
-    resetLocalState: () => void
-    goHome: () => void
-}
-
-/** Shared by turn-off and turn-off-and-remove: both clear the same local state
- *  and land the user back on the un-configured home screen. */
-export const useCloudBackupTeardown = (): UseCloudBackupTeardownResult => {
+/** Where both turn-off flows land: the un-configured home screen. */
+export const useGoToCloudBackupHome = (): (() => void) => {
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-    const resetCloudBackup = useCloudBackupStore(state => state.resetState)
-    const resetSyncState = useBackupSyncStateStore(state => state.resetState)
 
-    const resetLocalState = useCallback(() => {
-        resetCloudBackup()
-        resetSyncState()
-    }, [resetCloudBackup, resetSyncState])
-
-    const goHome = useCallback(
+    return useCallback(
         () =>
             navigation.reset({
                 index: 0,
@@ -45,6 +28,4 @@ export const useCloudBackupTeardown = (): UseCloudBackupTeardownResult => {
             }),
         [navigation],
     )
-
-    return { resetLocalState, goHome }
 }
