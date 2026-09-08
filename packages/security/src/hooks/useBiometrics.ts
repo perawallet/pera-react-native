@@ -442,23 +442,44 @@ export const useBiometrics = (): UseBiometricsResult => {
                 // A blob this build cannot frame-check is a pre-binding blob,
                 // and decodeBiometricBlob reports that as null rather than
                 // letting it reach the enclave and come back as a decryption
-                // error.
-                const blob = await withSecret(
+                // error. Wrapped so a failed keystore *read* (withSecret
+                // resolving null) is distinguishable from a read that came
+                // back but didn't decode — only the latter is an affirmative
+                // signal about the blob itself.
+                const blobRead = await withSecret(
                     BIOMETRIC_BLOB_KEY_ID,
-                    decodeBiometricBlob,
+                    bytes => ({
+                        decoded: decodeBiometricBlob(bytes),
+                    }),
                 )
-                if (!blob || typeof expected !== 'string') {
+                if (!blobRead) {
+                    // hasSecret was true moments ago (checkBiometricsEnabled
+                    // above), so a null here means the read itself failed —
+                    // ambiguous, not affirmative. Must not destroy the opt-in.
+                    return { kind: 'failed', reason: 'unavailable' }
+                }
+                if (!blobRead.decoded || typeof expected !== 'string') {
                     await dropOptIn('rebind-required')
                     return { kind: 'mismatch' }
                 }
+                const blob = blobRead.decoded
 
                 const released = await biometricsService.unwrapBiometricToken(
                     blob,
                     prompt,
                 )
                 if (!released.success) {
-                    // A declined, cancelled or locked-out ceremony says
-                    // nothing about the key, so the opt-in survives.
+                    // `invalidated` is the one unwrap reason that is
+                    // affirmative rather than a prompt outcome: neither
+                    // native module emits it for a decline, a cancel or a
+                    // lockout, only for the OS having destroyed the key. It
+                    // is exactly the signal that may destroy an opt-in.
+                    if (released.reason === 'invalidated') {
+                        await dropOptIn('enrollment-changed')
+                        return { kind: 'mismatch' }
+                    }
+                    // Every other reason — declined, cancelled, locked-out —
+                    // says nothing about the key, so the opt-in survives.
                     return { kind: 'failed', reason: released.reason }
                 }
 

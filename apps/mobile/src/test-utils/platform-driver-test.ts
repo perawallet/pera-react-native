@@ -69,7 +69,13 @@ const buildServices = (): PlatformServices => {
         },
         async clearEnrollmentBinding() {},
         async armBiometricBinding() {
-            return { blob: 'test-blob', tokenHash: 'test-hash' }
+            // Hash of the 32-zero-byte token below, so a test that actually
+            // verifies the two must cohere.
+            return {
+                blob: 'test-blob',
+                tokenHash:
+                    '66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925',
+            }
         },
         async unwrapBiometricToken() {
             return { success: true, token: new Uint8Array(32) } as const

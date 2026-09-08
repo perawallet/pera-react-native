@@ -1148,5 +1148,45 @@ describe('useBiometrics', () => {
             expect(outcome).toEqual({ kind: 'failed', reason: 'system-cancel' })
             expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
         })
+
+        test('drops the opt-in when the OS reports the key invalidated', async () => {
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                    handler(framed('ct')),
+            )
+            kmsMocks.getSecretMetadata.mockReturnValue({
+                biometricTokenHash: 'deadbeef',
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: false,
+                reason: 'invalidated',
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(),
+            )
+
+            expect(outcome).toEqual({ kind: 'mismatch' })
+            expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+                BIOMETRIC_BLOB_KEY_ID,
+            )
+            expect(result.current.disabledReason).toBe('enrollment-changed')
+        })
+
+        test('preserves the opt-in when the keystore read itself fails', async () => {
+            // hasSecret stays true (the record exists) but the read resolves
+            // null — ambiguous, unlike a decode failure on bytes that came
+            // back.
+            kmsMocks.withSecret.mockResolvedValue(null)
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(),
+            )
+
+            expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
+            expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        })
     })
 })

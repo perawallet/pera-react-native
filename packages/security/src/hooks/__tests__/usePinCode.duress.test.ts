@@ -47,7 +47,6 @@ vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
         disableBiometrics: vi.fn(),
-        refreshBiometricsBinding: vi.fn(),
     })),
 }))
 

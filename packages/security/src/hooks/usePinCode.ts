@@ -197,8 +197,9 @@ export const usePinCode = (): UsePinCodeResult => {
                 // Unconditional: `checkBiometricsEnabled` reporting false no
                 // longer implies the blob is gone — it keeps one whose
                 // enrollment it could not confirm — and `disableBiometrics` is
-                // an idempotent delete. Guarding here would strand the blob
-                // holding a copy of the PinRecord just removed above.
+                // an idempotent delete. Guarding here would strand a blob
+                // whose PIN just got removed above, unreachable until the
+                // next unlock ceremony revokes it.
                 await disableBiometrics()
             }
             forceRefresh.current += 1
