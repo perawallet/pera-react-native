@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
 
 /**
@@ -107,6 +109,37 @@ export type BiometricAvailability =
     | 'unavailable'
     | 'unknown'
 
+/**
+ * The wrapped unlock token and the SHA-256 of its plaintext, hex-encoded. The
+ * token itself is minted natively and never crosses the bridge on the way in —
+ * only `unwrapBiometricToken` returns it, during an unlock.
+ */
+export type BiometricArmResult = {
+    blob: string
+    tokenHash: string
+}
+
+/**
+ * Why an unwrap failed.
+ *
+ * - `invalidated` — the OS destroyed the key because the enrolled biometric set
+ *                   changed. Affirmative and permanent; the opt-in is gone.
+ * - `no-binding`  — there is no key to unwrap with: a pre-binding blob, a
+ *                   restored backup, or a keystore reset.
+ *
+ * Everything else is a prompt outcome and carries the same meaning it does for
+ * `authenticate`. `system-cancel` in particular must survive: it is the only
+ * reason the lock screen retries on, and it exists for the deeplink cold start.
+ */
+export type BiometricUnwrapFailureReason =
+    | BiometricsAuthenticateFailureReason
+    | 'invalidated'
+    | 'no-binding'
+
+export type BiometricUnwrapResult =
+    | { success: true; token: Uint8Array }
+    | { success: false; reason: BiometricUnwrapFailureReason }
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
@@ -137,4 +170,22 @@ export interface BiometricsService {
      */
     checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding>
     clearEnrollmentBinding(): Promise<void>
+    /**
+     * Creates the OS-bound key pair, mints a random unlock token, wraps it, and
+     * returns the ciphertext with the token's hash. Requires no biometric
+     * ceremony — the wrap uses the public half — so it is safe on paths with no
+     * user present, such as the legacy import. Resolves null when no key could
+     * be created. Idempotent: it destroys any existing binding first.
+     */
+    armBiometricBinding(): Promise<Nullable<BiometricArmResult>>
+    /**
+     * Releases the unlock token, which requires a real biometric ceremony
+     * against the Secure Enclave or TEE. Returns the token rather than a
+     * verdict on purpose: a boolean here would be the defect this exists to
+     * close.
+     */
+    unwrapBiometricToken(
+        blob: string,
+        prompt?: BiometricsAuthenticatePrompt,
+    ): Promise<BiometricUnwrapResult>
 }

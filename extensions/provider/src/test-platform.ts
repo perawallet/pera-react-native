@@ -170,6 +170,12 @@ export const buildTestPlatform = (
             return 'valid' as const
         },
         async clearEnrollmentBinding() {},
+        async armBiometricBinding() {
+            return { blob: 'test-blob', tokenHash: 'test-hash' }
+        },
+        async unwrapBiometricToken() {
+            return { success: true, token: new Uint8Array(32) } as const
+        },
     }
 
     const defaultAppIntegrity: AppIntegrityService = {

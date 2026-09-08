@@ -36,4 +36,16 @@ describe('capability stubs', () => {
             new ChromeMigrationService().hasLegacyData(),
         ).resolves.toBe(false)
     })
+
+    it('refuses to arm or unwrap, having no OS biometric to bind to', async () => {
+        const service = new ChromeBiometricsService()
+
+        await expect(service.armBiometricBinding()).resolves.toBeNull()
+        await expect(service.unwrapBiometricToken('anything')).resolves.toEqual(
+            {
+                success: false,
+                reason: 'unavailable',
+            },
+        )
+    })
 })

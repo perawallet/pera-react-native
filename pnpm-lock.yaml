@@ -1392,6 +1392,9 @@ importers:
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../../packages/hardware-wallet
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -1444,6 +1447,9 @@ importers:
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../platform

@@ -48,6 +48,10 @@ const mockBiometricsService = {
     createEnrollmentBinding: mockCreateEnrollmentBinding,
     checkEnrollmentBinding: mockCheckEnrollmentBinding,
     clearEnrollmentBinding: mockClearEnrollmentBinding,
+    armBiometricBinding: vi.fn().mockResolvedValue(null),
+    unwrapBiometricToken: vi
+        .fn()
+        .mockResolvedValue({ success: false, reason: 'unavailable' }),
 }
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
