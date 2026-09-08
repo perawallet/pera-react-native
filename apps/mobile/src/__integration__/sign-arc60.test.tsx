@@ -53,11 +53,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    buildArc60AuthSigningPayload,
-    decodeArc60Data,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -269,24 +265,79 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
     )
 
     it(
-        "Given a SIWA request whose signer is rekeyed but still holds its own key, when the user confirms, then the signer's own key signs, not the auth account's",
+        'Given a SIWA request whose signer is rekeyed but still holds its own key, when the user confirms, then the wallet refuses: control moved to the auth account',
         async () => {
             const authSigner = await seedAlgo25Signer()
             const { result: kms } = renderHook(() => useKMS())
             const ownKey = await kms.current.createAlgo25Key()
             const rekeyedSigner: WalletAccount = {
-                id: 'rekeyed-arc60-signer-with-key',
+                id: 'rekeyed-with-own-key',
                 type: AccountTypes.algo25,
                 address: ownKey.address,
                 keyPairId: ownKey.seedKey.id ?? '',
                 rekeyAddress: AUTH_ADDRESS,
-                name: 'Rekeyed SIWA signer',
+                name: 'Rekeyed SIWA signer with key',
             }
             useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
 
-            const { request, approve, reject } = buildArc60SignRequest({
+            const { request, approve, error } = buildArc60SignRequest({
                 domain: 'arc60.io',
                 signer: ownKey.address,
+            })
+
+            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+
+            const { confirm } = renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arc60-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            confirm('arc60-confirm-slide')
+
+            // The old key is refused at sign time as ERROR_INVALID_SIGNER; the
+            // dApp has to name the auth address as `signer` instead.
+            await waitFor(
+                () => {
+                    expect(error).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(String(error.mock.calls[0][0])).toMatch(
+                /rekeyed to .* the SIWA signer must be that auth address/,
+            )
+            expect(signSpy).not.toHaveBeenCalled()
+            expect(approve).not.toHaveBeenCalled()
+
+            signSpy.mockRestore()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a SIWA request naming the auth account as signer and the rekeyed account as account_address, when the user confirms, then the auth key signs',
+        async () => {
+            const authSigner = await seedAlgo25Signer()
+            const rekeyedAccount: WalletAccount = {
+                id: 'rekeyed-arc60-account',
+                type: AccountTypes.watch,
+                address: REKEYED_SIGNER_ADDRESS,
+                rekeyAddress: AUTH_ADDRESS,
+                name: 'Rekeyed SIWA account',
+            }
+            useAccountsStore
+                .getState()
+                .setAccounts([rekeyedAccount, authSigner])
+
+            const { request, approve, reject } = buildArc60SignRequest({
+                domain: 'arc60.io',
+                signer: AUTH_ADDRESS,
+                accountAddress: REKEYED_SIGNER_ADDRESS,
             })
 
             const signSpy = vi.spyOn(getProvider().key.store, 'sign')
@@ -313,24 +364,9 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
             expect(reject).not.toHaveBeenCalled()
 
             const delivered = approve.mock.calls[0][0]
-            expect(delivered[0].signer).toBe(ownKey.address)
-            expect(delivered[0].signature).toBeInstanceOf(Uint8Array)
-
+            expect(delivered[0].signer).toBe(AUTH_ADDRESS)
             expect(signSpy).toHaveBeenCalledTimes(1)
-            expect(signSpy.mock.calls[0][0]).toBe(rekeyedSigner.keyPairId)
-            expect(signSpy.mock.calls[0][0]).not.toBe(authSigner.keyPairId)
-
-            // Signed bytes: sha256(decoded SIWA payload) || sha256(authenticatorData).
-            const decodedData = decodeArc60Data(
-                request.stdSigData.data,
-                request.metadata.encoding,
-            )
-            expect(signSpy.mock.calls[0][1]).toEqual(
-                buildArc60AuthSigningPayload(
-                    decodedData,
-                    request.stdSigData.authenticatorData,
-                ),
-            )
+            expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
 
             signSpy.mockRestore()
         },

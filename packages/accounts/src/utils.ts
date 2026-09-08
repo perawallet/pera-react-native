@@ -244,8 +244,10 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
  * own public key, so a rekeyed signer holding no key of its own cannot be
  * signed for by its auth account (every verifier would reject the result). A
  * dApp that wants a rekeyed account authenticated names the auth address as
- * `signer` and the account as the SIWA `account_address`, which
- * `validateArc60AuthRequest` accepts. Must stay in lockstep with
+ * `signer` and the account as the SIWA `account_address`; the signing
+ * package's `validateArc60AuthRequest` enforces that shape (a rekeyed account
+ * may not sign for itself even when it still holds its key). Must stay in
+ * lockstep with
  * `resolveSigningAccount` in the signing package.
  */
 export const canSignArc60 = (account: WalletAccount): boolean =>

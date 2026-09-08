@@ -29,7 +29,8 @@ import type { SignableData, SourceMetadata } from '../../pipeline/types'
  *   different key signed. The rekey hop MUST NOT be followed; a signer that
  *   holds no key of its own is refused by the leaf signer. A dApp that wants
  *   a rekeyed account authenticated names the auth address as `signer` and
- *   the account as the SIWA `account_address`.
+ *   the account as the SIWA `account_address`; `validateArc60AuthRequest`
+ *   enforces that shape and refuses a rekeyed account signing for itself.
  * - Transactions (any other shape): standard rekey rule — resolve the single
  *   rekey hop to the auth account, which holds the signing key. Rekey
  *   indirection is not transitive, so this is one hop, not a chain.
