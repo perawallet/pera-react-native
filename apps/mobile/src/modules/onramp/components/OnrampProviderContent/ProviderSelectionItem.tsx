@@ -17,6 +17,7 @@ import {
     quoteDestinationAmount,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
+import { displayCurrencyToAssetId } from '@perawallet/wallet-core-shared'
 import {
     getOnrampDestinationCurrency,
     getOnrampFeeCurrency,
@@ -46,6 +47,10 @@ export const ProviderSelectionItem = ({
 }: ProviderSelectionItemProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    // Provider quote currencies are trusted codes (Meld fiat/crypto codes, XO
+    // asset ids), so the ALGO ticker may translate to the glyph-earning id.
+    const destinationCurrency = getOnrampDestinationCurrency(quote)
+    const feeCurrency = getOnrampFeeCurrency(quote)
 
     return (
         <PWRadioButton
@@ -74,7 +79,8 @@ export const ProviderSelectionItem = ({
                 </PWView>
                 <PWView style={styles.rightColumn}>
                     <CurrencyAmount
-                        currency={getOnrampDestinationCurrency(quote)}
+                        currency={destinationCurrency}
+                        assetId={displayCurrencyToAssetId(destinationCurrency)}
                         value={quoteDestinationAmount(quote, sourceAmount)}
                         precision='compact'
                         showSymbol
@@ -83,7 +89,8 @@ export const ProviderSelectionItem = ({
                         style={styles.amountText}
                     />
                     <CurrencyAmount
-                        currency={getOnrampFeeCurrency(quote)}
+                        currency={feeCurrency}
+                        assetId={displayCurrencyToAssetId(feeCurrency)}
                         value={getOnrampTotalFee(quote)}
                         precision='compact'
                         showSymbol

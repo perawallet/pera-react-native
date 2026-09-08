@@ -37,7 +37,7 @@ export type AssetAmountProps = {
     density?: AssetAmountDensity
 } & Omit<
     CurrencyAmountProps,
-    'currency' | 'value' | 'precision' | 'assetDecimals'
+    'currency' | 'value' | 'precision' | 'assetDecimals' | 'assetId'
 >
 
 /**
@@ -52,11 +52,15 @@ export const AssetAmount = ({
     ...displayProps
 }: AssetAmountProps) => {
     const currency = asset?.unitName ?? ''
+    // '' (unknown asset, e.g. still loading) stays in asset mode: no glyph, no
+    // fiat-symbol mapping.
+    const assetId = asset?.assetId ?? ''
 
     if (density === 'compact') {
         return (
             <CurrencyAmount
                 currency={currency}
+                assetId={assetId}
                 value={value}
                 precision='compact'
                 {...displayProps}
@@ -67,6 +71,7 @@ export const AssetAmount = ({
     return (
         <CurrencyAmount
             currency={currency}
+            assetId={assetId}
             value={value}
             precision='assetFull'
             assetDecimals={asset?.decimals}

@@ -78,6 +78,7 @@ export const TransactionInfoTab = ({
                     <CurrencyAmount
                         value={fees.abs()}
                         currency={transaction.transactionCurrency}
+                        assetId={null}
                         precision='compact'
                         prefix={feesPrefix}
                         symbolPosition='end'

@@ -73,6 +73,7 @@ const TransactionListItemView = ({
                             key={index}
                             value={amount.value}
                             currency={amount.currency}
+                            assetId={amount.assetId}
                             precision='compact'
                             prefix={amount.prefix}
                             showSymbol

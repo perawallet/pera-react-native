@@ -80,6 +80,7 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts).toHaveLength(1)
         expect(result.current.amounts[0].value.toString()).toBe('0.5')
         expect(result.current.amounts[0].currency).toBe('ALGO')
+        expect(result.current.amounts[0].assetId).toBe('0')
         expect(result.current.amounts[0].prefix).toBe('-')
     })
 
@@ -178,7 +179,30 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts).toHaveLength(1)
         expect(result.current.amounts[0].value.toString()).toBe('0.25')
         expect(result.current.amounts[0].currency).toBe('USDC')
+        expect(result.current.amounts[0].assetId).toBe('31566704')
         expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it("carries an ALGO-named ASA's real id so the row cannot impersonate native ALGO", () => {
+        const { result } = renderHook(() =>
+            useTransactionAmounts(
+                createPaymentTx({
+                    txType: 'axfer',
+                    sender: OTHER_ADDRESS,
+                    receiver: USER_ADDRESS,
+                    amount: new Decimal('1000000000'),
+                    asset: {
+                        assetId: '987654321',
+                        name: 'Definitely Algo',
+                        unitName: 'ALGO',
+                        decimals: 6,
+                    },
+                }),
+            ),
+        )
+
+        expect(result.current.amounts[0].currency).toBe('ALGO')
+        expect(result.current.amounts[0].assetId).toBe('987654321')
     })
 
     it('scales a swap output by the out-asset decimals', () => {
@@ -200,6 +224,7 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts).toHaveLength(1)
         expect(result.current.amounts[0].value.toString()).toBe('66385.34')
         expect(result.current.amounts[0].currency).toBe('ALPHA')
+        expect(result.current.amounts[0].assetId).toBe('2726252423')
         expect(result.current.amounts[0].prefix).toBe('+')
     })
 
