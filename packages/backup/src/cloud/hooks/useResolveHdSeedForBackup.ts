@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
-import type { SerializeHdResolver } from '@perawallet/wallet-core-backup'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
     entropyChildIdOf,
@@ -22,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { SerializeHdResolver } from '../sync/types'
 
 type KMS = ReturnType<typeof useKMS>
 
