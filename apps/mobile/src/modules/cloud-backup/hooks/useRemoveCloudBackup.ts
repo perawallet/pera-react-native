@@ -10,41 +10,10 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import {
-    deleteBackupKeys,
-    destroyBackup,
-    getBackupSyncManager,
-    useCloudBackupStore,
-} from '@perawallet/wallet-core-backup'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { useRemoveCloudBackupMutation } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useCloudBackupTeardown } from './useCloudBackupTeardown'
-
-const warn = (message: string, error: unknown): void => {
-    logger.warn(message, {
-        error: error instanceof Error ? error.message : String(error),
-    })
-}
-
-/** False when the server still holds the backup, which is not fatal locally. */
-const destroyRemoteBackup = async (
-    network: Network,
-    backupId: string | null,
-    deviceId: string | null,
-): Promise<boolean> => {
-    if (!backupId || !deviceId) return true
-    try {
-        await destroyBackup(network, backupId, deviceId)
-        return true
-    } catch (error) {
-        warn('useRemoveCloudBackup: remote destroy failed', error)
-        return false
-    }
-}
+import { useGoToCloudBackupHome } from './useGoToCloudBackupHome'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
@@ -56,19 +25,11 @@ const removalToast = (t: Translate, remoteOk: boolean) => ({
     type: remoteOk ? ('success' as const) : ('error' as const),
 })
 
-const stopSyncManager = (): void => {
-    try {
-        getBackupSyncManager().stop()
-    } catch (error) {
-        warn('useRemoveCloudBackup: failed to stop sync manager', error)
-    }
-}
-
 type UseRemoveCloudBackupResult = {
     /**
      * Local teardown runs even when the remote destroy fails, so the user is
-     * always freed from the backup on this device (mirrors Android's
-     * `DeleteBackup`). The remote backup may be briefly orphaned in that case.
+     * always freed from the backup on this device. The remote backup may be
+     * briefly orphaned in that case.
      */
     removeBackup: () => void
     isRemoving: boolean
@@ -77,24 +38,9 @@ type UseRemoveCloudBackupResult = {
 export const useRemoveCloudBackup = (): UseRemoveCloudBackupResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
-    const backupId = useCloudBackupStore(state => state.backupId)
-    const { resetLocalState, goHome } = useCloudBackupTeardown()
+    const goHome = useGoToCloudBackupHome()
 
-    const mutation = useMutation({
-        throwOnError: false,
-        mutationFn: async (): Promise<{ remoteOk: boolean }> => {
-            const remoteOk = await destroyRemoteBackup(
-                network,
-                backupId,
-                deviceId,
-            )
-            stopSyncManager()
-            await deleteBackupKeys()
-            resetLocalState()
-            return { remoteOk }
-        },
+    const mutation = useRemoveCloudBackupMutation({
         onSuccess: ({ remoteOk }) => {
             showToast(removalToast(t, remoteOk))
             goHome()
