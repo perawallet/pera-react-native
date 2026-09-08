@@ -51,21 +51,44 @@ Surface:
   deletion while the App Group MMKV does not, so it would eventually claim a key
   that is gone.
 
-## Android: `setInvalidatedByBiometricEnrollment`
+## Android: AndroidKeyStore RSA pair plus an AES canary
 
-- The OS carries the invalidation: an AES key at alias
-  `pera.biometric.enrollment` with `setUserAuthenticationRequired(true)` and
-  `setInvalidatedByBiometricEnrollment(true)` is destroyed by the platform when a
-  biometric is enrolled or all are removed. The key holds nothing; its existence
-  _is_ the binding.
-- `Cipher.init` is the probe: it raises `KeyPermanentlyInvalidatedException`
-  without any user interaction, whereas _using_ the key would require a
-  BiometricPrompt. `UserNotAuthenticatedException` therefore means the key is
-  intact, so `'valid'`.
-- Auth-per-use is what binds the key to the set rather than to a time window:
-  `setUserAuthenticationParameters(0, AUTH_BIOMETRIC_STRONG)` on API 30+, and
-  the deprecated `setUserAuthenticationValidityDurationSeconds(-1)` on 29
-  (`minSdkVersion` is 29).
+Two keys, created and destroyed as one unit so the probe can never disagree with
+the key it stands for.
+
+- The token is wrapped to an RSA-2048 pair at alias `pera.biometric.unlock`,
+  StrongBox-backed where the device allows it. Unwrapping goes through a
+  `BiometricPrompt.CryptoObject` carrying the initialised `Cipher`, and the
+  decrypt uses the cipher the result hands back — using any other would defeat
+  the binding.
+- The public half is re-imported through `KeyFactory` /
+  `X509EncodedKeySpec` before wrapping. A key read from
+  `getCertificate(alias).publicKey` is still an AndroidKeyStore key and is
+  subject to the key's own `USER_AUTH_REQUIRED`, so encrypting with it would
+  demand a ceremony; detaching it is what makes arming possible with no user
+  present.
+- OAEP is initialised with an explicit `OAEPParameterSpec`. AndroidKeyStore
+  defaults MGF1 to SHA-1 regardless of `setDigests`, and StrongBox supports
+  SHA-256 only, so the default silently diverges from the key spec on one path
+  and is rejected outright on the other.
+- StrongBox generation retries without the flag on
+  `StrongBoxUnavailableException`: some devices advertise it and then refuse.
+- An AES key at alias `pera.biometric.enrollment` is the enrollment probe. It
+  holds nothing; its existence _is_ the binding. `Cipher.init` is what makes it a
+  probe: for AES the keystore operation begins there, so it raises
+  `KeyPermanentlyInvalidatedException` with no user interaction, whereas RSA
+  defers the authentication check to `doFinal` and cannot be probed without a
+  ceremony. `UserNotAuthenticatedException` therefore means the key is intact,
+  so `'valid'`.
+- `checkBinding` reports `'absent'` as soon as the RSA pair is missing, because
+  the canary alone says nothing about the key that actually holds the token.
+- The OS carries the invalidation on both:
+  `setInvalidatedByBiometricEnrollment(true)` destroys them when a biometric is
+  enrolled or all are removed. Auth-per-use is what binds them to the set rather
+  than to a time window: a 0s validity with `AUTH_BIOMETRIC_STRONG` via
+  `setUserAuthenticationParameters` on API 30+, and the deprecated
+  `setUserAuthenticationValidityDurationSeconds(-1)` on 29 (`minSdkVersion` is
+  29).
 
 ## On-device QA
 
