@@ -954,15 +954,8 @@ export const usePeraWebviewInterface = (
                     // The page cannot be un-told; `pair` keeps watching the
                     // grace and abandons the pairing itself.
                 }
-                // 'session': the peer answered with a proposal, so the
-                // approval sheet is on its way and the page hears back
-                // through the approve/reject path — never from here. On web
-                // the same result crosses realms: offscreen's `wcHost.ts`
-                // resolved this pairing's `pair-outcome` because a real
-                // `session_request` landed on the connector it created. The
-                // approval window there still opens separately, and this
-                // callback has no handle on it or its eventual decision —
-                // only on the fact that a handshake was reached.
+                // 'session': the peer answered with a proposal; the page hears
+                // the decision through the approve/reject path, never from here.
             })()
         },
         [pair, describeUri, hadRequiredParams, webview, hasInternet, sourceUrl],
