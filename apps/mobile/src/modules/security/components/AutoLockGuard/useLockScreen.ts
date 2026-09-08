@@ -46,8 +46,7 @@ export const useLockScreen = ({
         lockoutEndTime,
         setLockoutEndTime,
     } = usePinCode()
-    const { checkBiometricsEnabled, authenticateWithBiometrics } =
-        useBiometrics()
+    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
     const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
@@ -90,7 +89,7 @@ export const useLockScreen = ({
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onUnlock,
         t,
@@ -98,7 +97,7 @@ export const useLockScreen = ({
     })
     promptRef.current = {
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onUnlock,
         t,
@@ -141,7 +140,7 @@ export const useLockScreen = ({
             if (promptRef.current.isLockedOut) return
             const enabled = await promptRef.current.checkBiometricsEnabled()
             if (cancelled || !enabled) return
-            const result = await promptRef.current.authenticateWithBiometrics({
+            const outcome = await promptRef.current.unlockWithBiometrics({
                 title: promptRef.current.t(
                     'security.biometric.unlock_prompt_title',
                 ),
@@ -150,15 +149,19 @@ export const useLockScreen = ({
                 ),
             })
             if (cancelled) return
-            if (result.success) {
+            if (outcome.kind === 'ok') {
                 void promptRef.current.resetFailedAttempts()
                 promptRef.current.onUnlock()
                 return
             }
+            // A record-level lockout, and a blob that no longer matches its key, both
+            // terminate here: the PIN pad is the only way forward and re-prompting would
+            // either bypass the lockout or burn another ceremony on a dead key.
+            if (outcome.kind !== 'failed') return
             // Only OS-initiated cancellation re-arms; a user cancel stays
             // terminal (silent fallback to PIN), and lockout/failed/unknown
             // never retry.
-            if (result.reason !== 'system-cancel' || retriesLeft === 0) return
+            if (outcome.reason !== 'system-cancel' || retriesLeft === 0) return
             return attemptPrompt(retriesLeft - 1)
         }
 
