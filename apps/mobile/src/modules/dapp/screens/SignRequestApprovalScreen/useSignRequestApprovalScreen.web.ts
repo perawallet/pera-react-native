@@ -27,6 +27,7 @@ import {
 import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     canSignArc60,
+    useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import {

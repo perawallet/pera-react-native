@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => {
         generateOrderedUniqueId: vi.fn(),
         encodeToBase64: vi.fn(),
         useSigningAccounts: vi.fn(),
+        useAllAccounts: vi.fn(),
         canSignArc60: vi.fn(),
     }
 })
@@ -54,6 +55,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
+    useAllAccounts: mocks.useAllAccounts,
     canSignArc60: mocks.canSignArc60,
 }))
 
@@ -148,6 +150,7 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.generateOrderedUniqueId.mockReset()
         mocks.encodeToBase64.mockReset()
         mocks.useSigningAccounts.mockReset()
+        mocks.useAllAccounts.mockReset()
         mocks.canSignArc60.mockReset()
         mocks.enqueueInboundRequest.mockReset()
         mocks.resolveConnectionRequest.mockReset()
@@ -185,6 +188,7 @@ describe('useSignRequestApprovalScreen', () => {
         // grant/name ('ADDR'), so existing sign-transactions/sign-message
         // cases exercise the post-hydration path unchanged.
         mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
+        mocks.useAllAccounts.mockReturnValue([{ address: 'ADDR' }])
         mocks.canSignArc60.mockReturnValue(true)
 
         closeSpy = vi.fn()
@@ -615,8 +619,8 @@ describe('useSignRequestApprovalScreen', () => {
             })
         })
 
-        // canSignArc60 resolves a rekeyed signer through its auth account,
-        // which the signing-accounts filter can hide.
+        // The adapter matches a signer against approved accounts' auth
+        // addresses, and the signing-accounts filter can hide a keyless one.
         it('gives the adapter every account, not only the signing ones', () => {
             mocks.useAllAccounts.mockReturnValue([
                 { address: 'ADDR' },

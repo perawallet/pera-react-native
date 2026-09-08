@@ -91,15 +91,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // no rekey hop.
     canSignArbitraryData: (account: MockAccount) =>
         account.canSignData === true,
-    // Mirrors the real `canSignArc60`: signs directly, or hops one rekey to
-    // an auth account that can. Two-argument shape preserved deliberately —
-    // this is the exact contract use-wallet v5 depends on.
-    canSignArc60: (account: MockAccount, accounts: MockAccount[]) => {
-        if (account.canArc60) return true
-        if (!account.rekeyAddress) return false
-        const auth = accounts.find(a => a.address === account.rekeyAddress)
-        return !!auth && auth.canArc60 === true
-    },
+    // Mirrors the real `canSignArc60`: account-local, because an ARC-60
+    // signature verifies against the signer's own key.
+    canSignArc60: (account: MockAccount) => account.canArc60 === true,
 }))
 
 const { enqueueInboundRequest, useConnectionSigningAdapter } =
@@ -671,14 +665,10 @@ describe('useConnectionSigningAdapter', () => {
             )
         })
 
-        it('passes the full accounts list to canSignArc60 so it can resolve a keyless signer through its own rekey hop', () => {
-            // PRIMARY_SIGNER is directly authorized but holds no signing key
-            // of its own (canArc60: false, no direct key) — only reachable
-            // via canSignArc60's OWN rekey fallback to REKEYED_SIGNER, which
-            // requires the full `accounts` array as canSignArc60's second
-            // argument. A mutant that dropped that argument (or ignored it)
-            // would see `undefined`/nothing to search and fail to resolve
-            // the hop, rejecting a legitimate signer.
+        it('refuses a keyless rekeyed signer the dApp names directly', () => {
+            // PRIMARY_SIGNER is authorized but holds no key of its own, and
+            // its auth account cannot sign for it: an ARC-60 signature
+            // verifies against the named signer's own key.
             mockAccounts = [
                 {
                     address: PRIMARY_SIGNER,
@@ -690,25 +680,23 @@ describe('useConnectionSigningAdapter', () => {
             const { registry, send } = makeRegistry()
             renderHook(() => useConnectionSigningAdapter(registry))
 
-            send(
-                signDataMessage(
-                    {
-                        type: 'arc60',
-                        stdSigData: {
-                            data: 'ZGF0YQ==',
-                            signer: PRIMARY_SIGNER,
-                            domain: 'example.com',
-                            authenticatorData: new Uint8Array([1, 2, 3]),
-                        },
-                        metadata: { scope: 1, encoding: 'base64' },
+            const message = signDataMessage(
+                {
+                    type: 'arc60',
+                    stdSigData: {
+                        data: 'ZGF0YQ==',
+                        signer: PRIMARY_SIGNER,
+                        domain: 'example.com',
+                        authenticatorData: new Uint8Array([1, 2, 3]),
                     },
-                    [PRIMARY_SIGNER],
-                ),
+                    metadata: { scope: 1, encoding: 'base64' },
+                },
+                [PRIMARY_SIGNER],
             )
+            send(message)
 
-            expect(mockAddSignRequest).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'arc60' }),
-            )
+            expect(message.reject).toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
         })
 
         it('responds with signatures in request order', async () => {
