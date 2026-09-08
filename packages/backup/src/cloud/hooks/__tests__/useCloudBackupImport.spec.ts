@@ -14,7 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 // Type-only, so it survives the `vi.mock` below and still holds every fixture
 // to the real payload schema — the drift this spec previously hid.
-import type { PulledAccount } from '@perawallet/wallet-core-backup'
+import type { PulledAccount } from '../../restore/pullBackupItems'
 
 // --- hoisted mock state + spies -------------------------------------------
 
@@ -95,18 +95,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useUpdateAccount: () => updateAccountMock,
     }
 })
-
-vi.mock('@perawallet/wallet-core-backup', () => ({
-    BackupAccountType: {
-        algo25: 'algo25',
-        hdSeed: 'hdSeed',
-        hdWallet: 'hdWallet',
-        hardware: 'hardware',
-        watch: 'watch',
-        multisig: 'multisig',
-        quantum: 'quantum',
-    },
-}))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: encodeAlgorandAddressMock,

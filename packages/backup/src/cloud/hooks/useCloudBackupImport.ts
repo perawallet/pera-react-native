@@ -25,19 +25,6 @@ import {
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    BackupAccountType,
-    type Algo25AddressPayload,
-    type HardwareAddressPayload,
-    type HdWalletAddressPayload,
-    type ImportSummary,
-    type MultisigAddressPayload,
-    type PulledAccount,
-    type QuantumAddressPayload,
-    type SecretsBackupPayload,
-    type SyncImportFn,
-    type WatchAddressPayload,
-} from '@perawallet/wallet-core-backup'
-import {
     encodeAlgorandAddress,
     generateMultisigAddress,
     isValidAlgorandAddress,
@@ -50,6 +37,18 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    BackupAccountType,
+    type Algo25AddressPayload,
+    type HardwareAddressPayload,
+    type HdWalletAddressPayload,
+    type MultisigAddressPayload,
+    type QuantumAddressPayload,
+    type SecretsBackupPayload,
+    type WatchAddressPayload,
+} from '../models'
+import type { PulledAccount } from '../restore/pullBackupItems'
+import type { ImportSummary, SyncImportFn } from '../sync/types'
 
 type ImportFailure = ImportSummary['failed'][number]
 
