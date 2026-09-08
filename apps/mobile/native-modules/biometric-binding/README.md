@@ -168,9 +168,10 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
 **Upgrade and legacy paths**
 
 12. Upgrade path: with biometrics already enabled before this build (a
-    pre-binding blob with no key pair behind it), the first launch after
-    upgrading must keep it enabled by re-arming, and a re-enrollment after that
-    must then be caught normally.
+    pre-binding blob with no key pair behind it), the first reconcile after
+    upgrading must drop the opt-in — the toggle reads off, and the user is
+    offered "Turn back on". Accepting that offer re-arms it, and a
+    re-enrollment after that must then be caught normally.
 13. Legacy import: arm the binding on the import path, where no user is present
     to complete a ceremony, and confirm it succeeds — this is the path that
     depends on the wrap needing only the public key.
