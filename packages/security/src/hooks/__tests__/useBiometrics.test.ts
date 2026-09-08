@@ -881,6 +881,40 @@ describe('useBiometrics', () => {
             expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
         })
 
+        // `armBiometricBinding` is destructive-idempotent: it deletes the old
+        // key before minting a new one, so a pre-existing blob is sealed
+        // under a key that is already gone the moment arming succeeds. A
+        // cancelled ceremony must not leave that dead blob behind, or the
+        // next reconcile reports 'absent' and drops it as 'rebind-required'
+        // — a plain Cancel would have permanently destroyed a working opt-in.
+        test('drops a stale blob left behind by a prior key once arming succeeds, even if the ceremony is declined', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('stale-blob')
+            mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
+                true,
+            )
+            mockBiometricsService.getSecurityLevel.mockResolvedValue('strong')
+            mockBiometricsService.armBiometricBinding.mockResolvedValue({
+                blob: 'ct',
+                tokenHash: 'deadbeef',
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: false,
+                reason: 'user-cancel',
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() => result.current.enableBiometrics())
+
+            expect(outcome).toEqual({ ok: false, reason: 'declined' })
+            expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+                BIOMETRIC_BLOB_KEY_ID,
+            )
+            expect(
+                mockBiometricsService.clearEnrollmentBinding,
+            ).toHaveBeenCalled()
+            expect(kmsMocks.biometricBytes).toBeNull()
+        })
+
         test('fails without writing a blob when arming is refused', async () => {
             mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
                 true,
@@ -1020,6 +1054,35 @@ describe('useBiometrics', () => {
 
             expect(outcome).toEqual({ kind: 'mismatch' })
             expect(result.current.disabledReason).toBe('rebind-required')
+        })
+
+        // A pre-binding blob held serialized JSON, so it always starts 0x7B —
+        // never the version byte. `decodeBlob` has to refuse it outright
+        // rather than hand it to the enclave and let it come back as a
+        // decryption error.
+        test('rejects a pre-binding blob at the version-byte guard before it reaches the enclave', async () => {
+            const legacyBlob = serializePinRecord({
+                version: 2,
+                salt: '00'.repeat(16),
+                hash: '00'.repeat(32),
+                failedAttempts: 0,
+                lockoutEndTime: null,
+            })
+            kmsMocks.withSecret.mockImplementation(
+                async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                    handler(legacyBlob),
+            )
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.unlockWithBiometrics(),
+            )
+
+            expect(outcome).toEqual({ kind: 'mismatch' })
+            expect(result.current.disabledReason).toBe('rebind-required')
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
         })
 
         test('refuses before prompting while the record is locked out', async () => {

@@ -15,12 +15,13 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 /**
  * Why biometric unlock stopped working without the user asking for it.
  *
- * The first two are affirmative reports that destroy the opt-in, recoverable by
- * re-enabling in the app — `enrollment-changed` immediately, `weak-biometric`
- * only once a class-3 biometric is enrolled. `not-available` is different in
- * kind: nothing is destroyed and it re-arms itself once the device is fixed, but
- * until then unlock silently does not happen, which is worth saying out loud.
- * Only persistent unavailability qualifies — a lockout clears on its own and is
+ * `enrollment-changed`, `weak-biometric` and `rebind-required` are affirmative
+ * reports that destroy the opt-in, recoverable by re-enabling in the app —
+ * `enrollment-changed` immediately, `weak-biometric` only once a class-3
+ * biometric is enrolled. `not-available` is different in kind: nothing is
+ * destroyed and it re-arms itself once the device is fixed, but until then
+ * unlock silently does not happen, which is worth saying out loud. Only
+ * persistent unavailability qualifies — a lockout clears on its own and is
  * never reported here.
  *
  * `rebind-required` is a key that is gone rather than superseded: an upgrade

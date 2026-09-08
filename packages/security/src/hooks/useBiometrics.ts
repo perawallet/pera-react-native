@@ -348,6 +348,16 @@ export const useBiometrics = (): UseBiometricsResult => {
                 const armed = await biometricsService.armBiometricBinding()
                 if (!armed) return { ok: false, reason: 'error' }
 
+                // `armBiometricBinding` is destructive-idempotent: it deletes
+                // any existing key before minting the new one, so a blob
+                // already in the keystore is sealed under a key that is now
+                // gone the instant this line returns. Drop it here rather
+                // than leaving it for a declined ceremony to orphan — an
+                // 'unavailable' probe reading can otherwise flip the toggle
+                // OFF while keeping a still-good blob, only for a re-enable
+                // attempt the user cancels to destroy it for good.
+                await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+
                 // The confirmation ceremony IS the unwrap. Proving the OS will
                 // release the token is the only thing that proves unlock will
                 // work later; a prompt that merely returns true proves
@@ -373,7 +383,18 @@ export const useBiometrics = (): UseBiometricsResult => {
                     confirmed.token.fill(0)
                 }
 
-                await writeBiometricBlob(armed.blob, armed.tokenHash)
+                try {
+                    await writeBiometricBlob(armed.blob, armed.tokenHash)
+                } catch (err) {
+                    // The key is armed but nothing backs it. Left alone, the
+                    // reconcile's early return on a missing blob never
+                    // reaches the binding, so it would report enabled
+                    // forever while every unlock burned a real ceremony and
+                    // then failed — the same hazard the decline path above
+                    // guards against.
+                    await biometricsService.clearEnrollmentBinding()
+                    throw err
+                }
                 setIsEnabled(true)
                 setDisabledReason(null)
                 return { ok: true }
@@ -383,6 +404,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         },
         [
             biometricsService,
+            removeSecret,
             writeBiometricBlob,
             setIsEnabled,
             setDisabledReason,
