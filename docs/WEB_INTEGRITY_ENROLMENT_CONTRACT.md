@@ -15,7 +15,8 @@ key, refuse un-enrolled installs, and revoke abusers.
 
 Turnstile cannot run inside the extension: it ships an encrypted bytecode program interpreted in the
 page, which is remotely hosted code and barred from extension pages regardless of CSP. The check
-therefore runs on a page we host, and the result travels back to the extension.
+therefore runs on a page we host, embedded in the extension as an iframe, and the result travels back
+to the extension.
 
 ## 2. Trust model
 
@@ -39,23 +40,31 @@ therefore runs on a page we host, and the result travels back to the extension.
 ```mermaid
 sequenceDiagram
     participant SW as Extension service worker
-    participant Tab as Check page (perawallet.app)
+    participant Page as Extension page (onboarding)
+    participant Frame as Check page iframe (perawallet.app)
     participant CF as Cloudflare Turnstile
     participant BE as Backend
 
     SW->>SW: onboarding complete or attest 403 (enrolment required / revoked)
     SW->>SW: kid = base64url(sha256(SPKI of install public key))
-    SW->>Tab: chrome.tabs.create(check page URL with kid)
-    Tab->>CF: render widget (action, cData = kid)
-    CF-->>Tab: turnstile token (invisible where reputation allows)
-    Tab->>SW: content script relays TURNSTILE_SOLVED over a runtime port
+    SW->>Page: show-check-frame(url with kid), hidden
+    Page->>Frame: mount iframe, visually hidden
+    Frame->>CF: render widget (action, cData = kid, interaction-only)
+    alt Cloudflare needs a click
+        Frame->>SW: interactive-required (via content script)
+        SW->>Page: expand-check-frame
+        CF-->>Frame: user clicks, token
+    else invisible
+        CF-->>Frame: token
+    end
+    Frame->>SW: content script relays TURNSTILE_SOLVED over a runtime port
     SW->>SW: verify port.sender.origin, url path, kid matches pending enrolment
     SW->>BE: POST /api/v3/public/integrity/enrol (device_id, public_key, turnstile_token)
     BE->>CF: siteverify (secret, token, remoteip)
     CF-->>BE: success, action, cdata, hostname, challenge_ts
     BE->>BE: action and cdata == kid(public_key) and hostname allowed; store enrolment
     BE-->>SW: 200 enrolled
-    SW->>SW: persist enrolment marker beside the key; close the tab
+    SW->>Page: hide-check-frame; persist enrolment marker beside the key
 ```
 
 The mint loop never blocks on enrolment. Minting works un-enrolled until the backend enforces
@@ -65,11 +74,11 @@ enrolment (section 6.4); enrolment is a prerequisite the backend enforces and th
 
 ### 4.1 Location and environments
 
-| environment | check page                                       | Turnstile sitekey                                                                                                                                                 |
-| ----------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| production  | `https://integrity.perawallet.app/check`         | production sitekey, hostname allowlist = that host                                                                                                                |
-| staging     | `https://integrity-staging.perawallet.app/check` | staging sitekey                                                                                                                                                   |
-| local / e2e | any origin the dev build's manifest lists        | Cloudflare test sitekeys: `1x00000000000000000000AA` (always passes), `2x00000000000000000000AB` (always blocks), `3x00000000000000000000FF` (forces interactive) |
+| environment | check page                                       | Turnstile sitekey                                                                                                                                                      |
+| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| production  | `https://integrity.perawallet.app/check`         | production sitekey, hostname allowlist = that host                                                                                                                     |
+| staging     | `https://integrity-staging.perawallet.app/check` | staging sitekey                                                                                                                                                        |
+| local / e2e | any origin the dev build's manifest lists        | Cloudflare test sitekeys: `1x00000000000000000000BB` (passes invisibly), `1x00000000000000000000AA` (passes, visible), `3x00000000000000000000FF` (forces interactive) |
 
 A dedicated subdomain rather than a path on the marketing site: the extension's content script must
 match this origin exactly, the page needs its own strict CSP, and the host doubles as the Turnstile
@@ -88,7 +97,8 @@ https://integrity.perawallet.app/check?v=1&kid=<base64url sha256 of SPKI DER>&la
   verbatim.
 - `lang`: optional, for the page's own copy. Turnstile picks the browser language itself.
 
-Nothing secret or personal is in the URL. The installation id never leaves the extension.
+Nothing secret or personal is in the URL. The installation id never leaves the extension. The page
+behaves the same whether it is framed or opened as a tab; it does not need to know which.
 
 ### 4.3 Widget configuration
 
@@ -97,13 +107,19 @@ turnstile.render('#check', {
     sitekey: SITEKEY_FOR_THIS_HOST,
     action: 'pera-extension-enrol', // fixed; the backend requires this exact value
     cData: kidFromQuery, // the binding
-    appearance: 'interaction-only', // invisible unless Cloudflare needs a click
+    appearance: 'interaction-only', // nothing rendered unless Cloudflare needs a click
     'refresh-expired': 'manual', // the extension owns retries, not the widget
+    'before-interactive-callback': onInteractiveRequired, // the extension expands the frame
+    'after-interactive-callback': onInteractiveDone,
     callback: onSolved,
     'error-callback': onError,
     'expired-callback': onExpired,
 })
 ```
+
+`interaction-only` keeps the widget invisible for the large majority of solves. When Cloudflare does
+need a click, `before-interactive-callback` fires before the checkbox renders, which is the moment
+the page tells the extension to make the frame visible.
 
 The page never calls `siteverify` and never stores the token. A Turnstile token is single-use and
 valid for 300 seconds, so the page hands it over immediately.
@@ -115,6 +131,14 @@ closed on purpose. It posts to its own window, and an extension content script i
 origin relays to the service worker over a runtime port. The page only needs this:
 
 ```js
+window.postMessage(
+    { type: 'pera:integrity-check', v: 1, event: 'interactive-required', kid },
+    window.location.origin,
+)
+window.postMessage(
+    { type: 'pera:integrity-check', v: 1, event: 'interactive-done', kid },
+    window.location.origin,
+)
 window.postMessage(
     {
         type: 'pera:integrity-check',
@@ -135,23 +159,27 @@ window.postMessage(
 offline), `TURNSTILE_ERROR` (widget error callback, Cloudflare's code attached as `detail`),
 `TURNSTILE_EXPIRED` (token expired before it was picked up), `UNSUPPORTED_VERSION`, `INVALID_KID`.
 
-The page shows a retry button on every error. When the extension is not detected within a few
-seconds (no `ready` event from the content script), it shows a plain message that the page only
-works when opened by the Pera extension.
+While the widget is invisible the page renders nothing but its status text, so a hidden frame has
+nothing to show. Once interaction is required the page shows the widget, a one-line explanation
+("Quick check before Pera can sponsor your first transactions") and a retry button on error. When
+the extension is not detected within a few seconds (no `ready` event from the content script), it
+shows a plain message that the page only works when opened by the Pera extension.
 
 ### 4.5 CSP and hygiene
 
 `script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com;
-connect-src 'self'`. No analytics, no cookies, no third-party scripts besides Turnstile: this page is
-a bot check, and every extra script is attack surface on the one origin the extension listens to.
+connect-src 'self'`. No `X-Frame-Options` or `frame-ancestors` that would block a
+`chrome-extension://` parent: the page is designed to be framed by the extension. No analytics, no
+cookies, no third-party scripts besides Turnstile: this page is a bot check, and every extra script
+is attack surface on the one origin the extension listens to.
 
 ## 5. Extension contract
 
 ### 5.1 Ownership and triggers
 
 The service worker is the sole owner of enrolment, as it is of minting. UI realms never enrol; they
-send a request message and the worker decides. The offscreen document cannot participate (its
-`chrome.storage.session` is poison-pilled).
+host the frame when asked and send a request message when onboarding completes; the worker decides.
+The offscreen document cannot participate (its `chrome.storage.session` is poison-pilled).
 
 Triggers, in order of expected frequency:
 
@@ -161,30 +189,55 @@ Triggers, in order of expected frequency:
 2. **Attest answers `403 APP_INTEGRITY_ENROLMENT_REQUIRED`.** Marker lost or the backend started
    enforcing. Re-enrol with the existing key.
 3. **Attest answers `403 APP_INTEGRITY_REVOKED`.** Clear the key and the marker, generate a new key,
-   enrol. The only time a user ever sees a second check.
+   enrol. The only time a user could see a second check.
 
-Enrolment must not require an unlocked vault: it touches only the `pera-integrity` IndexedDB,
-`chrome.tabs`, and `fetch`.
+Enrolment must not require an unlocked vault: it touches only the `pera-integrity` IndexedDB, the
+frame host in an extension page, `chrome.tabs` for the fallback, and `fetch`.
 
-### 5.2 Single flight and lifecycle
+### 5.2 Surfaces: hidden iframe first, tab as fallback
+
+The default surface is an iframe of the check page inside an extension page, kept visually hidden
+(fixed position, 1 by 1 pixel, opacity 0, pointer events off; never `display: none`, which would
+stop the widget from running). For the large majority of installs the solve completes there and the
+user sees nothing. The frame becomes a centred 440 by 560 modal only when the page reports
+`interactive-required`, and collapses again on `interactive-done`, `solved` or `error`.
+
+The host is the extension page that triggered enrolment: the expanded tab during onboarding. Its
+overlay must render above every other app overlay (post-onboarding promo, PIN nudge), or enrolment
+must wait until those are dismissed; a checkbox hidden under another dialog is a stuck enrolment.
+
+A new tab (`chrome.tabs.create`, returning focus to the opener when closed) is the fallback, used
+only when:
+
+- no extension page is open to host the frame (a re-enrolment triggered while only the toolbar
+  popup is open, which closes on focus loss and cannot host a long-lived frame);
+- the frame never reports `ready` within 5 seconds (page blocked, offline, or a CSP or
+  frame-ancestors regression on the web side);
+- the page reports `TURNSTILE_BLOCKED`.
+
+The relay and the worker logic are identical for both surfaces; only where the page is mounted
+differs.
+
+### 5.3 Single flight and lifecycle
 
 - `navigator.locks.request('pera-integrity-enrol', ...)`, the same pattern as the mint lock, so
-  popup plus expanded tab cannot open two check tabs.
-- Open the check page with `chrome.tabs.create`, remember the tab id, register
-  `chrome.tabs.onRemoved` for it.
+  popup plus expanded tab cannot start two enrolments.
+- Mount the frame (or open the fallback tab), remember which, and register `chrome.tabs.onRemoved`
+  for a fallback tab.
 - Wait for `solved` or `error` on the port, with an overall deadline of 4 minutes: inside
   Turnstile's 300-second token life, leaving time for the enrol call.
-- On `solved`: `POST /integrity/enrol`. On 200, persist the marker, close the tab, clear backoff.
-  On 4xx, close the tab and record a failure. On a network error, retry the POST once immediately
-  and then stop: the token is single-use, so a second server-side attempt after a 5xx that actually
-  processed it fails, and that failure means "check again on the next trigger".
+- On `solved`: `POST /integrity/enrol`. On 200, persist the marker, hide the frame or close the
+  tab, clear backoff. On 4xx, hide or close and record a failure. On a network error, retry the
+  POST once immediately and then stop: the token is single-use, so a second server-side attempt
+  after a 5xx that actually processed it fails, and that failure means "check again on the next
+  trigger".
 - On `error`, tab closed, or deadline: abort, release the lock, record a failure.
 
-Enrolment opens a visible tab, so it must never loop. At most one automatic attempt per trigger,
+Enrolment can become visible, so it must never loop. At most one automatic attempt per trigger,
 with exponential backoff between triggers (floor 5 minutes, cap 24 hours) persisted in
 `chrome.storage.session` like the mint backoff. A user-initiated retry bypasses the backoff.
 
-### 5.3 Relay and validation
+### 5.4 Relay and validation
 
 Manifest additions (a Web Store review, so the hosts are decided once):
 
@@ -197,10 +250,11 @@ Manifest additions (a Web Store review, so the hosts are decided once):
     "js": ["content-integrity-check.js"],
     "run_at": "document_start",
     "world": "ISOLATED",
-    "all_frames": false
+    "all_frames": true
 }
 ```
 
+`all_frames: true` is what makes the iframe surface work; the same script serves the fallback tab.
 `host_permissions` already covers `https://*.perawallet.app/*`. No new permission:
 `chrome.tabs.create`, `chrome.tabs.remove` and `chrome.tabs.onRemoved` work without the `tabs`
 permission.
@@ -211,6 +265,8 @@ The content script listens for the page's `postMessage` (same-origin only), ackn
 
 ```ts
 type IntegrityCheckPortMessage =
+    | { type: 'INTERACTIVE_REQUIRED'; v: 1; kid: string }
+    | { type: 'INTERACTIVE_DONE'; v: 1; kid: string }
     | { type: 'TURNSTILE_SOLVED'; v: 1; kid: string; turnstileToken: string }
     | {
           type: 'TURNSTILE_ERROR'
@@ -227,24 +283,26 @@ disconnects the port and logs at debug:
 1. `port.name === 'pera-integrity-check'`.
 2. `port.sender.origin` is exactly one of the configured check-page origins (the browser stamps
    this; the page cannot forge it), and `port.sender.url` starts with that origin plus `/check`.
-3. An enrolment is pending, opened by this worker, whose `kid` equals the message's `kid`, and the
-   port's `sender.tab.id` equals the tab the worker opened.
+3. An enrolment is pending, started by this worker, whose `kid` equals the message's `kid`, and the
+   port's `sender.tab.id` equals the tab hosting the frame or the fallback tab the worker opened.
 4. `turnstileToken` is a non-empty string of at most 2048 characters.
 
-The page stays untrusted after these checks: the token is only ever forwarded to the backend, whose
-`siteverify` result is the actual gate.
+`INTERACTIVE_REQUIRED` only ever expands the frame; the page cannot use it to make the extension do
+anything else, and a hostile page that fakes it merely shows itself. The page stays untrusted after
+these checks: the token is only ever forwarded to the backend, whose `siteverify` result is the
+actual gate.
 
-### 5.4 Storage
+### 5.5 Storage
 
 In the `pera-integrity` IndexedDB, beside the install key, a record `enrolment` =
 `{ kid, enrolledAt }`. The worker treats "marker present and `kid` matches the current key" as
 enrolled. A key regenerated for any reason invalidates the marker by construction.
 
-### 5.5 Revocation handling in the mint loop
+### 5.6 Revocation handling in the mint loop
 
 The mint loop distinguishes attest 403s by `code`: `APP_INTEGRITY_ENROLMENT_REQUIRED` keeps the key
 and re-enrols; `APP_INTEGRITY_REVOKED` clears key and marker, then re-enrols; any other 403 clears
-the key and lets the next attempt start clean. Both re-enrolments go through section 5.2's backoff,
+the key and lets the next attempt start clean. Both re-enrolments go through section 5.3's backoff,
 so a revoked install cannot spin.
 
 ## 6. Backend contract
@@ -298,8 +356,7 @@ Table `bun_integrity_enrolment`: `kid` (primary key), `public_key`, `device_id` 
 - Enrol for a key already bound to a different `device_id`: `409`. A key cannot serve two handles;
   the client regenerates its key on that path.
 - Revocation sets `revoked_at`; the row stays so the same key can never re-enrol. Revocations are fed
-  by the fee-delegation extraction detector (its abuse events carry the requesting device id) and by
-  manual ops action.
+  by ops action and by whatever abuse signal the fee-delegation service produces.
 
 ### 6.4 Attest integration and enforcement
 
@@ -322,11 +379,14 @@ keep theirs.
 
 ## 7. Decisions
 
-1. **Standalone tab, not an iframe.** Turnstile keeps clearance state in the page's storage; an
-   `https` iframe under a `chrome-extension://` top-level page gets partitioned storage, so
-   reputation would not carry across sessions and more users would be pushed to the interactive
-   checkbox. The contract works for both (the relay is the same content script with
-   `all_frames: true`), so the iframe variant can be measured on current Chrome without changing it.
+1. **Hidden iframe first, expanded only on interaction, tab as fallback.** With `interaction-only`
+   the widget renders nothing for most solves, so a hidden frame gives a zero-UI enrolment;
+   `before-interactive-callback` is the signal to expand it. A tab or popup window would flash a
+   surface open and closed for every user to cover the minority who need a click. The trade: an
+   iframe under a `chrome-extension://` page gets partitioned storage, so Turnstile's clearance may
+   not carry across sessions and the interactive rate may be higher than in a tab. Enrolment is
+   once per install, so that costs at most one extra click for some users; the rate is measured on
+   staging with real keys before production.
 2. **Binding through Turnstile `cData`, verified server-side.** The alternative (the extension
    passes the installation id, the page echoes it back) trusts the page. `cData` is signed into the
    token by Cloudflare and echoed by `siteverify`, so the backend verifies the binding without
@@ -343,7 +403,7 @@ keep theirs.
 6. **Error codes are UPPER_SNAKE.** Matches the existing `APP_INTEGRITY_TOKEN_REQUIRED` /
    `APP_INTEGRITY_TOKEN_INVALID` / `APP_INTEGRITY_PLATFORM_NOT_ALLOWED` family so clients switch on
    one style.
-7. **Backoff is per trigger with a 24-hour cap.** Enrolment shows a tab; a mint-style 60-minute cap
+7. **Backoff is per trigger with a 24-hour cap.** Enrolment can show UI; a mint-style 60-minute cap
    would surface the check hourly to a user whose enrolment keeps failing.
 8. **`remoteip` is informational.** Requiring the enrol request IP to match the page load would break
    users on dual-stack or rotating mobile networks for no gain the key binding does not already give.
@@ -352,8 +412,9 @@ keep theirs.
 
 The pieces have to land in this order, because each is tested against the one before it:
 
-1. Web: check page on the staging host with the staging sitekey.
+1. Web: check page on the staging host with the staging sitekey, frameable by the extension.
 2. Backend: `enrol` endpoint, table, `siteverify`, tests against the test secret; enforcement off.
-3. Extension: content script, relay, worker flow, marker, revocation codes.
-4. Staging soak with enforcement off, watching enrolment counts and error codes.
+3. Extension: content script, relay, frame host, worker flow, marker, revocation codes.
+4. Staging soak with enforcement off, watching enrolment counts, error codes, and how often
+   `interactive-required` fires from the framed page.
 5. `APP_INTEGRITY_WEB_REQUIRE_ENROLMENT` on staging, then production.
