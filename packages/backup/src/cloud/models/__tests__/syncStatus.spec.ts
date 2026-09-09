@@ -16,7 +16,6 @@ import { deriveBackupSyncStatus } from '../syncStatus'
 const base = {
     isConfigured: true,
     isSyncing: false,
-    isDestroyed: false,
     lastSyncResult: null as 'SUCCESS' | 'FAILED' | null,
 }
 
@@ -26,23 +25,24 @@ describe('deriveBackupSyncStatus', () => {
             'idle',
         )
     })
-    test('syncing takes precedence over everything else', () => {
+    test('syncing takes precedence over the last result', () => {
         expect(
             deriveBackupSyncStatus({
                 ...base,
                 isSyncing: true,
+                lastSyncResult: 'FAILED',
             }),
         ).toBe('syncing')
-    })
-    test('destroyed when backup was deleted server-side', () => {
-        expect(deriveBackupSyncStatus({ ...base, isDestroyed: true })).toBe(
-            'destroyed',
-        )
     })
     test('error when last result failed', () => {
         expect(
             deriveBackupSyncStatus({ ...base, lastSyncResult: 'FAILED' }),
         ).toBe('error')
+    })
+    test('not upToDate before the first sync has ever completed', () => {
+        expect(deriveBackupSyncStatus({ ...base, lastSyncResult: null })).toBe(
+            'pending',
+        )
     })
     test('upToDate when configured, clean, last result success', () => {
         expect(

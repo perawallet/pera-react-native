@@ -62,14 +62,12 @@ type PassphraseSectionProps = {
     wordIndices: Uint16Array
     status: PassphraseStatus
     onCopy: () => void
-    onRestore: () => void
 }
 
 const PassphraseSection = ({
     wordIndices,
     status,
     onCopy,
-    onRestore,
 }: PassphraseSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -122,23 +120,15 @@ const PassphraseSection = ({
                 </PWText>
             )}
             {status === 'unreadable' && (
-                <>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.errorText}
-                        {...getTestProps(
-                            'backup_credentials_passphrase_unreadable',
-                        )}
-                    >
-                        {t('cloud_backup.credentials.passphrase_unreadable')}
-                    </PWText>
-                    <PWButton
-                        variant='secondary'
-                        title={t('cloud_backup.credentials.restore_button')}
-                        onPress={onRestore}
-                        testID='backup_credentials_restore_button'
-                    />
-                </>
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.errorText}
+                    {...getTestProps(
+                        'backup_credentials_passphrase_unreadable',
+                    )}
+                >
+                    {t('cloud_backup.credentials.passphrase_unreadable')}
+                </PWText>
             )}
         </PWView>
     )
@@ -154,7 +144,6 @@ export const BackupCredentialsSheet = () => {
         passphraseStatus,
         handleCopyPassphrase,
         handleCopyEncryptionKey,
-        handleRestore,
         handleClose,
     } = useBackupCredentialsSheet()
 
@@ -184,7 +173,6 @@ export const BackupCredentialsSheet = () => {
                     wordIndices={wordIndices}
                     status={passphraseStatus}
                     onCopy={handleCopyPassphrase}
-                    onRestore={handleRestore}
                 />
                 <EncryptionKeyField
                     encryptionKey={encryptionKey}

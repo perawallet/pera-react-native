@@ -26,13 +26,31 @@ import { CloudBackupScreen } from '../screens/CloudBackupScreen'
 import { CloudBackupSetupScreen } from '../screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '../screens/CloudBackupVerifyScreen'
 import { CloudBackupOverviewScreen } from '../screens/CloudBackupOverviewScreen'
+import { CloudBackupAccountsScreen } from '../screens/CloudBackupAccountsScreen'
+import { CloudBackupAccountsReviewScreen } from '../screens/CloudBackupAccountsReviewScreen'
+import { CloudBackupContactsScreen } from '../screens/CloudBackupContactsScreen'
+import { CloudBackupContactsReviewScreen } from '../screens/CloudBackupContactsReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
+import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
+import { useCloudBackupRestoreExit } from '../hooks/useCloudBackupRestoreExit'
 import type { CloudBackupStackParamList } from './types'
 
 export type { CloudBackupStackParamList } from './types'
 
 const CloudBackupStack = createNativeStackNavigator<CloudBackupStackParamList>()
+
+// The restore screens are shared with the import flow, which has no
+// `CloudBackupOverview` to land on, so each stack names its own exit.
+export const CloudBackupRestoreEncryptionKeyRoute = () => {
+    const { exitToOverview } = useCloudBackupRestoreExit()
+    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitToOverview} />
+}
+
+export const CloudBackupRestoreScanRoute = () => {
+    const { exitToOverview } = useCloudBackupRestoreExit()
+    return <CloudBackupRestoreScanScreen onDone={exitToOverview} />
+}
 
 const CloudBackupCloseButton = () => {
     const navigation = useNavigation()
@@ -95,6 +113,34 @@ export const CloudBackupStackNavigator = () => {
                 component={CloudBackupOverviewScreen}
             />
             <CloudBackupStack.Screen
+                name='CloudBackupAccounts'
+                options={{
+                    title: 'cloud_backup.accounts.title',
+                }}
+                component={CloudBackupAccountsScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupAccountsReview'
+                options={{
+                    title: 'cloud_backup.accounts.review_title',
+                }}
+                component={CloudBackupAccountsReviewScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupContacts'
+                options={{
+                    title: 'cloud_backup.contacts.title',
+                }}
+                component={CloudBackupContactsScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupContactsReview'
+                options={{
+                    title: 'cloud_backup.contacts.review_title',
+                }}
+                component={CloudBackupContactsReviewScreen}
+            />
+            <CloudBackupStack.Screen
                 name='CloudBackupRestorePassphrase'
                 options={{
                     title: '',
@@ -106,7 +152,14 @@ export const CloudBackupStackNavigator = () => {
                 options={{
                     title: '',
                 }}
-                component={CloudBackupRestoreEncryptionKeyScreen}
+                component={CloudBackupRestoreEncryptionKeyRoute}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupRestoreScan'
+                options={{
+                    title: '',
+                }}
+                component={CloudBackupRestoreScanRoute}
             />
         </CloudBackupStack.Navigator>
     )

@@ -22,6 +22,9 @@ const {
     stopMock,
     resetCloudBackupMock,
     resetSyncStateMock,
+    resetSyncActivityMock,
+    backupIdMock,
+    deviceIdMock,
 } = vi.hoisted(() => ({
     destroyBackupMock: vi.fn(),
     deleteBackupKeysMock: vi.fn(),
@@ -29,6 +32,9 @@ const {
     stopMock: vi.fn(),
     resetCloudBackupMock: vi.fn(),
     resetSyncStateMock: vi.fn(),
+    resetSyncActivityMock: vi.fn(),
+    backupIdMock: { value: 'did:pera:ADDR' as string | null },
+    deviceIdMock: { value: 'dev-1' as string | null },
 }))
 
 vi.mock('../../api', () => ({ destroyBackup: destroyBackupMock }))
@@ -49,7 +55,7 @@ vi.mock('../../store/store', () => ({
         }) => unknown,
     ) =>
         selector({
-            backupId: 'did:pera:ADDR',
+            backupId: backupIdMock.value,
             resetState: resetCloudBackupMock,
         }),
 }))
@@ -60,12 +66,18 @@ vi.mock('../../store/syncStateStore', () => ({
     ) => selector({ resetState: resetSyncStateMock }),
 }))
 
+vi.mock('../../store/syncActivityStore', () => ({
+    useBackupSyncActivityStore: (
+        selector: (s: { resetState: () => void }) => unknown,
+    ) => selector({ resetState: resetSyncActivityMock }),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'dev-1',
+vi.mock('../../store/resolveBackupDeviceId', () => ({
+    resolveBackupDeviceId: () => deviceIdMock.value,
 }))
 
 import { useRemoveCloudBackupMutation } from '../useRemoveCloudBackupMutation'
@@ -85,6 +97,8 @@ beforeEach(() => {
     vi.clearAllMocks()
     getBackupSyncManagerMock.mockReturnValue({ stop: stopMock })
     deleteBackupKeysMock.mockResolvedValue(undefined)
+    backupIdMock.value = 'did:pera:ADDR'
+    deviceIdMock.value = 'dev-1'
 })
 
 describe('useRemoveCloudBackupMutation', () => {
@@ -100,7 +114,6 @@ describe('useRemoveCloudBackupMutation', () => {
         act(() => result.current.mutate())
 
         await waitFor(() => expect(onSuccess).toHaveBeenCalled())
-        expect(onSuccess.mock.calls[0][0]).toEqual({ remoteOk: true })
         expect(destroyBackupMock).toHaveBeenCalledWith(
             'mainnet',
             'did:pera:ADDR',
@@ -110,23 +123,42 @@ describe('useRemoveCloudBackupMutation', () => {
         expect(deleteBackupKeysMock).toHaveBeenCalled()
         expect(resetCloudBackupMock).toHaveBeenCalled()
         expect(resetSyncStateMock).toHaveBeenCalled()
+        expect(resetSyncActivityMock).toHaveBeenCalled()
     })
 
-    test('reports remoteOk false but still tears down when the destroy fails', async () => {
-        destroyBackupMock.mockRejectedValue(new Error('offline'))
-        const onSuccess = vi.fn()
+    test('keeps the local backup intact when the remote destroy fails', async () => {
+        destroyBackupMock.mockRejectedValueOnce(new Error('offline'))
+        const onError = vi.fn()
 
         const { result } = renderHook(
-            () => useRemoveCloudBackupMutation({ onSuccess }),
+            () => useRemoveCloudBackupMutation({ onError }),
             { wrapper: createWrapper() },
         )
 
         act(() => result.current.mutate())
 
-        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
-        expect(onSuccess.mock.calls[0][0]).toEqual({ remoteOk: false })
-        expect(stopMock).toHaveBeenCalled()
-        expect(resetCloudBackupMock).toHaveBeenCalled()
-        expect(resetSyncStateMock).toHaveBeenCalled()
+        await waitFor(() => expect(onError).toHaveBeenCalled())
+        // The keys are the only way back to a backup the server still holds.
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+        expect(stopMock).not.toHaveBeenCalled()
+        expect(resetCloudBackupMock).not.toHaveBeenCalled()
+        expect(resetSyncStateMock).not.toHaveBeenCalled()
+        expect(resetSyncActivityMock).not.toHaveBeenCalled()
+    })
+
+    test('rejects without a request when no backup is configured', async () => {
+        backupIdMock.value = null
+        const onError = vi.fn()
+
+        const { result } = renderHook(
+            () => useRemoveCloudBackupMutation({ onError }),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => result.current.mutate())
+
+        await waitFor(() => expect(onError).toHaveBeenCalled())
+        expect(destroyBackupMock).not.toHaveBeenCalled()
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
     })
 })

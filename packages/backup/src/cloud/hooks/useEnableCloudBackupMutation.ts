@@ -28,6 +28,8 @@ export type EnableCloudBackupMutationResult = {
     backupId: BackupId
     /** The salt the backup was registered with, pinned to this attempt. */
     salt: string
+    /** The device id the backup was registered under, pinned to this attempt. */
+    deviceId: string
 }
 
 /**
@@ -63,9 +65,9 @@ export const useEnableCloudBackupMutation = (
                 deviceId,
                 network,
             })
-            setConfigured({ backupId, salt })
+            setConfigured({ backupId, salt, deviceId })
             clearDraft()
-            return { backupId, salt }
+            return { backupId, salt, deviceId }
         },
         ...options,
     })

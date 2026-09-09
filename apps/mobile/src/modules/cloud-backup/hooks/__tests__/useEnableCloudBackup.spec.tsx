@@ -28,6 +28,7 @@ const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
             value: null as MutationCallbacks<{
                 backupId: string
                 salt: string
+                deviceId: string
             }> | null,
         },
     }),
@@ -67,6 +68,7 @@ describe('useEnableCloudBackup', () => {
             capturedOptions.value?.onSuccess?.({
                 backupId: 'did:pera:abc',
                 salt: 'c2FsdA==',
+                deviceId: 'device-123',
             }),
         )
 

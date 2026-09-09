@@ -35,6 +35,11 @@ const SYNC_ICON: Record<SyncBadge, { name: IconName; variant: PWIconVariant }> =
         syncing: { name: 'cloud-check', variant: 'secondary' },
     }
 
+const NEVER_SYNCED_ICON: { name: IconName; variant: PWIconVariant } = {
+    name: 'cloud-off',
+    variant: 'secondary',
+}
+
 export const CloudBackupOverviewScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -45,6 +50,7 @@ export const CloudBackupOverviewScreen = () => {
         accountsInSync,
         accountsNotBackedUp,
         contactsInSync,
+        contactsNotBackedUp,
         onPressAccounts,
         onPressContacts,
         onPressCredentialAddress,
@@ -53,7 +59,7 @@ export const CloudBackupOverviewScreen = () => {
         onPressTurnOff,
     } = useCloudBackupOverview()
 
-    const syncIcon = SYNC_ICON[syncStatus]
+    const syncIcon = syncStatus ? SYNC_ICON[syncStatus] : NEVER_SYNCED_ICON
 
     return (
         <PWScreen testID='cloud_backup_overview_screen'>
@@ -64,7 +70,11 @@ export const CloudBackupOverviewScreen = () => {
                     iconVariant={syncIcon.variant}
                     title={t('cloud_backup.overview.latest_sync')}
                     subtitle={lastSyncedLabel}
-                    trailing={<SyncStatusBadge status={syncStatus} />}
+                    trailing={
+                        syncStatus ? (
+                            <SyncStatusBadge status={syncStatus} />
+                        ) : undefined
+                    }
                     testID='cloud_backup_overview_latest_sync'
                 />
 
@@ -110,12 +120,27 @@ export const CloudBackupOverviewScreen = () => {
                             variant='filled'
                             icon='contacts'
                             title={t('cloud_backup.overview.contacts')}
-                            subtitle={t(
-                                'cloud_backup.overview.contacts_in_sync',
-                                {
-                                    count: contactsInSync,
-                                },
-                            )}
+                            subtitle={
+                                contactsNotBackedUp > 0
+                                    ? t(
+                                          'cloud_backup.overview.contacts_not_backed_up',
+                                          {
+                                              count: contactsNotBackedUp,
+                                          },
+                                      )
+                                    : t(
+                                          'cloud_backup.overview.contacts_in_sync',
+                                          {
+                                              count: contactsInSync,
+                                          },
+                                      )
+                            }
+                            subtitleIcon={
+                                contactsNotBackedUp > 0
+                                    ? 'cloud-off'
+                                    : undefined
+                            }
+                            subtitleIconVariant='error'
                             showChevron
                             onPress={onPressContacts}
                             testID='cloud_backup_overview_contacts'
@@ -162,7 +187,7 @@ export const CloudBackupOverviewScreen = () => {
                                 'cloud_backup.overview.sync_devices_description',
                             )}
                             showChevron
-                            onPress={onPressSyncDevices}
+                            onPress={() => void onPressSyncDevices()}
                             testID='cloud_backup_overview_sync_devices'
                         />
                         <OverviewRow

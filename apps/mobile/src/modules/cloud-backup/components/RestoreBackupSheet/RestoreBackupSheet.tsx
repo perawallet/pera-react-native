@@ -10,23 +10,51 @@
  limitations under the License
  */
 
-import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { PWSheetLayout, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { RestoreOptionRow } from './RestoreOptionRow'
+import { useStyles } from './styles'
 
-export type RestoreBackupSheetResult = 'continue'
+export type RestoreBackupSheetResult = 'scan' | 'manual'
 
 export const RestoreBackupSheet = () => {
     const { t } = useLanguage()
+    const styles = useStyles()
+    const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
 
     return (
-        <ConfirmActionContent<RestoreBackupSheetResult>
-            icon='cloud-download'
-            iconVariant='positive'
-            title={t('cloud_backup.restore.sheet_title')}
-            message={t('cloud_backup.restore.sheet_description')}
-            confirmLabel={t('cloud_backup.restore.sheet_continue')}
-            confirmValue='continue'
-            confirmTestID='cloud_backup_restore_sheet_continue'
-        />
+        <PWSheetLayout
+            testID='cloud_backup_restore_sheet'
+            header={
+                <SheetHeader
+                    title={t('cloud_backup.restore.sheet_title')}
+                    showClose
+                />
+            }
+        >
+            <PWView style={styles.body}>
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.description}
+                >
+                    {t('cloud_backup.restore.sheet_description')}
+                </PWText>
+                <PWView style={styles.options}>
+                    <RestoreOptionRow
+                        icon='qr'
+                        label={t('cloud_backup.restore.sheet_scan')}
+                        onPress={() => resolve('scan')}
+                        testID='cloud_backup_restore_sheet_scan'
+                    />
+                    <RestoreOptionRow
+                        icon='key'
+                        label={t('cloud_backup.restore.sheet_manual')}
+                        onPress={() => resolve('manual')}
+                        testID='cloud_backup_restore_sheet_manual'
+                    />
+                </PWView>
+            </PWView>
+        </PWSheetLayout>
     )
 }

@@ -80,6 +80,39 @@ describe('useQRScannerView', () => {
         )
     })
 
+    it('delivers a payload the deeplink parser rejects when skipDeepLinkHandler is true', () => {
+        // A cloud-backup sync envelope is raw JSON, not a deeplink; gating it
+        // on `isValidDeepLink` swallowed the scan silently.
+        mockIsValidDeepLink.mockReturnValue(false)
+        const onSuccess = vi.fn()
+        const envelope = '{"v":1,"t":"backup-sync","payload":"..."}'
+        const { result } = renderHook(() =>
+            useQRScannerView({
+                isVisible: true,
+                onSuccess,
+                skipDeepLinkHandler: true,
+            }),
+        )
+        result.current.onBarcodeScanned([{ rawValue: envelope }])
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        expect(onSuccess).toHaveBeenCalledWith(envelope, expect.any(Function))
+    })
+
+    it('ignores a payload the deeplink parser rejects when skipDeepLinkHandler is false', () => {
+        mockIsValidDeepLink.mockReturnValue(false)
+        const onSuccess = vi.fn()
+        const { result } = renderHook(() =>
+            useQRScannerView({
+                isVisible: true,
+                onSuccess,
+                skipDeepLinkHandler: false,
+            }),
+        )
+        result.current.onBarcodeScanned([{ rawValue: 'not-a-deeplink' }])
+        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        expect(onSuccess).not.toHaveBeenCalled()
+    })
+
     it('ignores re-entrant scans while one is already being handled', () => {
         const onSuccess = vi.fn()
         const { result } = renderHook(() =>

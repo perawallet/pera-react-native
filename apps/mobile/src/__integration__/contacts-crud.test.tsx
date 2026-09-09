@@ -37,6 +37,35 @@ vi.mock('expo-image-picker', () => ({
     })),
 }))
 
+const {
+    isCloudBackupEnabledMock,
+    keepContactInBackupMock,
+    deleteContactFromBackupMock,
+} = vi.hoisted(() => ({
+    isCloudBackupEnabledMock: vi.fn(() => false),
+    keepContactInBackupMock: vi.fn(async () => true),
+    deleteContactFromBackupMock: vi.fn(async () => true),
+}))
+
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: () => isCloudBackupEnabledMock(),
+}))
+
+// Only the manager is stubbed: the sheet, the screen and the sync-state store
+// stay real, because the wiring between them is what this file exercises.
+vi.mock('@perawallet/wallet-core-backup', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-backup')
+    >('@perawallet/wallet-core-backup')
+    return {
+        ...actual,
+        getBackupSyncManager: () => ({
+            keepContactInBackup: keepContactInBackupMock,
+            deleteContactFromBackup: deleteContactFromBackupMock,
+        }),
+    }
+})
+
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -45,6 +74,13 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    BackupItemStatus,
+    BackupItemType,
+    contactItemKey,
+    createEmptySyncState,
+    useBackupSyncStateStore,
+} from '@perawallet/wallet-core-backup'
 import { PWButton } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen/AddContactScreen'
@@ -138,6 +174,24 @@ const readContacts = () => {
     return result.current.contacts
 }
 
+/** Minimum sync state for `useIsContactBackedUp` to report true, which is what
+ *  makes EditContactScreen ask about the backup before removing a contact. */
+const markContactBackedUp = (address: string) => {
+    useBackupSyncStateStore.getState().setSyncState({
+        ...createEmptySyncState('did:pera:TESTBACKUP'),
+        items: {
+            [contactItemKey(address)]: {
+                type: BackupItemType.CONTACT,
+                knownVer: 1,
+                baseVer: 1,
+                isDirty: false,
+                status: BackupItemStatus.ACTIVE,
+                lastRemoteHash: null,
+            },
+        },
+    })
+}
+
 describe('Flow: Contacts CRUD', () => {
     beforeEach(() => {
         resetTestKeystore()
@@ -146,6 +200,10 @@ describe('Flow: Contacts CRUD', () => {
             .getState()
             .setSelectedAccountAddress(SENDER_ACCOUNT.address)
         resetContacts()
+        isCloudBackupEnabledMock.mockReturnValue(false)
+        useBackupSyncStateStore.getState().setSyncState(null)
+        keepContactInBackupMock.mockClear()
+        deleteContactFromBackupMock.mockClear()
     })
 
     afterEach(() => {
@@ -296,6 +354,81 @@ describe('Flow: Contacts CRUD', () => {
             await waitFor(() => {
                 expect(readContacts()).toHaveLength(0)
             })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a backed-up contact, when the cloud-backup sheet is answered with "Keep it", then the contact leaves the device and stays in the backup',
+        async () => {
+            isCloudBackupEnabledMock.mockReturnValue(true)
+            seedContact('Alice', HD_TEST_ADDRESS)
+            selectContact('Alice', HD_TEST_ADDRESS)
+            markContactBackedUp(HD_TEST_ADDRESS)
+
+            renderWithNavigation(EditContactScreen, 'EditContact', {
+                additionalScreens: [
+                    { name: 'Contacts', component: ContactsListPlaceholder },
+                ],
+            })
+
+            fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
+            await waitFor(() =>
+                screen.getByTestId('contact_delete_confirm_button'),
+            )
+            fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
+
+            await waitFor(() => screen.getByTestId('delete_from_backup_cancel'))
+            fireEvent.click(screen.getByTestId('delete_from_backup_cancel'))
+
+            await waitFor(() => {
+                expect(keepContactInBackupMock).toHaveBeenCalledWith(
+                    HD_TEST_ADDRESS,
+                    'Alice',
+                )
+            })
+            await waitFor(() => {
+                expect(readContacts()).toHaveLength(0)
+            })
+            expect(deleteContactFromBackupMock).not.toHaveBeenCalled()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a backed-up contact, when the cloud-backup sheet is confirmed, then the backup copy is deleted too',
+        async () => {
+            isCloudBackupEnabledMock.mockReturnValue(true)
+            seedContact('Alice', HD_TEST_ADDRESS)
+            selectContact('Alice', HD_TEST_ADDRESS)
+            markContactBackedUp(HD_TEST_ADDRESS)
+
+            renderWithNavigation(EditContactScreen, 'EditContact', {
+                additionalScreens: [
+                    { name: 'Contacts', component: ContactsListPlaceholder },
+                ],
+            })
+
+            fireEvent.click(screen.getByTestId('edit_contact_delete_button'))
+            await waitFor(() =>
+                screen.getByTestId('contact_delete_confirm_button'),
+            )
+            fireEvent.click(screen.getByTestId('contact_delete_confirm_button'))
+
+            await waitFor(() =>
+                screen.getByTestId('delete_from_backup_confirm'),
+            )
+            fireEvent.click(screen.getByTestId('delete_from_backup_confirm'))
+
+            await waitFor(() => {
+                expect(deleteContactFromBackupMock).toHaveBeenCalledWith(
+                    HD_TEST_ADDRESS,
+                )
+            })
+            await waitFor(() => {
+                expect(readContacts()).toHaveLength(0)
+            })
+            expect(keepContactInBackupMock).not.toHaveBeenCalled()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

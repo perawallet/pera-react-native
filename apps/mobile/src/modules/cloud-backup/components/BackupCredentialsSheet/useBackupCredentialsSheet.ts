@@ -23,12 +23,9 @@ import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useClipboard } from '@hooks/useClipboard'
 
-export type BackupCredentialsResult = 'restore'
-
 /**
  * `unavailable` — nothing is stored, so this device isn't configured.
- * `unreadable` — something is stored but can't be decoded; per the backup
- * flow docs (Case 25) the only recovery is re-entering phrase and salt.
+ * `unreadable` — something is stored but can't be decoded.
  */
 export type PassphraseStatus =
     | 'loading'
@@ -43,15 +40,13 @@ type UseBackupCredentialsSheetResult = {
     passphraseStatus: PassphraseStatus
     handleCopyPassphrase: () => void
     handleCopyEncryptionKey: () => void
-    handleRestore: () => void
     handleClose: () => void
 }
 
 export const useBackupCredentialsSheet =
     (): UseBackupCredentialsSheetResult => {
         const { copyToClipboard } = useClipboard()
-        const { resolve, dismiss } =
-            useBottomSheetResult<BackupCredentialsResult>()
+        const { dismiss } = useBottomSheetResult()
         const backupId = useCloudBackupStore(state => state.backupId)
         const salt = useCloudBackupStore(state => state.salt)
 
@@ -145,8 +140,6 @@ export const useBackupCredentialsSheet =
             )
         }, [copyToClipboard, encryptionKey])
 
-        const handleRestore = useCallback(() => resolve('restore'), [resolve])
-
         const handleClose = useCallback(() => dismiss(), [dismiss])
 
         return {
@@ -156,7 +149,6 @@ export const useBackupCredentialsSheet =
             passphraseStatus,
             handleCopyPassphrase,
             handleCopyEncryptionKey,
-            handleRestore,
             handleClose,
         }
     }

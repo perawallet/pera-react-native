@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
+import { useCallback } from 'react'
+import {
+    getBackupSyncManager,
+    useBackupSyncActivityStore,
+} from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 
 type UseBackupSyncResult = {
@@ -20,18 +23,17 @@ type UseBackupSyncResult = {
 }
 
 export const useBackupSync = (): UseBackupSyncResult => {
-    const [isSyncing, setIsSyncing] = useState(false)
+    // The manager owns the flag, so a periodic tick, an account-change sync or
+    // a socket-driven pull shows here too — not only the runs this hook starts.
+    const isSyncing = useBackupSyncActivityStore(state => state.isSyncing)
 
     const syncNow = useCallback(async (): Promise<void> => {
-        setIsSyncing(true)
         try {
             await getBackupSyncManager().syncNow()
         } catch (error) {
             logger.warn('useBackupSync: manual sync failed', {
                 error: error instanceof Error ? error.message : String(error),
             })
-        } finally {
-            setIsSyncing(false)
         }
     }, [])
 

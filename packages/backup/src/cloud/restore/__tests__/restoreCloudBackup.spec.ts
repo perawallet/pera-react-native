@@ -42,7 +42,10 @@ import {
 const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
 
+const CONTACT_SUMMARY = { imported: 1, failed: [] }
+
 const importAccounts = vi.fn()
+const importContacts = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -50,6 +53,7 @@ const params = () => ({
     deviceId: 'device-123',
     network: 'mainnet' as const,
     importAccounts,
+    importContacts,
 })
 
 const keys = (fill = 5) => ({
@@ -59,10 +63,24 @@ const keys = (fill = 5) => ({
     authSecretKey: new Uint8Array(64).fill(4),
 })
 
+const manifestItem = (overrides = {}) => ({
+    type: 'ACCOUNT',
+    ver: 3,
+    status: 'ACTIVE',
+    hash: 'sha256:remote',
+    lastSeq: 9,
+    ...overrides,
+})
+
 const pull = {
     backupGlobalHash: 'hash',
     lastSeq: 10,
+    manifestItems: {
+        'accounts/A': manifestItem(),
+        'secrets/A': manifestItem({ ver: 2, hash: 'sha256:secret' }),
+    },
     accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
+    contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
     skipped: [],
 }
 
@@ -83,6 +101,7 @@ describe('restoreCloudBackup', () => {
         deleteBackupKeysMock.mockReset().mockResolvedValue(undefined)
         pullBackupItemsMock.mockReset().mockResolvedValue(pull)
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
+        importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -94,14 +113,88 @@ describe('restoreCloudBackup', () => {
             mnemonic: MNEMONIC,
         })
         expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
+        expect(importContacts).toHaveBeenCalledWith(pull.contacts)
         expect(result.backupId).toBe('did:pera:abc')
         expect(result.summary).toBe(SUMMARY)
+        expect(result.contactSummary).toBe(CONTACT_SUMMARY)
         expect(result.syncState).toMatchObject({
             backupId: 'did:pera:abc',
             lastKnownBackupHash: 'hash',
             lastSyncedSeq: 10,
             lastSyncResult: 'SUCCESS',
         })
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('derives under the argon2id config it was given, not the build defaults', async () => {
+        const argon2id = {
+            timeCost: 4,
+            memoryCost: 128,
+            parallelism: 2,
+            outputLength: 32,
+        }
+
+        await restoreCloudBackup({ ...params(), argon2id })
+
+        expect(deriveBackupKeysMock).toHaveBeenCalledWith(
+            expect.objectContaining({ argon2id }),
+        )
+    })
+
+    test('leaves the config unset when the caller has none', async () => {
+        await restoreCloudBackup(params())
+
+        expect(deriveBackupKeysMock).toHaveBeenCalledWith(
+            expect.objectContaining({ argon2id: undefined }),
+        )
+    })
+
+    test('adopts the manifest versions, so the first push after a restore is not refused', async () => {
+        const { syncState } = await restoreCloudBackup(params())
+
+        // Version 0 would mean "the server has nothing here"; the server has
+        // these at 3 and 2, refuses the write, and no delta ever follows to
+        // correct it.
+        expect(syncState.items['accounts/A']).toMatchObject({
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: 'ACTIVE',
+            lastRemoteHash: 'sha256:remote',
+        })
+        expect(syncState.items['secrets/A']).toMatchObject({
+            knownVer: 2,
+            baseVer: 2,
+        })
+    })
+
+    test('tracks keys the restore never imported, tombstones included', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                'accounts/GONE': manifestItem({ ver: 7, status: 'IGNORED' }),
+            },
+            // Deleted and unreadable items are filtered out of the import.
+            accounts: [],
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items['accounts/GONE']).toMatchObject({
+            knownVer: 7,
+            baseVer: 7,
+            status: 'IGNORED',
+        })
+    })
+
+    test('keeps a restore whose accounts landed when the contact import throws', async () => {
+        importContacts.mockRejectedValue(new Error('store unavailable'))
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(result.contactSummary).toEqual({ imported: 0, failed: [] })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
     })
 

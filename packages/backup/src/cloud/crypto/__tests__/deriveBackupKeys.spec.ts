@@ -17,9 +17,16 @@ import { describe, test, expect, vi } from 'vitest'
 // Argon2id is native-only; mock it to a fixed master key (0x01..0x20) so the
 // orchestration is deterministic and the downstream HKDF/Ed25519 vectors match
 // the per-unit specs.
+// Params are spelled out so `mock.calls` keeps its tuple shape and the salt
+// and config assertions below can index into it.
 const { deriveBackupMasterKeyMock } = vi.hoisted(() => ({
     deriveBackupMasterKeyMock: vi.fn(
-        async () => new Uint8Array(Array.from({ length: 32 }, (_, i) => i + 1)),
+        async (
+            _password: Uint8Array,
+            _salt: Uint8Array,
+            _config?: unknown,
+        ): Promise<Uint8Array> =>
+            new Uint8Array(Array.from({ length: 32 }, (_, i) => i + 1)),
     ),
 }))
 
@@ -60,5 +67,29 @@ describe('deriveBackupKeys', () => {
 
         const saltArg = deriveBackupMasterKeyMock.mock.calls.at(-1)?.[1]
         expect(saltArg).toEqual(new Uint8Array(16).fill(9))
+    })
+
+    test('passes a supplied argon2id config through to the derivation', async () => {
+        const argon2id = {
+            timeCost: 4,
+            memoryCost: 128,
+            parallelism: 2,
+            outputLength: 32,
+        }
+
+        await deriveBackupKeys({ mnemonic: ['abandon'], salt: SALT, argon2id })
+
+        expect(deriveBackupMasterKeyMock.mock.calls.at(-1)?.[2]).toEqual(
+            argon2id,
+        )
+    })
+
+    // Undefined rather than ARGON2ID_CONFIG: the default lives on
+    // `deriveBackupMasterKey`, so restating it here would let the two drift
+    // apart without failing.
+    test('leaves the config unset when none is supplied', async () => {
+        await deriveBackupKeys({ mnemonic: ['abandon'], salt: SALT })
+
+        expect(deriveBackupMasterKeyMock.mock.calls.at(-1)?.[2]).toBeUndefined()
     })
 })

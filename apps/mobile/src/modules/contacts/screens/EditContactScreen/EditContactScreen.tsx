@@ -19,6 +19,7 @@ import { ContactForm } from '@components/ContactForm'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { DeleteFromBackupSheet } from '@modules/cloud-backup'
 import { useEditContactForm } from '@modules/contacts/hooks'
 
 export const EditContactScreen = () => {
@@ -32,6 +33,7 @@ export const EditContactScreen = () => {
         rawAddressInput,
         imageUri,
         nfd,
+        needsBackupChoice,
         onAddressInputChange,
         onPickImage,
         save,
@@ -71,8 +73,27 @@ export const EditContactScreen = () => {
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-        if (confirmed) removeContact()
-    }, [requestBottomSheet, t, removeContact])
+        if (!confirmed) return
+        if (!needsBackupChoice) {
+            await removeContact()
+            return
+        }
+
+        const shouldDelete = await requestBottomSheet<boolean>({
+            contents: (
+                <DeleteFromBackupSheet
+                    title={t('cloud_backup.contacts.delete_sheet_title')}
+                    message={t('cloud_backup.contacts.delete_sheet_body')}
+                    declineLabel={t('cloud_backup.accounts.keep_action')}
+                />
+            ),
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        // Dismissed without choosing: the contact stays, so the user is never
+        // left with a removal whose cloud half they did not decide.
+        if (shouldDelete == null) return
+        await removeContact(shouldDelete ? 'delete' : 'keep')
+    }, [requestBottomSheet, t, removeContact, needsBackupChoice])
 
     return (
         <PWScreen

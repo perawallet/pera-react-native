@@ -15,12 +15,17 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const { deleteBackupKeysMock, resetCloudBackupMock, resetSyncStateMock } =
-    vi.hoisted(() => ({
-        deleteBackupKeysMock: vi.fn(),
-        resetCloudBackupMock: vi.fn(),
-        resetSyncStateMock: vi.fn(),
-    }))
+const {
+    deleteBackupKeysMock,
+    resetCloudBackupMock,
+    resetSyncStateMock,
+    resetSyncActivityMock,
+} = vi.hoisted(() => ({
+    deleteBackupKeysMock: vi.fn(),
+    resetCloudBackupMock: vi.fn(),
+    resetSyncStateMock: vi.fn(),
+    resetSyncActivityMock: vi.fn(),
+}))
 
 vi.mock('../../credentials/keyStorage', () => ({
     deleteBackupKeys: deleteBackupKeysMock,
@@ -36,6 +41,12 @@ vi.mock('../../store/syncStateStore', () => ({
     useBackupSyncStateStore: (
         selector: (s: { resetState: () => void }) => unknown,
     ) => selector({ resetState: resetSyncStateMock }),
+}))
+
+vi.mock('../../store/syncActivityStore', () => ({
+    useBackupSyncActivityStore: (
+        selector: (s: { resetState: () => void }) => unknown,
+    ) => selector({ resetState: resetSyncActivityMock }),
 }))
 
 import { useDisableCloudBackupMutation } from '../useDisableCloudBackupMutation'
@@ -68,6 +79,7 @@ describe('useDisableCloudBackupMutation', () => {
         await waitFor(() => expect(resetCloudBackupMock).toHaveBeenCalled())
         expect(deleteBackupKeysMock).toHaveBeenCalled()
         expect(resetSyncStateMock).toHaveBeenCalled()
+        expect(resetSyncActivityMock).toHaveBeenCalled()
     })
 
     test('keeps local state when key removal fails', async () => {
@@ -84,5 +96,6 @@ describe('useDisableCloudBackupMutation', () => {
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(resetCloudBackupMock).not.toHaveBeenCalled()
         expect(resetSyncStateMock).not.toHaveBeenCalled()
+        expect(resetSyncActivityMock).not.toHaveBeenCalled()
     })
 })

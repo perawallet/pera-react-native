@@ -3309,26 +3309,39 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 // Mock @perawallet/wallet-core-contacts
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: vi.fn(() => ({
-        contacts: [],
-        findContacts: vi.fn(() => []),
+vi.mock('@perawallet/wallet-core-contacts', () => {
+    const state = {
+        contacts: [] as unknown[],
         addContact: vi.fn(),
         editContact: vi.fn(),
         deleteContact: vi.fn(),
         selectedContact: null,
         setSelectedContact: vi.fn(),
-    })),
-    useContactsStore: vi.fn(() => ({
-        contacts: [],
-        addContact: vi.fn(),
-        editContact: vi.fn(),
-        deleteContact: vi.fn(),
-        selectedContact: null,
-        setSelectedContact: vi.fn(),
-    })),
-    DuplicateAddressError: class DuplicateAddressError extends Error {},
-}))
+        resetState: vi.fn(),
+    }
+    // Shaped like the zustand store, not just its hook call: the backup sync
+    // manager reads it through `getState`/`subscribe`.
+    const useContactsStore = Object.assign(
+        vi.fn((selector?: (s: any) => any) =>
+            selector ? selector(state) : state,
+        ),
+        {
+            getState: () => state,
+            setState: vi.fn(),
+            subscribe: vi.fn(() => () => undefined),
+        },
+    )
+
+    return {
+        useContacts: vi.fn(() => ({
+            ...state,
+            findContacts: vi.fn(() => []),
+        })),
+        useContactsStore,
+        DuplicateAddressError: class DuplicateAddressError extends Error {},
+        ContactNotFoundError: class ContactNotFoundError extends Error {},
+    }
+})
 
 // Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
 // cannot be parsed as JS; mock the whole package to avoid the SyntaxError)

@@ -22,6 +22,7 @@ const STORE_NAME = 'cloud-backup-store'
 const initialState = {
     backupId: null as string | null,
     salt: null as string | null,
+    deviceId: null as string | null,
 }
 
 type SetState = (partial: Partial<CloudBackupStore>) => void
@@ -31,7 +32,8 @@ const createActions = (
     set: SetState,
     get: GetState,
 ): CloudBackupActions & BaseStoreState => ({
-    setConfigured: ({ backupId, salt }) => set({ backupId, salt }),
+    setConfigured: ({ backupId, salt, deviceId }) =>
+        set({ backupId, salt, deviceId }),
     isConfigured: () => get().backupId != null,
     resetState: () => set(initialState),
 })
@@ -39,6 +41,7 @@ const createActions = (
 const persistedState = (state: CloudBackupStore) => ({
     backupId: state.backupId,
     salt: state.salt,
+    deviceId: state.deviceId,
 })
 
 export const useCloudBackupStore = create<CloudBackupStore>()(

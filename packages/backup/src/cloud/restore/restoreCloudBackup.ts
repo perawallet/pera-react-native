@@ -14,9 +14,20 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
-import { createEmptySyncState } from '../models'
-import type { BackupId, DeviceId, SyncState } from '../models'
-import type { ImportSummary, SyncImportFn } from '../sync/types'
+import { createEmptySyncState, trackedItemsFromManifest } from '../models'
+import type {
+    Argon2idConfig,
+    BackupId,
+    ContactBackupPayload,
+    DeviceId,
+    SyncState,
+} from '../models'
+import type {
+    ContactImportFn,
+    ContactImportSummary,
+    ImportSummary,
+    SyncImportFn,
+} from '../sync/types'
 import type { BackupKeys } from '../crypto/deriveBackupKeys'
 import { pullBackupItems } from './pullBackupItems'
 import type { PullBackupItemsResult } from './pullBackupItems'
@@ -42,19 +53,25 @@ type RestoreCloudBackupParams = {
     mnemonic: string[]
     /** Base64 salt the UI calls the "encryption key". */
     salt: string
+    /** Defaults to this build's `ARGON2ID_CONFIG`. A sync QR carries the
+     *  parameters its backup was created under, so that path passes them. */
+    argon2id?: Argon2idConfig
     deviceId: DeviceId
     network: Network
     /** Decrypted remote accounts → wallet. Hook-bound (needs KMS), so the app
      *  layer injects it. */
     importAccounts: SyncImportFn
+    /** Decrypted remote contacts → contacts store. */
+    importContacts: ContactImportFn
 }
 
 export type RestoreCloudBackupResult = {
     backupId: BackupId
-    /** Seeded from the pull so the first background sync resumes at `lastSeq`
-     *  instead of re-reading every item. */
+    /** Seeded from the pull's manifest, so the first background sync resumes at
+     *  `lastSeq` and pushes at the versions the server actually holds. */
     syncState: SyncState
     summary: ImportSummary
+    contactSummary: ContactImportSummary
 }
 
 /** Reads the category off a rejection from {@link restoreCloudBackup}. */
@@ -94,6 +111,23 @@ const cleanUpAfterRestoreFailure = async (): Promise<void> => {
     }
 }
 
+/** Never let the contacts half sink a restore whose accounts already landed:
+ *  the keys are committed by this point, so a throw here would roll them back
+ *  and leave the wallet with neither. */
+const importContactsSafely = async (
+    importContacts: ContactImportFn,
+    contacts: ContactBackupPayload[],
+): Promise<ContactImportSummary> => {
+    try {
+        return await importContacts(contacts)
+    } catch (error) {
+        logger.warn('restoreCloudBackup: contact import failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return { imported: 0, failed: [] }
+    }
+}
+
 const syncStateFromPull = (
     backupId: BackupId,
     pull: PullBackupItemsResult,
@@ -103,17 +137,19 @@ const syncStateFromPull = (
     lastSyncedSeq: pull.lastSeq,
     lastSyncedAt: Date.now(),
     lastSyncResult: 'SUCCESS',
+    items: trackedItemsFromManifest(pull.manifestItems),
 })
 
 const deriveKeys = async (
     mnemonic: string[],
     salt: string,
+    argon2id?: Argon2idConfig,
 ): Promise<BackupKeys> => {
     // Lazy import keeps tweetnacl/@noble/argon2 out of the startup module graph.
     const { deriveBackupKeys } = await import('../crypto')
 
     try {
-        return await deriveBackupKeys({ mnemonic, salt })
+        return await deriveBackupKeys({ mnemonic, salt, argon2id })
     } catch (error) {
         // The phrase and the salt are the only inputs, and a truncated paste of
         // the salt throws out of `decodeFromBase64` — so a derive failure here
@@ -130,13 +166,16 @@ const deriveKeys = async (
 export const restoreCloudBackup = async ({
     mnemonic,
     salt,
+    argon2id,
     deviceId,
     network,
     importAccounts,
+    importContacts,
 }: RestoreCloudBackupParams): Promise<RestoreCloudBackupResult> => {
     const { backupId, encryptionKey, authSecretKey } = await deriveKeys(
         mnemonic,
         salt,
+        argon2id,
     )
 
     try {
@@ -149,11 +188,16 @@ export const restoreCloudBackup = async ({
             encryptionKey,
         })
         const summary = await importAccounts(pull.accounts)
+        const contactSummary = await importContactsSafely(
+            importContacts,
+            pull.contacts,
+        )
 
         return {
             backupId,
             syncState: syncStateFromPull(backupId, pull),
             summary,
+            contactSummary,
         }
     } catch (error) {
         const category = categorize(error)
