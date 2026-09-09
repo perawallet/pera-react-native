@@ -32,3 +32,5 @@ declare module 'crypto' {
         callback: (error: Error | null, result: Uint8Array) => void,
     ): void
 }
+
+export {}

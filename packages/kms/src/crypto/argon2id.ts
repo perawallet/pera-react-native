@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// Consumers that compile kms from source (conformance) have their own tsconfig
+// `include`, which never picks up the sibling augmentation. Import it so it
+// travels with the only file that needs it; the import erases at runtime.
+import type {} from './crypto-argon2'
 import { argon2 } from 'crypto'
 
 export type Argon2idParams = {
