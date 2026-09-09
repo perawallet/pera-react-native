@@ -317,35 +317,35 @@ describe('useLocalKeyArc60Signer', () => {
         ).rejects.toBeInstanceOf(Arc60BadJsonError)
     })
 
-    test('signs a rekeyed algo25 with its OWN keypair (not the auth chain)', async () => {
-        // The dApp verifies the signature against ORIG_ADDR's pubkey, so
-        // we sign with ORIG_ADDR's own key even though it has been rekeyed.
+    test('rejects a rekeyed algo25 naming itself as signer even though it holds its key', async () => {
+        // Once ORIG_ADDR is rekeyed, control belongs to AUTH_ADDR on chain;
+        // a proof made with ORIG_ADDR's old key must not authenticate it.
         const original = {
             ...algo25Account,
             address: 'ORIG_ADDR',
             rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
-        mockSignDataWithKey.mockResolvedValue([new Uint8Array([1])])
+        mockAccounts = [original]
 
         const origSiwa = new TextEncoder().encode(
             buildSiwa({ account_address: 'ORIG_ADDR' }),
         )
 
         const { result } = renderHook(() => useLocalKeyArc60Signer())
-        await act(async () => {
-            await result.current.signArc60(
-                original,
-                {
-                    ...validStdSigData,
-                    data: encodeToBase64(origSiwa),
-                    signer: 'ORIG_ADDR',
-                },
-                validMetadata,
-            )
-        })
-
-        const [childId] = mockSignDataWithKey.mock.calls[0]
-        expect(childId).toBe('key-algo25-ed25519')
+        await expect(
+            act(async () => {
+                await result.current.signArc60(
+                    original,
+                    {
+                        ...validStdSigData,
+                        data: encodeToBase64(origSiwa),
+                        signer: 'ORIG_ADDR',
+                    },
+                    validMetadata,
+                )
+            }),
+        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 
     test('rejects a watch-rekeyed account even when the auth has keys', async () => {

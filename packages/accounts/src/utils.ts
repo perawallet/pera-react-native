@@ -237,39 +237,21 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
 
 /**
- * Diverges from {@link canSignArbitraryData} on two counts: ARC-60 also has an
- * on-device Ledger signing path, and it falls back to the single rekey hop.
+ * Diverges from {@link canSignArbitraryData} only in that ARC-60 also has an
+ * on-device Ledger signing path.
  *
- * Strictly additive over "can this account sign for itself": the hop is only
- * consulted for a signer that has no key of its own, which is what let a
- * rekeyed account be refused outright. A signer that can sign
- * directly keeps signing with its own key — deliberately, because a dApp that
- * already resolved the auth address itself names *that* account as the signer,
- * and hopping again off a chained rekey would sign with a key the requested
- * account's auth-addr does not designate.
- *
- * The hop target is refused when it cannot produce a verifiable ARC-60
- * signature: multisig (a response carries one signature, so a threshold can
- * never be represented) and quantum (ARC-60 verifies Ed25519 only — the same
- * reason {@link canSignViaParticipants} excludes it).
- *
- * Must stay in lockstep with `resolveSigningAccount` in the signing package,
- * which applies the same fallback when picking the account that signs.
+ * Deliberately account-local: an ARC-60 signature verifies against `signer`'s
+ * own public key, so a rekeyed signer holding no key of its own cannot be
+ * signed for by its auth account (every verifier would reject the result). A
+ * dApp that wants a rekeyed account authenticated names the auth address as
+ * `signer` and the account as the SIWA `account_address`; the signing
+ * package's `validateArc60AuthRequest` enforces that shape (a rekeyed account
+ * may not sign for itself even when it still holds its key). Must stay in
+ * lockstep with
+ * `resolveSigningAccount` in the signing package.
  */
-export const canSignArc60 = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): boolean => {
-    if (canSignDirectly(account)) return true
-    if (!account.rekeyAddress) return false
-    const auth = accounts.find(a => a.address === account.rekeyAddress)
-    return (
-        !!auth &&
-        !isMultisigAccount(auth) &&
-        !isQuantumAccount(auth) &&
-        canSignDirectly(auth)
-    )
-}
+export const canSignArc60 = (account: WalletAccount): boolean =>
+    canSignDirectly(account)
 
 /**
  * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
