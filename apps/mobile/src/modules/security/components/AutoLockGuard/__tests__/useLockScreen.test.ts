@@ -17,7 +17,7 @@ import { useLockScreen } from '../useLockScreen'
 import {
     usePinCode,
     useBiometrics,
-    type BiometricsAuthenticateResult,
+    type BiometricUnlockOutcome,
 } from '@perawallet/wallet-core-security'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
@@ -47,7 +47,7 @@ describe('useLockScreen', () => {
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockoutEndTime = vi.fn()
     const mockCheckBiometricsEnabled = vi.fn()
-    const mockAuthenticateWithBiometrics = vi.fn()
+    const mockUnlockWithBiometrics = vi.fn()
     const mockOnUnlock = vi.fn()
 
     beforeEach(() => {
@@ -64,7 +64,7 @@ describe('useLockScreen', () => {
         })
         ;(useBiometrics as Mock).mockReturnValue({
             checkBiometricsEnabled: mockCheckBiometricsEnabled,
-            authenticateWithBiometrics: mockAuthenticateWithBiometrics,
+            unlockWithBiometrics: mockUnlockWithBiometrics,
         })
     })
 
@@ -113,7 +113,7 @@ describe('useLockScreen', () => {
             setLockoutEndTime: mockSetLockoutEndTime,
         })
         mockCheckBiometricsEnabled.mockResolvedValue(true)
-        mockAuthenticateWithBiometrics.mockResolvedValue({ success: true })
+        mockUnlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
 
         renderHook(() =>
             useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -126,8 +126,84 @@ describe('useLockScreen', () => {
         })
 
         expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
-        expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+        expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
         expect(mockOnUnlock).not.toHaveBeenCalled()
+    })
+
+    describe('unlockWithBiometrics outcome handling', () => {
+        it('unlocks only when the token unwrap succeeds', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics.mockResolvedValue({ kind: 'ok' })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() => expect(mockOnUnlock).toHaveBeenCalled())
+        })
+
+        it('stays locked when the unwrap reports a mismatch', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(mockUnlockWithBiometrics).toHaveBeenCalled(),
+            )
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+        })
+
+        it('stays locked and does not retry when the record reports a lockout', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics.mockResolvedValue({
+                kind: 'locked',
+                lockoutEndTime: Date.now() + 30_000,
+            })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(mockUnlockWithBiometrics).toHaveBeenCalled(),
+            )
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+            expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
+        })
+
+        it('retries once on a system cancel, as before', async () => {
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics
+                .mockResolvedValueOnce({
+                    kind: 'failed',
+                    reason: 'system-cancel',
+                })
+                .mockResolvedValueOnce({ kind: 'ok' })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() => expect(mockOnUnlock).toHaveBeenCalled())
+        })
+
+        it('feeds the record lockout into the pad when the unwrap reports locked', async () => {
+            const lockoutEndTime = Date.now() + 30_000
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics.mockResolvedValue({
+                kind: 'locked',
+                lockoutEndTime,
+            })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
+                    lockoutEndTime,
+                ),
+            )
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+        })
     })
 
     describe('handlePinComplete', () => {
@@ -334,8 +410,8 @@ describe('useLockScreen', () => {
         describe('biometric prompt on cold-start lock activation', () => {
             it('does not prompt biometrics while unlocked', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 renderHook(() =>
@@ -347,7 +423,7 @@ describe('useLockScreen', () => {
                 })
 
                 expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
-                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
@@ -357,8 +433,8 @@ describe('useLockScreen', () => {
                 // burned the attempt flag at mount and double-prompted on the
                 // flip, cancelling the first prompt mid-flight.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 const { rerender } = renderHook(
@@ -376,7 +452,7 @@ describe('useLockScreen', () => {
                     await Promise.resolve()
                 })
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
@@ -387,10 +463,10 @@ describe('useLockScreen', () => {
                 // biometric prompt.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
                 let resolveAuth:
-                    | ((result: BiometricsAuthenticateResult) => void)
+                    | ((result: BiometricUnlockOutcome) => void)
                     | undefined
-                mockAuthenticateWithBiometrics.mockReturnValue(
-                    new Promise<BiometricsAuthenticateResult>(resolve => {
+                mockUnlockWithBiometrics.mockReturnValue(
+                    new Promise<BiometricUnlockOutcome>(resolve => {
                         resolveAuth = resolve
                     }),
                 )
@@ -399,11 +475,9 @@ describe('useLockScreen', () => {
                     checkBiometricsEnabled: (
                         ...args: Parameters<typeof mockCheckBiometricsEnabled>
                     ) => mockCheckBiometricsEnabled(...args),
-                    authenticateWithBiometrics: (
-                        ...args: Parameters<
-                            typeof mockAuthenticateWithBiometrics
-                        >
-                    ) => mockAuthenticateWithBiometrics(...args),
+                    unlockWithBiometrics: (
+                        ...args: Parameters<typeof mockUnlockWithBiometrics>
+                    ) => mockUnlockWithBiometrics(...args),
                 }))
 
                 const { rerender } = renderHook(
@@ -416,17 +490,17 @@ describe('useLockScreen', () => {
                 await act(async () => {
                     await Promise.resolve()
                 })
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
 
                 // Identity churn while the OS prompt is up.
                 rerender({ isLocked: true })
 
                 await act(async () => {
-                    resolveAuth?.({ success: true })
+                    resolveAuth?.({ kind: 'ok' })
                     await Promise.resolve()
                 })
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
         })
@@ -434,8 +508,8 @@ describe('useLockScreen', () => {
         describe('biometric prompt on repeated lock activations', () => {
             it('prompts biometrics again after unlock and re-lock', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 const { rerender } = renderHook(
@@ -448,7 +522,7 @@ describe('useLockScreen', () => {
                 await act(async () => {
                     await Promise.resolve()
                 })
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
 
                 // Unlock
                 rerender({ isLocked: false })
@@ -458,13 +532,13 @@ describe('useLockScreen', () => {
                 await act(async () => {
                     await Promise.resolve()
                 })
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(2)
             })
 
             it('does not prompt biometrics on re-lock if user is locked out', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 ;(usePinCode as Mock).mockReturnValue({
@@ -487,7 +561,7 @@ describe('useLockScreen', () => {
                     await Promise.resolve()
                 })
 
-                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
             })
         })
 
@@ -520,8 +594,8 @@ describe('useLockScreen', () => {
             it('defers the cold-start prompt until the app becomes active', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 renderHook(() =>
@@ -530,7 +604,7 @@ describe('useLockScreen', () => {
                 await flushPrompt()
 
                 expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
-                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
 
                 setAppState('active')
                 await act(async () => {
@@ -538,7 +612,7 @@ describe('useLockScreen', () => {
                 })
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
@@ -546,8 +620,8 @@ describe('useLockScreen', () => {
             it('removes the AppState listener when unlocked before the app activates', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 const { rerender } = renderHook(
@@ -571,15 +645,15 @@ describe('useLockScreen', () => {
                 })
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
             it('does not prompt on activation if a lockout began while waiting', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 const { rerender } = renderHook(
@@ -608,7 +682,7 @@ describe('useLockScreen', () => {
                 await flushPrompt()
 
                 expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
-                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockUnlockWithBiometrics).not.toHaveBeenCalled()
             })
 
             it('retries after a system-cancel once the app becomes active, then unlocks', async () => {
@@ -617,32 +691,32 @@ describe('useLockScreen', () => {
                 // the app is still mid-launch.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
                 let resolveFirstAuth:
-                    | ((result: BiometricsAuthenticateResult) => void)
+                    | ((result: BiometricUnlockOutcome) => void)
                     | undefined
-                mockAuthenticateWithBiometrics
+                mockUnlockWithBiometrics
                     .mockReturnValueOnce(
-                        new Promise<BiometricsAuthenticateResult>(resolve => {
+                        new Promise<BiometricUnlockOutcome>(resolve => {
                             resolveFirstAuth = resolve
                         }),
                     )
-                    .mockResolvedValueOnce({ success: true })
+                    .mockResolvedValueOnce({ kind: 'ok' })
 
                 renderHook(() =>
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
                 )
                 await flushPrompt()
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
 
                 // The cancellation lands while the app is genuinely inactive.
                 setAppState('inactive')
                 await act(async () => {
                     resolveFirstAuth?.({
-                        success: false,
+                        kind: 'failed',
                         reason: 'system-cancel',
                     })
                 })
                 await flushPrompt()
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
 
                 setAppState('active')
                 await act(async () => {
@@ -650,33 +724,33 @@ describe('useLockScreen', () => {
                 })
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(2)
                 expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
 
             it('retries immediately when the app is already active on a system-cancel', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics
+                mockUnlockWithBiometrics
                     .mockResolvedValueOnce({
-                        success: false,
+                        kind: 'failed',
                         reason: 'system-cancel',
                     })
-                    .mockResolvedValueOnce({ success: true })
+                    .mockResolvedValueOnce({ kind: 'ok' })
 
                 renderHook(() =>
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
                 )
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(2)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
 
             it('stops retrying after the retry budget is spent', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: false,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'failed',
                     reason: 'system-cancel',
                 })
 
@@ -686,7 +760,7 @@ describe('useLockScreen', () => {
                 await flushPrompt()
 
                 // Initial attempt + MAX_SYSTEM_CANCEL_RETRIES.
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(3)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(3)
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
@@ -698,8 +772,8 @@ describe('useLockScreen', () => {
                 'unknown',
             ] as const)('never retries after a %s failure', async reason => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: false,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'failed',
                     reason,
                 })
 
@@ -708,8 +782,39 @@ describe('useLockScreen', () => {
                 )
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 // No retry armed: nothing ever subscribed to AppState.
+                expect(AppState.addEventListener).not.toHaveBeenCalled()
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it('never retries when the record reports a lockout', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'locked',
+                    lockoutEndTime: Date.now() + 30_000,
+                })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(AppState.addEventListener).not.toHaveBeenCalled()
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it('never retries when the unwrap reports a mismatch', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockUnlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(AppState.addEventListener).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
@@ -717,8 +822,8 @@ describe('useLockScreen', () => {
             it('ignores AppState churn from a prompt that already succeeded', async () => {
                 setAppState('inactive')
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue({
-                    success: true,
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'ok',
                 })
 
                 renderHook(() =>
@@ -732,7 +837,7 @@ describe('useLockScreen', () => {
                     handler('active')
                 })
                 await flushPrompt()
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
 
                 // iOS drives inactive -> active around the prompt itself; the
@@ -743,7 +848,7 @@ describe('useLockScreen', () => {
                 })
                 await flushPrompt()
 
-                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
         })

@@ -15,12 +15,25 @@ export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
 export const INITIAL_LOCKOUT_SECONDS = 30
 export const AUTO_LOCK_TIMEOUT_MS = 2 * 60 * 1000
 
-// Keystore lookup ids. Both entries are stored as canonical `secret-key`
-// keystore records via `commitSecret`; the id disambiguates which slot
-// (hashed PIN record vs. biometric blob — the PinRecord bytes mirrored so
-// biometric auth can confirm a PIN exists without re-prompting).
+// Keystore lookup ids, stored as canonical `secret-key` records via
+// `commitSecret`. The biometric blob holds a random unlock token sealed by an
+// OS-bound key; the token's hash rides as record metadata, which lives in the
+// plaintext bucket and so is readable without a decrypt.
 export const PIN_RECORD_KEY_ID = 'pera.pinCode'
-export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
+export const BIOMETRIC_BLOB_KEY_ID = 'pera.biometricUnlockToken'
+// Held a copy of the PIN record with no OS-bound key behind it. Referenced only
+// by the reconcile, which sweeps it and asks the user to opt in again.
+export const LEGACY_BIOMETRIC_BLOB_KEY_ID = 'pera.biometricPinCode'
+export const BIOMETRIC_TOKEN_HASH_METADATA_KEY = 'biometricTokenHash'
+// Leading byte of the stored blob, so an unwrap refuses a framing it does not
+// understand instead of handing it to the enclave as a decryption error.
+export const BIOMETRIC_BLOB_VERSION = 2
+// Ceremonies that passed but whose key could not release the token, counted
+// since the last successful unwrap (a cancel or lockout in between says
+// nothing about the key and does not reset it), before the opt-in is dropped.
+// Above one because keystore operations get pruned under load; small because
+// every failure is a wasted prompt.
+export const MAX_BIOMETRIC_UNWRAP_FAILURES = 3
 // v2 kept the duress PIN under this separate id. Key ids live in a plaintext
 // metadata bucket, so the record's mere existence told a device image the
 // duress feature was in use; v3 folds the duress slot into `pera.pinCode`.

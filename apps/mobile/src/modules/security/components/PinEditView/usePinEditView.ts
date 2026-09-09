@@ -58,8 +58,7 @@ export const usePinEditView = ({
         resetFailedAttempts,
         isLockedOut,
     } = usePinCode()
-    const { checkBiometricsEnabled, authenticateWithBiometrics } =
-        useBiometrics()
+    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
     const { showError } = useErrorToast()
 
     const [currentMode, setCurrentMode] = useState<PinEntryMode>(mode)
@@ -102,7 +101,7 @@ export const usePinEditView = ({
     // already passing biometrics.
     const promptRef = useRef({
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
         t,
@@ -110,7 +109,7 @@ export const usePinEditView = ({
     })
     promptRef.current = {
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
         onSuccess,
         t,
@@ -130,16 +129,15 @@ export const usePinEditView = ({
             void (async () => {
                 const enabled = await promptRef.current.checkBiometricsEnabled()
                 if (cancelled || !enabled) return
-                const result =
-                    await promptRef.current.authenticateWithBiometrics({
-                        title: promptRef.current.t(
-                            'security.biometric.unlock_prompt_title',
-                        ),
-                        cancelLabel: promptRef.current.t(
-                            'security.biometric.cancel_label',
-                        ),
-                    })
-                if (cancelled || !result.success) return
+                const outcome = await promptRef.current.unlockWithBiometrics({
+                    title: promptRef.current.t(
+                        'security.biometric.unlock_prompt_title',
+                    ),
+                    cancelLabel: promptRef.current.t(
+                        'security.biometric.cancel_label',
+                    ),
+                })
+                if (cancelled || outcome.kind !== 'ok') return
                 void promptRef.current.resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {

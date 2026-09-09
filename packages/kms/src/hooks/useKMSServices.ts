@@ -24,6 +24,7 @@ import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
 import {
     commitSecret,
+    getSecretMetadata,
     hasSecret,
     removeSecret,
     withSecret,
@@ -63,6 +64,7 @@ type UseKMSServiceResult = {
         handler: (bytes: Uint8Array) => T | Promise<T>,
     ) => Promise<Nullable<T>>
     hasSecret: (id: string) => boolean
+    getSecretMetadata: (id: string) => Nullable<Record<string, unknown>>
     removeSecret: (id: string) => Promise<void>
 }
 
@@ -100,6 +102,7 @@ export const useKMSService = (): UseKMSServiceResult => {
         commitSecret,
         withSecret,
         hasSecret,
+        getSecretMetadata,
         removeSecret,
     }
 }

@@ -2168,7 +2168,8 @@
             "cancel": "Pas maintenant",
             "unavailable_title": "Biométrie indisponible",
             "unavailable_body": "Activez Face ID ou Touch ID pour Pera dans les réglages de votre appareil, puis réactivez le déverrouillage biométrique.",
-            "body_not-available": "Le déverrouillage biométrique ne fonctionne pas car aucune biométrie n'est configurée pour Pera sur votre appareil. Configurez-la dans les réglages, puis réactivez-la ici."
+            "body_not-available": "Le déverrouillage biométrique ne fonctionne pas car aucune biométrie n'est configurée pour Pera sur votre appareil. Configurez-la dans les réglages, puis réactivez-la ici.",
+            "body_rebind-required": "Pera doit reconfigurer le déverrouillage biométrique sur cet appareil. Réactivez-le pour continuer à déverrouiller par biométrie."
         }
     },
     "send_funds": {

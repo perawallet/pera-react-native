@@ -70,7 +70,7 @@ vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
         disableBiometrics: vi.fn(),
-        refreshBiometricsBinding: vi.fn(),
+        completePendingBiometricRearm: vi.fn().mockResolvedValue(undefined),
     })),
 }))
 
@@ -237,26 +237,6 @@ describe('usePinCode — duress slot', () => {
         expect(await result.current.checkDuressPinEnabled()).toBe(false)
     }, 60_000)
 
-    test('saveDuressPin re-mirrors the biometric blob (the blob copies the record bytes)', async () => {
-        const refreshBiometricsBinding = vi.fn()
-        vi.mocked(useBiometrics).mockReturnValue({
-            checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            refreshBiometricsBinding,
-            disableBiometrics: vi.fn(),
-        } as unknown as ReturnType<typeof useBiometrics>)
-
-        const { result } = renderHook(() => usePinCode())
-        await act(async () => {
-            await result.current.savePin('123456')
-        })
-        refreshBiometricsBinding.mockClear()
-
-        await act(async () => {
-            await result.current.saveDuressPin('111111')
-        })
-        expect(refreshBiometricsBinding).toHaveBeenCalled()
-    }, 60_000)
-
     test('verifyPin returns `ok` for the regular PIN even when duress is armed', async () => {
         const { result } = renderHook(() => usePinCode())
         await act(async () => {
@@ -379,11 +359,10 @@ describe('usePinCode — duress slot', () => {
         kmsMocks.pinBytes = legacyV2Bytes(regular)
         kmsMocks.legacyDuressBytes = legacyV2Bytes(duress)
 
-        const refreshBiometricsBinding = vi.fn()
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
-            refreshBiometricsBinding,
             disableBiometrics: vi.fn(),
+            completePendingBiometricRearm: vi.fn().mockResolvedValue(undefined),
         } as unknown as ReturnType<typeof useBiometrics>)
 
         const { result } = renderHook(() => usePinCode())
@@ -392,9 +371,6 @@ describe('usePinCode — duress slot', () => {
             expect(kmsMocks.legacyDuressBytes).toBeNull()
             expect(currentPinRecord()?.duressEnabled).toBe(1)
         })
-        // The record bytes changed, so the biometric mirror must be refreshed.
-        expect(refreshBiometricsBinding).toHaveBeenCalled()
-
         let regularOutcome, duressOutcome
         await act(async () => {
             regularOutcome = await result.current.verifyPin('123456')

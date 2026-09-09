@@ -15,7 +15,7 @@ export {
     useBiometrics,
     type BiometricType,
     type BiometricsAuthenticateFailureReason,
-    type BiometricsAuthenticateResult,
+    type BiometricUnlockOutcome,
     type EnableBiometricsResult,
     type EnableBiometricsFailureReason,
 } from './useBiometrics'

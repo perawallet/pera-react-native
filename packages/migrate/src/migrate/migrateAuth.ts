@@ -12,11 +12,14 @@
 
 import {
     BIOMETRIC_BLOB_KEY_ID,
+    BIOMETRIC_TOKEN_HASH_METADATA_KEY,
     createPinRecord,
+    encodeBiometricBlob,
     PIN_RECORD_KEY_ID,
     serializePinRecord,
 } from '@perawallet/wallet-core-security'
 import { commitSecret, withSecret } from '@perawallet/wallet-core-kms'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
     LegacyAuth,
     LegacyPreferences,
@@ -68,11 +71,21 @@ export const migrateAuth = async (
         result.pinMigrated = true
 
         if (preferences.biometricEnabled === true) {
-            await commitSecret({
-                id: BIOMETRIC_BLOB_KEY_ID,
-                bytes: serializePinRecord(record),
-            })
-            result.biometricMigrated = true
+            // No user is present to complete a ceremony, and arming needs none.
+            // A key that turns out unusable is dropped by the next reconcile or,
+            // after repeated failed unwraps, by the unlock path, and the user is
+            // asked to opt in again.
+            const armed = await getProvider().biometrics.armBiometricBinding()
+            if (armed) {
+                await commitSecret({
+                    id: BIOMETRIC_BLOB_KEY_ID,
+                    bytes: encodeBiometricBlob(armed.blob),
+                    metadata: {
+                        [BIOMETRIC_TOKEN_HASH_METADATA_KEY]: armed.tokenHash,
+                    },
+                })
+                result.biometricMigrated = true
+            }
         }
     } finally {
         pinBytes.fill(0)

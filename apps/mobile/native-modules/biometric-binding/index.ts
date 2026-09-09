@@ -14,8 +14,12 @@ export type PeraBiometricAvailability =
     | 'unknown'
 
 export type PeraBiometricBindingModule = {
-    /** Resolves false when the current enrollment could not be recorded. */
-    createBinding(): Promise<boolean>
+    /** Resolves null when no OS-bound key could be created. */
+    armBinding(): Promise<{ blob: string; tokenHash: string } | null>
+    unwrapToken(
+        blob: string,
+        prompt: { title: string; cancelLabel: string },
+    ): Promise<Uint8Array>
     checkBinding(): Promise<PeraBiometricBindingStatus>
     clearBinding(): Promise<void>
     /** The raw platform status behind "biometrics unavailable". */

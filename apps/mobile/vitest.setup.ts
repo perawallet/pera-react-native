@@ -68,12 +68,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi
-                .fn()
-                .mockResolvedValue({ success: false, reason: 'unavailable' }),
-            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
             checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
             clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            armBiometricBinding: vi.fn().mockResolvedValue(null),
+            unwrapBiometricToken: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),
@@ -174,12 +174,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi
-                .fn()
-                .mockResolvedValue({ success: false, reason: 'unavailable' }),
-            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
             checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
             clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            armBiometricBinding: vi.fn().mockResolvedValue(null),
+            unwrapBiometricToken: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),

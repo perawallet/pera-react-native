@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BiometricsAuthenticateResult } from '@perawallet/wallet-core-security'
+import type { BiometricUnlockOutcome } from '@perawallet/wallet-core-security'
 
 const mocks = vi.hoisted(() => ({
     verifyPin: vi.fn(),
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     resetFailedAttempts: vi.fn(),
     isLockedOut: false,
     checkBiometricsEnabled: vi.fn(),
-    authenticateWithBiometrics: vi.fn(),
+    unlockWithBiometrics: vi.fn(),
     showError: vi.fn(),
 }))
 
@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     }),
     useBiometrics: () => ({
         checkBiometricsEnabled: mocks.checkBiometricsEnabled,
-        authenticateWithBiometrics: mocks.authenticateWithBiometrics,
+        unlockWithBiometrics: mocks.unlockWithBiometrics,
     }),
 }))
 
@@ -64,11 +64,9 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
 
     it('completes on biometric success even when re-rendered mid-prompt', async () => {
         mocks.checkBiometricsEnabled.mockResolvedValue(true)
-        let resolveAuth: (
-            value: BiometricsAuthenticateResult,
-        ) => void = () => {}
-        mocks.authenticateWithBiometrics.mockReturnValue(
-            new Promise<BiometricsAuthenticateResult>(resolve => {
+        let resolveAuth: (value: BiometricUnlockOutcome) => void = () => {}
+        mocks.unlockWithBiometrics.mockReturnValue(
+            new Promise<BiometricUnlockOutcome>(resolve => {
                 resolveAuth = resolve
             }),
         )
@@ -84,18 +82,18 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
 
         // Let checkBiometricsEnabled resolve and the prompt start.
         await flush()
-        expect(mocks.authenticateWithBiometrics).toHaveBeenCalledTimes(1)
+        expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
 
         // An unrelated re-render with a fresh onSuccess identity (as the bottom
         // sheet does) must not cancel the in-flight prompt or re-fire it.
         rerender({ onSuccess: onSuccessB })
 
         await act(async () => {
-            resolveAuth({ success: true })
+            resolveAuth({ kind: 'ok' })
             await Promise.resolve()
         })
 
-        expect(mocks.authenticateWithBiometrics).toHaveBeenCalledTimes(1)
+        expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
         expect(onSuccessB).toHaveBeenCalledTimes(1)
         expect(mocks.resetFailedAttempts).toHaveBeenCalledTimes(1)
     })
@@ -108,7 +106,20 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
 
         await flush()
 
-        expect(mocks.authenticateWithBiometrics).not.toHaveBeenCalled()
+        expect(mocks.unlockWithBiometrics).not.toHaveBeenCalled()
+        expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('does not call onSuccess when the token unwrap does not succeed', async () => {
+        mocks.checkBiometricsEnabled.mockResolvedValue(true)
+        mocks.unlockWithBiometrics.mockResolvedValue({ kind: 'mismatch' })
+
+        const onSuccess = vi.fn()
+        renderHook(() => usePinEditView({ mode: 'verify', onSuccess }))
+
+        await flush()
+
+        expect(mocks.unlockWithBiometrics).toHaveBeenCalledTimes(1)
         expect(onSuccess).not.toHaveBeenCalled()
     })
 })

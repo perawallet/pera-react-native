@@ -46,8 +46,7 @@ export const useLockScreen = ({
         lockoutEndTime,
         setLockoutEndTime,
     } = usePinCode()
-    const { checkBiometricsEnabled, authenticateWithBiometrics } =
-        useBiometrics()
+    const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
     const { performDuressWipe } = useDuressWipe()
 
     const [hasError, setHasError] = useState(false)
@@ -90,16 +89,18 @@ export const useLockScreen = ({
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
     })
     promptRef.current = {
         checkBiometricsEnabled,
-        authenticateWithBiometrics,
+        unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
@@ -141,7 +142,7 @@ export const useLockScreen = ({
             if (promptRef.current.isLockedOut) return
             const enabled = await promptRef.current.checkBiometricsEnabled()
             if (cancelled || !enabled) return
-            const result = await promptRef.current.authenticateWithBiometrics({
+            const outcome = await promptRef.current.unlockWithBiometrics({
                 title: promptRef.current.t(
                     'security.biometric.unlock_prompt_title',
                 ),
@@ -150,15 +151,25 @@ export const useLockScreen = ({
                 ),
             })
             if (cancelled) return
-            if (result.success) {
+            if (outcome.kind === 'ok') {
                 void promptRef.current.resetFailedAttempts()
                 promptRef.current.onUnlock()
                 return
             }
+            // The hook read the lockout from the record because the store is
+            // not hydrated yet on a cold start; feed it back so the pad counts
+            // down instead of silently refusing input.
+            if (outcome.kind === 'locked') {
+                void promptRef.current.setLockoutEndTime(outcome.lockoutEndTime)
+                return
+            }
+            // A dead blob terminates here too: re-prompting would burn
+            // another ceremony on it.
+            if (outcome.kind !== 'failed') return
             // Only OS-initiated cancellation re-arms; a user cancel stays
             // terminal (silent fallback to PIN), and lockout/failed/unknown
             // never retry.
-            if (result.reason !== 'system-cancel' || retriesLeft === 0) return
+            if (outcome.reason !== 'system-cancel' || retriesLeft === 0) return
             return attemptPrompt(retriesLeft - 1)
         }
 

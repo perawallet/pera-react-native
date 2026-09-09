@@ -74,6 +74,18 @@ export const hasSecret = (id: string): boolean => {
 }
 
 /**
+ * Record metadata for `id`, straight from the reactive store. Metadata lives in
+ * the plaintext `k/` bucket, so this needs neither the master key nor a decrypt
+ * — unlike `withSecret`, it is safe to call on every render.
+ */
+export const getSecretMetadata = (
+    id: string,
+): Nullable<Record<string, unknown>> => {
+    const key = getKeystoreStore().state.keys.find(k => k.id === id)
+    return key?.metadata ?? null
+}
+
+/**
  * Runs `handler` with the decrypted secret bytes for `id`, then zeroes them
  * in `finally`. The secret never leaves this scope as a returned value, so
  * callers can't accidentally retain sensitive material beyond the handler's
