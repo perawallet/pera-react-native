@@ -354,6 +354,48 @@ describe('services/security/store', () => {
         }
     })
 
+    test('isBiometricRearmPending survives a restart and reset clears it', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useSecurityStore } = await import('../store')
+
+        act(() => {
+            useSecurityStore.getState().setBiometricRearmPending(true)
+        })
+
+        vi.resetModules()
+        const { useSecurityStore: rehydrated } = await import('../store')
+        expect(rehydrated.getState().isBiometricRearmPending).toBe(true)
+
+        act(() => {
+            rehydrated.getState().resetState()
+        })
+        expect(rehydrated.getState().isBiometricRearmPending).toBe(false)
+        const raw = getProvider().keyValueStorage.getItem(
+            'security-store',
+        ) as Nullable<string>
+        expect(raw && JSON.parse(raw).state.isBiometricRearmPending).toBe(false)
+    })
+
+    test('rehydration coerces a tampered isBiometricRearmPending to false', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        for (const tampered of ['yes', 1, null]) {
+            vi.resetModules()
+            getProvider().keyValueStorage.setItem(
+                'security-store',
+                JSON.stringify({
+                    state: { isBiometricRearmPending: tampered },
+                    version: 1,
+                }),
+            )
+            const { useSecurityStore } = await import('../store')
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                false,
+            )
+        }
+    })
+
     test('registers resetState and clearStorage callbacks', async () => {
         const { useSecurityStore } = await import('../store')
 

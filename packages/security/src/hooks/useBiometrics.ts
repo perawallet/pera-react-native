@@ -77,6 +77,12 @@ type UseBiometricsResult = {
     unlockWithBiometrics: (
         prompt: BiometricsAuthenticatePrompt,
     ) => Promise<BiometricUnlockOutcome>
+    /**
+     * Finishes the upgrade the reconcile started: arms a fresh binding for a
+     * swept pre-binding blob, with no ceremony. Only call it after the user
+     * has just proven the PIN; a no-op when nothing is pending.
+     */
+    completePendingBiometricRearm: () => Promise<void>
 }
 
 const sha256Hex = (bytes: Uint8Array): string =>
@@ -121,6 +127,9 @@ export const useBiometrics = (): UseBiometricsResult => {
     const setUnwrapFailures = useSecurityStore(
         state => state.setBiometricUnwrapFailures,
     )
+    const setRearmPending = useSecurityStore(
+        state => state.setBiometricRearmPending,
+    )
     const [isAvailable, setIsAvailable] = useState(false)
 
     // The blob and its OS-bound key die together. `reason` is null when the
@@ -137,6 +146,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             // its offer.
             setAcknowledgedReason(null)
             setUnwrapFailures(0)
+            setRearmPending(false)
         },
         [
             removeSecret,
@@ -145,14 +155,19 @@ export const useBiometrics = (): UseBiometricsResult => {
             setDisabledReason,
             setAcknowledgedReason,
             setUnwrapFailures,
+            setRearmPending,
         ],
     )
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
         // A blob from before OS-bound keys existed: nothing can unwrap it, so
-        // it is swept without a probe and the user is asked to opt in again.
+        // it is swept without a probe, and the binding is re-armed once the
+        // user has proven the PIN rather than asking them to opt in again.
         if (hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)) {
-            await dropOptIn('rebind-required')
+            await removeSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)
+            await biometricsService.clearEnrollmentBinding()
+            setIsEnabled(false)
+            setRearmPending(true)
             return false
         }
         if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
@@ -212,12 +227,14 @@ export const useBiometrics = (): UseBiometricsResult => {
         return false
     }, [
         hasSecret,
+        removeSecret,
         dropOptIn,
         biometricsService,
         setIsEnabled,
         setDisabledReason,
         acknowledgedReason,
         setAcknowledgedReason,
+        setRearmPending,
     ])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
@@ -306,6 +323,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                 setDisabledReason(null)
                 // A fresh key must not inherit the count of the one it replaces.
                 setUnwrapFailures(0)
+                setRearmPending(false)
                 return { ok: true }
             } catch {
                 return { ok: false, reason: 'error' }
@@ -318,9 +336,42 @@ export const useBiometrics = (): UseBiometricsResult => {
             setIsEnabled,
             setDisabledReason,
             setUnwrapFailures,
+            setRearmPending,
             dropOptIn,
         ],
     )
+
+    const completePendingBiometricRearm =
+        useCallback(async (): Promise<void> => {
+            if (!useSecurityStore.getState().isBiometricRearmPending) return
+            // No ceremony, like the legacy import: the next unlock is the proof,
+            // and the decrypt-failure counter bounds a key that turns out dead.
+            const armed = await biometricsService.armBiometricBinding()
+            if (!armed) {
+                setRearmPending(false)
+                setDisabledReason('rebind-required')
+                return
+            }
+            try {
+                await writeBiometricBlob(armed.blob, armed.tokenHash)
+            } catch {
+                await biometricsService.clearEnrollmentBinding()
+                setRearmPending(false)
+                setDisabledReason('rebind-required')
+                return
+            }
+            setRearmPending(false)
+            setIsEnabled(true)
+            setDisabledReason(null)
+            setUnwrapFailures(0)
+        }, [
+            biometricsService,
+            writeBiometricBlob,
+            setRearmPending,
+            setIsEnabled,
+            setDisabledReason,
+            setUnwrapFailures,
+        ])
 
     const disableBiometrics = useCallback(async (): Promise<void> => {
         await dropOptIn(null)
@@ -444,6 +495,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         enableBiometrics,
         disableBiometrics,
         unlockWithBiometrics,
+        completePendingBiometricRearm,
     }
 }
 

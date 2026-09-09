@@ -26,14 +26,19 @@ import { createHash } from 'crypto'
 import { bytesToHex, type Optional } from '@perawallet/wallet-core-shared'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { commitSecret, hasSecret } from '@perawallet/wallet-core-kms'
 import {
+    BIOMETRIC_BLOB_KEY_ID,
+    LEGACY_BIOMETRIC_BLOB_KEY_ID,
     useBiometrics,
+    usePinCode,
     type BiometricUnlockOutcome,
     type EnableBiometricsResult,
 } from '@perawallet/wallet-core-security'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
+const TEST_PIN = '123456'
 
 // The unit-test setup mocks `@perawallet/wallet-extension-platform-driver`
 // with vi.fn() bodies that resolve `false` by default — fine for unit
@@ -143,6 +148,53 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
 
             // Unlock succeeds via the stub.
+            let outcome: Optional<BiometricUnlockOutcome>
+            await act(async () => {
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
+            })
+            expect(outcome).toEqual({ kind: 'ok' })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a blob from before OS-bound keys existed, when the user unlocks with the PIN, then the binding is re-armed silently and biometric unlock works with no offer shown',
+        async () => {
+            const { result: pinHook } = renderHook(() => usePinCode())
+            await act(async () => {
+                await pinHook.current.savePin(TEST_PIN)
+            })
+            await commitSecret({
+                id: LEGACY_BIOMETRIC_BLOB_KEY_ID,
+                bytes: new TextEncoder().encode('{"legacy":true}'),
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            // The reconcile sweeps the old record without a prompt or an
+            // offer; the user is asked for nothing at the lock screen.
+            await waitFor(() => {
+                expect(hasSecret(LEGACY_BIOMETRIC_BLOB_KEY_ID)).toBe(false)
+            })
+            expect(result.current.disabledReason).toBeNull()
+            expect(
+                mockedBiometrics().armBiometricBinding,
+            ).not.toHaveBeenCalled()
+
+            await act(async () => {
+                expect(await pinHook.current.verifyPin(TEST_PIN)).toEqual({
+                    kind: 'ok',
+                })
+            })
+
+            await waitFor(() => {
+                expect(result.current.isEnabled).toBe(true)
+            })
+            expect(hasSecret(BIOMETRIC_BLOB_KEY_ID)).toBe(true)
+            expect(
+                mockedBiometrics().unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+            expect(result.current.disabledReason).toBeNull()
+
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
                 outcome = await result.current.unlockWithBiometrics(PROMPT)

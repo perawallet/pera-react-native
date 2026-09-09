@@ -183,12 +183,13 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
 **Upgrade and legacy paths**
 
 13. Upgrade path: with biometrics already enabled before this build (a blob
-    under the pre-binding id, with no key pair behind it), the first reconcile
-    after upgrading must drop the opt-in without any prompt — the toggle reads
-    off, and after the PIN unlock the user is offered "Turn back on". Kill the
-    app before unlocking and reopen: the offer must survive the restart.
-    Accepting it re-arms the binding, and a re-enrollment after that must then
-    be caught normally.
+    under the pre-binding id, with no key pair behind it), the first launch
+    after upgrading must raise no biometric sheet and no offer at the lock
+    screen. Entering the PIN must re-arm the binding silently: Settings reads
+    on, the next lock shows one biometric sheet and it unlocks. Kill the app
+    before ever entering the PIN and reopen: the re-arm must still happen on
+    the first PIN entry. Force the arm to fail (no biometric enrolled at that
+    moment) and confirm the "set up again" offer appears instead.
 14. Legacy import: arm the binding on the import path, where no user is present
     to complete a ceremony, and confirm it succeeds — this is the path that
     depends on the wrap needing only the public key.

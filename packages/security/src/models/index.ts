@@ -24,9 +24,9 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
  * persistent unavailability qualifies — a lockout clears on its own and is
  * never reported here.
  *
- * `rebind-required` is a key that is gone rather than superseded: an upgrade
- * from a build whose blob had no OS-bound key, a restored backup, or a keystore
- * reset. On iOS it also covers a changed enrollment, because
+ * `rebind-required` is a key that is gone rather than superseded: a restored
+ * backup, a keystore reset, or an upgrade whose silent re-arm could not create
+ * a key. On iOS it also covers a changed enrollment, because
  * `.biometryCurrentSet` removes the key rather than marking it unusable and
  * nothing can tell the two apart without a marker that would outlive the app.
  */
@@ -95,6 +95,14 @@ export type SecurityState = BaseStoreState & {
      * drop threshold.
      */
     biometricUnwrapFailures: number
+    /**
+     * A blob from before OS-bound keys existed was swept and the binding is
+     * re-armed silently on the next successful PIN entry, which is the
+     * identity proof that makes arming without a ceremony acceptable.
+     * Persisted: the sweep runs at the lock screen and the app may be killed
+     * before the PIN is ever entered.
+     */
+    isBiometricRearmPending: boolean
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -111,6 +119,7 @@ export type SecurityState = BaseStoreState & {
         reason: Nullable<BiometricsDisabledReason>,
     ) => void
     setBiometricUnwrapFailures: (count: number) => void
+    setBiometricRearmPending: (pending: boolean) => void
 }
 
 export type PinEntryMode =

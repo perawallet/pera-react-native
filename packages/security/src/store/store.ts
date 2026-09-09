@@ -32,6 +32,7 @@ const initialState = {
     biometricsDisabledReason: null,
     acknowledgedBiometricsDisabledReason: null,
     biometricUnwrapFailures: 0,
+    isBiometricRearmPending: false,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -110,6 +111,8 @@ export const useSecurityStore: UseBoundStore<
             ) => set({ acknowledgedBiometricsDisabledReason: reason }),
             setBiometricUnwrapFailures: (count: number) =>
                 set({ biometricUnwrapFailures: count }),
+            setBiometricRearmPending: (pending: boolean) =>
+                set({ isBiometricRearmPending: pending }),
             resetState: () => set(initialState),
         }),
         {
@@ -122,6 +125,7 @@ export const useSecurityStore: UseBoundStore<
                 acknowledgedBiometricsDisabledReason:
                     state.acknowledgedBiometricsDisabledReason,
                 biometricUnwrapFailures: state.biometricUnwrapFailures,
+                isBiometricRearmPending: state.isBiometricRearmPending,
             }),
             merge: (persisted, current) => {
                 const stored = persisted as Partial<SecurityState> | undefined
@@ -140,6 +144,9 @@ export const useSecurityStore: UseBoundStore<
                     biometricUnwrapFailures: sanitizeUnwrapFailures(
                         stored?.biometricUnwrapFailures,
                     ),
+                    // A forged true only re-arms after the PIN is proven.
+                    isBiometricRearmPending:
+                        stored?.isBiometricRearmPending === true,
                 }
             },
         },

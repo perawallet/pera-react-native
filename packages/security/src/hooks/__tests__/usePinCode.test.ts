@@ -64,12 +64,15 @@ vi.mock('../../store', () => ({
 
 const biometricsMocks = vi.hoisted(() => ({
     disableBiometrics: vi.fn(),
+    completePendingBiometricRearm: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
         disableBiometrics: biometricsMocks.disableBiometrics,
+        completePendingBiometricRearm:
+            biometricsMocks.completePendingBiometricRearm,
     })),
 }))
 
@@ -260,6 +263,8 @@ describe('usePinCode', () => {
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
             disableBiometrics,
+            completePendingBiometricRearm:
+                biometricsMocks.completePendingBiometricRearm,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),
             unlockWithBiometrics: vi.fn(),
@@ -289,6 +294,8 @@ describe('usePinCode', () => {
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
             disableBiometrics,
+            completePendingBiometricRearm:
+                biometricsMocks.completePendingBiometricRearm,
             checkBiometricsAvailable: vi.fn(),
             enableBiometrics: vi.fn(),
             unlockWithBiometrics: vi.fn(),
@@ -322,6 +329,38 @@ describe('usePinCode', () => {
             outcome = await result.current.verifyPin('123456')
         })
         expect(outcome).toEqual({ kind: 'ok' })
+    }, 30_000)
+
+    test('verifyPin completes a pending biometric re-arm after a correct PIN', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const record = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord(record)
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.verifyPin('123456')
+        })
+        expect(
+            biometricsMocks.completePendingBiometricRearm,
+        ).toHaveBeenCalledTimes(1)
+    }, 30_000)
+
+    test('verifyPin does not re-arm biometrics on a wrong PIN', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const record = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord(record)
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.verifyPin('654321')
+        })
+        expect(
+            biometricsMocks.completePendingBiometricRearm,
+        ).not.toHaveBeenCalled()
     }, 30_000)
 
     test('verifyPin returns `fail` for incorrect PIN against a hashed record', async () => {

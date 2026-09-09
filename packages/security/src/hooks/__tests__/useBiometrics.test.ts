@@ -835,6 +835,29 @@ describe('useBiometrics', () => {
             expect(useSecurityStore.getState().biometricUnwrapFailures).toBe(0)
         })
 
+        test('an explicit enable supersedes a pending re-arm', async () => {
+            useSecurityStore.getState().setBiometricRearmPending(true)
+            const token = new Uint8Array([7, 7, 7])
+            mockBiometricsService.armBiometricBinding.mockResolvedValue({
+                blob: 'ct',
+                tokenHash: sha256Hex(token),
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ ok: true })
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                false,
+            )
+        })
+
         test('frames the stored blob with the current version byte', async () => {
             const token = new Uint8Array([7, 7, 7])
             mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
@@ -1054,7 +1077,7 @@ describe('useBiometrics', () => {
             expect(result.current.disabledReason).toBe('enrollment-changed')
         })
 
-        test('sweeps a blob left under the legacy id without probing the key pair', async () => {
+        test('sweeps a blob left under the legacy id and leaves a re-arm pending instead of an offer', async () => {
             kmsMocks.hasSecret.mockImplementation(
                 (id: string) => id === LEGACY_BIOMETRIC_BLOB_KEY_ID,
             )
@@ -1072,7 +1095,73 @@ describe('useBiometrics', () => {
             expect(
                 mockBiometricsService.checkEnrollmentBinding,
             ).not.toHaveBeenCalled()
+            expect(result.current.disabledReason).toBeNull()
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                true,
+            )
+        })
+    })
+
+    describe('completePendingBiometricRearm', () => {
+        const token = new Uint8Array([7, 7, 7])
+        const armed = { blob: 'ct', tokenHash: sha256Hex(token) }
+
+        test('arms and writes a fresh blob without a ceremony when a re-arm is pending', async () => {
+            useSecurityStore.getState().setBiometricRearmPending(true)
+            mockBiometricsService.armBiometricBinding.mockResolvedValue(armed)
+
+            const { result } = renderHook(() => useBiometrics())
+            await act(() => result.current.completePendingBiometricRearm())
+
+            expect(kmsMocks.commitSecret).toHaveBeenCalledWith({
+                id: BIOMETRIC_BLOB_KEY_ID,
+                bytes: expect.any(Uint8Array),
+                metadata: { biometricTokenHash: armed.tokenHash },
+            })
+            expect(
+                mockBiometricsService.unwrapBiometricToken,
+            ).not.toHaveBeenCalled()
+            expect(result.current.isEnabled).toBe(true)
+            expect(result.current.disabledReason).toBeNull()
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                false,
+            )
+        })
+
+        test('falls back to the offer when arming is refused', async () => {
+            useSecurityStore.getState().setBiometricRearmPending(true)
+            mockBiometricsService.armBiometricBinding.mockResolvedValue(null)
+
+            const { result } = renderHook(() => useBiometrics())
+            await act(() => result.current.completePendingBiometricRearm())
+
+            expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
+            expect(result.current.isEnabled).toBe(false)
             expect(result.current.disabledReason).toBe('rebind-required')
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                false,
+            )
+        })
+
+        test('does nothing when no re-arm is pending', async () => {
+            const { result } = renderHook(() => useBiometrics())
+            await act(() => result.current.completePendingBiometricRearm())
+
+            expect(
+                mockBiometricsService.armBiometricBinding,
+            ).not.toHaveBeenCalled()
+            expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
+        })
+
+        test('a drop cancels a pending re-arm', async () => {
+            useSecurityStore.getState().setBiometricRearmPending(true)
+
+            const { result } = renderHook(() => useBiometrics())
+            await act(() => result.current.disableBiometrics())
+
+            expect(useSecurityStore.getState().isBiometricRearmPending).toBe(
+                false,
+            )
         })
     })
 

@@ -70,6 +70,7 @@ vi.mock('../useBiometrics', () => ({
     useBiometrics: vi.fn(() => ({
         checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
         disableBiometrics: vi.fn(),
+        completePendingBiometricRearm: vi.fn().mockResolvedValue(undefined),
     })),
 }))
 
@@ -361,6 +362,7 @@ describe('usePinCode — duress slot', () => {
         vi.mocked(useBiometrics).mockReturnValue({
             checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
             disableBiometrics: vi.fn(),
+            completePendingBiometricRearm: vi.fn().mockResolvedValue(undefined),
         } as unknown as ReturnType<typeof useBiometrics>)
 
         const { result } = renderHook(() => usePinCode())

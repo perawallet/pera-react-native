@@ -92,7 +92,7 @@ export const usePinCode = (): UsePinCodeResult => {
         state => state.setAutoLockStartedAt,
     )
 
-    const { disableBiometrics } = useBiometrics()
+    const { disableBiometrics, completePendingBiometricRearm } = useBiometrics()
 
     const isLockedOut = useMemo(
         () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
@@ -267,7 +267,12 @@ export const usePinCode = (): UsePinCodeResult => {
                 : await verifyPinAgainstRecord(pin, record)
             const duressOk = await verifyPinAgainstDuressSlot(pin, record)
 
-            if (regularOk) return { kind: 'ok' }
+            if (regularOk) {
+                // Not awaited: arming can take seconds on some Android
+                // hardware and must not delay the unlock it follows.
+                void completePendingBiometricRearm()
+                return { kind: 'ok' }
+            }
             // The duress comparison deliberately bypasses the lockout gate
             // (the caller's `isLockedOut` check) — duress must be reachable
             // even mid-lockout, otherwise an attacker could lock the user out
@@ -278,7 +283,7 @@ export const usePinCode = (): UsePinCodeResult => {
             if (duressOk) return { kind: 'duress' }
             return { kind: 'fail' }
         },
-        [loadRecord],
+        [loadRecord, completePendingBiometricRearm],
     )
 
     const handleFailedAttempt = useCallback(async () => {
