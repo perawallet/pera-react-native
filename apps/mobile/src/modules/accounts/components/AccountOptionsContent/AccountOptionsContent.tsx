@@ -147,9 +147,9 @@ export const AccountOptionsContent = ({
     if (removeConfirmView === 'cloud-backup-delete') {
         return (
             <DeleteFromBackupSheet
-                cancelLabel={t('cloud_backup.accounts.keep_action')}
+                declineLabel={t('cloud_backup.accounts.keep_action')}
                 onConfirm={() => void handleDeleteFromBackup()}
-                onCancel={() => void handleKeepInBackup()}
+                onDecline={() => void handleKeepInBackup()}
             />
         )
     }

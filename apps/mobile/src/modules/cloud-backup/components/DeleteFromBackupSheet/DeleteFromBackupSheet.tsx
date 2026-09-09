@@ -17,19 +17,19 @@ type DeleteFromBackupSheetProps = {
     /** Defaults to the account copy; contacts pass their own. */
     title?: string
     message?: string
-    /** Overrides the cancel label where declining is not "abort" but "keep the
+    /** Overrides the decline label where declining is not "abort" but "keep the
      *  backup's copy". */
-    cancelLabel?: string
+    declineLabel?: string
     onConfirm?: () => void
-    onCancel?: () => void
+    onDecline?: () => void
 }
 
 export const DeleteFromBackupSheet = ({
     title,
     message,
-    cancelLabel,
+    declineLabel,
     onConfirm,
-    onCancel,
+    onDecline,
 }: DeleteFromBackupSheetProps = {}) => {
     const { t } = useLanguage()
 
@@ -42,15 +42,19 @@ export const DeleteFromBackupSheet = ({
             isMessageCentered
             confirmLabel={t('cloud_backup.accounts.delete_sheet_confirm')}
             confirmVariant='destructiveLight'
-            cancelLabel={
-                cancelLabel ?? t('cloud_backup.accounts.delete_sheet_cancel')
+            // Declining is an answer the caller acts on, so it takes the
+            // tertiary slot, which resolves a value. The cancel slot only ever
+            // dismisses, which is what a swipe-away already means here.
+            tertiaryLabel={
+                declineLabel ?? t('cloud_backup.accounts.delete_sheet_cancel')
             }
-            cancelVariant='secondary'
+            tertiaryVariant='secondary'
+            tertiaryValue={false}
             onConfirm={onConfirm}
-            onCancel={onCancel}
+            onTertiary={onDecline}
             testID='delete_from_backup_sheet'
             confirmTestID='delete_from_backup_confirm'
-            cancelTestID='delete_from_backup_cancel'
+            tertiaryTestID='delete_from_backup_cancel'
         />
     )
 }
