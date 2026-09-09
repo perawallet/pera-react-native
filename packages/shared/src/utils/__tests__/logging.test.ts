@@ -387,6 +387,88 @@ describe('logging', () => {
             expect(reported.error.message).toContain('public-id')
         })
 
+        // Credential-shaped keys that used to be absent from the sensitive
+        // list: session/OAuth tokens, PKCE material, card data, key material.
+        test.each([
+            ['accessToken', 'tok-abc123'],
+            ['refresh_token', 'tok-refresh456'],
+            ['pushToken', 'fcm-push789'],
+            ['Authorization', 'Bearer tok-bearer'],
+            ['bearerToken', 'tok-bearer2'],
+            ['codeVerifier', 'pkce-verifier-xyz'],
+            ['code_verifier', 'pkce-verifier-abc'],
+            ['otp', '123456-otp'],
+            ['otpCode', '654321-otp'],
+            ['pan', '4111111111111111'],
+            ['cvv', '987-cvv'],
+            ['cvc', '789-cvc'],
+            ['entropy', 'deadbeefcafe'],
+        ])('redacts credential key %s in context', (key, value) => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('request failed', { [key]: value, requestId: 'req-1' })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).not.toContain(value)
+            expect(reported.error.message).toContain('[REDACTED]')
+            expect(reported.error.message).toContain('req-1')
+        })
+
+        // `pan` and `otp` must stay exact-key matches: as substrings they
+        // would wipe the diagnostic keys below (and any `*shotP*` word
+        // contains "otp").
+        test('preserves diagnostic keys that merely contain pan/otp', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('card sync failed', {
+                panLast4: '1234',
+                isExpanded: true,
+                participants: 3,
+                isOtpRequired: true,
+                screenshotPrevention: 'active',
+            })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).toContain('"panLast4":"1234"')
+            expect(reported.error.message).toContain('"isExpanded":true')
+            expect(reported.error.message).toContain('"participants":3')
+            expect(reported.error.message).toContain('"isOtpRequired":true')
+            expect(reported.error.message).toContain('"active"')
+        })
+
+        // Regression sentinel for the M5 finding: the request layer logs a
+        // failed request's parsed response body under `responseBody`, and the
+        // structural walk must scrub credential keys inside it while keeping
+        // the diagnostic `type`/`detail` siblings.
+        test('redacts credential keys inside a logged response body object', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('Request error encountered', {
+                status: 400,
+                responseBody: {
+                    type: 'invalid_grant',
+                    detail: 'code expired',
+                    password: 'hunter2',
+                    access_token: 'tok-leaked',
+                },
+            })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).not.toContain('hunter2')
+            expect(reported.error.message).not.toContain('tok-leaked')
+            expect(reported.error.message).toContain('invalid_grant')
+            expect(reported.error.message).toContain('code expired')
+        })
+
         describe('error serialization', () => {
             const capturedContext = (): LogContext => {
                 const call = (

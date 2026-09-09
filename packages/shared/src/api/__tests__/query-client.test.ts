@@ -1170,6 +1170,52 @@ describe('queryClient', () => {
             )
         })
 
+        // ky 2.x's HTTPError carries the normalized options (whose `body` is
+        // the stringified request body) and the parsed response body (`data`)
+        // as enumerable fields, so serialising the whole error ships both to
+        // Crashlytics — and the body arrives as an escaped JSON string the
+        // redactor's key regex can never match.
+        it('never puts the request body into the error log', async () => {
+            const httpError = new MockHTTPError(400) as MockHTTPError & {
+                options?: unknown
+                data?: unknown
+            }
+            httpError.options = {
+                body: '{"password":"hunter2","code_verifier":"pkce-secret"}',
+            }
+            httpError.data = { type: 'invalid_grant' }
+
+            await runBeforeError(httpError as unknown as Error)
+
+            expect(mockLogger.error).toHaveBeenCalledTimes(1)
+            const serialized = JSON.stringify(mockLogger.error.mock.calls[0])
+            expect(serialized).not.toContain('hunter2')
+            expect(serialized).not.toContain('pkce-secret')
+        })
+
+        // As a parsed value (not a pre-serialized string) the logger's own
+        // structural redaction walks the body and scrubs sensitive keys.
+        it('logs the parsed response body so the logger can redact it structurally', async () => {
+            const httpError = new MockHTTPError(400) as MockHTTPError & {
+                data?: unknown
+            }
+            httpError.data = { type: 'invalid_grant', detail: 'code expired' }
+
+            await runBeforeError(httpError as unknown as Error)
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                'Request error encountered',
+                expect.objectContaining({
+                    status: 400,
+                    url: 'https://mainnet.pera.algo/v1/assets',
+                    responseBody: {
+                        type: 'invalid_grant',
+                        detail: 'code expired',
+                    },
+                }),
+            )
+        })
+
         it('still logs unexpected errors at error level', async () => {
             const unexpectedError = new Error('boom')
 

@@ -160,11 +160,16 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
         name: error.name,
         // safely attempt to get response info if available
         status: error instanceof HTTPError ? error.response?.status : undefined,
+        url: request?.url,
+        method: request?.method,
         durationMs,
         abortReason: context.abortReason,
-        details: JSON.stringify(error, (_key, value) =>
-            typeof value === 'bigint' ? value.toString() : value,
-        ),
+        // Never JSON.stringify the error itself: ky's HTTPError carries the
+        // normalized options (whose `body` is the stringified request body) as
+        // an enumerable field, and pre-serialized JSON reaches the redactor as
+        // an escaped string its key regex cannot match. The parsed response
+        // body as a plain value gets walked and scrubbed by the logger.
+        responseBody: isHTTPError(error) ? error.data : undefined,
     })
     return error
 }
