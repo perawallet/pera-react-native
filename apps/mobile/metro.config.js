@@ -194,6 +194,41 @@ console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
 
+// Migration dev tools (the simulator + viewer screens) are stubbed out of any
+// bundle that is neither a dev bundle nor a staging build. The simulator
+// deletes the real legacy stores and plants fixture accounts whose private
+// keys derive from a public repo constant, so production bundles must not
+// carry the code at all — the runtime `developerSettings` capability gate and
+// the native production-id refusal are the other two layers. QA exercises
+// migration on staging release builds, hence the APP_ENV carve-out; unset
+// APP_ENV and everything else falls through to stubbed.
+const migrationDevToolsEnabled =
+    process.env.NODE_ENV === 'development' || process.env.APP_ENV === 'staging';
+
+// Same resolved-absolute-path keying as localeTourStubs, and the barrels are
+// the only importers routes/index.tsx reaches, so stubbing them detaches each
+// screen's whole folder (store, hooks, subcomponents) from the graph.
+const migrationDevToolsStubs = Object.fromEntries(
+    [
+        'src/modules/settings/screens/developer/SettingsDeveloperMigrationSimulatorScreen/index',
+        'src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/index',
+    ].map(modulePath => [
+        path.resolve(projectRoot, `${modulePath}.ts`),
+        path.resolve(projectRoot, `${modulePath}.stub.ts`),
+    ]),
+);
+
+console.log(
+    `[metro] migration dev tools: ${migrationDevToolsEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'}, APP_ENV=${process.env.APP_ENV ?? 'unset'})`,
+);
+
+// Every stub set stays independently gated; the wrapper below consults the
+// merged map once per resolution.
+const buildStubs = {
+    ...(localeTourEnabled ? {} : localeTourStubs),
+    ...(migrationDevToolsEnabled ? {} : migrationDevToolsStubs),
+};
+
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
     // Strip Vite ?raw suffix so Metro can find the actual file
@@ -455,8 +490,8 @@ const customResolveRequest = (context, moduleName, platform) => {
 // branch in particular) re-enter Metro's own resolver, not this one.
 const resolveRequest = (context, moduleName, platform) => {
     const resolved = customResolveRequest(context, moduleName, platform);
-    if (localeTourEnabled || resolved?.type !== 'sourceFile') return resolved;
-    const stub = localeTourStubs[resolved.filePath];
+    if (resolved?.type !== 'sourceFile') return resolved;
+    const stub = buildStubs[resolved.filePath];
     return stub ? { type: 'sourceFile', filePath: stub } : resolved;
 };
 

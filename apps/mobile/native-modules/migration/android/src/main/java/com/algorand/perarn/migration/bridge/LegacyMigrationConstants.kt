@@ -14,6 +14,8 @@ package com.algorand.perarn.migration.bridge
 internal object LegacyMigrationConstants {
     const val SCHEMA_VERSION = 1
 
+    const val PRODUCTION_PACKAGE_NAME = "com.algorand.android"
+
     const val SETTINGS_PREFS_FILE = "algorand_settings"
 
     const val TINK_KEYSET_PREFS_FILE = "ALGORAND_ENCR_ACCOUNTS"

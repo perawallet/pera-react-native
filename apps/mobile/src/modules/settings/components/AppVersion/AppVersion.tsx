@@ -16,6 +16,7 @@ import { useStyles } from './styles'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { config } from '@perawallet/wallet-core-config'
 import { UserPreferences } from '@constants/user-preferences'
+import { routeCapabilities } from '@routes/capabilities'
 import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
 import { PWText } from '@components/core'
@@ -115,7 +116,9 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
         }
     }
 
-    if (!enableSecretTaps) {
+    // Without developer settings the preference the taps set is inert, and
+    // the "developer menu enabled" toast would be a lie — drop the gesture.
+    if (!enableSecretTaps || !routeCapabilities.developerSettings) {
         return <Version />
     }
 

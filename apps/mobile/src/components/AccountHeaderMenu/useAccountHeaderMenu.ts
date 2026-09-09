@@ -18,6 +18,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
+import { routeCapabilities } from '@routes/capabilities'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
@@ -34,9 +35,11 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
     const { switchNetwork } = useSwitchNetwork()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const isDeveloperMenuEnabled = !!getPreference(
-        UserPreferences.developerMenuEnabled,
-    )
+    // The preference alone isn't enough: it persists across upgrades, and
+    // store builds that used to expose developer settings may have it on.
+    const isDeveloperMenuEnabled =
+        routeCapabilities.developerSettings &&
+        !!getPreference(UserPreferences.developerMenuEnabled)
 
     const handleNetworkSwitch = useCallback(async () => {
         const target = isMainnet ? Networks.testnet : Networks.mainnet

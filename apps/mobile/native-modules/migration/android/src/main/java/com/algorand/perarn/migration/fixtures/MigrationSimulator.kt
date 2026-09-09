@@ -30,6 +30,7 @@ internal object MigrationSimulator {
         includeUnroutable: Boolean,
         includeAuthState: Boolean,
     ) {
+        requireNotProductionApp(context)
         val plan = planFor(dbName)
         require(version in plan.oldestSupported..plan.targetVersion) {
             "version $version out of range [${plan.oldestSupported}, ${plan.targetVersion}] for $dbName"
@@ -65,7 +66,16 @@ internal object MigrationSimulator {
     }
 
     fun generatePreSixxAccounts(context: Context) {
+        requireNotProductionApp(context)
         FixturesPreSixxAccounts.apply(context)
+    }
+
+    // Deletes the real legacy databases and plants accounts whose keys derive
+    // from a public constant (FixtureCrypto) — never in the store app.
+    private fun requireNotProductionApp(context: Context) {
+        check(context.packageName != LegacyMigrationConstants.PRODUCTION_PACKAGE_NAME) {
+            "refused: the migration simulator is disabled in the production app"
+        }
     }
 
     private fun planFor(dbName: String): MigrationPlan = when (dbName) {
