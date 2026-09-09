@@ -455,6 +455,40 @@ const customResolveRequest = (context, moduleName, platform) => {
     // unstable_conditionNames above), Metro picks the ESM entry. Redirect to
     // the sibling CJS build — identical API, no top-level await — by resolving
     // normally and swapping the resolved entry file.
+    // tslib's exports map lists `import` before `default` (1.x sends it to
+    // modules/index.js, 2.x to tslib.es6.mjs), and Metro matches conditions in
+    // map order, so with `import` enabled (see unstable_conditionNames below) a
+    // plain `require("tslib")` from a CJS WalletConnect module lands on the ESM
+    // wrapper. That wrapper destructures `__extends` off a default import of the
+    // UMD build, which is undefined here, so it throws at module scope — before
+    // AppRegistry.registerComponent runs, which surfaces as "App entry not
+    // found" rather than as a stack in the app. Redirect to the CJS build.
+    if (moduleName === 'tslib') {
+        const resolved = context.resolveRequest(context, moduleName, platform);
+        if (resolved?.type === 'sourceFile') {
+            if (/tslib\.es6\.m?js$/.test(resolved.filePath)) {
+                return {
+                    type: 'sourceFile',
+                    filePath: resolved.filePath.replace(
+                        /tslib\.es6\.m?js$/,
+                        'tslib.js',
+                    ),
+                };
+            }
+            if (/[\\/]modules[\\/]index\.js$/.test(resolved.filePath)) {
+                return {
+                    type: 'sourceFile',
+                    filePath: path.resolve(
+                        path.dirname(resolved.filePath),
+                        '..',
+                        'tslib.js',
+                    ),
+                };
+            }
+        }
+        return resolved;
+    }
+
     if (moduleName === 'falcon-1024') {
         const resolved = context.resolveRequest(context, moduleName, platform);
         if (
