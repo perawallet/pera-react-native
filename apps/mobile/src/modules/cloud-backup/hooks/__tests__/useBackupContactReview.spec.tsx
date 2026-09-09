@@ -16,46 +16,51 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useBackupContactReview } from '../useBackupContactReview'
 
-const {
-    contactsMock,
-    reviewMock,
-    showToastMock,
-    backUpContactMock,
-    addContactFromBackupMock,
-    deleteContactFromBackupMock,
-} = vi.hoisted(() => ({
-    contactsMock: { current: [] as { address: string; name: string }[] },
-    reviewMock: {
-        current: {
-            backedUp: new Set<string>(),
-            notBackedUp: [] as string[],
-            availableFromBackup: [] as { address: string; name: string }[],
+const { contactsMock, reviewMock, showToastMock, reviewActionMock, kindMock } =
+    vi.hoisted(() => ({
+        contactsMock: { current: [] as { address: string; name: string }[] },
+        reviewMock: {
+            current: {
+                backedUp: new Set<string>(),
+                notBackedUp: [] as string[],
+                availableFromBackup: [] as { address: string; name: string }[],
+            },
         },
-    },
-    showToastMock: vi.fn(),
-    backUpContactMock: vi.fn(async () => true),
-    addContactFromBackupMock: vi.fn(async () => ({
-        imported: 1,
-        failed: [] as { address: string; reason: string }[],
-    })),
-    deleteContactFromBackupMock: vi.fn(async () => true),
-}))
+        showToastMock: vi.fn(),
+        reviewActionMock: vi.fn(
+            async (_variables: { action: string; address: string }) =>
+                undefined,
+        ),
+        kindMock: { current: '' },
+    }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContactsStore: (selector: (s: unknown) => unknown) =>
         selector({ contacts: contactsMock.current }),
 }))
 
-vi.mock('@perawallet/wallet-core-backup', () => ({
-    deriveBackupContactReview: () => reviewMock.current,
-    useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
-        selector({ syncState: null }),
-    getBackupSyncManager: () => ({
-        backUpContact: backUpContactMock,
-        addContactFromBackup: addContactFromBackupMock,
-        deleteContactFromBackup: deleteContactFromBackupMock,
-    }),
-}))
+// The mutation itself belongs to the package and is covered there. Standing
+// real react-query over a stub action keeps this file on what the hook still
+// owns: the buckets, the busy row and the toasts.
+vi.mock('@perawallet/wallet-core-backup', async () => {
+    const { useMutation } = await import('@tanstack/react-query')
+    return {
+        deriveBackupContactReview: () => reviewMock.current,
+        useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
+            selector({ syncState: null }),
+        useBackupReviewActionMutation: (
+            kind: string,
+            options: Record<string, unknown>,
+        ) => {
+            kindMock.current = kind
+            return useMutation({
+                throwOnError: false,
+                mutationFn: reviewActionMock,
+                ...options,
+            })
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn() },
@@ -113,24 +118,41 @@ describe('useBackupContactReview', () => {
         expect(result.current.isBackedUp('B')).toBe(false)
     })
 
-    test('backs up one contact and reports success', async () => {
+    test('runs each row action against the contact side of the mutation', async () => {
+        const { result } = renderReview()
+        // react-query hands the mutationFn a second context argument.
+        const variables = () =>
+            reviewActionMock.mock.calls.map(([passed]) => passed)
+
+        act(() => result.current.backUpContact('B'))
+        act(() => result.current.addFromBackup('GONE'))
+        act(() => result.current.deleteFromBackup('GONE'))
+
+        await waitFor(() => expect(variables()).toHaveLength(3))
+        expect(variables()).toEqual([
+            { action: 'backUp', address: 'B' },
+            { action: 'add', address: 'GONE' },
+            { action: 'delete', address: 'GONE' },
+        ])
+        expect(kindMock.current).toBe('contact')
+    })
+
+    test('holds the row busy for the length of the action, then reports success', async () => {
         const { result } = renderReview()
 
         act(() => result.current.backUpContact('B'))
 
-        await waitFor(() => expect(backUpContactMock).toHaveBeenCalledWith('B'))
+        await waitFor(() => expect(result.current.busyAddress).toBe('B'))
         await waitFor(() =>
             expect(showToastMock).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
             ),
         )
+        expect(result.current.busyAddress).toBeNull()
     })
 
-    test('reports an add the importer rejected as an error', async () => {
-        addContactFromBackupMock.mockResolvedValueOnce({
-            imported: 0,
-            failed: [{ address: 'GONE', reason: 'unreadable' }],
-        })
+    test('reports a rejected action as an error and frees the row', async () => {
+        reviewActionMock.mockRejectedValueOnce(new Error('unreadable'))
         const { result } = renderReview()
 
         act(() => result.current.addFromBackup('GONE'))
@@ -140,18 +162,6 @@ describe('useBackupContactReview', () => {
                 expect.objectContaining({ type: 'error' }),
             ),
         )
-    })
-
-    test('reports a busy sync as an error rather than failing silently', async () => {
-        deleteContactFromBackupMock.mockResolvedValueOnce(false)
-        const { result } = renderReview()
-
-        act(() => result.current.deleteFromBackup('GONE'))
-
-        await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
-            ),
-        )
+        expect(result.current.busyAddress).toBeNull()
     })
 })

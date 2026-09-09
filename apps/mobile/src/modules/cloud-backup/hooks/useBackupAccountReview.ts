@@ -11,21 +11,19 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
 import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     deriveBackupAccountReview,
-    getBackupSyncManager,
+    useBackupReviewActionMutation,
     useBackupSyncStateStore,
+    type BackupReviewAction,
 } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-
-type ReviewAction = 'backUp' | 'add' | 'delete'
 
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
@@ -39,7 +37,10 @@ export type UseBackupAccountReviewResult = {
     deleteFromBackup: (address: string) => void
 }
 
-const TOAST_KEY: Record<ReviewAction, { success: string; error: string }> = {
+const TOAST_KEY: Record<
+    BackupReviewAction,
+    { success: string; error: string }
+> = {
     backUp: {
         success: 'cloud_backup.accounts.back_up_success',
         error: 'cloud_backup.accounts.back_up_error',
@@ -71,41 +72,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
         [syncState, addresses],
     )
 
-    const { mutate } = useMutation({
-        throwOnError: false,
-        mutationFn: async ({
-            action,
-            address,
-        }: {
-            action: ReviewAction
-            address: string
-        }): Promise<void> => {
-            const manager = getBackupSyncManager()
-            switch (action) {
-                case 'backUp': {
-                    if (!(await manager.backUpAccount(address))) {
-                        throw new Error('Backup is busy syncing')
-                    }
-                    break
-                }
-                case 'add': {
-                    const summary = await manager.addAccountFromBackup(address)
-                    if (summary == null) {
-                        throw new Error('Backup is busy syncing')
-                    }
-                    if (summary.failed.length > 0) {
-                        throw new Error(summary.failed[0].reason)
-                    }
-                    break
-                }
-                case 'delete': {
-                    if (!(await manager.deleteAccountFromBackup(address))) {
-                        throw new Error('Backup is busy syncing')
-                    }
-                    break
-                }
-            }
-        },
+    const { mutate } = useBackupReviewActionMutation('account', {
         onMutate: ({ address }) => setBusyAddress(address),
         onSuccess: (_result, { action }) => {
             showToast({

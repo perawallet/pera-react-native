@@ -84,7 +84,7 @@ export const EditContactScreen = () => {
                 <DeleteFromBackupSheet
                     title={t('cloud_backup.contacts.delete_sheet_title')}
                     message={t('cloud_backup.contacts.delete_sheet_body')}
-                    cancelLabel={t('cloud_backup.accounts.keep_action')}
+                    declineLabel={t('cloud_backup.accounts.keep_action')}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
