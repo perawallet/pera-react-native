@@ -11,6 +11,9 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                // Aliased to react-native-quick-crypto by the app's bundler;
+                // bundling it here stubs the module out to `{}`.
+                'crypto',
                 'react',
                 'react/jsx-runtime',
                 'zustand',
