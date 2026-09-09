@@ -32,6 +32,10 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
+import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/screens/CloudBackupRestorePassphraseScreen'
+import { CloudBackupRestoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreEncryptionKeyScreen'
+import { CloudBackupRestoreScanScreen } from '@modules/cloud-backup/screens/CloudBackupRestoreScanScreen'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -114,6 +118,27 @@ const PeraWebImportLoadingScreenWithErrorBoundary = withAccountErrorBoundary(
 const PeraWebImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
     PeraWebImportResultScreen,
 )
+const CloudBackupRestorePassphraseScreenWithErrorBoundary =
+    withAccountErrorBoundary(CloudBackupRestorePassphraseScreen)
+
+// The restore screens are shared with the cloud-backup stack, whose
+// `CloudBackupOverview` exit does not exist here; a restore reached from the
+// import flow ends like every other import.
+const CloudBackupRestoreEncryptionKeyRoute = () => {
+    const { exitAccountFlow } = useExitAccountFlow()
+    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitAccountFlow} />
+}
+
+const CloudBackupRestoreScanRoute = () => {
+    const { exitAccountFlow } = useExitAccountFlow()
+    return <CloudBackupRestoreScanScreen onDone={exitAccountFlow} />
+}
+
+const CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary =
+    withAccountErrorBoundary(CloudBackupRestoreEncryptionKeyRoute)
+const CloudBackupRestoreScanScreenWithErrorBoundary = withAccountErrorBoundary(
+    CloudBackupRestoreScanRoute,
+)
 
 /**
  * Names of every screen registered by `renderImportFlowScreens`. Used by the
@@ -142,6 +167,9 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'PeraWebImportInfo',
     'PeraWebImportLoading',
     'PeraWebImportResult',
+    'CloudBackupRestorePassphrase',
+    'CloudBackupRestoreEncryptionKey',
+    'CloudBackupRestoreScan',
 ] as const satisfies ReadonlyArray<keyof ImportFlowParamList>
 
 export type ImportFlowStack = ReturnType<
@@ -275,6 +303,21 @@ export const renderImportFlowScreens = (
             options={{ headerShown: false }}
             layout={fullScreenLayout}
             component={PeraWebImportResultScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestorePassphrase'
+            options={{ title: '' }}
+            component={CloudBackupRestorePassphraseScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestoreEncryptionKey'
+            options={{ title: '' }}
+            component={CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='CloudBackupRestoreScan'
+            options={{ title: '' }}
+            component={CloudBackupRestoreScanScreenWithErrorBoundary}
         />
     </>
 )

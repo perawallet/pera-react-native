@@ -17,6 +17,7 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import { backupIdToAddress } from '../crypto/backupIdToAddress'
+import { BACKUP_CONTACTS_KEY_PREFIX } from '../models'
 import type { BackupId, BackupItemKey } from '../models'
 import { API_PREFIX, backupRoot } from './constants'
 
@@ -116,6 +117,11 @@ export type BuildRestoreHandlersParams = SignatureVerification & {
     items: RestoreFixtureItem[]
 }
 
+/** The wire type follows the key prefix, the way the real server records it —
+ *  a `contacts/` item announced as an ACCOUNT would hide a routing bug. */
+const itemTypeOf = (key: string): 'ACCOUNT' | 'CONTACT' =>
+    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ? 'CONTACT' : 'ACCOUNT'
+
 export const buildRestoreHandlers = ({
     backupId,
     encryptionKey,
@@ -141,7 +147,7 @@ export const buildRestoreHandlers = ({
                 string,
                 {
                     key: string
-                    type: 'ACCOUNT'
+                    type: 'ACCOUNT' | 'CONTACT'
                     ver: number
                     status: 'ACTIVE'
                     hash: string
@@ -152,7 +158,7 @@ export const buildRestoreHandlers = ({
             for (const item of resolvedItems) {
                 manifestItems[item.key] = {
                     key: item.key,
-                    type: 'ACCOUNT',
+                    type: itemTypeOf(item.key),
                     ver: item.ver,
                     status: 'ACTIVE',
                     hash: item.hash,
@@ -181,7 +187,7 @@ export const buildRestoreHandlers = ({
             .map(item => ({
                 seq: item.seq,
                 key: item.key,
-                type: 'ACCOUNT' as const,
+                type: itemTypeOf(item.key),
                 ver: item.ver,
                 status: 'ACTIVE' as const,
                 op: 'UPSERT' as const,

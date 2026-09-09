@@ -17,14 +17,19 @@ import {
     restoreCloudBackup,
     type RestoreCloudBackupResult,
 } from '../restore/restoreCloudBackup'
+import type { Argon2idConfig } from '../models'
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
+import { useCloudBackupContactImport } from './useCloudBackupContactImport'
 import { useCloudBackupImport } from './useCloudBackupImport'
 
 export type RestoreCloudBackupVariables = {
     /** Base64 salt the UI calls the "encryption key". */
     salt: string
+    /** Omitted for a manually entered salt: the phrase carries no parameters,
+     *  so the backup is assumed to be on this build's defaults. */
+    argon2id?: Argon2idConfig
 }
 
 /**
@@ -44,11 +49,13 @@ export const useRestoreCloudBackupMutation = (
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const { importAccounts } = useCloudBackupImport()
+    const { importContacts } = useCloudBackupContactImport()
 
     return useMutation({
         throwOnError: false,
         mutationFn: async ({
             salt,
+            argon2id,
         }: RestoreCloudBackupVariables): Promise<RestoreCloudBackupResult> => {
             if (!deviceId) {
                 throw new Error('Device ID is unavailable')
@@ -62,9 +69,11 @@ export const useRestoreCloudBackupMutation = (
             const result = await restoreCloudBackup({
                 mnemonic,
                 salt,
+                argon2id,
                 deviceId,
                 network,
                 importAccounts,
+                importContacts,
             })
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.

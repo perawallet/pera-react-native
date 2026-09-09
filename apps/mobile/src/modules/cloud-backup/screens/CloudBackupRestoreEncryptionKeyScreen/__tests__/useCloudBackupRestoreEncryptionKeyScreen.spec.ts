@@ -15,15 +15,12 @@ import { renderHook, act } from '@testing-library/react'
 import { CloudBackupRestoreError } from '@perawallet/wallet-core-backup'
 
 const restore = vi.fn()
-const reset = vi.fn()
+const onDone = vi.fn()
 const showToast = vi.fn()
 const clearDraft = vi.fn()
 let hasMnemonic = true
 let isRestoring = false
 
-vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ reset }),
-}))
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -49,6 +46,9 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
 
 import { useCloudBackupRestoreEncryptionKeyScreen } from '../useCloudBackupRestoreEncryptionKeyScreen'
 
+const renderScreen = () =>
+    renderHook(() => useCloudBackupRestoreEncryptionKeyScreen({ onDone }))
+
 describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -57,9 +57,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     })
 
     it('runs restore with the entered key', () => {
-        const { result } = renderHook(() =>
-            useCloudBackupRestoreEncryptionKeyScreen(),
-        )
+        const { result } = renderScreen()
         act(() => result.current.handleKeyChange('c2FsdA=='))
         act(() => result.current.handleRestore())
 
@@ -68,9 +66,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
 
     it('does not run restore without a retained phrase', () => {
         hasMnemonic = false
-        const { result } = renderHook(() =>
-            useCloudBackupRestoreEncryptionKeyScreen(),
-        )
+        const { result } = renderScreen()
         act(() => result.current.handleKeyChange('c2FsdA=='))
         act(() => result.current.handleRestore())
 
@@ -79,16 +75,14 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
 
     it('blocks a second press while the restore is in flight', () => {
         isRestoring = true
-        const { result } = renderHook(() =>
-            useCloudBackupRestoreEncryptionKeyScreen(),
-        )
+        const { result } = renderScreen()
         act(() => result.current.handleKeyChange('c2FsdA=='))
 
         expect(result.current.canRestore).toBe(false)
     })
 
-    it('navigates to overview and clears the draft on success', () => {
-        renderHook(() => useCloudBackupRestoreEncryptionKeyScreen())
+    it('clears the draft and hands the exit back to the caller on success', () => {
+        renderScreen()
         const cbs = (globalThis as Record<string, unknown>).__cbs as {
             onSuccess: (s: unknown) => void
         }
@@ -98,23 +92,18 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
             }),
         )
         expect(clearDraft).toHaveBeenCalled()
-        expect(reset).toHaveBeenCalledWith({
-            index: 0,
-            routes: [{ name: 'CloudBackupOverview' }],
-        })
+        expect(onDone).toHaveBeenCalled()
     })
 
     it('scrubs the restore draft when the screen unmounts', () => {
-        const { unmount } = renderHook(() =>
-            useCloudBackupRestoreEncryptionKeyScreen(),
-        )
+        const { unmount } = renderScreen()
         expect(clearDraft).not.toHaveBeenCalled()
         unmount()
         expect(clearDraft).toHaveBeenCalledTimes(1)
     })
 
     it('shows the mapped error toast on failure', () => {
-        renderHook(() => useCloudBackupRestoreEncryptionKeyScreen())
+        renderScreen()
         const cbs = (globalThis as Record<string, unknown>).__cbs as {
             onError: (error: unknown) => void
         }

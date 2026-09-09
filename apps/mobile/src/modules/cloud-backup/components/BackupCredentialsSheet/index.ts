@@ -11,4 +11,3 @@
  */
 
 export { BackupCredentialsSheet } from './BackupCredentialsSheet'
-export type { BackupCredentialsResult } from './useBackupCredentialsSheet'

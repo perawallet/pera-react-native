@@ -13,9 +13,23 @@
 export { canonicalJson, contentHash } from './canonicalize'
 export { serializeAccountItems } from './serializeAccountItems'
 export { buildLocalItems } from './buildLocalItems'
+export { buildLocalContactItems } from './buildLocalContactItems'
+export { contactsFingerprint } from './contactsFingerprint'
 export { reconcile } from './reconcile'
 export { applyDeltas } from './applyDeltas'
 export { pushDirty } from './pushDirty'
+export {
+    markAccountForBackup,
+    importFromBackup,
+    deleteFromBackup,
+    keepAccountInBackup,
+    markContactForBackup,
+    importContactFromBackup,
+    deleteContactFromBackup,
+    keepContactInBackup,
+    reviewActionDeps,
+} from './reviewActions'
+export type { ReviewActionDeps } from './reviewActions'
 export { syncBackup } from './syncBackup'
 export { pullBackupDeltas } from './pullBackupDeltas'
 export { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -50,6 +64,8 @@ export type {
     SyncEngineDeps,
     SyncImportFn,
     ImportSummary,
+    ContactImportFn,
+    ContactImportSummary,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'

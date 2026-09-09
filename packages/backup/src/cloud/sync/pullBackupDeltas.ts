@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { fetchDelta, readItems } from '../api'
+import { fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import type { SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
+import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import type { SyncEngineDeps } from './types'
 
 /** WebSocket-triggered lightweight pull: fetch deltas from the local cursor and
@@ -23,16 +24,20 @@ import type { SyncEngineDeps } from './types'
 export const pullBackupDeltas = async (
     deps: Pick<
         SyncEngineDeps,
-        'network' | 'backupId' | 'deviceId' | 'encryptionKey' | 'importAccounts'
+        | 'network'
+        | 'backupId'
+        | 'deviceId'
+        | 'encryptionKey'
+        | 'importAccounts'
+        | 'importContacts'
     >,
     state: SyncState,
     now: number = Date.now(),
 ): Promise<SyncState> => {
-    const deltas = await fetchDelta(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        state.lastSyncedSeq,
+    const { deltas, rebuiltThroughSeq } = await fetchDeltaOrRebuild(
+        deps,
+        state,
+        () => fetchManifest(deps.network, deps.backupId, deps.deviceId),
     )
     const next = await applyDeltas({
         state,
@@ -43,6 +48,7 @@ export const pullBackupDeltas = async (
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
             readItems,
             decrypt: decryptItemPayload,
         },
@@ -50,5 +56,10 @@ export const pullBackupDeltas = async (
 
     // A device that only ever receives over the socket never runs `syncBackup`,
     // so without this it reads as never-synced with a full account list.
-    return { ...next, lastSyncedAt: now, lastSyncResult: 'SUCCESS' }
+    return {
+        ...next,
+        lastSyncedSeq: Math.max(next.lastSyncedSeq, rebuiltThroughSeq),
+        lastSyncedAt: now,
+        lastSyncResult: 'SUCCESS',
+    }
 }

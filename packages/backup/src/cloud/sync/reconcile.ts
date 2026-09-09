@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    BackupItemStatus,
-    BackupItemType,
-    type SyncItemState,
-    type SyncState,
-} from '../models'
+import { BackupItemStatus, type SyncItemState, type SyncState } from '../models'
 import type { LocalItem, LocalSnapshot } from './types'
 
 type SyncItems = Record<string, SyncItemState>
@@ -38,6 +33,7 @@ const markChanged = (
 ): SyncItemState => ({
     ...tracked,
     isDirty: true,
+    pendingImport: false,
     localContentHash: item.contentHash,
     localUpdatedAt: now,
 })
@@ -45,57 +41,26 @@ const markChanged = (
 const hasChanged = (tracked: SyncItemState, item: LocalItem): boolean =>
     tracked.localContentHash !== item.contentHash
 
-const withLocalChanges = (
-    items: SyncItems,
-    localItems: LocalItem[],
-    now: number,
-): SyncItems => {
-    const next: SyncItems = { ...items }
-    for (const item of localItems) {
-        const tracked = next[item.key]
-        if (tracked?.status === BackupItemStatus.IGNORED) continue
-
-        if (!tracked) next[item.key] = trackNewItem(item, now)
-        else if (hasChanged(tracked, item))
-            next[item.key] = markChanged(tracked, item, now)
-    }
-    return next
-}
-
-const isDeletedLocally = (
-    tracked: SyncItemState,
-    key: string,
-    localKeys: Set<string>,
-): boolean =>
-    tracked.type === BackupItemType.ACCOUNT &&
-    tracked.status === BackupItemStatus.ACTIVE &&
-    !localKeys.has(key)
-
-const withPendingDeletes = (
-    items: SyncItems,
-    localKeys: Set<string>,
-): SyncItems => {
-    const next: SyncItems = { ...items }
-    for (const [key, tracked] of Object.entries(next)) {
-        if (isDeletedLocally(tracked, key, localKeys))
-            next[key] = { ...tracked, pendingDelete: true }
-    }
-    return next
-}
-
-/** Pure: returns a new SyncState with isDirty / pendingDelete / localContentHash
- *  / localUpdatedAt derived from the current local items. */
+/** Absence is deliberately not a signal. An account missing locally is not a
+ *  request to delete it from the server — only the user is, through the removal
+ *  flow. That keeps a device wipe from emptying the backup. */
 export const reconcile = (
     state: SyncState,
     local: LocalSnapshot,
     now: number,
 ): SyncState => {
-    const items = withLocalChanges(state.items, local.items, now)
+    const items: SyncItems = { ...state.items }
+    for (const item of local.items) {
+        const tracked = items[item.key]
+        if (tracked?.status === BackupItemStatus.IGNORED) continue
 
-    // An unreadable secret serializes to nothing, which is the same signal as a
-    // user deletion — so deleting on an incomplete pass wipes the backup.
-    if (local.skipped > 0) return { ...state, items }
-
-    const localKeys = new Set(local.items.map(item => item.key))
-    return { ...state, items: withPendingDeletes(items, localKeys) }
+        if (!tracked) items[item.key] = trackNewItem(item, now)
+        else if (hasChanged(tracked, item))
+            items[item.key] = markChanged(tracked, item, now)
+        // The account is on the device again, so there is nothing left to
+        // review — however it got here, Add or a plain re-import.
+        else if (tracked.pendingImport)
+            items[item.key] = { ...tracked, pendingImport: false }
+    }
+    return { ...state, items }
 }

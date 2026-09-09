@@ -112,3 +112,70 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
         expect(onSuccess).not.toHaveBeenCalled()
     })
 })
+
+describe('usePinEditView onPinConfirmed', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mocks.isLockedOut = false
+    })
+
+    it('never persists the pin when a handler is supplied', async () => {
+        const onPinConfirmed = vi.fn().mockResolvedValue({ ok: true })
+        const { result } = renderHook(() =>
+            usePinEditView({ mode: 'setup', onPinConfirmed }),
+        )
+
+        act(() => result.current.handlePinComplete('123456'))
+        await act(() => result.current.handlePinComplete('123456'))
+
+        expect(onPinConfirmed).toHaveBeenCalledWith('123456')
+        expect(mocks.savePin).not.toHaveBeenCalled()
+    })
+})
+
+describe('usePinEditView titles', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mocks.isLockedOut = false
+    })
+
+    it('prefers the supplied titles over the mode defaults', () => {
+        const { result } = renderHook(() =>
+            usePinEditView({
+                mode: 'setup',
+                title: 'Choose a code',
+                confirmTitle: 'Re-enter it',
+            }),
+        )
+
+        expect(result.current.title).toBe('Choose a code')
+
+        act(() => result.current.handlePinComplete('123456'))
+
+        expect(result.current.title).toBe('Re-enter it')
+    })
+
+    it('falls back to the mode defaults when no override is supplied', () => {
+        const { result } = renderHook(() => usePinEditView({ mode: 'setup' }))
+
+        expect(result.current.title).toBe('security.pin.setup_title')
+
+        act(() => result.current.handlePinComplete('123456'))
+
+        expect(result.current.title).toBe('security.pin.confirm_title')
+    })
+
+    it('ignores the overrides in the verify modes', () => {
+        mocks.checkBiometricsEnabled.mockResolvedValue(false)
+
+        const { result } = renderHook(() =>
+            usePinEditView({
+                mode: 'verify',
+                title: 'Choose a code',
+                confirmTitle: 'Re-enter it',
+            }),
+        )
+
+        expect(result.current.title).toBe('security.pin.verify_title')
+    })
+})

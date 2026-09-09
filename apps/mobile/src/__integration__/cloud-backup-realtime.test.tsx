@@ -33,6 +33,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    useCloudBackupContactImport,
     useCloudBackupImport,
     useResolveMnemonicForBackup,
     useCloudBackupStore,
@@ -136,9 +137,13 @@ describe('Flow: Cloud backup → real-time manager', () => {
             const mnemonicHook = renderQueryHook(() =>
                 useResolveMnemonicForBackup(),
             )
+            const contactImportHook = renderQueryHook(() =>
+                useCloudBackupContactImport(),
+            )
 
             manager = initializeBackupSyncManager({
                 importAccounts: importHook.current.importAccounts,
+                importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,
                 resolveHd: async () => null,
                 socketFactory: fakeSocketFactory,

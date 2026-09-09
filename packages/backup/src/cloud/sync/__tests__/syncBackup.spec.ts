@@ -32,7 +32,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { UpsertResult } from '../../api'
+import { FromSeqTooOldError, UpsertResult } from '../../api'
 import {
     BackupItemStatus,
     BackupItemType,
@@ -56,6 +56,7 @@ const deps = () => ({
     deviceId: 'dev',
     encryptionKey,
     listAccounts: () => [watch],
+    listContacts: () => [],
     serializeAccount: async (a: WalletAccount) =>
         serializeAccountItems(a, { updatedAt: 1, secrets: null }),
     importAccounts: vi.fn(async () => ({
@@ -63,6 +64,7 @@ const deps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
 })
 
 describe('syncBackup', () => {
@@ -97,6 +99,53 @@ describe('syncBackup', () => {
         const next = await syncBackup(deps(), state)
         expect(fetchDelta).not.toHaveBeenCalled()
         expect(next.lastSyncResult).toBe('SUCCESS')
+    })
+
+    // Retention pruned past this device's cursor. The manifest is the only
+    // description of the backup left, so the sync has to converge on it instead
+    // of failing here forever.
+    it('rebuilds from the manifest when the cursor has been pruned', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                'accounts/W': {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'r',
+                    lastSeq: 97,
+                },
+            },
+        })
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+        const state = createEmptySyncState('b')
+        state.lastSyncedSeq = 3
+        state.lastKnownBackupHash = 'stale'
+        state.items['accounts/W'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: contentHash(
+                canonicalJson({
+                    type: 'watch',
+                    address: 'W',
+                    customName: 'Watcher',
+                }),
+            ),
+            localUpdatedAt: 1,
+        }
+
+        const next = await syncBackup(deps(), state)
+
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(next.lastSyncedSeq).toBe(100)
+        expect(next.lastKnownBackupHash).toBe('g')
+        expect(readItems).not.toHaveBeenCalled()
+        expect(batchUpsertItems).not.toHaveBeenCalled()
     })
 
     it('pulls deltas and pushes the new local account on a first sync', async () => {
@@ -200,5 +249,42 @@ describe('syncBackup', () => {
 
         expect(deleteItem).not.toHaveBeenCalled()
         expect(next.items['accounts/W'].pendingDelete).toBeUndefined()
+    })
+
+    it('pushes local contacts alongside accounts', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g3',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'contacts/C1',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 2,
+                },
+            ],
+        })
+
+        const next = await syncBackup(
+            {
+                ...deps(),
+                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+            },
+            createEmptySyncState('b'),
+        )
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        expect(
+            request.items.map((entry: { key: string }) => entry.key).sort(),
+        ).toEqual(['accounts/W', 'contacts/C1'])
+        expect(next.items['contacts/C1']).toMatchObject({
+            type: BackupItemType.CONTACT,
+            isDirty: false,
+            knownVer: 1,
+        })
     })
 })

@@ -15,6 +15,11 @@ export type CloudBackupStackParamList = {
     CloudBackupSetup: undefined
     CloudBackupVerify: undefined
     CloudBackupOverview: undefined
+    CloudBackupAccounts: undefined
+    CloudBackupAccountsReview: undefined
+    CloudBackupContacts: undefined
+    CloudBackupContactsReview: undefined
     CloudBackupRestorePassphrase: undefined
+    CloudBackupRestoreScan: undefined
     CloudBackupRestoreEncryptionKey: undefined
 }

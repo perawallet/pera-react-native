@@ -17,25 +17,21 @@ export type BackupSyncStatus =
     | 'pending'
     | 'syncing'
     | 'upToDate'
-    | 'destroyed'
     | 'error'
 
 type DeriveParams = {
     isConfigured: boolean
     isSyncing: boolean
-    isDestroyed: boolean
     lastSyncResult: BackupSyncResult | null
 }
 
 export const deriveBackupSyncStatus = ({
     isConfigured,
     isSyncing,
-    isDestroyed,
     lastSyncResult,
 }: DeriveParams): BackupSyncStatus => {
     if (!isConfigured) return 'idle'
     if (isSyncing) return 'syncing'
-    if (isDestroyed) return 'destroyed'
     if (lastSyncResult === 'FAILED') return 'error'
     if (lastSyncResult === null) return 'pending'
     return 'upToDate'

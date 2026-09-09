@@ -11,6 +11,9 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                // Aliased to react-native-quick-crypto by the app's bundler;
+                // bundling it here stubs the module out to `{}`.
+                'crypto',
                 'react',
                 'react/jsx-runtime',
                 'zustand',
@@ -25,6 +28,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
+                '@perawallet/wallet-core-contacts',
                 '@perawallet/wallet-core-device',
                 '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-shared',

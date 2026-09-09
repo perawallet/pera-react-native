@@ -15,6 +15,7 @@ import { AppState } from 'react-native'
 import {
     getBackupSyncManager,
     initializeBackupSyncManager,
+    useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
     useResolveHdSeedForBackup,
@@ -34,6 +35,9 @@ import {
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']
+    importContacts: ReturnType<
+        typeof useCloudBackupContactImport
+    >['importContacts']
     resolveHd: SerializeHdResolver
     resolveMnemonic: SerializeMnemonicResolver
     showToast: ReturnType<typeof useToast>['showToast']
@@ -62,11 +66,13 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { importAccounts } = useCloudBackupImport()
+    const { importContacts } = useCloudBackupContactImport()
     const resolveHd = useResolveHdSeedForBackup()
     const resolveMnemonic = useResolveMnemonicForBackup()
 
     const latest = useRef<BackupSyncCallbacks>({
         importAccounts,
+        importContacts,
         resolveHd,
         resolveMnemonic,
         showToast,
@@ -76,12 +82,20 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     useEffect(() => {
         latest.current = {
             importAccounts,
+            importContacts,
             resolveHd,
             resolveMnemonic,
             showToast,
             t,
         }
-    }, [importAccounts, resolveHd, resolveMnemonic, showToast, t])
+    }, [
+        importAccounts,
+        importContacts,
+        resolveHd,
+        resolveMnemonic,
+        showToast,
+        t,
+    ])
 
     return latest
 }
@@ -95,6 +109,7 @@ const useBackupSyncManagerSetup = () => {
     useEffect(() => {
         initializeBackupSyncManager({
             importAccounts: accounts => latest.current.importAccounts(accounts),
+            importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
             onBackupDeleted: () =>

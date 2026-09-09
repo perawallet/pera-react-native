@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { PinEditContent, type PinEntryMode } from '@modules/security'
-import type { SavePinHandlerResult } from '@modules/security/components/PinEditView/usePinEditView'
+import type { PinConfirmedResult } from '@modules/security/components/PinEditView/usePinEditView'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
@@ -89,9 +89,9 @@ export const useSettingsSecurityScreen =
             async (
                 mode: PinEntryMode,
                 options?: {
-                    savePinHandler?: (
+                    onPinConfirmed?: (
                         pin: string,
-                    ) => Promise<SavePinHandlerResult>
+                    ) => Promise<PinConfirmedResult>
                 },
             ): Promise<boolean> => {
                 const result = await requestBottomSheet<boolean>({
@@ -99,7 +99,7 @@ export const useSettingsSecurityScreen =
                         <PinEditContent
                             mode={mode}
                             testID='settings_security_pin_edit_view'
-                            savePinHandler={options?.savePinHandler}
+                            onPinConfirmed={options?.onPinConfirmed}
                         />
                     ),
                     options: {
@@ -230,8 +230,8 @@ export const useSettingsSecurityScreen =
             [setPreference],
         )
 
-        const duressSavePinHandler = useCallback(
-            async (pin: string): Promise<SavePinHandlerResult> => {
+        const handleDuressPinConfirmed = useCallback(
+            async (pin: string): Promise<PinConfirmedResult> => {
                 // Reject if the entered duress PIN matches the regular PIN —
                 // letting them coincide would mean a normal unlock always
                 // wipes data, which is catastrophic.
@@ -260,7 +260,7 @@ export const useSettingsSecurityScreen =
             async (value: boolean) => {
                 if (value) {
                     const success = await openPinSheet('setup', {
-                        savePinHandler: duressSavePinHandler,
+                        onPinConfirmed: handleDuressPinConfirmed,
                     })
                     if (!success) {
                         // User cancelled the setup sheet — revert any
@@ -281,7 +281,7 @@ export const useSettingsSecurityScreen =
             },
             [
                 openPinSheet,
-                duressSavePinHandler,
+                handleDuressPinConfirmed,
                 saveDuressPin,
                 refreshPinState,
             ],

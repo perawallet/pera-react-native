@@ -59,7 +59,6 @@ vi.mock('@hooks/useClipboard', () => ({
 }))
 
 const mockDismiss = vi.fn()
-const mockResolve = vi.fn()
 const mockCopyToClipboard = vi.fn()
 
 // Stands in for the real accessor: hands the handler a buffer it owns, then
@@ -69,7 +68,7 @@ let accessorBuffer: Uint16Array
 beforeEach(() => {
     vi.clearAllMocks()
     ;(useBottomSheetResult as Mock).mockReturnValue({
-        resolve: mockResolve,
+        resolve: vi.fn(),
         dismiss: mockDismiss,
     })
     ;(useClipboard as Mock).mockReturnValue({
@@ -146,21 +145,6 @@ describe('useBackupCredentialsSheet', () => {
         result.current.handleCopyPassphrase()
 
         expect(mockCopyToClipboard).not.toHaveBeenCalled()
-    })
-
-    test('handleRestore resolves the sheet with the restore choice', async () => {
-        ;(withBackupMnemonicIndices as Mock).mockRejectedValue(
-            new BackupMnemonicParseError('corrupt'),
-        )
-
-        const { result } = renderHook(() => useBackupCredentialsSheet())
-        await waitFor(() =>
-            expect(result.current.passphraseStatus).toBe('unreadable'),
-        )
-
-        result.current.handleRestore()
-
-        expect(mockResolve).toHaveBeenCalledWith('restore')
     })
 
     test('zeroes the retained buffer when the sheet unmounts', async () => {

@@ -11,49 +11,15 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    restoreErrorCategoryOf,
     useCloudBackupRestoreDraftStore,
     useRestoreCloudBackupMutation,
-    type ImportSummary,
-    type RestoreCloudBackupResult,
     type RestoreCloudBackupVariables,
-    type RestoreErrorCategory,
 } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
-import type { CloudBackupStackParamList } from '../../routes/types'
+import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
 
 type Translate = ReturnType<typeof useLanguage>['t']
-
-const ERROR_KEYS: Record<RestoreErrorCategory, string> = {
-    NOT_FOUND: 'cloud_backup.restore.error_not_found',
-    INVALID_CREDENTIALS: 'cloud_backup.restore.error_invalid_credentials',
-    UNKNOWN: 'cloud_backup.restore.error_unknown',
-}
-
-const outcomeToast = (t: Translate, { failed }: ImportSummary) =>
-    failed.length > 0
-        ? {
-              title: t('cloud_backup.restore.partial_success', {
-                  count: failed.length,
-              }),
-              body: '',
-              type: 'warning' as const,
-          }
-        : {
-              title: t('cloud_backup.restore.success'),
-              body: '',
-              type: 'success' as const,
-          }
-
-const failureToast = (t: Translate, category: RestoreErrorCategory) => ({
-    title: t(ERROR_KEYS[category]),
-    body: '',
-    type: 'error' as const,
-})
 
 type RestoreDraft = {
     hasMnemonic: boolean
@@ -61,10 +27,10 @@ type RestoreDraft = {
 }
 
 /**
- * Scrubs the entered recovery phrase on unmount. This is the terminal screen
- * that consumes the mnemonic — and the only screen that populates the draft is
- * the one navigating here — so success reset, back-out and any other flow exit
- * all pass through here. The success path clears it too; doing so is idempotent.
+ * Scrubs the entered recovery phrase on unmount. This is where the manual
+ * restore flow consumes the mnemonic the passphrase screen wrote, so success,
+ * back-out and any other exit from that flow all pass through here. The success
+ * path clears it too; doing so is idempotent.
  */
 const useRestoreDraft = (): RestoreDraft => {
     const hasMnemonic = useCloudBackupRestoreDraftStore(
@@ -80,38 +46,6 @@ const useRestoreDraft = (): RestoreDraft => {
     return { hasMnemonic, clearDraft }
 }
 
-type RestoreOutcome = {
-    onSuccess: (result: RestoreCloudBackupResult) => void
-    onError: (error: unknown) => void
-}
-
-const useRestoreOutcome = (clearDraft: () => void): RestoreOutcome => {
-    const { t } = useLanguage()
-    const { showToast } = useToast()
-    const navigation =
-        useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-
-    const onSuccess = useCallback(
-        ({ summary }: RestoreCloudBackupResult) => {
-            showToast(outcomeToast(t, summary))
-            clearDraft()
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CloudBackupOverview' }],
-            })
-        },
-        [showToast, t, clearDraft, navigation],
-    )
-
-    const onError = useCallback(
-        (error: unknown) =>
-            showToast(failureToast(t, restoreErrorCategoryOf(error))),
-        [showToast, t],
-    )
-
-    return { onSuccess, onError }
-}
-
 const useRestoreRunner = (
     restore: (variables: RestoreCloudBackupVariables) => void,
     hasMnemonic: boolean,
@@ -122,6 +56,10 @@ const useRestoreRunner = (
         restore({ salt })
     }, [hasMnemonic, salt, restore])
 
+export type UseCloudBackupRestoreEncryptionKeyScreenParams = {
+    onDone: () => void
+}
+
 type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     t: Translate
     encryptionKey: string
@@ -131,31 +69,32 @@ type UseCloudBackupRestoreEncryptionKeyScreenResult = {
     handleRestore: () => void
 }
 
-export const useCloudBackupRestoreEncryptionKeyScreen =
-    (): UseCloudBackupRestoreEncryptionKeyScreenResult => {
-        const { t } = useLanguage()
-        const [encryptionKey, setEncryptionKey] = useState('')
-        const { hasMnemonic, clearDraft } = useRestoreDraft()
-        const outcome = useRestoreOutcome(clearDraft)
-        const mutation = useRestoreCloudBackupMutation(outcome)
-        const isRestoring = mutation.isPending
-        const handleRestore = useRestoreRunner(
-            mutation.mutate,
-            hasMnemonic,
-            encryptionKey,
-        )
+export const useCloudBackupRestoreEncryptionKeyScreen = ({
+    onDone,
+}: UseCloudBackupRestoreEncryptionKeyScreenParams): UseCloudBackupRestoreEncryptionKeyScreenResult => {
+    const { t } = useLanguage()
+    const [encryptionKey, setEncryptionKey] = useState('')
+    const { hasMnemonic, clearDraft } = useRestoreDraft()
+    const outcome = useRestoreOutcome({ clearDraft, onDone })
+    const mutation = useRestoreCloudBackupMutation(outcome)
+    const isRestoring = mutation.isPending
+    const handleRestore = useRestoreRunner(
+        mutation.mutate,
+        hasMnemonic,
+        encryptionKey,
+    )
 
-        const handleKeyChange = useCallback(
-            (value: string) => setEncryptionKey(value.trim()),
-            [],
-        )
+    const handleKeyChange = useCallback(
+        (value: string) => setEncryptionKey(value.trim()),
+        [],
+    )
 
-        return {
-            t,
-            encryptionKey,
-            isRestoring,
-            canRestore: encryptionKey.length > 0 && !isRestoring,
-            handleKeyChange,
-            handleRestore,
-        }
+    return {
+        t,
+        encryptionKey,
+        isRestoring,
+        canRestore: encryptionKey.length > 0 && !isRestoring,
+        handleKeyChange,
+        handleRestore,
     }
+}
