@@ -38,6 +38,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => {
         // Real values from packages/walletconnect/src/constants.ts.
         WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
         WC_DELIVERY_TIMEOUT_MS: 8000,
+        WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
     }
 })
 
@@ -210,6 +211,34 @@ describe('useWalletConnectPairing (native)', () => {
             expect(outcome).toEqual({ type: 'session' })
             expect(mockAbandonPairing).not.toHaveBeenCalled()
         })
+
+        it('caps the socket fail-fast at the default budget when no override is given', async () => {
+            mockConnect.mockResolvedValue('pairing-client')
+            mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            await result.current.pair('wc:123')
+
+            expect(mockWaitForPairingSocketOpen).toHaveBeenCalledWith(
+                'pairing-client',
+                8000,
+            )
+        })
+
+        it('gives a fresh 15s pairing the full transport-attempt window, not the 8s delivery budget', async () => {
+            // The transport's own first connect attempt runs 10s; an 8s
+            // socket fail-fast would kill a live-but-slow socket mid-connect.
+            mockConnect.mockResolvedValue('pairing-client')
+            mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            await result.current.pair('wc:123', { outcomeTimeoutMs: 15_000 })
+
+            expect(mockWaitForPairingSocketOpen).toHaveBeenCalledWith(
+                'pairing-client',
+                12_000,
+            )
+        })
     })
 
     describe('handshake-topic dedupe', () => {
@@ -258,6 +287,40 @@ describe('useWalletConnectPairing (native)', () => {
             await result.current.pair(uriForTopic('topic-a'))
 
             expect(mockConnect).toHaveBeenCalledTimes(2)
+        })
+
+        it('abandons a prior timed-out connector for the same topic before a rescan builds a fresh one', async () => {
+            // A rescan within the timed-out connector's 60s grace window
+            // would otherwise leave two connectors on one topic, both able to
+            // receive the bridge replay and queue a duplicate approval sheet.
+            mockConnect
+                .mockResolvedValueOnce('client-1')
+                .mockResolvedValueOnce('client-2')
+            mockWaitForSessionOutcome.mockResolvedValue({ type: 'timeout' })
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            await result.current.pair(uriForTopic('topic-a'))
+            expect(mockAbandonPairing).not.toHaveBeenCalled()
+
+            await result.current.pair(uriForTopic('topic-a'))
+
+            expect(mockAbandonPairing).toHaveBeenCalledWith('client-1')
+            expect(mockConnect).toHaveBeenCalledTimes(2)
+        })
+
+        it('does not abandon a prior connector that already produced a session', async () => {
+            // A connected session for the topic must survive a later scan;
+            // only a timed-out (grace-window) connector is a rescan hazard.
+            mockConnect
+                .mockResolvedValueOnce('client-1')
+                .mockResolvedValueOnce('client-2')
+            mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            await result.current.pair(uriForTopic('topic-a'))
+            await result.current.pair(uriForTopic('topic-a'))
+
+            expect(mockAbandonPairing).not.toHaveBeenCalledWith('client-1')
         })
 
         it('does not dedupe URIs without a parseable topic', async () => {

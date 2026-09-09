@@ -238,10 +238,14 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockConnect }),
     waitForSessionOutcome: vi.fn(async () => ({ type: 'session' })),
+    waitForPairingSocketOpen: vi.fn(async () => true),
     abandonPairing: vi.fn(),
+    WalletConnectBridgeConnectionError: class extends Error {},
     // Real values from packages/walletconnect/src/constants.ts.
     WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
-    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
+    WC_DELIVERY_TIMEOUT_MS: 8000,
+    WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
+    WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS: 15_000,
     WC_LATE_SESSION_GRACE_MS: 60_000,
 }))
 

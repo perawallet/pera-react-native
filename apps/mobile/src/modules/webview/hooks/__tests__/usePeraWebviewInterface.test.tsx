@@ -290,6 +290,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => {
         // Real values from packages/walletconnect/src/constants.ts.
         WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
         WC_DELIVERY_TIMEOUT_MS: 8000,
+        WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
     }
 })
 

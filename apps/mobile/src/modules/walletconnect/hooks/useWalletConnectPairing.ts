@@ -17,7 +17,7 @@ import {
     waitForPairingSocketOpen,
     waitForSessionOutcome,
     WalletConnectBridgeConnectionError,
-    WC_DELIVERY_TIMEOUT_MS,
+    WC_PAIRING_SOCKET_TIMEOUT_MS,
     WC_SESSION_OUTCOME_TIMEOUT_MS,
     type WalletConnectPairingOriginSource,
     type WalletConnectSessionOutcome,
@@ -42,6 +42,18 @@ const WC_CONNECT_TIMEOUT_MS = 10_000
  */
 const inFlightPairings = new Map<string, Promise<WalletConnectPairingResult>>()
 
+/**
+ * The last timed-out connector per handshake topic, kept past settle so a
+ * rescan of the same QR can tear it down before building a fresh connector.
+ * A timed-out connector stays in its 60s late-session grace (the deeplink
+ * handler watches it), still subscribed to the topic; without this, a rescan
+ * would leave two connectors on one topic, both able to receive the bridge
+ * replay and queue a duplicate approval sheet. Only timeouts are recorded —
+ * a session (live) or error/connect-failed (already abandoned) leaves no
+ * grace connector to collide with.
+ */
+const graceConnectorByTopic = new Map<string, string>()
+
 const getHandshakeTopic = (uri: string): string | null => {
     const match = uri.match(/^wc:([^@]+)@/)
     return match ? match[1] : null
@@ -49,6 +61,7 @@ const getHandshakeTopic = (uri: string): string | null => {
 
 export const resetPairingStateForTesting = (): void => {
     inFlightPairings.clear()
+    graceConnectorByTopic.clear()
 }
 
 export type WalletConnectPairingResult =
@@ -77,8 +90,9 @@ export type WalletConnectPairingOptions = {
         browserName?: string
     }
     /**
-     * Overrides `WC_SESSION_OUTCOME_TIMEOUT_MS`. Deep-link pairings pass
-     * `WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS` — see its doc comment.
+     * Overrides `WC_SESSION_OUTCOME_TIMEOUT_MS`. Fresh-connector pairings
+     * (deep link, QR, notification) pass
+     * `WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS` — see its doc comment.
      */
     outcomeTimeoutMs?: number
 }
@@ -143,21 +157,25 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
                         browserName: options.origin.browserName,
                     })
             }
+            const outcomeBudget =
+                options?.outcomeTimeoutMs ?? WC_SESSION_OUTCOME_TIMEOUT_MS
             const outcomePromise = waitForSessionOutcome(
                 pairingClientId,
-                options?.outcomeTimeoutMs ?? WC_SESSION_OUTCOME_TIMEOUT_MS,
+                outcomeBudget,
             )
             // Socket fail-fast, raced so it never delays a live pairing: the
             // WC client surfaces no event for a socket that simply never
             // opens (dead bridge, wedged handshake), which would otherwise
             // burn the full outcome budget in silence. A socket that never
             // opened can never deliver a session_request, so the pairing is
-            // abandoned outright — no late-session grace applies.
+            // abandoned outright — no late-session grace applies. Budget must
+            // clear the transport's own connect attempt (never shorter) yet
+            // never outlast the outcome itself.
             const socketOpened = await Promise.race([
                 outcomePromise.then(() => true),
                 waitForPairingSocketOpen(
                     pairingClientId,
-                    WC_DELIVERY_TIMEOUT_MS,
+                    Math.min(WC_PAIRING_SOCKET_TIMEOUT_MS, outcomeBudget),
                 ),
             ])
             if (!socketOpened) {
@@ -205,9 +223,25 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
             if (!topic) return runPairing(uri, options)
             const inFlight = inFlightPairings.get(topic)
             if (inFlight) return inFlight
-            const pairing = runPairing(uri, options).finally(() => {
-                inFlightPairings.delete(topic)
-            })
+            // Tear down a prior timed-out connector for this topic before the
+            // rescan builds a fresh one, so only one connector on the topic
+            // can receive the bridge replay. Safe if it since connected —
+            // `abandonPairing` refuses a connector with a live session.
+            const priorGraceConnector = graceConnectorByTopic.get(topic)
+            if (priorGraceConnector) {
+                graceConnectorByTopic.delete(topic)
+                abandonPairing(priorGraceConnector)
+            }
+            const pairing = runPairing(uri, options)
+                .then(outcome => {
+                    if (outcome.type === 'timeout' && outcome.clientId) {
+                        graceConnectorByTopic.set(topic, outcome.clientId)
+                    }
+                    return outcome
+                })
+                .finally(() => {
+                    inFlightPairings.delete(topic)
+                })
             inFlightPairings.set(topic, pairing)
             return pairing
         },

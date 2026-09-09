@@ -262,7 +262,8 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => {
         // Real values from packages/walletconnect/src/constants.ts.
         WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
         WC_DELIVERY_TIMEOUT_MS: 8000,
-        WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
+        WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
+        WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS: 15_000,
         WC_LATE_SESSION_GRACE_MS: 60_000,
     }
 })
@@ -749,7 +750,7 @@ describe('useDeepLink', () => {
             )
         })
 
-        it('keeps the 8s outcome budget for QR pairings', async () => {
+        it('gives a QR pairing the extended fresh-pairing outcome budget', async () => {
             ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
             const { result } = renderHook(() => useDeepLink())
 
@@ -758,6 +759,42 @@ describe('useDeepLink', () => {
                     'wc:123?bridge=x&key=y',
                     false,
                     'qr',
+                )
+            })
+
+            expect(mockWaitForSessionOutcome).toHaveBeenCalledWith(
+                'pairing-client',
+                15_000,
+            )
+        })
+
+        it('gives a notification-delivered pairing the extended fresh-pairing outcome budget', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'notification',
+                )
+            })
+
+            expect(mockWaitForSessionOutcome).toHaveBeenCalledWith(
+                'pairing-client',
+                15_000,
+            )
+        })
+
+        it('keeps the 8s outcome budget for in-app pairings', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'in-app',
                 )
             })
 

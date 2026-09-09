@@ -15,7 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import {
     abandonPairing,
     waitForSessionOutcome,
-    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS,
+    WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS,
     WC_LATE_SESSION_GRACE_MS,
     type WalletConnectPairingOriginSource,
 } from '@perawallet/wallet-core-walletconnect'
@@ -72,8 +72,7 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
 
             // The OS deep-link path has no other pending UI (QR has the
             // scanner's own overlay), so a global scrim covers the outcome
-            // wait; it also gets the extended budget — the app switch pays
-            // for a fresh WSS handshake plus the bridge replay.
+            // wait.
             if (isOsDeeplink) {
                 usePairingProgressStore.getState().beginPairing()
             }
@@ -84,9 +83,13 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
                         source: originSource,
                         browserName: data.browserName,
                     },
-                    outcomeTimeoutMs: isOsDeeplink
-                        ? WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS
-                        : undefined,
+                    // Every non-in-app pairing builds a fresh connector and
+                    // pays the full WSS handshake + bridge replay — see the
+                    // constant's doc comment for why 8s cannot cover that.
+                    outcomeTimeoutMs:
+                        originSource === 'in-app'
+                            ? undefined
+                            : WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS,
                 })
             } finally {
                 if (isOsDeeplink) {
@@ -117,6 +120,13 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
                 return false
             }
             if (result.type === 'timeout') {
+                // Unreproducible in-house; field logs are the only way to
+                // tell a slow bridge from a starved socket. Never the URI —
+                // its `key=` param is the pairing secret.
+                logger.error('[deeplink/wc] outcome timed out', {
+                    originSource,
+                    ...walletConnectLogContext(data.uri),
+                })
                 showError({
                     variant: 'walletconnect',
                     parsedType: 'WALLET_CONNECT',
