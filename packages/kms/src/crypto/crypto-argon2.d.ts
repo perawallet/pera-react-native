@@ -12,9 +12,9 @@
 
 // Augments the `crypto` module with the Argon2id primitive that
 // react-native-quick-crypto exposes when the app aliases `crypto` to it on
-// React Native. `@types/node` omits `argon2`, so the base package declares the
-// shape it depends on here. Any other frontend must alias `crypto` to an
-// implementation providing this same function.
+// React Native. `@types/node` omits `argon2`, so the shape is declared here.
+// Any other frontend must alias `crypto` to an implementation providing this
+// same function.
 declare module 'crypto' {
     interface QuickCryptoArgon2Params {
         message: Uint8Array

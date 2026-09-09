@@ -11,15 +11,21 @@
  */
 
 import { argon2 } from 'crypto'
-import type { Argon2idConfig } from '../models'
+
+export type Argon2idParams = {
+    timeCost: number
+    /** MiB. The primitive takes KiB, which this module converts. */
+    memoryCost: number
+    parallelism: number
+    outputLength: number
+}
 
 const KIB_PER_MIB = 1024
 
-/** `config.memoryCost` is MiB; the primitive takes KiB. */
 export const argon2idDerive = (
     message: Uint8Array,
     nonce: Uint8Array,
-    config: Argon2idConfig,
+    params: Argon2idParams,
 ): Promise<Uint8Array> =>
     new Promise((resolve, reject) => {
         argon2(
@@ -27,10 +33,10 @@ export const argon2idDerive = (
             {
                 message,
                 nonce,
-                parallelism: config.parallelism,
-                tagLength: config.outputLength,
-                memory: config.memoryCost * KIB_PER_MIB,
-                passes: config.timeCost,
+                parallelism: params.parallelism,
+                tagLength: params.outputLength,
+                memory: params.memoryCost * KIB_PER_MIB,
+                passes: params.timeCost,
             },
             (error, result) => {
                 if (error) reject(error)

@@ -50,7 +50,7 @@ import {
     encryptBackupSyncQr,
     parseBackupSyncQrEnvelope,
 } from '../syncQrPayload'
-import { sealAesGcm } from '../aesGcm'
+import { sealAesGcm } from '@perawallet/wallet-core-kms'
 import { ARGON2ID_CONFIG } from '../constants'
 
 const record = (params: Argon2Params) => {

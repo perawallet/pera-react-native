@@ -10,8 +10,8 @@
  limitations under the License
  */
 
+import { argon2idDerive } from '@perawallet/wallet-core-kms'
 import type { Argon2idConfig } from '../models'
-import { argon2idDerive } from './argon2id'
 import { ARGON2ID_CONFIG } from './constants'
 
 /**

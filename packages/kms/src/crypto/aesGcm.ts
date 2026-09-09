@@ -11,14 +11,14 @@
  */
 
 import { randomBytes, createCipheriv, createDecipheriv } from 'crypto'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
 import {
     concatBytes,
     decodeFromBase64,
     encodeToBase64,
 } from '@perawallet/wallet-core-shared'
-import { BACKUP_CIPHER_ALGORITHM } from './constants'
+import { zeroBytes } from './secure-memory'
 
+const AES_GCM_ALGORITHM = 'aes-256-gcm'
 const AES_GCM_IV_LENGTH = 12
 const AES_GCM_TAG_LENGTH = 16
 
@@ -39,6 +39,10 @@ const decoder = new TextDecoder()
 /**
  * Seals UTF-8 plaintext as base64( IV(12) || CIPHERTEXT || TAG(16) ) under
  * AES-256-GCM. `key` is caller-owned and deliberately not zeroed here.
+ *
+ * The concatenated layout is this function's own contract. Records written by
+ * the native passkey provider and by the web vault carry a detached tag in a
+ * JSON envelope instead, so they are not interchangeable with these payloads.
  */
 export const sealAesGcm = (
     plaintext: string,
@@ -48,7 +52,7 @@ export const sealAesGcm = (
     let plaintextBytes: Uint8Array | null = null
     try {
         const iv = new Uint8Array(randomBytes(AES_GCM_IV_LENGTH))
-        const cipher = createCipheriv(BACKUP_CIPHER_ALGORITHM, key, iv)
+        const cipher = createCipheriv(AES_GCM_ALGORITHM, key, iv)
         cipher.setAAD(aad)
         plaintextBytes = encoder.encode(plaintext)
         const ciphertext = concatBytes(
@@ -85,7 +89,7 @@ export const openAesGcm = (
             AES_GCM_IV_LENGTH,
             raw.length - AES_GCM_TAG_LENGTH,
         )
-        const decipher = createDecipheriv(BACKUP_CIPHER_ALGORITHM, key, iv)
+        const decipher = createDecipheriv(AES_GCM_ALGORITHM, key, iv)
         decipher.setAAD(aad)
         decipher.setAuthTag(tag)
         updateBytes = decipher.update(ciphertext)

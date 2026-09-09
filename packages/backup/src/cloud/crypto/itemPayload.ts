@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import {
+    AesGcmOpenError,
+    openAesGcm,
+    sealAesGcm,
+} from '@perawallet/wallet-core-kms'
 import type { BackupId, BackupItemKey } from '../models'
-import { AesGcmOpenError, openAesGcm, sealAesGcm } from './aesGcm'
 
 export class DecryptItemPayloadError extends Error {
     constructor(message = 'Failed to decrypt backup item payload') {

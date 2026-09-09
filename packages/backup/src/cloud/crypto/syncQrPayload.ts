@@ -11,14 +11,17 @@
  */
 
 import { randomBytes } from 'crypto'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import {
+    argon2idDerive,
+    openAesGcm,
+    sealAesGcm,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 import {
     encodeToBase64,
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
-import { argon2idDerive } from './argon2id'
-import { openAesGcm, sealAesGcm } from './aesGcm'
 import { ARGON2ID_CONFIG } from './constants'
 
 export const BACKUP_SYNC_QR_TYPE = 'backup-sync'
