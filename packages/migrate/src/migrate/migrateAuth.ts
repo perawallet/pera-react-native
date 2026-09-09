@@ -71,10 +71,10 @@ export const migrateAuth = async (
         result.pinMigrated = true
 
         if (preferences.biometricEnabled === true) {
-            // Arming needs no ceremony, which is what makes it possible here: there
-            // is no user present to complete one. The reconcile probes the key on the
-            // next mount, so a key that turns out unusable costs a re-opt-in prompt
-            // rather than a broken unlock.
+            // No user is present to complete a ceremony, and arming needs none.
+            // A key that turns out unusable is dropped by the next reconcile or,
+            // after repeated failed unwraps, by the unlock path, and the user is
+            // asked to opt in again.
             const armed = await getProvider().biometrics.armBiometricBinding()
             if (armed) {
                 await commitSecret({

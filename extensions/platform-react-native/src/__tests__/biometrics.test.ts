@@ -68,6 +68,8 @@ const emptyBindingModule = {
     unwrapToken: vi.fn().mockResolvedValue(new Uint8Array()),
 }
 
+const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
+
 describe('RNBiometricsService', () => {
     const service = new RNBiometricsService()
 
@@ -331,8 +333,24 @@ describe('RNBiometricsService', () => {
             })
         })
 
+        it('never substitutes its own copy for the caller prompt', async () => {
+            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
+            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
+
+            await new RNBiometricsService().unwrapBiometricToken('ct', {
+                title: '',
+                cancelLabel: '',
+            })
+
+            expect(unwrapToken).toHaveBeenCalledWith('ct', {
+                title: '',
+                cancelLabel: '',
+            })
+        })
+
         it.each([
             ['invalidated', 'invalidated'],
+            ['decrypt-failed', 'decrypt-failed'],
             ['no-binding', 'no-binding'],
             ['user-cancel', 'user-cancel'],
             ['system-cancel', 'system-cancel'],
@@ -349,6 +367,7 @@ describe('RNBiometricsService', () => {
 
             const result = await new RNBiometricsService().unwrapBiometricToken(
                 'ct',
+                PROMPT,
             )
 
             expect(result).toEqual({ success: false, reason })
@@ -364,6 +383,7 @@ describe('RNBiometricsService', () => {
 
             const result = await new RNBiometricsService().unwrapBiometricToken(
                 'ct',
+                PROMPT,
             )
 
             expect(result).toEqual({ success: false, reason: 'unknown' })
@@ -374,6 +394,7 @@ describe('RNBiometricsService', () => {
 
             const result = await new RNBiometricsService().unwrapBiometricToken(
                 'ct',
+                PROMPT,
             )
 
             expect(result).toEqual({ success: false, reason: 'no-binding' })

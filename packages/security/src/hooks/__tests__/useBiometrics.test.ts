@@ -61,12 +61,19 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
-import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
+import {
+    PIN_RECORD_KEY_ID,
+    BIOMETRIC_BLOB_KEY_ID,
+    LEGACY_BIOMETRIC_BLOB_KEY_ID,
+    MAX_BIOMETRIC_UNWRAP_FAILURES,
+} from '../../constants'
 import { PIN_RECORD_VERSION, serializePinRecord } from '../../pinRecord'
 import { useSecurityStore } from '../../store'
 
 const sha256Hex = (bytes: Uint8Array): string =>
     bytesToHex(new Uint8Array(createHash('sha256').update(bytes).digest()))
+
+const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
 
 const wireBlobMocks = () => {
     kmsMocks.commitSecret.mockImplementation(
@@ -89,11 +96,12 @@ const wireBlobMocks = () => {
             }
         },
     )
-    kmsMocks.hasSecret.mockImplementation((id: string) =>
-        id === PIN_RECORD_KEY_ID
-            ? kmsMocks.pinBytes !== null
-            : kmsMocks.biometricBytes !== null,
-    )
+    kmsMocks.hasSecret.mockImplementation((id: string) => {
+        if (id === PIN_RECORD_KEY_ID) return kmsMocks.pinBytes !== null
+        if (id === BIOMETRIC_BLOB_KEY_ID)
+            return kmsMocks.biometricBytes !== null
+        return false
+    })
     kmsMocks.removeSecret.mockImplementation(async (id: string) => {
         if (id === PIN_RECORD_KEY_ID) kmsMocks.pinBytes = null
         else kmsMocks.biometricBytes = null
@@ -280,7 +288,7 @@ describe('useBiometrics', () => {
         const { result } = await renderAndSettle()
 
         await act(async () => {
-            await result.current.enableBiometrics()
+            await result.current.enableBiometrics(PROMPT)
         })
 
         expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
@@ -304,7 +312,7 @@ describe('useBiometrics', () => {
 
         let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            enableResult = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics(PROMPT)
         })
 
         expect(enableResult).toEqual({ ok: false, reason: 'unconfirmed' })
@@ -414,7 +422,7 @@ describe('useBiometrics', () => {
 
         let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            enableResult = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics(PROMPT)
         })
 
         expect(enableResult).toEqual({ ok: false, reason: 'error' })
@@ -427,7 +435,7 @@ describe('useBiometrics', () => {
 
         let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            enableResult = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics(PROMPT)
         })
 
         expect(enableResult).toEqual({ ok: false, reason: 'unavailable' })
@@ -442,7 +450,7 @@ describe('useBiometrics', () => {
 
         let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            enableResult = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics(PROMPT)
         })
 
         expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
@@ -471,7 +479,7 @@ describe('useBiometrics', () => {
         const { result } = await renderAndSettle()
 
         await act(async () => {
-            await result.current.enableBiometrics()
+            await result.current.enableBiometrics(PROMPT)
         })
 
         expect(result.current.isEnabled).toBe(true)
@@ -583,7 +591,7 @@ describe('useBiometrics', () => {
 
             let enableResult: EnableBiometricsResult | undefined
             await act(async () => {
-                enableResult = await result.current.enableBiometrics()
+                enableResult = await result.current.enableBiometrics(PROMPT)
             })
 
             expect(enableResult).toEqual({
@@ -745,7 +753,7 @@ describe('useBiometrics', () => {
 
             mockCheckEnrollmentBinding.mockResolvedValue('valid')
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
 
             expect(result.current.disabledReason).toBeNull()
@@ -791,7 +799,9 @@ describe('useBiometrics', () => {
             })
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: true })
             expect(kmsMocks.commitSecret).toHaveBeenCalledWith({
@@ -817,7 +827,7 @@ describe('useBiometrics', () => {
             })
 
             const { result } = renderHook(() => useBiometrics())
-            await act(() => result.current.enableBiometrics())
+            await act(() => result.current.enableBiometrics(PROMPT))
 
             const written = kmsMocks.commitSecret.mock.calls.find(
                 call => call[0].id === BIOMETRIC_BLOB_KEY_ID,
@@ -847,7 +857,9 @@ describe('useBiometrics', () => {
             })
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: true })
         })
@@ -867,7 +879,9 @@ describe('useBiometrics', () => {
             })
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: false, reason: 'declined' })
             expect(
@@ -898,7 +912,9 @@ describe('useBiometrics', () => {
             })
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: false, reason: 'declined' })
             expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
@@ -918,7 +934,9 @@ describe('useBiometrics', () => {
             mockBiometricsService.armBiometricBinding.mockResolvedValue(null)
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: false, reason: 'error' })
             expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
@@ -946,7 +964,9 @@ describe('useBiometrics', () => {
             kmsMocks.commitSecret.mockRejectedValueOnce(new Error('boom'))
 
             const { result } = renderHook(() => useBiometrics())
-            const outcome = await act(() => result.current.enableBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
 
             expect(outcome).toEqual({ ok: false, reason: 'error' })
             expect(
@@ -958,7 +978,9 @@ describe('useBiometrics', () => {
 
     describe('checkBiometricsEnabled against the key-pair probe', () => {
         beforeEach(() => {
-            kmsMocks.hasSecret.mockReturnValue(true)
+            kmsMocks.hasSecret.mockImplementation(
+                (id: string) => id !== LEGACY_BIOMETRIC_BLOB_KEY_ID,
+            )
             mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
                 true,
             )
@@ -1007,6 +1029,27 @@ describe('useBiometrics', () => {
 
             expect(result.current.disabledReason).toBe('enrollment-changed')
         })
+
+        test('sweeps a blob left under the legacy id without probing the key pair', async () => {
+            kmsMocks.hasSecret.mockImplementation(
+                (id: string) => id === LEGACY_BIOMETRIC_BLOB_KEY_ID,
+            )
+
+            const { result } = renderHook(() => useBiometrics())
+            const enabled = await act(() =>
+                result.current.checkBiometricsEnabled(),
+            )
+
+            expect(enabled).toBe(false)
+            expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+                LEGACY_BIOMETRIC_BLOB_KEY_ID,
+            )
+            expect(mockClearEnrollmentBinding).toHaveBeenCalled()
+            expect(
+                mockBiometricsService.checkEnrollmentBinding,
+            ).not.toHaveBeenCalled()
+            expect(result.current.disabledReason).toBe('rebind-required')
+        })
     })
 
     describe('unlockWithBiometrics', () => {
@@ -1015,7 +1058,9 @@ describe('useBiometrics', () => {
             Uint8Array.from([2, ...new TextEncoder().encode(blob)])
 
         beforeEach(() => {
-            kmsMocks.hasSecret.mockReturnValue(true)
+            kmsMocks.hasSecret.mockImplementation(
+                (id: string) => id !== LEGACY_BIOMETRIC_BLOB_KEY_ID,
+            )
             mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
                 true,
             )
@@ -1041,7 +1086,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'ok' })
@@ -1062,7 +1107,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'mismatch' })
@@ -1093,7 +1138,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'mismatch' })
@@ -1125,7 +1170,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'locked', lockoutEndTime })
@@ -1150,7 +1195,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'failed', reason: 'system-cancel' })
@@ -1172,7 +1217,7 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'mismatch' })
@@ -1190,11 +1235,121 @@ describe('useBiometrics', () => {
 
             const { result } = renderHook(() => useBiometrics())
             const outcome = await act(() =>
-                result.current.unlockWithBiometrics(),
+                result.current.unlockWithBiometrics(PROMPT),
             )
 
             expect(outcome).toEqual({ kind: 'failed', reason: 'unavailable' })
             expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+        })
+
+        describe('decrypt failures', () => {
+            const unwrapFails = (reason: string) => {
+                kmsMocks.withSecret.mockImplementation(
+                    async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                        handler(framed('ct')),
+                )
+                kmsMocks.getSecretMetadata.mockReturnValue({
+                    biometricTokenHash: 'deadbeef',
+                })
+                mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                    success: false,
+                    reason,
+                })
+            }
+
+            test('keeps the opt-in and counts a single decrypt failure', async () => {
+                unwrapFails('decrypt-failed')
+
+                const { result } = renderHook(() => useBiometrics())
+                const outcome = await act(() =>
+                    result.current.unlockWithBiometrics(PROMPT),
+                )
+
+                expect(outcome).toEqual({
+                    kind: 'failed',
+                    reason: 'decrypt-failed',
+                })
+                expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+                expect(
+                    useSecurityStore.getState().biometricUnwrapFailures,
+                ).toBe(1)
+            })
+
+            test('drops with rebind-required once decrypt failures reach the limit', async () => {
+                useSecurityStore
+                    .getState()
+                    .setBiometricUnwrapFailures(
+                        MAX_BIOMETRIC_UNWRAP_FAILURES - 1,
+                    )
+                unwrapFails('decrypt-failed')
+
+                const { result } = renderHook(() => useBiometrics())
+                const outcome = await act(() =>
+                    result.current.unlockWithBiometrics(PROMPT),
+                )
+
+                expect(outcome).toEqual({ kind: 'mismatch' })
+                expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+                    BIOMETRIC_BLOB_KEY_ID,
+                )
+                expect(result.current.disabledReason).toBe('rebind-required')
+                expect(
+                    useSecurityStore.getState().biometricUnwrapFailures,
+                ).toBe(0)
+            })
+
+            test('a cancelled ceremony leaves the count alone', async () => {
+                useSecurityStore
+                    .getState()
+                    .setBiometricUnwrapFailures(
+                        MAX_BIOMETRIC_UNWRAP_FAILURES - 1,
+                    )
+                unwrapFails('user-cancel')
+
+                const { result } = renderHook(() => useBiometrics())
+                const outcome = await act(() =>
+                    result.current.unlockWithBiometrics(PROMPT),
+                )
+
+                expect(outcome).toEqual({
+                    kind: 'failed',
+                    reason: 'user-cancel',
+                })
+                expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+                expect(
+                    useSecurityStore.getState().biometricUnwrapFailures,
+                ).toBe(MAX_BIOMETRIC_UNWRAP_FAILURES - 1)
+            })
+
+            test('a released token resets the count', async () => {
+                useSecurityStore
+                    .getState()
+                    .setBiometricUnwrapFailures(
+                        MAX_BIOMETRIC_UNWRAP_FAILURES - 1,
+                    )
+                const token = new Uint8Array([4, 2])
+                kmsMocks.withSecret.mockImplementation(
+                    async (_id: string, handler: (b: Uint8Array) => unknown) =>
+                        handler(framed('ct')),
+                )
+                kmsMocks.getSecretMetadata.mockReturnValue({
+                    biometricTokenHash: sha256Hex(token),
+                })
+                mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                    success: true,
+                    token,
+                })
+
+                const { result } = renderHook(() => useBiometrics())
+                const outcome = await act(() =>
+                    result.current.unlockWithBiometrics(PROMPT),
+                )
+
+                expect(outcome).toEqual({ kind: 'ok' })
+                expect(
+                    useSecurityStore.getState().biometricUnwrapFailures,
+                ).toBe(0)
+            })
         })
     })
 })

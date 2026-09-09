@@ -28,13 +28,14 @@ export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
  */
 export type BiometricSecurityLevel = 'none' | 'secret' | 'weak' | 'strong'
 
+/**
+ * Translated copy for the OS sheet. Both fields are required: the platform
+ * layer holds no fallback copy, and AndroidX BiometricPrompt rejects a
+ * PromptInfo without a title or a negative button text.
+ */
 export type BiometricsAuthenticatePrompt = {
-    title?: string
-    description?: string
-    // Required on Android when device-credential fallback is disabled:
-    // AndroidX BiometricPrompt rejects PromptInfo without a non-empty
-    // negative button text. Ignored on iOS (LAContext provides its own).
-    cancelLabel?: string
+    title: string
+    cancelLabel: string
 }
 
 /**
@@ -58,14 +59,12 @@ export type BiometricsAuthenticateFailureReason =
  * of a fingerprint never passes through an observable bad state, so both keep
  * reporting an enrolled strong biometric across the change.
  *
- * - `valid`       — unchanged since the binding was recorded.
- * - `changed`     — a biometric was added, or all of them removed. The only
- *                   affirmative report here, and the only one that may destroy
- *                   an opt-in.
- * - `absent`      — nothing recorded: opted in before bindings existed, or
- *                   arrived through the legacy-app migration.
- * - `unavailable` — no reading could be taken (no native module, nothing
- *                   enrolled to read, a lockout hiding the enrollment, a native
+ * - `valid`       — the key pair is present and intact.
+ * - `changed`     — a biometric was added, or all of them removed. Android
+ *                   only; iOS removes the key instead and reports `absent`.
+ * - `absent`      — no key pair: a restored backup, a keystore reset, or an
+ *                   iOS re-enrollment. Affirmative, unlike `unavailable`.
+ * - `unavailable` — no reading could be taken (no native module, a native
  *                   failure). Not a revocation.
  */
 export type BiometricEnrollmentBinding =
@@ -116,19 +115,26 @@ export type BiometricArmResult = {
 /**
  * Why an unwrap failed.
  *
- * - `invalidated` — the OS destroyed the key because the enrolled biometric set
- *                   changed. Affirmative and permanent; the opt-in is gone.
- * - `no-binding`  — there is no key to unwrap with: a pre-binding blob, a
- *                   restored backup, or a keystore reset.
+ * - `invalidated`    — the OS destroyed the key because the enrolled biometric
+ *                      set changed. Affirmative; the opt-in is gone. Android
+ *                      only: iOS removes the key instead, which reads as
+ *                      `no-binding`.
+ * - `decrypt-failed` — the ceremony passed, or the cipher could not be set up,
+ *                      and the key still did not release the token. Usually a
+ *                      dead key/blob pair, occasionally a keystore operation
+ *                      pruned under load, so callers count it rather than act
+ *                      on a single one.
+ * - `no-binding`     — there is no key to unwrap with: a restored backup, a
+ *                      keystore reset, or an iOS re-enrollment.
  *
- * Everything else is a prompt outcome and carries the same meaning it does for
- * the biometric prompt ceremony. `system-cancel` in particular must survive:
- * it is the only reason the lock screen retries on, and it exists for the
- * deeplink cold start.
+ * Everything else is a prompt outcome. `system-cancel` in particular must
+ * survive: it is the only reason the lock screen retries on, and it exists for
+ * the deeplink cold start.
  */
 export type BiometricUnwrapFailureReason =
     | BiometricsAuthenticateFailureReason
     | 'invalidated'
+    | 'decrypt-failed'
     | 'no-binding'
 
 export type BiometricUnwrapResult =
@@ -172,6 +178,6 @@ export interface BiometricsService {
      */
     unwrapBiometricToken(
         blob: string,
-        prompt?: BiometricsAuthenticatePrompt,
+        prompt: BiometricsAuthenticatePrompt,
     ): Promise<BiometricUnwrapResult>
 }

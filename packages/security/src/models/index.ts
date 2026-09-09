@@ -88,6 +88,12 @@ export type SecurityState = BaseStoreState & {
      * so a later recurrence prompts again.
      */
     acknowledgedBiometricsDisabledReason: Nullable<BiometricsDisabledReason>
+    /**
+     * Consecutive unlock ceremonies that passed but whose key could not
+     * release the token. Persisted: unlocks are usually separated by a cold
+     * start, so an in-memory count would never reach the drop threshold.
+     */
+    biometricUnwrapFailures: number
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -103,6 +109,7 @@ export type SecurityState = BaseStoreState & {
     setAcknowledgedBiometricsDisabledReason: (
         reason: Nullable<BiometricsDisabledReason>,
     ) => void
+    setBiometricUnwrapFailures: (count: number) => void
 }
 
 export type PinEntryMode =

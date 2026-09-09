@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const PIN_KEY = 'pera.pinCode'
-const BIO_KEY = 'pera.biometricPinCode'
+const BIO_KEY = 'pera.biometricUnlockToken'
 
 const { commitSecretMock, withSecretMock, biometricsMock } = vi.hoisted(() => ({
     commitSecretMock: vi.fn(),
@@ -23,7 +23,7 @@ const { commitSecretMock, withSecretMock, biometricsMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     PIN_RECORD_KEY_ID: 'pera.pinCode',
-    BIOMETRIC_BLOB_KEY_ID: 'pera.biometricPinCode',
+    BIOMETRIC_BLOB_KEY_ID: 'pera.biometricUnlockToken',
     BIOMETRIC_TOKEN_HASH_METADATA_KEY: 'biometricTokenHash',
     createPinRecord: vi.fn(async (pin: string) => ({
         version: 1,

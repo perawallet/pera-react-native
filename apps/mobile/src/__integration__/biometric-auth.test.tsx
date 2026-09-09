@@ -33,6 +33,7 @@ import {
 } from '@perawallet/wallet-core-security'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
+const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
 
 // The unit-test setup mocks `@perawallet/wallet-extension-platform-driver`
 // with vi.fn() bodies that resolve `false` by default — fine for unit
@@ -130,7 +131,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // written under BIOMETRIC_BLOB_KEY_ID and isEnabled flips true.
             let enabled: Optional<EnableBiometricsResult>
             await act(async () => {
-                enabled = await result.current.enableBiometrics()
+                enabled = await result.current.enableBiometrics(PROMPT)
             })
             expect(enabled).toEqual({ ok: true })
             expect(result.current.isEnabled).toBe(true)
@@ -144,7 +145,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // Unlock succeeds via the stub.
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({ kind: 'ok' })
         },
@@ -159,7 +160,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -182,7 +183,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({ kind: 'ok' })
         },
@@ -197,7 +198,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -208,7 +209,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({
                 kind: 'failed',
@@ -236,7 +237,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -250,7 +251,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             // The hook short-circuits when checkBiometricsEnabled is
             // false — the platform's unwrapBiometricToken() doesn't even
@@ -271,7 +272,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -283,7 +284,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({
                 kind: 'failed',
@@ -306,7 +307,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({
                 kind: 'failed',
@@ -325,13 +326,13 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
 
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({ kind: 'ok' })
         },
@@ -346,7 +347,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -383,7 +384,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(result.current.isAvailable).toBe(true)
             })
             await act(async () => {
-                await result.current.enableBiometrics()
+                await result.current.enableBiometrics(PROMPT)
             })
             expect(result.current.isEnabled).toBe(true)
 
@@ -391,7 +392,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let outcome: Optional<BiometricUnlockOutcome>
             await act(async () => {
-                outcome = await result.current.unlockWithBiometrics()
+                outcome = await result.current.unlockWithBiometrics(PROMPT)
             })
             expect(outcome).toEqual({ kind: 'failed', reason: 'user-cancel' })
             // Nothing was destroyed: the next attempt still has a blob to
@@ -418,7 +419,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
 
             let enabled: Optional<EnableBiometricsResult>
             await act(async () => {
-                enabled = await result.current.enableBiometrics()
+                enabled = await result.current.enableBiometrics(PROMPT)
             })
             expect(enabled).toEqual({ ok: false, reason: 'error' })
             expect(result.current.isEnabled).toBe(false)

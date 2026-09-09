@@ -91,6 +91,7 @@ export const useLockScreen = ({
         checkBiometricsEnabled,
         unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
@@ -99,6 +100,7 @@ export const useLockScreen = ({
         checkBiometricsEnabled,
         unlockWithBiometrics,
         resetFailedAttempts,
+        setLockoutEndTime,
         onUnlock,
         t,
         isLockedOut,
@@ -154,9 +156,15 @@ export const useLockScreen = ({
                 promptRef.current.onUnlock()
                 return
             }
-            // A record-level lockout, and a blob that no longer matches its key, both
-            // terminate here: the PIN pad is the only way forward and re-prompting would
-            // either bypass the lockout or burn another ceremony on a dead key.
+            // The hook read the lockout from the record because the store is
+            // not hydrated yet on a cold start; feed it back so the pad counts
+            // down instead of silently refusing input.
+            if (outcome.kind === 'locked') {
+                void promptRef.current.setLockoutEndTime(outcome.lockoutEndTime)
+                return
+            }
+            // A dead blob terminates here too: re-prompting would burn
+            // another ceremony on it.
             if (outcome.kind !== 'failed') return
             // Only OS-initiated cancellation re-arms; a user cancel stays
             // terminal (silent fallback to PIN), and lockout/failed/unknown

@@ -185,6 +185,25 @@ describe('useLockScreen', () => {
             )
             await vi.waitFor(() => expect(mockOnUnlock).toHaveBeenCalled())
         })
+
+        it('feeds the record lockout into the pad when the unwrap reports locked', async () => {
+            const lockoutEndTime = Date.now() + 30_000
+            mockCheckBiometricsEnabled.mockResolvedValue(true)
+            mockUnlockWithBiometrics.mockResolvedValue({
+                kind: 'locked',
+                lockoutEndTime,
+            })
+
+            renderHook(() =>
+                useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+            )
+            await vi.waitFor(() =>
+                expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
+                    lockoutEndTime,
+                ),
+            )
+            expect(mockOnUnlock).not.toHaveBeenCalled()
+        })
     })
 
     describe('handlePinComplete', () => {

@@ -80,6 +80,7 @@ const asBinding = (status: string): BiometricEnrollmentBinding =>
 
 const UNWRAP_FAILURE_REASONS = [
     'invalidated',
+    'decrypt-failed',
     'no-binding',
     'user-cancel',
     'system-cancel',
@@ -88,9 +89,9 @@ const UNWRAP_FAILURE_REASONS = [
     'failed',
 ] as const satisfies readonly BiometricUnwrapFailureReason[]
 
-// The native side classifies the failure, because only it can tell a destroyed
-// key from a declined prompt. An unrecognized code means a native change this
-// build does not know about, so it degrades rather than guessing.
+// Only the native side can tell a destroyed key from a declined prompt, so it
+// classifies and this only maps; an unrecognized code degrades rather than
+// guessing.
 const mapUnwrapFailureReason = (
     error: unknown,
 ): BiometricUnwrapFailureReason => {
@@ -214,17 +215,14 @@ export class RNBiometricsService implements BiometricsService {
 
     async unwrapBiometricToken(
         blob: string,
-        prompt: BiometricsAuthenticatePrompt = {},
+        prompt: BiometricsAuthenticatePrompt,
     ): Promise<BiometricUnwrapResult> {
         const module = getBindingModule()
         // No module means no key, which is indistinguishable from a key that
         // was never created — and both are recoverable by re-opting in.
         if (!module) return { success: false, reason: 'no-binding' }
         try {
-            const token = await module.unwrapToken(blob, {
-                title: prompt.title ?? 'Authenticate',
-                cancelLabel: prompt.cancelLabel || 'Cancel',
-            })
+            const token = await module.unwrapToken(blob, prompt)
             return { success: true, token }
         } catch (error) {
             const reason = mapUnwrapFailureReason(error)

@@ -31,6 +31,7 @@ const initialState = {
     isBiometricsEnabled: false,
     biometricsDisabledReason: null,
     acknowledgedBiometricsDisabledReason: null,
+    biometricUnwrapFailures: 0,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -51,16 +52,30 @@ const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
     return value
 }
 
+// A Record rather than a list so adding a reason without listing it here is a
+// type error: a reason missing from this map is silently dropped on restart.
+const DISABLED_REASONS: Record<BiometricsDisabledReason, true> = {
+    'enrollment-changed': true,
+    'weak-biometric': true,
+    'not-available': true,
+    'rebind-required': true,
+}
+
 // Drives copy in a sheet, so an unrecognized persisted value has no safe
 // rendering — drop it and simply don't offer the prompt.
 const sanitizeDisabledReason = (
     value: unknown,
 ): Nullable<BiometricsDisabledReason> =>
-    value === 'enrollment-changed' ||
-    value === 'weak-biometric' ||
-    value === 'not-available'
-        ? value
+    typeof value === 'string' &&
+    Object.prototype.hasOwnProperty.call(DISABLED_REASONS, value)
+        ? (value as BiometricsDisabledReason)
         : null
+
+// A tampered count only moves the drop earlier or later; zero changes nothing.
+const sanitizeUnwrapFailures = (value: unknown): number =>
+    typeof value === 'number' && Number.isInteger(value) && value >= 0
+        ? value
+        : 0
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
@@ -93,6 +108,8 @@ export const useSecurityStore: UseBoundStore<
             setAcknowledgedBiometricsDisabledReason: (
                 reason: Nullable<BiometricsDisabledReason>,
             ) => set({ acknowledgedBiometricsDisabledReason: reason }),
+            setBiometricUnwrapFailures: (count: number) =>
+                set({ biometricUnwrapFailures: count }),
             resetState: () => set(initialState),
         }),
         {
@@ -104,22 +121,27 @@ export const useSecurityStore: UseBoundStore<
                 biometricsDisabledReason: state.biometricsDisabledReason,
                 acknowledgedBiometricsDisabledReason:
                     state.acknowledgedBiometricsDisabledReason,
+                biometricUnwrapFailures: state.biometricUnwrapFailures,
             }),
-            merge: (persisted, current) => ({
-                ...current,
-                autoLockStartedAt: sanitizeAutoLockStartedAt(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.autoLockStartedAt,
-                ),
-                biometricsDisabledReason: sanitizeDisabledReason(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.biometricsDisabledReason,
-                ),
-                acknowledgedBiometricsDisabledReason: sanitizeDisabledReason(
-                    (persisted as Partial<SecurityState> | undefined)
-                        ?.acknowledgedBiometricsDisabledReason,
-                ),
-            }),
+            merge: (persisted, current) => {
+                const stored = persisted as Partial<SecurityState> | undefined
+                return {
+                    ...current,
+                    autoLockStartedAt: sanitizeAutoLockStartedAt(
+                        stored?.autoLockStartedAt,
+                    ),
+                    biometricsDisabledReason: sanitizeDisabledReason(
+                        stored?.biometricsDisabledReason,
+                    ),
+                    acknowledgedBiometricsDisabledReason:
+                        sanitizeDisabledReason(
+                            stored?.acknowledgedBiometricsDisabledReason,
+                        ),
+                    biometricUnwrapFailures: sanitizeUnwrapFailures(
+                        stored?.biometricUnwrapFailures,
+                    ),
+                }
+            },
         },
     ),
 )
