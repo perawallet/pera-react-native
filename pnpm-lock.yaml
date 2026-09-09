@@ -285,6 +285,9 @@ patchedDependencies:
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26':
     hash: f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96
     path: patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.26.patch
+  '@perawallet/walletconnect@1.0.2':
+    hash: e8aa22603400c96ef41de05c7875d08f8e9e438c33e451f87b8eff818024a0ff
+    path: patches/@perawallet__walletconnect.patch
   expo-modules-jsi@57.0.4:
     hash: 9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1
     path: patches/expo-modules-jsi@57.0.4.patch
@@ -431,7 +434,7 @@ importers:
         version: link:../../packages/devtools
       '@perawallet/walletconnect':
         specifier: 'catalog:'
-        version: 1.0.2
+        version: 1.0.2(patch_hash=e8aa22603400c96ef41de05c7875d08f8e9e438c33e451f87b8eff818024a0ff)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
@@ -4102,7 +4105,7 @@ importers:
         version: link:../../extensions/provider
       '@perawallet/walletconnect':
         specifier: 'catalog:'
-        version: 1.0.2
+        version: 1.0.2(patch_hash=e8aa22603400c96ef41de05c7875d08f8e9e438c33e451f87b8eff818024a0ff)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -14011,7 +14014,7 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.79.0':
     optional: true
 
-  '@perawallet/walletconnect@1.0.2':
+  '@perawallet/walletconnect@1.0.2(patch_hash=e8aa22603400c96ef41de05c7875d08f8e9e438c33e451f87b8eff818024a0ff)':
     dependencies:
       '@noble/ciphers': 2.2.0
       '@noble/hashes': 2.3.0

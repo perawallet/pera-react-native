@@ -52,15 +52,27 @@ export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
 export const WC_SESSION_OUTCOME_TIMEOUT_MS = 8000
 
 /**
- * Outcome budget for pairings that arrive via an OS deep link from a mobile
- * browser. That path pays for an app switch the 8s default never sees: a
+ * Outcome budget for pairings that build a brand-new connector: OS deep
+ * links, QR scans, and notification-delivered links. All of them pay a
  * fresh WSS handshake to the bridge, the topic subscribe, and the bridge
- * replaying the dApp's queued `session_request` — possibly on a device that
- * just cold-started (the clock can also run behind the PIN screen). QR and
- * in-app-browser pairings keep the 8s default; they pair from a warm,
- * foregrounded app.
+ * replaying the dApp's queued `session_request` — and the transport's own
+ * connect attempt runs 10s before its first retry, so an 8s budget cannot
+ * survive even one hung attempt. A live pairing resolves the moment the
+ * `session_request` lands, so the ceiling costs nothing on the happy path.
+ * In-app-browser pairings keep the 8s default as a scoped exclusion, not a
+ * warm-socket claim.
  */
-export const WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS = 15_000
+export const WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS = 15_000
+
+/**
+ * How long the pairing socket fail-fast waits for the bridge socket to open
+ * before declaring the bridge unreachable. Must exceed the SDK transport's
+ * own first connect attempt (10s, `SocketTransport._connectTimeout`) or it
+ * pre-empts a live-but-slow socket mid-connect and reports a false failure.
+ * Capped at the pairing's outcome budget by the caller, so a short (in-app)
+ * pairing never waits longer than its outcome.
+ */
+export const WC_PAIRING_SOCKET_TIMEOUT_MS = 12_000
 
 /**
  * After a pairing outcome times out, how much longer a late
