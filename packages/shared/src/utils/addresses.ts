@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { decodeAddress } from 'algosdk'
+
 /**
  * Total characters retained by {@link truncateAlgorandAddress}, split evenly
  * between prefix and suffix: 11 renders as `5…5`, 20 renders as `10…10`.
@@ -26,4 +28,15 @@ export const truncateAlgorandAddress = (
         maxLength % 2 === 0 ? maxLength / 2 : (maxLength - 1) / 2
     if (address.length <= maxLength) return address
     return `${address.substring(0, prefixLength)}...${address.substring(address.length - prefixLength)}`
+}
+
+/** True only for a canonical Algorand address: base32, 58 chars, valid checksum. */
+export const isValidAlgorandAddress = (address?: string): boolean => {
+    if (!address) return false
+    try {
+        decodeAddress(address)
+        return true
+    } catch {
+        return false
+    }
 }

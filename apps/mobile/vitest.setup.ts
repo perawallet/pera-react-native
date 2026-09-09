@@ -2688,6 +2688,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return value
         },
         truncateAlgorandAddress: vi.fn(a => a),
+        // Real checksum validation — contactSchema gates its address rule on
+        // it, so a constant stub would make every form-validity assertion
+        // meaningless.
+        isValidAlgorandAddress: (
+            await vi.importActual<
+                typeof import('../../packages/shared/src/utils/addresses')
+            >('../../packages/shared/src/utils/addresses')
+        ).isValidAlgorandAddress,
         SHORT_ADDRESS_LENGTH: 11,
         LONG_ADDRESS_LENGTH: 20,
         dedupeSecondaryLabel: (primary: string, secondary?: string | null) =>
