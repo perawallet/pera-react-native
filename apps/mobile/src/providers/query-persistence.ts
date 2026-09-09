@@ -23,6 +23,12 @@ import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
 import { isCardQuery } from '@perawallet/wallet-core-card'
 import { isBlockchainQuery } from '@perawallet/wallet-core-blockchain'
 
+// Caches written before the serializer tagged Decimals hold them as bare
+// strings, and consumers call Decimal methods on hydrated data during render.
+// Bump whenever the persisted shape changes incompatibly so such caches are
+// discarded instead of rehydrated.
+export const PERSISTED_CACHE_BUSTER = 'decimal-tagged'
+
 export const shouldDehydrateQuery = (query: Query): boolean => {
     // chart-history snapshots are allowlisted AHEAD of the module
     // exclusions below. They are network-only (no SQLite history table backs

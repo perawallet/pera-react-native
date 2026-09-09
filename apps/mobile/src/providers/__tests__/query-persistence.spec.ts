@@ -19,7 +19,18 @@ vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-assets')
 vi.unmock('@perawallet/wallet-core-blockchain')
 
-import type { Query, QueryKey } from '@tanstack/react-query'
+import {
+    QueryClient,
+    dehydrate,
+    hydrate,
+    type Query,
+    type QueryKey,
+} from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
+import {
+    algorandSafeQueryParse,
+    algorandSafeQuerySerialize,
+} from '@perawallet/wallet-core-blockchain'
 import { shouldDehydrateQuery } from '../query-persistence'
 
 const asQuery = (
@@ -133,5 +144,45 @@ describe('shouldDehydrateQuery', () => {
         expect(
             shouldDehydrateQuery(asQuery(['discover', 'feed'], 'pending')),
         ).toBe(false)
+    })
+})
+
+describe('persisted Decimal query data', () => {
+    // The preferred-currency rate is persisted and transformed in its queryFn,
+    // so the Decimal itself crosses the disk boundary. Consumers call Decimal
+    // methods on the hydrated value during render, so a string coming back
+    // is a cold-start crash for every non-USD user.
+    it('survives the dehydrate → serialize → parse → hydrate round trip', () => {
+        const currencyPriceKey: QueryKey = [
+            'currencies',
+            { network: 'mainnet', preferredFiatCurrency: 'EUR' },
+        ]
+        const source = new QueryClient()
+        source.setQueryData(currencyPriceKey, {
+            id: 'EUR',
+            usdPrice: new Decimal('0.85'),
+        })
+        expect(
+            shouldDehydrateQuery(
+                source.getQueryCache().find({ queryKey: currencyPriceKey })!,
+            ),
+        ).toBe(true)
+
+        const restored = new QueryClient()
+        hydrate(
+            restored,
+            algorandSafeQueryParse(
+                algorandSafeQuerySerialize(
+                    dehydrate(source, { shouldDehydrateQuery }),
+                ),
+            ),
+        )
+
+        const data = restored.getQueryData<{ usdPrice: Decimal }>(
+            currencyPriceKey,
+        )
+        expect(Decimal.isDecimal(data?.usdPrice)).toBe(true)
+        expect(data?.usdPrice.isZero()).toBe(false)
+        expect(data?.usdPrice.toString()).toBe('0.85')
     })
 })
