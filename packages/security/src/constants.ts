@@ -28,9 +28,11 @@ export const BIOMETRIC_TOKEN_HASH_METADATA_KEY = 'biometricTokenHash'
 // Leading byte of the stored blob, so an unwrap refuses a framing it does not
 // understand instead of handing it to the enclave as a decryption error.
 export const BIOMETRIC_BLOB_VERSION = 2
-// Consecutive ceremonies that passed but whose key could not release the
-// token before the opt-in is dropped. Above one because keystore operations
-// get pruned under load; small because every failure is a wasted prompt.
+// Ceremonies that passed but whose key could not release the token, counted
+// since the last successful unwrap (a cancel or lockout in between says
+// nothing about the key and does not reset it), before the opt-in is dropped.
+// Above one because keystore operations get pruned under load; small because
+// every failure is a wasted prompt.
 export const MAX_BIOMETRIC_UNWRAP_FAILURES = 3
 // v2 kept the duress PIN under this separate id. Key ids live in a plaintext
 // metadata bucket, so the record's mere existence told a device image the

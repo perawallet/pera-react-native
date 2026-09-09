@@ -89,9 +89,10 @@ export type SecurityState = BaseStoreState & {
      */
     acknowledgedBiometricsDisabledReason: Nullable<BiometricsDisabledReason>
     /**
-     * Consecutive unlock ceremonies that passed but whose key could not
-     * release the token. Persisted: unlocks are usually separated by a cold
-     * start, so an in-memory count would never reach the drop threshold.
+     * Unlock ceremonies that passed but whose key could not release the
+     * token, since the last successful unwrap. Persisted: unlocks are usually
+     * separated by a cold start, so an in-memory count would never reach the
+     * drop threshold.
      */
     biometricUnwrapFailures: number
 

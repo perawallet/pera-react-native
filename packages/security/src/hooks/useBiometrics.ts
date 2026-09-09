@@ -304,6 +304,8 @@ export const useBiometrics = (): UseBiometricsResult => {
                 }
                 setIsEnabled(true)
                 setDisabledReason(null)
+                // A fresh key must not inherit the count of the one it replaces.
+                setUnwrapFailures(0)
                 return { ok: true }
             } catch {
                 return { ok: false, reason: 'error' }
@@ -315,6 +317,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             writeBiometricBlob,
             setIsEnabled,
             setDisabledReason,
+            setUnwrapFailures,
             dropOptIn,
         ],
     )

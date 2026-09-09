@@ -32,8 +32,9 @@ Surface:
 
 What JavaScript does with a rejection is decided in
 `packages/security/src/hooks/useBiometrics.ts`: `invalidated` drops the opt-in
-at once, `decrypt-failed` drops it only after `MAX_BIOMETRIC_UNWRAP_FAILURES`
-consecutive occurrences, and every other code keeps it.
+at once, `decrypt-failed` drops it only once `MAX_BIOMETRIC_UNWRAP_FAILURES` of
+them have accumulated since the last successful unwrap (a cancel or lockout in
+between does not reset the count), and every other code keeps it.
 
 ## iOS: Secure Enclave key pair
 

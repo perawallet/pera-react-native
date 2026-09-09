@@ -811,6 +811,30 @@ describe('useBiometrics', () => {
             })
         })
 
+        test('a fresh key starts with a clean decrypt-failure count', async () => {
+            useSecurityStore
+                .getState()
+                .setBiometricUnwrapFailures(MAX_BIOMETRIC_UNWRAP_FAILURES - 1)
+            const token = new Uint8Array([7, 7, 7])
+            const tokenHash = sha256Hex(token)
+            mockBiometricsService.armBiometricBinding.mockResolvedValue({
+                blob: 'ct',
+                tokenHash,
+            })
+            mockBiometricsService.unwrapBiometricToken.mockResolvedValue({
+                success: true,
+                token,
+            })
+
+            const { result } = renderHook(() => useBiometrics())
+            const outcome = await act(() =>
+                result.current.enableBiometrics(PROMPT),
+            )
+
+            expect(outcome).toEqual({ ok: true })
+            expect(useSecurityStore.getState().biometricUnwrapFailures).toBe(0)
+        })
+
         test('frames the stored blob with the current version byte', async () => {
             const token = new Uint8Array([7, 7, 7])
             mockBiometricsService.checkBiometricsAvailable.mockResolvedValue(
