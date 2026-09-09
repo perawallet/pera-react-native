@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { isDebug, isStaging } from '@perawallet/wallet-core-config'
+
 import type { RouteCapabilities } from './capabilities-types'
 
 export type { RouteCapabilities } from './capabilities-types'
@@ -31,7 +33,11 @@ export const routeCapabilities: RouteCapabilities = {
     accountDrawer: true,
     storeRating: true,
     confirmationModeSetting: true,
-    developerSettings: true,
+    // Carries destructive tooling (the migration simulator wipes the real
+    // legacy stores and plants fixture accounts with publicly-derivable keys),
+    // so the signed store build must not expose it. metro.config.js
+    // additionally strips those screens from non-dev/non-staging bundles.
+    developerSettings: isDebug || isStaging,
     vaultSecuritySettings: false,
     // Native's WalletConnect covers dapp connections; the ARC-0027 injected
     // provider is browser-extension only.

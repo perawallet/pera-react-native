@@ -19,8 +19,10 @@ enum LegacyMigrationConstants {
 
     static let logTag: String = "LegacyMigration"
 
+    static let productionBundleId: String = "com.algorandllc.algorand"
+
     static let legacyAppGroupByBundleId: [String: String] = [
-        "com.algorandllc.algorand":       "group.com.algorandllc.algorand",
+        productionBundleId:               "group.com.algorandllc.algorand",
         "com.peralda.perawallet.staging": "group.com.peralda.perawallet.staging",
         "com.peralda.perawallet.beta":    "group.com.peralda.perawallet.beta",
     ]

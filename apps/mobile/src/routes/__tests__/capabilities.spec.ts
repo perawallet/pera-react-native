@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { routeCapabilities } from '../capabilities'
 import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
@@ -25,11 +25,15 @@ describe('route capabilities', () => {
         // current-behavior regression. deepLinkPaste is
         // web-only (native keeps the qrScanner camera instead — the two
         // flags are mutually exclusive per platform).
+        // developerSettings is build-gated (isDebug || isStaging), not a
+        // constant — the unit-test env is signed-release-shaped (__DEV__
+        // false), so it's excluded here and covered by the gate tests below.
         const {
             vaultSecuritySettings,
             dappConnections,
             connectionsSettings,
             deepLinkPaste,
+            developerSettings: _developerSettings,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
@@ -37,6 +41,48 @@ describe('route capabilities', () => {
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
+    })
+
+    describe('developerSettings build gate', () => {
+        const importWithFlags = async (flags: {
+            isDebug: boolean
+            isStaging: boolean
+        }) => {
+            vi.resetModules()
+            vi.doMock('@perawallet/wallet-core-config', () => flags)
+            const { routeCapabilities: capabilities } =
+                await import('../capabilities')
+            return capabilities
+        }
+
+        afterEach(() => {
+            vi.doUnmock('@perawallet/wallet-core-config')
+            vi.resetModules()
+        })
+
+        it('is off in the signed store build (prod release)', async () => {
+            const capabilities = await importWithFlags({
+                isDebug: false,
+                isStaging: false,
+            })
+            expect(capabilities.developerSettings).toBe(false)
+        })
+
+        it('stays on for local debug builds', async () => {
+            const capabilities = await importWithFlags({
+                isDebug: true,
+                isStaging: false,
+            })
+            expect(capabilities.developerSettings).toBe(true)
+        })
+
+        it('stays on for staging release builds', async () => {
+            const capabilities = await importWithFlags({
+                isDebug: false,
+                isStaging: true,
+            })
+            expect(capabilities.developerSettings).toBe(true)
+        })
     })
 
     it('web map: M6 discover off (feature-gate crash), webview-dependent leftovers/card features still off (spec)', () => {

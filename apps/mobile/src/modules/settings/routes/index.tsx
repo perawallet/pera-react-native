@@ -360,14 +360,16 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsLanguageScreen}
             />
-            <SettingsStack.Screen
-                name='DeveloperSettings'
-                options={{
-                    title: 'screens.developer_settings',
-                    headerShown: false,
-                }}
-                component={DeveloperSettingsStackNavigator}
-            />
+            {routeCapabilities.developerSettings && (
+                <SettingsStack.Screen
+                    name='DeveloperSettings'
+                    options={{
+                        title: 'screens.developer_settings',
+                        headerShown: false,
+                    }}
+                    component={DeveloperSettingsStackNavigator}
+                />
+            )}
         </SettingsStack.Navigator>
     )
 }
