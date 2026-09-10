@@ -10,18 +10,10 @@
  limitations under the License
  */
 
-import { encodeAddress, decodeAddress } from 'algosdk'
+import { encodeAddress } from 'algosdk'
+
+export { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
     return encodeAddress(bytes)
-}
-
-export const isValidAlgorandAddress = (address?: string): boolean => {
-    if (!address) return false
-    try {
-        decodeAddress(address)
-        return true
-    } catch {
-        return false
-    }
 }
