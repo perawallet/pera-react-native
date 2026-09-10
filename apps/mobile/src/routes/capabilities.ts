@@ -42,4 +42,9 @@ export const routeCapabilities: RouteCapabilities = {
     // Native keeps the two separate WalletConnect/Connected Sites menu
     // entries (dappConnections is off there anyway).
     connectionsSettings: false,
+    // Platform gate only: native can host the password manager. The surface
+    // itself stays dark behind useIsPasswordManagerEnabled, which needs the
+    // enable_password_manager remote flag and never opens in production, the
+    // variant whose native credential provider is compiled out.
+    passwordManager: true,
 }

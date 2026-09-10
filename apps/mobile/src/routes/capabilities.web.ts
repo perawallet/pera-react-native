@@ -50,4 +50,7 @@ export const routeCapabilities: RouteCapabilities = {
     // registered it navigates nowhere and leaves the QR scanner locked awaiting a callback.
     sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
+    // Off: the browser extension has no OS credential provider to fill into,
+    // so the enable_password_manager remote flag must not surface it here.
+    passwordManager: false,
 }

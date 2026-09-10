@@ -22,4 +22,5 @@ export type {
     PasskeyAutofillEventCallback,
     PasskeyAutofillExtension,
     PasskeyAutofillSubscription,
+    PasswordCredentialIdentity,
 } from './types'

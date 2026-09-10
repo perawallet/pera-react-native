@@ -84,9 +84,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
-            // `getAppVersion` is the name on DeviceInfoService; `getVersion`
-            // above is not on the interface at all.
+            // `getAppVersion`/`getAppBuild` are the names on DeviceInfoService;
+            // `getVersion`/`getBuildNumber` are not on the interface at all.
             getAppVersion: () => '1.0.0',
+            getAppBuild: () => '1',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLocales: () => ['en-US'],
@@ -191,6 +192,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
             getAppVersion: () => '1.0.0',
+            getAppBuild: () => '1',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLocales: () => ['en-US'],
@@ -3512,6 +3514,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_quantum_accounts: 'enable_quantum_accounts',
         enable_quantum_swap: 'enable_quantum_swap',
         enable_gift_cards: 'enable_gift_cards',
+        enable_password_manager: 'enable_password_manager',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

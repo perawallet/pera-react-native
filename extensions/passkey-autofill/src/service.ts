@@ -15,6 +15,7 @@ import type {
     NativeStoredCredential,
     PasskeyAutofillEventCallback,
     PasskeyAutofillSubscription,
+    PasswordCredentialIdentity,
 } from './types'
 
 /**
@@ -46,8 +47,18 @@ export interface PasskeyAutofillNativeAPI {
     replaceCredentialIdentities?(
         credentials: NativeStoredCredential[],
     ): Promise<void>
+    replacePasswordCredentialIdentities?(
+        identities: PasswordCredentialIdentity[],
+    ): Promise<void>
     isProviderActive(): Promise<boolean>
     openProviderSettings(): Promise<boolean>
+    isAutofillServiceActive?(): Promise<boolean>
+    openAutofillSettings?(): Promise<boolean>
+    autofillPickerReady?(): Promise<void>
+    requestAutofillUnlock?(): Promise<boolean>
+    resolveAutofillPick?(recordIdentifier: string): Promise<void>
+    cancelAutofillPick?(): Promise<void>
+    pruneAppLinks?(recordIdentifier: string): Promise<void>
     getDiagnostics?(): Promise<string[]>
     addListener(
         eventName: string,
@@ -162,12 +173,67 @@ export class PasskeyAutofillService {
         return this.invoke('refreshCredentialIdentities', [], undefined)
     }
 
+    /**
+     * iOS-only. Android's credential provider enumerates MMKV on demand and
+     * keeps no OS-side index, so there is nothing to replace there.
+     */
+    replacePasswordCredentialIdentities(
+        identities: PasswordCredentialIdentity[],
+    ): Promise<void> {
+        return this.invoke(
+            'replacePasswordCredentialIdentities',
+            [identities],
+            undefined,
+        )
+    }
+
     isProviderActive(): Promise<boolean> {
         return this.invoke('isProviderActive', [], false)
     }
 
     openProviderSettings(): Promise<boolean> {
         return this.invoke('openProviderSettings', [], false)
+    }
+
+    /**
+     * Unlike other optional native methods, an absent
+     * `isAutofillServiceActive` must reject rather than resolve `false` via
+     * {@link invoke}'s fallback: "no autofill service exists on this
+     * platform" (iOS, or a build predating the native work) has to be
+     * distinguishable from "the service exists and is off", since only the
+     * latter is something the enable-action UI can fix.
+     */
+    isAutofillServiceActive(): Promise<boolean> {
+        if (typeof this.native.isAutofillServiceActive !== 'function') {
+            return Promise.reject(
+                new Error('isAutofillServiceActive is not supported'),
+            )
+        }
+        return (async () => this.native.isAutofillServiceActive!())()
+    }
+
+    openAutofillSettings(): Promise<boolean> {
+        return this.invoke('openAutofillSettings', [], false)
+    }
+
+    autofillPickerReady(): Promise<void> {
+        return this.invoke('autofillPickerReady', [], undefined)
+    }
+
+    requestAutofillUnlock(): Promise<boolean> {
+        return this.invoke('requestAutofillUnlock', [], false)
+    }
+
+    resolveAutofillPick(recordIdentifier: string): Promise<void> {
+        return this.invoke('resolveAutofillPick', [recordIdentifier], undefined)
+    }
+
+    cancelAutofillPick(): Promise<void> {
+        return this.invoke('cancelAutofillPick', [], undefined)
+    }
+
+    pruneAppLinks(recordIdentifier: string): Promise<void> {
+        return this.invoke('pruneAppLinks', [recordIdentifier], undefined)
     }
 
     onPasskeyAdded(

@@ -144,6 +144,25 @@ describe('PasskeyAutofillService', () => {
             expect(native.deleteCredential).toHaveBeenCalledWith('cred-1')
         })
 
+        it('forwards pruneAppLinks to native with the record identifier', async () => {
+            const pruneAppLinks = vi.fn().mockResolvedValue(undefined)
+            const service = new PasskeyAutofillService(
+                makeNative({ pruneAppLinks }),
+            )
+
+            await service.pruneAppLinks('pera.login.abc')
+
+            expect(pruneAppLinks).toHaveBeenCalledWith('pera.login.abc')
+        })
+
+        it('resolves pruneAppLinks when the native module predates the method', async () => {
+            const service = new PasskeyAutofillService(makeNative({}))
+
+            await expect(
+                service.pruneAppLinks('pera.login.abc'),
+            ).resolves.toBeUndefined()
+        })
+
         it('returns the native isProviderActive / openProviderSettings results', async () => {
             const service = new PasskeyAutofillService(
                 makeNative({
@@ -195,5 +214,99 @@ describe('PasskeyAutofillService', () => {
             // Must be safely callable even though there is nothing to remove.
             expect(() => sub.remove()).not.toThrow()
         })
+    })
+
+    describe('autofill service status', () => {
+        it('returns the native autofill-enabled result', async () => {
+            const native = makeNative({
+                isAutofillServiceActive: vi.fn(async () => true),
+            })
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.isAutofillServiceActive()).resolves.toBe(true)
+        })
+
+        it('resolves openAutofillSettings to false when the native module predates the method', async () => {
+            const native = makeNative({})
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.openAutofillSettings()).resolves.toBe(false)
+        })
+
+        it('rejects isAutofillServiceActive when the native module has no such capability', async () => {
+            const native = makeNative({})
+            const service = new PasskeyAutofillService(native)
+
+            await expect(service.isAutofillServiceActive()).rejects.toThrow()
+        })
+    })
+
+    describe('replacePasswordCredentialIdentities', () => {
+        it('forwards the identities to the native module', async () => {
+            const replacePasswordCredentialIdentities = vi.fn(
+                async () => undefined,
+            )
+            const service = new PasskeyAutofillService(
+                makeNative({ replacePasswordCredentialIdentities }),
+            )
+
+            await service.replacePasswordCredentialIdentities([
+                {
+                    recordIdentifier: 'pera.login.abc',
+                    serviceIdentifier: 'example.com',
+                    user: 'ada@example.com',
+                },
+            ])
+
+            expect(replacePasswordCredentialIdentities).toHaveBeenCalledWith([
+                {
+                    recordIdentifier: 'pera.login.abc',
+                    serviceIdentifier: 'example.com',
+                    user: 'ada@example.com',
+                },
+            ])
+        })
+
+        it('resolves without throwing when the platform does not register it', async () => {
+            const service = new PasskeyAutofillService(makeNative())
+
+            await expect(
+                service.replacePasswordCredentialIdentities([]),
+            ).resolves.toBeUndefined()
+        })
+    })
+})
+
+describe('autofill picker bridge', () => {
+    it('forwards a selection to the native module', async () => {
+        const resolveAutofillPick = vi.fn(async () => undefined)
+        const service = new PasskeyAutofillService(
+            makeNative({ resolveAutofillPick }),
+        )
+
+        await service.resolveAutofillPick('pera.login.abc')
+
+        expect(resolveAutofillPick).toHaveBeenCalledWith('pera.login.abc')
+    })
+
+    it('returns the native unlock result', async () => {
+        const service = new PasskeyAutofillService(
+            makeNative({ requestAutofillUnlock: vi.fn(async () => true) }),
+        )
+
+        await expect(service.requestAutofillUnlock()).resolves.toBe(true)
+    })
+
+    it('resolves unlock false when the native module has no such method', async () => {
+        const service = new PasskeyAutofillService(makeNative({}))
+
+        await expect(service.requestAutofillUnlock()).resolves.toBe(false)
+    })
+
+    it('does not throw when ready and cancel are absent', async () => {
+        const service = new PasskeyAutofillService(makeNative({}))
+
+        await expect(service.autofillPickerReady()).resolves.toBeUndefined()
+        await expect(service.cancelAutofillPick()).resolves.toBeUndefined()
     })
 })

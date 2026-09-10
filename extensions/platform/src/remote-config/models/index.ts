@@ -36,6 +36,7 @@ export const RemoteConfigKeys = {
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
     enable_language_selection: 'enable_language_selection',
     enable_gift_cards: 'enable_gift_cards',
+    enable_password_manager: 'enable_password_manager',
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
@@ -115,6 +116,12 @@ export const RemoteConfigDefaults: Record<
     // itself is currently unavailable; testers force it on via the
     // developer-settings flag overrides.
     enable_gift_cards: false,
+    // Password manager proof of concept. Off everywhere — no dev/staging
+    // carve-out — because logins are keystore-only and unrecoverable if the
+    // device is lost; testers force it on via the developer-settings flag
+    // overrides. routeCapabilities.passwordManager still keeps it off where
+    // there is no OS credential provider to fill into (web).
+    enable_password_manager: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',

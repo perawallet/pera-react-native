@@ -28,9 +28,17 @@ import 'fast-text-encoding'
 
 // Expo registration (replaces AppRegistry.registerComponent)
 import { registerRootComponent } from 'expo'
+import { AppRegistry } from 'react-native'
 import { App } from './src/App'
+import { AutofillPickerRoot } from './src/modules/passwords/AutofillPickerRoot'
+import AUTOFILL_PICKER_COMPONENT from './autofill-picker-component'
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately
 registerRootComponent(App)
+
+// The autofill picker activity mounts this by name, read from manifest
+// meta-data before any JS has run — nothing here can negotiate it, so the
+// name is shared with the config rather than repeated.
+AppRegistry.registerComponent(AUTOFILL_PICKER_COMPONENT, () => AutofillPickerRoot)
