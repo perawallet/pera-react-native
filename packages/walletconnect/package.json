@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",

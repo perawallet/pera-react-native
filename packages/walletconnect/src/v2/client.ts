@@ -146,6 +146,12 @@ export const createWalletKitClient: WalletKitFactory = async ({
     projectId,
     storage,
 }) => {
+    // `Core` is a process-global singleton unless told otherwise: a second
+    // construction hands back the first instance, whose relayer `teardown`
+    // has explicitly closed, and binds a second engine to it so every inbound
+    // frame is handled twice. A data wipe tears down and re-initializes, so
+    // the handler needs a genuinely new client each time.
+    process.env.DISABLE_GLOBAL_CORE = 'true'
     const core = new Core({ projectId, storage })
     return await WalletKit.init({ core, metadata: PERA_CLIENT_META })
 }

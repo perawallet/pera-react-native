@@ -457,8 +457,6 @@ export const createWalletConnectV2Handler = (
             connectionId: topic,
             correlationId: String(id),
             sourceType: 'walletconnect',
-            // Becomes ARC-0001's `authorizedAddresses`: what stops a session
-            // approved for account A signing for B.
             authorizedAccounts: record.accounts,
             // The approval-time snapshot, not the live session metadata a
             // dApp can update; it is the anti-spoofing `sourceMetadata`.
@@ -953,14 +951,14 @@ export const createWalletConnectV2Handler = (
             }
             context = next
             if (projectId.length === 0) {
-                // Reported, not thrown: v2 being unconfigured is a build
-                // fact, not a failure of this boot, and every other handler
-                // must still come up. `restore()` then reports no
-                // connections, so stale v2 rows are pruned.
-                reportError(
-                    new WalletConnectError(
-                        'WalletConnect v2 is unavailable: no Reown project id is configured',
-                    ),
+                // Logged, not thrown or reported: v2 being unconfigured is a
+                // build fact, not a failure of this boot, and every other
+                // handler must still come up. The user hears about it from
+                // `pair()` when they scan a v2 URI, not as a toast on every
+                // launch. `restore()` then reports no connections, so stale
+                // v2 rows are pruned.
+                logger.warn(
+                    '[WC v2] unavailable: no Reown project id is configured',
                 )
                 return
             }

@@ -238,8 +238,6 @@ export const createWalletConnectV1Handler = (
             connectionId: connection.id,
             correlationId: String(requestId),
             sourceType: 'walletconnect',
-            // Becomes ARC-0001's `authorizedAddresses`: what stops a session
-            // approved for account A signing for B.
             authorizedAccounts: connection.accounts,
             // The approval-time snapshot, not the live `peerMeta` a dApp can overwrite afterwards.
             peer: connection.peer,

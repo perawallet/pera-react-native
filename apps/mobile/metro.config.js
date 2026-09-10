@@ -447,14 +447,6 @@ const customResolveRequest = (context, moduleName, platform) => {
         return context.resolveRequest(context, resolvedPath, platform);
     }
 
-    // falcon-1024 ships a dual build whose ESM entry (dist/index.js)
-    // instantiates its WASM with a module-level `await`. hermesc rejects
-    // top-level await in release bundles, so the release build dies at
-    // createBundleReleaseJsAndAssets. Because this package lists the `import`
-    // condition before `require` and we enable both (see
-    // unstable_conditionNames above), Metro picks the ESM entry. Redirect to
-    // the sibling CJS build — identical API, no top-level await — by resolving
-    // normally and swapping the resolved entry file.
     // tslib's exports map lists `import` before `default` (1.x sends it to
     // modules/index.js, 2.x to tslib.es6.mjs), and Metro matches conditions in
     // map order, so with `import` enabled (see unstable_conditionNames below) a
@@ -489,6 +481,14 @@ const customResolveRequest = (context, moduleName, platform) => {
         return resolved;
     }
 
+    // falcon-1024 ships a dual build whose ESM entry (dist/index.js)
+    // instantiates its WASM with a module-level `await`. hermesc rejects
+    // top-level await in release bundles, so the release build dies at
+    // createBundleReleaseJsAndAssets. Because this package lists the `import`
+    // condition before `require` and we enable both (see
+    // unstable_conditionNames above), Metro picks the ESM entry. Redirect to
+    // the sibling CJS build — identical API, no top-level await — by resolving
+    // normally and swapping the resolved entry file.
     if (moduleName === 'falcon-1024') {
         const resolved = context.resolveRequest(context, moduleName, platform);
         if (

@@ -28,13 +28,10 @@ import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
 
 /**
- * Owns the one registry for the app's lifetime: creates it, registers the
- * WalletConnect handlers, and composes the boot sequence, the approval queue,
- * the error toasts and the signing adapter around it.
- *
- * This runs synchronously during render, before `useConnectionsBoot`, so a
- * factory that threw would take the whole provider — and every other handler
- * — down with it. Both build their transports inside `initialize()` instead.
+ * The handler factories run synchronously during render, before
+ * `useConnectionsBoot`, so one that threw would take the whole provider — and
+ * every other handler — down with it. Both build their transports inside
+ * `initialize()` instead.
  */
 export const useConnectionsProvider = (): ConnectionRegistry => {
     const registryRef = useRef<ConnectionRegistry | null>(null)
@@ -50,8 +47,8 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         registry.register(
             createWalletConnectV2Handler({
                 getNetwork,
-                // Empty when no Reown project is provisioned for the build,
-                // which the handler reports through `onError` rather than
+                // Empty when no Reown project is provisioned for the build;
+                // the handler then logs and refuses v2 pairings rather than
                 // failing the boot.
                 projectId: config.reownProjectId,
                 keyValueStorage: getProvider().keyValueStorage,

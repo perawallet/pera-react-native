@@ -26,7 +26,7 @@ import type {
     Connection,
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { logger, Networks } from '@perawallet/wallet-core-shared'
 import type {
     WalletKitEvent,
     WalletKitFactory,
@@ -187,17 +187,26 @@ describe('initialize', () => {
         expect(context.onDisconnected).toHaveBeenCalledWith(TOPIC)
     })
 
-    it('reports through onError and does not throw when the project id is empty', async () => {
+    // Not reported: an unscoped error reaches the app's toast, and an
+    // unconfigured build would show one on every launch.
+    it('logs, and neither throws nor reports, when the project id is empty', async () => {
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const { handler, createWalletKit } = makeHandler({ projectId: '' })
         const context = makeContext()
 
         await expect(handler.initialize(context)).resolves.toBeUndefined()
 
         expect(createWalletKit).not.toHaveBeenCalled()
-        expect(context.onError).toHaveBeenCalledTimes(1)
-        const [error, scope] = context.onError.mock.calls[0]
-        expect(error).toBeInstanceOf(Error)
-        expect(scope).toBeUndefined()
+        expect(context.onError).not.toHaveBeenCalled()
+        expect(warn).toHaveBeenCalledTimes(1)
+    })
+
+    it('refuses to pair while unavailable, so the user hears about it when it matters', async () => {
+        vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const { handler } = makeHandler({ projectId: '' })
+        await handler.initialize(makeContext())
+
+        await expect(handler.pair(V2_URI)).rejects.toThrow(/unavailable/)
     })
 
     it('claims no connections at all when v2 is unavailable', async () => {

@@ -508,9 +508,11 @@ jobs:
       # `test -d` first: grep over a missing directory exits non-zero, which
       # the negation turns into a pass — the guard would go quiet exactly when
       # the bundle step it depends on failed to produce anything.
+      # Case-insensitive: module paths do not survive a sourcemap-less
+      # bundle, and the only literal WalletKit leaves behind is "WalletKit".
       - name: Guard against WalletKit leaking into the browser bundle
         if: steps.changes.outputs.affected == 'true'
-        run: test -d apps/browser/dist && ! grep -rlE "walletkit|@reown" apps/browser/dist
+        run: test -d apps/browser/dist && ! grep -rliE "walletkit|@reown" apps/browser/dist
 
       # Keyed on the lockfile hash (same idiom as the node_modules/build-artifact
       # caches above) since @playwright/test is pinned via a semver range, not an

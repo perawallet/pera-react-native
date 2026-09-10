@@ -54,8 +54,8 @@ describe('toConnectionSettingsRow', () => {
     })
 
     // The methods come from the handler too: v1 stores them under
-    // `permissions` and v2 under `methods`, and the read model reading either
-    // key itself is what left the v2 panel empty.
+    // `permissions` and v2 under `methods`, so a key read off the record here
+    // would be wrong for one of them.
     it('carries the handler-resolved methods, not a key read off the record', () => {
         const row = toConnectionSettingsRow(
             {

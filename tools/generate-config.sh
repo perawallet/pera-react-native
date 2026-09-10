@@ -44,9 +44,9 @@ if [ "${APP_ENV:-}" == "production" ]; then
     fi
   done
 
-  # An opaque relay credential rather than a URL, so it has no staging variant
+  # A public client identifier rather than a URL, so it has no staging variant
   # to detect — but the v2 relay rejects a client without one, and by launch the
-  # artifact is already signed. Never echo the value.
+  # artifact is already signed.
   if [ -z "${REOWN_PROJECT_ID:-}" ]; then
     echo "ERROR: REOWN_PROJECT_ID is unset in a production build — WalletConnect v2 could not pair." >&2
     exit 1

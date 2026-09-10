@@ -25,10 +25,10 @@ vi.mock('@perawallet/wallet-core-signing', async () => {
         arc60WireSchema: wire.arc60WireSchema,
         assertArc60RequestWithinLimits: wire.assertArc60RequestWithinLimits,
         parseArc60WireRequest: wire.parseArc60WireRequest,
-        // Mirrors `MAX_DATA_SIGN_REQUESTS` in the signing package's
-        // constants.ts, which cannot be imported here: it pulls the KMS
-        // barrel, and that reaches react-native-mmkv too.
+        // Mirror the signing package's constants.ts, which cannot be imported
+        // here: it pulls the KMS barrel, and that reaches react-native-mmkv too.
         MAX_DATA_SIGN_REQUESTS: 1000,
+        MAX_TRANSACTION_SIGN_REQUESTS: 1000,
     }
 })
 

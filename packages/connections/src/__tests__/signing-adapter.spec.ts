@@ -74,6 +74,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // value (1000, `@perawallet/wallet-core-signing`'s `constants.ts`) is
     // exercised by that package's own tests.
     MAX_DATA_SIGN_REQUESTS: 2,
+    MAX_TRANSACTION_SIGN_REQUESTS: 1000,
     // `schema.ts` and `validate.ts` import these eagerly; only the
     // sign-transactions path is driven from this file, so neither is used.
     arc60WireSchema: { safeParse: vi.fn() },
