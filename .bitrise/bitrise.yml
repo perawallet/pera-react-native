@@ -599,8 +599,19 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
-            envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+            INSTALL_URL="${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+            # An app-store-signed IPA gets no public install page from Bitrise, so
+            # fall back to the permanent artifact URL or the card links no IPA.
+            if [ -z "$INSTALL_URL" ] && [ -n "${BITRISE_PERMANENT_DOWNLOAD_URL_MAP:-}" ]; then
+              IFS='|' read -ra ADDR <<< "$BITRISE_PERMANENT_DOWNLOAD_URL_MAP"
+              for i in "${ADDR[@]}"; do
+                if [[ "$i" =~ \.ipa=\>(.+) ]]; then
+                  INSTALL_URL="${BASH_REMATCH[1]}"
+                  break
+                fi
+              done
+            fi
+            envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
   android-staging:
     description: Build and deploy Android Staging to Firebase App Distribution
     envs:
