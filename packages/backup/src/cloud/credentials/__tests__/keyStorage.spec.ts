@@ -12,22 +12,44 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const { commitSecretMock, removeSecretMock, withSecretMock, hasSecretMock } =
-    vi.hoisted(() => ({
-        commitSecretMock: vi.fn(async () => undefined),
-        removeSecretMock: vi.fn(async () => undefined),
-        withSecretMock: vi.fn(),
-        hasSecretMock: vi.fn(() => false),
-    }))
+const {
+    MNEMONIC,
+    commitSecretMock,
+    removeSecretMock,
+    withSecretMock,
+    hasSecretMock,
+} = vi.hoisted(() => ({
+    MNEMONIC: ['marble', 'protect', 'crawl'],
+    commitSecretMock: vi.fn(
+        async (_params: { id: string; bytes: Uint8Array }) => undefined,
+    ),
+    removeSecretMock: vi.fn(async (_id: string) => undefined),
+    withSecretMock: vi.fn(),
+    hasSecretMock: vi.fn(() => false),
+}))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: commitSecretMock,
     removeSecret: removeSecretMock,
     withSecret: withSecretMock,
     hasSecret: hasSecretMock,
+    // Stand-ins for the real wordlist lookups; only the round-trip matters here.
+    mnemonicWordsToIndices: (words: string[]) => {
+        const indices = new Uint16Array(words.length)
+        for (let i = 0; i < words.length; i++) {
+            const index = MNEMONIC.indexOf(words[i])
+            if (index < 0) return null
+            indices[i] = index
+        }
+        return indices
+    },
+    zeroBytes: (...buffers: Array<Uint16Array | Uint8Array | null>) => {
+        for (const buffer of buffers) buffer?.fill(0)
+    },
 }))
 
 import {
+    BackupMnemonicParseError,
     CLOUD_BACKUP_AUTH_KEY_ID,
     CLOUD_BACKUP_ENC_KEY_ID,
     CLOUD_BACKUP_MNEMONIC_ID,
@@ -35,10 +57,8 @@ import {
     hasBackupCredentials,
     persistBackupKeys,
     withBackupEncryptionKey,
-    withBackupMnemonic,
+    withBackupMnemonicIndices,
 } from '../keyStorage'
-
-const MNEMONIC = ['marble', 'protect', 'crawl']
 
 describe('persistBackupKeys', () => {
     beforeEach(() => {
@@ -48,9 +68,21 @@ describe('persistBackupKeys', () => {
         removeSecretMock.mockResolvedValue(undefined)
     })
 
+    // Snapshot at call time: the phrase buffer is zeroed before the call returns.
+    // Plain arrays because jsdom's `TextEncoder` yields another realm's `Uint8Array`.
+    const captureCommits = (): Map<string, number[]> => {
+        const committed = new Map<string, number[]>()
+        commitSecretMock.mockImplementation(async ({ id, bytes }) => {
+            committed.set(id, Array.from(bytes))
+            return undefined
+        })
+        return committed
+    }
+
     test('commits the encryption key, auth secret key, and mnemonic under stable ids', async () => {
         const encryptionKey = new Uint8Array(32).fill(1)
         const authSecretKey = new Uint8Array(64).fill(2)
+        const committed = captureCommits()
 
         await persistBackupKeys({
             encryptionKey,
@@ -58,18 +90,52 @@ describe('persistBackupKeys', () => {
             mnemonic: MNEMONIC,
         })
 
-        expect(commitSecretMock).toHaveBeenCalledWith({
-            id: CLOUD_BACKUP_ENC_KEY_ID,
-            bytes: encryptionKey,
+        expect(committed.get(CLOUD_BACKUP_ENC_KEY_ID)).toEqual(
+            Array.from(encryptionKey),
+        )
+        expect(committed.get(CLOUD_BACKUP_AUTH_KEY_ID)).toEqual(
+            Array.from(authSecretKey),
+        )
+        expect(committed.get(CLOUD_BACKUP_MNEMONIC_ID)).toEqual(
+            Array.from(new TextEncoder().encode(MNEMONIC.join(' '))),
+        )
+    })
+
+    test('zeroes the encoded phrase once it is committed', async () => {
+        const handed: Uint8Array[] = []
+        commitSecretMock.mockImplementation(async ({ id, bytes }) => {
+            if (id === CLOUD_BACKUP_MNEMONIC_ID) handed.push(bytes)
+            return undefined
         })
-        expect(commitSecretMock).toHaveBeenCalledWith({
-            id: CLOUD_BACKUP_AUTH_KEY_ID,
-            bytes: authSecretKey,
+
+        await persistBackupKeys({
+            encryptionKey: new Uint8Array(32).fill(1),
+            authSecretKey: new Uint8Array(64).fill(2),
+            mnemonic: MNEMONIC,
         })
-        expect(commitSecretMock).toHaveBeenCalledWith({
-            id: CLOUD_BACKUP_MNEMONIC_ID,
-            bytes: new TextEncoder().encode(MNEMONIC.join(' ')),
+
+        expect(handed).toHaveLength(1)
+        expect(handed[0].every(byte => byte === 0)).toBe(true)
+    })
+
+    test('zeroes the encoded phrase even when the commit fails', async () => {
+        const handed: Uint8Array[] = []
+        commitSecretMock.mockImplementation(async ({ id, bytes }) => {
+            if (id !== CLOUD_BACKUP_MNEMONIC_ID) return undefined
+            handed.push(bytes)
+            throw new Error('keystore full')
         })
+
+        await expect(
+            persistBackupKeys({
+                encryptionKey: new Uint8Array(32).fill(1),
+                authSecretKey: new Uint8Array(64).fill(2),
+                mnemonic: MNEMONIC,
+            }),
+        ).rejects.toThrow('keystore full')
+
+        expect(handed).toHaveLength(1)
+        expect(handed[0].every(byte => byte === 0)).toBe(true)
     })
 
     test('rolls back the encryption key when the auth key commit fails', async () => {
@@ -108,32 +174,76 @@ describe('persistBackupKeys', () => {
     })
 })
 
-describe('withBackupMnemonic', () => {
+describe('withBackupMnemonicIndices', () => {
+    const storedPhrase = () => new TextEncoder().encode(MNEMONIC.join(' '))
+
     beforeEach(() => {
         withSecretMock.mockReset()
-    })
-
-    test('decodes the stored bytes into words and passes them to the handler', async () => {
         withSecretMock.mockImplementation(
             async (_id: string, handler: (bytes: Uint8Array) => unknown) =>
-                handler(new TextEncoder().encode(MNEMONIC.join(' '))),
+                handler(storedPhrase()),
         )
+    })
 
-        const words = await withBackupMnemonic(resolved => resolved)
+    test('decodes the stored bytes into wordlist indices for the handler', async () => {
+        const indices = await withBackupMnemonicIndices(resolved =>
+            Array.from(resolved),
+        )
 
         expect(withSecretMock).toHaveBeenCalledWith(
             CLOUD_BACKUP_MNEMONIC_ID,
             expect.any(Function),
         )
-        expect(words).toEqual(MNEMONIC)
+        expect(indices).toEqual([0, 1, 2])
+    })
+
+    test('zeroes the index buffer once the handler returns', async () => {
+        let leaked: Uint16Array | null = null
+
+        await withBackupMnemonicIndices(resolved => {
+            leaked = resolved
+        })
+
+        expect(Array.from(leaked!)).toEqual([0, 0, 0])
+    })
+
+    test('waits for an async handler before zeroing', async () => {
+        const seen = await withBackupMnemonicIndices(async resolved => {
+            await Promise.resolve()
+            return Array.from(resolved)
+        })
+
+        expect(seen).toEqual([0, 1, 2])
     })
 
     test('returns null when no mnemonic is stored', async () => {
         withSecretMock.mockResolvedValue(null)
 
-        const result = await withBackupMnemonic(resolved => resolved)
+        const result = await withBackupMnemonicIndices(resolved => resolved)
 
         expect(result).toBeNull()
+    })
+
+    test('throws BackupMnemonicParseError when the stored phrase is not a wordlist phrase', async () => {
+        withSecretMock.mockImplementation(
+            async (_id: string, handler: (bytes: Uint8Array) => unknown) =>
+                handler(new TextEncoder().encode('not a wordlist phrase')),
+        )
+
+        await expect(
+            withBackupMnemonicIndices(resolved => resolved),
+        ).rejects.toBeInstanceOf(BackupMnemonicParseError)
+    })
+
+    test('does not invoke the handler when the stored phrase cannot be decoded', async () => {
+        withSecretMock.mockImplementation(
+            async (_id: string, handler: (bytes: Uint8Array) => unknown) =>
+                handler(new TextEncoder().encode('not a wordlist phrase')),
+        )
+        const handler = vi.fn()
+
+        await expect(withBackupMnemonicIndices(handler)).rejects.toThrow()
+        expect(handler).not.toHaveBeenCalled()
     })
 })
 

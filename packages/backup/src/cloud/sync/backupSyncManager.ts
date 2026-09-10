@@ -12,22 +12,40 @@
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import {
     logger,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useCloudBackupStore, useBackupSyncStateStore } from '../store'
+import {
+    useCloudBackupStore,
+    useBackupSyncActivityStore,
+    useBackupSyncStateStore,
+    resolveBackupDeviceId,
+} from '../store'
 import {
     withBackupAuthSecretKey,
     withBackupEncryptionKey,
     hasBackupCredentials,
     deleteBackupKeys,
 } from '../credentials/keyStorage'
-import { createEmptySyncState } from '../models'
+import { createEmptySyncState, type SyncState } from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
+import {
+    deleteContactFromBackup,
+    deleteFromBackup,
+    importContactFromBackup,
+    importFromBackup,
+    keepAccountInBackup,
+    keepContactInBackup,
+    markAccountForBackup,
+    markContactForBackup,
+    reviewActionDeps,
+} from './reviewActions'
+import { accountFingerprint } from './accountFingerprint'
+import { contactsFingerprint } from './contactsFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -37,21 +55,25 @@ import {
     type BackupWebSocketEvent,
 } from './webSocketClient'
 import type {
+    ContactImportFn,
+    ContactImportSummary,
+    ImportSummary,
     SyncEngineDeps,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'
 
 const PERIODIC_SYNC_MS = 5 * 60 * 1000
+const LOCAL_CHANGE_DEBOUNCE_MS = 2000
 
 export type BackupSyncManagerDeps = {
     importAccounts: SyncEngineDeps['importAccounts']
+    importContacts: ContactImportFn
     /** Hook-bound 25-word phrase resolver, injected from RootComponent. */
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
     socketFactory?: BackupSocketFactory
-    onStateChange?: () => void
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
     onBackupDeleted?: () => void
@@ -62,11 +84,24 @@ export class BackupSyncManager {
     private syncInProgress = false
     private periodic: Nullable<ReturnType<typeof setInterval>> = null
     private socket: Nullable<BackupWebSocketClient> = null
+    private unwatchAccounts: Nullable<() => void> = null
+    private unwatchContacts: Nullable<() => void> = null
+    private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
+    private accountsFingerprint = ''
+    private contactsFingerprint = ''
 
     constructor(private readonly deps: BackupSyncManagerDeps) {}
 
     isSyncing(): boolean {
         return this.syncInProgress
+    }
+
+    /** Mirrored into the activity store so the UI can show background work — a
+     *  periodic tick, an account change or a socket-driven pull — not just the
+     *  runs it started itself. */
+    private setSyncing(isSyncing: boolean): void {
+        this.syncInProgress = isSyncing
+        useBackupSyncActivityStore.getState().setIsSyncing(isSyncing)
     }
 
     private context(): Nullable<{
@@ -75,9 +110,8 @@ export class BackupSyncManager {
         deviceId: string
     }> {
         const network = useNetworkStore.getState().network
-        const backupId = useCloudBackupStore.getState().backupId
-        const deviceId =
-            useDeviceStore.getState().deviceIDs?.get(network) ?? null
+        const { backupId } = useCloudBackupStore.getState()
+        const deviceId = resolveBackupDeviceId(network)
         if (!backupId || !deviceId) return null
         return { network, backupId, deviceId }
     }
@@ -100,8 +134,158 @@ export class BackupSyncManager {
                         resolveHd: this.deps.resolveHd,
                     }),
                 importAccounts: this.deps.importAccounts,
+                listContacts: () => useContactsStore.getState().contacts ?? [],
+                importContacts: this.deps.importContacts,
             }),
         )
+    }
+
+    /** Runs one exclusive mutation of the sync state, so a review action and a
+     *  background sync can't both write the whole state and lose the other's
+     *  edit. Returns false when a sync already holds the slot. */
+    private async withExclusiveState(
+        run: (state: SyncState, deps: SyncEngineDeps) => Promise<SyncState>,
+    ): Promise<boolean> {
+        if (this.syncInProgress) return false
+        const ctx = this.context()
+        if (!ctx) return false
+        this.setSyncing(true)
+        try {
+            const state =
+                useBackupSyncStateStore.getState().syncState ??
+                createEmptySyncState(ctx.backupId)
+            const next = await this.withEngineDeps(ctx, deps =>
+                run(state, deps),
+            )
+            if (!next) return false
+            useBackupSyncStateStore.getState().setSyncState(next)
+            return true
+        } finally {
+            this.setSyncing(false)
+        }
+    }
+
+    async backUpAccount(address: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markAccountForBackup(state, address),
+        )
+        if (!staged) return false
+        await this.syncNow()
+        return true
+    }
+
+    async addAccountFromBackup(address: string): Promise<ImportSummary | null> {
+        let summary: ImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deleteAccountFromBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async (state, deps) =>
+            deleteFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the address returns to the review
+     *  screen under "available from backup". */
+    async keepAccountInBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepAccountInBackup(state, address),
+        )
+    }
+
+    async backUpContact(address: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markContactForBackup(state, address),
+        )
+        if (!staged) return false
+        await this.syncNow()
+        return true
+    }
+
+    async addContactFromBackup(
+        address: string,
+    ): Promise<ContactImportSummary | null> {
+        let summary: ContactImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importContactFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deleteContactFromBackup(address: string): Promise<boolean> {
+        return this.withExclusiveState(async (state, deps) =>
+            deleteContactFromBackup({
+                state,
+                address,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the contact returns to the review
+     *  screen under "available from backup". */
+    async keepContactInBackup(address: string, name: string): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepContactInBackup(state, address, name),
+        )
+    }
+
+    private watchLocalStores(): void {
+        this.accountsFingerprint = accountFingerprint(
+            useAccountsStore.getState().accounts,
+        )
+        this.unwatchAccounts = useAccountsStore.subscribe(state => {
+            const next = accountFingerprint(state.accounts)
+            if (next === this.accountsFingerprint) return
+            this.accountsFingerprint = next
+            this.scheduleLocalSync()
+        })
+
+        this.contactsFingerprint = contactsFingerprint(
+            useContactsStore.getState().contacts ?? [],
+        )
+        this.unwatchContacts = useContactsStore.subscribe(state => {
+            const next = contactsFingerprint(state.contacts ?? [])
+            if (next === this.contactsFingerprint) return
+            this.contactsFingerprint = next
+            this.scheduleLocalSync()
+        })
+    }
+
+    /** Debounced so a batch import lands as one sync. Re-arms rather than
+     *  dropping when a sync is already running: syncBackup snapshots the
+     *  accounts and contacts at its start, so an in-flight run cannot see this
+     *  change. */
+    private scheduleLocalSync(): void {
+        if (this.localChangeTimer != null) clearTimeout(this.localChangeTimer)
+        this.localChangeTimer = setTimeout(() => {
+            this.localChangeTimer = null
+            if (!this.running) return
+            if (this.syncInProgress) {
+                this.scheduleLocalSync()
+                return
+            }
+            void this.syncNow()
+        }, LOCAL_CHANGE_DEBOUNCE_MS)
     }
 
     async start(): Promise<void> {
@@ -109,11 +293,19 @@ export class BackupSyncManager {
         // No credentials = nothing to sync. This also covers the post-delete
         // state: a server-deleted backup wipes the on-device keys, so start()
         // becomes a no-op until the user sets up a fresh backup.
-        if (!hasBackupCredentials()) return
+        if (!hasBackupCredentials()) {
+            logger.warn(
+                'BackupSyncManager: start skipped, no backup credentials',
+            )
+            return
+        }
         this.running = true
         // Defensive: never leak a prior interval/socket if start races a stop.
         if (this.periodic != null) clearInterval(this.periodic)
         this.socket?.disconnect()
+        this.unwatchAccounts?.()
+        this.unwatchContacts?.()
+        this.watchLocalStores()
         await this.syncNow()
         this.connectSocket()
         this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
@@ -125,6 +317,14 @@ export class BackupSyncManager {
             clearInterval(this.periodic)
             this.periodic = null
         }
+        if (this.localChangeTimer != null) {
+            clearTimeout(this.localChangeTimer)
+            this.localChangeTimer = null
+        }
+        this.unwatchAccounts?.()
+        this.unwatchAccounts = null
+        this.unwatchContacts?.()
+        this.unwatchContacts = null
         this.socket?.disconnect()
         this.socket = null
     }
@@ -136,6 +336,7 @@ export class BackupSyncManager {
         this.stop()
         useCloudBackupStore.getState().resetState()
         useBackupSyncStateStore.getState().resetState()
+        useBackupSyncActivityStore.getState().resetState()
         try {
             await deleteBackupKeys()
         } catch (error) {
@@ -148,9 +349,11 @@ export class BackupSyncManager {
     async syncNow(): Promise<void> {
         if (this.syncInProgress) return
         const ctx = this.context()
-        if (!ctx) return
-        this.syncInProgress = true
-        this.deps.onStateChange?.()
+        if (!ctx) {
+            logger.warn('BackupSyncManager: sync skipped, no backup context')
+            return
+        }
+        this.setSyncing(true)
         try {
             const state =
                 useBackupSyncStateStore.getState().syncState ??
@@ -158,19 +361,28 @@ export class BackupSyncManager {
             const next = await this.withEngineDeps(ctx, deps =>
                 syncBackup(deps, state),
             )
-            if (next) useBackupSyncStateStore.getState().setSyncState(next)
+            if (next) {
+                useBackupSyncStateStore.getState().setSyncState(next)
+            } else {
+                logger.warn(
+                    'BackupSyncManager: sync produced no state, encryption key unavailable',
+                )
+            }
         } catch (error) {
             logger.warn('BackupSyncManager: sync failed', {
                 error: error instanceof Error ? error.message : String(error),
             })
-            const s = useBackupSyncStateStore.getState().syncState
-            if (s)
-                useBackupSyncStateStore
-                    .getState()
-                    .setSyncState({ ...s, lastSyncResult: 'FAILED' })
+            // Seed an empty state when the first-ever sync is the one that
+            // failed, so the overview reports FAILED instead of falling back
+            // to the never-synced badge.
+            const s =
+                useBackupSyncStateStore.getState().syncState ??
+                createEmptySyncState(ctx.backupId)
+            useBackupSyncStateStore
+                .getState()
+                .setSyncState({ ...s, lastSyncResult: 'FAILED' })
         } finally {
-            this.syncInProgress = false
-            this.deps.onStateChange?.()
+            this.setSyncing(false)
         }
     }
 
@@ -178,7 +390,7 @@ export class BackupSyncManager {
         if (this.syncInProgress) return
         const ctx = this.context()
         if (!ctx) return
-        this.syncInProgress = true
+        this.setSyncing(true)
         try {
             const state =
                 useBackupSyncStateStore.getState().syncState ??
@@ -192,7 +404,7 @@ export class BackupSyncManager {
                 error: error instanceof Error ? error.message : String(error),
             })
         } finally {
-            this.syncInProgress = false
+            this.setSyncing(false)
         }
     }
 

@@ -23,6 +23,8 @@ export {
 } from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { zeroBytes } from './crypto/secure-memory'
+export { AesGcmOpenError, openAesGcm, sealAesGcm } from './crypto/aesGcm'
+export { argon2idDerive, type Argon2idParams } from './crypto/argon2id'
 export {
     prepareHDMasterKey,
     type PreparedHDMasterKey,

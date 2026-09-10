@@ -10,24 +10,38 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
-import {
-    batchUpsertItems,
-    deleteItem,
-    fetchDelta,
-    fetchManifest,
-    readItems,
-} from '../api'
+import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
+import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { SyncState } from '../models'
+import type { Manifest, SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
+import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
 import { pushDirty } from './pushDirty'
+import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
-import type { SyncEngineDeps } from './types'
+import type { LocalSnapshot, SyncEngineDeps } from './types'
 
 const hasPendingWork = (state: SyncState): boolean =>
     Object.values(state.items).some(i => i.isDirty || i.pendingDelete)
+
+/** A registered backup has no manifest until its first item lands, so the very
+ *  first sync of a new backup 404s. Destroying a backup drops its auth key, so
+ *  a wiped backup fails with 401 instead — a 404 can only mean "still empty".
+ *  Warns because that is only true once: a 404 that keeps coming back leaves
+ *  `lastKnownBackupHash` pinned, which silently disables the short-circuit
+ *  below and makes every sync a full delta + read + push. */
+const fetchManifestOrNull = async (
+    deps: SyncEngineDeps,
+): Promise<Manifest | null> => {
+    try {
+        return await fetchManifest(deps.network, deps.backupId, deps.deviceId)
+    } catch (error) {
+        if (!isNotFoundError(error)) throw error
+        logger.warn('syncBackup: no manifest, treating backup as empty')
+        return null
+    }
+}
 
 /** Full pull + push. `now` is injected for deterministic tests. Throws on a hard
  *  network/transport failure (caller records FAILED + backs off); on success the
@@ -38,24 +52,29 @@ export const syncBackup = async (
     now: number = Date.now(),
 ): Promise<SyncState> => {
     // 1. Reconcile local first so the short-circuit below is accurate.
-    const local = await buildLocalItems(
+    const accounts = await buildLocalItems(
         deps.listAccounts(),
         deps.serializeAccount,
     )
-    if (local.skipped > 0) {
+    if (accounts.skipped > 0) {
         logger.warn('syncBackup: accounts skipped, deletions deferred', {
-            skipped: local.skipped,
+            skipped: accounts.skipped,
         })
+    }
+    const local: LocalSnapshot = {
+        items: [
+            ...accounts.items,
+            ...buildLocalContactItems(deps.listContacts(), now),
+        ],
+        // Account-only: a contact cannot fail to serialize.
+        skipped: accounts.skipped,
     }
     let next = reconcile(state, local, now)
 
     // 2. Manifest short-circuit.
-    const manifest = await fetchManifest(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-    )
+    const manifest = await fetchManifestOrNull(deps)
     if (
+        manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&
         !hasPendingWork(next)
     ) {
@@ -63,11 +82,10 @@ export const syncBackup = async (
     }
 
     // 3-4. Fetch + apply remote deltas.
-    const deltas = await fetchDelta(
-        deps.network,
-        deps.backupId,
-        deps.deviceId,
-        next.lastSyncedSeq,
+    const { deltas } = await fetchDeltaOrRebuild(
+        deps,
+        next,
+        async () => manifest,
     )
     next = await applyDeltas({
         state: next,
@@ -78,6 +96,7 @@ export const syncBackup = async (
             deviceId: deps.deviceId,
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
+            importContacts: deps.importContacts,
             readItems,
             decrypt: decryptItemPayload,
         },
@@ -100,8 +119,9 @@ export const syncBackup = async (
     // 6. Advance pointers + mark success.
     return {
         ...next,
-        lastKnownBackupHash: manifest.backupGlobalHash,
-        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest.lastSeq),
+        lastKnownBackupHash:
+            manifest?.backupGlobalHash ?? next.lastKnownBackupHash,
+        lastSyncedSeq: Math.max(next.lastSyncedSeq, manifest?.lastSeq ?? 0),
         lastSyncedAt: now,
         lastSyncResult: 'SUCCESS',
     }

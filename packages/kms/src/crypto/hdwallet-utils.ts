@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { pbkdf2, createHash, randomBytes } from 'crypto'
+import { pbkdf2, randomBytes } from 'crypto'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { entropyToMnemonic as entropyToMnemonicLib } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import {
@@ -117,9 +118,7 @@ export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
         )
     }
     const checksumBitCount = entropyBits / ENTROPY_BITS_PER_CHECKSUM_BIT // 4..8
-    const checksum =
-        createHash('sha256').update(entropy).digest()[0] >>
-        (BITS_PER_BYTE - checksumBitCount)
+    const checksum = sha256(entropy)[0] >> (BITS_PER_BYTE - checksumBitCount)
 
     const indices = new Uint16Array(
         (entropyBits + checksumBitCount) / BITS_PER_MNEMONIC_WORD,
@@ -187,9 +186,7 @@ export const indicesToEntropy = (indices: Uint16Array): Uint8Array => {
     }
 
     // The bits left in the accumulator are exactly the checksum.
-    const expected =
-        createHash('sha256').update(entropy).digest()[0] >>
-        (BITS_PER_BYTE - checksumBitCount)
+    const expected = sha256(entropy)[0] >> (BITS_PER_BYTE - checksumBitCount)
     if ((acc & ((1 << checksumBitCount) - 1)) !== expected) {
         zeroBytes(entropy)
         throw new Error('Invalid BIP39 mnemonic checksum')

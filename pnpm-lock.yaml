@@ -2203,6 +2203,9 @@ importers:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
         version: 9.2.0(algosdk@3.7.0)
+      '@algorandfoundation/xhd-wallet-api':
+        specifier: 'catalog:'
+        version: 2.0.0-canary.1
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2218,6 +2221,9 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
+      '@perawallet/wallet-core-contacts':
+        specifier: workspace:*
+        version: link:../contacts
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -2233,6 +2239,9 @@ importers:
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
       algosdk:
         specifier: 'catalog:'
         version: 3.7.0
@@ -2961,6 +2970,9 @@ importers:
       '@joe-p/react-native-falcon':
         specifier: 'catalog:'
         version: 0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 2.3.0
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain

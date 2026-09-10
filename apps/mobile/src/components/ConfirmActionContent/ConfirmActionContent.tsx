@@ -39,6 +39,7 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     testID?: string
     confirmTestID?: string
     cancelTestID?: string
+    tertiaryTestID?: string
 }
 
 export const ConfirmActionContent = <TResult = boolean,>({
@@ -63,6 +64,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
     testID,
     confirmTestID,
     cancelTestID,
+    tertiaryTestID,
 }: ConfirmActionContentProps<TResult>) => {
     const { resolve, dismiss } = useBottomSheetResult<TResult>()
 
@@ -90,6 +92,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
             testID={testID}
             confirmTestID={confirmTestID}
             cancelTestID={cancelTestID}
+            tertiaryTestID={tertiaryTestID}
         />
     )
 }

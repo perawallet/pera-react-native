@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-// Test-only barrel — exposes co-located MSW handler factories without
-// pulling them into the production bundle entry. Import via
-// `@perawallet/wallet-core-backup/test-handlers` in test files.
+// Test-only barrel: the MSW handler factories and the item codec, kept off the
+// package's public export surface. Import via
+// `@perawallet/wallet-core-backup/test-handlers`.
 
 export {
+    buildRegisterHandler,
+    type BuildRegisterHandlerParams,
     buildRestoreHandlers,
     type RestoreFixtureItem,
     type BuildRestoreHandlersParams,
@@ -22,3 +24,8 @@ export {
     type BuildSyncHandlersParams,
     type SyncHandlerHandle,
 } from './cloud/api/msw-handlers'
+
+export {
+    decryptItemPayload,
+    encryptItemPayload,
+} from './cloud/crypto/itemPayload'

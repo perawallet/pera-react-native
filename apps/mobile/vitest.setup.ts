@@ -3016,6 +3016,23 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     // to satisfy `new Set(MNEMONIC_WORDLIST)` at import time without dragging
     // the real wordlist into the test bundle.
     MNEMONIC_WORDLIST: ['abandon', 'ability', 'able', 'about'],
+    // The real helpers map against the 2048-word list. Tests only need a
+    // stable, injective index <-> word pair, so synthesize one rather than
+    // pulling the full wordlist in alongside the placeholder above.
+    mnemonicIndexToWord: (index: number) => `word-${index}`,
+    // Mirrors the real contract: null when a token isn't a wordlist word.
+    mnemonicWordsToIndices: (words: string[]) => {
+        const indices = new Uint16Array(words.length)
+        for (let i = 0; i < words.length; i++) {
+            const synthesized = /^word-(\d+)$/.exec(words[i])
+            const index = synthesized
+                ? Number(synthesized[1])
+                : ['abandon', 'ability', 'able', 'about'].indexOf(words[i])
+            if (index < 0) return null
+            indices[i] = index
+        }
+        return indices
+    },
     // Seed-access origins consumed at import time by the signing pipeline and
     // the backup flow (SIGNING_KEY_DOMAIN, useMnemonicForAddress). kms is fully
     // stubbed here, so both the constant and its consumers read these values —
@@ -3292,26 +3309,39 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 // Mock @perawallet/wallet-core-contacts
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: vi.fn(() => ({
-        contacts: [],
-        findContacts: vi.fn(() => []),
+vi.mock('@perawallet/wallet-core-contacts', () => {
+    const state = {
+        contacts: [] as unknown[],
         addContact: vi.fn(),
         editContact: vi.fn(),
         deleteContact: vi.fn(),
         selectedContact: null,
         setSelectedContact: vi.fn(),
-    })),
-    useContactsStore: vi.fn(() => ({
-        contacts: [],
-        addContact: vi.fn(),
-        editContact: vi.fn(),
-        deleteContact: vi.fn(),
-        selectedContact: null,
-        setSelectedContact: vi.fn(),
-    })),
-    DuplicateAddressError: class DuplicateAddressError extends Error {},
-}))
+        resetState: vi.fn(),
+    }
+    // Shaped like the zustand store, not just its hook call: the backup sync
+    // manager reads it through `getState`/`subscribe`.
+    const useContactsStore = Object.assign(
+        vi.fn((selector?: (s: any) => any) =>
+            selector ? selector(state) : state,
+        ),
+        {
+            getState: () => state,
+            setState: vi.fn(),
+            subscribe: vi.fn(() => () => undefined),
+        },
+    )
+
+    return {
+        useContacts: vi.fn(() => ({
+            ...state,
+            findContacts: vi.fn(() => []),
+        })),
+        useContactsStore,
+        DuplicateAddressError: class DuplicateAddressError extends Error {},
+        ContactNotFoundError: class ContactNotFoundError extends Error {},
+    }
+})
 
 // Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
 // cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
