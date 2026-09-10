@@ -86,8 +86,8 @@ export default defineConfig({
             {
                 // `@perawallet/walletconnect` (WC v1 fork) opens a relay
                 // socket on construction — no good in jsdom. Route every
-                // consumer (including the deep
-                // `@perawallet/wallet-core-walletconnect` hooks) through a
+                // consumer (including `@perawallet/wallet-core-walletconnect`'s
+                // v1 handler) through a
                 // stub class that captures `on()` handlers and
                 // `approveSession()` calls so integration tests can drive the
                 // pairing flow end-to-end. The stub also exports
@@ -160,6 +160,13 @@ export default defineConfig({
             {
                 find: '@utils',
                 replacement: path.resolve(__dirname, './src/utils'),
+            },
+            {
+                // Test-only: a spec that has to reach a package module by
+                // path (because the barrel is hand-mocked) should not have to
+                // count how deep it sits to do it.
+                find: '@packages',
+                replacement: path.resolve(__dirname, '../../packages'),
             },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
@@ -258,6 +265,17 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../extensions/platform/src/index.ts',
+                ),
+            },
+            {
+                // `vitest.setup.ts` builds the provider's connection store from
+                // this package, so EVERY mobile unit test loads it. Left on
+                // `dist` that is a global stale-build hazard, the same one the
+                // core connections alias above avoids.
+                find: '@perawallet/wallet-extension-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/connections/src/index.ts',
                 ),
             },
             {
@@ -379,6 +397,16 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/walletconnect/src/index.ts',
+                ),
+            },
+            {
+                // Actively developed alongside the rest of this plan —
+                // aliased to source rather than `dist` to avoid the stale-
+                // build hazard this project has already hit repeatedly.
+                find: '@perawallet/wallet-core-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/connections/src/index.ts',
                 ),
             },
             {

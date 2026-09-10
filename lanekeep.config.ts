@@ -7,12 +7,14 @@ import { defineConfig } from 'lanekeep'
 import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
+import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
+import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 
 export default defineConfig({
     // Every workspace member lives one level under apps/, packages/ or
@@ -47,6 +49,8 @@ export default defineConfig({
     rules: [
         noPrimitiveRnComponents,
         noChromeImportsOutsideWeb,
+        noCrossProtocolImports,
+        noWcImportsInConnectionsModule,
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,

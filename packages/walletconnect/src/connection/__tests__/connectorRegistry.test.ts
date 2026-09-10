@@ -26,11 +26,11 @@ import {
     clearConnectorHandlerBinder,
     waitForPairingSocketOpen,
 } from '../connectorRegistry'
-import { useWalletConnectStore } from '../../store'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
-} from '../../errors'
+} from '../../shared/errors'
+import { PERA_CLIENT_META } from '../../shared/constants'
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -98,7 +98,6 @@ describe('connectorRegistry', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         __resetRegistryForTests()
-        useWalletConnectStore.getState().resetState()
     })
 
     afterEach(() => {
@@ -127,20 +126,6 @@ describe('connectorRegistry', () => {
 
             expect(connected.transportClose).not.toHaveBeenCalled()
             expect(getConnector('c1')).toBe(connected)
-        })
-
-        it('refuses to touch a session with a persisted connection', () => {
-            const pending = makeConnector('c1')
-            pending.connected = false
-            registerConnector('c1', pending)
-            useWalletConnectStore
-                .getState()
-                .setWalletConnectConnections([{ clientId: 'c1' }])
-
-            abandonPairing('c1')
-
-            expect(pending.transportClose).not.toHaveBeenCalled()
-            expect(getConnector('c1')).toBe(pending)
         })
 
         it('is a no-op for an unknown clientId', () => {
@@ -222,6 +207,16 @@ describe('connectorRegistry', () => {
             // a fresh connector is built, the stale one is torn down, and
             // the handler binder re-attaches the dApp request handlers.
             expect(WalletConnect).toHaveBeenCalledTimes(1)
+            // Built through the shared factory: Pera's client metadata and
+            // the no-op session storage, never the SDK's localStorage default.
+            expect(WalletConnect).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    clientMeta: PERA_CLIENT_META,
+                    storage: expect.objectContaining({
+                        getSession: expect.any(Function),
+                    }),
+                }),
+            )
             expect(stale.transportClose).toHaveBeenCalled()
             const fresh = vi.mocked(WalletConnect).mock.results[0]
                 .value as MockConnector

@@ -13,10 +13,13 @@
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
-    PERA_CLIENT_META,
-    useWalletConnectStore,
-    type WalletConnectConnection,
+    ALL_PERMISSIONS,
+    commitSessionKey,
+    isWalletConnectV1Connection,
+    toPeer,
+    type WalletConnectV1Connection,
 } from '@perawallet/wallet-core-walletconnect'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export type WalletConnectMigrationResult = {
     imported: number
@@ -53,9 +56,21 @@ const parseSessionMeta = (json: string): ParsedSessionMeta => {
     }
 }
 
-type ImportableConnection = WalletConnectConnection & {
+/**
+ * `key` is the raw session key, held only long enough to hand to
+ * `commitSessionKey`; nothing past that carries secret material without a `secretRef`.
+ */
+type ReconstructedLegacySession = {
     clientId: string
-    session: NonNullable<WalletConnectConnection['session']>
+    peerId: string
+    bridge: string
+    topic: string
+    key: string
+    chainId: number
+    accounts: string[]
+    handshakeId?: number
+    createdAt: number
+    peer: WalletConnectV1Connection['peer']
 }
 
 type ResolvedSessionFields = {
@@ -87,7 +102,7 @@ const isSessionValid = (
 
 const toConnection = (
     legacy: LegacyWalletConnectV1Session,
-): ImportableConnection | null => {
+): ReconstructedLegacySession | null => {
     const meta = parseSessionMeta(legacy.sessionMetaJson)
     const fields: ResolvedSessionFields = {
         bridge: meta.bridge,
@@ -109,34 +124,31 @@ const toConnection = (
 
     return {
         clientId,
-        version: 1,
+        peerId,
         bridge,
-        connected: false,
-        createdAt: new Date(normalizeTimestampMs(legacy.dateTimestampMs)),
-        session: {
-            connected: true,
-            accounts,
-            chainId,
-            bridge,
-            key,
-            clientId,
-            clientMeta: PERA_CLIENT_META,
-            peerId,
-            peerMeta: {
-                name: legacy.peerMeta.name,
-                url: legacy.peerMeta.url,
-                icons: legacy.peerMeta.icons,
-                description: legacy.peerMeta.description,
-            },
-            handshakeId: legacy.handshakeId ?? 0,
-            handshakeTopic: topic,
-        },
+        topic,
+        key,
+        chainId,
+        accounts,
+        // Omitted rather than defaulted to 0: the v1 handler's replay guard tests `!== undefined`.
+        handshakeId:
+            typeof legacy.handshakeId === 'number'
+                ? legacy.handshakeId
+                : undefined,
+        createdAt: normalizeTimestampMs(legacy.dateTimestampMs),
+        peer: toPeer(legacy.peerMeta),
     }
 }
 
-export const migrateWalletConnect = (
+/**
+ * Native-app (iOS/Android) session exports; each session key goes into the
+ * keystore behind a `secretRef`. Only sessions whose every account has already
+ * been migrated are imported: one authorised for an address the wallet does not
+ * hold would be unusable and misleading.
+ */
+export const migrateWalletConnect = async (
     sessions: LegacyWalletConnectV1Session[],
-): WalletConnectMigrationResult => {
+): Promise<WalletConnectMigrationResult> => {
     const result: WalletConnectMigrationResult = { imported: 0, skipped: 0 }
     if (sessions.length === 0) {
         return result
@@ -146,48 +158,80 @@ export const migrateWalletConnect = (
         useAccountsStore.getState().accounts.map(account => account.address),
     )
 
-    const store = useWalletConnectStore.getState()
-    const existing = store.walletConnectConnections
-    const seenClientIds = new Set(
-        existing.map(connection => connection.clientId).filter(Boolean),
-    )
+    const store = getProvider().connections.store
+    const existing = await store.list()
+    const seenIds = new Set(existing.map(connection => connection.id))
     const seenTopics = new Set(
         existing
-            .map(connection => connection.session?.handshakeTopic)
-            .filter(Boolean),
+            .filter(isWalletConnectV1Connection)
+            .map(connection => connection.metadata.handshakeTopic),
     )
 
-    const imports: ImportableConnection[] = []
+    // An I/O failure must not be folded into `skipped`: the caller stamps the
+    // step complete whenever nothing escapes, which would orphan an already
+    // committed session key with no retry path. Attempt the rest, then rethrow.
+    let firstFailure: Error | null = null
+
     for (const session of sessions) {
-        try {
-            const connection = toConnection(session)
-            if (
-                !connection ||
-                seenClientIds.has(connection.clientId) ||
-                seenTopics.has(connection.session.handshakeTopic)
-            ) {
-                result.skipped += 1
-                continue
-            }
-            if (
-                !connection.session.accounts.every(address =>
-                    migratedAddresses.has(address),
-                )
-            ) {
-                result.skipped += 1
-                continue
-            }
-            seenClientIds.add(connection.clientId)
-            seenTopics.add(connection.session.handshakeTopic)
-            imports.push(connection)
-            result.imported += 1
-        } catch {
+        const reconstructed = toConnection(session)
+        if (
+            !reconstructed ||
+            seenIds.has(reconstructed.clientId) ||
+            seenTopics.has(reconstructed.topic)
+        ) {
             result.skipped += 1
+            continue
+        }
+        if (
+            !reconstructed.accounts.every(address =>
+                migratedAddresses.has(address),
+            )
+        ) {
+            result.skipped += 1
+            continue
+        }
+
+        try {
+            const secretRef = await commitSessionKey(
+                reconstructed.clientId,
+                reconstructed.key,
+            )
+
+            const connection: WalletConnectV1Connection = {
+                id: reconstructed.clientId,
+                kind: 'walletconnect-v1',
+                name: reconstructed.peer.name,
+                peer: reconstructed.peer,
+                accounts: reconstructed.accounts,
+                secretRef,
+                status: 'active',
+                createdAt: reconstructed.createdAt,
+                lastActiveAt: reconstructed.createdAt,
+                metadata: {
+                    bridge: reconstructed.bridge,
+                    handshakeTopic: reconstructed.topic,
+                    peerId: reconstructed.peerId,
+                    chainId: reconstructed.chainId,
+                    ...(reconstructed.handshakeId !== undefined
+                        ? { handshakeId: reconstructed.handshakeId }
+                        : {}),
+                    // The native export has no per-session method list and the
+                    // legacy apps gated none; this is the v1 handler's fallback too.
+                    permissions: [...ALL_PERMISSIONS],
+                },
+            }
+            await store.upsert(connection)
+
+            seenIds.add(reconstructed.clientId)
+            seenTopics.add(reconstructed.topic)
+            result.imported += 1
+        } catch (error) {
+            firstFailure ??=
+                error instanceof Error ? error : new Error(String(error))
         }
     }
 
-    if (imports.length > 0) {
-        store.setWalletConnectConnections([...existing, ...imports])
-    }
+    if (firstFailure) throw firstFailure
+
     return result
 }

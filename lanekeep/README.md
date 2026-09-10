@@ -18,6 +18,7 @@ the comment there for what was verified and when the exemption expires.
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | `pera/no-primitive-rn-components`    | No direct `react-native` primitive imports in app code; use the PW-prefixed wrapper from `@components/core`.                  |
 | `pera/no-chrome-imports-outside-web` | A chrome-only package must not reach a native bundle.                                                                         |
+| `pera/no-cross-protocol-imports`     | A `v1/` sibling directory must not import from `v2/`, or vice versa — including type-only imports.                            |
 | `pera/no-typography-in-styles`       | No `fontSize`/`fontFamily`/etc. set directly inside `makeStyles`; use `getTypography` or a `PWText` variant.                  |
 | `pera/no-empty-style-objects`        | No style key that resolves to `{}`.                                                                                           |
 | `pera/no-numeric-sizes`              | No literal numeric spacing/sizing inside `makeStyles`; use a `theme.spacing`/`theme.borderRadius`/`theme.borders` token.      |

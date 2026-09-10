@@ -36,6 +36,7 @@ export default defineConfig({
                 'react-native-mmkv',
                 'react-native-quick-crypto',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-connections',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-platform-driver',
                 '@perawallet/wallet-extension-ledger-react-native',

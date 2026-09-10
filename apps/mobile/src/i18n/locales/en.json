@@ -20,7 +20,7 @@
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
             "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
             "unauthorized_signer": "This site isn't authorized to request a signature for that account.",
-            "no_session": "This connection is no longer valid. Reconnect the site and try again."
+            "connection_revoked": "This connection was disconnected. Reconnect from the site and try again."
         },
         "passkey": {
             "create": {
@@ -161,6 +161,7 @@
             "body_generic": "We couldn't process the link. Please try again.",
             "title_walletconnect": "WalletConnect failed",
             "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the bridge may be unreachable.",
+            "body_walletconnect_timeout": "No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.",
             "title_wc_unsupported": "Connection link not supported",
             "body_wc_unsupported": "This WalletConnect link can't be used by Pera. Please reconnect from the dApp and try again.",
             "title_keyreg": "Couldn't prepare key registration",
@@ -807,6 +808,16 @@
             "key_access_error": "Failed to access the signing key.",
             "invalid_key": "The signing key for this account is invalid.",
             "generic": "Something went wrong accessing your signing key."
+        },
+        "connections": {
+            "invalid_payload": "An app sent a request Pera couldn't understand. Please check the app and try again.",
+            "no_handler": "Pera couldn't handle this connection request. Please check the app and try again.",
+            "unknown_connection": "Pera couldn't find that connection. It may have already been disconnected.",
+            "duplicate_kind": "Something went wrong setting up app connections. Please restart Pera and try again.",
+            "already_initialized": "Something went wrong setting up app connections. Please restart Pera and try again.",
+            "already_answered": "This request has already been answered.",
+            "no_subscriber": "Pera wasn't ready to handle this request. Please try again.",
+            "not_initialized": "Pera is still starting up. Please try connecting again in a moment."
         },
         "walletconnect": {
             "title": "An error occurred processing an app request",
@@ -2828,7 +2839,8 @@
             "error_sheet_title": "Error",
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request.",
-            "error_network_mismatch": "This app asked to connect on {{requested}}, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
+            "error_network_mismatch": "This app asked to connect on a different network, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
+            "error_delivery_failed": "Pera couldn't reach the app to deliver your answer, so it may still be waiting. Try again from the app.",
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts."
         },
         "connection": {
@@ -2848,7 +2860,6 @@
             "delete_all_title": "Delete All Sessions",
             "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
             "disconnect_failed_title": "Couldn't disconnect",
-            "unknown_peer": "Unknown",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
             "permissions": "Advanced Permissions",

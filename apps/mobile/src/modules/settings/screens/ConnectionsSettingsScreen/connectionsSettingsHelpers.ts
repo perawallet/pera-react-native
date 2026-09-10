@@ -11,49 +11,32 @@
  */
 
 import type { ModalState } from '@hooks/useModalState'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
+import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+
+// Shared by the native and web hooks so they cannot drift on the `UnifiedConnection` shape.
+
+/** A registry record's kind, or `'dapp'` for an ARC-0027 site permission, which is not a `Connection`. */
+export type ConnectionKind = RegistryConnectionKind | 'dapp'
 
 /**
- * Platform-independent pieces of `useConnectionsSettingsScreen`, shared by
- * the native hook and its web twin so the two never drift on the shape of
- * a `UnifiedConnection` row or how one is built from either source.
+ * Screen-only union of the two read models. `connectedAt` differs per source
+ * (a `Date` for a site permission, epoch ms for a registry row) and a `Date`
+ * persisted via `createJSONStorage` rehydrates as an ISO *string*, so a naive
+ * `.getTime()` throws; compare via {@link toComparableTime}.
  */
-
-/**
- * Extensible by design — a `'liquidauth'` member is expected once Liquid
- * Auth lands as a third adapter (design doc). A plain string-literal union
- * is deliberately as far as this goes for now.
- */
-export type ConnectionKind = 'walletconnect' | 'dapp'
-
-/** Screen-only presentation type. Neither underlying store is touched or
- * reshaped — this just unions their read models for one flat list.
- *
- * `connectedAt` is `Date | string` rather than plain `Date`: it is sourced
- * from `WalletConnectConnection.createdAt`, which is persisted via
- * `createJSONStorage` with no reviver, so every rehydrated WC record
- * carries an ISO *string* at runtime despite its `Date` type — `?.` does
- * not guard a string, so a naive `.getTime()` throws the moment the WC
- * store rehydrates. Use {@link toComparableTime} wherever this needs
- * comparing. */
 export type UnifiedConnection = {
     id: string
     kind: ConnectionKind
     title: string
     subtitle: string
     iconUrl?: string
-    connectedAt?: Date | string
+    connectedAt?: Date | string | number
     onRevoke: () => void
 }
 
-/**
- * Coerces a possibly-rehydrated-as-string timestamp into epoch
- * milliseconds for sorting, defaulting to `0` when absent or unparseable —
- * mirrors the previous `?.getTime() ?? 0` fallback's intent, but actually
- * guards a `string` (see `UnifiedConnection.connectedAt`'s doc comment for
- * why one shows up here at runtime).
- */
+/** Guards the rehydrated-as-string case (see `UnifiedConnection.connectedAt`); `0` when absent or unparseable. */
 export const toComparableTime = (
     value: Date | string | number | undefined,
 ): number => {
@@ -66,44 +49,27 @@ export const toComparableTime = (
 export type UseConnectionsSettingsScreenResult = {
     connections: UnifiedConnection[]
     isLoading: boolean
+    /** False while the registry mirror is still filling; hold the empty state until then. */
+    isHydrated: boolean
     handleRevoke: (connection: UnifiedConnection) => void
     keyExtractor: (item: UnifiedConnection) => string
-    /** Drives the QR-paste flow for pairing a new WalletConnect session —
-     * the only connection kind here that's user-initiated (dapp connections
-     * come from the injected provider's enable() flow instead). */
+    /** Opens the QR-paste flow; WalletConnect is the only user-initiated kind here (dapp connections come from enable()). */
     scannerState: ModalState
 }
 
-export const toUnifiedWalletConnectConnection = (
-    connection: WalletConnectConnection,
-    disconnect: (clientId: string) => Promise<void>,
-    /**
-     * `disconnect` sends a control message to the offscreen host on web
-     * (see `useWalletConnectSessionsControl.web.ts`) — a rejected send
-     * (e.g. no offscreen document to receive it) must not fail silently:
-     * without this, the row simply stays on screen with no signal to the
-     * user and an unhandled promise rejection. Native's `disconnect` can
-     * fail too (a revival timeout inside `useWalletConnect.disconnect`),
-     * so this is wired on both platforms, not just web.
-     */
-    onError: (error: unknown) => void,
-    unknownPeerLabel: string,
-): UnifiedConnection => {
-    const peerMeta = connection.session?.peerMeta
-    const clientId = connection.clientId ?? ''
-
-    return {
-        id: `walletconnect-${clientId}`,
-        kind: 'walletconnect',
-        title: peerMeta?.name ?? unknownPeerLabel,
-        subtitle: peerMeta?.url ?? connection.bridge ?? '',
-        iconUrl: peerMeta?.icons?.[0],
-        connectedAt: connection.createdAt,
-        onRevoke: () => {
-            disconnect(clientId).catch(onError)
-        },
-    }
-}
+/** `connectedAt` is plain epoch ms here; `onRevoke` is the list hook's fire-and-forget revoke with its own toast. */
+export const toUnifiedConnection = (
+    row: ConnectionSettingsRow,
+    revoke: (id: string) => void,
+): UnifiedConnection => ({
+    id: `connection-${row.id}`,
+    kind: row.kind,
+    title: row.title,
+    subtitle: row.subtitle,
+    iconUrl: row.iconUrl,
+    connectedAt: row.lastActiveAt || row.createdAt,
+    onRevoke: () => revoke(row.id),
+})
 
 export const toUnifiedDappPermission = (
     site: DappPermission,

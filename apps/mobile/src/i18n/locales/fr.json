@@ -20,7 +20,7 @@
             "network_mismatch": "Cette transaction concerne un réseau Algorand différent du réseau actif de votre wallet. Changez de réseau dans les paramètres, puis réessayez.",
             "unsupported_message": "Ce site a envoyé une demande de signature de message que Pera ne peut pas traiter. La demande a été refusée.",
             "unauthorized_signer": "Ce site n’est pas autorisé à demander une signature pour ce compte.",
-            "no_session": "Cette connexion n’est plus valide. Reconnectez le site et réessayez."
+            "connection_revoked": "Cette connexion a été interrompue. Reconnectez-vous depuis le site, puis réessayez."
         },
         "passkey": {
             "create": {
@@ -161,6 +161,7 @@
             "body_generic": "Nous n’avons pas pu traiter le lien. Veuillez réessayer.",
             "title_walletconnect": "Échec de WalletConnect",
             "body_walletconnect": "Nous n’avons pas pu nous connecter à la dApp. La session a peut-être expiré ou le bridge est inaccessible.",
+            "body_walletconnect_timeout": "Aucune réponse de la dApp. La session a peut-être expiré ou le bridge WalletConnect est inaccessible.",
             "title_wc_unsupported": "Lien de connexion non pris en charge",
             "body_wc_unsupported": "Pera ne peut pas utiliser ce lien WalletConnect. Veuillez rétablir la connexion depuis la dApp et réessayer.",
             "title_keyreg": "Impossible de préparer l’enregistrement de clé",
@@ -807,6 +808,16 @@
             "key_access_error": "Impossible d’accéder à la clé de signature.",
             "invalid_key": "La clé de signature de ce compte est invalide.",
             "generic": "Un problème est survenu lors de l’accès à votre clé de signature."
+        },
+        "connections": {
+            "invalid_payload": "Une application a envoyé une demande que Pera n’a pas pu comprendre. Veuillez vérifier l’application, puis réessayer.",
+            "no_handler": "Pera n’a pas pu traiter cette demande de connexion. Veuillez vérifier l’application, puis réessayer.",
+            "unknown_connection": "Pera n’a pas trouvé cette connexion. Elle a peut-être déjà été déconnectée.",
+            "duplicate_kind": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
+            "already_initialized": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
+            "already_answered": "Cette demande a déjà reçu une réponse.",
+            "no_subscriber": "Pera n’était pas prêt à traiter cette demande. Veuillez réessayer.",
+            "not_initialized": "Pera est encore en cours de démarrage. Veuillez réessayer dans un instant."
         },
         "walletconnect": {
             "title": "Une erreur est survenue lors du traitement d’une demande d’application",
@@ -2828,7 +2839,8 @@
             "error_sheet_title": "Erreur",
             "error_sheet_body": "Votre demande WalletConnect a échoué avec l’erreur suivante :",
             "error_sheet_retry": "Veuillez réessayer en retournant dans la dApp où vous avez initié la demande.",
-            "error_network_mismatch": "Cette application a demandé à se connecter sur {{requested}}, mais votre wallet est sur {{active}}. Changez de réseau dans les paramètres, puis réessayez.",
+            "error_network_mismatch": "Cette application a demandé à se connecter sur un autre réseau, mais votre wallet est sur {{active}}. Changez de réseau dans les paramètres, puis réessayez.",
+            "error_delivery_failed": "Pera n'a pas pu joindre l'application pour transmettre votre réponse ; elle est peut-être toujours en attente. Veuillez réessayer depuis l'application.",
             "quantum_fee_delivery_failed": "La demande n’a pas pu être traitée. Cette application ne prend peut-être pas en charge les frais de réseau plus élevés requis par les comptes Quantum."
         },
         "connection": {
@@ -2848,7 +2860,6 @@
             "delete_all_title": "Supprimer toutes les sessions",
             "delete_all_body": "Voulez-vous vraiment supprimer toutes les sessions ? Cela supprimera toutes vos sessions actives et vous déconnectera de toutes les applications connectées.",
             "disconnect_failed_title": "Déconnexion impossible",
-            "unknown_peer": "Inconnu",
             "version": "Cette session utilise WalletConnect V{{version}}",
             "connected_accounts": "Connecté avec",
             "permissions": "Autorisations avancées",

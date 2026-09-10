@@ -20,7 +20,7 @@
             "network_mismatch": "Bu işlem, cüzdanının etkin ağından farklı bir Algorand ağı için. Ayarlardan ağı değiştir ve tekrar dene.",
             "unsupported_message": "Bu site, Pera’nın işleyemediği bir mesaj imzalama isteği gönderdi. İstek reddedildi.",
             "unauthorized_signer": "Bu site, o hesap için imza talep etmeye yetkili değil.",
-            "no_session": "Bu bağlantı artık geçerli değil. Siteyi yeniden bağla ve tekrar dene."
+            "connection_revoked": "Bu bağlantı kesildi. Siteden yeniden bağlan ve tekrar dene."
         },
         "passkey": {
             "create": {
@@ -161,6 +161,7 @@
             "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
             "title_walletconnect": "WalletConnect başarısız oldu",
             "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
+            "body_walletconnect_timeout": "dApp’ten yanıt alınamadı. Oturumun süresi dolmuş ya da WalletConnect köprüsüne ulaşılamıyor olabilir.",
             "title_wc_unsupported": "Bağlantı linki desteklenmiyor",
             "body_wc_unsupported": "Bu WalletConnect linki Pera tarafından kullanılamıyor. Lütfen dApp üzerinden yeniden bağlanmayı dene.",
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
@@ -807,6 +808,16 @@
             "key_access_error": "İmza anahtarına erişilemedi.",
             "invalid_key": "Bu hesabın imza anahtarı geçersiz.",
             "generic": "İmza anahtarına erişilirken bir şeyler ters gitti."
+        },
+        "connections": {
+            "invalid_payload": "Bir uygulama, Pera'nın anlayamadığı bir istek gönderdi. Uygulamayı kontrol et ve tekrar dene.",
+            "no_handler": "Pera bu bağlantı isteğini işleyemedi. Uygulamayı kontrol et ve tekrar dene.",
+            "unknown_connection": "Pera bu bağlantıyı bulamadı. Bağlantı zaten kesilmiş olabilir.",
+            "duplicate_kind": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
+            "already_initialized": "Uygulama bağlantıları kurulurken bir sorun oluştu. Pera'yı yeniden başlat ve tekrar dene.",
+            "already_answered": "Bu istek zaten yanıtlandı.",
+            "no_subscriber": "Pera bu isteği işlemeye hazır değildi. Lütfen tekrar dene.",
+            "not_initialized": "Pera hâlâ başlatılıyor. Lütfen birazdan tekrar dene."
         },
         "walletconnect": {
             "title": "Bir uygulama isteği işlenirken bir hata oluştu",
@@ -2828,7 +2839,8 @@
             "error_sheet_title": "Hata",
             "error_sheet_body": "WalletConnect isteğin şu hatayla başarısız oldu:",
             "error_sheet_retry": "İsteği başlattığın dApp’e geri dönerek tekrar dene.",
-            "error_network_mismatch": "Bu uygulama {{requested}} ağında bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
+            "error_network_mismatch": "Bu uygulama farklı bir ağda bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
+            "error_delivery_failed": "Pera, cevabını iletmek için uygulamaya ulaşamadı; uygulama hâlâ bekliyor olabilir. Uygulamadan tekrar dene.",
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir."
         },
         "connection": {
@@ -2848,7 +2860,6 @@
             "delete_all_title": "Tüm oturumları sil",
             "delete_all_body": "Tüm oturumları silmek istediğinden emin misin? Bu işlem etkin tüm oturumlarını kaldırır ve bağlı tüm uygulamalarla bağlantını keser.",
             "disconnect_failed_title": "Bağlantı kesilemedi",
-            "unknown_peer": "Bilinmiyor",
             "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
             "connected_accounts": "Bağlı hesaplar",
             "permissions": "Gelişmiş izinler",

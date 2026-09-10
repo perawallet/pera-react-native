@@ -1,12 +1,23 @@
 {
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "noEmit": false,
-    "declaration": true,
-    "emitDeclarationOnly": true,
     "resolveJsonModule": true,
+    // Typecheck-only: the build emits declarations through
+    // `tsconfig.build.json` instead, because these `paths` resolve the
+    // connections package to its SOURCE. Its own `exports` point at dist, so
+    // a stale build there surfaced here as errors in this package's specs —
+    // the v1 handler spec runs the shared contract suite from `/testing` and a
+    // leaf spec reads the pairing budgets. Source files cannot sit in an
+    // emitting program (rootDir), hence the split.
+    "paths": {
+      "@perawallet/wallet-core-connections": ["../connections/src/index.ts"],
+      "@perawallet/wallet-core-connections/testing": [
+        "../connections/src/testing/handler-contract.ts"
+      ],
+      "@perawallet/wallet-core-connections/pairingOutcome": [
+        "../connections/src/pairingOutcome.ts"
+      ]
+    }
   },
   "include": [
     "src"

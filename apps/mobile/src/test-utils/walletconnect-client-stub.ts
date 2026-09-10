@@ -10,15 +10,10 @@
  limitations under the License
  */
 
-// In-memory replacement for `@perawallet/walletconnect`, whose real relay
-// socket jsdom can't service. Implements only the surface `useWalletConnect`
-// calls into.
-//
-// Every instance is pushed into `walletConnectClientStub.instances` so a test
-// can grab it, fire `session_request` the way the relay would, and assert on
-// approveSession / rejectSession.
-//
-// Aliased in via vitest.config.ts, so every consumer gets this class.
+// In-memory replacement for `@perawallet/walletconnect`, whose relay socket
+// jsdom can't service; aliased in via vitest.config.ts. Every instance is pushed
+// into `walletConnectClientStub.instances` so a test can fire `session_request`
+// the way the relay would.
 
 import type { Optional } from '@perawallet/wallet-core-shared'
 
@@ -42,32 +37,40 @@ export const walletConnectClientStub = {
 
 class StubWalletConnect {
     clientId: string
+    // The v1 handler snapshots these onto the persisted `Connection` and
+    // `isWalletConnectV1Connection` refuses a record missing any of them, so a
+    // stub without them cannot answer a single follow-up request.
+    bridge = 'https://relay.example.test'
+    peerId: string
+    handshakeTopic: string
     connected = false
-    // Mirrors the subset of WC v1's `session` object that production
-    // code reads — chainId is checked by `validateRequest` in the sign
-    // handler, accounts by signer-resolution, peerMeta surfaces dApp
-    // identity. Stays empty until approveSession populates it.
+    // The subset of WC v1's `session` production reads (chainId via
+    // `validateRequest`, accounts via signer resolution, peerMeta for identity).
     session: {
         permissions?: string[]
         chainId?: number
         accounts?: string[]
         peerMeta?: unknown
-    } = {}
-    // The real WC v1 client opens its SocketTransport in the constructor;
-    // `ensureConnectorReady` fast-paths on `_transport.connected`, so the
-    // stub models an immediately-open socket. Tests that need a dead
-    // socket can flip this to false.
+        key?: string
+    } = { key: 'stub-session-key' }
+    // The real client opens its SocketTransport in the constructor and
+    // `ensureConnectorReady` fast-paths on `_transport.connected`, so the stub
+    // models an immediately-open socket. Flip to false for a dead-socket test.
     _transport = { connected: true }
     handlers = new Map<string, Handler>()
 
     approveSessionCalls: { chainId: number; accounts: string[] }[] = []
     rejectSessionCalls = 0
+    transportCloseCalls = 0
     killSessionCalls: { message?: string }[] = []
     rejectRequestCalls: { id?: number; error?: Error }[] = []
     approveRequestCalls: { id?: number; result?: unknown }[] = []
 
     constructor() {
-        this.clientId = `stub-client-${walletConnectClientStub.nextClientId++}`
+        const index = walletConnectClientStub.nextClientId++
+        this.clientId = `stub-client-${index}`
+        this.peerId = `stub-peer-${index}`
+        this.handshakeTopic = `stub-topic-${index}`
         walletConnectClientStub.instances.push(this)
     }
 
@@ -78,12 +81,7 @@ class StubWalletConnect {
         this.handlers.delete(event)
     }
 
-    /**
-     * Test helper — invoke a registered handler to simulate the relay
-     * pushing an event up. Production callers never see this method
-     * (the real WC class doesn't expose it); tests use it to drive
-     * `session_request`, `algo_signTxn`, etc.
-     */
+    /** Simulates the relay pushing an event up; the real WC class has no such method. */
     fire(event: string, ...args: unknown[]): void {
         const handler = this.handlers.get(event)
         if (!handler) {
@@ -96,15 +94,11 @@ class StubWalletConnect {
 
     approveSession(args: { chainId: number; accounts: string[] }): void {
         this.approveSessionCalls.push(args)
-        // Match production semantics: a successfully approved session
-        // flips the connector to `connected = true`. `useWalletConnect.disconnect`
-        // gates `killSession` on this flag, so tests that pair → disconnect
-        // need it to be true after approval.
+        // As in production, an approved session flips `connected = true`, which
+        // `killSession` is gated on.
         this.connected = true
-        // Populate the same session fields production WC fills in after
-        // a successful relay handshake. Sign-flow tests (`wc-sign.test.tsx`)
-        // depend on `session.chainId` being set so `validateRequest` in
-        // the sign handler doesn't reject with InvalidNetworkError.
+        // Sign-flow tests depend on `session.chainId` so `validateRequest`
+        // doesn't reject with InvalidNetworkError.
         this.session = {
             ...this.session,
             chainId: args.chainId,
@@ -113,6 +107,17 @@ class StubWalletConnect {
     }
     rejectSession(): void {
         this.rejectSessionCalls += 1
+        // The real SDK fires 'disconnect' synchronously from here and leaves
+        // the socket open — the shape that made a declined pairing leak a
+        // live connector, so the stub has to reproduce it.
+        this.handlers.get('disconnect')?.(null, {
+            event: 'disconnect',
+            params: [{ message: 'Session Rejected' }],
+        })
+    }
+    transportClose(): void {
+        this.transportCloseCalls += 1
+        this._transport.connected = false
     }
     async killSession(args?: { message?: string }): Promise<void> {
         this.killSessionCalls.push(args ?? {})

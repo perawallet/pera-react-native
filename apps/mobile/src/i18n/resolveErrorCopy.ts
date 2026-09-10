@@ -52,6 +52,7 @@ export const TITLE_KEY_BY_CATEGORY: Record<ErrorCategory, string> = {
     [ErrorCategory.UNKNOWN]: 'errors.general.title',
     [ErrorCategory.VALIDATION]: 'errors.general.title',
     [ErrorCategory.WALLETCONNECT]: 'errors.general.title',
+    [ErrorCategory.CONNECTIONS]: 'errors.general.title',
 }
 
 // An offline or timed-out request has no bespoke copy by design; the request
@@ -66,11 +67,8 @@ const logGenericBannerFallback = (error: unknown, message: string): void => {
 }
 
 /**
- * Single source of truth for turning any thrown value into user-facing copy.
- *
- * Branch order is load-bearing: PeraNetworkError and NoConnectionError are both
- * AppError subclasses, so they must be tested before the AppError branch or
- * they would never match.
+ * Branch order is load-bearing: PeraNetworkError and NoConnectionError are
+ * AppError subclasses, so they must be tested before the AppError branch.
  */
 export const resolveErrorCopy = (
     error: unknown,
@@ -129,10 +127,8 @@ export const resolveErrorCopy = (
     }
 
     if (error instanceof Error) {
-        // Raw Errors from algokit/algosdk may carry an algod node message we can
-        // translate. Landing on `unknown_node_error` means nothing was
-        // recognized — prefer the caller's generic copy over the algod-flavored
-        // one.
+        // Raw algokit/algosdk Errors may carry a translatable algod message;
+        // `unknown_node_error` means nothing was recognized, so prefer the caller's copy.
         const algodError = toAlgodError(error)
         if (algodError.code !== 'unknown_node_error') {
             return getAlgodMessage(algodError)

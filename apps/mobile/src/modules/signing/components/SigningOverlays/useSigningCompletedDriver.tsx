@@ -17,18 +17,25 @@ import {
     useSigningEvent,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { useConnectionsStore } from '@perawallet/wallet-core-connections'
+import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import type { SigningReturnToDapp } from '../SigningCompletedContent/useSigningCompletedContent'
 
 /**
- * How this request's session was paired — undefined for non-WC requests
- * and for sessions with no recorded origin (pre-existing sessions).
+ * How this request's session was paired; undefined for non-connection requests
+ * and connections with no recorded origin. Read off the connection record via
+ * `transportId` (the `Connection.id`), not the legacy `dappOrigins` side-table.
  */
-const resolveSessionOrigin = (req: SignRequest) =>
+const resolveSessionOrigin = (
+    req: SignRequest,
+): ConnectionOrigin | undefined =>
     req.sourceType === 'walletconnect' && req.transportId
-        ? useWalletConnectStore.getState().dappOrigins[req.transportId]
+        ? useConnectionsStore
+              .getState()
+              .connections.find(connection => connection.id === req.transportId)
+              ?.origin
         : undefined
 
 /** Only external-browser sessions get the "Return to the dApp" hand-off. */
@@ -44,19 +51,8 @@ const resolveReturnToDapp = (
     }
 }
 
-/**
- * Subscribes to the signing event bus and shows the "transaction
- * processing" sheet via the centralized bottom sheet manager when a
- * transaction request completes with a non-proposed transport result.
- *
- * Surfaced only for externally-triggered transaction requests
- * (WalletConnect, webview, deeplink). Every internal flow owns its own
- * processing/success UI — send-funds and asset-inbox claim/reject have
- * dedicated full-screen processing screens, and swap and opt-in/out render
- * their own success UI — so the generic sheet would be redundant for them.
- * Data signing (arbitrary-data / ARC-60) is not a transaction, and multisig
- * cosign / propose completions are surfaced by PendingSignaturesContent.
- */
+// The generic "transaction processing" sheet, only for externally-triggered
+// transaction requests; every internal flow owns its own processing/success UI.
 export const useSigningCompletedDriver = (): void => {
     const { request: requestBottomSheet } = useBottomSheet()
     const openIdRef = useRef<string | null>(null)
@@ -67,18 +63,13 @@ export const useSigningCompletedDriver = (): void => {
             if (event.type !== 'completed') return
             const req = event.request
 
-            // Transaction-only confirmation — arbitrary-data and ARC-60
-            // signing never surface this sheet.
+            // Arbitrary-data and ARC-60 signing are not transactions.
             if (req.type !== 'transactions') return
 
-            // Multisig cosign + multisig propose are surfaced by
-            // PendingSignaturesContent — skip the generic completion sheet.
+            // Multisig cosign and propose completions are surfaced by PendingSignaturesContent.
             if (req.sourceType === 'multisig-cosign') return
             if (event.result.type === 'proposed') return
 
-            // Show only for externally-triggered requests (WalletConnect,
-            // webview, deeplink). All internal flows own their own
-            // processing/success UI, so this sheet would be redundant.
             if (!isInteractiveSource(req.sourceType)) return
 
             // In-app dApps are right behind this sheet and show their own

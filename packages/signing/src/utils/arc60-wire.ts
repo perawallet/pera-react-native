@@ -18,23 +18,12 @@ import {
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import { Arc60BadRequestError } from './arc60-errors'
 
-// Single source of truth for the on-the-wire shape of an ARC-60 sign request,
-// shared by every transport that accepts one (WalletConnect bridge + the
-// in-app webview bridge). Keep the schema and limits here — do not re-declare
-// them per transport, or the two paths will drift.
+// Shared by every transport that accepts an ARC-60 request; re-declaring the
+// schema or limits per transport lets the paths drift.
 
-/**
- * Hard cap on the serialized size of an ARC-60 `algo_signData` request.
- * ARC-60 is the primary untrusted-dApp input surface; oversized payloads are
- * rejected *before* parse/canonify to keep the signing UI thread responsive.
- */
+/** Serialized-size cap, enforced before parse/canonify to keep the UI thread responsive on hostile input. */
 export const ARC60_MAX_REQUEST_BYTES = 64 * 1024
 
-/**
- * Rejects an ARC-60 request whose serialized size exceeds
- * {@link ARC60_MAX_REQUEST_BYTES} *before* it reaches `safeParse`/`canonify`.
- * Pure + dependency-free so it can be unit-tested without a transport stack.
- */
 export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
     const serialized = JSON.stringify(rawParams) ?? ''
     if (utf8ByteLength(serialized) > ARC60_MAX_REQUEST_BYTES) {
@@ -45,17 +34,26 @@ export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
 }
 
 /**
- * Zod schema for the wire shape of an ARC-60 `algo_signData` request.
- *
- * Mirrors ARC-60's `StdSigData` + `Metadata`. `data`, `signer`, `domain`,
- * `authenticatorData` are required strings on the wire; `authenticatorData`
- * is base64 and is decoded after parsing.
+ * `decodeFromBase64` only rejects a length that is not a multiple of 4
+ * (`'!!!!'` and `''` decode to garbage or empty bytes), so the alphabet and
+ * padding are enforced here at the boundary. Both alphabets: base64-js decodes
+ * `-`/`_` too, and a padded base64url `authenticatorData` — roughly four in
+ * five random 37-byte payloads carry one of those characters — has always been
+ * accepted, so a §4-only pattern would reject producers that work today.
  */
+const BASE64_PATTERN =
+    /^(?:[A-Za-z0-9+/_-]{4})*(?:[A-Za-z0-9+/_-]{2}==|[A-Za-z0-9+/_-]{3}=|[A-Za-z0-9+/_-]{4})$/
+
+/** ARC-60's `StdSigData` + `Metadata` as sent on the wire; `authenticatorData` is base64 and decoded after parsing. */
 export const arc60WireSchema = z.object({
     data: z.string().max(16 * 1024), // base64-encoded SIWA blob
     signer: z.string().min(1).max(128),
     domain: z.string().min(1).max(256),
-    authenticatorData: z.string().min(1).max(512),
+    /**
+     * ARC-60 requires the first 32 decoded bytes to be `sha256(domain)`, and 44
+     * is the shortest base64 encoding of 32 bytes (`ceil(32/3)*4`).
+     */
+    authenticatorData: z.string().min(44).max(512).regex(BASE64_PATTERN),
     requestId: z.string().max(256).optional(),
     hdPath: z.string().max(256).optional(),
     metadata: z.object({
@@ -86,11 +84,8 @@ export const isArc60WirePayload = (params: unknown): boolean => {
 }
 
 /**
- * Validates raw ARC-60 request params against {@link arc60WireSchema} and the
- * size cap, then base64-decodes `authenticatorData`. Returns the typed
- * `Arc60StdSigData` / `Arc60Metadata` ready for the signing pipeline. Throws
- * {@link Arc60BadRequestError} on any wire-level problem. Does NOT perform
- * signer/session checks — those are transport-specific.
+ * Throws {@link Arc60BadRequestError} on any wire-level problem. Signer and
+ * session checks are transport-specific and not done here.
  */
 export const parseArc60WireRequest = (
     rawParams: unknown,
@@ -159,17 +154,10 @@ const hostFromMaybeUrl = (value: string): string => {
 }
 
 /**
- * True when an ARC-60 request's self-asserted SIWA `domain` does not match the
- * platform-verified origin the request actually came from (the in-app
- * webview's loaded host). A mismatch is the signature of a relay/phishing
- * attempt: a page at origin A coaxing the user into signing an authentication
- * challenge bound to domain B, which the attacker then replays to log in as the
- * user on B.
- *
- * `verifiedOrigin` MUST be an origin the platform itself observed (never a
- * dApp-asserted value). Returns false when none is available — e.g.
- * WalletConnect, where the peer URL is self-asserted, so there is nothing
- * trustworthy to compare against and we must not raise a false positive.
+ * A self-asserted SIWA `domain` that differs from the platform-observed origin
+ * is the signature of a relay/phishing attempt (origin A coaxing a challenge
+ * bound to domain B). `verifiedOrigin` must never be a dApp-asserted value;
+ * absent one (WalletConnect, where the peer URL is self-asserted) this is false.
  */
 export const isArc60OriginMismatch = (
     domain: string,

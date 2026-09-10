@@ -363,10 +363,8 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
 })
 
 describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
-    // useDeepLink mounts the signing pipeline (via useWalletConnect →
-    // useSigningRequest → useMultisigTransportAdapters), which calls
-    // useQueryClient. renderHook makes its own tree so we wrap it with a
-    // QueryClientProvider matching the walletconnect-pair test pattern.
+    // useDeepLink reaches hooks that call useQueryClient. renderHook makes
+    // its own tree so we wrap it with a QueryClientProvider.
     const hookQueryClient = createTestQueryClient()
     const HookWrapper = ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={hookQueryClient}>

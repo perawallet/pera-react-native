@@ -76,7 +76,12 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+    // The connections package composes its request schema from the real
+    // ARC-0001 schema at load, so the stand-in must carry it.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/blockchain/src/arc0001/schema')
+    >('../../../../../../../../packages/blockchain/src/arc0001/schema')),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

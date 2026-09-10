@@ -67,16 +67,13 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletConnectPairing'
+import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPairing'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import {
-    parseWalletConnectUri,
-    walletConnectLogContext,
-} from '@hooks/deeplink/walletconnect-parser'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { parseWalletConnectUri } from '@perawallet/wallet-core-walletconnect'
 import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
 import {
     isSupportedBridgeMethod,
@@ -173,7 +170,7 @@ export const usePeraWebviewInterface = (
     const { t, currentLanguage } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
-    const { pair } = useWalletConnectPairing()
+    const { pair, describeUri } = useConnectionPairing()
     const resolveArc0001 = useArc0001Resolver()
     const enqueueSignRequest = useEnqueueArc0001SignRequest()
     const { handleDeepLink } = useDeepLink()
@@ -925,7 +922,7 @@ export const usePeraWebviewInterface = (
                     // pairing secret.
                     logger.error('[webview/wc] connect failed', {
                         error: result.error,
-                        ...walletConnectLogContext(parsed.uri),
+                        ...describeUri(parsed.uri),
                     })
                     sendErrorToWebview(
                         message.id,
@@ -954,22 +951,14 @@ export const usePeraWebviewInterface = (
                         'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
                         webview,
                     )
+                    // The page cannot be un-told; `pair` keeps watching the
+                    // grace and abandons the pairing itself.
                 }
-                // 'session': on native, the approval sheet pops via the
-                // provider and the page hears back through the session
-                // approve/reject path. On web, `result.type === 'session'`
-                // here IS a genuine cross-realm signal, not just "dispatched"
-                // — it means offscreen's `wcHost.ts` resolved this pairing's
-                // `pair-outcome` because a real `session_request` landed on
-                // the connector it created (see `useWalletConnectPairing.
-                // web.ts`). The wc-connect approval window itself still opens
-                // separately, as its own window via the offscreen host's
-                // approval request — this callback has no handle on that
-                // window or its eventual decision, only on the fact that a
-                // handshake was reached.
+                // 'session': the peer answered with a proposal; the page hears
+                // the decision through the approve/reject path, never from here.
             })()
         },
-        [pair, hadRequiredParams, webview, hasInternet, sourceUrl],
+        [pair, describeUri, hadRequiredParams, webview, hasInternet, sourceUrl],
     )
 
     const onBackPressed = useCallback(() => {

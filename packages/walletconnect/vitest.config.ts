@@ -28,6 +28,19 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            // Source, not `dist`, so tests cannot pass against a stale build
+            // artifact. Both aliases are load-bearing: `Networks`
+            // (betanet/custom) lives in packages/config and shared only
+            // re-exports it, so aliasing shared alone still resolves that
+            // re-export through config's own dist.
+            '@perawallet/wallet-core-shared': path.resolve(
+                __dirname,
+                '../shared/src/index.ts',
+            ),
+            '@perawallet/wallet-core-config': path.resolve(
+                __dirname,
+                '../config/src/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',
@@ -59,6 +72,21 @@ export default defineConfig({
             '@perawallet/wallet-core-device': path.resolve(
                 __dirname,
                 '../device/src/index.ts',
+            ),
+            // The `/testing` subpath needs its own entry — aliasing the
+            // package root does not cover it, and the v1 handler spec runs
+            // the shared handler contract suite from there.
+            '@perawallet/wallet-core-connections/testing': path.resolve(
+                __dirname,
+                '../connections/src/testing/handler-contract.ts',
+            ),
+            '@perawallet/wallet-core-connections': path.resolve(
+                __dirname,
+                '../connections/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-connections': path.resolve(
+                __dirname,
+                '../../extensions/connections/src/index.ts',
             ),
         },
     },

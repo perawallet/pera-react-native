@@ -48,6 +48,11 @@ describe('useDeeplinkErrorHandler', () => {
             'deeplink.error.title_walletconnect',
             'deeplink.error.body_walletconnect',
         ],
+        [
+            'walletconnect_timeout',
+            'deeplink.error.title_walletconnect',
+            'deeplink.error.body_walletconnect_timeout',
+        ],
         ['keyreg', 'deeplink.error.title_keyreg', 'deeplink.error.body_keyreg'],
         [
             'keyreg-unknown-account',

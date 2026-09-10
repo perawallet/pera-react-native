@@ -13,12 +13,8 @@
 import { Platform } from 'react-native'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
-/**
- * RN AppState helpers scoped to what the WalletConnect foreground-reconnect
- * hook needs. The app exposes a fuller set of helpers (background-transition,
- * polling action) at `@utils/app-state`; only the foreground-transition
- * detection is duplicated here so the hook can live in this package.
- */
+// Duplicates the foreground-transition detection from the app's `@utils/app-state`
+// so this package needs no app import.
 
 const ACTIVE_STATE = 'active'
 const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])

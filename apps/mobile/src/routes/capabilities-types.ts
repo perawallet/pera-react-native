@@ -11,10 +11,8 @@
  */
 
 /**
- * Capability map (design spec: "a capability map in the web bootstrap drives
- * which tabs/routes register — no scattered Platform.OS checks in screens").
- * Native resolves capabilities.ts (everything on, current behavior); web
- * resolves capabilities.web.ts. Gate UI on these flags, never on Platform.OS.
+ * Gate UI on these flags, never on Platform.OS. Native resolves capabilities.ts
+ * (everything on); web resolves capabilities.web.ts.
  */
 export type RouteCapabilities = {
     discoverTab: boolean
@@ -26,10 +24,8 @@ export type RouteCapabilities = {
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
     qrScanner: boolean
-    /** Paste-a-deeplink entry point in the Menu icon bar (web only). Replaces
-     * qrScanner there: a camera is near-useless in a 360x600 toolbar popup and
-     * Pera Connect now covers the pairing path scanning existed to serve. The
-     * two flags are mutually exclusive per platform. */
+    /** Paste-a-deeplink entry point (web only), replacing qrScanner there: a camera
+     * is near-useless in a 360x600 popup. The two flags are mutually exclusive per platform. */
     deepLinkPaste: boolean
     pushNotificationSettings: boolean
     walletConnectSettings: boolean
@@ -51,9 +47,8 @@ export type RouteCapabilities = {
      * not the native app's WalletConnect, tracked separately by
      * walletConnectSettings). */
     dappConnections: boolean
-    /** Quantum (PQ/Falcon-1024) accounts. Off on web: the WASM signer is
-     * Node/test-only today and its Emscripten build doesn't bundle for the
-     * browser extension (see useIsQuantumAccountsEnabled). */
+    /** Quantum (Falcon-1024) accounts. Off on web: the WASM signer's Emscripten
+     * build doesn't bundle for the extension (see useIsQuantumAccountsEnabled). */
     quantum: boolean
     /** Rekey feature area (wallet-wide scan-for-rekeyed sweep, rekey-to-
      * standard/shared/ledger flows) — native-only; these stacks aren't
@@ -63,10 +58,8 @@ export type RouteCapabilities = {
      * registered, so the SHARED_ACCOUNT_IMPORT deeplink can decline cleanly
      * instead of navigating nowhere. */
     sharedAccounts: boolean
-    /** Unified settings screen merging WalletConnect sessions and ARC-0027
-     * dapp connections into one list (web only). When on, it supersedes the
-     * separate walletConnectSettings/dappConnections settings-menu entries —
-     * their routes/screens/capabilities stay untouched for direct
-     * navigation (e.g. WalletConnectSettingsDetails). */
+    /** Unified settings list of WalletConnect sessions and ARC-0027 dapp connections
+     * (web only). Supersedes the separate settings-menu entries; their routes stay
+     * for direct navigation. */
     connectionsSettings: boolean
 }

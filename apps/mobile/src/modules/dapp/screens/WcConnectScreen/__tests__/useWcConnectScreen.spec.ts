@@ -35,21 +35,27 @@ import { useWcConnectScreen } from '../useWcConnectScreen'
 const ACCOUNT_A = { address: 'AAAA', name: 'Account A' }
 const ACCOUNT_B = { address: 'BBBB', name: 'Account B' }
 
-const wcConnectApproval = (
+const PEER = {
+    name: 'Test dApp',
+    url: 'https://dapp.example',
+    icons: ['https://dapp.example/icon.png'],
+}
+
+const proposalApproval = (
     overrides: Record<string, unknown> = {},
 ): Record<string, unknown> => ({
-    kind: 'wc-connect',
-    requestId: 'wc-wc-connect-client-1',
-    clientId: 'client-1',
-    chainId: 416_002,
+    kind: 'connection-proposal',
+    requestId: 'connection-proposal-1',
+    proposalId: 'proposal-1',
+    connectionKind: 'walletconnect-v1',
     origin: 'https://dapp.example',
-    peerName: 'Test dApp',
-    peerIcons: ['https://dapp.example/icon.png'],
-    permissions: ['algo_signTxn'],
+    peer: PEER,
+    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    expiresAt: Date.now() + 60_000,
     ...overrides,
 })
 
-const render = (approval: unknown = wcConnectApproval()) => {
+const render = (approval: unknown = proposalApproval()) => {
     mocks.useDappRequest.mockReturnValue({
         approval,
         isLoading: false,
@@ -68,37 +74,11 @@ describe('useWcConnectScreen', () => {
         })
     })
 
-    it('shapes the approval into what the shared header consumes', () => {
+    it('exposes the proposal peer and its requested methods as the permissions list', () => {
         const { result } = render()
 
-        expect(result.current.request).toEqual({
-            clientId: 'client-1',
-            chainId: 416_002,
-            permissions: ['algo_signTxn'],
-            peerMeta: {
-                name: 'Test dApp',
-                url: 'https://dapp.example',
-                icons: ['https://dapp.example/icon.png'],
-                description: '',
-            },
-        })
-    })
-
-    it('falls back to the origin when the peer asserted no name', () => {
-        // peerMeta.name is optional in WC v1; an empty header title would read
-        // as "  wants to connect to your account".
-        const { result } = render(wcConnectApproval({ peerName: undefined }))
-
-        expect(result.current.request?.peerMeta.name).toBe(
-            'https://dapp.example',
-        )
-    })
-
-    it('lists no permissions rather than inventing a full set when the message carries none', () => {
-        // Showing more than the dApp asked for would misrepresent the grant.
-        const { result } = render(wcConnectApproval({ permissions: undefined }))
-
-        expect(result.current.request?.permissions).toEqual([])
+        expect(result.current.peer).toEqual(PEER)
+        expect(result.current.permissions).toEqual(['algo_signTxn'])
     })
 
     it('cannot connect until an account is picked, then approves with exactly those accounts', () => {
@@ -174,7 +154,7 @@ describe('useWcConnectScreen', () => {
 
     it('surfaces the browser-verified requester origin untouched', () => {
         const { result } = render(
-            wcConnectApproval({ requesterOrigin: 'https://real-tab.example' }),
+            proposalApproval({ requesterOrigin: 'https://real-tab.example' }),
         )
 
         expect(result.current.requesterOrigin).toBe('https://real-tab.example')
@@ -183,7 +163,7 @@ describe('useWcConnectScreen', () => {
     describe('requester origin vs the peer’s own url claim', () => {
         it('treats a matching origin as not distinct, so the header shows only the badge', () => {
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'https://dapp.example',
                     requesterOrigin: 'https://dapp.example',
                 }),
@@ -193,17 +173,16 @@ describe('useWcConnectScreen', () => {
         })
 
         it('ignores a path or trailing slash on the peer url when comparing', () => {
-            // peerMeta.url routinely carries a path while requesterOrigin is
-            // always bare. Comparing raw strings would call this a mismatch and
-            // put the duplicated origin line back on every normal connection —
-            // the exact thing this change removes.
+            // A peer url routinely carries a path while requesterOrigin is
+            // always bare; a raw comparison would name the origin twice on
+            // every ordinary connection.
             for (const peerUrl of [
                 'https://dapp.example/',
                 'https://dapp.example/connect?x=1',
                 'https://dapp.example:443/deep/path#frag',
             ]) {
                 const { result } = render(
-                    wcConnectApproval({
+                    proposalApproval({
                         origin: peerUrl,
                         requesterOrigin: 'https://dapp.example',
                     }),
@@ -213,10 +192,10 @@ describe('useWcConnectScreen', () => {
         })
 
         it('reports a genuinely different origin as distinct, so the spoof stays visible', () => {
-            // The security case: a page can pair while asserting someone
-            // else's peerMeta.url. The badge must not silently vouch for it.
+            // A page can pair while asserting someone else's url; the badge
+            // must not silently vouch for it.
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'https://trusted-looking.example',
                     requesterOrigin: 'https://evil.example',
                 }),
@@ -231,7 +210,7 @@ describe('useWcConnectScreen', () => {
                 'http://dapp.example',
             ]) {
                 const { result } = render(
-                    wcConnectApproval({
+                    proposalApproval({
                         origin: peerUrl,
                         requesterOrigin: 'https://dapp.example',
                     }),
@@ -242,7 +221,7 @@ describe('useWcConnectScreen', () => {
 
         it('treats an unparseable peer url as distinct rather than vouching for it', () => {
             const { result } = render(
-                wcConnectApproval({
+                proposalApproval({
                     origin: 'not a url',
                     requesterOrigin: 'https://real-tab.example',
                 }),
@@ -252,8 +231,6 @@ describe('useWcConnectScreen', () => {
         })
 
         it('is never distinct when there is no requester origin to compare', () => {
-            // Nothing to show and nothing to contradict — the header renders no
-            // requester row at all in this case.
             expect(render().result.current.isRequesterOriginDistinct).toBe(
                 false,
             )
@@ -266,13 +243,14 @@ describe('useWcConnectScreen', () => {
         expect(render().result.current.requesterOrigin).toBeUndefined()
     })
 
-    it('builds no request for an approval of another kind', () => {
-        expect(
-            render({
-                kind: 'enable',
-                requestId: 'x',
-                origin: 'https://x.example',
-            }).result.current.request,
-        ).toBe(null)
+    it('exposes no peer for an approval of another kind', () => {
+        const { result } = render({
+            kind: 'enable',
+            requestId: 'x',
+            origin: 'https://x.example',
+        })
+
+        expect(result.current.peer).toBe(null)
+        expect(result.current.permissions).toEqual([])
     })
 })

@@ -62,7 +62,7 @@ const {
     mockPushWebView: vi.fn(),
     mockRequestByType: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
-    mockConnect: vi.fn(),
+    mockConnect: vi.fn(async () => ({ type: 'session' })),
     mockAddSignRequest: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
     mockSetDestination: vi.fn(),
@@ -235,19 +235,22 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
 }))
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: mockConnect }),
-    waitForSessionOutcome: vi.fn(async () => ({ type: 'session' })),
-    waitForPairingSocketOpen: vi.fn(async () => true),
-    abandonPairing: vi.fn(),
-    WalletConnectBridgeConnectionError: class extends Error {},
-    // Real values from packages/walletconnect/src/constants.ts.
-    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
-    WC_DELIVERY_TIMEOUT_MS: 8000,
-    WC_PAIRING_SOCKET_TIMEOUT_MS: 12_000,
-    WC_FRESH_PAIRING_OUTCOME_TIMEOUT_MS: 15_000,
-    WC_LATE_SESSION_GRACE_MS: 60_000,
+vi.mock('@modules/connections/hooks/useConnectionPairing', () => ({
+    useConnectionPairing: () => ({
+        pair: mockConnect,
+        describeUri: vi.fn(() => ({ topic: 'topic' })),
+    }),
 }))
+
+// The real budgets by module path: the package barrel builds a zod schema
+// and an AppError subclass from packages this file mocks by hand.
+vi.mock(
+    '@perawallet/wallet-core-connections',
+    async () =>
+        await vi.importActual<
+            typeof import('@packages/connections/src/pairingOutcome')
+        >('@packages/connections/src/pairingOutcome'),
+)
 
 vi.mock('@modules/webview/hooks', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
@@ -997,9 +1000,10 @@ describe('deeplink format coverage', () => {
                 break
             }
             case 'connect': {
-                expect(mockConnect).toHaveBeenCalledWith({
-                    connection: { uri: channel.uri },
-                })
+                expect(mockConnect).toHaveBeenCalledWith(
+                    channel.uri,
+                    expect.anything(),
+                )
                 break
             }
             case 'addSignRequest': {

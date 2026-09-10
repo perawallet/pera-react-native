@@ -10,8 +10,42 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { toComparableTime } from '../connectionsSettingsHelpers'
+import { describe, it, expect, vi } from 'vitest'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+import {
+    toComparableTime,
+    toUnifiedConnection,
+} from '../connectionsSettingsHelpers'
+
+const row: ConnectionSettingsRow = {
+    id: 'conn-1',
+    kind: 'walletconnect-v1',
+    title: 'Dapp',
+    subtitle: 'https://d.app',
+    accounts: [],
+    isConnected: true,
+    createdAt: 1000,
+    lastActiveAt: 2000,
+    peer: { name: 'Dapp' },
+    permissions: [],
+    networks: ['mainnet'],
+}
+
+describe('toUnifiedConnection', () => {
+    // The unified list is kind-agnostic; the badge and copy branch on the
+    // record's own kind, not on a label the mapper invents.
+    it('carries the row kind through instead of relabelling it', () => {
+        expect(toUnifiedConnection(row, vi.fn()).kind).toBe('walletconnect-v1')
+    })
+
+    it('revokes by the connection id', () => {
+        const revoke = vi.fn()
+
+        toUnifiedConnection(row, revoke).onRevoke()
+
+        expect(revoke).toHaveBeenCalledWith('conn-1')
+    })
+})
 
 describe('toComparableTime', () => {
     it('returns the same epoch ms for a Date and its ISO string equivalent', () => {
@@ -22,10 +56,9 @@ describe('toComparableTime', () => {
         )
     })
 
-    // `WalletConnectConnection.createdAt` is typed `Date` but persisted via
-    // `createJSONStorage` with no reviver, so every rehydrated record
-    // carries an ISO string at runtime. `?.getTime()` does not guard a
-    // string — this is the exact value shape that used to throw.
+    // A `Date` persisted via `createJSONStorage` with no reviver rehydrates
+    // as an ISO string. `?.getTime()` does not guard a string — this is the
+    // exact value shape that used to throw.
     it('does not throw on a rehydrated string, unlike a bare .getTime() call', () => {
         expect(() => toComparableTime('2026-01-01T00:00:00.000Z')).not.toThrow()
         expect(toComparableTime('2026-01-01T00:00:00.000Z')).toBe(

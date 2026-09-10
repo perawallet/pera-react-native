@@ -13,21 +13,20 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 const mocks = vi.hoisted(() => ({
-    disconnect: vi.fn(),
+    revoke: vi.fn(),
     goBack: vi.fn(),
     showError: vi.fn(),
     pushWebView: vi.fn(),
 }))
 
-// This branch's screen takes `disconnect` from the connector-free control
-// hook, not from useWalletConnect(network) — no UI surface may own a WC
-// connector on the extension (webConnectorOwnership.test.ts).
-vi.mock('@modules/walletconnect/hooks/useWalletConnectSessionsControl', () => ({
-    useWalletConnectSessionsControl: () => ({
-        disconnect: mocks.disconnect,
-    }),
+// The screen revokes through the settings list hook's awaited `revoke`, not
+// a connector of its own — no UI surface may own a WC connector
+// (webConnectorOwnership.test.ts).
+vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
+    useConnectionSettingsList: () => ({ revoke: mocks.revoke }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -50,29 +49,45 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+vi.mock('@analytics', () => ({
+    trackEvent: vi.fn(),
+    WalletConnectEvent: { SessionDisconnected: 'session-disconnected' },
+    AnalyticsMetadataKey: { DappName: 'dappName', DappUrl: 'dappUrl' },
+}))
+
 import { useSettingsWalletConnectDetailsScreen } from '../useSettingsWalletConnectDetailsScreen'
 
-const session = {
-    clientId: 'client-1',
-    session: { accounts: [], peerMeta: { name: 'Dapp', url: 'https://d.app' } },
-} as never
+const connectionRow = (url = 'https://d.app'): ConnectionSettingsRow => ({
+    id: 'client-1',
+    kind: 'walletconnect-v1',
+    title: 'Dapp',
+    subtitle: url,
+    accounts: [],
+    isConnected: true,
+    createdAt: 0,
+    lastActiveAt: 0,
+    peer: { name: 'Dapp', url },
+    permissions: ['algo_signTxn'],
+    networks: ['mainnet'],
+    protocolVersion: 1,
+})
 
 describe('useSettingsWalletConnectDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.disconnect.mockResolvedValue(undefined)
+        mocks.revoke.mockResolvedValue(undefined)
     })
 
     it('navigates back once the session is actually revoked', async () => {
         const { result } = renderHook(() =>
-            useSettingsWalletConnectDetailsScreen(session),
+            useSettingsWalletConnectDetailsScreen(connectionRow()),
         )
 
         await act(async () => {
             result.current.handleDelete()
         })
 
-        expect(mocks.disconnect).toHaveBeenCalledWith('client-1')
+        expect(mocks.revoke).toHaveBeenCalledWith('client-1')
         expect(mocks.goBack).toHaveBeenCalledTimes(1)
         expect(mocks.showError).not.toHaveBeenCalled()
     })
@@ -81,10 +96,10 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
     // screen with the session still listed, indistinguishable from success.
     it('keeps the user on the screen and reports the failure when revoke rejects', async () => {
         const error = new NoConnectionError()
-        mocks.disconnect.mockRejectedValue(error)
+        mocks.revoke.mockRejectedValue(error)
 
         const { result } = renderHook(() =>
-            useSettingsWalletConnectDetailsScreen(session),
+            useSettingsWalletConnectDetailsScreen(connectionRow()),
         )
 
         await act(async () => {
@@ -93,18 +108,16 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
 
         expect(mocks.showError).toHaveBeenCalledWith(
             error,
-            // This branch names the failure specifically rather than
-            // reusing the generic error title.
             'walletconnect.settings.disconnect_failed_title',
         )
         expect(mocks.goBack).not.toHaveBeenCalled()
     })
 
     it('clears the loading flag whichever way the revoke ends', async () => {
-        mocks.disconnect.mockRejectedValue(new Error('boom'))
+        mocks.revoke.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() =>
-            useSettingsWalletConnectDetailsScreen(session),
+            useSettingsWalletConnectDetailsScreen(connectionRow()),
         )
 
         await act(async () => {
@@ -113,32 +126,9 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
 
         expect(result.current.isLoading).toBe(false)
     })
-    it('closes the modal without disconnecting when the session has no clientId', () => {
-        // Nothing to revoke, so the socket is never touched — but the sheet
-        // must still close or the user is stuck behind it.
-        const { result } = renderHook(() =>
-            useSettingsWalletConnectDetailsScreen({
-                ...(session as object),
-                clientId: undefined,
-            } as never),
-        )
-
-        act(() => {
-            result.current.handleDelete()
-        })
-
-        expect(mocks.disconnect).not.toHaveBeenCalled()
-        expect(result.current.deleteModalState.isOpen).toBe(false)
-    })
 })
 
-describe('useSettingsWalletConnectDetailsScreen — hostile peerMeta URL gating', () => {
-    const sessionWithUrl = (url: string) =>
-        ({
-            clientId: 'client-1',
-            session: { accounts: [], peerMeta: { name: 'Dapp', url } },
-        }) as never
-
+describe('useSettingsWalletConnectDetailsScreen — hostile peer URL gating', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
@@ -149,7 +139,7 @@ describe('useSettingsWalletConnectDetailsScreen — hostile peerMeta URL gating'
         'http://insecure.example',
     ])('does not open the WebView for %s', url => {
         const { result } = renderHook(() =>
-            useSettingsWalletConnectDetailsScreen(sessionWithUrl(url)),
+            useSettingsWalletConnectDetailsScreen(connectionRow(url)),
         )
 
         act(() => result.current.handleOpenLink())
@@ -157,10 +147,10 @@ describe('useSettingsWalletConnectDetailsScreen — hostile peerMeta URL gating'
         expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
 
-    it('opens the WebView for a valid https peerMeta URL', () => {
+    it('opens the WebView for a valid https peer URL', () => {
         const { result } = renderHook(() =>
             useSettingsWalletConnectDetailsScreen(
-                sessionWithUrl('https://d.app'),
+                connectionRow('https://d.app'),
             ),
         )
 

@@ -20,7 +20,7 @@
             "network_mismatch": "Esta transação é de uma rede Algorand diferente da rede ativa na sua wallet. Troque de rede em Configurações e tente novamente.",
             "unsupported_message": "Este site enviou uma solicitação de assinatura de mensagem que a Pera não consegue processar. A solicitação foi recusada.",
             "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta.",
-            "no_session": "Esta conexão não é mais válida. Reconecte o site e tente novamente."
+            "connection_revoked": "Esta conexão foi desconectada. Conecte-se novamente pelo site e tente de novo."
         },
         "passkey": {
             "create": {
@@ -161,6 +161,7 @@
             "body_generic": "Não conseguimos processar o link. Tente novamente.",
             "title_walletconnect": "Falha no WalletConnect",
             "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o bridge pode estar inacessível.",
+            "body_walletconnect_timeout": "O dApp não respondeu. A sessão pode ter expirado ou o bridge do WalletConnect pode estar inacessível.",
             "title_wc_unsupported": "Link de conexão não suportado",
             "body_wc_unsupported": "O Pera não consegue usar este link do WalletConnect. Reconecte a partir do dApp e tente novamente.",
             "title_keyreg": "Não foi possível preparar o registro de chaves",
@@ -807,6 +808,16 @@
             "key_access_error": "Não foi possível acessar a chave de assinatura.",
             "invalid_key": "A chave de assinatura desta conta é inválida.",
             "generic": "Algo deu errado ao acessar sua chave de assinatura."
+        },
+        "connections": {
+            "invalid_payload": "Um app enviou uma solicitação que a Pera não conseguiu entender. Verifique o app e tente novamente.",
+            "no_handler": "A Pera não conseguiu processar esta solicitação de conexão. Verifique o app e tente novamente.",
+            "unknown_connection": "A Pera não encontrou essa conexão. Ela pode já ter sido desconectada.",
+            "duplicate_kind": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
+            "already_initialized": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
+            "already_answered": "Esta solicitação já foi respondida.",
+            "no_subscriber": "A Pera não estava pronta para processar esta solicitação. Tente novamente.",
+            "not_initialized": "A Pera ainda está iniciando. Tente novamente em instantes."
         },
         "walletconnect": {
             "title": "Ocorreu um erro ao processar a solicitação de um app",
@@ -2851,7 +2862,8 @@
             "error_sheet_title": "Erro",
             "error_sheet_body": "Sua solicitação do WalletConnect falhou com o seguinte erro:",
             "error_sheet_retry": "Tente novamente voltando ao dApp onde você iniciou a solicitação.",
-            "error_network_mismatch": "Este app pediu para conectar em {{requested}}, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
+            "error_network_mismatch": "Este app pediu para conectar em outra rede, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
+            "error_delivery_failed": "A Pera não conseguiu contatar o aplicativo para entregar sua resposta, então ele pode continuar aguardando. Tente novamente pelo aplicativo.",
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum."
         },
         "connection": {
@@ -2871,7 +2883,6 @@
             "delete_all_title": "Excluir todas as sessões",
             "delete_all_body": "Tem certeza de que quer excluir todas as sessões? Isso vai remover todas as suas sessões ativas e desconectar você de todos os apps conectados.",
             "disconnect_failed_title": "Não foi possível desconectar",
-            "unknown_peer": "Desconhecido",
             "version": "Esta sessão usa o WalletConnect V{{version}}",
             "connected_accounts": "Conectado com",
             "permissions": "Permissões avançadas",

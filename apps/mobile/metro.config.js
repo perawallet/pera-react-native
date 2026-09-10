@@ -363,6 +363,23 @@ const customResolveRequest = (context, moduleName, platform) => {
         );
         return context.resolveRequest(context, sourcePath, platform);
     }
+    // Subpath: the remote registry is the one platform-chrome module with a
+    // runtime dependency on the connections package; kept off the main barrel
+    // so the service worker never loads that graph.
+    if (
+        platform === 'web' &&
+        moduleName ===
+            '@perawallet/wallet-extension-platform-chrome/remote-registry'
+    ) {
+        const sourcePath = path.resolve(
+            monorepoRoot,
+            'extensions',
+            'platform-chrome',
+            'src',
+            'remote-registry.ts',
+        );
+        return context.resolveRequest(context, sourcePath, platform);
+    }
     if (moduleName === '@perawallet/wallet-extension-platform-driver') {
         const driverPackage =
             platform === 'web' ? 'platform-chrome' : 'platform-react-native';
