@@ -9,14 +9,14 @@ environment variables.
 
 1. `productionConfig`, the committed defaults in `src/main.ts`. These are safe for open-source builds:
    public AlgoNode infrastructure, staging backend URLs, empty API keys.
-2. `generatedEnv` from `src/generated-env.ts`, written by `tools/generate-config.sh` from the
+2. `generatedEnv` from `src/generated-env.ts`, written by `tools/dev-config.sh` from the
    environment at build time. That file is gitignored, so a checkout always starts from the
    committed defaults.
 
 `overrideEnvironmentMap` (bottom of `src/main.ts`) is the authoritative mapping from config field to
 environment variable name. Read it rather than any list in this file.
 
-`tools/generate-config.sh` sources `.env` at the repo root, then an optional overlay file named by
+`tools/dev-config.sh` sources `.env` at the repo root, then an optional overlay file named by
 `PERA_ENV_OVERLAY` which wins over `.env`.
 
 Environment variable names are **not** prefixed. It is `BACKEND_API_KEY`, not `PERA_BACKEND_API_KEY`.
@@ -37,7 +37,7 @@ broken:
 
 1. A field on `configSchema` and a default on `productionConfig` (`src/main.ts`).
 2. An entry in `overrideEnvironmentMap` mapping that field to its variable name.
-3. An `append_config` line in `tools/generate-config.sh`, or the variable never reaches
+3. An `append_config` line in `tools/dev-config.sh`, or the variable never reaches
    `generated-env.ts`.
 4. The variable name in `turbo.json`'s `globalEnv`, or turbo will not hash it.
 

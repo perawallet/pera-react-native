@@ -3,7 +3,7 @@ name: Release / RC
 # Mints a vX.Y.Z-rc.N tag every Friday and pushes it. The pushed tag fires
 # Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,
 # production + staging) — same path as the nightly alpha tags, just on the rc
-# channel and the same base version. Idempotent: tools/create-nightly-tag.sh
+# channel and the same base version. Idempotent: tools/release-prerelease-tag.sh
 # exits without tagging when there are no new commits since the last rc tag.
 
 on:
@@ -38,4 +38,4 @@ jobs:
       - name: Mint and push rc tag
         env:
           CHANNEL: rc
-        run: ./tools/create-nightly-tag.sh
+        run: ./tools/release-prerelease-tag.sh

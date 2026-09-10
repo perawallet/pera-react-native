@@ -6,7 +6,7 @@ set -uo pipefail
 # gates. Setup is the only thing that can notice, so it has to relink rather
 # than report the stale link as already wired.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/setup.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/dev-setup.sh"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
@@ -116,7 +116,7 @@ check "and Git in the worktree runs the hook it linked" "1" \
     "$(git -C "$WT" commit -q -m "chore: rejected by the hook" >/dev/null 2>&1; echo $?)"
 
 if [ "$failures" -gt 0 ]; then
-    echo "setup: ${failures} failure(s)"
+    echo "dev-setup: ${failures} failure(s)"
     exit 1
 fi
-echo "setup: all checks passed"
+echo "dev-setup: all checks passed"

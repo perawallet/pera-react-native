@@ -9,7 +9,7 @@ set -uo pipefail
 # the shipped release. Both shapes are pinned below.
 # Builds throwaway repos rather than leaning on this repo's real tags, which move.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/create-nightly-tag.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-prerelease-tag.sh"
 
 failures=0
 check() { # $1 label  $2 expected  $3 actual

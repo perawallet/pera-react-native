@@ -5,7 +5,7 @@ set -uo pipefail
 # failure that matters is tagging the wrong one — HEAD instead of the rc's
 # commit would ship whatever landed since, unbuilt and untested.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/promote-rc-tag.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-stable-tag.sh"
 REPO=$(mktemp -d)
 SCRATCH="$REPO"
 trap 'rm -rf $SCRATCH' EXIT
@@ -208,7 +208,7 @@ check "and keeps the local tags so the leftovers stay visible" "2" \
 cd "$REPO" || exit 1
 
 if [ "$failures" -gt 0 ]; then
-    echo "promote-rc-tag: ${failures} failure(s)"
+    echo "release-stable-tag: ${failures} failure(s)"
     exit 1
 fi
-echo "promote-rc-tag: all checks passed"
+echo "release-stable-tag: all checks passed"

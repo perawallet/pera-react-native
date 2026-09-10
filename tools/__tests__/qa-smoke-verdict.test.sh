@@ -5,7 +5,7 @@ set -uo pipefail
 # SDK exited 0 after pabot's result merge crashed, and nothing read the
 # artefacts. These fixtures cover every layout that run can leave behind.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/smoke-verdict.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/qa-smoke-verdict.sh"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -87,7 +87,7 @@ printf '<?xml version="1.0"?>\n<robot generator="Robot 6.1.1">\n<suite id="s1"' 
 check "truncated output is fail" "fail" "$("$SCRIPT" "$D")"
 
 if [ "$failures" -gt 0 ]; then
-    echo "smoke-verdict: ${failures} failure(s)"
+    echo "qa-smoke-verdict: ${failures} failure(s)"
     exit 1
 fi
-echo "smoke-verdict: all checks passed"
+echo "qa-smoke-verdict: all checks passed"

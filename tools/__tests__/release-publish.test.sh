@@ -6,7 +6,7 @@ set -uo pipefail
 # no credential is needed — the assertion is whether a create would have run.
 # Builds a throwaway repo rather than leaning on this repo's real tags.
 
-SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/publish-github-release.sh"
+SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/release-publish.sh"
 REPO=$(mktemp -d)
 trap 'rm -rf "$REPO"' EXIT
 
@@ -69,7 +69,7 @@ check "notes range starts at the previous stable" yes \
     "$(says "$stable" 'notes range: v1.0.0..v1.1.0')"
 
 if [ "$failures" -gt 0 ]; then
-    echo "publish-github-release: ${failures} failure(s)"
+    echo "release-publish: ${failures} failure(s)"
     exit 1
 fi
-echo "publish-github-release: all checks passed"
+echo "release-publish: all checks passed"

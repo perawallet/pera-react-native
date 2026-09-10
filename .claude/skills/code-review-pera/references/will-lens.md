@@ -100,7 +100,7 @@ Representative real comments from `wjbeau` across ~500 recent PR reviews, groupe
 - "Should these things be in config or even in remote-config just to make them a little easier to change?"
 - "Should we move this to remote-config with sensible defaults?"
 - "I think we can probably bump this up — the backend maybe supports 100, so that would cut down the number of queries by 4."
-- Secrets at build time: "we can inject this at build time using bitrise secrets and locally using env vars — check out `tools/generate-config.sh`." / "one GoogleService-Info.plist and overwrite it from bitrise secrets in the build."
+- Secrets at build time: "we can inject this at build time using bitrise secrets and locally using env vars — check out `tools/dev-config.sh`." / "one GoogleService-Info.plist and overwrite it from bitrise secrets in the build."
 
 ## 12. Comments
 

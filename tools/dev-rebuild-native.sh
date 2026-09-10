@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# tools/rebuild-native.sh
+# tools/dev-rebuild-native.sh
 # Builds native addons that pnpm skips during `pnpm install` locally.
 #
 # Why this is needed:

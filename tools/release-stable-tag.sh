@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/promote-rc-tag.sh
+# tools/release-stable-tag.sh
 # Cuts a golden release from a release candidate: given v7.0.2-rc.3, tags that
 # same commit v7.0.2 and pushes it, which fires Bitrise's release-builds
 # pipeline for the production builds.
@@ -20,7 +20,7 @@ set -euo pipefail
 # The caller publishes the GitHub Release itself rather than leaving it to
 # release-publish.yml: a tag pushed with GITHUB_TOKEN does not trigger further
 # workflows, so that workflow's `push: tags` trigger never sees this one.
-# create-nightly-tag.sh carries the same caveat.
+# release-prerelease-tag.sh carries the same caveat.
 
 # Deletes one stable version's alpha/rc tags, locally and on origin. The glob
 # pins the version; the anchored shape check then drops hand-cut lookalikes

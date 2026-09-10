@@ -61,7 +61,7 @@ describe('production staging-URL guard', () => {
         'leaves %s builds free to use staging URLs',
         environment => {
             // Pin the staging URLs explicitly: `config` reflects whatever
-            // generate-config.sh baked from the local .env, which on a machine
+            // dev-config.sh baked from the local .env, which on a machine
             // with the production overrides set contains no staging host at all
             // — the assertion would then pass without exercising the guard.
             const candidate: Config = {

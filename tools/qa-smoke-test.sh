@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/smoke-test.sh
+# tools/qa-smoke-test.sh
 # Release smoke gate: uploads a freshly built artifact to BrowserStack and runs
 # the account-creation suite from the platform's E2E harness against it.
 #
@@ -21,9 +21,9 @@ ARTIFACT="${2:-}"
 
 usage() {
   cat >&2 <<EOF
-Usage: tools/smoke-test.sh <ios|android> <artifact>
+Usage: tools/qa-smoke-test.sh <ios|android> <artifact>
 
-  ios      <artifact> is an .ipa already patched by tools/patch-ipa-for-browserstack.sh
+  ios      <artifact> is an .ipa already patched by tools/qa-patch-ipa-browserstack.sh
   android  <artifact> is an .apk (BrowserStack cannot install an .aab)
 
 Environment:
@@ -127,14 +127,14 @@ SDK_RC=0
 browserstack-sdk robot --outputdir "$RESULTS_DIR" --include "$SMOKE_TAG" "$SMOKE_SUITE" || SDK_RC=$?
 
 # Best-effort repair of the merge pabot dropped, so the uploaded report is
-# readable. The verdict does not depend on this succeeding — smoke-verdict.sh
+# readable. The verdict does not depend on this succeeding — qa-smoke-verdict.sh
 # reads the per-process outputs directly when there is no merged file.
 if [ ! -f "$RESULTS_DIR/output.xml" ] && command -v rebot >/dev/null 2>&1; then
   rebot --nostatusrc --outputdir "$RESULTS_DIR" \
     "$RESULTS_DIR"/pabot_results/*/output.xml >/dev/null 2>&1 || true
 fi
 
-VERDICT=$("$ROOT_DIR/tools/smoke-verdict.sh" "$RESULTS_DIR") || true
+VERDICT=$("$ROOT_DIR/tools/qa-smoke-verdict.sh" "$RESULTS_DIR") || true
 # Written for the Bitrise publish step, which runs in a separate shell with no
 # harness venv and so cannot re-derive this itself.
 printf '%s' "$VERDICT" >"$RESULTS_DIR/verdict"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tools/localnet.sh
+# tools/dev-localnet.sh
 # Manage a local Algorand LocalNet via the official AlgoKit CLI.
 # Purely container lifecycle — no app-config side effects. The app is pointed at
 # LocalNet at runtime via Settings > Developer > Node Settings > Custom network.

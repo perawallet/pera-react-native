@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tools/create-nightly-tag.sh
+# tools/release-prerelease-tag.sh
 # Mints a prerelease tag (vX.Y.Z-<channel>.N) on the current HEAD and pushes it
 # to origin, which triggers the release-builds pipeline (prod + staging). Run
 # from GitHub Actions: nightly on the alpha channel, weekly on the rc channel.

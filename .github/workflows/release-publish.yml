@@ -4,7 +4,7 @@ name: Release / Publish
 # Nightly (-alpha.N) and rc (-rc.N) tags never get a release: their workflows
 # only push the tag, which is all Bitrise needs to build.
 #
-# Both entry points below funnel through tools/publish-github-release.sh, which
+# Both entry points below funnel through tools/release-publish.sh, which
 # owns the stable-only rule — so a hand-pushed prerelease tag and a manual
 # dispatch of one behave identically to the scheduled path: no release.
 #
@@ -45,4 +45,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
-        run: ./tools/publish-github-release.sh "$TAG"
+        run: ./tools/release-publish.sh "$TAG"

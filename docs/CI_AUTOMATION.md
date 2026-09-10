@@ -41,10 +41,10 @@ published under Releases.
 `release-publish.yml` because a tag pushed with `GITHUB_TOKEN` does not trigger
 further workflows, so that workflow's `push: tags` trigger never fires for it.
 
-The stable-only rule lives in `tools/publish-github-release.sh`, not in the
+The stable-only rule lives in `tools/release-publish.sh`, not in the
 workflow, so every route to it agrees: hand-pushing a prerelease tag or
 dispatching one by name skips just as the scheduled path does. Pinned by
-`tools/__tests__/publish-github-release.test.sh`.
+`tools/__tests__/release-publish.test.sh`.
 
 ## Safety rules
 
@@ -73,18 +73,18 @@ or past Waiting for Deployment with no fix version.
 
 ## Scripts
 
-| Script                            | Owns                                                     |
-| --------------------------------- | -------------------------------------------------------- |
-| `tools/jira-sync.sh`              | every write to Jira: transitions, assignee, fix version  |
-| `tools/lib/jira-api.sh`           | auth, paging, retry policy, and the board filter default |
-| `tools/jira-drift.sh`             | the read-only drift report                               |
-| `tools/release-tickets.sh`        | which tickets a tag delivered                            |
-| `tools/previous-release-tag.sh`   | previous tag on the same channel, no fallback            |
-| `tools/release-range-start.sh`    | the above plus the prerelease-only fallback              |
-| `tools/publish-github-release.sh` | idempotent GitHub Release creation                       |
-| `tools/promote-rc-tag.sh`         | resolving an rc and tagging its commit as stable         |
-| `tools/cap-changelog.sh`          | keeping the Slack card under the 3000-char block limit   |
-| `tools/smoke-verdict.sh`          | the pass/fail verdict for a finished Robot smoke run     |
+| Script                           | Owns                                                     |
+| -------------------------------- | -------------------------------------------------------- |
+| `tools/jira-sync.sh`             | every write to Jira: transitions, assignee, fix version  |
+| `tools/lib/jira-api.sh`          | auth, paging, retry policy, and the board filter default |
+| `tools/jira-drift.sh`            | the read-only drift report                               |
+| `tools/release-tickets.sh`       | which tickets a tag delivered                            |
+| `tools/release-previous-tag.sh`  | previous tag on the same channel, no fallback            |
+| `tools/release-range-start.sh`   | the above plus the prerelease-only fallback              |
+| `tools/release-publish.sh`       | idempotent GitHub Release creation                       |
+| `tools/release-stable-tag.sh`    | resolving an rc and tagging its commit as stable         |
+| `tools/release-changelog-cap.sh` | keeping the Slack card under the 3000-char block limit   |
+| `tools/qa-smoke-verdict.sh`      | the pass/fail verdict for a finished Robot smoke run     |
 
 `alpha` and `rc` interleave on `main`, so ranges are always per-channel: an
 unrestricted `git describe` would diff a Friday RC against Thursday's nightly.

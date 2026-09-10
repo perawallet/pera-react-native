@@ -224,7 +224,7 @@ export const configSchema = z
     .check(ctx => {
         // Committed defaults point first-party URLs at staging, safe for
         // open-source builds; production overrides them via env. This is the last
-        // line of defence behind generate-config.sh, matched by VALUE rather than
+        // line of defence behind dev-config.sh, matched by VALUE rather than
         // a hand-kept field list so a future staging default can't slip past.
         if (ctx.value.appEnvironment !== 'production') return
         for (const [field, value] of Object.entries(ctx.value)) {
@@ -263,7 +263,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     // Injected at build time from the BACKEND_API_KEY env var via
-    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // tools/dev-config.sh (bitrise secrets in CI, .env locally). Empty
     // here so no key literal ships in the open-source source tree.
     backendAPIKey: '',
     algodApiKey: '',
@@ -374,7 +374,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBaanxBaseUrl: 'https://api.baanx.com',
     testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
     // PUBLIC client keys (x-client-key) are injected at build time from env
-    // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
+    // vars (bitrise secrets in CI, .env locally) via tools/dev-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
     // TODO(card): set the real Baanx tenant id for production via the

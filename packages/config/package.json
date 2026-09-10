@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "generate:config": "bash ../../tools/generate-config.sh",
+    "generate:config": "bash ../../tools/dev-config.sh",
     "build": "vite build && tsc -p tsconfig.build.json",
     "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "preview": "vite preview",
