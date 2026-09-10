@@ -82,6 +82,11 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
     getActiveConnectionRegistry: () => mockGetActiveConnectionRegistry(),
 }))
 
+vi.mock('@perawallet/wallet-core-walletconnect', () => ({
+    LEGACY_STORE_KEY: 'wallet-connect-store',
+    LEGACY_IMPORTED_IDS_KEY: 'wallet-connect-store:imported',
+}))
+
 const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
     mockAccountsResetState: vi.fn(),
     mockAccountsClearStorage: vi.fn(),
@@ -410,6 +415,24 @@ describe('useDeleteAllData', () => {
         expect(mockClearConnections).toHaveBeenCalledTimes(1)
         expect(mockDisconnectAll.mock.invocationCallOrder[0]).toBeLessThan(
             mockClearConnections.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('removes the legacy WalletConnect blob, which holds plaintext session keys', async () => {
+        // Nothing else does now: the zustand store that used to register a
+        // `clearStorage` is gone, and the importer deletes the blob only after
+        // a fully clean pass, so an import that never completed would survive
+        // the wipe and re-import into a wallet with none of its accounts.
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockRemoveItem).toHaveBeenCalledWith('wallet-connect-store')
+        // The marker guards re-import; left behind it would outlive the blob.
+        expect(mockRemoveItem).toHaveBeenCalledWith(
+            'wallet-connect-store:imported',
         )
     })
 

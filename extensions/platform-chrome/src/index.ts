@@ -71,6 +71,7 @@ export {
     type ConnectionsControlResponse,
     type ConnectionApprovalRequest,
     type ConnectionApprovalRequestMessage,
+    type ConnectionErrorReason,
     type ConnectionsAck,
     type ConnectionsEvent,
     type ConnectionsEventMessage,

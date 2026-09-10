@@ -66,6 +66,11 @@ export interface ConnectionRegistry extends ConnectionRegistryClient {
     initialize(): Promise<void>
     teardown(): Promise<void>
     subscribeToMessages(listener: (m: InboundMessage) => void): () => void
+    /**
+     * Publishes to `subscribeToErrors`. For host-side adapters that answer
+     * requests themselves and would otherwise fail silently.
+     */
+    reportError(error: Error, scope?: ConnectionErrorScope): void
 }
 
 export const createConnectionRegistry = (options: {
@@ -122,9 +127,27 @@ export const createConnectionRegistry = (options: {
     const contextFor = (): ConnectionHandlerContext => ({
         store,
         onProposal: proposal => {
+            // A settled proposal is the end of its pairing, and `pairings` is
+            // only the routing table for `abandonPairing`; without this it
+            // grows for the life of the process.
+            const { pairingId } = proposal
+            const forget = (): void => void pairings.delete(pairingId ?? '')
+            const routed: ConnectionProposal =
+                pairingId === undefined
+                    ? proposal
+                    : {
+                          ...proposal,
+                          approve: accounts =>
+                              proposal.approve(accounts).then(connection => {
+                                  forget()
+                                  return connection
+                              }),
+                          reject: reason =>
+                              proposal.reject(reason).finally(forget),
+                      }
             for (const listener of proposalListeners) {
                 try {
-                    listener(proposal)
+                    listener(routed)
                 } catch (listenerError) {
                     logger.warn('[connections] proposal listener threw', {
                         error: listenerError,
@@ -287,6 +310,17 @@ export const createConnectionRegistry = (options: {
             return tearingDown
         },
         pair: async (uri, opts) => {
+            // A handler builds a real socket here, but only a live handler has
+            // the context to route the handshake that comes back. Mid-boot the
+            // pairing waits; before one it is refused, so the caller can say so
+            // rather than leaving a bound connector and a silent timeout.
+            if (initializing) await initializing
+            if (!isLive) {
+                throw new ConnectionsError(
+                    'not-initialized',
+                    'The connections registry is not initialized',
+                )
+            }
             const handler = claimingHandler(uri)
             if (!handler?.pair) {
                 throw new ConnectionsError(
@@ -333,5 +367,6 @@ export const createConnectionRegistry = (options: {
             errorListeners.add(listener)
             return () => void errorListeners.delete(listener)
         },
+        reportError: emitError,
     }
 }

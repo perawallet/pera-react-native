@@ -133,7 +133,10 @@ export const runOffscreenApp = async (): Promise<void> => {
         broadcastEvent: broadcastConnectionsEvent,
         reconnectAll: reconnectAllConnectors,
     })
-    onConnectionsControlMessage(connectionsHost.handleControlMessage)
+    // Bound after the registry is live, never before: the registry refuses a
+    // `pair` it cannot route, and an early command answered with that error
+    // would stop `sendConnectionsControlMessage` retrying across this window.
+    // Unanswered is what the retry budget exists for.
     await bootConnections({
         registry,
         store,
@@ -141,6 +144,7 @@ export const runOffscreenApp = async (): Promise<void> => {
         importLegacy: () =>
             importLegacyConnections({ storage, store, sessionKeys }),
     })
+    onConnectionsControlMessage(connectionsHost.handleControlMessage)
 
     logger.info('[offscreen] connections host started')
 }

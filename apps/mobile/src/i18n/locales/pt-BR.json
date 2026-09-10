@@ -19,7 +19,8 @@
             },
             "network_mismatch": "Esta transação é de uma rede Algorand diferente da rede ativa na sua wallet. Troque de rede em Configurações e tente novamente.",
             "unsupported_message": "Este site enviou uma solicitação de assinatura de mensagem que a Pera não consegue processar. A solicitação foi recusada.",
-            "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta."
+            "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta.",
+            "connection_revoked": "Esta conexão foi desconectada. Conecte-se novamente pelo site e tente de novo."
         },
         "passkey": {
             "create": {
@@ -815,7 +816,8 @@
             "duplicate_kind": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
             "already_initialized": "Algo deu errado ao configurar as conexões com apps. Reinicie a Pera e tente novamente.",
             "already_answered": "Esta solicitação já foi respondida.",
-            "no_subscriber": "A Pera não estava pronta para processar esta solicitação. Tente novamente."
+            "no_subscriber": "A Pera não estava pronta para processar esta solicitação. Tente novamente.",
+            "not_initialized": "A Pera ainda está iniciando. Tente novamente em instantes."
         },
         "walletconnect": {
             "title": "Ocorreu um erro ao processar a solicitação de um app",
@@ -2861,6 +2863,7 @@
             "error_sheet_body": "Sua solicitação do WalletConnect falhou com o seguinte erro:",
             "error_sheet_retry": "Tente novamente voltando ao dApp onde você iniciou a solicitação.",
             "error_network_mismatch": "Este app pediu para conectar em outra rede, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
+            "error_delivery_failed": "A Pera não conseguiu contatar o aplicativo para entregar sua resposta, então ele pode continuar aguardando. Tente novamente pelo aplicativo.",
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum."
         },
         "connection": {

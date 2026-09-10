@@ -24,6 +24,7 @@ export type ConnectionsErrorCode =
     | 'already-initialized'
     | 'already-answered'
     | 'no-subscriber'
+    | 'not-initialized'
 
 const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, string> = {
     'invalid-payload': 'errors.connections.invalid_payload',
@@ -33,6 +34,7 @@ const MESSAGE_KEY_BY_CODE: Record<ConnectionsErrorCode, string> = {
     'already-initialized': 'errors.connections.already_initialized',
     'already-answered': 'errors.connections.already_answered',
     'no-subscriber': 'errors.connections.no_subscriber',
+    'not-initialized': 'errors.connections.not_initialized',
 }
 
 /**

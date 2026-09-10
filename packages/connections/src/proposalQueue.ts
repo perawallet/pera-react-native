@@ -53,7 +53,13 @@ export type ProposalQueue = {
 type OpenSheet = {
     pairingId?: string
     connectionId?: ConnectionId
-    close: () => void
+    /** Dismisses the UI only, for a caller that answers the peer itself. */
+    dismiss: () => void
+    /**
+     * Dismisses the UI and answers the peer; the connection-error path.
+     * Absent on a sheet no scope can name, which nothing can reach it through.
+     */
+    close?: () => void
 }
 
 const logRejectFailure =
@@ -93,7 +99,11 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
         isHolding = true
         // The pairing is a session now, so an error about it arrives scoped
         // to the CONNECTION. Nothing to reject: it is approved.
-        openSheet = { connectionId: connection.id, close: success.close }
+        openSheet = {
+            connectionId: connection.id,
+            close: success.close,
+            dismiss: success.close,
+        }
         void success.closed
             .catch((error: unknown) => {
                 // The session is already approved; this only costs the
@@ -142,9 +152,11 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
         }
 
         const { pairingId } = proposal
+        const dismiss = (): void => sheet?.close()
         openSheet = pairingId
             ? {
                   pairingId,
+                  dismiss,
                   // Dismisses synchronously — the sheet must not sit over a
                   // dead connection for a delivery round-trip — then the raw
                   // `reject` (the wrapper would settle twice) tears the
@@ -164,7 +176,9 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
                           })
                   },
               }
-            : null
+            : // Scope-less, so `closeForScope` never matches it; carried only
+              // so `teardown` can take the sheet off screen.
+              { dismiss }
 
         const settled: ConnectionProposal = {
             ...proposal,
@@ -175,18 +189,48 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
                     settle(true, connection)
                     return connection
                 }),
-            reject: reason =>
-                proposal.reject(reason).finally(() => settle(true)),
+            // Dismissed before the answer goes out, as the connection-error
+            // path above is: `reject` waits on a socket revival, and the sheet
+            // must not sit frozen over a dead connection for that round-trip.
+            // The promise still carries a delivery failure to the caller.
+            reject: reason => {
+                settle(true)
+                return proposal.reject(reason)
+            },
         }
 
         sheet = ui.openApproval(settled)
-        void sheet.closed.catch((error: unknown) => {
-            // Nothing was shown, so release the guard without dismissing.
-            logger.error('Failed to show a connection proposal sheet', {
-                error,
-            })
-            settle(false)
-        })
+        // Both branches release the guard: the sheet host resolves `closed`
+        // when it dismisses without a decision (a store reset, an unregistered
+        // host), and leaving `open` set there would queue every later proposal
+        // behind a sheet that is no longer on screen. `settle` is idempotent,
+        // so the ordinary approve/reject path is a no-op here.
+        void sheet.closed.then(
+            () => {
+                // Still undecided means the sheet went away under the user;
+                // it cannot come back, so the peer is answered rather than
+                // left to time out.
+                const isUndecided = open?.proposalId === proposal.proposalId
+                settle(false)
+                if (isUndecided) {
+                    void proposal
+                        .reject('dismissed')
+                        .catch(
+                            logRejectFailure(
+                                'Failed to reject a connection proposal dismissed without a decision',
+                                proposal.proposalId,
+                            ),
+                        )
+                }
+            },
+            (error: unknown) => {
+                // Nothing was shown, so release the guard without dismissing.
+                logger.error('Failed to show a connection proposal sheet', {
+                    error,
+                })
+                settle(false)
+            },
+        )
     }
 
     return {
@@ -198,13 +242,29 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
             show(proposal)
         },
         closeForScope: scope => {
-            // Queued proposals for the subject would open onto a socket that
-            // is already gone.
-            pending = pending.filter(
-                queued => !matchesScope({ pairingId: queued.pairingId }, scope),
-            )
+            // A queued proposal for the subject would open onto a pairing that
+            // is already gone, and its connector stays bound for the request
+            // TTL, so it is answered here rather than merely dropped.
+            const dropped: ConnectionProposal[] = []
+            pending = pending.filter(queued => {
+                if (!matchesScope({ pairingId: queued.pairingId }, scope)) {
+                    return true
+                }
+                dropped.push(queued)
+                return false
+            })
+            for (const queued of dropped) {
+                void queued
+                    .reject('connection error')
+                    .catch(
+                        logRejectFailure(
+                            'Failed to reject a queued connection proposal after a connection error',
+                            queued.proposalId,
+                        ),
+                    )
+            }
             const sheet = openSheet
-            if (sheet && matchesScope(sheet, scope)) sheet.close()
+            if (sheet && matchesScope(sheet, scope)) sheet.close?.()
         },
         isRejectingOnError: scope =>
             (scope.pairingId !== undefined &&
@@ -213,6 +273,9 @@ export const createProposalQueue = (ui: ProposalQueueUi): ProposalQueue => {
                 rejectingOnError.has(scope.connectionId)),
         teardown: () => {
             const outstanding = [...(open ? [open] : []), ...pending]
+            // Taken off screen first: the rejections below leave nothing for a
+            // sheet still sitting over the pairing to answer.
+            openSheet?.dismiss()
             open = null
             openSheet = null
             isHolding = false

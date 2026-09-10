@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
@@ -110,6 +110,7 @@ describe('installConnectionsApprovalRouter', () => {
         openConnectionRequest: ReturnType<typeof vi.fn>
         openConnectionError: ReturnType<typeof vi.fn>
     }
+    let ensureOffscreenDocumentLike: Mock<() => Promise<void>>
 
     beforeEach(() => {
         chromeMock = makeChromeMock()
@@ -122,11 +123,13 @@ describe('installConnectionsApprovalRouter', () => {
             }),
             openConnectionError: vi.fn().mockResolvedValue(undefined),
         }
+        ensureOffscreenDocumentLike = vi.fn(async () => {})
         installConnectionsApprovalRouter({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             approvals: approvals as any,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             chromeLike: chromeMock as any,
+            ensureOffscreenDocumentLike,
         })
     })
 
@@ -193,6 +196,42 @@ describe('installConnectionsApprovalRouter', () => {
                     kind: 'reject-proposal',
                     proposalId: 'proposal-1',
                 })
+            })
+        })
+
+        // The decision window closed on the bridge ack, so a dropped host
+        // reply reads to the user as a connection that succeeded.
+        it('opens a delivery-failure notice when the host refuses the approval', async () => {
+            const errorSpy = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+            chromeMock.runtime.sendMessage.mockResolvedValue({
+                ok: false,
+                error: 'This connection request has expired',
+            })
+
+            chromeMock.deliver(proposalRequest())
+
+            await vi.waitFor(() => {
+                expect(approvals.openConnectionError).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        reason: 'delivery-failed',
+                        origin: 'https://dapp.example',
+                        peer: PEER,
+                    }),
+                )
+            })
+            errorSpy.mockRestore()
+        })
+
+        it('opens no notice when the host accepts the approval', async () => {
+            chromeMock.deliver(proposalRequest())
+
+            await vi.waitFor(() => {
+                expect(chromeMock.runtime.sendMessage).toHaveBeenCalled()
+            })
+            await vi.waitFor(() => {
+                expect(approvals.openConnectionError).not.toHaveBeenCalled()
             })
         })
 
@@ -275,6 +314,25 @@ describe('installConnectionsApprovalRouter', () => {
                     }),
                 )
             })
+        })
+
+        it('opens a delivery-failure notice when the signed result cannot be delivered', async () => {
+            const errorSpy = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+            chromeMock.runtime.sendMessage.mockResolvedValue({
+                ok: false,
+                error: 'dead socket',
+            })
+
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() => {
+                expect(approvals.openConnectionError).toHaveBeenCalledWith(
+                    expect.objectContaining({ reason: 'delivery-failed' }),
+                )
+            })
+            errorSpy.mockRestore()
         })
 
         it('posts a decline when the approval window fails to open', async () => {

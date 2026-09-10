@@ -53,7 +53,7 @@ const sessionKeys: WalletConnectV1SessionKeyStore = {
         return `wc1-session-key:${clientId}`
     }),
     has: clientId => keys.has(clientId),
-    read: async clientId => keys.get(clientId) ?? null,
+    read: vi.fn(async (clientId: string) => keys.get(clientId) ?? null),
     remove: async clientId => void keys.delete(clientId),
 }
 
@@ -687,6 +687,28 @@ describe('walletconnect v1 handler behaviour', () => {
         )
     })
 
+    it('leaves no live socket behind when committing the session key fails', async () => {
+        // `approveSession` flips the connector to `connected`, which
+        // `abandonPairing` then refuses to tear down: a keystore fault after
+        // it would strand a live session with no record and no way to
+        // disconnect it, answering every request "No session found".
+        const { handler, onProposal, records } = await setup()
+        await handler.pair(V1_URI)
+        const connector = lastConnector()
+        connector.emit('session_request', null, handshake(4160))
+        await flush()
+        vi.mocked(sessionKeys.commit).mockRejectedValueOnce(
+            new Error('keystore locked'),
+        )
+
+        await expect(
+            onProposal.mock.calls[0][0].approve(['AAAA']),
+        ).rejects.toThrow('keystore locked')
+
+        expect(connector.approveSession).not.toHaveBeenCalled()
+        expect(await records()).toEqual([])
+    })
+
     it('stores session keys in the keystore when no store is injected', async () => {
         const store = memoryStore()
         const onProposal = vi.fn<(proposal: ConnectionProposal) => void>()
@@ -851,6 +873,33 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(onError).toHaveBeenCalled()
     })
 
+    it('declines a wrong-network request with the wrong-network copy, not the generic signing one', async () => {
+        // The gate's `reason` is developer English written for the peer;
+        // wrapped in the generic class the user is told a signing request
+        // failed instead of which network to switch to.
+        keys.set('c1', 'restored-key')
+        const onTestNet: Connection = {
+            ...SEEDED,
+            metadata: { ...SEEDED.metadata, chainId: 416_002 },
+        }
+        const { onError, onMessage } = await setupRestored([onTestNet])
+        const connector = lastConnector()
+        connector.connected = true
+
+        connector.emit('algo_signTxn', null, { id: 12, ...SIGN_TXN_FRAME })
+        await flush()
+
+        expect(onMessage).not.toHaveBeenCalled()
+        expect(onError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                metadata: expect.objectContaining({
+                    messageKey: 'errors.walletconnect.invalid_network_body',
+                }),
+            }),
+            expect.anything(),
+        )
+    })
+
     it('does not restore inside initialize; the registry runs restore', async () => {
         keys.set('c1', 'restored-key')
 
@@ -984,6 +1033,44 @@ describe('walletconnect v1 handler behaviour', () => {
         expect(wc.FakeConnector.instances).toHaveLength(0)
     })
 
+    it('releases the session key of a malformed record it drops', async () => {
+        // Reconciliation only touches the store, so a record omitted from the
+        // restored set leaves its keystore entry with nothing left pointing at
+        // it; only `disconnect` releases one otherwise.
+        keys.set('c1', 'restored-key')
+        const malformed = {
+            ...SEEDED,
+            metadata: { ...SEEDED.metadata, bridge: undefined },
+        } as unknown as Connection
+
+        const { handler } = await setup([malformed])
+        const restored = await handler.restore()
+
+        expect(restored).toEqual([])
+        expect(keys.has('c1')).toBe(false)
+    })
+
+    it('keeps restoring the other sessions when one key read faults', async () => {
+        // Un-caught, one bad read aborts `revive` for every session after it:
+        // `bootHandler` skips reconcile, and the survivors sit `active` in
+        // settings with no socket until the next launch.
+        const second: Connection = { ...SEEDED, id: 'c2' }
+        keys.set('c2', 'restored-key')
+        const { handler, records } = await setup([SEEDED, second])
+        vi.mocked(sessionKeys.read).mockRejectedValueOnce(
+            new Error('decrypt failed'),
+        )
+
+        const restored = await handler.restore()
+
+        expect(restored).toHaveLength(2)
+        expect(restored.find(c => c.id === 'c1')?.status).toBe('inactive')
+        expect(restored.find(c => c.id === 'c2')?.status).toBe('active')
+        expect((await records()).find(c => c.id === 'c2')?.status).toBe(
+            'active',
+        )
+    })
+
     it('reports a session whose connector could not be rebuilt as inactive', async () => {
         // Settings renders `status` as the user-visible Connected badge, so
         // leaving `active` on a session with no socket makes the list lie.
@@ -1055,6 +1142,52 @@ describe('walletconnect v1 handler behaviour', () => {
         })
 
         await expect(flush()).resolves.toBeUndefined()
+    })
+
+    it('emits one proposal when the bridge replays an unapproved pairing handshake', async () => {
+        // The sweep recreates a not-yet-approved connector and the bridge
+        // replays the topic's pending history. There is no stored record yet,
+        // so the connected+stored guard cannot catch it: web rejects the live
+        // pairing as "already pending", native queues a second sheet whose
+        // Cancel tears the approved connector down.
+        const { handler, onProposal } = await setup()
+        await handler.pair(V1_URI)
+        const connector = lastConnector()
+
+        connector.emit('session_request', null, handshake(4160))
+        await flush()
+        connector.emit('session_request', null, handshake(4160))
+        await flush()
+
+        expect(onProposal).toHaveBeenCalledTimes(1)
+    })
+
+    it('proposes again for a genuinely new handshake on the same pairing', async () => {
+        const { handler, onProposal } = await setup()
+        await handler.pair(V1_URI)
+        const connector = lastConnector()
+
+        connector.emit('session_request', null, handshake(4160, 42))
+        await flush()
+        connector.emit('session_request', null, handshake(4160, 43))
+        await flush()
+
+        expect(onProposal).toHaveBeenCalledTimes(2)
+    })
+
+    it('proposes again after the previous pairing was declined', async () => {
+        const { handler, onProposal } = await setup()
+        await handler.pair(V1_URI)
+        const connector = lastConnector()
+        connector.emit('session_request', null, handshake(4160))
+        await flush()
+        await onProposal.mock.calls[0][0].reject('user declined')
+
+        await handler.pair(V1_URI)
+        lastConnector().emit('session_request', null, handshake(4160))
+        await flush()
+
+        expect(onProposal).toHaveBeenCalledTimes(2)
     })
 
     it('refuses a fresh handshake on a settled session', async () => {

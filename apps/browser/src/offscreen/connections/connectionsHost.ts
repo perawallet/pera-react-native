@@ -263,7 +263,9 @@ export const startConnectionsHost = (
         const key = requestKey(message.connectionId, message.correlationId)
         const request = requests.get(key)
         if (!request) return fail(`Unknown request ${key}`)
-        requests.delete(key)
+        // Dropped only once the peer has actually been answered. `answerOnce`
+        // releases its guard on a failed delivery, so forgetting the request
+        // first would leave nothing for a retry to address.
         if (message.outcome.ok) {
             await request.respond(
                 decodeWalletOperationResult(message.outcome.result),
@@ -271,6 +273,7 @@ export const startConnectionsHost = (
         } else {
             await request.reject(new Error(message.outcome.message))
         }
+        requests.delete(key)
         return ok()
     }
 

@@ -32,6 +32,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     enqueueInboundRequest,
+    isConnectionAlive,
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
@@ -98,6 +99,15 @@ export const useSignRequestApprovalScreen =
             enqueuedRef.current = true
 
             if (approval.kind === 'connection-request') {
+                // The grant on the message is the snapshot taken when the
+                // request arrived; the user can revoke the connection from the
+                // popup while this window is open, and signing against a
+                // revoked grant would produce a signature nothing can deliver.
+                if (!isConnectionAlive(approval.connectionId)) {
+                    setError(t('dapp.sign.connection_revoked'))
+                    void rejectApproval(requestId)
+                    return
+                }
                 // The offscreen host already validated the operation; this rebuilds
                 // the neutral adapter's input from the wire.
                 const message: InboundMessage = {
@@ -125,6 +135,9 @@ export const useSignRequestApprovalScreen =
                     addSignRequest,
                     removeSignRequest,
                     accounts: allAccounts,
+                    // Keep the window open so the reason is readable, as the
+                    // sign-transactions branch below does.
+                    onError: err => setError(describeSignError(err, t)),
                 })
                 return
             }

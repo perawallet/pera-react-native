@@ -32,6 +32,9 @@ export const useWcErrorScreen = (): UseWcErrorScreenResult => {
         if (!notice) return null
         // WalletConnectErrorContent renders `t(error.message)` with no values
         // of its own, so the message arrives localised and interpolated.
+        if (notice.reason === 'delivery-failed') {
+            return new Error(t('walletconnect.request.error_delivery_failed'))
+        }
         return new Error(
             t('walletconnect.request.error_network_mismatch', {
                 active: t(

@@ -32,6 +32,14 @@ import {
 
 export const LEGACY_STORE_KEY = 'wallet-connect-store'
 
+/**
+ * Ids already imported. The blob is retained until every key verifies, so
+ * without this a record the user disconnected after an earlier pass comes back
+ * `active` on the next launch — the live store alone cannot tell "never
+ * imported" from "imported and since removed".
+ */
+export const LEGACY_IMPORTED_IDS_KEY = 'wallet-connect-store:imported'
+
 // The v1 client derives its AES key from this hex; anything else can never
 // decrypt a frame, so committing it would only preserve an unrevivable session.
 const SESSION_KEY_PATTERN = /^[0-9a-f]{64}$/i
@@ -179,6 +187,23 @@ const reconstructOrigin = (value: unknown): ConnectionOrigin | undefined => {
     }
 }
 
+const readImportedIds = (storage: ConnectionPersistence): Set<string> => {
+    const raw = storage.getItem(LEGACY_IMPORTED_IDS_KEY)
+    if (raw === null) return new Set()
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        if (!Array.isArray(parsed)) return new Set()
+        return new Set(
+            parsed.filter(
+                (value): value is string => typeof value === 'string',
+            ),
+        )
+    } catch {
+        // A corrupt marker only costs one redundant import pass.
+        return new Set()
+    }
+}
+
 const originFor = (
     dappOrigins: unknown,
     clientId: string,
@@ -234,6 +259,17 @@ export const importLegacyConnections = async (options: {
     let firstFailure: Error | null = null
     const committedClientIds: string[] = []
     const presentIds = new Set((await store.list()).map(({ id }) => id))
+    const importedIds = readImportedIds(storage)
+    // Written per record, not once at the end: a crash between two records
+    // must not leave an already-imported session unmarked and re-importable.
+    const markImported = (clientId: string): void => {
+        if (importedIds.has(clientId)) return
+        importedIds.add(clientId)
+        storage.setItem(
+            LEGACY_IMPORTED_IDS_KEY,
+            JSON.stringify([...importedIds]),
+        )
+    }
 
     for (const record of records) {
         const reconstructed = reconstructRecord(record)
@@ -243,16 +279,28 @@ export const importLegacyConnections = async (options: {
         }
 
         try {
+            // Imported earlier and since disconnected: `disconnect` released
+            // its key, so committing again would recreate a secret no record
+            // points at, and gating the blob on it would keep the blob forever.
+            if (
+                importedIds.has(reconstructed.clientId) &&
+                !presentIds.has(reconstructed.clientId)
+            ) {
+                skipped += 1
+                continue
+            }
+
             const secretRef = await sessionKeys.commit(
                 reconstructed.clientId,
                 reconstructed.sessionKey,
             )
 
-            // The app may have updated a record an earlier pass wrote, so the
-            // blob's copy is stale. Its key is still verified below before the blob may go.
+            // Already in the store from an earlier pass. Its key is still
+            // verified below before the blob may go.
             if (presentIds.has(reconstructed.clientId)) {
                 skipped += 1
                 committedClientIds.push(reconstructed.clientId)
+                markImported(reconstructed.clientId)
                 continue
             }
 
@@ -283,6 +331,7 @@ export const importLegacyConnections = async (options: {
             }
             await store.upsert(connection)
             presentIds.add(connection.id)
+            markImported(connection.id)
 
             imported += 1
             committedClientIds.push(reconstructed.clientId)
@@ -297,12 +346,29 @@ export const importLegacyConnections = async (options: {
         }
     }
 
-    // Deletion is gated on every committed key being readable back, not on
-    // zero skips: a permanently malformed row must not keep the plaintext
-    // blob on disk forever, but a lost key must.
-    const unverified = committedClientIds.filter(
-        clientId => !sessionKeys.has(clientId),
+    // Deletion is gated on every committed key reading back, not on zero
+    // skips: a permanently malformed row must not keep the plaintext blob on
+    // disk forever, but a lost key must. A real read, not a presence check —
+    // an entry that exists but cannot be decrypted is a lost key.
+    const readBacks = await Promise.all(
+        committedClientIds.map(async clientId => {
+            try {
+                // Collapsed to a boolean here, never carried: the verification
+                // must not leave a copy of every session key in an array.
+                const key = await sessionKeys.read(clientId)
+                return { clientId, readable: key !== null }
+            } catch (error) {
+                logger.warn('[WC migration] session key failed to read back', {
+                    clientId,
+                    error,
+                })
+                return { clientId, readable: false }
+            }
+        }),
     )
+    const unverified = readBacks
+        .filter(({ readable }) => !readable)
+        .map(({ clientId }) => clientId)
     if (unverified.length > 0) {
         logger.warn(
             '[WC migration] some migrated session keys failed verification; keeping the legacy blob',
@@ -317,6 +383,8 @@ export const importLegacyConnections = async (options: {
     }
 
     storage.removeItem(LEGACY_STORE_KEY)
+    // The blob is gone, so the marker has nothing left to guard.
+    storage.removeItem(LEGACY_IMPORTED_IDS_KEY)
     storage.trim?.()
 
     return { imported, skipped }

@@ -322,11 +322,29 @@ export type ConnectionApprovalRequest =
     // exists so the user learns why their click did nothing.
     | {
           kind: 'connection-error'
-          reason: 'network-mismatch'
+          reason: ConnectionErrorReason
           pairingId?: string
           peer?: ConnectionPeer
-          activeNetwork: Network
+          /** Only the network-mismatch notice names a network. */
+          activeNetwork?: Network
       }
+
+/**
+ * `delivery-failed` is the post-decision case: the approval window has already
+ * closed on the bridge ack, so this notice is the only place left to tell the
+ * user the dApp never heard their answer.
+ */
+export const CONNECTION_ERROR_REASONS = [
+    'network-mismatch',
+    'delivery-failed',
+] as const
+
+export type ConnectionErrorReason = (typeof CONNECTION_ERROR_REASONS)[number]
+
+const isConnectionErrorReason = (
+    value: unknown,
+): value is ConnectionErrorReason =>
+    CONNECTION_ERROR_REASONS.includes(value as ConnectionErrorReason)
 
 export type ConnectionApprovalRequestMessage = {
     scope: typeof CONNECTIONS_REQUEST_SCOPE
@@ -364,10 +382,12 @@ export const isConnectionApprovalRequest = (
             )
         }
         case 'connection-error': {
+            if (!isConnectionErrorReason(value.reason)) return false
+            if (!isOptionalString(value.pairingId)) return false
+            if (value.peer !== undefined && !isPeer(value.peer)) return false
+            // Kept required where the copy interpolates it.
             return (
-                value.reason === 'network-mismatch' &&
-                isOptionalString(value.pairingId) &&
-                (value.peer === undefined || isPeer(value.peer)) &&
+                value.reason !== 'network-mismatch' ||
                 typeof value.activeNetwork === 'string'
             )
         }

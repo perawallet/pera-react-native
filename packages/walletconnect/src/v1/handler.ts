@@ -64,6 +64,7 @@ import {
 import {
     gateSignDataRequest,
     gateSignTxnRequest,
+    type GateRejectionCode,
     type GateResult,
 } from '../validation/inboundRequestGate'
 import {
@@ -115,6 +116,13 @@ export const createWalletConnectV1Handler = (
     let stopSweep: Nullable<() => void> = null
     // Keyed by clientId: on v1 the connector IS the pairing.
     const pendingOrigins = new Map<string, ConnectionOrigin>()
+    // The proposal id already handed out for each pairing. The bridge replays a
+    // topic's pending history on every re-subscription, and a pairing the user
+    // has not approved yet has no stored record for the guard below to match,
+    // so the sweep recreating its connector would emit the same proposal twice:
+    // a second sheet on native, and an "already pending" reject of the live
+    // pairing on web. A new handshake carries a new id and still gets through.
+    const openProposals = new Map<string, string>()
 
     const requireContext = (): ConnectionHandlerContext => {
         if (!context) {
@@ -294,12 +302,22 @@ export const createWalletConnectV1Handler = (
         return { request, connection }
     }
 
+    // The gate's `reason` is developer English that reaches the peer; the code
+    // is what picks the class, and with it the copy the user is shown.
+    const rejectionFor = (reason: string, code: GateRejectionCode): Error => {
+        if (code === 'invalid-network')
+            return new WalletConnectInvalidNetworkError(reason)
+        if (code === 'session-not-found')
+            return new WalletConnectInvalidSessionError(reason)
+        return new WalletConnectSignRequestError(reason)
+    }
+
     const declineRequest = (
         clientId: string,
         requestId: number,
-        reason: string,
+        verdict: Extract<GateResult, { ok: false }>,
     ): void => {
-        const rejection = new WalletConnectSignRequestError(reason)
+        const rejection = rejectionFor(verdict.reason, verdict.code)
         rejectToPeer(clientId, requestId, rejection)
         reportError(rejection, connectionScope(clientId))
     }
@@ -325,7 +343,7 @@ export const createWalletConnectV1Handler = (
             knownAddresses: connection.accounts,
         })
         if (!verdict.ok) {
-            declineRequest(connection.id, request.id, verdict.reason)
+            declineRequest(connection.id, request.id, verdict)
             return
         }
 
@@ -364,6 +382,7 @@ export const createWalletConnectV1Handler = (
                 : {
                       ok: false,
                       reason: 'chain id not acceptable on the active network',
+                      code: 'invalid-network',
                   }
             : gateSignDataRequest({
                   payload,
@@ -371,7 +390,7 @@ export const createWalletConnectV1Handler = (
                   sessionChainId: connection.metadata.chainId,
               })
         if (!verdict.ok) {
-            declineRequest(connection.id, request.id, verdict.reason)
+            declineRequest(connection.id, request.id, verdict)
             return
         }
 
@@ -395,6 +414,7 @@ export const createWalletConnectV1Handler = (
         // The dApp's side expires long before ours; approving late can only fake-succeed.
         if (Date.now() > input.expiresAt) {
             pendingOrigins.delete(input.clientId)
+            openProposals.delete(input.clientId)
             throw new WalletConnectSessionRequestExpiredError()
         }
 
@@ -404,15 +424,21 @@ export const createWalletConnectV1Handler = (
             input.clientId,
             WC_DELIVERY_TIMEOUT_MS,
         )
-        connector.approveSession({
-            chainId: input.chainId,
-            accounts: input.accounts,
-        })
 
+        // The key comes from the pairing URI, so it is committable before the
+        // dApp is told yes. Ordered that way because `approveSession` flips the
+        // connector to `connected`, which `abandonPairing` then refuses to tear
+        // down: a keystore fault after it would leave a live socket with no
+        // record and no way for the user to disconnect it.
         const secretRef = await sessionKeys.commit(
             input.clientId,
             connector.session.key,
         )
+
+        connector.approveSession({
+            chainId: input.chainId,
+            accounts: input.accounts,
+        })
 
         const existing = await store().get(input.clientId)
         // A re-approval without an origin must not erase the stored one.
@@ -440,6 +466,7 @@ export const createWalletConnectV1Handler = (
         }
         await store().upsert(connection)
         pendingOrigins.delete(input.clientId)
+        openProposals.delete(input.clientId)
         return connection
     }
 
@@ -451,6 +478,7 @@ export const createWalletConnectV1Handler = (
         connector: Nullable<WalletConnect>,
     ): void => {
         pendingOrigins.delete(clientId)
+        openProposals.delete(clientId)
         if (connector) {
             teardownConnector(connector)
             forgetConnector(clientId)
@@ -569,9 +597,19 @@ export const createWalletConnectV1Handler = (
         const methods = params.permissions
             ? params.permissions.filter(isAlgorandPermission)
             : [...ALL_PERMISSIONS]
+        const proposalId = `${clientId}:${request.id}`
+        if (openProposals.get(clientId) === proposalId) {
+            logger.debug('[WC v1] ignoring a replayed pairing handshake', {
+                clientId,
+                requestId: request.id,
+            })
+            return
+        }
+        openProposals.set(clientId, proposalId)
+
         const proposal: ConnectionProposal = {
             kind: WALLET_CONNECT_V1_KIND,
-            proposalId: `${clientId}:${request.id}`,
+            proposalId,
             pairingId: clientId,
             peer,
             requested: {
@@ -711,7 +749,18 @@ export const createWalletConnectV1Handler = (
     ): Promise<WalletConnectV1Connection> => {
         if (rebindLive(connection.id)) return asStatus(connection, 'active')
 
-        const key = await sessionKeys.read(connection.id)
+        // A keystore fault or a failed decrypt is this one session's problem;
+        // thrown, it would abort `restore` for every session after it.
+        let key: string | null
+        try {
+            key = await sessionKeys.read(connection.id)
+        } catch (error) {
+            logger.warn('[WC v1] failed to read a stored session key', {
+                connectionId: connection.id,
+                error,
+            })
+            key = null
+        }
 
         // Re-checked after the await, or two overlapping restores build two sockets.
         if (rebindLive(connection.id)) return asStatus(connection, 'active')
@@ -764,16 +813,36 @@ export const createWalletConnectV1Handler = (
             if (isWalletConnectV1Connection(record)) {
                 own.push(record)
             } else if (record.kind === WALLET_CONNECT_V1_KIND) {
-                // Omitting it from the reported set is what deletes it; leave a trace.
+                // Omitting it from the reported set is what deletes it, and
+                // reconciliation only touches the store, so the session key it
+                // points at has to be released here or it outlives the record.
                 logger.warn(
                     '[WC v1] dropping a malformed stored session record',
                     { connectionId: record.id },
                 )
+                await sessionKeys
+                    .remove(record.id)
+                    .catch((secretError: unknown) => {
+                        logger.warn(
+                            '[WC v1] failed to remove a dropped record’s session key',
+                            { connectionId: record.id, error: secretError },
+                        )
+                    })
             }
         }
         const restored: WalletConnectV1Connection[] = []
         for (const connection of own) {
-            restored.push(await revive(connection))
+            try {
+                restored.push(await revive(connection))
+            } catch (error) {
+                // Reported unchanged rather than dropped: omitting it from the
+                // returned set is what makes reconciliation delete the record.
+                logger.warn('[WC v1] failed to restore a stored session', {
+                    connectionId: connection.id,
+                    error,
+                })
+                restored.push(connection)
+            }
         }
         return restored
     }
@@ -818,6 +887,7 @@ export const createWalletConnectV1Handler = (
             stopSweep?.()
             stopSweep = null
             pendingOrigins.clear()
+            openProposals.clear()
             clearConnectorHandlerBinder(bindHandlers)
             context = null
         },
@@ -844,6 +914,7 @@ export const createWalletConnectV1Handler = (
 
         abandonPairing: pairingId => {
             pendingOrigins.delete(pairingId)
+            openProposals.delete(pairingId)
             abandonConnectorPairing(pairingId)
         },
 

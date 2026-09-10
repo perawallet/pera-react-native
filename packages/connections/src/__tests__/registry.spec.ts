@@ -41,6 +41,11 @@ const makeOriginHandler = (
     ...overrides,
 })
 
+/** The `ConnectionHandlerContext` a handler's `initialize` spy was handed. */
+const capturedContext = (
+    handler: ConnectionHandler,
+): ConnectionHandlerContext => vi.mocked(handler.initialize).mock.calls[0][0]
+
 /** A URI-pairing handler claiming `${kind}:` URIs. */
 const makeHandler = (
     kind: string,
@@ -144,6 +149,7 @@ describe('createConnectionRegistry', () => {
         const registry = createConnectionRegistry({ store })
         registry.register(alpha)
         registry.register(beta)
+        await registry.initialize()
 
         await registry.pair('beta:xyz')
 
@@ -158,6 +164,7 @@ describe('createConnectionRegistry', () => {
             const registry = createConnectionRegistry({ store })
             registry.register(dapp)
             registry.register(beta)
+            await registry.initialize()
 
             await expect(registry.pair('beta:xyz')).resolves.toBe(
                 'beta-pairing',
@@ -169,9 +176,55 @@ describe('createConnectionRegistry', () => {
         it('throws no-handler when only URI-less handlers are registered', async () => {
             const registry = createConnectionRegistry({ store })
             registry.register(makeOriginHandler('dapp'))
+            await registry.initialize()
 
             await expect(registry.pair('beta:xyz')).rejects.toMatchObject({
                 code: 'no-handler',
+            })
+        })
+
+        it('refuses a pairing before initialize, so the caller can say so rather than strand a connector', async () => {
+            const beta = makeHandler('beta')
+            const registry = createConnectionRegistry({ store })
+            registry.register(beta)
+
+            await expect(registry.pair('beta:xyz')).rejects.toMatchObject({
+                code: 'not-initialized',
+            })
+
+            expect(beta.pair).not.toHaveBeenCalled()
+        })
+
+        it('waits out an in-flight initialize rather than refusing a cold-start deep link', async () => {
+            let releaseBoot: () => void = () => {}
+            const booted = new Promise<void>(resolve => {
+                releaseBoot = resolve
+            })
+            const beta = makeHandler('beta', {
+                initialize: vi.fn(async () => booted),
+            })
+            const registry = createConnectionRegistry({ store })
+            registry.register(beta)
+
+            const initializing = registry.initialize()
+            const pairing = registry.pair('beta:xyz')
+            expect(beta.pair).not.toHaveBeenCalled()
+
+            releaseBoot()
+            await initializing
+
+            await expect(pairing).resolves.toBe('beta-pairing')
+        })
+
+        it('refuses a pairing after teardown', async () => {
+            const beta = makeHandler('beta')
+            const registry = createConnectionRegistry({ store })
+            registry.register(beta)
+            await registry.initialize()
+            await registry.teardown()
+
+            await expect(registry.pair('beta:xyz')).rejects.toMatchObject({
+                code: 'not-initialized',
             })
         })
 
@@ -179,6 +232,7 @@ describe('createConnectionRegistry', () => {
             const beta = makeHandler('beta')
             const registry = createConnectionRegistry({ store })
             registry.register(beta)
+            await registry.initialize()
 
             await registry.pair('beta:xyz', { origin: ORIGIN })
 
@@ -195,6 +249,7 @@ describe('createConnectionRegistry', () => {
             const registry = createConnectionRegistry({ store })
             registry.register(alpha)
             registry.register(beta)
+            await registry.initialize()
             const pairingId = await registry.pair('beta:xyz')
 
             registry.abandonPairing(pairingId)
@@ -207,12 +262,48 @@ describe('createConnectionRegistry', () => {
             const beta = makeHandler('beta')
             const registry = createConnectionRegistry({ store })
             registry.register(beta)
+            await registry.initialize()
             const pairingId = await registry.pair('beta:xyz')
 
             registry.abandonPairing(pairingId)
             registry.abandonPairing(pairingId)
 
             expect(beta.abandonPairing).toHaveBeenCalledTimes(1)
+        })
+
+        it('stops routing a pairing id once its proposal is approved', async () => {
+            // `pairings` is only the routing table for `abandonPairing`; a
+            // settled proposal is the end of its pairing, so an entry that is
+            // never pruned grows for the life of the process.
+            const beta = makeHandler('beta')
+            const registry = createConnectionRegistry({ store })
+            registry.register(beta)
+            const proposals: ConnectionProposal[] = []
+            registry.subscribeToProposals(proposal => proposals.push(proposal))
+            await registry.initialize()
+            const pairingId = await registry.pair('beta:xyz')
+            capturedContext(beta).onProposal(makeProposal({ pairingId }))
+
+            await proposals[0].approve(['AAAA'])
+            registry.abandonPairing(pairingId)
+
+            expect(beta.abandonPairing).not.toHaveBeenCalled()
+        })
+
+        it('stops routing a pairing id once its proposal is rejected', async () => {
+            const beta = makeHandler('beta')
+            const registry = createConnectionRegistry({ store })
+            registry.register(beta)
+            const proposals: ConnectionProposal[] = []
+            registry.subscribeToProposals(proposal => proposals.push(proposal))
+            await registry.initialize()
+            const pairingId = await registry.pair('beta:xyz')
+            capturedContext(beta).onProposal(makeProposal({ pairingId }))
+
+            await proposals[0].reject('declined')
+            registry.abandonPairing(pairingId)
+
+            expect(beta.abandonPairing).not.toHaveBeenCalled()
         })
 
         it('is a no-op for a pairing id no handler issued', () => {
@@ -229,6 +320,7 @@ describe('createConnectionRegistry', () => {
             const beta = makeHandler('beta', { abandonPairing: undefined })
             const registry = createConnectionRegistry({ store })
             registry.register(beta)
+            await registry.initialize()
             const pairingId = await registry.pair('beta:xyz')
 
             expect(() => registry.abandonPairing(pairingId)).not.toThrow()
@@ -310,6 +402,7 @@ describe('createConnectionRegistry', () => {
         // untranslated English for anything without a `messageKey`.
         const registry = createConnectionRegistry({ store })
         registry.register(makeHandler('alpha'))
+        await registry.initialize()
 
         await expect(registry.pair('beta:xyz')).rejects.toMatchObject({
             message: expect.stringMatching(/No connection handler/),

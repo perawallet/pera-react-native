@@ -13,11 +13,13 @@
 import { useEffect, useRef } from 'react'
 import {
     generateOrderedUniqueId,
+    isRetryableError,
     logger,
     toError,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
+    isFeeAdjustmentDeliveryError,
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
     useSigningRequest,
@@ -37,10 +39,16 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { InboundMessage } from './models'
+import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
 
 type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
+
+/** Where a failure the user should hear about goes; the registry's channel on mobile. */
+export type ConnectionErrorReporter = (
+    error: Error,
+    scope: ConnectionErrorScope,
+) => void
 
 /**
  * A failed reject delivery has nowhere to propagate (the contract returns
@@ -59,6 +67,53 @@ const rejectInBackground = (message: RequestMessage, error: Error): void => {
     } catch (syncError) {
         onFailure(syncError)
     }
+}
+
+/**
+ * Answers the peer AND tells the user. Everything that refuses a request
+ * before signing goes through here; a user reject and a soft reject do not.
+ */
+const declineRequest = (
+    message: RequestMessage,
+    error: Error,
+    onError?: ConnectionErrorReporter,
+): void => {
+    onError?.(error, { connectionId: message.connectionId })
+    rejectInBackground(message, error)
+}
+
+/**
+ * A retryable failure is the signing machine's to retry, and the request has a
+ * single answer: rejecting the peer here consumes it, so the user's RETRY would
+ * fail `already-answered` against a dApp that has already given up. Nor is it
+ * reported, since the RETRY sheet is the surface; the fee-adjusted delivery
+ * failure is the exception, because only its toast tells the user the dApp may
+ * not accept the higher fees. Returns whether the request is finished with.
+ */
+const failRequest = (
+    message: RequestMessage,
+    error: Error,
+    onError?: ConnectionErrorReporter,
+): boolean => {
+    const isRetryable = isRetryableError(error)
+    if (!isRetryable || isFeeAdjustmentDeliveryError(error)) {
+        onError?.(error, { connectionId: message.connectionId })
+    }
+    if (isRetryable) return false
+    rejectInBackground(message, error)
+    return true
+}
+
+/**
+ * The multisig sync-flow handoff persists a JSON-RPC id so a relaunched app can
+ * answer the dApp without the enqueue closures. `correlationId` is opaque by
+ * contract, so a handler whose ids are not plain integers (WalletConnect v1's
+ * are) simply gets no post-kill delivery rather than a NaN one.
+ */
+const handoffPayloadId = (correlationId: string): number | undefined => {
+    if (!/^\d+$/.test(correlationId)) return undefined
+    const parsed = Number(correlationId)
+    return Number.isSafeInteger(parsed) ? parsed : undefined
 }
 
 /**
@@ -83,17 +138,16 @@ const isArc60AuthorizedSigner = (
 const enqueueArc60Request = (
     message: RequestMessage,
     payload: Arc60SignableData,
-    accounts: WalletAccount[],
-    addSignRequest: (request: SignRequest) => void,
-    removeSignRequest: (request: SignRequest) => void,
+    deps: EnqueueInboundRequestDeps,
 ): void => {
+    const { accounts, addSignRequest, removeSignRequest, onError } = deps
     const { stdSigData, metadata } = payload
     const { signer } = stdSigData
 
     if (
         !isArc60AuthorizedSigner(signer, message.authorizedAccounts, accounts)
     ) {
-        rejectInBackground(message, new Error('Invalid signer'))
+        declineRequest(message, new Error('Invalid signer'), onError)
         return
     }
 
@@ -102,9 +156,10 @@ const enqueueArc60Request = (
     // key, so a keyless rekeyed signer is refused rather than signed for by
     // its auth account. Watch and multisig accounts fail it too.
     if (!account || !canSignArc60(account)) {
-        rejectInBackground(
+        declineRequest(
             message,
             new Error('Signer cannot sign ARC-60 payloads'),
+            onError,
         )
         return
     }
@@ -133,8 +188,9 @@ const enqueueArc60Request = (
             rejectInBackground(message, new Error('User rejected'))
         },
         error: async (error: Error) => {
-            rejectInBackground(message, error)
-            removeSignRequest(signRequest)
+            if (failRequest(message, error, onError)) {
+                removeSignRequest(signRequest)
+            }
         },
     }
     addSignRequest(signRequest)
@@ -162,16 +218,19 @@ const legacyDataItemViolation = (
 const enqueueLegacyDataRequest = (
     message: RequestMessage,
     items: PeraArbitraryDataMessage[],
-    accounts: WalletAccount[],
-    addSignRequest: (request: SignRequest) => void,
-    removeSignRequest: (request: SignRequest) => void,
+    deps: EnqueueInboundRequestDeps,
 ): void => {
+    const { accounts, addSignRequest, removeSignRequest, onError } = deps
     if (items.length === 0) {
-        rejectInBackground(message, new Error('Invalid data found'))
+        declineRequest(message, new Error('Invalid data found'), onError)
         return
     }
     if (items.length > MAX_DATA_SIGN_REQUESTS) {
-        rejectInBackground(message, new Error('Too many sign requests found'))
+        declineRequest(
+            message,
+            new Error('Too many sign requests found'),
+            onError,
+        )
         return
     }
     for (const item of items) {
@@ -181,7 +240,7 @@ const enqueueLegacyDataRequest = (
             accounts,
         )
         if (violation) {
-            rejectInBackground(message, violation)
+            declineRequest(message, violation, onError)
             return
         }
     }
@@ -209,8 +268,9 @@ const enqueueLegacyDataRequest = (
             rejectInBackground(message, new Error('User rejected'))
         },
         error: async (error: Error) => {
-            rejectInBackground(message, error)
-            removeSignRequest(signRequest)
+            if (failRequest(message, error, onError)) {
+                removeSignRequest(signRequest)
+            }
         },
     }
     addSignRequest(signRequest)
@@ -220,27 +280,13 @@ const enqueueLegacyDataRequest = (
 const enqueueSignDataRequest = (
     message: RequestMessage,
     payload: Arc60SignableData | PeraArbitraryDataMessage[],
-    accounts: WalletAccount[],
-    addSignRequest: (request: SignRequest) => void,
-    removeSignRequest: (request: SignRequest) => void,
+    deps: EnqueueInboundRequestDeps,
 ): void => {
     if (Array.isArray(payload)) {
-        enqueueLegacyDataRequest(
-            message,
-            payload,
-            accounts,
-            addSignRequest,
-            removeSignRequest,
-        )
+        enqueueLegacyDataRequest(message, payload, deps)
         return
     }
-    enqueueArc60Request(
-        message,
-        payload,
-        accounts,
-        addSignRequest,
-        removeSignRequest,
-    )
+    enqueueArc60Request(message, payload, deps)
 }
 
 export type EnqueueInboundRequestDeps = {
@@ -249,6 +295,12 @@ export type EnqueueInboundRequestDeps = {
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
     accounts: WalletAccount[]
+    /**
+     * Without one a refused or undeliverable request closes the sheet with no
+     * explanation. The registry's emitter on mobile; the approval window
+     * passes its own surface.
+     */
+    onError?: ConnectionErrorReporter
 }
 
 /**
@@ -274,7 +326,7 @@ export const enqueueInboundRequest = (
                 },
             )
         } catch (error) {
-            rejectInBackground(message, toError(error))
+            declineRequest(message, toError(error), deps.onError)
             return
         }
 
@@ -283,6 +335,9 @@ export const enqueueInboundRequest = (
         deps.enqueueArc0001(resolved, {
             sourceType: 'walletconnect',
             transportId: message.connectionId,
+            // Serializable id so a multisig sync-flow handoff can answer this
+            // exact request after an app kill.
+            payloadId: handoffPayloadId(message.correlationId),
             sourceMetadata: message.peer,
             // A failed delivery must propagate: it is how a dead-socket revival
             // surfaces as retryable rather than as a fake success.
@@ -291,21 +346,17 @@ export const enqueueInboundRequest = (
             respondWithReject: () =>
                 rejectInBackground(message, new Error('User rejected')),
             respondWithSoftReject: error => message.reject(error),
-            respondWithError: error => rejectInBackground(message, error),
+            respondWithError: error => {
+                failRequest(message, error, deps.onError)
+            },
         }).catch((error: unknown) => {
-            rejectInBackground(message, toError(error))
+            declineRequest(message, toError(error), deps.onError)
         })
         return
     }
 
     // The operation union is closed; the only remaining case is 'sign-data'.
-    enqueueSignDataRequest(
-        message,
-        message.operation.payload,
-        deps.accounts,
-        deps.addSignRequest,
-        deps.removeSignRequest,
-    )
+    enqueueSignDataRequest(message, message.operation.payload, deps)
 }
 
 /** Every handler normalises into `InboundMessage`, so a new connection kind needs no change here. */
@@ -317,12 +368,18 @@ export const useConnectionSigningAdapter = (
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
 
+    // The registry's own channel, so a WalletConnect failure raises the same
+    // toast the handler's errors do.
+    const onError: ConnectionErrorReporter = (error, scope) =>
+        registry.reportError(error, scope)
+
     const depsRef = useRef<EnqueueInboundRequestDeps>({
         resolveArc0001,
         enqueueArc0001,
         addSignRequest,
         removeSignRequest,
         accounts,
+        onError,
     })
     depsRef.current = {
         resolveArc0001,
@@ -330,6 +387,7 @@ export const useConnectionSigningAdapter = (
         addSignRequest,
         removeSignRequest,
         accounts,
+        onError,
     }
 
     useEffect(

@@ -30,7 +30,11 @@ export {
     createStorageSessionKeyStore,
     type WalletConnectV1SessionKeyStore,
 } from './v1/secrets'
-export { importLegacyConnections } from './migration/importLegacyConnections'
+export {
+    importLegacyConnections,
+    LEGACY_IMPORTED_IDS_KEY,
+    LEGACY_STORE_KEY,
+} from './migration/importLegacyConnections'
 export {
     useConnectorRegistryStore,
     type ConnectorRegistryStore,

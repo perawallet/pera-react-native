@@ -19,6 +19,7 @@ import type {
 } from '@perawallet/wallet-extension-connections'
 import {
     isWireWalletOperationResult,
+    type ConnectionErrorReason,
     type WireWalletOperation,
     type WireWalletOperationResult,
 } from '../connections/protocol'
@@ -88,9 +89,9 @@ export type PendingApproval =
           requestId: string
           origin: string
           faviconUrl?: string
-          reason: 'network-mismatch'
+          reason: ConnectionErrorReason
           peer?: ConnectionPeer
-          activeNetwork: Network
+          activeNetwork?: Network
       }
     | ({
           kind: 'passkey-create'
@@ -102,6 +103,15 @@ export type PendingApproval =
           kind: 'passkey-get'
           faviconUrl?: string
       } & PasskeyGetApprovalContext)
+
+/**
+ * `origin` is dApp-asserted on the connection kinds (it comes from `peer.url`),
+ * so a page varying `peerMeta.url` per handshake would dodge the per-origin cap
+ * entirely. The browser-verified origin is used wherever the kind carries one.
+ */
+const capacityKeyFor = (approval: PendingApproval): string =>
+    ('requesterOrigin' in approval ? approval.requesterOrigin : undefined) ??
+    approval.origin
 
 // Each open* method stores its typed `resolve` widened to this so one pending
 // map serves every approval kind; the cast back happens in that method's executor.
@@ -275,9 +285,9 @@ export class ApprovalWindowBridge
         requestId: string
         origin: string
         faviconUrl?: string
-        reason: 'network-mismatch'
+        reason: ConnectionErrorReason
         peer?: ConnectionPeer
-        activeNetwork: Network
+        activeNetwork?: Network
     }): Promise<void> {
         const settled = this.awaitApproval<unknown>({
             ...ctx,
@@ -322,7 +332,7 @@ export class ApprovalWindowBridge
                 `An approval for '${approval.requestId}' is already pending`,
             )
         }
-        this.assertCapacity(approval.origin)
+        this.assertCapacity(capacityKeyFor(approval))
         return new Promise<T | null>(resolve => {
             this.pending.set(approval.requestId, {
                 approval,
@@ -335,7 +345,7 @@ export class ApprovalWindowBridge
     // needs no prior permission, and the core router only de-dupes on
     // `origin::requestId`, so a page varying the id could otherwise bury the
     // desktop in windows recoverable only by force-quitting the browser.
-    private assertCapacity(origin: string): void {
+    private assertCapacity(key: string): void {
         if (this.pending.size >= MAX_PENDING_APPROVALS) {
             throw new ApprovalRejectedError(
                 'Too many approval requests are already open',
@@ -343,11 +353,11 @@ export class ApprovalWindowBridge
         }
         let forOrigin = 0
         for (const entry of this.pending.values()) {
-            if (entry.approval.origin === origin) forOrigin++
+            if (capacityKeyFor(entry.approval) === key) forOrigin++
         }
         if (forOrigin >= MAX_PENDING_APPROVALS_PER_ORIGIN) {
             throw new ApprovalRejectedError(
-                `Too many approval requests are already open for ${origin}`,
+                `Too many approval requests are already open for ${key}`,
             )
         }
     }

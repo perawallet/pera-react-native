@@ -226,13 +226,17 @@ describe('runOffscreenApp connections wiring', () => {
         })
     })
 
-    it('subscribes the control handler before booting, so restore-time traffic is not dropped', async () => {
+    it('subscribes the control handler only once the registry is live', async () => {
+        // The registry refuses a `pair` it cannot route. Answered with that
+        // error, `sendConnectionsControlMessage` stops retrying and the
+        // pairing is lost; unanswered, its retry budget carries the command
+        // across the boot window — which is what that budget is for.
         await boot()
 
         const subscribeOrder =
             onConnectionsControlMessage.mock.invocationCallOrder[0]
         const bootOrder = bootConnections.mock.invocationCallOrder[0]
-        expect(subscribeOrder).toBeLessThan(bootOrder ?? 0)
+        expect(bootOrder).toBeLessThan(subscribeOrder ?? 0)
     })
 
     it('no longer rehydrates the legacy wallet-connect store across contexts', async () => {

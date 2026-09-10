@@ -19,7 +19,8 @@
             },
             "network_mismatch": "Esta transacción es para una red de Algorand distinta a la red activa de tu wallet. Cambia de red en los ajustes y vuelve a intentarlo.",
             "unsupported_message": "Este sitio envió una solicitud de firma de mensaje que Pera no puede procesar. La solicitud se ha rechazado.",
-            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta."
+            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta.",
+            "connection_revoked": "Esta conexión se desconectó. Vuelve a conectarte desde el sitio e inténtalo de nuevo."
         },
         "passkey": {
             "create": {
@@ -815,7 +816,8 @@
             "duplicate_kind": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
             "already_initialized": "Algo salió mal al configurar las conexiones con apps. Reinicia Pera y vuelve a intentarlo.",
             "already_answered": "Esta solicitud ya fue respondida.",
-            "no_subscriber": "Pera no estaba listo para procesar esta solicitud. Vuelve a intentarlo."
+            "no_subscriber": "Pera no estaba listo para procesar esta solicitud. Vuelve a intentarlo.",
+            "not_initialized": "Pera aún se está iniciando. Vuelve a intentarlo en un momento."
         },
         "walletconnect": {
             "title": "Error al procesar una solicitud de una app",
@@ -2838,6 +2840,7 @@
             "error_sheet_body": "Tu solicitud de WalletConnect ha fallado con el siguiente error:",
             "error_sheet_retry": "Vuelve a intentarlo desde la dApp donde iniciaste la solicitud.",
             "error_network_mismatch": "Esta app ha pedido conectarse en otra red, pero tu wallet está en {{active}}. Cambia de red en los ajustes y vuelve a intentarlo.",
+            "error_delivery_failed": "Pera no pudo comunicarse con la aplicación para enviar tu respuesta, así que puede seguir esperando. Vuelve a intentarlo desde la aplicación.",
             "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum."
         },
         "connection": {

@@ -18,9 +18,23 @@ import {
     assertArc60RequestWithinLimits,
 } from '../shared/schema'
 
-export type GateResult = { ok: true } | { ok: false; reason: string }
+/**
+ * Which error the caller answers the peer with. `reason` is developer English
+ * for the peer and the logs; the code is what selects the user-facing copy.
+ */
+export type GateRejectionCode =
+    | 'invalid-network'
+    | 'session-not-found'
+    | 'invalid-request'
 
-const reject = (reason: string): GateResult => ({ ok: false, reason })
+export type GateResult =
+    | { ok: true }
+    | { ok: false; reason: string; code: GateRejectionCode }
+
+const reject = (
+    reason: string,
+    code: GateRejectionCode = 'invalid-request',
+): GateResult => ({ ok: false, reason, code })
 const accept: GateResult = { ok: true }
 
 // An undefined session chain id means the wallet has no record of the session
@@ -66,10 +80,13 @@ export const gateSignTxnRequest = (input: {
     if (!envelope) return reject('malformed WC envelope')
 
     if (input.sessionChainId === undefined) {
-        return reject(SESSION_NOT_FOUND_REASON)
+        return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
     if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
-        return reject('chain id not acceptable on the active network')
+        return reject(
+            'chain id not acceptable on the active network',
+            'invalid-network',
+        )
     }
 
     const group = envelope.params[0]
@@ -124,10 +141,13 @@ export const gateSignDataRequest = (input: {
     }
 
     if (input.sessionChainId === undefined) {
-        return reject(SESSION_NOT_FOUND_REASON)
+        return reject(SESSION_NOT_FOUND_REASON, 'session-not-found')
     }
     if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
-        return reject('chain id not acceptable on the active network')
+        return reject(
+            'chain id not acceptable on the active network',
+            'invalid-network',
+        )
     }
 
     try {

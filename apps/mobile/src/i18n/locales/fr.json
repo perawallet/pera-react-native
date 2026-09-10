@@ -19,7 +19,8 @@
             },
             "network_mismatch": "Cette transaction concerne un réseau Algorand différent du réseau actif de votre wallet. Changez de réseau dans les paramètres, puis réessayez.",
             "unsupported_message": "Ce site a envoyé une demande de signature de message que Pera ne peut pas traiter. La demande a été refusée.",
-            "unauthorized_signer": "Ce site n’est pas autorisé à demander une signature pour ce compte."
+            "unauthorized_signer": "Ce site n’est pas autorisé à demander une signature pour ce compte.",
+            "connection_revoked": "Cette connexion a été interrompue. Reconnectez-vous depuis le site, puis réessayez."
         },
         "passkey": {
             "create": {
@@ -815,7 +816,8 @@
             "duplicate_kind": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
             "already_initialized": "Une erreur est survenue lors de la configuration des connexions aux applications. Veuillez redémarrer Pera, puis réessayer.",
             "already_answered": "Cette demande a déjà reçu une réponse.",
-            "no_subscriber": "Pera n’était pas prêt à traiter cette demande. Veuillez réessayer."
+            "no_subscriber": "Pera n’était pas prêt à traiter cette demande. Veuillez réessayer.",
+            "not_initialized": "Pera est encore en cours de démarrage. Veuillez réessayer dans un instant."
         },
         "walletconnect": {
             "title": "Une erreur est survenue lors du traitement d’une demande d’application",
@@ -2838,6 +2840,7 @@
             "error_sheet_body": "Votre demande WalletConnect a échoué avec l’erreur suivante :",
             "error_sheet_retry": "Veuillez réessayer en retournant dans la dApp où vous avez initié la demande.",
             "error_network_mismatch": "Cette application a demandé à se connecter sur un autre réseau, mais votre wallet est sur {{active}}. Changez de réseau dans les paramètres, puis réessayez.",
+            "error_delivery_failed": "Pera n'a pas pu joindre l'application pour transmettre votre réponse ; elle est peut-être toujours en attente. Veuillez réessayer depuis l'application.",
             "quantum_fee_delivery_failed": "La demande n’a pas pu être traitée. Cette application ne prend peut-être pas en charge les frais de réseau plus élevés requis par les comptes Quantum."
         },
         "connection": {

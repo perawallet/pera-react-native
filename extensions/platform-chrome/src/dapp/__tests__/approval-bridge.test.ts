@@ -1378,6 +1378,44 @@ describe('ApprovalWindowBridge', () => {
             expect(created).toHaveLength(8)
         })
 
+        it('counts a connection proposal against its browser-verified origin, not the peer url', async () => {
+            // `origin` on a proposal comes from `peer.url`, which the dApp
+            // asserts: varying it per handshake would dodge the per-origin cap
+            // and leave only the global one.
+            const { chromeLike, created } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            const propose = (requestId: string, peerUrl: string) =>
+                bridge
+                    .openConnectionProposal({
+                        requestId,
+                        origin: peerUrl,
+                        proposalId: requestId,
+                        connectionKind: 'walletconnect-v1',
+                        peer: { name: 'dApp', url: peerUrl },
+                        requested: {
+                            networks: ['mainnet'],
+                            methods: ['algo_signTxn'],
+                        },
+                        expiresAt: 1,
+                        requesterOrigin: 'https://spam.example',
+                    })
+                    .catch((error: unknown) => error)
+
+            for (let i = 0; i < 3; i++) {
+                void propose(`p${i}`, `https://claimed-${i}.example`)
+                await flush()
+            }
+            expect(created).toHaveLength(3)
+
+            const fourth = await propose('p3', 'https://claimed-3.example')
+            await flush()
+
+            expect(fourth).toBeInstanceOf(Error)
+            expect(created).toHaveLength(3)
+        })
+
         it('frees capacity once an approval settles', async () => {
             const { chromeLike, created, closeWindow } = makeChrome()
             const bridge = new ApprovalWindowBridge(chromeLike)

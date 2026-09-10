@@ -27,6 +27,7 @@ import {
     type ConnectionRegistry,
     type InboundMessage,
     type WalletOperation,
+    type WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
 import { WalletConnectInvalidNetworkError } from '@perawallet/wallet-core-walletconnect'
 import {
@@ -64,6 +65,9 @@ const makeFakeRegistry = () => {
         networksFor: vi.fn(() => []),
         disconnect: vi.fn(async () => {}),
         disconnectAll: vi.fn(async () => {}),
+        reportError: (error, scope) => {
+            for (const listener of errorListeners) listener(error, scope)
+        },
         subscribeToProposals: listener => {
             proposalListeners.add(listener)
             return () => void proposalListeners.delete(listener)
@@ -409,6 +413,38 @@ describe('startConnectionsHost', () => {
             })
 
             expect(response).toEqual({ ok: false, error: 'dead socket' })
+        })
+
+        it('keeps the request addressable after a failed delivery, so a retry lands', async () => {
+            // `answerOnce` releases its guard when delivery fails, but a
+            // request already dropped from the host's map has nothing left to
+            // address — the retry answers "unknown request" instead.
+            const respond = vi
+                .fn<(result: WalletOperationResult) => Promise<void>>()
+                .mockRejectedValueOnce(new Error('dead socket'))
+                .mockResolvedValue(undefined)
+            const request = makeRequest({ respond })
+            fake.emitMessage(request)
+            const send = {
+                kind: 'respond' as const,
+                connectionId: 'conn-1',
+                correlationId: '7',
+                outcome: {
+                    ok: true as const,
+                    result: {
+                        type: 'sign-transactions' as const,
+                        signed: ['c3R4bg=='],
+                    },
+                },
+            }
+
+            expect(await control(send)).toEqual({
+                ok: false,
+                error: 'dead socket',
+            })
+
+            expect(await control(send)).toEqual({ ok: true })
+            expect(respond).toHaveBeenCalledTimes(2)
         })
 
         it('answers an unknown request id with { ok: false }', async () => {

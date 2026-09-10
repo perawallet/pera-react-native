@@ -22,6 +22,10 @@ import { isStoreDisabledError } from '@perawallet/wallet-core-passkeys'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import {
+    LEGACY_IMPORTED_IDS_KEY,
+    LEGACY_STORE_KEY,
+} from '@perawallet/wallet-core-walletconnect'
+import {
     getProvider,
     clearKeystore,
 } from '@perawallet/wallet-extension-provider'
@@ -119,6 +123,18 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await getProvider().connections.store.clear()
         } catch (e) {
             logger.error('Failed to clear stored connections', { error: e })
+        }
+
+        // The pre-registry blob holds plaintext session keys and is removed
+        // only by a fully clean import pass, so an import that never completed
+        // would otherwise survive the wipe and re-import on the next launch.
+        try {
+            getProvider().keyValueStorage.removeItem(LEGACY_STORE_KEY)
+            getProvider().keyValueStorage.removeItem(LEGACY_IMPORTED_IDS_KEY)
+        } catch (e) {
+            logger.error('Failed to remove the legacy WalletConnect store', {
+                error: e,
+            })
         }
 
         // 6. Unregister device from push notification backend

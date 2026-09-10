@@ -28,18 +28,11 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
-            // packages/shared's dist is stale and its build currently fails
-            // on main (unrelated to this package), so it can't be
-            // regenerated. Alias straight to source so tests exercise real
-            // behavior instead of a silently outdated build artifact.
-            // `Networks` (betanet/custom) is defined in packages/config and
-            // only re-exported by shared/src/models/base-types.ts, so
-            // aliasing shared alone still resolves that re-export through
-            // config's own stale dist — wallet-core-config needs the same
-            // source alias for the chain to be genuinely fresh end to end.
-            // Do not remove either alias as "redundant" once these packages
-            // build again without first confirming both dists are back in
-            // sync with their src.
+            // Source, not `dist`, so tests cannot pass against a stale build
+            // artifact. Both aliases are load-bearing: `Networks`
+            // (betanet/custom) lives in packages/config and shared only
+            // re-exports it, so aliasing shared alone still resolves that
+            // re-export through config's own dist.
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',

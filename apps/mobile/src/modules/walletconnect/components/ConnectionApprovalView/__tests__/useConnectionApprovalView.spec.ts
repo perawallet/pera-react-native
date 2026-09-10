@@ -13,16 +13,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
+import { AppError } from '@perawallet/wallet-core-shared'
 import { useConnectionApprovalView } from '../useConnectionApprovalView'
 
-const { trackEvent, confirmQuantumDappUsage, errorToast } = vi.hoisted(() => ({
-    trackEvent: vi.fn(),
-    confirmQuantumDappUsage: vi.fn(
-        async (_accounts: string[]): Promise<'continue' | 'cancel'> =>
-            'continue',
-    ),
-    errorToast: vi.fn(),
-}))
+const { trackEvent, confirmQuantumDappUsage, errorToast, showError } =
+    vi.hoisted(() => ({
+        trackEvent: vi.fn(),
+        confirmQuantumDappUsage: vi.fn(
+            async (_accounts: string[]): Promise<'continue' | 'cancel'> =>
+                'continue',
+        ),
+        errorToast: vi.fn(),
+        showError: vi.fn(),
+    }))
 
 vi.mock('@analytics', async importOriginal => ({
     ...(await importOriginal<typeof import('@analytics')>()),
@@ -35,6 +38,10 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast }),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError }),
 }))
 
 const makeProposal = (overrides = {}) => ({
@@ -56,6 +63,7 @@ describe('useConnectionApprovalView', () => {
     afterEach(() => {
         trackEvent.mockClear()
         errorToast.mockClear()
+        showError.mockClear()
     })
 
     it('approves through the proposal, with no registry lookup', async () => {
@@ -92,8 +100,18 @@ describe('useConnectionApprovalView', () => {
         expect(result.current.selectedAccounts).toEqual([])
     })
 
-    it('surfaces an expired proposal without calling approve', async () => {
-        const proposal = makeProposal({ expiresAt: Date.now() - 1 })
+    // The handler owns the expiry verdict and throws a typed error; a second
+    // check here only lets the two answers drift.
+    it('surfaces the expired error the handler throws, and settles the proposal', async () => {
+        const expired = new AppError('This connection request has expired', {
+            messageKey: 'errors.walletconnect.session_request_expired_body',
+            retryable: false,
+        })
+        const proposal = makeProposal({
+            approve: vi.fn(async () => {
+                throw expired
+            }),
+        })
         const { result } = renderHook(() =>
             useConnectionApprovalView(proposal as never),
         )
@@ -101,18 +119,32 @@ describe('useConnectionApprovalView', () => {
         act(() => result.current.handleAccountPress('AAAA'))
         await act(() => result.current.handleConnect())
 
-        expect(proposal.approve).not.toHaveBeenCalled()
+        // main toasted this; the local pre-check that replaced it closed the
+        // sheet silently.
+        expect(showError).toHaveBeenCalledWith(expired, expect.any(String))
+        // Retrying an expired handshake can only fake-succeed.
+        expect(proposal.reject).toHaveBeenCalled()
     })
 
-    it('rejects an expired proposal instead of leaving it unsettled', async () => {
-        const proposal = makeProposal({ expiresAt: Date.now() - 1 })
+    it('keeps the sheet open for a retryable delivery failure', async () => {
+        const timeout = new AppError("Couldn't reach WalletConnect", {
+            messageKey: 'errors.walletconnect.connection_timeout_body',
+            retryable: true,
+        })
+        const proposal = makeProposal({
+            approve: vi.fn(async () => {
+                throw timeout
+            }),
+        })
         const { result } = renderHook(() =>
             useConnectionApprovalView(proposal as never),
         )
 
+        act(() => result.current.handleAccountPress('AAAA'))
         await act(() => result.current.handleConnect())
 
-        expect(proposal.reject).toHaveBeenCalled()
+        expect(errorToast).toHaveBeenCalled()
+        expect(proposal.reject).not.toHaveBeenCalled()
     })
 
     it('gates approval behind the quantum-dApp warning, before approve runs', async () => {

@@ -303,7 +303,7 @@ describe('createProposalQueue', () => {
             expect(approvals[0].close).not.toHaveBeenCalled()
         })
 
-        it('drops queued proposals for the subject and opens the next unrelated one', () => {
+        it('rejects queued proposals for the subject and opens the next unrelated one', () => {
             const { ui } = makeUi()
             const queue = createProposalQueue(ui)
             queue.enqueue(makeProposal('p1', 'pair-1'))
@@ -317,7 +317,9 @@ describe('createProposalQueue', () => {
             expect(vi.mocked(ui.openApproval).mock.calls[1][0].proposalId).toBe(
                 'p3',
             )
-            expect(doomed.reject).not.toHaveBeenCalled()
+            // Its connector stays bound for the request TTL, so dropping it
+            // without an answer leaves the peer waiting on a live socket.
+            expect(doomed.reject).toHaveBeenCalledTimes(1)
         })
 
         // The pairing became a session, so its errors carry the connection id.
@@ -386,5 +388,83 @@ describe('createProposalQueue', () => {
         for (const proposal of proposals) {
             expect(proposal.reject).toHaveBeenCalledWith('provider torn down')
         }
+    })
+
+    it('dismisses the sheet before the rejection is delivered', async () => {
+        // `reject` waits on a socket revival (up to 8s on a dead one) and the
+        // Cancel handler has no loading state, so awaiting delivery first
+        // leaves the sheet frozen and swallows re-taps.
+        const { ui, approvals, wrapped } = makeUi()
+        const queue = createProposalQueue(ui)
+        const proposal = makeProposal('p1', 'pair-1')
+        let finishReject = (): void => {}
+        proposal.reject.mockImplementation(
+            () =>
+                new Promise<void>(resolve => {
+                    finishReject = resolve
+                }),
+        )
+        queue.enqueue(proposal)
+
+        void wrapped(0).reject('user declined')
+        await flush()
+
+        expect(approvals[0].close).toHaveBeenCalledTimes(1)
+        finishReject()
+        await flush()
+    })
+
+    it('takes the open sheet off screen on teardown', () => {
+        // The pairing behind it has just been rejected; left up, the sheet
+        // offers Connect on a proposal nothing will answer.
+        const { ui, approvals } = makeUi()
+        const queue = createProposalQueue(ui)
+        queue.enqueue(makeProposal('p1'))
+
+        queue.teardown()
+
+        expect(approvals[0].close).toHaveBeenCalledTimes(1)
+    })
+
+    it('releases the queue when a sheet closes without a decision', async () => {
+        // `requestBottomSheet` resolves `closed` with no decision on a store
+        // reset or an unregistered host. Left set, `open` blocks every later
+        // proposal from ever being shown.
+        const { ui, approvals } = makeUi()
+        const queue = createProposalQueue(ui)
+        queue.enqueue(makeProposal('p1'))
+        queue.enqueue(makeProposal('p2'))
+
+        approvals[0].resolveClosed()
+        await flush()
+
+        expect(ui.openApproval).toHaveBeenCalledTimes(2)
+        expect(approvals[1].proposal?.proposalId).toBe('p2')
+    })
+
+    it('rejects a proposal whose sheet closed without a decision', async () => {
+        // The sheet cannot be brought back, so an unanswered peer would wait
+        // out its own timeout.
+        const { ui, approvals } = makeUi()
+        const queue = createProposalQueue(ui)
+        const proposal = makeProposal('p1')
+        queue.enqueue(proposal)
+
+        approvals[0].resolveClosed()
+        await flush()
+
+        expect(proposal.reject).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reject a proposal the user approved when its sheet then closes', async () => {
+        const { ui, approvals } = makeUi()
+        const queue = createProposalQueue(ui)
+        const proposal = makeProposal('p1')
+        queue.enqueue(proposal)
+
+        await approvals[0].proposal!.approve(['AAAA'])
+        await flush()
+
+        expect(proposal.reject).not.toHaveBeenCalled()
     })
 })

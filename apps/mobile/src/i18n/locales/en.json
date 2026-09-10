@@ -19,7 +19,8 @@
             },
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
             "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
-            "unauthorized_signer": "This site isn't authorized to request a signature for that account."
+            "unauthorized_signer": "This site isn't authorized to request a signature for that account.",
+            "connection_revoked": "This connection was disconnected. Reconnect from the site and try again."
         },
         "passkey": {
             "create": {
@@ -815,7 +816,8 @@
             "duplicate_kind": "Something went wrong setting up app connections. Please restart Pera and try again.",
             "already_initialized": "Something went wrong setting up app connections. Please restart Pera and try again.",
             "already_answered": "This request has already been answered.",
-            "no_subscriber": "Pera wasn't ready to handle this request. Please try again."
+            "no_subscriber": "Pera wasn't ready to handle this request. Please try again.",
+            "not_initialized": "Pera is still starting up. Please try connecting again in a moment."
         },
         "walletconnect": {
             "title": "An error occurred processing an app request",
@@ -2838,6 +2840,7 @@
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request.",
             "error_network_mismatch": "This app asked to connect on a different network, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
+            "error_delivery_failed": "Pera couldn't reach the app to deliver your answer, so it may still be waiting. Try again from the app.",
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts."
         },
         "connection": {

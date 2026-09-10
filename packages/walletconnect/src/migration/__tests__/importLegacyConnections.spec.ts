@@ -23,7 +23,13 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         },
     ),
     hasSecret: vi.fn((id: string) => secrets.has(id)),
-    withSecret: vi.fn(async () => null),
+    // A real read-back: the importer verifies by decrypting, not by presence.
+    withSecret: vi.fn(
+        async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+            const stored = secrets.get(id)
+            return stored ? handler(stored) : null
+        },
+    ),
     removeSecret: vi.fn(async () => {}),
     zeroBytes: vi.fn((bytes: Uint8Array) => bytes.fill(0)),
 }))
@@ -32,7 +38,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 // shared implementation rather than carrying its own.
 vi.mock('../../shared/peer', { spy: true })
 
-const { LEGACY_STORE_KEY, importLegacyConnections } =
+const { LEGACY_IMPORTED_IDS_KEY, LEGACY_STORE_KEY, importLegacyConnections } =
     await import('../importLegacyConnections')
 const { createConnectionStore } =
     await import('@perawallet/wallet-extension-connections')
@@ -445,6 +451,73 @@ describe('importLegacyConnections', () => {
         // The blob survives — 'bad' will be retried, forever if need be,
         // without ever losing 'a' and 'c'.
         expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
+    })
+
+    it('does not re-import a session the user disconnected after an earlier pass', async () => {
+        // The blob outlives a pass that could not verify every key, so it is
+        // read again next launch. Dedup against the live store alone cannot
+        // tell "never imported" from "imported and since disconnected", and
+        // the dApp comes back `active` with its socket revived.
+        const storage = makeStorage()
+        storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a', 'b']))
+        const store = createConnectionStore({ storage })
+        // 'b' never verifies, so the blob is kept and the run repeats.
+        commit.mockImplementation(async (clientId: string, key: string) => {
+            if (clientId !== 'b') keys.set(clientId, key)
+            return `wc1-session-key:${clientId}`
+        })
+
+        await importLegacyConnections({ storage, store, sessionKeys })
+        expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
+        await store.remove('a')
+
+        const second = await importLegacyConnections({
+            storage,
+            store,
+            sessionKeys,
+        })
+
+        expect(second.imported).toBe(0)
+        // 'b' is untouched — it was never disconnected; 'a' stays gone.
+        expect((await store.list()).map(({ id }) => id)).toEqual(['b'])
+        commit.mockImplementation(defaultCommit)
+    })
+
+    it('does not re-commit the key of a session the user disconnected, nor gate the blob on it', async () => {
+        // `disconnect` released the key. Committing it again would recreate a
+        // secret no record points at, and requiring it to read back would keep
+        // the plaintext blob on disk forever.
+        const storage = makeStorage()
+        storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a', 'b']))
+        const store = createConnectionStore({ storage })
+        commit.mockImplementation(async (clientId: string, key: string) => {
+            if (clientId !== 'b') keys.set(clientId, key)
+            return `wc1-session-key:${clientId}`
+        })
+        await importLegacyConnections({ storage, store, sessionKeys })
+        expect(storage.getItem(LEGACY_STORE_KEY)).not.toBeNull()
+
+        await store.remove('a')
+        await sessionKeys.remove('a')
+        commit.mockImplementation(defaultCommit)
+        commit.mockClear()
+
+        await importLegacyConnections({ storage, store, sessionKeys })
+
+        expect(commit).not.toHaveBeenCalledWith('a', expect.anything())
+        expect(keys.has('a')).toBe(false)
+        expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
+    })
+
+    it('drops the imported-ids marker with the blob', async () => {
+        const storage = makeStorage()
+        storage.setItem(LEGACY_STORE_KEY, legacyBlob(['a']))
+        const store = createConnectionStore({ storage })
+
+        await importLegacyConnections({ storage, store, sessionKeys })
+
+        expect(storage.getItem(LEGACY_STORE_KEY)).toBeNull()
+        expect(storage.getItem(LEGACY_IMPORTED_IDS_KEY)).toBeNull()
     })
 
     it('withholds deletion when a committed secret fails post-loop verification', async () => {

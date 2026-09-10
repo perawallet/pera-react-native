@@ -12,7 +12,12 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import {
     Arc0001Error,
     Arc0001ErrorCode,
@@ -72,6 +77,11 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     // sign-transactions path is driven from this file, so neither is used.
     arc60WireSchema: { safeParse: vi.fn() },
     parseArc60WireRequest: vi.fn(),
+    // Mirrors the real predicate: the class name, or the marker the
+    // WalletConnect rewrap keeps in the message.
+    isFeeAdjustmentDeliveryError: (error: Error) =>
+        error.name === 'FeeAdjustmentDeliveryError' ||
+        error.message.includes('fee-adjusted'),
 }))
 
 // A minimal double of `WalletAccount` — just the fields the two capability
@@ -142,7 +152,9 @@ const signDataMessage = (
 // silently passing through the bottom type.
 const makeRegistry = () => {
     let emit: ((m: InboundMessage) => void) | undefined
+    const reportError = vi.fn()
     const registry: ConnectionRegistry = {
+        reportError,
         register: vi.fn(),
         initialize: vi.fn(async () => {}),
         teardown: vi.fn(async () => {}),
@@ -161,6 +173,7 @@ const makeRegistry = () => {
     }
     return {
         registry,
+        reportError,
         send: (m: InboundMessage) => emit?.(m),
         isSubscribed: () => emit !== undefined,
     }
@@ -271,6 +284,164 @@ describe('useConnectionSigningAdapter', () => {
         await expect(transport.respondWithResult([])).rejects.toThrow(
             'socket dead',
         )
+    })
+
+    it('forwards the request id as payloadId so a resumed multisig handoff can answer the dApp', () => {
+        // `handoffDelivery` is gated on `payloadId`; without it a group whose
+        // app is killed mid-signing has no delivery channel on relaunch.
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '1747',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject: vi.fn(),
+        })
+
+        expect(lastTransport().payloadId).toBe(1747)
+    })
+
+    it('leaves payloadId unset for a correlation id that is not a plain integer', () => {
+        // The id is opaque by contract; a handler that numbers its requests
+        // otherwise gets no post-kill handoff rather than a NaN one.
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: 'thid:abc',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject: vi.fn(),
+        })
+
+        expect(lastTransport().payloadId).toBeUndefined()
+    })
+
+    it('leaves a retryable delivery failure to the signing machine: no peer answer, no error toast', async () => {
+        // The request has one answer. Rejecting on a dead socket that then
+        // revives consumes it, so the user's RETRY fails `already-answered`
+        // against a dApp that has already been told no. Reporting it would
+        // toast over the RETRY sheet the machine is already showing.
+        const { registry, reportError, send } = makeRegistry()
+        const reject = vi.fn(async () => {})
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject,
+        })
+        const timeout = new AppError('socket dead', {
+            severity: ErrorSeverity.HIGH,
+            category: ErrorCategory.CONNECTIONS,
+            retryable: true,
+        })
+
+        lastTransport().respondWithError(timeout)
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(reject).not.toHaveBeenCalled()
+        expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports a fee-adjusted delivery failure even though it is retryable, still without answering the peer', async () => {
+        // The RETRY sheet alone cannot explain this one: the user needs to
+        // hear that the dApp may not accept the higher fees.
+        const { registry, reportError, send } = makeRegistry()
+        const reject = vi.fn(async () => {})
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject,
+        })
+        const feeAdjusted = new AppError(
+            'The dApp rejected or failed to accept the fee-adjusted response',
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.CONNECTIONS,
+                retryable: true,
+            },
+        )
+
+        lastTransport().respondWithError(feeAdjusted)
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(reject).not.toHaveBeenCalled()
+        expect(reportError).toHaveBeenCalledWith(feeAdjusted, {
+            connectionId: 'c1',
+        })
+    })
+
+    it('answers the peer and reports a delivery failure the machine cannot retry', async () => {
+        const { registry, reportError, send } = makeRegistry()
+        const reject = vi.fn(async () => {})
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject,
+        })
+        const fatal = new Error('signing failed')
+
+        lastTransport().respondWithError(fatal)
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(reject).toHaveBeenCalledWith(fatal)
+        expect(reportError).toHaveBeenCalledWith(fatal, {
+            connectionId: 'c1',
+        })
+    })
+
+    it('reports a refused request on the error channel, not only to the peer', async () => {
+        // Otherwise a request the adapter turns away closes with no toast.
+        const { registry, reportError, send } = makeRegistry()
+        const violation = new Error('Invalid base64 in transaction 0')
+        mockResolve.mockImplementationOnce(() => {
+            throw violation
+        })
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject: vi.fn(async () => {}),
+        })
+
+        expect(reportError).toHaveBeenCalledWith(violation, {
+            connectionId: 'c1',
+        })
     })
 
     it('swallows a failed rejection delivery instead of leaking it', async () => {

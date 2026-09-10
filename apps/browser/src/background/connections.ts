@@ -11,14 +11,15 @@
  */
 
 import {
-    CONNECTIONS_CONTROL_SCOPE,
     isConnectionApprovalRequestMessage,
     isTrustedExtensionPageSender,
+    sendConnectionsControlMessage,
     type ApprovalWindowBridge,
     type ConnectionsAck,
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-extension-platform-chrome'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import { ensureOffscreenDocument } from './offscreen'
 
 export const CONNECTIONS_HEARTBEAT_ALARM = 'pera-connections-heartbeat'
 const LEGACY_HEARTBEAT_ALARM = 'pera-wc-heartbeat'
@@ -41,21 +42,66 @@ const peerOrigin = (peer: ConnectionPeer | undefined): string => {
 export const installConnectionsApprovalRouter = ({
     approvals,
     chromeLike = chrome,
+    ensureOffscreenDocumentLike = ensureOffscreenDocument,
 }: {
     approvals: ApprovalWindowBridge
     chromeLike?: typeof chrome
+    ensureOffscreenDocumentLike?: () => Promise<void>
 }): void => {
-    // A raw send, not `sendConnectionsControlMessage`: its ensure-offscreen
-    // ping is a message the service worker would be sending to itself.
-    const control = (command: ConnectionsControlCommand): void => {
-        void chromeLike.runtime
-            .sendMessage({ scope: CONNECTIONS_CONTROL_SCOPE, ...command })
+    // Every user decision travels this way, and the approval window has already
+    // closed on success, so an unanswered send is a dApp that never hears back.
+    // The retry budget covers the offscreen document being recreated under it
+    // (`runOffscreenApp` closes the window when the DB worker dies); the
+    // ensure step is the service worker's own, not the UI realm's ping to it.
+    //
+    // Resolves false when the command did not take: the budget ran out, or the
+    // host answered `{ ok: false }` because delivery to the peer failed (dead
+    // WalletConnect socket, expired handshake). Dropped, that reads to the user
+    // as success.
+    const control = async (
+        command: ConnectionsControlCommand,
+    ): Promise<boolean> => {
+        try {
+            await sendConnectionsControlMessage(command, {
+                chromeLike,
+                ensureHost: () => ensureOffscreenDocumentLike(),
+            })
+            return true
+        } catch (error) {
+            console.error(
+                `[pera] connections control '${command.kind}' failed:`,
+                error,
+            )
+            return false
+        }
+    }
+
+    // The decision window is gone by now, so this notice is the only surface
+    // left; without it the user is told nothing and assumes the dApp heard.
+    const notifyDeliveryFailed = (peer: ConnectionPeer | undefined): void => {
+        void approvals
+            .openConnectionError({
+                requestId: `connection-error-${crypto.randomUUID()}`,
+                origin: peerOrigin(peer),
+                faviconUrl: peer?.icons?.[0],
+                reason: 'delivery-failed',
+                peer,
+            })
             .catch((error: unknown) => {
                 console.error(
-                    `[pera] connections control '${command.kind}' failed:`,
+                    '[pera] delivery-failure notice failed to open:',
                     error,
                 )
             })
+    }
+
+    const controlOrNotify = (
+        command: ConnectionsControlCommand,
+        peer: ConnectionPeer | undefined,
+    ): void => {
+        void control(command).then(delivered => {
+            if (!delivered) notifyDeliveryFailed(peer)
+        })
     }
 
     chromeLike.runtime.onMessage.addListener(
@@ -81,15 +127,16 @@ export const installConnectionsApprovalRouter = ({
                             requesterOrigin: request.requesterOrigin,
                         })
                         .then(decision => {
-                            if (decision) {
-                                control({
-                                    kind: 'approve-proposal',
-                                    proposalId,
-                                    accounts: decision.approvedAddresses,
-                                })
-                            } else {
-                                control({ kind: 'reject-proposal', proposalId })
-                            }
+                            controlOrNotify(
+                                decision
+                                    ? {
+                                          kind: 'approve-proposal',
+                                          proposalId,
+                                          accounts: decision.approvedAddresses,
+                                      }
+                                    : { kind: 'reject-proposal', proposalId },
+                                request.peer,
+                            )
                         })
                         .catch((error: unknown) => {
                             // Nothing else answers the peer if the window never opened.
@@ -97,7 +144,7 @@ export const installConnectionsApprovalRouter = ({
                                 '[pera] connection-proposal approval window failed to open:',
                                 error,
                             )
-                            control({
+                            void control({
                                 kind: 'reject-proposal',
                                 proposalId,
                                 reason: 'Approval window failed to open',
@@ -121,24 +168,27 @@ export const installConnectionsApprovalRouter = ({
                             peer: request.peer,
                         })
                         .then(decision => {
-                            control({
-                                kind: 'respond',
-                                connectionId,
-                                correlationId,
-                                outcome: decision
-                                    ? { ok: true, result: decision.result }
-                                    : {
-                                          ok: false,
-                                          message: 'Request declined',
-                                      },
-                            })
+                            controlOrNotify(
+                                {
+                                    kind: 'respond',
+                                    connectionId,
+                                    correlationId,
+                                    outcome: decision
+                                        ? { ok: true, result: decision.result }
+                                        : {
+                                              ok: false,
+                                              message: 'Request declined',
+                                          },
+                                },
+                                request.peer,
+                            )
                         })
                         .catch((error: unknown) => {
                             console.error(
                                 '[pera] connection-request approval window failed to open:',
                                 error,
                             )
-                            control({
+                            void control({
                                 kind: 'respond',
                                 connectionId,
                                 correlationId,

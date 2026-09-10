@@ -129,6 +129,23 @@ describe('parseArc60WireRequest', () => {
             }),
         ).toThrow(Arc60BadRequestError)
     })
+
+    it('accepts padded base64url authenticatorData, which base64-js decodes', () => {
+        // `-` and `_` land in roughly four in five random 37-byte payloads,
+        // and SIWA producers emit them; a §4-only alphabet would reject
+        // requests that have always worked.
+        const urlSafe = encodeToBase64(new Uint8Array(37).fill(251))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+        expect(urlSafe).toMatch(/[-_]/)
+
+        const { stdSigData } = parseArc60WireRequest({
+            ...validWireRequest,
+            authenticatorData: urlSafe,
+        })
+
+        expect(stdSigData.authenticatorData.length).toBe(37)
+    })
 })
 
 describe('isArc60OriginMismatch', () => {

@@ -12,12 +12,13 @@
 
 import { useCallback, useRef, useState } from 'react'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
-import { logger } from '@perawallet/wallet-core-shared'
+import { AppError, logger, toError } from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
     WalletConnectEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
@@ -38,6 +39,7 @@ export const useConnectionApprovalView = (
 ): UseConnectionApprovalViewResult => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const { showError } = useErrorToast()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
@@ -87,21 +89,10 @@ export const useConnectionApprovalView = (
         if (isHandlingRef.current) return
         isHandlingRef.current = true
         try {
-            // The peer's side of the handshake expires long before a queued approval
-            // reaches this button, so approving can only fake-succeed; decline so the
-            // proposal still settles. Before the quantum warning: a dead proposal never shows it.
-            if (Date.now() > proposal.expiresAt) {
-                try {
-                    await proposal.reject('expired')
-                } catch (error) {
-                    logger.error(
-                        'Failed to reject an expired connection proposal',
-                        { error },
-                    )
-                }
-                return
-            }
-
+            // No expiry pre-check here: the handler owns that verdict and
+            // throws a typed error the catch below maps to copy, and a second
+            // check only lets the two answers drift.
+            //
             // Before approve, so a 'cancel' can't leave a half-approved connection;
             // this await is the async gap `isHandlingRef` covers.
             const decision = await confirmQuantumDappUsage(selectedAccounts)
@@ -121,16 +112,25 @@ export const useConnectionApprovalView = (
                         selectedAccounts.length,
                 })
             } catch (error) {
-                // Delivery failure (dead socket that couldn't be revived,
-                // etc.): keep the sheet open so Connect can simply be
-                // retried — this deliberately does not reject the proposal.
                 logger.error('Failed to approve a connection proposal', {
                     error,
                 })
-                errorToast(
-                    t('walletconnect.request.error_sheet_title'),
-                    t('walletconnect.connection.approve_delivery_failed'),
-                )
+                // Only a failure the handler positively types as terminal —
+                // an expired handshake above all — settles the proposal;
+                // anything else keeps the sheet open so Connect can simply be
+                // pressed again, and deliberately does not reject.
+                if (error instanceof AppError && !error.metadata.retryable) {
+                    showError(
+                        error,
+                        t('walletconnect.request.error_sheet_title'),
+                    )
+                    await rejectProposal(toError(error).message)
+                } else {
+                    errorToast(
+                        t('walletconnect.request.error_sheet_title'),
+                        t('walletconnect.connection.approve_delivery_failed'),
+                    )
+                }
             } finally {
                 setIsConnecting(false)
             }
@@ -143,6 +143,7 @@ export const useConnectionApprovalView = (
         confirmQuantumDappUsage,
         rejectProposal,
         errorToast,
+        showError,
         t,
     ])
 

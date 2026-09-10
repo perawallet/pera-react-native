@@ -105,7 +105,9 @@ plaintext key-value storage. The keystore store fixes at-rest exposure on native
 socket's lifetime either way.
 
 `importLegacyConnections` (`src/migration/importLegacyConnections.ts`) takes the same store, deletes
-the legacy blob only once every committed key reads back, and is crash-resumable.
+the legacy blob only once every committed key reads back, and is crash-resumable. It keeps its own
+set of imported ids: the blob outlives a partial pass, and the live store alone cannot tell a record
+that was never imported from one the user has since disconnected.
 
 ## Origins
 

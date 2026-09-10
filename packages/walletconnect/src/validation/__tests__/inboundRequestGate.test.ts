@@ -134,6 +134,7 @@ describe('gateSignTxnRequest', () => {
         expect(result).toEqual({
             ok: false,
             reason: 'session not found — please disconnect and reconnect the dapp',
+            code: 'session-not-found',
         })
     })
 
@@ -229,6 +230,7 @@ describe('gateSignDataRequest', () => {
         expect(result).toEqual({
             ok: false,
             reason: 'session not found — please disconnect and reconnect the dapp',
+            code: 'session-not-found',
         })
     })
 
@@ -256,6 +258,7 @@ describe('gateSignDataRequest', () => {
         expect(result).toEqual({
             ok: false,
             reason: 'Invalid ARC-60 sign request payload — request exceeds the maximum allowed size',
+            code: 'invalid-request',
         })
     })
 })

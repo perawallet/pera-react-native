@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => {
         isArc60WirePayload: vi.fn(),
         parseArc60WireRequest: vi.fn(),
         enqueueInboundRequest: vi.fn(),
+        isConnectionAlive: vi.fn(() => true),
         resolveSignTransactions: vi.fn(),
         resolveSignMessage: vi.fn(),
         resolveConnectionRequest: vi.fn(),
@@ -66,6 +67,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-connections', () => ({
     enqueueInboundRequest: mocks.enqueueInboundRequest,
+    isConnectionAlive: mocks.isConnectionAlive,
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
@@ -157,6 +159,8 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.decodeWalletOperation.mockReset()
         mocks.encodeWalletOperationResult.mockReset()
         mocks.removeSignRequest.mockReset()
+        mocks.isConnectionAlive.mockReset()
+        mocks.isConnectionAlive.mockReturnValue(true)
 
         mocks.resolveConnectionRequest.mockResolvedValue(undefined)
         mocks.decodeWalletOperation.mockImplementation(
@@ -594,7 +598,7 @@ describe('useSignRequestApprovalScreen', () => {
                 authorizedAccounts: ['ADDR'],
                 peer: PEER,
             })
-            expect(deps).toEqual({
+            expect(deps).toMatchObject({
                 resolveArc0001: mocks.resolve,
                 enqueueArc0001: mocks.enqueue,
                 addSignRequest: mocks.addSignRequest,
@@ -647,6 +651,27 @@ describe('useSignRequestApprovalScreen', () => {
                 wire: result,
             })
             expect(closeSpy).toHaveBeenCalled()
+        })
+
+        it('refuses to sign against a connection the user revoked while the window was open', async () => {
+            // The grant on the message is the snapshot taken when the request
+            // arrived; without this the window signs for a session that no
+            // longer exists and nothing on screen says so.
+            mocks.isConnectionAlive.mockReturnValue(false)
+
+            const { result } = renderHook(() => useSignRequestApprovalScreen())
+
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
+            expect(mocks.rejectApproval).toHaveBeenCalledWith('cr1')
+            expect(result.current.error).toBe('dapp.sign.connection_revoked')
+        })
+
+        it('surfaces an adapter failure in the window instead of closing it silently', () => {
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(
+                typeof mocks.enqueueInboundRequest.mock.calls[0][1].onError,
+            ).toBe('function')
         })
 
         it('reject rejects the approval and closes the window', async () => {

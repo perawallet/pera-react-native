@@ -82,6 +82,15 @@ const CONTROL_RETRY_DELAY_MS = 400
 const sleep = (ms: number): Promise<void> =>
     new Promise(resolve => setTimeout(resolve, ms))
 
+export type SendConnectionsControlOptions = {
+    /**
+     * Runs before every attempt. Overridden by the service worker, which owns
+     * `chrome.offscreen` directly and would otherwise be pinging itself.
+     */
+    ensureHost?: () => Promise<void>
+    chromeLike?: typeof chrome
+}
+
 /**
  * An unanswered send retries within a bounded budget: the host is legitimately
  * absent while the offscreen document is recreated or booting, and it answers
@@ -91,13 +100,16 @@ export const sendConnectionsControlMessage = async <
     M extends ConnectionsControlCommand,
 >(
     message: M,
+    options?: SendConnectionsControlOptions,
 ): Promise<ConnectionsControlResult<M['kind']>> => {
+    const chromeLike = options?.chromeLike ?? chrome
+    const ensureHost = options?.ensureHost ?? ensureOffscreenHost
     const deadline = Date.now() + CONTROL_ACK_BUDGET_MS
     for (;;) {
-        await ensureOffscreenHost()
+        await ensureHost()
         let response: unknown
         try {
-            response = await chrome.runtime.sendMessage({
+            response = await chromeLike.runtime.sendMessage({
                 scope: CONNECTIONS_CONTROL_SCOPE,
                 ...message,
             })

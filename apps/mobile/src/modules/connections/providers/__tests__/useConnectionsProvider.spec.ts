@@ -21,6 +21,7 @@ import {
 } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import { AppError } from '@perawallet/wallet-core-shared'
+import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import i18n from '@i18n/index'
 import type { ReactElement } from 'react'
@@ -511,6 +512,25 @@ describe('useConnectionsProvider', () => {
 
             const [{ body }] = showToast.mock.calls[0] as [{ body: string }]
             expect(body).not.toContain('0.txn')
+        })
+
+        // The adapter reaches this channel through `registry.reportError`, so
+        // a fee-adjusted delivery failure over WalletConnect gets the
+        // dApp-compat copy rather than the generic one.
+        it('toasts the fee-adjustment copy for a fee-adjusted delivery failure', () => {
+            renderHook(() => useConnectionsProvider())
+
+            errorSubscription.listener?.(
+                new FeeAdjustmentDeliveryError(
+                    'The dApp rejected or failed to accept the fee-adjusted response',
+                ),
+                scoped('client-1'),
+            )
+
+            const [{ body }] = showToast.mock.calls[0] as [{ body: string }]
+            expect(body).toBe(
+                i18n.t('walletconnect.request.quantum_fee_delivery_failed'),
+            )
         })
 
         it('toasts the declared messageKey copy for a typed registry error', () => {
