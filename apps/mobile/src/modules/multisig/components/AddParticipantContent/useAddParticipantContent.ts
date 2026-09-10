@@ -12,8 +12,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AccountTypes, useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    AccountSigTypes,
+    useAccountSigTypeQuery,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import {
     ParticipantIsMultisigError,
     ParticipantIsQuantumError,
@@ -46,22 +49,29 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     const { network } = useNetwork()
     const { errorToast } = useToast()
     const accounts = useAllAccounts()
-    const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
     const [selectedNfdName, setSelectedNfdName] = useState<Optional<string>>()
     const { resolve, dismiss } = useBottomSheetResult<AddParticipantResult>()
 
-    const isLocalEntity = useMemo(
-        () =>
-            accounts.some(a => a.address === selectedAddress) ||
-            contacts.some(c => c.address === selectedAddress),
-        [accounts, contacts, selectedAddress],
+    const isLocalAccount = useMemo(
+        () => accounts.some(a => a.address === selectedAddress),
+        [accounts, selectedAddress],
     )
 
     const multisigCheck = useIsMultisigAddressQuery({
         network,
         address: selectedAddress,
-        enabled: !!selectedAddress && !isLocalEntity,
+        enabled: !!selectedAddress && !isLocalAccount,
+    })
+
+    // A post-quantum address is a hash of the PQ key — indistinguishable from
+    // an Ed25519 address offline — so external addresses (QR scans included)
+    // are classified by the indexer's observed sig-type. An account that never
+    // signed on chain stays unknown and passes; nothing client-visible can
+    // classify it.
+    const sigTypeCheck = useAccountSigTypeQuery({
+        address: selectedAddress,
+        enabled: !!selectedAddress && !isLocalAccount,
     })
 
     const showValidationError = useCallback(
@@ -93,10 +103,22 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
     )
 
     useEffect(() => {
-        if (!selectedAddress || multisigCheck.isFetching) return
+        if (
+            !selectedAddress ||
+            multisigCheck.isFetching ||
+            sigTypeCheck.isFetching
+        )
+            return
 
         if (multisigCheck.data?.isMultisig) {
             showValidationError(new ParticipantIsMultisigError())
+            setSelectedAddress('')
+            setSelectedNfdName(undefined)
+            return
+        }
+
+        if (sigTypeCheck.sigType === AccountSigTypes.pqsig) {
+            showValidationError(new ParticipantIsQuantumError())
             setSelectedAddress('')
             setSelectedNfdName(undefined)
             return
@@ -110,6 +132,8 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
         selectedNfdName,
         multisigCheck.data?.isMultisig,
         multisigCheck.isFetching,
+        sigTypeCheck.sigType,
+        sigTypeCheck.isFetching,
         resolve,
         showValidationError,
     ])
@@ -129,14 +153,13 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
                 resolve({ address, nfdName })
                 return
             }
-            if (contacts.some(c => c.address === address)) {
-                resolve({ address, nfdName })
-                return
-            }
+            // Contacts are only saved addresses — their account type is
+            // unknown, so they need the same remote validation as any other
+            // external address.
             setSelectedAddress(address)
             setSelectedNfdName(nfdName)
         },
-        [accounts, contacts, resolve, showValidationError],
+        [accounts, resolve, showValidationError],
     )
 
     return { handleSelected, dismiss }

@@ -30,6 +30,11 @@ const multisigCheckState: {
     isFetching: boolean
 } = { data: undefined, isFetching: false }
 
+const sigTypeCheckState: {
+    sigType: string | null
+    isFetching: boolean
+} = { sigType: null, isFetching: false }
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
@@ -66,12 +71,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         subscribe: () => () => {},
     },
     useNetwork: () => ({ network: 'testnet' }),
-}))
-
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: () => ({
-        contacts: [{ address: CONTACT_ADDR, name: 'Bob' }],
-    }),
+    AccountSigTypes: { sig: 'sig', msig: 'msig', lsig: 'lsig', pqsig: 'pqsig' },
+    useAccountSigTypeQuery: () => sigTypeCheckState,
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', async () => {
@@ -89,6 +90,8 @@ describe('useAddParticipantContent', () => {
         vi.clearAllMocks()
         multisigCheckState.data = undefined
         multisigCheckState.isFetching = false
+        sigTypeCheckState.sigType = null
+        sigTypeCheckState.isFetching = false
     })
 
     it('resolves immediately with the address when the user picks a local non-watch account', () => {
@@ -133,17 +136,69 @@ describe('useAddParticipantContent', () => {
         )
     })
 
-    it('resolves immediately when the user picks a contact', () => {
+    it('validates a contact address like any external one before resolving', async () => {
+        multisigCheckState.data = { isMultisig: false }
         const { result } = renderHook(() => useAddParticipantContent())
 
         act(() => {
             result.current.handleSelected(CONTACT_ADDR)
         })
 
-        expect(mockResolve).toHaveBeenCalledWith({
-            address: CONTACT_ADDR,
-            nfdName: undefined,
+        await waitFor(() =>
+            expect(mockResolve).toHaveBeenCalledWith({
+                address: CONTACT_ADDR,
+                nfdName: undefined,
+            }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('shows a quantum-account error toast and does not resolve when the contact address signs with a post-quantum key', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        sigTypeCheckState.sigType = 'pqsig'
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(CONTACT_ADDR)
         })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.add_participant.cannot_add_quantum_error',
+                'multisig.add_participant.cannot_add_quantum_error_body',
+            ),
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it('shows a quantum-account error toast and does not resolve when the external (QR-scanned) address signs with a post-quantum key', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        sigTypeCheckState.sigType = 'pqsig'
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(EXTERNAL_ADDR)
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'multisig.add_participant.cannot_add_quantum_error',
+                'multisig.add_participant.cannot_add_quantum_error_body',
+            ),
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it('waits for the sig-type check before resolving an external address', async () => {
+        multisigCheckState.data = { isMultisig: false }
+        sigTypeCheckState.isFetching = true
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(EXTERNAL_ADDR)
+        })
+
+        expect(mockResolve).not.toHaveBeenCalled()
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
