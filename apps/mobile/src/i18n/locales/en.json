@@ -2047,6 +2047,18 @@
             "pin_description": "This 6-digit PIN will be required to use the Pera Wallet. We highly recommend creating a PIN to help increase wallet security in the event your phone is stolen.",
             "pin_setpin": "Set PIN Code",
             "pin_notnow": "Not now"
+        },
+        "cloud_backup_intro": {
+            "badge": "CLOUD BACKUP",
+            "title": "Back up your wallet",
+            "description": "Protect your accounts and contacts with secure cloud synchronization.",
+            "encryption_title": "Secure Encryption",
+            "encryption_description": "Your data is encrypted locally with your Encryption Key before being uploaded.",
+            "sync_title": "Multi-device Sync",
+            "sync_description": "Access your contacts and account names seamlessly across all your devices.",
+            "recovery_title": "Account Recovery",
+            "recovery_description": "Easily restore your information when switching to a new phone or reinstalling the app.",
+            "continue": "Continue"
         }
     },
     "quantum": {

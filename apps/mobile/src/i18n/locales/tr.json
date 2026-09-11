@@ -2047,6 +2047,18 @@
             "pin_description": "Pera Wallet’ı kullanmak için bu 6 haneli PIN kodu gerekli olacak. Telefonunun çalınması durumunda cüzdan güvenliğini artırmaya yardımcı olması için bir PIN kodu oluşturmanı önemle öneriyoruz.",
             "pin_setpin": "PIN kodu belirle",
             "pin_notnow": "Şimdi değil"
+        },
+        "cloud_backup_intro": {
+            "badge": "BULUT YEDEKLEME",
+            "title": "Cüzdanını yedekle",
+            "description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru.",
+            "encryption_title": "Güvenli şifreleme",
+            "encryption_description": "Verilerin, yüklenmeden önce şifreleme anahtarınla cihazında şifrelenir.",
+            "sync_title": "Çoklu cihaz eşitleme",
+            "sync_description": "Kişilerine ve hesap adlarına tüm cihazlarından sorunsuzca eriş.",
+            "recovery_title": "Hesap geri yükleme",
+            "recovery_description": "Yeni bir telefona geçtiğinde veya uygulamayı yeniden yüklediğinde bilgilerini kolayca geri yükle.",
+            "continue": "Devam et"
         }
     },
     "quantum": {

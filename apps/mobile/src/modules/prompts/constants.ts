@@ -38,6 +38,8 @@ export const PromptPriority = {
      * softest banner, less urgent than the PIN setup nudge.
      */
     legacyQuantumNotice: 150,
-    /** Banners marked autoOpenMode: 'select' — the softest interruption. */
+    /** Banners marked autoOpenMode: 'select'. */
     autoOpenBanner: 100,
+    /** Asks nothing of the user, so it yields to every other prompt. */
+    cloudBackupIntro: 50,
 } as const

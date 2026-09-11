@@ -2062,6 +2062,18 @@
             "pin_description": "Este código PIN de 6 dígitos será necessário para usar a Pera Wallet. Recomendamos criar um código PIN para aumentar a segurança da wallet caso seu celular seja roubado.",
             "pin_setpin": "Definir código PIN",
             "pin_notnow": "Agora não"
+        },
+        "cloud_backup_intro": {
+            "badge": "BACKUP NA NUVEM",
+            "title": "Faça backup da sua wallet",
+            "description": "Proteja suas contas e contatos com sincronização segura na nuvem.",
+            "encryption_title": "Criptografia segura",
+            "encryption_description": "Seus dados são criptografados localmente com sua chave de criptografia antes de serem enviados.",
+            "sync_title": "Sincronização entre dispositivos",
+            "sync_description": "Acesse seus contatos e os nomes das suas contas facilmente em todos os seus dispositivos.",
+            "recovery_title": "Recuperação de conta",
+            "recovery_description": "Restaure suas informações facilmente ao trocar de celular ou reinstalar o app.",
+            "continue": "Continuar"
         }
     },
     "quantum": {

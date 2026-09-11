@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { NumberedList } from './NumberedList'
-export type { NumberedListItem, NumberedListProps } from './NumberedList'
+export { CloudBackupIntroPrompt } from './CloudBackupIntroPrompt'
