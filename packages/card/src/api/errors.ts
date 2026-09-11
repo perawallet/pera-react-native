@@ -164,12 +164,19 @@ export const getCardApiError = async (
     if (typeof body !== 'object' || body === null) return { status }
 
     const record = body as Record<string, unknown>
-    const code = firstString(record, ['code', 'errorCode', 'error'])
-    const message = firstString(record, [
-        'message',
-        'detail',
-        'error_description',
-    ])
+    // `type`/`details`/`data.message` are AppliedBlockchain's escrow error shape.
+    const code = firstString(record, ['code', 'errorCode', 'error', 'type'])
+    const data = record.data
+    const message =
+        firstString(record, [
+            'message',
+            'detail',
+            'details',
+            'error_description',
+        ]) ??
+        (typeof data === 'object' && data !== null
+            ? firstString(data as Record<string, unknown>, ['message'])
+            : undefined)
 
     // Baanx wraps the real error as a JSON string inside `message` — unwrap it so
     // callers see the actual status/code/message instead of an opaque blob.

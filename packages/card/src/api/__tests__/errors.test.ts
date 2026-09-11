@@ -101,6 +101,36 @@ describe('getCardApiError', () => {
         })
     })
 
+    it("reads AppliedBlockchain's escrow shape (type + details, or data.message)", async () => {
+        expect(
+            await getCardApiError({
+                response: { status: 400 },
+                data: {
+                    type: 'SIGNATURE_VERIFICATION_FAILED',
+                    details: 'signature does not match the delegator',
+                },
+            }),
+        ).toEqual({
+            status: 400,
+            code: 'SIGNATURE_VERIFICATION_FAILED',
+            message: 'signature does not match the delegator',
+        })
+
+        expect(
+            await getCardApiError({
+                response: { status: 400 },
+                data: {
+                    type: 'CARD_OWNERSHIP_MISMATCH',
+                    data: { message: 'card is not owned by delegator' },
+                },
+            }),
+        ).toEqual({
+            status: 400,
+            code: 'CARD_OWNERSHIP_MISMATCH',
+            message: 'card is not owned by delegator',
+        })
+    })
+
     it('prefers clone() so the original stream is untouched', async () => {
         const json = vi.fn().mockResolvedValue({ code: 'X' })
         const originalJson = vi.fn()

@@ -937,7 +937,11 @@
             "report_suspicious_before_confirm": "Continuar o registro",
             "error_title": "Algo deu errado",
             "error_body": "Tente novamente.",
-            "setup_incomplete": "Configuração incompleta"
+            "setup_incomplete": "Configuração incompleta",
+            "auto_funding_unavailable_title": "O financiamento automático ainda não está disponível",
+            "auto_funding_unavailable_body": "Este cartão não pode ser autorizado para financiamento automático agora. Você pode continuar usando o financiamento manual.",
+            "auto_funding_rejected_title": "Autorização de financiamento automático recusada",
+            "auto_funding_rejected_body": "Não foi possível verificar a autorização. Tente novamente ou continue usando o financiamento manual."
         },
         "transactions": {
             "navigation_title": "Transações",
@@ -1292,6 +1296,12 @@
             "create_card_account_error_body": "A criação do cartão exige uma assinatura que este tipo de conta não fornece. Conecte uma conta Pera padrão como sua fonte de financiamento.",
             "linked_elsewhere_error_title": "Conta já vinculada",
             "linked_elsewhere_error_body": "Esta conta já está vinculada a outro perfil do Pera Card. Conecte outra conta como sua fonte de financiamento.",
+            "create_in_progress_title": "A criação do cartão já está em andamento",
+            "create_in_progress_body": "Outra solicitação ainda está criando um cartão para esta conta. Aguarde um momento e tente novamente.",
+            "setup_incomplete_error_title": "Conclua primeiro a configuração da sua conta",
+            "setup_incomplete_error_body": "Sua conta Pera Card ainda não está pronta para um cartão. Conclua as etapas restantes e tente novamente.",
+            "create_card_unavailable_title": "Não foi possível confirmar seu cartão na rede",
+            "create_card_unavailable_body": "O cartão não foi criado e nada foi cobrado. Tente novamente em instantes.",
             "auto_funding_degraded_title": "Cartão criado",
             "auto_funding_degraded_body": "Não foi possível ativar o financiamento automático agora, então seu cartão começa com o financiamento manual. Você pode mudar depois nas configurações do cartão."
         },

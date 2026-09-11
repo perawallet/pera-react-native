@@ -929,7 +929,11 @@
             "report_suspicious_before_confirm": "Mit Meldung fortfahren",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Bitte versuche es erneut.",
-            "setup_incomplete": "Einrichtung nicht abgeschlossen"
+            "setup_incomplete": "Einrichtung nicht abgeschlossen",
+            "auto_funding_unavailable_title": "Auto-Funding ist noch nicht verfügbar",
+            "auto_funding_unavailable_body": "Diese Karte kann derzeit nicht für Auto-Funding autorisiert werden. Du kannst weiterhin die manuelle Finanzierung nutzen.",
+            "auto_funding_rejected_title": "Auto-Funding-Autorisierung abgelehnt",
+            "auto_funding_rejected_body": "Die Autorisierung konnte nicht bestätigt werden. Versuche es erneut oder nutze weiterhin die manuelle Finanzierung."
         },
         "transactions": {
             "navigation_title": "Transaktionen",
@@ -1282,6 +1286,12 @@
             "create_card_account_error_body": "Die Kartenerstellung erfordert eine Signatur, die dieser Kontotyp nicht bereitstellen kann. Verbinde ein Standard-Pera-Konto als Finanzierungsquelle.",
             "linked_elsewhere_error_title": "Konto bereits verknüpft",
             "linked_elsewhere_error_body": "Dieses Konto ist bereits mit einem anderen Pera Card Profil verknüpft. Verbinde ein anderes Konto als Finanzierungsquelle.",
+            "create_in_progress_title": "Kartenerstellung läuft bereits",
+            "create_in_progress_body": "Eine andere Anfrage erstellt gerade eine Karte für dieses Konto. Warte einen Moment und versuche es erneut.",
+            "setup_incomplete_error_title": "Schließe zuerst die Kontoeinrichtung ab",
+            "setup_incomplete_error_body": "Dein Pera Card Konto ist noch nicht bereit für eine Karte. Schließe die restlichen Schritte ab und versuche es erneut.",
+            "create_card_unavailable_title": "Karte konnte im Netzwerk nicht bestätigt werden",
+            "create_card_unavailable_body": "Die Karte wurde nicht erstellt und nichts wurde belastet. Bitte versuche es gleich noch einmal.",
             "auto_funding_degraded_title": "Karte erstellt",
             "auto_funding_degraded_body": "Auto-Funding konnte gerade nicht aktiviert werden, daher startet deine Karte mit manueller Finanzierung. Du kannst später in den Karteneinstellungen wechseln."
         },

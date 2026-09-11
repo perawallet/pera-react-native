@@ -14,9 +14,15 @@ import {
     addDeviceIntegrityHeader,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { getCardApiError } from '../errors'
+import { getCardApiError, type CardApiError } from '../errors'
 import { getCardTransport } from '../transport'
-import { CardAccountLinkedElsewhereError } from './errors'
+import {
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+} from './errors'
 import { createCardResponseSchema } from './schema'
 
 /** ARC-60 `StdSigData`, base64-encoded for the wire. */
@@ -102,12 +108,30 @@ export const createCard = async (
         })
         return createCardResponseSchema.parse(response.data)
     } catch (error) {
-        // The route's only 400 is the linked-elsewhere conflict (malformed
-        // bodies are 422s), and it is terminal for this address — typed so
-        // the UI can say more than "try again".
-        if ((await getCardApiError(error)).status === 400) {
-            throw new CardAccountLinkedElsewhereError()
-        }
-        throw error
+        throw mapCreateCardError(error, await getCardApiError(error))
     }
+}
+
+// The backend answers with a stable `code`; the 400 fallback stays because the
+// route's only 400 is the linked-elsewhere conflict (malformed bodies are 422s).
+const mapCreateCardError = (
+    error: unknown,
+    { code, status }: CardApiError,
+): unknown => {
+    if (code === 'ACCOUNT_LINKED_ELSEWHERE' || status === 400) {
+        return new CardAccountLinkedElsewhereError()
+    }
+    if (code === 'CREATE_IN_PROGRESS') {
+        return new CardCreateInProgressError()
+    }
+    if (code === 'BAANX_ACCOUNT_NOT_FOUND') {
+        return new CardSetupIncompleteError()
+    }
+    if (status === 401) {
+        return new CardOwnershipProofRejectedError(code)
+    }
+    if (status !== undefined && status >= 500) {
+        return new CardCreateUnavailableError(code)
+    }
+    return error
 }

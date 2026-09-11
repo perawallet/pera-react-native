@@ -70,8 +70,8 @@ vi.mock('@modules/card/hooks', () => ({
         createAndApprove: mockCreateAndApprove,
     }),
     useFinishCardCreation: () => ({ finish: mockFinish }),
-    // Records the per-instance keys so tests can tell the generic handler
-    // (no options) apart from the linked-elsewhere one.
+    // Records the options too, so a test can prove the screen relies on the
+    // shared handler's copy resolution instead of passing its own keys.
     useCardErrorToast:
         (options?: unknown) =>
         (error: unknown): Promise<void> =>
@@ -220,7 +220,7 @@ describe('useCardCreateSigningScreen', () => {
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, false)
     })
 
-    it('linked-elsewhere failure uses the specific copy, not the generic error toast', async () => {
+    it('hands a linked-elsewhere failure to the shared toast as its typed error', async () => {
         mockCreateAndApprove.mockRejectedValueOnce(
             new CardAccountLinkedElsewhereError(),
         )
@@ -228,12 +228,10 @@ describe('useCardCreateSigningScreen', () => {
 
         await proceed(result)
 
+        // The copy for this case lives in useCardErrorToast's resolver.
         expect(mockShowCardError).toHaveBeenCalledWith(
             expect.any(CardAccountLinkedElsewhereError),
-            {
-                titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
-                bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
-            },
+            undefined,
         )
         expect(stepStatus(result.current.steps, 'create')).toBe('active')
         expect(mockFinish).not.toHaveBeenCalled()

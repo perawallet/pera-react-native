@@ -32,7 +32,13 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 })
 
 import { createCard } from '../endpoints'
-import { CardAccountLinkedElsewhereError } from '../errors'
+import {
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+} from '../errors'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
@@ -179,13 +185,76 @@ describe('createCard error mapping', () => {
         )
     })
 
-    it('propagates non-400 rejections unchanged', async () => {
+    const rejectWith = (status: number, code?: string) =>
         request.mockRejectedValue(
-            Object.assign(new Error('server exploded'), {
-                response: { status: 503 },
+            Object.assign(new Error(`HTTP ${status}`), {
+                response: { status },
+                data: code ? { status, code, error: code } : undefined,
             }),
         )
 
-        await expect(createCard(params)).rejects.toThrow('server exploded')
+    it('maps ACCOUNT_LINKED_ELSEWHERE by code regardless of status', async () => {
+        rejectWith(409, 'ACCOUNT_LINKED_ELSEWHERE')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardAccountLinkedElsewhereError,
+        )
+    })
+
+    it('maps the 409 creation lock to CardCreateInProgressError', async () => {
+        rejectWith(409, 'CREATE_IN_PROGRESS')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateInProgressError,
+        )
+    })
+
+    it('maps a missing Baanx card record to CardSetupIncompleteError', async () => {
+        rejectWith(404, 'BAANX_ACCOUNT_NOT_FOUND')
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardSetupIncompleteError,
+        )
+    })
+
+    it('maps a rejected ownership proof (401) and keeps the backend code', async () => {
+        rejectWith(401, 'ARC60_SIGNATURE_INVALID')
+
+        await expect(createCard(params)).rejects.toMatchObject({
+            name: 'CardOwnershipProofRejectedError',
+            code: 'ARC60_SIGNATURE_INVALID',
+        })
+        await expect(createCard(params)).rejects.toThrow(
+            CardOwnershipProofRejectedError,
+        )
+    })
+
+    it('maps every 5xx to CardCreateUnavailableError with the backend code', async () => {
+        rejectWith(502, 'CARD_CREATE_FAILED')
+        await expect(createCard(params)).rejects.toMatchObject({
+            name: 'CardCreateUnavailableError',
+            code: 'CARD_CREATE_FAILED',
+        })
+
+        rejectWith(503, 'ALGOD_UNAVAILABLE')
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateUnavailableError,
+        )
+
+        rejectWith(500)
+        await expect(createCard(params)).rejects.toThrow(
+            CardCreateUnavailableError,
+        )
+    })
+
+    it('propagates rejections it cannot classify unchanged', async () => {
+        request.mockRejectedValue(
+            Object.assign(new Error('unprocessable'), {
+                response: { status: 422 },
+                data: { status: 422, code: 'VALIDATION' },
+            }),
+        )
+
+        await expect(createCard(params)).rejects.toThrow('unprocessable')
     })
 })
