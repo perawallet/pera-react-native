@@ -112,6 +112,9 @@ export const useSignRequestApprovalScreen =
                 // the neutral adapter's input from the wire.
                 const message: InboundMessage = {
                     kind: 'request',
+                    // The offscreen host answers only WalletConnect kinds; a
+                    // future transport must carry its own label over the wire.
+                    sourceType: 'walletconnect',
                     connectionId: approval.connectionId,
                     correlationId: approval.correlationId,
                     authorizedAccounts: approval.authorizedAccounts,
@@ -135,6 +138,9 @@ export const useSignRequestApprovalScreen =
                     addSignRequest,
                     removeSignRequest,
                     accounts: allAccounts,
+                    // One request per window, and no extension handler
+                    // reports an expiry yet, so nothing is ever withdrawn.
+                    pendingRequests: new Map(),
                     // Keep the window open so the reason is readable, as the
                     // sign-transactions branch below does.
                     onError: err => setError(describeSignError(err, t)),

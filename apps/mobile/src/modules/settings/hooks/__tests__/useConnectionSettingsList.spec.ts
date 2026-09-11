@@ -29,6 +29,9 @@ const mockDisconnect = vi.fn()
 const mockNetworksFor = vi.fn((connection: Connection) =>
     connection.id === 'conn-a' ? ['mainnet', 'testnet'] : ['testnet'],
 )
+const mockMethodsFor = vi.fn((connection: Connection) =>
+    connection.id === 'conn-a' ? ['algo_signTxn'] : [],
+)
 // Partial: the read model runs for real, the store and registry are stubbed.
 vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
     ...(await importOriginal<
@@ -38,6 +41,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
     useConnectionRegistry: () => ({
         disconnect: mockDisconnect,
         networksFor: mockNetworksFor,
+        methodsFor: mockMethodsFor,
     }),
 }))
 
@@ -114,6 +118,21 @@ describe('useConnectionSettingsList', () => {
             'conn-b': ['testnet'],
         })
         expect(mockNetworksFor).toHaveBeenCalledWith(connectionA)
+    })
+
+    // Same reason: the approved methods live under a kind-specific key (v1
+    // `permissions`, v2 `methods`), so only the handler can read them.
+    it('asks the registry which methods each connection was approved for', () => {
+        const { result } = renderHook(() => useConnectionSettingsList())
+
+        const byId = Object.fromEntries(
+            result.current.connections.map(row => [row.id, row.permissions]),
+        )
+        expect(byId).toEqual({
+            'conn-a': ['algo_signTxn'],
+            'conn-b': [],
+        })
+        expect(mockMethodsFor).toHaveBeenCalledWith(connectionA)
     })
 
     it('reports whether the mirror has hydrated, so an empty list is not mistaken for no connections', () => {

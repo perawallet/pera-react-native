@@ -52,9 +52,14 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),
     WalletConnectEvent: { SessionDisconnected: 'session-disconnected' },
-    AnalyticsMetadataKey: { DappName: 'dappName', DappUrl: 'dappUrl' },
+    AnalyticsMetadataKey: {
+        DappName: 'dappName',
+        DappUrl: 'dappUrl',
+        WcVersion: 'wcVersion',
+    },
 }))
 
+import { trackEvent } from '@analytics'
 import { useSettingsWalletConnectDetailsScreen } from '../useSettingsWalletConnectDetailsScreen'
 
 const connectionRow = (url = 'https://d.app'): ConnectionSettingsRow => ({
@@ -90,6 +95,25 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         expect(mocks.revoke).toHaveBeenCalledWith('client-1')
         expect(mocks.goBack).toHaveBeenCalledTimes(1)
         expect(mocks.showError).not.toHaveBeenCalled()
+    })
+
+    it('tracks the disconnect with the protocol version as the analytics enum', async () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                kind: 'walletconnect-v2',
+                protocolVersion: 2,
+            }),
+        )
+
+        await act(async () => {
+            result.current.handleDelete()
+        })
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            'session-disconnected',
+            expect.objectContaining({ wcVersion: '2' }),
+        )
     })
 
     // goBack() must not run from .finally: a failed revoke would close the

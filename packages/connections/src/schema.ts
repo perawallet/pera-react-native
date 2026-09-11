@@ -12,14 +12,21 @@
 
 import { z } from 'zod'
 import { arc0001SignTxnRequestSchema } from '@perawallet/wallet-core-blockchain'
-import { MAX_DATA_SIGN_REQUESTS } from '@perawallet/wallet-core-signing'
+import {
+    MAX_DATA_SIGN_REQUESTS,
+    MAX_TRANSACTION_SIGN_REQUESTS,
+} from '@perawallet/wallet-core-signing'
 
 /**
  * The resolver's own schema, not a copy: zod strips undeclared keys, so any
  * divergence would silently disarm a resolver refusal (a dropped `msig` turns
- * a 4200 into an ordinary signing sheet).
+ * a 4200 into an ordinary signing sheet). Capped here because this is the one
+ * gate every transport passes; the resolver decodes every entry before any
+ * later check could refuse the group.
  */
-export const arc0001GroupSchema = arc0001SignTxnRequestSchema.min(1)
+export const arc0001GroupSchema = arc0001SignTxnRequestSchema
+    .min(1)
+    .max(MAX_TRANSACTION_SIGN_REQUESTS)
 
 export const legacyArbitraryDataSchema = z
     .array(

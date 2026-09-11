@@ -20,6 +20,7 @@ import {
     type Mock,
 } from 'vitest'
 import { cleanup, renderHook, waitFor } from '@testing-library/react'
+import { config } from '@perawallet/wallet-core-config'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
@@ -97,9 +98,31 @@ const errorSubscription: {
 /** The failures under test happen under an open approval sheet, before approval. */
 const scoped = (pairingId: string): ErrorScope => ({ pairingId })
 
+/** What the composition root injects, per handler kind. */
+type V1Options = { getNetwork: () => string }
+type V2Options = V1Options & {
+    projectId: string
+    keyValueStorage: object
+}
+
+const mockCreateV1 = vi.fn((options: V1Options) => ({
+    kind: 'walletconnect-v1',
+    options,
+}))
+const mockCreateV2 = vi.fn((options: V2Options) => ({
+    kind: 'walletconnect-v2',
+    options,
+}))
+const mockRegister = vi.fn((_handler: { kind: string }) => {})
+
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     importLegacyConnections: mockImport,
-    createWalletConnectV1Handler: () => ({ kind: 'walletconnect-v1' }),
+    createWalletConnectV1Handler: mockCreateV1,
+}))
+// The subpath the barrel deliberately omits, mocked so this spec never loads
+// WalletKit for a registration assertion.
+vi.mock('@perawallet/wallet-core-walletconnect/v2', () => ({
+    createWalletConnectV2Handler: mockCreateV2,
 }))
 // Partial: the boot sequence, the active-registry accessor and the scope
 // matcher run for real; only the registry itself and the signing adapter are
@@ -109,7 +132,7 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
         typeof import('@perawallet/wallet-core-connections')
     >()),
     createConnectionRegistry: () => ({
-        register: vi.fn(),
+        register: mockRegister,
         initialize: mockInitialize,
         teardown: vi.fn(async () => {}),
         subscribeToProposals: (listener: (proposal: MockProposal) => void) => {
@@ -173,13 +196,16 @@ vi.mock('@perawallet/wallet-core-migrate', () => ({
 // real store/storage values are irrelevant here.
 let keystoreReady: Promise<void> = Promise.resolve()
 
+/** Stable identity, so the registration test can assert what was injected. */
+const keyValueStorage = {}
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         // Just enough store for the real mirror hydration to subscribe to.
         connections: {
             store: { list: async () => [], subscribe: () => () => {} },
         },
-        keyValueStorage: {},
+        keyValueStorage,
     }),
     getKeystore: () => ({
         ready: keystoreReady.then(() => void order.push('keystore')),
@@ -202,6 +228,9 @@ describe('useConnectionsProvider', () => {
         keystoreReady = Promise.resolve()
         mockImport.mockClear()
         mockInitialize.mockClear()
+        mockRegister.mockClear()
+        mockCreateV1.mockClear()
+        mockCreateV2.mockClear()
         proposalSubscription.listener = null
         errorSubscription.listener = null
         requestBottomSheet.mockClear()
@@ -294,6 +323,23 @@ describe('useConnectionsProvider', () => {
 
         unmount()
         expect(getActiveConnectionRegistry()).toBeNull()
+    })
+
+    // Registration happens during render, ahead of the boot effect: a factory
+    // that threw here would take every other handler down with it, so both
+    // build their transports inside `initialize()` instead.
+    it('registers both WalletConnect protocols with their transport deps injected', () => {
+        renderHook(() => useConnectionsProvider())
+
+        expect(
+            mockRegister.mock.calls.map(([handler]) => handler.kind),
+        ).toEqual(['walletconnect-v1', 'walletconnect-v2'])
+        const v2 = mockCreateV2.mock.calls[0][0]
+        expect(v2.projectId).toBe(config.reownProjectId)
+        expect(v2.keyValueStorage).toBe(keyValueStorage)
+        // One injection point shared by both, so neither reaches for a store
+        // default and pulls the blockchain package into a consumer's graph.
+        expect(v2.getNetwork).toBe(mockCreateV1.mock.calls[0][0].getNetwork)
     })
 
     describe('proposal subscription', () => {

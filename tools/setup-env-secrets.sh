@@ -15,7 +15,7 @@ set -e
 #   IOS_GOOGLE_SERVICE_INFO_BASE64, BACKUP_BASE_URL, IOS_PROVISIONING_PROFILE_NAME,
 #   IOS_AUTOFILL_PROVISIONING_PROFILE_NAME, FIREBASE_APP_ID_ANDROID,
 #   APP_STORE_APPLE_ID, PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER,
-#   TESTNET_BAANX_CLIENT_KEY
+#   TESTNET_BAANX_CLIENT_KEY, REOWN_PROJECT_ID
 #
 # Web (browser extension) only — Firebase Web SDK / GA4 / Sentry, see
 # extensions/platform-chrome/src/services/{firebase-app,analytics,
@@ -62,6 +62,9 @@ SECRETS=(
   "FIREBASE_VAPID_KEY"
   "GA_MEASUREMENT_API_SECRET"
   "SENTRY_DSN"
+  # Per-environment because a Reown Cloud project scopes its own allowlists and
+  # relay quotas; staging QA traffic must not spend production's.
+  "REOWN_PROJECT_ID"
 )
 
 for SECRET in "${SECRETS[@]}"; do

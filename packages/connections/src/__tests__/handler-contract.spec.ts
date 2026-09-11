@@ -72,6 +72,7 @@ const createOriginHandler = (): ConnectionHandler => {
                                 status: 'active',
                                 createdAt: Date.now(),
                                 lastActiveAt: Date.now(),
+                                metadata: { methods: ['algo_signTxn'] },
                             }
                             approved.set(connection.id, connection)
                             await ctx.store.upsert(connection)
@@ -96,6 +97,10 @@ const createOriginHandler = (): ConnectionHandler => {
                         kind: 'request',
                         connectionId,
                         correlationId: '1',
+                        // A page-hosted dApp, so not the WalletConnect label — the
+                        // suite passing with it is what proves the neutral
+                        // layer never decides this.
+                        sourceType: 'webview',
                         authorizedAccounts: connection.accounts,
                         peer: connection.peer,
                         rawOperation: {
@@ -122,6 +127,16 @@ const createOriginHandler = (): ConnectionHandler => {
                 (record: Connection) => record.kind === ORIGIN_KIND,
             ),
         matchesNetwork: () => true,
+        // Off the record, like the real handlers: the key is this kind's own
+        // choice, and the neutral layer never reads it.
+        methodsFor: connection => {
+            const methods = connection.metadata?.methods
+            return Array.isArray(methods)
+                ? methods.filter(
+                      (method): method is string => typeof method === 'string',
+                  )
+                : []
+        },
     }
 }
 

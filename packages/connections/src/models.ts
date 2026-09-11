@@ -15,6 +15,7 @@ import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60SignableData,
     PeraArbitraryDataMessage,
+    SourceType,
 } from '@perawallet/wallet-core-signing'
 import type {
     Connection,
@@ -91,6 +92,14 @@ type MessageBase = {
     /** Handler-scoped and opaque (WalletConnect id, DIDComm `thid`, ...). Do not parse it. */
     correlationId: string
     /**
+     * How the signing pipeline labels this request's origin — it drives
+     * `isInteractiveSource`/`isExternalCallbackSource` membership, the signing
+     * sheet's per-source branch and analytics. The HANDLER declares it, so a
+     * new transport reaches the pipeline without the neutral layer knowing it
+     * exists.
+     */
+    sourceType: SourceType
+    /**
      * Becomes ARC-0001's `authorizedAddresses`. Carried on the message rather
      * than looked up downstream: a store lookup could race a concurrent disconnect.
      */
@@ -111,6 +120,17 @@ export type InboundMessage =
           kind: 'notification'
           connectionId: ConnectionId
           event: ConnectionEvent
+      }
+    /**
+     * The peer will no longer take an answer to this request; whatever is
+     * holding it open for the user (a signing sheet) must let go. Never a
+     * new request kind on the raw side: the handler reports it through
+     * `ConnectionHandlerContext.onRequestExpired`.
+     */
+    | {
+          kind: 'request-expired'
+          connectionId: ConnectionId
+          correlationId: string
       }
 
 /**

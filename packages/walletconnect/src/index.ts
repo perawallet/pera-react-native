@@ -35,6 +35,12 @@ export {
     LEGACY_IMPORTED_IDS_KEY,
     LEGACY_STORE_KEY,
 } from './migration/importLegacyConnections'
+export * from './v2/connection'
+export * from './v2/caip'
+export {
+    clearWalletConnectV2Storage,
+    WALLET_CONNECT_V2_STORAGE_PREFIX,
+} from './v2/storage'
 export {
     useConnectorRegistryStore,
     type ConnectorRegistryStore,

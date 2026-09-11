@@ -104,12 +104,20 @@ const noopContext = (seed: Connection[] = []): ConnectionHandlerContext => ({
     onProposal: vi.fn(),
     onMessage: vi.fn(),
     onDisconnected: vi.fn(),
+    onRequestExpired: vi.fn(),
     onError: vi.fn(),
 })
 
 /**
  * Run from each handler's own spec. A handler with no URI runs it without `uri`
  * fixtures and must pass; that is what keeps the interface from being WalletConnect-shaped.
+ *
+ * Deliberately not proven here:
+ * - that `restore()` is authoritative over an external SDK's own session
+ *   list — protocol-specific, belongs in the handler's own spec
+ * - `connection.id` is opaque to this suite — the peer is handed whatever id
+ *   the record carries, so record-keying is the handler spec's job
+ * - the scheme-only case is only as strong as the fixture's scheme
  */
 export const runHandlerContractTests = (
     name: string,
@@ -217,9 +225,10 @@ export const runHandlerContractTests = (
             })
 
             it('declines a scheme-only signal with no pairing payload', () => {
-                expect(uriHandler().canHandleUri('wc://?browser=safari')).toBe(
-                    false,
-                )
+                const scheme = requireUri().valid.split(':')[0]
+                expect(
+                    uriHandler().canHandleUri(`${scheme}://?browser=safari`),
+                ).toBe(false)
             })
 
             it('never leaks the pairing secret through describeUri', () => {
@@ -288,7 +297,15 @@ export const runHandlerContractTests = (
                     return message
                 }
 
-                return { store, handler, registry, connection, requestOne }
+                return {
+                    store,
+                    handler,
+                    registry,
+                    pairingId,
+                    proposal,
+                    connection,
+                    requestOne,
+                }
             }
 
             it('an approved connection round-trips through restore, with the origin pair carried', async () => {
@@ -304,6 +321,21 @@ export const runHandlerContractTests = (
                 await registry.teardown()
             })
 
+            // The id `pair()` resolved with is what a pairing entry point
+            // correlates its own dApp's answer on. It is only invisible to a
+            // handler whose pairing and connection ids are the same value —
+            // true on v1, false on v2 — so nothing else in this suite
+            // catches a proposal carrying some other id.
+            it.skipIf(!uri)(
+                'surfaces the proposal under the pairing id pair() resolved with',
+                async () => {
+                    const { proposal, pairingId, registry } = await approveOne()
+
+                    expect(proposal.pairingId).toBe(pairingId)
+                    await registry.teardown()
+                },
+            )
+
             it.skipIf(!uri)(
                 'writes the origin handed to pair onto the approved record',
                 async () => {
@@ -317,6 +349,19 @@ export const runHandlerContractTests = (
                     await registry.teardown()
                 },
             )
+
+            // The settings panel lists these, and the key they live under is
+            // kind-specific — a handler reading the wrong one shows an empty
+            // panel for a session that was approved for something.
+            it('reports the methods an approved connection was granted', async () => {
+                const { handler, registry, connection } = await approveOne()
+
+                expect(handler.methodsFor(connection)).not.toHaveLength(0)
+                expect(registry.methodsFor(connection)).toEqual(
+                    handler.methodsFor(connection),
+                )
+                await registry.teardown()
+            })
 
             it('records no origin when pair was given none', async () => {
                 const { registry, connection } = await approveOne()

@@ -11,7 +11,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { ARC60_MAX_REQUEST_BYTES } from '@perawallet/wallet-core-signing'
+import {
+    ARC60_MAX_REQUEST_BYTES,
+    MAX_TRANSACTION_SIGN_REQUESTS,
+} from '@perawallet/wallet-core-signing'
 import { validateRawMessage } from '../validate'
 import type { RawInboundMessage } from '../models'
 
@@ -22,6 +25,7 @@ const request = (
     kind: 'request',
     connectionId: 'c1',
     correlationId: '1',
+    sourceType: 'walletconnect',
     authorizedAccounts: ['AAAA'],
     peer: { name: 'Test dApp' },
     rawOperation: { type, params },
@@ -116,6 +120,17 @@ describe('validateRawMessage', () => {
         const result = validateRawMessage(
             request('sign-transactions', [{ message: 'hi' }]),
         )
+
+        expect(result.ok).toBe(false)
+    })
+
+    it('rejects an ARC-0001 group over the transaction cap', () => {
+        const group = Array.from(
+            { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
+            () => ({ txn: 'base64==' }),
+        )
+
+        const result = validateRawMessage(request('sign-transactions', group))
 
         expect(result.ok).toBe(false)
     })

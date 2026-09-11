@@ -160,8 +160,8 @@
             "title_generic": "Impossible d’ouvrir le lien",
             "body_generic": "Nous n’avons pas pu traiter le lien. Veuillez réessayer.",
             "title_walletconnect": "Échec de WalletConnect",
-            "body_walletconnect": "Nous n’avons pas pu nous connecter à la dApp. La session a peut-être expiré ou le bridge est inaccessible.",
-            "body_walletconnect_timeout": "Aucune réponse de la dApp. La session a peut-être expiré ou le bridge WalletConnect est inaccessible.",
+            "body_walletconnect": "Nous n’avons pas pu nous connecter à la dApp. La session a peut-être expiré ou la dApp est inaccessible.",
+            "body_walletconnect_timeout": "Aucune réponse de la dApp. La session a peut-être expiré ou la dApp est inaccessible.",
             "title_wc_unsupported": "Lien de connexion non pris en charge",
             "body_wc_unsupported": "Pera ne peut pas utiliser ce lien WalletConnect. Veuillez rétablir la connexion depuis la dApp et réessayer.",
             "title_keyreg": "Impossible de préparer l’enregistrement de clé",
@@ -1022,7 +1022,8 @@
             "invalid_session_body": "Vous avez reçu une demande de session invalide provenant d’une application. Veuillez vérifier l’application, puis réessayer.",
             "connection_timeout_body": "Impossible de joindre WalletConnect pour transmettre votre transaction signée. Vérifiez votre connexion, puis réessayez.",
             "bridge_connection_body": "Impossible de se connecter à WalletConnect. Vérifiez votre connexion internet, puis réessayez.",
-            "session_request_expired_body": "Cette demande de connexion a expiré. Lancez une nouvelle connexion depuis la dApp, puis réessayez."
+            "session_request_expired_body": "Cette demande de connexion a expiré. Lancez une nouvelle connexion depuis la dApp, puis réessayez.",
+            "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",

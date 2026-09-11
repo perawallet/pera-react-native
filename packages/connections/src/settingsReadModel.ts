@@ -32,7 +32,10 @@ export type ConnectionSettingsRow = {
     lastActiveAt: number
     /** Carried whole: the detail screen shows the description and picks its own icon. */
     peer: ConnectionPeer
-    /** Methods the session was approved for; empty when the record predates the field. */
+    /**
+     * Methods the session was approved for, as its handler reads them; empty
+     * when the record predates the field.
+     */
     permissions: string[]
     /** Every network the connection is usable on, as its handler resolves it. */
     networks: Network[]
@@ -40,23 +43,7 @@ export type ConnectionSettingsRow = {
     protocolVersion?: number
 }
 
-const readStringArray = (
-    source: Record<string, unknown>,
-    key: string,
-): string[] => {
-    const value = source[key]
-    if (!Array.isArray(value)) return []
-    return value.filter((item): item is string => typeof item === 'string')
-}
-
-// `Connection.metadata` is kind-specific, so the one field surfaced here is
-// read defensively; a record another handler wrote simply reports none.
-const readPermissions = (connection: Connection): string[] => {
-    const metadata = connection.metadata
-    if (typeof metadata !== 'object' || metadata === null) return []
-    return readStringArray(metadata, 'permissions')
-}
-
+/** The `WCV1` / `WCV2` badge the settings screens have always shown. */
 const protocolVersionFor = (kind: ConnectionKind): number | undefined => {
     if (kind === 'walletconnect-v1') return 1
     if (kind === 'walletconnect-v2') return 2
@@ -66,6 +53,7 @@ const protocolVersionFor = (kind: ConnectionKind): number | undefined => {
 export const toConnectionSettingsRow = (
     connection: Connection,
     networks: Network[],
+    methods: string[],
 ): ConnectionSettingsRow => ({
     id: connection.id,
     kind: connection.kind,
@@ -77,7 +65,7 @@ export const toConnectionSettingsRow = (
     createdAt: connection.createdAt,
     lastActiveAt: connection.lastActiveAt,
     peer: connection.peer,
-    permissions: readPermissions(connection),
+    permissions: methods,
     networks,
     ...(protocolVersionFor(connection.kind) !== undefined
         ? { protocolVersion: protocolVersionFor(connection.kind) }

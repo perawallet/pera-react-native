@@ -486,6 +486,7 @@ describe('walletconnect v1 handler behaviour', () => {
             onProposal,
             onMessage,
             onDisconnected,
+            onRequestExpired: vi.fn(),
             onError,
         }
         const handler = createWalletConnectV1Handler({
@@ -767,6 +768,8 @@ describe('walletconnect v1 handler behaviour', () => {
         const message = asRequest(onMessage.mock.calls[0][0])
         expect(message.connectionId).toBe(connector.clientId)
         expect(message.correlationId).toBe('7')
+        // The handler declares this; the neutral layer no longer assumes it.
+        expect(message.sourceType).toBe('walletconnect')
         // The property that stops a session approved for A signing for B.
         expect(message.authorizedAccounts).toEqual(['BBBB', 'CCCC'])
         expect(message.rawOperation).toEqual({
@@ -1048,6 +1051,21 @@ describe('walletconnect v1 handler behaviour', () => {
 
         expect(restored).toEqual([])
         expect(keys.has('c1')).toBe(false)
+    })
+
+    it('drops a stored record whose permissions are not all strings', async () => {
+        // Both writers produce `string[]`, so only a corrupt row gets here,
+        // but the settings screen maps `permissions` without checking, and v2
+        // guards its `methods` the same way.
+        keys.set('c1', 'restored-key')
+        const corrupt = {
+            ...SEEDED,
+            metadata: { ...SEEDED.metadata, permissions: ['algo_signTxn', 7] },
+        } as unknown as Connection
+
+        const { handler } = await setup([corrupt])
+
+        expect(await handler.restore()).toEqual([])
     })
 
     it('keeps restoring the other sessions when one key read faults', async () => {

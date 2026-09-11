@@ -16,7 +16,9 @@ managing N connections; the `ConnectionRegistry` (`src/registry.ts`) owns the ha
 every inbound payload before a subscriber can see it, and reconciles the store from each handler's
 `restore()` on boot. Handlers emit protocol-neutral `WalletOperation`s (ARC-0001 groups, ARC-60 or
 legacy sign-data); `src/signing-adapter.ts` is the single bridge from those into the signing
-pipeline, so a new protocol needs a handler and nothing else.
+pipeline, so a new protocol needs a handler and nothing else. The bridge runs both ways: a handler
+whose peer stops waiting for an answer reports `onRequestExpired`, and the adapter withdraws the
+sign request it is holding for the user, since answering late would only fail on the wire.
 
 `src/testing/handler-contract.ts` is the contract suite every handler runs against. An assertion a
 legitimate handler cannot satisfy is an interface finding, not a reason to bend the handler.
@@ -74,7 +76,7 @@ addresses before approving, because any extension page can send on the control s
 ## Composition roots
 
 - Native: `apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts` creates the
-  registry, registers the WalletConnect v1 handler, boots it through `bootConnections`
+  registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
   (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
   adapter.
 - Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` does the same boot and starts
@@ -88,6 +90,10 @@ addresses before approving, because any extension page can send on the control s
 
 A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
 and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
+
+WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
+`apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
+neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
 
 ## Boot order
 
@@ -108,6 +114,21 @@ socket's lifetime either way.
 the legacy blob only once every committed key reads back, and is crash-resumable. It keeps its own
 set of imported ids: the blob outlives a partial pass, and the live store alone cannot tell a record
 that was never imported from one the user has since disconnected.
+
+## WalletConnect v2 key material
+
+The v2 record carries no `secretRef`. WalletKit owns the key material itself: every pairing and
+session symKey and the client's ed25519 seed sit in its keychain, which `Core` persists as one JSON
+row through the storage adapter in `packages/walletconnect/src/v2/storage.ts`. That adapter is Pera's
+default key-value store, namespaced under `wc2:`, so on native the keychain is plaintext MMKV where
+v1's session key is a keystore entry.
+
+This is a deliberate trade-off, not an oversight. Sealing it would mean an adapter that routes the
+keychain row through the keystore on every write, and the row is rewritten on every pairing and
+session change. The exposure is the same class as v1's on the extension: a symKey lets an attacker
+read or inject that dApp session's relay traffic and signs nothing. Delete all data clears the
+namespace through `clearWalletConnectV2Storage`, which the wipe runs last because it holds only the
+client registry surface and cannot tear the handler down first.
 
 ## Origins
 

@@ -47,6 +47,11 @@ export interface ConnectionRegistryClient {
     describeUri(uri: string): Record<string, string | null>
     /** Empty for a kind with no registered handler. */
     networksFor(connection: Connection): Network[]
+    /**
+     * The methods the connection was approved for, as its handler reads them.
+     * Empty for a kind with no registered handler.
+     */
+    methodsFor(connection: Connection): string[]
     disconnect(id: ConnectionId): Promise<void>
     disconnectAll(): Promise<void>
     subscribeToProposals(listener: (p: ConnectionProposal) => void): () => void
@@ -193,6 +198,23 @@ export const createConnectionRegistry = (options: {
                 )
                 emitError(normalized, { connectionId: id })
             })
+        },
+        // Fanned out on the message channel: the subscriber holding the
+        // request open is the one who must let go of it.
+        onRequestExpired: (connectionId, correlationId) => {
+            for (const listener of messageListeners) {
+                try {
+                    listener({
+                        kind: 'request-expired',
+                        connectionId,
+                        correlationId,
+                    })
+                } catch (listenerError) {
+                    logger.warn('[connections] message listener threw', {
+                        error: listenerError,
+                    })
+                }
+            }
         },
         onError: emitError,
     })
@@ -345,6 +367,8 @@ export const createConnectionRegistry = (options: {
                 handler.matchesNetwork(connection, network),
             )
         },
+        methodsFor: connection =>
+            handlers.get(connection.kind)?.methodsFor(connection) ?? [],
         disconnect: async id => {
             const handler = await handlerForConnection(id)
             await handler.disconnect(id)

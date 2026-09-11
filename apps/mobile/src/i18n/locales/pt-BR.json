@@ -160,8 +160,8 @@
             "title_generic": "Não foi possível abrir o link",
             "body_generic": "Não conseguimos processar o link. Tente novamente.",
             "title_walletconnect": "Falha no WalletConnect",
-            "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o bridge pode estar inacessível.",
-            "body_walletconnect_timeout": "O dApp não respondeu. A sessão pode ter expirado ou o bridge do WalletConnect pode estar inacessível.",
+            "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o dApp pode estar inacessível.",
+            "body_walletconnect_timeout": "O dApp não respondeu. A sessão pode ter expirado ou o dApp pode estar inacessível.",
             "title_wc_unsupported": "Link de conexão não suportado",
             "body_wc_unsupported": "O Pera não consegue usar este link do WalletConnect. Reconecte a partir do dApp e tente novamente.",
             "title_keyreg": "Não foi possível preparar o registro de chaves",
@@ -1022,7 +1022,8 @@
             "invalid_session_body": "Você recebeu uma solicitação de sessão inválida de um app. Verifique o app e tente novamente.",
             "connection_timeout_body": "Não foi possível conectar ao WalletConnect para entregar sua transação assinada. Verifique sua conexão e tente novamente.",
             "bridge_connection_body": "Não foi possível conectar ao WalletConnect. Verifique sua conexão com a internet e tente novamente.",
-            "session_request_expired_body": "Esta solicitação de conexão expirou. Inicie uma nova conexão pelo dApp e tente novamente."
+            "session_request_expired_body": "Esta solicitação de conexão expirou. Inicie uma nova conexão pelo dApp e tente novamente.",
+            "request_expired_body": "Esta solicitação de assinatura expirou antes de ser respondida. Peça ao app para enviá-la novamente."
         },
         "signing": {
             "title": "Ocorreu um erro ao processar a solicitação de assinatura",

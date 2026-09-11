@@ -57,6 +57,7 @@ export const useConnectionSettingsList =
                         toConnectionSettingsRow(
                             connection,
                             registry.networksFor(connection),
+                            registry.methodsFor(connection),
                         ),
                     ),
                 ),

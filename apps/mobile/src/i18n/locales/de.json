@@ -160,8 +160,8 @@
             "title_generic": "Link konnte nicht geöffnet werden",
             "body_generic": "Der Link konnte nicht verarbeitet werden. Bitte versuche es erneut.",
             "title_walletconnect": "WalletConnect fehlgeschlagen",
-            "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die Bridge ist nicht erreichbar.",
-            "body_walletconnect_timeout": "Keine Antwort von der dApp. Möglicherweise ist die Sitzung abgelaufen oder die WalletConnect-Bridge ist nicht erreichbar.",
+            "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die dApp ist nicht erreichbar.",
+            "body_walletconnect_timeout": "Keine Antwort von der dApp. Möglicherweise ist die Sitzung abgelaufen oder die dApp ist nicht erreichbar.",
             "title_wc_unsupported": "Verbindungslink nicht unterstützt",
             "body_wc_unsupported": "Dieser WalletConnect-Link kann von Pera nicht verwendet werden. Bitte stelle die Verbindung in der dApp erneut her und versuche es noch einmal.",
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
@@ -1014,7 +1014,8 @@
             "invalid_session_body": "Du hast eine ungültige Sitzungsanfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
             "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
-            "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
+            "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut.",
+            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",

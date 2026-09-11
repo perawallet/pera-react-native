@@ -26,8 +26,10 @@ export type WalletConnectVersion = '1' | '2'
 
 /**
  * Dapp name/url come from the session request's `peerMeta` and are always
- * present. Wc version + topic aren't exposed by RN's WalletConnect types, so
- * those (and address/counts) are optional.
+ * present; address and counts are not known at every call site, so they are
+ * optional. `WcSessionTopic` stays unset everywhere on purpose: a v2 topic
+ * identifies one user's live session, and this pipeline is not the place for
+ * it.
  */
 export interface WalletConnectRequiredPayloads {
     [WalletConnectEvent.SessionApproved]: {

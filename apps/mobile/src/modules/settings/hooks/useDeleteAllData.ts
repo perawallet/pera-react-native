@@ -22,6 +22,7 @@ import { isStoreDisabledError } from '@perawallet/wallet-core-passkeys'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import {
+    clearWalletConnectV2Storage,
     LEGACY_IMPORTED_IDS_KEY,
     LEGACY_STORE_KEY,
 } from '@perawallet/wallet-core-walletconnect'
@@ -173,6 +174,18 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             queryClient.removeQueries()
         }
         getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
+
+        // 12. WalletKit's keychain: no disconnect clears the client seed or an
+        // unsettled pairing's symKey. Last, because `clearAllStores` above is
+        // what tears the v2 handler down, and a live client mutating after an
+        // earlier clear writes its in-memory keychain straight back.
+        try {
+            clearWalletConnectV2Storage(getProvider().keyValueStorage)
+        } catch (e) {
+            logger.error('Failed to clear the WalletConnect v2 storage', {
+                error: e,
+            })
+        }
     }, [queryClient, keys, deleteKey, savePin, deleteDevices, contextRegistry])
 
     return { deleteAllData: wipeAllUserData, wipeAllUserData }

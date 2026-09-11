@@ -34,7 +34,9 @@ const baseConnection: Connection = {
 
 describe('toConnectionSettingsRow', () => {
     it('maps a Connection record onto the settings read model', () => {
-        expect(toConnectionSettingsRow(baseConnection, ['mainnet'])).toEqual({
+        expect(
+            toConnectionSettingsRow(baseConnection, ['mainnet'], []),
+        ).toEqual({
             id: 'conn-1',
             kind: 'walletconnect-v1',
             title: 'Some Dapp',
@@ -51,16 +53,17 @@ describe('toConnectionSettingsRow', () => {
         })
     })
 
-    it('surfaces the approved permissions out of kind-specific metadata', () => {
+    // The methods come from the handler too: v1 stores them under
+    // `permissions` and v2 under `methods`, so a key read off the record here
+    // would be wrong for one of them.
+    it('carries the handler-resolved methods, not a key read off the record', () => {
         const row = toConnectionSettingsRow(
             {
                 ...baseConnection,
-                metadata: {
-                    chainId: 416_001,
-                    permissions: ['algo_signTxn'],
-                },
+                metadata: { chainId: 416_001, methods: ['algo_signTxn'] },
             },
             [],
+            ['algo_signTxn'],
         )
 
         expect(row.permissions).toEqual(['algo_signTxn'])
@@ -72,22 +75,19 @@ describe('toConnectionSettingsRow', () => {
         const row = toConnectionSettingsRow(
             { ...baseConnection, metadata: { chainId: 4160 } },
             ['mainnet', 'testnet'],
+            [],
         )
 
         expect(row.networks).toEqual(['mainnet', 'testnet'])
         expect(row).not.toHaveProperty('chainId')
     })
 
-    // The detail screen renders `permissions` directly, so an unreadable
-    // metadata blob must land as "unknown" (an empty list) rather than
-    // throwing on a record another handler wrote.
-    it('reports no permissions when the metadata has none', () => {
+    // A kind with no registered handler reports no methods, which the detail
+    // screen renders as "unknown" rather than as a broken panel.
+    it('reports no methods and no version for an unknown kind', () => {
         const row = toConnectionSettingsRow(
-            {
-                ...baseConnection,
-                kind: 'some-other-protocol',
-                metadata: { permissions: 'not-a-list' },
-            },
+            { ...baseConnection, kind: 'some-other-protocol' },
+            [],
             [],
         )
 
@@ -99,6 +99,7 @@ describe('toConnectionSettingsRow', () => {
         const row = toConnectionSettingsRow(
             { ...baseConnection, status: 'inactive' },
             [],
+            [],
         )
 
         expect(row.isConnected).toBe(false)
@@ -107,6 +108,7 @@ describe('toConnectionSettingsRow', () => {
     it('falls back to an empty subtitle and no icon when the peer carries neither', () => {
         const row = toConnectionSettingsRow(
             { ...baseConnection, peer: { name: 'Bare Peer' } },
+            [],
             [],
         )
 
@@ -117,7 +119,7 @@ describe('toConnectionSettingsRow', () => {
     // Epoch-ms numbers straight off the record: there is no Date/string
     // rehydration hazard here, so no `toComparableTime` guard is needed.
     it('carries createdAt and lastActiveAt straight through as numbers', () => {
-        const row = toConnectionSettingsRow(baseConnection, [])
+        const row = toConnectionSettingsRow(baseConnection, [], [])
 
         expect(typeof row.createdAt).toBe('number')
         expect(typeof row.lastActiveAt).toBe('number')
@@ -129,9 +131,11 @@ describe('sortConnectionSettingsRows', () => {
         const older = toConnectionSettingsRow(
             { ...baseConnection, id: 'older', lastActiveAt: 1000 },
             [],
+            [],
         )
         const newer = toConnectionSettingsRow(
             { ...baseConnection, id: 'newer', lastActiveAt: 2000 },
+            [],
             [],
         )
 
@@ -144,9 +148,11 @@ describe('sortConnectionSettingsRows', () => {
         const older = toConnectionSettingsRow(
             { ...baseConnection, id: 'older', lastActiveAt: 1000 },
             [],
+            [],
         )
         const newer = toConnectionSettingsRow(
             { ...baseConnection, id: 'newer', lastActiveAt: 2000 },
+            [],
             [],
         )
         const input = [older, newer]

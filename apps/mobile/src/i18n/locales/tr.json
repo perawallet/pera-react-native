@@ -160,8 +160,8 @@
             "title_generic": "Bağlantı açılamadı",
             "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
             "title_walletconnect": "WalletConnect başarısız oldu",
-            "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
-            "body_walletconnect_timeout": "dApp’ten yanıt alınamadı. Oturumun süresi dolmuş ya da WalletConnect köprüsüne ulaşılamıyor olabilir.",
+            "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da dApp’e ulaşılamıyor olabilir.",
+            "body_walletconnect_timeout": "dApp’ten yanıt alınamadı. Oturumun süresi dolmuş ya da dApp’e ulaşılamıyor olabilir.",
             "title_wc_unsupported": "Bağlantı linki desteklenmiyor",
             "body_wc_unsupported": "Bu WalletConnect linki Pera tarafından kullanılamıyor. Lütfen dApp üzerinden yeniden bağlanmayı dene.",
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
@@ -1022,7 +1022,8 @@
             "invalid_session_body": "Bir uygulamadan geçersiz bir oturum isteği aldın. Uygulamayı kontrol et ve tekrar dene.",
             "connection_timeout_body": "İmzalanan işlemi iletmek için WalletConnect’e ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
             "bridge_connection_body": "WalletConnect'e bağlanılamadı. İnternet bağlantını kontrol et ve tekrar dene.",
-            "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene."
+            "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene.",
+            "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste."
         },
         "signing": {
             "title": "İmzalama isteği işlenirken bir hata oluştu",

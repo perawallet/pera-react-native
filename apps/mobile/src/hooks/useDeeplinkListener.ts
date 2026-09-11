@@ -56,9 +56,11 @@ export const useDeeplinkListener = () => {
         const shouldDispatch = (url: string): boolean => {
             if (isDuplicateUrl(url)) return false
             if (isValidDeepLink(url)) return true
-            // Unparseable wc-schemed links (WC v2, bridge-less v1, mangled
-            // wrappers) get a toast instead of silence. Focus hints only
-            // exist to foreground the wallet, so they stay silent.
+            // A wc-schemed link the parser refuses is a mangled wrapper (bad
+            // percent-encoding, a non-wc payload): a toast, not silence. A
+            // pairing URI no handler claims is refused further in, by the
+            // registry. Focus hints only exist to foreground the wallet, so
+            // they stay silent.
             if (isWalletConnectScheme(url) && !isWalletConnectFocusHint(url)) {
                 logger.warn('Deeplink: unsupported WalletConnect URI dropped')
                 showError({

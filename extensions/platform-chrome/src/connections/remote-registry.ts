@@ -48,7 +48,7 @@ const rebuildError = (
 }
 
 /**
- * URI claims, `describeUri` and `networksFor` are answered locally from
+ * URI claims, `describeUri`, `networksFor` and `methodsFor` are answered locally from
  * un-initialized handler instances; every lifecycle call goes to the offscreen
  * document, which owns the live handlers. No host surface by type: inbound
  * requests route offscreen → service worker → approval window, never to a UI realm.
@@ -170,6 +170,8 @@ export const createRemoteConnectionRegistry = (options: {
                 handler.matchesNetwork(connection, network),
             )
         },
+        methodsFor: connection =>
+            handlers.get(connection.kind)?.methodsFor(connection) ?? [],
         disconnect: async id => {
             await sendConnectionsControlMessage({
                 kind: 'disconnect',

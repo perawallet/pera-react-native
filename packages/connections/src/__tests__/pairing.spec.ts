@@ -32,6 +32,7 @@ const makeRegistry = () => {
     const registry: ConnectionRegistryClient = {
         pair: vi.fn(async () => 'pairing-a'),
         abandonPairing: vi.fn(),
+        methodsFor: vi.fn(() => []),
         // Stands in for the v1 handler's parse; the sequence must not know
         // what a `wc:` URI looks like.
         describeUri: vi.fn((uri: string) => ({

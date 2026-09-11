@@ -52,6 +52,7 @@ import {
 } from '../shared/constants'
 import { isChainIdAcceptable } from '../shared/chain'
 import { toPeer } from '../shared/peer'
+import { toWireResult } from '../shared/wire'
 import { redactWalletConnectUri, walletConnectLogContext } from '../shared/uri'
 import {
     WalletConnectBridgeConnectionError,
@@ -80,7 +81,6 @@ import {
     legacyItemChainIdsAcceptable,
     readErrorDetail,
     toClientMeta,
-    toWireResult,
     type WcRequest,
 } from './wire'
 import {
@@ -237,6 +237,7 @@ export const createWalletConnectV1Handler = (
             kind: 'request',
             connectionId: connection.id,
             correlationId: String(requestId),
+            sourceType: 'walletconnect',
             authorizedAccounts: connection.accounts,
             // The approval-time snapshot, not the live `peerMeta` a dApp can overwrite afterwards.
             peer: connection.peer,
@@ -934,5 +935,10 @@ export const createWalletConnectV1Handler = (
         matchesNetwork: (connection, network) =>
             isWalletConnectV1Connection(connection) &&
             isChainIdAcceptable(connection.metadata.chainId, network),
+
+        methodsFor: connection =>
+            isWalletConnectV1Connection(connection)
+                ? (connection.metadata.permissions ?? [])
+                : [],
     }
 }

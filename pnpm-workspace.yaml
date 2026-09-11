@@ -33,6 +33,10 @@ catalog:
   "@react-native-firebase/crashlytics": ^26.0.0
   "@react-native-firebase/messaging": ^26.0.0
   "@react-native-firebase/remote-config": ^26.0.0
+  # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
+  # internal protocol contract, so a floating minor on one side can pair with
+  # a core it was never built against. Bump the two together.
+  "@reown/walletkit": 1.5.6
   "@scure/base": 2.3.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
@@ -48,6 +52,15 @@ catalog:
   "@types/web-bluetooth": ^0.0.21
   "@vitejs/plugin-react": 6.1.0
   "@vitest/coverage-v8": ^4.1.9
+  # Kept in step with "@reown/walletkit" above; see the note there.
+  "@walletconnect/core": 2.23.10
+  # Same release train as core: it installs the `global.NetInfo` and
+  # `global.Platform` shims core's utils read, so bump the two together.
+  "@walletconnect/react-native-compat": 2.23.10
+  # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
+  # encodes the namespace rules the relay and the dApp both enforce, so a copy
+  # out of step with core's would build sessions core then rejects.
+  "@walletconnect/utils": 2.23.10
   "@xstate/react": ^6.1.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
@@ -95,6 +108,17 @@ catalog:
   xstate: ^5.28.0
   zod: ^4.4.3
   zustand: ^5.0.12
+
+packageExtensions:
+  # The compat lists async-storage as a required peer for core's default
+  # storage adapter. Pera injects its own (`packages/walletconnect/src/v2/storage.ts`),
+  # and `ignoreMissing` only silences the warning: auto-install still adds the
+  # package, and its presence re-keys every Firebase auth lockfile entry.
+  # Optional peers are not auto-installed.
+  '@walletconnect/react-native-compat':
+    peerDependenciesMeta:
+      '@react-native-async-storage/async-storage':
+        optional: true
 
 minimumReleaseAge: 10080
 

@@ -160,8 +160,8 @@
             "title_generic": "No se pudo abrir el enlace",
             "body_generic": "No pudimos procesar el enlace. Vuelve a intentarlo.",
             "title_walletconnect": "Error de WalletConnect",
-            "body_walletconnect": "No pudimos conectar con la dApp. La sesión puede haber caducado o el bridge puede estar inaccesible.",
-            "body_walletconnect_timeout": "La dApp no respondió. La sesión puede haber caducado o el bridge de WalletConnect puede estar inaccesible.",
+            "body_walletconnect": "No pudimos conectar con la dApp. La sesión puede haber caducado o la dApp puede estar inaccesible.",
+            "body_walletconnect_timeout": "La dApp no respondió. La sesión puede haber caducado o la dApp puede estar inaccesible.",
             "title_wc_unsupported": "Enlace de conexión no compatible",
             "body_wc_unsupported": "Pera no puede usar este enlace de WalletConnect. Vuelve a conectar desde la dApp e inténtalo de nuevo.",
             "title_keyreg": "No se pudo preparar el registro de clave",
@@ -1022,7 +1022,8 @@
             "invalid_session_body": "Recibiste una solicitud de sesión no válida de una app. Revisa la app y vuelve a intentarlo.",
             "connection_timeout_body": "No se pudo conectar con WalletConnect para entregar tu transacción firmada. Revisa tu conexión y vuelve a intentarlo.",
             "bridge_connection_body": "No se pudo conectar con WalletConnect. Revisa tu conexión a internet y vuelve a intentarlo.",
-            "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo."
+            "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo.",
+            "request_expired_body": "Esta solicitud de firma caducó antes de recibir respuesta. Pide a la app que la envíe de nuevo."
         },
         "signing": {
             "title": "Error al procesar la solicitud de firma",

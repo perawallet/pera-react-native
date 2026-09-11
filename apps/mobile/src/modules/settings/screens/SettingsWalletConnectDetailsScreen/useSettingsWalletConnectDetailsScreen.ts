@@ -21,6 +21,7 @@ import {
     trackEvent,
     WalletConnectEvent,
     AnalyticsMetadataKey,
+    type WalletConnectVersion,
 } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,6 +31,15 @@ import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { getPreferredDappIcon } from '@modules/walletconnect/utils/dapp-icon'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+
+// The analytics dimension is a string enum; the row carries the badge number.
+const wcVersionFor = (
+    protocolVersion: Optional<number>,
+): Optional<WalletConnectVersion> => {
+    if (protocolVersion === 1) return '1'
+    if (protocolVersion === 2) return '2'
+    return undefined
+}
 
 export type UseSettingsWalletConnectDetailsScreenResult = {
     preferredIcon: Optional<string>
@@ -69,6 +79,11 @@ export const useSettingsWalletConnectDetailsScreen = (
         trackEvent(WalletConnectEvent.SessionDisconnected, {
             [AnalyticsMetadataKey.DappName]: connection.peer.name,
             [AnalyticsMetadataKey.DappUrl]: connection.peer.url ?? '',
+            // Not the session topic: `WcSessionTopic` would identify one
+            // user's live session in the analytics pipeline.
+            [AnalyticsMetadataKey.WcVersion]: wcVersionFor(
+                connection.protocolVersion,
+            ),
         })
         void revoke(connection.id)
             .then(() => {

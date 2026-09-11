@@ -71,20 +71,30 @@ describe('WalletConnect deep-link parser', () => {
             expect(parseWalletConnectUri(wrapped)?.uri).toBe(inner)
         })
 
-        it('rejects a wc: URI with no bridge (a return-to-wallet signal, not a pairing URI)', () => {
+        it('rejects a return-to-wallet focus hint, which names no pairing at all', () => {
+            // dApps emit signals like `wc://?browser=...` to bring the wallet
+            // to the foreground. The request rides the already-open socket, so
+            // this must stay silent rather than surface as a failed pairing.
             expect(
                 parseWalletConnectUri('wc://?browser=Android%20Browser'),
             ).toBeNull()
         })
 
-        it('rejects a wc: URI with a topic but no bridge param', () => {
-            expect(parseWalletConnectUri('wc:test@1?key=test')).toBeNull()
+        it('parses a v2 pairing URI, which carries a symKey and no bridge', () => {
+            const uri = `wc:${'c'.repeat(64)}@2?relay-protocol=irn&symKey=${'d'.repeat(64)}`
+            expect(parseWalletConnectUri(uri)?.uri).toBe(uri)
         })
 
-        it('rejects a wc: URI with an empty bridge param', () => {
+        it('parses a bridge-less v1 URI and leaves the protocol check to the handler', () => {
+            // Which params a pairing URI needs is per-protocol, so the parser
+            // only owns URL shape: `canHandleUri` claims it or nobody does,
+            // and an unclaimed URI becomes the failed-pairing toast.
+            expect(parseWalletConnectUri('wc:test@1?key=test')?.uri).toBe(
+                'wc:test@1?key=test',
+            )
             expect(
-                parseWalletConnectUri('wc:test@1?bridge=&key=test'),
-            ).toBeNull()
+                parseWalletConnectUri('wc:test@1?bridge=&key=test')?.uri,
+            ).toBe('wc:test@1?bridge=&key=test')
         })
 
         it('parses and normalizes algorand-wc: URI', () => {
@@ -134,10 +144,10 @@ describe('WalletConnect deep-link parser', () => {
             ).toBeNull()
         })
 
-        it('rejects an algorand-wc: URI with no bridge', () => {
+        it('normalizes a bridge-less algorand-wc: URI instead of dropping it', () => {
             expect(
-                parseWalletConnectUri('algorand-wc:test@1?key=test'),
-            ).toBeNull()
+                parseWalletConnectUri('algorand-wc:test@1?key=test')?.uri,
+            ).toBe('wc:test@1?key=test')
         })
     })
 

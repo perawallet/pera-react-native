@@ -38,6 +38,7 @@ const makeOriginHandler = (
     disconnectAll: vi.fn(async () => {}),
     restore: vi.fn(async () => []),
     matchesNetwork: vi.fn(() => true),
+    methodsFor: vi.fn(() => []),
     ...overrides,
 })
 
@@ -99,6 +100,7 @@ const makeRawRequest = (options?: {
     kind: 'request',
     connectionId: 'c1',
     correlationId: '1',
+    sourceType: 'walletconnect',
     authorizedAccounts: ['AAAA'],
     peer: { name: 'Test dApp' },
     rawOperation: {
@@ -393,6 +395,30 @@ describe('createConnectionRegistry', () => {
 
             expect(
                 registry.networksFor(makeConnection({ kind: 'beta' })),
+            ).toEqual([])
+        })
+    })
+
+    describe('methodsFor', () => {
+        it('returns what the kind handler reports', () => {
+            const registry = createConnectionRegistry({ store })
+            registry.register(
+                makeHandler('alpha', {
+                    methodsFor: vi.fn(() => ['algo_signTxn']),
+                }),
+            )
+
+            expect(registry.methodsFor(makeConnection())).toEqual([
+                'algo_signTxn',
+            ])
+        })
+
+        it('is empty for a kind with no registered handler', () => {
+            const registry = createConnectionRegistry({ store })
+            registry.register(makeHandler('alpha'))
+
+            expect(
+                registry.methodsFor(makeConnection({ kind: 'beta' })),
             ).toEqual([])
         })
     })
@@ -957,6 +983,36 @@ describe('createConnectionRegistry', () => {
 
                 expect(respond).toHaveBeenCalledTimes(2)
             })
+        })
+    })
+
+    describe('onRequestExpired', () => {
+        it('fans the expiry out on the message channel as its own kind', async () => {
+            // The subscriber holding the request open (the signing adapter)
+            // is the one that has to let go of it.
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            ctx.onRequestExpired('c1', '7')
+
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+        })
+
+        it('survives a throwing subscriber', async () => {
+            const { ctx, registry } = await setupRegistry()
+            registry.subscribeToMessages(() => {
+                throw new Error('listener bug')
+            })
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            expect(() => ctx.onRequestExpired('c1', '7')).not.toThrow()
+            expect(seen).toHaveBeenCalledTimes(1)
         })
     })
 

@@ -68,10 +68,16 @@ export type ExternalSignTxnTransport = {
     respondWithSoftReject?: (error: Error) => Promise<void> | void
 }
 
+/**
+ * Resolves with the enqueued request, or `null` when the group was answered
+ * without one (nothing signable, or an invalid group refused up front). The
+ * handle is what lets a transport withdraw the request if the peer stops
+ * waiting for it.
+ */
 export type EnqueueArc0001SignRequest = (
     resolved: Arc0001ResolveResult,
     transport: ExternalSignTxnTransport,
-) => Promise<void>
+) => Promise<Nullable<TransactionSignRequest>>
 
 // Bridges an ARC-0001 resolver result to the signing pipeline. Transports
 // (WC, webview, future deeplinks) hand in the resolved subset plus a
@@ -98,7 +104,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 void transport.respondWithResult(
                     new Array(totalLength).fill(null),
                 )
-                return
+                return null
             }
 
             const indicesToSign = toSign.map(t => t.index)
@@ -115,7 +121,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 // Incoming group was invalid as received (stale/tampered
                 // group ID). Surface it to the dApp; never enqueue.
                 transport.respondWithError(toError(err))
-                return
+                return null
             }
 
             // No-raise path reproduces today's exact field values: full
@@ -222,6 +228,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
             } as TransactionSignRequest
 
             addSignRequest(signRequest)
+            return signRequest
         },
         [
             addSignRequest,

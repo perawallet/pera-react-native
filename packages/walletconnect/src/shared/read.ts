@@ -18,3 +18,6 @@ export const readString = (
     const value = source[key]
     return typeof value === 'string' ? value : undefined
 }
+
+export const isStringArray = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every(item => typeof item === 'string')

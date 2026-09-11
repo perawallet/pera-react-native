@@ -194,8 +194,28 @@ console.log(
     `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
 );
 
+// AsyncStorage is not a Pera dependency and must never become one: it would
+// be a second, unencrypted persistence layer beside MMKV. The specifier
+// arrives anyway because @walletconnect/keyvaluestorage's react-native entry
+// requires it at module scope and @walletconnect/core loads that entry even
+// when Core({ storage }) supplies our own store — so it is aliased to a stub
+// whose every member throws (metro-shims/async-storage.ts).
+const asyncStoragePackage = '@react-native-async-storage/async-storage';
+const asyncStorageStub = path.resolve(projectRoot, 'metro-shims/async-storage.ts');
+
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
+    // First branch on purpose: every early return below is a path this swap
+    // would otherwise miss, and the package is banned on web as well as
+    // native, so no platform guard either. Deep imports are redirected too —
+    // resolving one to the real package would defeat the whole alias.
+    if (
+        moduleName === asyncStoragePackage ||
+        moduleName.startsWith(asyncStoragePackage + '/')
+    ) {
+        return { filePath: asyncStorageStub, type: 'sourceFile' };
+    }
+
     // Strip Vite ?raw suffix so Metro can find the actual file
     if (moduleName.endsWith('?raw')) {
         const cleanName = moduleName.slice(0, -4);
@@ -425,6 +445,40 @@ const customResolveRequest = (context, moduleName, platform) => {
     if (forceResolveModules.includes(moduleName)) {
         const resolvedPath = path.resolve(projectRoot, 'node_modules', moduleName);
         return context.resolveRequest(context, resolvedPath, platform);
+    }
+
+    // tslib's exports map lists `import` before `default` (1.x sends it to
+    // modules/index.js, 2.x to tslib.es6.mjs), and Metro matches conditions in
+    // map order, so with `import` enabled (see unstable_conditionNames below) a
+    // plain `require("tslib")` from a CJS WalletConnect module lands on the ESM
+    // wrapper. That wrapper destructures `__extends` off a default import of the
+    // UMD build, which is undefined here, so it throws at module scope — before
+    // AppRegistry.registerComponent runs, which surfaces as "App entry not
+    // found" rather than as a stack in the app. Redirect to the CJS build.
+    if (moduleName === 'tslib') {
+        const resolved = context.resolveRequest(context, moduleName, platform);
+        if (resolved?.type === 'sourceFile') {
+            if (/tslib\.es6\.m?js$/.test(resolved.filePath)) {
+                return {
+                    type: 'sourceFile',
+                    filePath: resolved.filePath.replace(
+                        /tslib\.es6\.m?js$/,
+                        'tslib.js',
+                    ),
+                };
+            }
+            if (/[\\/]modules[\\/]index\.js$/.test(resolved.filePath)) {
+                return {
+                    type: 'sourceFile',
+                    filePath: path.resolve(
+                        path.dirname(resolved.filePath),
+                        '..',
+                        'tslib.js',
+                    ),
+                };
+            }
+        }
+        return resolved;
     }
 
     // falcon-1024 ships a dual build whose ESM entry (dist/index.js)

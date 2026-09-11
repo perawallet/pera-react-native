@@ -12,6 +12,7 @@
 
 import { useRef } from 'react'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
     useConnectionSigningAdapter,
@@ -19,22 +20,38 @@ import {
 } from '@perawallet/wallet-core-connections'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
+// lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
+import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import { useProposalQueue } from './useProposalQueue'
 
+/**
+ * The handler factories run synchronously during render, before
+ * `useConnectionsBoot`, so one that threw would take the whole provider — and
+ * every other handler — down with it. Both build their transports inside
+ * `initialize()` instead.
+ */
 export const useConnectionsProvider = (): ConnectionRegistry => {
     const registryRef = useRef<ConnectionRegistry | null>(null)
     if (!registryRef.current) {
         const registry = createConnectionRegistry({
             store: getProvider().connections.store,
         })
+        // Injected, on both handlers: a store default would drag the
+        // blockchain package into every importer's graph, `apps/browser`
+        // included.
+        const getNetwork = () => useNetworkStore.getState().network
+        registry.register(createWalletConnectV1Handler({ getNetwork }))
         registry.register(
-            createWalletConnectV1Handler({
-                // Injected: a store default would drag the blockchain package
-                // into every importer's graph, `apps/browser` included.
-                getNetwork: () => useNetworkStore.getState().network,
+            createWalletConnectV2Handler({
+                getNetwork,
+                // Empty when no Reown project is provisioned for the build;
+                // the handler then logs and refuses v2 pairings rather than
+                // failing the boot.
+                projectId: config.reownProjectId,
+                keyValueStorage: getProvider().keyValueStorage,
             }),
         )
         registryRef.current = registry
