@@ -46,6 +46,17 @@ export class WalletConnectInvalidSessionError extends WalletConnectError {
     }
 }
 
+/** A signing request whose TTL passed before the user answered it. */
+export class WalletConnectRequestExpiredError extends WalletConnectError {
+    constructor(originalError?: Error) {
+        super(
+            'The signing request expired before it was answered',
+            originalError,
+            { messageKey: 'errors.walletconnect.request_expired_body' },
+        )
+    }
+}
+
 export class WalletConnectSignRequestError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
         super(

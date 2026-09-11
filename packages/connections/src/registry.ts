@@ -199,6 +199,23 @@ export const createConnectionRegistry = (options: {
                 emitError(normalized, { connectionId: id })
             })
         },
+        // Fanned out on the message channel: the subscriber holding the
+        // request open is the one who must let go of it.
+        onRequestExpired: (connectionId, correlationId) => {
+            for (const listener of messageListeners) {
+                try {
+                    listener({
+                        kind: 'request-expired',
+                        connectionId,
+                        correlationId,
+                    })
+                } catch (listenerError) {
+                    logger.warn('[connections] message listener threw', {
+                        error: listenerError,
+                    })
+                }
+            }
+        },
         onError: emitError,
     })
 

@@ -35,10 +35,11 @@ const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 const mockClearPasskeyCredentials = vi.fn().mockResolvedValue(undefined)
 const mockClearConnections = vi.fn().mockResolvedValue(undefined)
 
+const mockKeyValueStorage = { removeItem: mockRemoveItem }
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
     getProvider: () => ({
-        keyValueStorage: { removeItem: mockRemoveItem },
+        keyValueStorage: mockKeyValueStorage,
         database: {},
         migration: { resetLegacyData: mockResetLegacyData },
         passkeyAutofill: { clearCredentials: mockClearPasskeyCredentials },
@@ -82,9 +83,12 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
     getActiveConnectionRegistry: () => mockGetActiveConnectionRegistry(),
 }))
 
+const mockClearWalletConnectV2Storage = vi.fn()
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     LEGACY_STORE_KEY: 'wallet-connect-store',
     LEGACY_IMPORTED_IDS_KEY: 'wallet-connect-store:imported',
+    clearWalletConnectV2Storage: (...args: unknown[]) =>
+        mockClearWalletConnectV2Storage(...args),
 }))
 
 const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
@@ -433,6 +437,47 @@ describe('useDeleteAllData', () => {
         // The marker guards re-import; left behind it would outlive the blob.
         expect(mockRemoveItem).toHaveBeenCalledWith(
             'wallet-connect-store:imported',
+        )
+    })
+
+    it('clears the WalletConnect v2 namespace, which holds every symKey and the client seed', async () => {
+        // `disconnectAll` removes each session's symKey but never the seed or
+        // an unsettled pairing, and no store registers the `wc2:` prefix with
+        // `clearAllStores`. Last of all, after `clearAllStores` has reopened
+        // the migration gate: that is what tears the handler down, and a live
+        // client writes its in-memory keychain back over an earlier clear.
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearWalletConnectV2Storage).toHaveBeenCalledTimes(1)
+        expect(mockClearWalletConnectV2Storage).toHaveBeenCalledWith(
+            mockKeyValueStorage,
+        )
+        expect(
+            (clearAllStores as Mock).mock.invocationCallOrder[0],
+        ).toBeLessThan(
+            mockClearWalletConnectV2Storage.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('finishes the wipe when clearing the v2 namespace throws', async () => {
+        mockClearWalletConnectV2Storage.mockImplementationOnce(() => {
+            throw new Error('mmkv gone')
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await expect(
+            act(async () => {
+                await result.current.deleteAllData()
+            }),
+        ).resolves.toBeUndefined()
+        expect(logger.error).toHaveBeenCalledWith(
+            'Failed to clear the WalletConnect v2 storage',
+            { error: expect.any(Error) },
         )
     })
 

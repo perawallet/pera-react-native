@@ -37,6 +37,7 @@ import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectPermissionError,
+    WalletConnectRequestExpiredError,
 } from '../shared/errors'
 import { toPeer } from '../shared/peer'
 import { toWireResult } from '../shared/wire'
@@ -235,6 +236,9 @@ export const createWalletConnectV2Handler = (
     // Proposal id to pairing topic, and the once-only ledger: a proposal
     // missing from here has been approved, rejected or expired.
     const pendingProposals = new Map<number, string>()
+    // Request id to session topic: `session_request_expire` carries only the
+    // id, and the registry addresses requests by connection.
+    const pendingRequests = new Map<number, string>()
     // Pairings the caller gave up on. Tombstoned rather than forgotten,
     // because a slow dApp can still deliver a proposal on one and a sheet
     // appearing from nowhere is worse than a map entry per abandon.
@@ -318,6 +322,23 @@ export const createWalletConnectV2Handler = (
                 pairingScope(pairingId),
             )
         })
+        // WalletKit has dropped the request, so any answer now fails with
+        // "No matching key": the sheet has to go, and the user hears why.
+        bind(walletKit, 'session_request_expire', ({ id }) => {
+            const topic = pendingRequests.get(id)
+            if (topic === undefined) return
+            pendingRequests.delete(id)
+            context?.onRequestExpired(topic, String(id))
+            reportError(
+                new WalletConnectRequestExpiredError(),
+                connectionScope(topic),
+            )
+        })
+        // `session_authenticate` stays unbound on purpose. A dApp's
+        // `authenticate()` sends a fallback `wc_sessionPropose` beside it, and
+        // sign-client drops that fallback once the wallet has a listener for
+        // the event, so binding one, even to reject, would refuse a pairing
+        // that works today.
         bindExpirer(walletKit)
     }
 
@@ -450,8 +471,10 @@ export const createWalletConnectV2Handler = (
             // pipeline learns the answer never landed, and the registry's
             // once-only guard releases on it so a retry can still answer.
             await requireClient().respondSessionRequest({ topic, response })
+            pendingRequests.delete(id)
         }
 
+        pendingRequests.set(id, topic)
         requireContext().onMessage({
             kind: 'request',
             connectionId: topic,
@@ -896,6 +919,9 @@ export const createWalletConnectV2Handler = (
             // client is dropped; a rejection here must not fail teardown.
             logger.warn('[WC v2] relay transport close failed', { error })
         }
+        // Closing the transport leaves the heartbeat pulsing, and the expirer
+        // it drives persists into the same namespace the next client owns.
+        walletKit.core.heartbeat.stop()
     }
 
     // The record goes whatever the relay says: a dApp the user removed must
@@ -974,6 +1000,7 @@ export const createWalletConnectV2Handler = (
             context = null
             pendingOrigins.clear()
             pendingProposals.clear()
+            pendingRequests.clear()
             abandonedPairings.clear()
             await releaseClient()
         },

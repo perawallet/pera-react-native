@@ -12,7 +12,7 @@
 
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
-import { readString } from '../shared/read'
+import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
 
 export const WALLET_CONNECT_V1_KIND = 'walletconnect-v1'
@@ -58,7 +58,11 @@ export const isWalletConnectV1Connection = (
         readString(metadata, 'bridge') !== undefined &&
         readString(metadata, 'handshakeTopic') !== undefined &&
         readString(metadata, 'peerId') !== undefined &&
-        typeof metadata.chainId === 'number'
+        typeof metadata.chainId === 'number' &&
+        // Optional on the record, but the settings screen maps whatever is
+        // there, so a present value has to be the shape the type promises.
+        (metadata.permissions === undefined ||
+            isStringArray(metadata.permissions))
     )
 }
 

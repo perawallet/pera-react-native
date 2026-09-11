@@ -16,6 +16,7 @@ import {
     isRetryableError,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
@@ -43,6 +44,76 @@ import type { ConnectionErrorScope, InboundMessage } from './models'
 import type { ConnectionRegistry } from './registry'
 
 type RequestMessage = Extract<InboundMessage, { kind: 'request' }>
+type ExpiredMessage = Extract<InboundMessage, { kind: 'request-expired' }>
+
+/**
+ * One request the pipeline is holding open for the user. `withdraw` is null
+ * while the ARC-0001 enqueue is still resolving fees; an expiry landing in
+ * that window marks the entry and the enqueue's continuation withdraws.
+ */
+type PendingRequest = { withdraw: Nullable<() => void>; isExpired: boolean }
+
+export type PendingRequestLedger = Map<string, PendingRequest>
+
+const requestKey = (message: {
+    connectionId: string
+    correlationId: string
+}): string => `${message.connectionId}\u0000${message.correlationId}`
+
+const trackRequest = (
+    deps: EnqueueInboundRequestDeps,
+    message: RequestMessage,
+    withdraw: Nullable<() => void>,
+): void => {
+    deps.pendingRequests.set(requestKey(message), {
+        withdraw,
+        isExpired: false,
+    })
+}
+
+const forgetRequest = (
+    deps: EnqueueInboundRequestDeps,
+    message: RequestMessage,
+): void => {
+    deps.pendingRequests.delete(requestKey(message))
+}
+
+/** The async enqueue settled: hand over the withdrawal, or honour an expiry that beat it. */
+const settleTrackedRequest = (
+    deps: EnqueueInboundRequestDeps,
+    message: RequestMessage,
+    withdraw: Nullable<() => void>,
+): void => {
+    const key = requestKey(message)
+    const entry = deps.pendingRequests.get(key)
+    if (!withdraw || !entry) {
+        deps.pendingRequests.delete(key)
+        return
+    }
+    if (entry.isExpired) {
+        deps.pendingRequests.delete(key)
+        withdraw()
+        return
+    }
+    entry.withdraw = withdraw
+}
+
+// Not reported here: the handler that saw the expiry owns the user-facing
+// error. An unknown key is a request already answered or refused.
+const withdrawExpiredRequest = (
+    message: ExpiredMessage,
+    deps: EnqueueInboundRequestDeps,
+): void => {
+    const key = requestKey(message)
+    const entry = deps.pendingRequests.get(key)
+    if (!entry) return
+    if (!entry.withdraw) {
+        entry.isExpired = true
+        return
+    }
+    deps.pendingRequests.delete(key)
+    entry.withdraw()
+}
 
 /** Where a failure the user should hear about goes; the registry's channel on mobile. */
 export type ConnectionErrorReporter = (
@@ -178,8 +249,10 @@ const enqueueArc60Request = (
                 type: 'sign-data',
                 signatures: signed.map(item => item.signature),
             })
+            forgetRequest(deps, message)
         },
         reject: async (reason: RejectReason = { kind: 'user' }) => {
+            forgetRequest(deps, message)
             if (reason.kind === 'softReject') {
                 await message.reject(reason.error)
                 removeSignRequest(signRequest)
@@ -189,11 +262,13 @@ const enqueueArc60Request = (
         },
         error: async (error: Error) => {
             if (failRequest(message, error, onError)) {
+                forgetRequest(deps, message)
                 removeSignRequest(signRequest)
             }
         },
     }
     addSignRequest(signRequest)
+    trackRequest(deps, message, () => removeSignRequest(signRequest))
 }
 
 // Chain id is out of scope: a v1 wire concept only the legacy v1 hook path
@@ -259,8 +334,10 @@ const enqueueLegacyDataRequest = (
                 type: 'sign-data',
                 signatures: signed.map(item => item.signature),
             })
+            forgetRequest(deps, message)
         },
         reject: async (reason: RejectReason = { kind: 'user' }) => {
+            forgetRequest(deps, message)
             if (reason.kind === 'softReject') {
                 await message.reject(reason.error)
                 removeSignRequest(signRequest)
@@ -270,11 +347,13 @@ const enqueueLegacyDataRequest = (
         },
         error: async (error: Error) => {
             if (failRequest(message, error, onError)) {
+                forgetRequest(deps, message)
                 removeSignRequest(signRequest)
             }
         },
     }
     addSignRequest(signRequest)
+    trackRequest(deps, message, () => removeSignRequest(signRequest))
 }
 
 // ARC-60 payloads are objects and the legacy shape is an array; Array.isArray is the whole discriminator.
@@ -297,6 +376,11 @@ export type EnqueueInboundRequestDeps = {
     removeSignRequest: (request: SignRequest) => void
     accounts: WalletAccount[]
     /**
+     * Every request still open for the user, so a `request-expired` message
+     * can withdraw the right one. One ledger per adapter instance.
+     */
+    pendingRequests: PendingRequestLedger
+    /**
      * Without one a refused or undeliverable request closes the sheet with no
      * explanation. The registry's emitter on mobile; the approval window
      * passes its own surface.
@@ -313,6 +397,10 @@ export const enqueueInboundRequest = (
     message: InboundMessage,
     deps: EnqueueInboundRequestDeps,
 ): void => {
+    if (message.kind === 'request-expired') {
+        withdrawExpiredRequest(message, deps)
+        return
+    }
     if (message.kind !== 'request') return
 
     if (message.operation.type === 'sign-transactions') {
@@ -331,6 +419,9 @@ export const enqueueInboundRequest = (
             return
         }
 
+        // Tracked before the enqueue, which awaits the fee calculator: an
+        // expiry can land in between.
+        trackRequest(deps, message, null)
         // `enqueue` can still reject past its own handling (re-encoding a
         // fee-adjusted group); un-caught that is an unanswered peer.
         deps.enqueueArc0001(resolved, {
@@ -342,17 +433,35 @@ export const enqueueInboundRequest = (
             sourceMetadata: message.peer,
             // A failed delivery must propagate: it is how a dead-socket revival
             // surfaces as retryable rather than as a fake success.
-            respondWithResult: signed =>
-                message.respond({ type: 'sign-transactions', signed }),
-            respondWithReject: () =>
-                rejectInBackground(message, new Error('User rejected')),
-            respondWithSoftReject: error => message.reject(error),
-            respondWithError: error => {
-                failRequest(message, error, deps.onError)
+            respondWithResult: async signed => {
+                await message.respond({ type: 'sign-transactions', signed })
+                forgetRequest(deps, message)
             },
-        }).catch((error: unknown) => {
-            declineRequest(message, toError(error), deps.onError)
-        })
+            respondWithReject: () => {
+                forgetRequest(deps, message)
+                rejectInBackground(message, new Error('User rejected'))
+            },
+            respondWithSoftReject: async error => {
+                await message.reject(error)
+                forgetRequest(deps, message)
+            },
+            respondWithError: error => {
+                if (failRequest(message, error, deps.onError)) {
+                    forgetRequest(deps, message)
+                }
+            },
+        }).then(
+            request =>
+                settleTrackedRequest(
+                    deps,
+                    message,
+                    request ? () => deps.removeSignRequest(request) : null,
+                ),
+            (error: unknown) => {
+                forgetRequest(deps, message)
+                declineRequest(message, toError(error), deps.onError)
+            },
+        )
         return
     }
 
@@ -374,12 +483,14 @@ export const useConnectionSigningAdapter = (
     const onError: ConnectionErrorReporter = (error, scope) =>
         registry.reportError(error, scope)
 
+    const pendingRequestsRef = useRef<PendingRequestLedger>(new Map())
     const depsRef = useRef<EnqueueInboundRequestDeps>({
         resolveArc0001,
         enqueueArc0001,
         addSignRequest,
         removeSignRequest,
         accounts,
+        pendingRequests: pendingRequestsRef.current,
         onError,
     })
     depsRef.current = {
@@ -388,6 +499,7 @@ export const useConnectionSigningAdapter = (
         addSignRequest,
         removeSignRequest,
         accounts,
+        pendingRequests: pendingRequestsRef.current,
         onError,
     }
 

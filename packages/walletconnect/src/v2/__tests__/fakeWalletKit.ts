@@ -74,6 +74,7 @@ export type FakeWalletKit = WalletKitClient & {
     /** Every event carrying at least one listener, so an extra bind fails too. */
     boundEvents(): WalletKitEvent[]
     transportClose: Mock<() => Promise<void>>
+    heartbeatStop: Mock<() => void>
     pair: Mock<WalletKitClient['core']['pairing']['pair']>
     pairingDisconnect: Mock<WalletKitClient['core']['pairing']['disconnect']>
     approveSession: Mock<WalletKitClient['approveSession']>
@@ -138,6 +139,7 @@ export const createFakeWalletKit = (
     }
     const sessions = { ...initial }
     const transportClose = vi.fn<() => Promise<void>>(async () => {})
+    const heartbeatStop = vi.fn<() => void>()
     const pair = vi.fn<WalletKitClient['core']['pairing']['pair']>(
         async () => ({
             topic: PAIRING_TOPIC,
@@ -179,6 +181,7 @@ export const createFakeWalletKit = (
         core: {
             pairing: { pair, disconnect: pairingDisconnect },
             relayer: { transportClose },
+            heartbeat: { stop: heartbeatStop },
             expirer: {
                 on: (_event, listener) => expirerListeners.add(listener),
                 off: (_event, listener) => expirerListeners.delete(listener),
@@ -199,6 +202,7 @@ export const createFakeWalletKit = (
                 )
                 .sort(),
         transportClose,
+        heartbeatStop,
         pair,
         pairingDisconnect,
     }

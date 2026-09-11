@@ -36,6 +36,28 @@ export interface WalletConnectV2Storage {
  */
 export const WALLET_CONNECT_V2_STORAGE_PREFIX = 'wc2:'
 
+const ownKeysOf = (keyValueStorage: KeyValueStorageService): string[] =>
+    keyValueStorage
+        .getAllKeys()
+        .filter(key => key.startsWith(WALLET_CONNECT_V2_STORAGE_PREFIX))
+
+/**
+ * Removes everything WalletKit persisted, keychain included: every pairing and
+ * session symKey and the client seed sit here, and no session disconnect
+ * clears the seed or a pairing that never settled. Needs no live client. A
+ * client still running writes its in-memory keychain back on its next
+ * mutation, so run this as close to the handler's teardown as the caller can.
+ */
+export const clearWalletConnectV2Storage = (
+    keyValueStorage: KeyValueStorageService,
+): void => {
+    const keys = ownKeysOf(keyValueStorage)
+    for (const key of keys) keyValueStorage.removeItem(key)
+    // MMKV is an append log: without compaction the removed symKeys stay
+    // recoverable from the file.
+    if (keys.length > 0) keyValueStorage.trim?.()
+}
+
 /**
  * Bridges Pera's synchronous KV service to the promise-based store
  * `Core({ storage })` expects.

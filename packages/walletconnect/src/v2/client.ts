@@ -110,6 +110,13 @@ export interface WalletKitClient {
             transportClose(): Promise<void>
         }
         /**
+         * The one interval every periodic core job (the expirer included)
+         * runs off. `transportClose` leaves it pulsing.
+         */
+        heartbeat: {
+            stop(): void
+        }
+        /**
          * WalletKit re-emits six events and `session_expire` is not one of
          * them, so a session that expires mid-run is only visible here.
          */

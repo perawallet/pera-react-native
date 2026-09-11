@@ -121,6 +121,17 @@ export type InboundMessage =
           connectionId: ConnectionId
           event: ConnectionEvent
       }
+    /**
+     * The peer will no longer take an answer to this request; whatever is
+     * holding it open for the user (a signing sheet) must let go. Never a
+     * new request kind on the raw side: the handler reports it through
+     * `ConnectionHandlerContext.onRequestExpired`.
+     */
+    | {
+          kind: 'request-expired'
+          connectionId: ConnectionId
+          correlationId: string
+      }
 
 /**
  * Envelope decoded and operation type known, payload unvalidated; the registry

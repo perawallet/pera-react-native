@@ -1022,7 +1022,8 @@
             "invalid_session_body": "Recibiste una solicitud de sesión no válida de una app. Revisa la app y vuelve a intentarlo.",
             "connection_timeout_body": "No se pudo conectar con WalletConnect para entregar tu transacción firmada. Revisa tu conexión y vuelve a intentarlo.",
             "bridge_connection_body": "No se pudo conectar con WalletConnect. Revisa tu conexión a internet y vuelve a intentarlo.",
-            "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo."
+            "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo.",
+            "request_expired_body": "Esta solicitud de firma caducó antes de recibir respuesta. Pide a la app que la envíe de nuevo."
         },
         "signing": {
             "title": "Error al procesar la solicitud de firma",

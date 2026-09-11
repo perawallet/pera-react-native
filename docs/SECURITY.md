@@ -42,7 +42,9 @@ That covers signing key material. WalletConnect v1's session key is a bridge sec
 signing key, and on the extension it lives in `keyValueStorage`: the offscreen document revives
 sockets before the vault is unlocked, so it has no key source to seal one under (native keeps it in
 the keystore). Reading it lets an attacker read and inject that dApp session's bridge traffic; it
-signs nothing. See [Connections](CONNECTIONS.md).
+signs nothing. WalletConnect v2's keychain (pairing and session symKeys, the client seed) is the
+same class of secret and lives in `keyValueStorage` on native as well, under the `wc2:` prefix,
+because WalletKit persists it as one row on every change. See [Connections](CONNECTIONS.md).
 
 Validate user input and API responses before acting on them. Keep secrets in `.env`, not in source.
 

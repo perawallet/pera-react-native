@@ -104,6 +104,7 @@ const noopContext = (seed: Connection[] = []): ConnectionHandlerContext => ({
     onProposal: vi.fn(),
     onMessage: vi.fn(),
     onDisconnected: vi.fn(),
+    onRequestExpired: vi.fn(),
     onError: vi.fn(),
 })
 

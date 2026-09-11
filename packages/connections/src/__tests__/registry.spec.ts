@@ -986,6 +986,36 @@ describe('createConnectionRegistry', () => {
         })
     })
 
+    describe('onRequestExpired', () => {
+        it('fans the expiry out on the message channel as its own kind', async () => {
+            // The subscriber holding the request open (the signing adapter)
+            // is the one that has to let go of it.
+            const { ctx, registry } = await setupRegistry()
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            ctx.onRequestExpired('c1', '7')
+
+            expect(seen).toHaveBeenCalledWith({
+                kind: 'request-expired',
+                connectionId: 'c1',
+                correlationId: '7',
+            })
+        })
+
+        it('survives a throwing subscriber', async () => {
+            const { ctx, registry } = await setupRegistry()
+            registry.subscribeToMessages(() => {
+                throw new Error('listener bug')
+            })
+            const seen = vi.fn()
+            registry.subscribeToMessages(seen)
+
+            expect(() => ctx.onRequestExpired('c1', '7')).not.toThrow()
+            expect(seen).toHaveBeenCalledTimes(1)
+        })
+    })
+
     describe('onDisconnected', () => {
         it('reports a failed store.remove through emitError instead of an unhandled rejection', async () => {
             store.remove = vi.fn(async () => {

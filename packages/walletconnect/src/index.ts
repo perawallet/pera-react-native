@@ -38,6 +38,10 @@ export {
 export * from './v2/connection'
 export * from './v2/caip'
 export {
+    clearWalletConnectV2Storage,
+    WALLET_CONNECT_V2_STORAGE_PREFIX,
+} from './v2/storage'
+export {
     useConnectorRegistryStore,
     type ConnectorRegistryStore,
 } from './store/connectorRegistryStore'

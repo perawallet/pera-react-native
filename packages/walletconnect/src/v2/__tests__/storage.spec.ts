@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform'
 import {
+    clearWalletConnectV2Storage,
     createWalletConnectV2Storage,
     WALLET_CONNECT_V2_STORAGE_PREFIX,
 } from '../storage'
@@ -134,5 +135,52 @@ describe('createWalletConnectV2Storage', () => {
 
         expect(await storage.getItem('keychain')).toBeUndefined()
         expect(await storage.getKeys()).toEqual([])
+    })
+})
+
+describe('clearWalletConnectV2Storage', () => {
+    const prefixed = (key: string): string =>
+        `${WALLET_CONNECT_V2_STORAGE_PREFIX}${key}`
+
+    it('removes every v2 entry and nothing of Pera’s', () => {
+        // The keychain (symKeys and the client seed) is one of these rows, and
+        // no session disconnect ever removes the seed or an unsettled pairing.
+        const backing = memoryKeyValueStorage({
+            [prefixed('wc@2:core:0.3//keychain')]: '{"a":"b"}',
+            [prefixed('client_ed25519_seed')]: '"seed"',
+            keychain: 'pera-owned',
+            reactQuery: '{}',
+        })
+
+        clearWalletConnectV2Storage(backing)
+
+        expect(snapshot(backing)).toEqual({
+            keychain: 'pera-owned',
+            reactQuery: '{}',
+        })
+    })
+
+    it('compacts the store once after removing, so the symKeys leave the file too', () => {
+        const trim = vi.fn()
+        const backing = Object.assign(
+            memoryKeyValueStorage({ [prefixed('client_ed25519_seed')]: '""' }),
+            { trim },
+        )
+
+        clearWalletConnectV2Storage(backing)
+
+        expect(trim).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not compact when there was nothing to remove', () => {
+        const trim = vi.fn()
+        const backing = Object.assign(memoryKeyValueStorage({ other: '1' }), {
+            trim,
+        })
+
+        clearWalletConnectV2Storage(backing)
+
+        expect(trim).not.toHaveBeenCalled()
+        expect(snapshot(backing)).toEqual({ other: '1' })
     })
 })

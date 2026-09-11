@@ -31,6 +31,12 @@ export interface ConnectionHandlerContext {
     /** Handlers emit the RAW form; the registry validates it. */
     onMessage(message: RawInboundMessage): void
     onDisconnected(id: ConnectionId): void
+    /**
+     * The peer stopped accepting an answer to a request it sent (a TTL
+     * passed). `correlationId` is the one the handler put on the message.
+     * Telling the user why is the handler's job, through {@link onError}.
+     */
+    onRequestExpired(id: ConnectionId, correlationId: string): void
     /** Report `{ pairingId }` for a failure before the proposal is approved and `{ connectionId }` after. */
     onError(error: Error, scope?: ConnectionErrorScope): void
 }

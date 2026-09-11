@@ -138,6 +138,9 @@ export const useSignRequestApprovalScreen =
                     addSignRequest,
                     removeSignRequest,
                     accounts: allAccounts,
+                    // One request per window, and no extension handler
+                    // reports an expiry yet, so nothing is ever withdrawn.
+                    pendingRequests: new Map(),
                     // Keep the window open so the reason is readable, as the
                     // sign-transactions branch below does.
                     onError: err => setError(describeSignError(err, t)),

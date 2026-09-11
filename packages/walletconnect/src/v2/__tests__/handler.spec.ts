@@ -37,6 +37,7 @@ import {
     isWalletConnectV2Connection,
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
+import { WalletConnectRequestExpiredError } from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
 import {
     ADDRESS,
@@ -88,11 +89,15 @@ const ORIGIN: ConnectionOrigin = {
 }
 
 /** Everything the handler binds; asserted exhaustively in both directions. */
+// Exact: `session_authenticate` must stay OFF this list. Sign-client drops a
+// dApp's fallback `wc_sessionPropose` as soon as the wallet has a listener
+// for it, so binding one would turn a working pairing into a refusal.
 const EXPECTED_BOUND_EVENTS: WalletKitEvent[] = [
     'proposal_expire',
     'session_delete',
     'session_proposal',
     'session_request',
+    'session_request_expire',
 ]
 
 /** A second proposal on the same pairing, which needs an id of its own. */
@@ -110,6 +115,7 @@ const makeContext = (store = memoryStore()) => ({
     onProposal: vi.fn<ConnectionHandlerContext['onProposal']>(),
     onMessage: vi.fn<ConnectionHandlerContext['onMessage']>(),
     onDisconnected: vi.fn<ConnectionHandlerContext['onDisconnected']>(),
+    onRequestExpired: vi.fn<ConnectionHandlerContext['onRequestExpired']>(),
     onError: vi.fn<ConnectionHandlerContext['onError']>(),
 })
 
@@ -458,6 +464,18 @@ describe('teardown', () => {
         expect(walletKit.transportClose).toHaveBeenCalledTimes(1)
     })
 
+    it('stops the heartbeat, so the orphaned core cannot write over the next client', async () => {
+        // `transportClose` leaves the 5 s heartbeat running, and the expirer it
+        // drives persists into the same `wc2:` namespace the client built by
+        // the post-wipe reboot owns; each cycle also leaks one interval.
+        const { handler, walletKit } = makeHandler()
+        await handler.initialize(makeContext())
+
+        await handler.teardown()
+
+        expect(walletKit.heartbeatStop).toHaveBeenCalledTimes(1)
+    })
+
     it('survives a transport that refuses to close', async () => {
         const walletKit = createFakeWalletKit()
         walletKit.transportClose.mockRejectedValue(new Error('socket stuck'))
@@ -465,6 +483,7 @@ describe('teardown', () => {
         await handler.initialize(makeContext())
 
         await expect(handler.teardown()).resolves.toBeUndefined()
+        expect(walletKit.heartbeatStop).toHaveBeenCalledTimes(1)
     })
 
     it('drops the client, so a torn-down handler claims nothing', async () => {
@@ -766,6 +785,50 @@ describe('session requests', () => {
         await expect(message.respond(result)).resolves.toBeUndefined()
         expect(walletKit.respondSessionRequest).toHaveBeenCalledTimes(2)
         await registry.teardown()
+    })
+})
+
+describe('request expiry', () => {
+    it('withdraws an unanswered request and tells the user why', async () => {
+        // WalletKit has dropped the request by now, so a late answer fails
+        // with "No matching key" and the pipeline would retry into a dead id.
+        const { walletKit, request, context } = await openSession()
+        await request()
+
+        walletKit.emit('session_request_expire', { id: REQUEST_ID })
+
+        expect(context.onRequestExpired).toHaveBeenCalledWith(
+            TOPIC,
+            String(REQUEST_ID),
+        )
+        expect(context.onError).toHaveBeenCalledWith(
+            expect.any(WalletConnectRequestExpiredError),
+            { connectionId: TOPIC },
+        )
+    })
+
+    it('ignores an expiry for a request it never surfaced', async () => {
+        const { walletKit, context } = await openSession()
+
+        walletKit.emit('session_request_expire', { id: REQUEST_ID + 1 })
+
+        expect(context.onRequestExpired).not.toHaveBeenCalled()
+        expect(context.onError).not.toHaveBeenCalled()
+    })
+
+    it('ignores an expiry for a request already answered', async () => {
+        const { walletKit, request, requireRequest, context } =
+            await openSession()
+        await request()
+        await requireRequest().respond({
+            type: 'sign-transactions',
+            signed: [null, null],
+        })
+
+        walletKit.emit('session_request_expire', { id: REQUEST_ID })
+
+        expect(context.onRequestExpired).not.toHaveBeenCalled()
+        expect(context.onError).not.toHaveBeenCalled()
     })
 })
 

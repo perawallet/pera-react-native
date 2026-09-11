@@ -11,7 +11,7 @@
  */
 
 import type { Connection } from '@perawallet/wallet-extension-connections'
-import { readString } from '../shared/read'
+import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriTopic, walletConnectUriVersion } from '../shared/uri'
 
 export const WALLET_CONNECT_V2_KIND = 'walletconnect-v2'
@@ -28,13 +28,14 @@ export type WalletConnectV2Metadata = {
 
 export type WalletConnectV2Connection = Connection & {
     kind: typeof WALLET_CONNECT_V2_KIND
-    /** Never present: WalletKit owns the symKey, so v2 stores no key material. */
+    /**
+     * Never present: the session symKey lives in WalletKit's own keychain
+     * under the `wc2:` namespace (see `./storage`), not in a keystore entry
+     * this record could point at. `docs/CONNECTIONS.md` records the trade-off.
+     */
     secretRef?: never
     metadata: WalletConnectV2Metadata
 }
-
-const isStringArray = (value: unknown): value is string[] =>
-    Array.isArray(value) && value.every(item => typeof item === 'string')
 
 /** The `?…` query of a `wc:` URI, with any `#fragment` cut off. */
 const queryOf = (uri: string): string => {

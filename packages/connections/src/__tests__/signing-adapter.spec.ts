@@ -695,6 +695,107 @@ describe('useConnectionSigningAdapter', () => {
         expect(message.reject).toHaveBeenCalledWith(failure)
     })
 
+    describe('request expiry', () => {
+        const expired = (correlationId = '7'): InboundMessage => ({
+            kind: 'request-expired',
+            connectionId: 'c1',
+            correlationId,
+        })
+
+        const txnMessage = (correlationId = '7'): InboundMessage => ({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId,
+            sourceType: 'walletconnect',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(async () => {}),
+            reject: vi.fn(async () => {}),
+        })
+
+        it('withdraws the enqueued transaction request the peer stopped waiting for', async () => {
+            // Answering late fails on the wire, and the pipeline would then
+            // retry into a request id the relay has already dropped.
+            const signRequest = { id: 'sr-1', type: 'transactions' }
+            mockEnqueue.mockResolvedValueOnce(signRequest as never)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+
+            send(txnMessage())
+            await Promise.resolve()
+            send(expired())
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
+        })
+
+        it('withdraws on arrival when the expiry beats the enqueue', async () => {
+            // The enqueue awaits the fee calculator; an expiry can land in
+            // between, when there is no sign request to remove yet.
+            const signRequest = { id: 'sr-2', type: 'transactions' }
+            let settle: (value: never) => void = () => {}
+            mockEnqueue.mockReturnValueOnce(
+                new Promise<never>(resolve => {
+                    settle = resolve
+                }),
+            )
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+
+            send(txnMessage())
+            send(expired())
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+
+            settle(signRequest as never)
+            await Promise.resolve()
+
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(signRequest)
+        })
+
+        it('withdraws a sign-data request by its connection and correlation id', () => {
+            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+            send(
+                signDataMessage(
+                    {
+                        type: 'arc60',
+                        stdSigData: {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            domain: 'example.com',
+                            authenticatorData: new Uint8Array([1]),
+                        },
+                        metadata: { scope: 1, encoding: 'base64' },
+                    },
+                    [PRIMARY_SIGNER],
+                ),
+            )
+            const added = mockAddSignRequest.mock.calls[0][0]
+
+            // A different request on the same connection is left alone.
+            send(expired('other'))
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+
+            send(expired('9'))
+            expect(mockRemoveSignRequest).toHaveBeenCalledWith(added)
+        })
+
+        it('does nothing for a request already answered', async () => {
+            const signRequest = { id: 'sr-3', type: 'transactions' }
+            mockEnqueue.mockResolvedValueOnce(signRequest as never)
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+            send(txnMessage())
+            await Promise.resolve()
+            await lastTransport().respondWithResult([null])
+
+            send(expired())
+
+            expect(mockRemoveSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
     describe('sign-data', () => {
         it('enqueues an ARC-60 sign request', () => {
             mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
@@ -1053,6 +1154,7 @@ describe('useConnectionSigningAdapter', () => {
             addSignRequest: mockAddSignRequest,
             removeSignRequest: mockRemoveSignRequest,
             accounts: [],
+            pendingRequests: new Map(),
         })
 
         expect(mockResolve).toHaveBeenCalledWith(expect.anything(), {
