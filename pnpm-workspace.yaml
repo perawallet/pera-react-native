@@ -5,7 +5,7 @@ packages:
   - conformance
 
 catalog:
-  "@algorandfoundation/algokit-utils": 9.2.0
+  "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore-core": 1.0.0-canary.3
   "@algorandfoundation/keystore-web": 1.0.0-canary.3
@@ -15,7 +15,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.26
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.15
+  "@lottiefiles/dotlottie-react": 0.19.16
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
@@ -37,26 +37,26 @@ catalog:
   # internal protocol contract, so a floating minor on one side can pair with
   # a core it was never built against. Bump the two together.
   "@reown/walletkit": 1.5.6
-  "@scure/base": 2.3.0
+  "@scure/base": 2.4.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
   "@tanstack/react-query-persist-client": ^5.99.0
   "@tanstack/store": 0.11.1
-  "@testing-library/react": 16.3.2
+  "@testing-library/react": 16.3.3
   "@types/chrome": ^0.2.2
   "@types/node": ^20.19.39
   "@types/react": ~19.2.14
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.1.0
+  "@vitejs/plugin-react": 6.1.1
   "@vitest/coverage-v8": ^4.1.9
   # Kept in step with "@reown/walletkit" above; see the note there.
-  "@walletconnect/core": 2.23.10
+  "@walletconnect/core": 2.24.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
-  "@walletconnect/react-native-compat": 2.23.10
+  "@walletconnect/react-native-compat": 2.24.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
@@ -90,7 +90,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.8.1
   msw: ^2.14.6
-  oxfmt: ^0.65.0
+  oxfmt: ^0.66.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
