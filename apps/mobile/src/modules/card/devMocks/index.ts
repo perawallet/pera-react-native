@@ -11,14 +11,10 @@
  */
 
 export { installCardDevMocks } from './installCardDevMocks'
+// Fixture data only (integration tests seed MSW with it); no longer served at
+// runtime, the transactions route hits the real Baanx API.
 export {
     buildMockCardTransactions,
     type MockCardTransaction,
 } from './mockCardTransactions'
-export {
-    applyMockDelegation,
-    buildMockDelegationProgram,
-    buildMockDelegationToken,
-    buildMockExternalWallets,
-    resetMockDelegation,
-} from './mockDelegation'
+export { applyMockDelegation } from './mockDelegation'

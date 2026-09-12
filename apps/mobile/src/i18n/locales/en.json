@@ -1145,7 +1145,12 @@
             "report_suspicious_before_body": "Please verify with family or other authorized users if they have used your card. If they have, you can unfreeze your card anytime to keep using it. If not, continue with the report.",
             "report_suspicious_before_confirm": "Continue with Report",
             "error_title": "Something went wrong",
-            "error_body": "Please try again."
+            "error_body": "Please try again.",
+            "setup_incomplete": "Setup not complete",
+            "auto_funding_unavailable_title": "Auto Funding isn't available yet",
+            "auto_funding_unavailable_body": "This card can't be authorized for Auto Funding right now. You can keep using Manual Funding.",
+            "auto_funding_rejected_title": "Auto Funding authorization rejected",
+            "auto_funding_rejected_body": "The authorization couldn't be verified. Try again, or keep using Manual Funding."
         },
         "transactions": {
             "navigation_title": "Transactions",
@@ -1413,7 +1418,11 @@
             "nationality_picker_title": "Nationality",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't save your details. Please try again."
+            "error_body": "We couldn't save your details. Please try again.",
+            "birth_country_label": "Country of Birth",
+            "birth_country_placeholder": "Select country",
+            "birth_country_picker_title": "Country of Birth",
+            "birth_country_required": "Please select your country of birth"
         },
         "address": {
             "navigation_title": "Residential Address",
@@ -1494,6 +1503,12 @@
             "create_card_account_error_body": "Card creation needs a signature this account type can't provide. Connect a standard Pera account as your funding source.",
             "linked_elsewhere_error_title": "Account already linked",
             "linked_elsewhere_error_body": "This account is already linked to another Pera Card profile. Connect a different account as your funding source.",
+            "create_in_progress_title": "Card creation already in progress",
+            "create_in_progress_body": "Another request is still creating a card for this account. Give it a moment and try again.",
+            "setup_incomplete_error_title": "Finish your account setup first",
+            "setup_incomplete_error_body": "Your Pera Card account isn't ready for a card yet. Complete the remaining steps and try again.",
+            "create_card_unavailable_title": "Couldn't confirm your card on the network",
+            "create_card_unavailable_body": "The card wasn't created and nothing was charged. Please try again in a moment.",
             "auto_funding_degraded_title": "Card created",
             "auto_funding_degraded_body": "Auto Funding couldn't be enabled right now, so your card starts on Manual Funding. You can switch later in card settings."
         },

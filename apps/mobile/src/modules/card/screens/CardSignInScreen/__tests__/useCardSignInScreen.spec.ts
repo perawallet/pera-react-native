@@ -28,6 +28,8 @@ vi.mock('@react-navigation/native', async () => {
 
 const mockMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
+// Default: the account already created its on-chain card, so a token lands on Home.
+const mockEscrowCardAddress: { value: string | null } = { value: 'ESCROW_CARD' }
 const mockSendOtpMutateAsync = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -50,6 +52,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             getState: () => ({
                 contactVerificationId: 'mock-contact-id',
                 setOnboardingStep: mockSetOnboardingStep,
+                escrowCardAddress: mockEscrowCardAddress.value,
             }),
         }),
         useSendLoginOtpMutation: () => ({
@@ -157,6 +160,62 @@ describe('useCardSignInScreen', () => {
         })
 
         expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.RecoverSignIn)
+    })
+
+    it('lands a fully set-up account (token + escrow card) on the wallet home', async () => {
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('resumes the setup checklist when the account has a token but no on-chain card yet', async () => {
+        // Registration complete is not setup complete: without an escrow card
+        // the signing steps never ran, and only the checklist can start them.
+        mockEscrowCardAddress.value = null
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardOnboarding',
+            params: { screen: 'CardOnboardingStatus', params: {} },
+        })
+        expect(mockNavigate).not.toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+        })
+        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('keeps the OTP submit gated until the code is complete', () => {

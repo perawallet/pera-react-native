@@ -211,6 +211,45 @@ describe('useCardStore', () => {
         expect(persisted?.selectedFundingType).toBe(FundingType.Manual)
     })
 
+    test('adoptCardUser keeps the setup state for the same user and clears it for another', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+        act(() => {
+            result.current.adoptCardUser('user-a')
+            result.current.setConnectedFundingSourceAddress('OWNERADDR')
+            result.current.setEscrowCard({
+                cardAddress: 'ESCROWCARDADDR',
+                ownerAddress: 'OWNERADDR',
+                network: 'testnet',
+                txId: 'TX1',
+            })
+        })
+        // Same user again (re-login): nothing is lost.
+        act(() => result.current.adoptCardUser('user-a'))
+        expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
+        expect(result.current.connectedFundingSourceAddress).toBe('OWNERADDR')
+        // A different user: the card belongs to someone else's Baanx account.
+        act(() => result.current.adoptCardUser('user-b'))
+        expect(result.current.cardUserId).toBe('user-b')
+        expect(result.current.escrowCardAddress).toBeNull()
+        expect(result.current.escrowCardOwner).toBeNull()
+        expect(result.current.connectedFundingSourceAddress).toBeNull()
+        expect(result.current.selectedFundingType).toBeNull()
+        // The owner is persisted so the check survives a restart.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted?.cardUserId).toBe('user-b')
+    })
+
     test('setEscrowCard records owner + txId, persists, and survives resetOnboardingProgress', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())

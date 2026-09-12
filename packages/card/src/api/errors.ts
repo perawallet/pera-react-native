@@ -151,19 +151,32 @@ export const getCardApiError = async (
     const status = getStatus(error)
     const body = await resolveErrorBody(error)
 
-    // A plain-text error body is itself the message.
+    // A plain-text error body is itself the message, unless it is markup: an
+    // Express 404 page is text/html and would otherwise be shown verbatim.
     if (typeof body === 'string') {
-        return { status, message: body.length > 0 ? body : undefined }
+        const text = body.trim()
+        const isMarkup = text.startsWith('<')
+        return {
+            status,
+            message: text.length > 0 && !isMarkup ? body : undefined,
+        }
     }
     if (typeof body !== 'object' || body === null) return { status }
 
     const record = body as Record<string, unknown>
-    const code = firstString(record, ['code', 'errorCode', 'error'])
-    const message = firstString(record, [
-        'message',
-        'detail',
-        'error_description',
-    ])
+    // `type`/`details`/`data.message` are AppliedBlockchain's escrow error shape.
+    const code = firstString(record, ['code', 'errorCode', 'error', 'type'])
+    const data = record.data
+    const message =
+        firstString(record, [
+            'message',
+            'detail',
+            'details',
+            'error_description',
+        ]) ??
+        (typeof data === 'object' && data !== null
+            ? firstString(data as Record<string, unknown>, ['message'])
+            : undefined)
 
     // Baanx wraps the real error as a JSON string inside `message` — unwrap it so
     // callers see the actual status/code/message instead of an opaque blob.
@@ -196,6 +209,30 @@ export const isInvalidInputError = (apiError: CardApiError): boolean =>
  */
 export const isDuplicateError = (apiError: CardApiError): boolean =>
     /duplicate|already exists/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
+ * AB's `/api/approvals` re-run after a prior success (e.g. an app restart
+ * between create and approve). The current AB service replays 200, so this
+ * only matters against an older build that rejected with "Card already
+ * created"; matched on text like {@link isDuplicateError}.
+ */
+export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
+    /already (created|approved)/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
+ * Baanx's final registration step (address) returns this generic message when
+ * the user was already created by an earlier attempt whose response was lost
+ * (seen live on the dev env: first call 500s after creating the user, every
+ * retry then fails with this text). Matched on text like
+ * {@link isDuplicateError}; kept separate because other steps use
+ * `isDuplicateError` with different follow-up semantics.
+ */
+export const isUserAlreadyCreatedError = (apiError: CardApiError): boolean =>
+    /create user failed/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
 

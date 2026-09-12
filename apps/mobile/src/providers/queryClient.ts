@@ -54,6 +54,22 @@ export const setOnPeraBackendUnavailable = (
     }
 }
 
+// Expo's log forwarder renders any context object that carries a `stack` as a
+// "Call Stack" block and blanks the rest, so name/status/url must ride in the
+// message to be readable in the dev log. `error` stays in context for the crash
+// reporter. Shape-based: no ky import.
+const describeError = (error: unknown): string => {
+    const shaped = error as {
+        name?: string
+        response?: { status?: number; url?: string }
+        request?: { url?: string }
+    }
+    const url = shaped?.response?.url ?? shaped?.request?.url
+    return [shaped?.name ?? 'Error', shaped?.response?.status, url]
+        .filter(part => part !== undefined)
+        .join(' ')
+}
+
 const cache = new QueryCache({
     onError: error => {
         // Transient connectivity errors are already logged at warn level by
@@ -74,7 +90,7 @@ const cache = new QueryCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('An error has occurred:', { error })
+        logger.error(`Query failed: ${describeError(error)}`, { error })
     },
 })
 
@@ -89,7 +105,7 @@ const mutationCache = new MutationCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('Mutation failed:', {
+        logger.error(`Mutation failed: ${describeError(error)}`, {
             error,
             mutationKey: mutation.options.mutationKey,
         })

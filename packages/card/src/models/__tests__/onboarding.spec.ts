@@ -83,6 +83,7 @@ describe('personalDetailsSchema', () => {
         lastName: 'Morgan',
         dateOfBirth: '27/02/1986',
         countryOfNationality: 'GB',
+        countryOfBirth: 'GB',
     }
 
     it('accepts a complete, valid record', () => {

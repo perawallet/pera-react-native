@@ -407,7 +407,7 @@ class Logger {
         // classified centrally so the policy stays in one reviewable place.
         //
         // The context is classified too because most call sites pass a constant
-        // string plus `{ error }` (the query cache's 'An error has occurred:'
+        // string plus `{ error }` (the query cache's 'Query failed: …'
         // being the one every algod and indexer failure reaches). Judging only
         // the first argument would leave the policy inert at the majority of
         // sites, including every transport timeout and 5xx.

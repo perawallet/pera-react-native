@@ -129,7 +129,7 @@ describe('useCreateAndApproveCardMutation', () => {
         expect(approveEscrowCard).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
-                address: ADDRESS,
+                cardAddress: 'ESCROW1',
                 currency: 'usdc',
                 txId: 'TX1',
                 signData: PROOF.signData,

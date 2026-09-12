@@ -12,16 +12,15 @@
 
 import { z } from 'zod'
 
-// POST /api/approvals → the created escrow card's account address. AB
-// performs the on-chain `cardCreate` for THEIR OWN records; the wallet's own
-// source of truth for the address is the Pera backend's create-card response
-// (api/card-creation) — this is a confirmation echo, validated the same way.
+// POST /api/approvals echoes the stored approval record. `address` is the
+// escrow card (what we sent); the other fields (transaction.blockNumber,
+// status, userId) are AB bookkeeping the wallet does not act on.
 export const escrowCardApprovalResponseSchema = z.object({
-    cardAddress: z.string(),
+    address: z.string(),
 })
 
-// POST /api/internal/delegator-lsig → echoes the delegator address (from AB's
-// demo `PostDelegatorLsigResponse`).
+// POST /api/internal/delegator-lsig replies 201; AB has not published the
+// body, so nothing in it is relied on.
 export const delegatorLsigResponseSchema = z.object({
-    delegatorAddress: z.string(),
+    delegatorAddress: z.string().optional(),
 })

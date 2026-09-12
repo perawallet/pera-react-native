@@ -1145,7 +1145,12 @@
             "report_suspicious_before_body": "Lütfen kartını ailenden birinin veya yetkili başka bir kullanıcının kullanıp kullanmadığını kontrol et. Kullandıysa, kullanmaya devam etmek için kartını dilediğin zaman kullanıma açabilirsin. Kullanmadıysa bildirime devam et.",
             "report_suspicious_before_confirm": "Bildirime devam et",
             "error_title": "Bir şeyler ters gitti",
-            "error_body": "Lütfen tekrar dene."
+            "error_body": "Lütfen tekrar dene.",
+            "setup_incomplete": "Kurulum tamamlanmadı",
+            "auto_funding_unavailable_title": "Otomatik fonlama henüz kullanılamıyor",
+            "auto_funding_unavailable_body": "Bu kart şu anda otomatik fonlama için yetkilendirilemiyor. Manuel fonlamayı kullanmaya devam edebilirsin.",
+            "auto_funding_rejected_title": "Otomatik fonlama yetkilendirmesi reddedildi",
+            "auto_funding_rejected_body": "Yetkilendirme doğrulanamadı. Tekrar dene veya manuel fonlamayı kullanmaya devam et."
         },
         "transactions": {
             "navigation_title": "İşlemler",
@@ -1413,7 +1418,11 @@
             "nationality_picker_title": "Uyruk",
             "confirm_button": "Devam et",
             "error_title": "Bir şeyler ters gitti",
-            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene."
+            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene.",
+            "birth_country_label": "Doğum Ülkesi",
+            "birth_country_placeholder": "Ülke seç",
+            "birth_country_picker_title": "Doğum Ülkesi",
+            "birth_country_required": "Lütfen doğum ülkeni seç"
         },
         "address": {
             "navigation_title": "İkamet adresi",
@@ -1494,6 +1503,12 @@
             "create_card_account_error_body": "Kart oluşturma, bu hesap türünün sağlayamadığı bir imza gerektiriyor. Fonlama kaynağı olarak standart bir Pera hesabı bağla.",
             "linked_elsewhere_error_title": "Hesap zaten bağlı",
             "linked_elsewhere_error_body": "Bu hesap başka bir Pera Card profiline zaten bağlı. Fonlama kaynağı olarak farklı bir hesap bağla.",
+            "create_in_progress_title": "Kart oluşturma zaten devam ediyor",
+            "create_in_progress_body": "Başka bir istek bu hesap için hâlâ kart oluşturuyor. Biraz bekle ve tekrar dene.",
+            "setup_incomplete_error_title": "Önce hesap kurulumunu tamamla",
+            "setup_incomplete_error_body": "Pera Card hesabın henüz kart için hazır değil. Kalan adımları tamamla ve tekrar dene.",
+            "create_card_unavailable_title": "Kartın ağda doğrulanamadı",
+            "create_card_unavailable_body": "Kart oluşturulmadı ve herhangi bir ücret alınmadı. Lütfen biraz sonra tekrar dene.",
             "auto_funding_degraded_title": "Kart oluşturuldu",
             "auto_funding_degraded_body": "Otomatik fonlama şu anda etkinleştirilemedi, bu yüzden kartın manuel fonlamayla başlıyor. Daha sonra kart ayarlarından değiştirebilirsin."
         },

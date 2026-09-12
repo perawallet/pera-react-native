@@ -86,6 +86,22 @@ describe('defaultTransport', () => {
         expect(baanxDirectRequest).not.toHaveBeenCalled()
     })
 
+    it('forwards timeoutMs to the pera client as the request timeout on the proxy route', async () => {
+        queryClient.mockResolvedValue(ok)
+
+        await defaultTransport.request({
+            route: 'proxy',
+            network: 'testnet',
+            method: 'POST',
+            path: '/api/v3/baanx/escrow-card',
+            timeoutMs: 60_000,
+        })
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({ timeout: 60_000 }),
+        )
+    })
+
     it('attaches the attestation token to proxy calls when one is valid', async () => {
         queryClient.mockResolvedValue(ok)
         getValidIntegrityToken.mockReturnValue('attestation-token')

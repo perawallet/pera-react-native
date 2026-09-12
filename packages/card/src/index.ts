@@ -58,6 +58,7 @@ export {
     isConflictError,
     isInvalidInputError,
     isDuplicateError,
+    isUserAlreadyCreatedError,
     isNotVerifiedError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
@@ -66,8 +67,13 @@ export type { CardApiError } from './api/errors'
 // copy (the classes carry no user-facing wording of their own).
 export {
     CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
 } from './api/card-creation'
 export { CardOrderNotVerifiedError } from './api/card'
+export { CardEscrowNotConfiguredError } from './api/transport'
 export { OnboardingNotVerifiedError } from './api/errors'

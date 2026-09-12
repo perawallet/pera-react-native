@@ -1145,7 +1145,12 @@
             "report_suspicious_before_body": "Comprueba con tu familia o con otros usuarios autorizados si han usado tu tarjeta. Si la han usado, puedes descongelarla cuando quieras para seguir utilizándola. Si no, continúa con el reporte.",
             "report_suspicious_before_confirm": "Continuar con el reporte",
             "error_title": "Algo salió mal",
-            "error_body": "Vuelve a intentarlo."
+            "error_body": "Vuelve a intentarlo.",
+            "setup_incomplete": "Configuración incompleta",
+            "auto_funding_unavailable_title": "La financiación automática aún no está disponible",
+            "auto_funding_unavailable_body": "Esta tarjeta no se puede autorizar para financiación automática ahora. Puedes seguir usando la financiación manual.",
+            "auto_funding_rejected_title": "Autorización de financiación automática rechazada",
+            "auto_funding_rejected_body": "No pudimos verificar la autorización. Inténtalo de nuevo o sigue usando la financiación manual."
         },
         "transactions": {
             "navigation_title": "Transacciones",
@@ -1413,7 +1418,11 @@
             "nationality_picker_title": "Nacionalidad",
             "confirm_button": "Continuar",
             "error_title": "Algo salió mal",
-            "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo."
+            "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo.",
+            "birth_country_label": "País de nacimiento",
+            "birth_country_placeholder": "Selecciona un país",
+            "birth_country_picker_title": "País de nacimiento",
+            "birth_country_required": "Selecciona tu país de nacimiento"
         },
         "address": {
             "navigation_title": "Dirección de residencia",
@@ -1494,6 +1503,12 @@
             "create_card_account_error_body": "La creación de la tarjeta requiere una firma que este tipo de cuenta no puede proporcionar. Conecta una cuenta de Pera estándar como fuente de financiación.",
             "linked_elsewhere_error_title": "Cuenta ya vinculada",
             "linked_elsewhere_error_body": "Esta cuenta ya está vinculada a otro perfil de Pera Card. Conecta una cuenta diferente como fuente de financiación.",
+            "create_in_progress_title": "La creación de la tarjeta ya está en curso",
+            "create_in_progress_body": "Otra solicitud sigue creando una tarjeta para esta cuenta. Espera un momento e inténtalo de nuevo.",
+            "setup_incomplete_error_title": "Completa primero la configuración de tu cuenta",
+            "setup_incomplete_error_body": "Tu cuenta de Pera Card aún no está lista para una tarjeta. Completa los pasos restantes e inténtalo de nuevo.",
+            "create_card_unavailable_title": "No pudimos confirmar tu tarjeta en la red",
+            "create_card_unavailable_body": "La tarjeta no se creó y no se cobró nada. Inténtalo de nuevo en un momento.",
             "auto_funding_degraded_title": "Tarjeta creada",
             "auto_funding_degraded_body": "No se pudo activar la financiación automática en este momento, así que tu tarjeta empieza con financiación manual. Puedes cambiarlo más adelante en los ajustes de la tarjeta."
         },

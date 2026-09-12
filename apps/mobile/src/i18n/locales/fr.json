@@ -1145,7 +1145,12 @@
             "report_suspicious_before_body": "Veuillez vérifier auprès de votre famille ou des autres utilisateurs autorisés s’ils ont utilisé votre carte. Si c’est le cas, vous pouvez la débloquer à tout moment pour continuer à l’utiliser. Sinon, poursuivez le signalement.",
             "report_suspicious_before_confirm": "Poursuivre le signalement",
             "error_title": "Une erreur est survenue",
-            "error_body": "Veuillez réessayer."
+            "error_body": "Veuillez réessayer.",
+            "setup_incomplete": "Configuration incomplète",
+            "auto_funding_unavailable_title": "Le financement automatique n’est pas encore disponible",
+            "auto_funding_unavailable_body": "Cette carte ne peut pas être autorisée pour le financement automatique pour le moment. Vous pouvez continuer à utiliser le financement manuel.",
+            "auto_funding_rejected_title": "Autorisation de financement automatique refusée",
+            "auto_funding_rejected_body": "L’autorisation n’a pas pu être vérifiée. Réessayez ou continuez à utiliser le financement manuel."
         },
         "transactions": {
             "navigation_title": "Transactions",
@@ -1413,7 +1418,11 @@
             "nationality_picker_title": "Nationalité",
             "confirm_button": "Continuer",
             "error_title": "Une erreur est survenue",
-            "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer."
+            "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer.",
+            "birth_country_label": "Pays de naissance",
+            "birth_country_placeholder": "Sélectionnez un pays",
+            "birth_country_picker_title": "Pays de naissance",
+            "birth_country_required": "Veuillez sélectionner votre pays de naissance"
         },
         "address": {
             "navigation_title": "Adresse de résidence",
@@ -1494,6 +1503,12 @@
             "create_card_account_error_body": "La création de la carte nécessite une signature que ce type de compte ne peut pas fournir. Connectez un compte Pera standard comme source de financement.",
             "linked_elsewhere_error_title": "Compte déjà lié",
             "linked_elsewhere_error_body": "Ce compte est déjà lié à un autre profil Pera Card. Connectez un autre compte comme source de financement.",
+            "create_in_progress_title": "La création de la carte est déjà en cours",
+            "create_in_progress_body": "Une autre demande est en train de créer une carte pour ce compte. Patientez un instant et réessayez.",
+            "setup_incomplete_error_title": "Terminez d’abord la configuration de votre compte",
+            "setup_incomplete_error_body": "Votre compte Pera Card n’est pas encore prêt pour une carte. Terminez les étapes restantes et réessayez.",
+            "create_card_unavailable_title": "Impossible de confirmer votre carte sur le réseau",
+            "create_card_unavailable_body": "La carte n’a pas été créée et rien n’a été débité. Veuillez réessayer dans un instant.",
             "auto_funding_degraded_title": "Carte créée",
             "auto_funding_degraded_body": "Le financement automatique n’a pas pu être activé pour le moment, votre carte démarre donc en financement manuel. Vous pourrez passer au financement automatique plus tard dans les paramètres de la carte."
         },
