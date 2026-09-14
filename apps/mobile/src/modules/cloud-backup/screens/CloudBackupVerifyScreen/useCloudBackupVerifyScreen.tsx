@@ -24,6 +24,7 @@ import {
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -90,6 +91,7 @@ const useEncryptionKeyConfirmation = (
     enableBackup: EnableBackup,
 ): (() => void) => {
     const { request: requestBottomSheet } = useBottomSheet()
+    const { requirePinVerification } = useRequirePinVerification()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
 
@@ -102,9 +104,10 @@ const useEncryptionKeyConfirmation = (
         if (result === 'show-credentials') {
             navigation.popTo('CloudBackupSetup')
         } else if (result === 'enable') {
+            if (!(await requirePinVerification())) return
             enableBackup()
         }
-    }, [requestBottomSheet, navigation, enableBackup])
+    }, [requestBottomSheet, requirePinVerification, navigation, enableBackup])
 
     // `useBackupQuiz` types its callback `() => void`.
     return useCallback(
