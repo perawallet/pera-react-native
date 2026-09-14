@@ -56,7 +56,6 @@ type UseCloudBackupOverviewResult = {
     onPressAccounts: () => void
     onPressContacts: () => void
     onPressCredentialAddress: () => Promise<void>
-    onPressCredentialInfo: () => void
     onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
 }
@@ -125,10 +124,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         () => formatSyncedAt(lastSyncedAt),
         [lastSyncedAt],
     )
-
-    const noop = useCallback(() => {
-        // TODO: wire the credential-info destination as its screen lands.
-    }, [])
 
     const onPressAccounts = useCallback(() => {
         trackEvent(CloudBackupEvent.OverviewAccounts)
@@ -200,7 +195,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressAccounts,
         onPressContacts,
         onPressCredentialAddress,
-        onPressCredentialInfo: noop,
         onPressSyncDevices,
         onPressTurnOff,
     }
