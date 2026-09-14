@@ -573,10 +573,10 @@
             "title": "Yeni bir bulut yedeklemesi oluştur",
             "description": "Yedeklemene gelecekte ulaşabilmek için 12 kelimelik anahtarını ve şifreleme anahtarlarını güvenli bir yerde sakla.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Panoya kopyala",
             "encryption_key_label": "Şifreleme anahtarı",
             "info_title": "Yerel şifreleme için gerekli",
             "info_body": "Bu kimlik bilgileri kaybolursa geri alınamaz. Yedeklemene erişimini kaybetmemek için onları güvenli bir yerde sakla.",
+            "checkbox_label": "Evet, Passphrase’imi sakladım",
             "proceed": "Devam et"
         },
         "verify": {
@@ -599,7 +599,6 @@
             "title": "Yedekleme kimlik bilgileri",
             "credential_address_label": "Kimlik bilgisi adresi",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Panoya kopyala",
             "passphrase_missing": "Bu cihazda kayıtlı bir Passphrase yok.",
             "passphrase_unreadable": "Bu cihazda kayıtlı Passphrase okunamadı.",
             "done_button": "Kimlik bilgilerini güvenle sakla"

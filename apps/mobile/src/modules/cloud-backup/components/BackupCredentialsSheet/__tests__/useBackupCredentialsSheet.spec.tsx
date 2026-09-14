@@ -16,10 +16,7 @@ import {
     BackupMnemonicParseError,
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
-import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
-import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useClipboard } from '@hooks/useClipboard'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupCredentialsSheet } from '../useBackupCredentialsSheet'
 
@@ -50,22 +47,11 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { error: vi.fn() },
 }))
 
-// A stand-in for the notifier PWBottomSheet mounts inside the sheet; toasts
-// handed the global one instead render behind it.
-vi.mock('@components/core', () => ({
-    bottomSheetNotifier: { current: { id: 'sheet-notifier' } },
-}))
-
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
-vi.mock('@hooks/useClipboard', () => ({
-    useClipboard: vi.fn(),
-}))
-
 const mockDismiss = vi.fn()
-const mockCopyToClipboard = vi.fn()
 
 // Stands in for the real accessor: hands the handler a buffer it owns, then
 // zeroes it once the handler returns — the contract the hook has to copy out of.
@@ -76,10 +62,6 @@ beforeEach(() => {
     ;(useBottomSheetResult as Mock).mockReturnValue({
         resolve: vi.fn(),
         dismiss: mockDismiss,
-    })
-    ;(useClipboard as Mock).mockReturnValue({
-        copyToClipboard: mockCopyToClipboard,
-        readText: vi.fn(),
     })
     ;(withBackupMnemonicIndices as Mock).mockImplementation(
         async (handler: (indices: Uint16Array) => unknown) => {
@@ -140,20 +122,6 @@ describe('useBackupCredentialsSheet', () => {
         expect(result.current.wordIndices).toHaveLength(0)
     })
 
-    test('does not clear the clipboard when there is no phrase to copy', async () => {
-        ;(withBackupMnemonicIndices as Mock).mockResolvedValue(null)
-
-        const { result } = renderHook(() => useBackupCredentialsSheet())
-        await waitFor(() =>
-            expect(result.current.passphraseStatus).toBe('unavailable'),
-        )
-
-        result.current.handleCopyPassphrase()
-
-        expect(mockCopyToClipboard).not.toHaveBeenCalled()
-        expect(trackEvent).not.toHaveBeenCalled()
-    })
-
     test('zeroes the retained buffer when the sheet unmounts', async () => {
         const { result, unmount } = renderHook(() =>
             useBackupCredentialsSheet(),
@@ -166,31 +134,6 @@ describe('useBackupCredentialsSheet', () => {
         unmount()
 
         expect(Array.from(retained)).toEqual([0, 0, 0])
-    })
-
-    test('copies the joined passphrase and the encryption key', async () => {
-        const { result } = renderHook(() => useBackupCredentialsSheet())
-        await waitFor(() =>
-            expect(result.current.wordIndices).toHaveLength(INDICES.length),
-        )
-
-        result.current.handleCopyPassphrase()
-        expect(trackEvent).toHaveBeenCalledWith(
-            CloudBackupEvent.CredentialsCopyPassphrase,
-        )
-        expect(mockCopyToClipboard).toHaveBeenCalledWith(
-            INDICES.map(index => mnemonicIndexToWord(index)).join(' '),
-            bottomSheetNotifier.current,
-        )
-
-        result.current.handleCopyEncryptionKey()
-        expect(trackEvent).toHaveBeenCalledWith(
-            CloudBackupEvent.CredentialsCopyKey,
-        )
-        expect(mockCopyToClipboard).toHaveBeenCalledWith(
-            SALT,
-            bottomSheetNotifier.current,
-        )
     })
 
     test('handleClose tracks the store tap and dismisses the sheet', async () => {

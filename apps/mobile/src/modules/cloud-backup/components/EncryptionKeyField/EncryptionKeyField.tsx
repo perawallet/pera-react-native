@@ -10,22 +10,17 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type EncryptionKeyFieldProps = {
     encryptionKey: string
-    onCopy: () => void
-    copyTestID: string
 }
 
-/** Labelled, truncating encryption-key row with a copy affordance. */
+/** Labelled, truncating encryption-key row. */
 export const EncryptionKeyField = ({
     encryptionKey,
-    onCopy,
-    copyTestID,
 }: EncryptionKeyFieldProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -46,15 +41,6 @@ export const EncryptionKeyField = ({
                 >
                     {encryptionKey}
                 </PWText>
-                <PWTouchableOpacity
-                    onPress={onCopy}
-                    {...getTestProps(copyTestID)}
-                >
-                    <PWIcon
-                        name='copy'
-                        variant='positive'
-                    />
-                </PWTouchableOpacity>
             </PWView>
         </PWView>
     )

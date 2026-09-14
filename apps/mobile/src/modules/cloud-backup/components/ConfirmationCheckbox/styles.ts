@@ -13,21 +13,18 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        gap: theme.spacing.xl,
-    },
-    section: {
-        gap: theme.spacing.sm,
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        alignSelf: 'stretch',
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
     },
     label: {
-        color: theme.colors.textGray,
-    },
-    loading: {
-        paddingVertical: theme.spacing.xxl,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    errorText: {
-        color: theme.colors.textGray,
+        flex: 1,
     },
 }))

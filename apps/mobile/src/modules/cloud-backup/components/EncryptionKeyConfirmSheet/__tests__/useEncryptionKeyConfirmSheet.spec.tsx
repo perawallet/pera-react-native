@@ -12,9 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useClipboard } from '@hooks/useClipboard'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useEncryptionKeyConfirmSheet } from '../useEncryptionKeyConfirmSheet'
 
@@ -32,32 +30,17 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     ),
 }))
 
-// A stand-in for the notifier PWBottomSheet mounts inside the sheet; toasts
-// handed the global one instead render behind it.
-vi.mock('@components/core', () => ({
-    bottomSheetNotifier: { current: { id: 'sheet-notifier' } },
-}))
-
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
-vi.mock('@hooks/useClipboard', () => ({
-    useClipboard: vi.fn(),
-}))
-
 const mockResolve = vi.fn()
-const mockCopyToClipboard = vi.fn()
 
 beforeEach(() => {
     vi.clearAllMocks()
     ;(useBottomSheetResult as Mock).mockReturnValue({
         resolve: mockResolve,
         dismiss: vi.fn(),
-    })
-    ;(useClipboard as Mock).mockReturnValue({
-        copyToClipboard: mockCopyToClipboard,
-        readText: vi.fn(),
     })
 })
 
@@ -87,18 +70,6 @@ describe('useEncryptionKeyConfirmSheet', () => {
         expect(trackEvent).toHaveBeenCalledTimes(1)
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.ConfirmStoredCheck,
-        )
-    })
-
-    test('copies the salt through the in-sheet notifier', () => {
-        const { result } = renderHook(() => useEncryptionKeyConfirmSheet())
-
-        result.current.handleCopy()
-
-        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ConfirmCopyKey)
-        expect(mockCopyToClipboard).toHaveBeenCalledWith(
-            SALT,
-            bottomSheetNotifier.current,
         )
     })
 

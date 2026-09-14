@@ -10,24 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    body: {
-        gap: theme.spacing.xl,
-    },
-    section: {
-        gap: theme.spacing.sm,
-    },
-    label: {
-        color: theme.colors.textGray,
-    },
-    loading: {
-        paddingVertical: theme.spacing.xxl,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    errorText: {
-        color: theme.colors.textGray,
-    },
-}))
+export { ConfirmationCheckbox } from './ConfirmationCheckbox'
+export type { ConfirmationCheckboxProps } from './ConfirmationCheckbox'

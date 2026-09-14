@@ -25,7 +25,6 @@ export const useStyles = makeStyles(theme => ({
     keyField: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
         minHeight: theme.spacing['3xl'] + theme.spacing.sm,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.sm,

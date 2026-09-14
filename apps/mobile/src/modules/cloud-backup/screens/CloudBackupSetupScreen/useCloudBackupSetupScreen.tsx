@@ -18,22 +18,20 @@ import {
     useCloudBackupDraftStore,
     type CloudBackupCredentials,
 } from '@perawallet/wallet-core-backup'
-import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { trackEvent, CloudBackupEvent } from '@analytics'
-import { useClipboard } from '@hooks/useClipboard'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupSetupScreenResult = {
     mnemonicIndices: Uint16Array
     saltB64: string
-    handleCopyPassphrase: () => void
-    handleCopyEncryptionKey: () => void
+    isConfirmed: boolean
+    toggleConfirmed: () => void
     handleProceed: () => void
 }
 
 export const useCloudBackupSetupScreen =
     (): UseCloudBackupSetupScreenResult => {
-        const { copyToClipboard } = useClipboard()
         const navigation =
             useNavigation<
                 NativeStackNavigationProp<CloudBackupStackParamList>
@@ -44,6 +42,7 @@ export const useCloudBackupSetupScreen =
         const [credentials] = useState<CloudBackupCredentials>(
             generateCloudBackupCredentials,
         )
+        const [isConfirmed, setIsConfirmed] = useState(false)
 
         // Wipe the generated recovery credentials from memory when the user
         // leaves the setup flow. This screen stays mounted across Setup →
@@ -58,19 +57,9 @@ export const useCloudBackupSetupScreen =
             [credentials, clearDraft],
         )
 
-        const handleCopyPassphrase = useCallback(() => {
-            // The words exist only for the length of this call; the retained
-            // form stays the zeroable index buffer.
-            void copyToClipboard(
-                Array.from(credentials.mnemonicIndices, index =>
-                    mnemonicIndexToWord(index),
-                ).join(' '),
-            )
-        }, [copyToClipboard, credentials.mnemonicIndices])
-
-        const handleCopyEncryptionKey = useCallback(() => {
-            void copyToClipboard(credentials.salt)
-        }, [copyToClipboard, credentials.salt])
+        const toggleConfirmed = useCallback(() => {
+            setIsConfirmed(value => !value)
+        }, [])
 
         const handleProceed = useCallback(() => {
             trackEvent(CloudBackupEvent.SetupProceed)
@@ -84,8 +73,8 @@ export const useCloudBackupSetupScreen =
         return {
             mnemonicIndices: credentials.mnemonicIndices,
             saltB64: credentials.salt,
-            handleCopyPassphrase,
-            handleCopyEncryptionKey,
+            isConfirmed,
+            toggleConfirmed,
             handleProceed,
         }
     }
