@@ -1626,8 +1626,10 @@
             "success_title": "Opération terminée",
             "success_subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
             "sender_count_more": "+{{count}} de plus",
+            "insufficient_algo_title": "ALGO insuffisant",
             "insufficient_algo_claim": "Vous n’avez pas assez d’ALGO pour réclamer cet actif. Ajoutez des fonds pour couvrir le solde minimum requis.",
-            "insufficient_algo_reject": "Vous n’avez pas assez d’ALGO pour refuser cet actif. Ajoutez des fonds pour couvrir les frais de transaction."
+            "insufficient_algo_reject": "Vous n’avez pas assez d’ALGO pour refuser cet actif. Ajoutez des fonds pour couvrir les frais de transaction.",
+            "insufficient_algo_cta": "Ajouter des fonds"
         }
     },
     "multisig": {

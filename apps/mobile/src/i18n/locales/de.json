@@ -1618,8 +1618,10 @@
             "success_title": "Vorgang abgeschlossen",
             "success_subtitle": "Deine Transaktion wurde erfolgreich vom Algorand-Netzwerk empfangen",
             "sender_count_more": "+{{count}} weitere",
+            "insufficient_algo_title": "Nicht genügend ALGO",
             "insufficient_algo_claim": "Du hast nicht genügend ALGO, um dieses Asset zu beanspruchen. Füge Guthaben hinzu, um das Mindestguthaben abzudecken.",
-            "insufficient_algo_reject": "Du hast nicht genügend ALGO, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken."
+            "insufficient_algo_reject": "Du hast nicht genügend ALGO, um dieses Asset abzulehnen. Füge Guthaben hinzu, um die Transaktionsgebühren abzudecken.",
+            "insufficient_algo_cta": "Guthaben hinzufügen"
         }
     },
     "multisig": {

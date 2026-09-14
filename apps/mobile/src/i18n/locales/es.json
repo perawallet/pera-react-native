@@ -1626,8 +1626,10 @@
             "success_title": "Operación completada",
             "success_subtitle": "La red de Algorand recibió tu transacción correctamente",
             "sender_count_more": "+{{count}} más",
+            "insufficient_algo_title": "ALGO insuficiente",
             "insufficient_algo_claim": "No tienes suficiente ALGO para reclamar este activo. Añade fondos para cubrir el requisito de saldo mínimo.",
-            "insufficient_algo_reject": "No tienes suficiente ALGO para rechazar este activo. Añade fondos para cubrir las comisiones de la transacción."
+            "insufficient_algo_reject": "No tienes suficiente ALGO para rechazar este activo. Añade fondos para cubrir las comisiones de la transacción.",
+            "insufficient_algo_cta": "Añadir fondos"
         }
     },
     "multisig": {

@@ -630,14 +630,15 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
     )
 
     it(
-        'Given a request flagged insufficientAlgoForClaiming, when the user confirms the claim, then an error toast fires and nothing is submitted to algod',
+        'Given a request flagged insufficientAlgoForClaiming, when the claim detail screen opens, then the shortfall is surfaced before the slide, the slide is inert, and nothing is submitted to algod',
         async () => {
             await seedClaimingAccount()
             useClaimAssetsStore
                 .getState()
                 .setAccountAddress(ALGO25_TEST_ADDRESS)
-            // The guard in useAssetClaimDetailScreen.handleClaim blocks only
-            // when insufficientAlgoForClaiming AND NOT shouldUseFundsBeforeClaiming.
+            // Blocked only when insufficientAlgoForClaiming AND NOT
+            // shouldUseFundsBeforeClaiming — the inbox's own funds would
+            // otherwise cover the opt-in.
             useClaimAssetsStore.getState().setAssetRequests([
                 buildAssetRequest({
                     insufficientAlgoForClaiming: true,
@@ -652,26 +653,18 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
 
             renderClaimFlow('AssetClaimDetail')
 
+            // The shortfall is stated on arrival, not after the user commits.
             await waitFor(
                 () => {
                     expect(
-                        screen.getByTestId('arc59_claim_confirm_slide'),
+                        screen.getByTestId('arc59_claim_insufficient_algo'),
                     ).toBeTruthy()
                 },
                 { timeout: 5000 },
             )
+
             fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
 
-            // The guard short-circuits with an error toast — algod is never
-            // touched and the flow stays on the detail screen.
-            await waitFor(
-                () => {
-                    expect(
-                        vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
-                },
-                { timeout: 5000 },
-            )
             expect(sendSpy).not.toHaveBeenCalled()
             expect(
                 screen.queryByTestId('arc59_claim_confirm_slide'),
