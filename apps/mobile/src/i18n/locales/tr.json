@@ -2053,11 +2053,11 @@
             "title": "Cüzdanını yedekle",
             "description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru.",
             "encryption_title": "Güvenli şifreleme",
-            "encryption_description": "Verilerin, yüklenmeden önce şifreleme anahtarınla cihazında şifrelenir.",
+            "encryption_description": "Verilerin, yüklenmeden önce passphrase’in ve şifreleme anahtarınla cihazında şifrelenir.",
             "sync_title": "Çoklu cihaz eşitleme",
-            "sync_description": "Kişilerine ve hesap adlarına tüm cihazlarından sorunsuzca eriş.",
+            "sync_description": "Kişilerin ve takma adların, tüm cihazlarında.",
             "recovery_title": "Hesap geri yükleme",
-            "recovery_description": "Yeni bir telefona geçtiğinde veya uygulamayı yeniden yüklediğinde bilgilerini kolayca geri yükle.",
+            "recovery_description": "Telefonunu mu değiştiriyorsun, uygulamayı mı yeniden yüklüyorsun? Verilerin seninle gelir.",
             "continue": "Devam et"
         }
     },

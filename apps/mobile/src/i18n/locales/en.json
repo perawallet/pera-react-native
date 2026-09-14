@@ -2053,11 +2053,11 @@
             "title": "Back up your wallet",
             "description": "Protect your accounts and contacts with secure cloud synchronization.",
             "encryption_title": "Secure Encryption",
-            "encryption_description": "Your data is encrypted locally with your Encryption Key before being uploaded.",
+            "encryption_description": "Encrypted locally with your passphrase and encryption key before upload.",
             "sync_title": "Multi-device Sync",
-            "sync_description": "Access your contacts and account names seamlessly across all your devices.",
+            "sync_description": "Your contacts and nicknames, on every device.",
             "recovery_title": "Account Recovery",
-            "recovery_description": "Easily restore your information when switching to a new phone or reinstalling the app.",
+            "recovery_description": "Switch phones or reinstall? Your data comes with you.",
             "continue": "Continue"
         }
     },

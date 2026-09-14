@@ -2053,11 +2053,11 @@
             "title": "Sauvegardez votre wallet",
             "description": "Protégez vos comptes et vos contacts grâce à une synchronisation cloud sécurisée.",
             "encryption_title": "Chiffrement sécurisé",
-            "encryption_description": "Vos données sont chiffrées localement avec votre clé de chiffrement avant d’être envoyées.",
+            "encryption_description": "Vos données sont chiffrées localement avec votre passphrase et votre clé de chiffrement avant d’être envoyées.",
             "sync_title": "Synchronisation multi-appareils",
-            "sync_description": "Accédez facilement à vos contacts et aux noms de vos comptes sur tous vos appareils.",
+            "sync_description": "Vos contacts et surnoms, sur tous vos appareils.",
             "recovery_title": "Récupération de compte",
-            "recovery_description": "Restaurez facilement vos informations lorsque vous changez de téléphone ou réinstallez l’application.",
+            "recovery_description": "Vous changez de téléphone ou réinstallez l’application ? Vos données vous suivent.",
             "continue": "Continuer"
         }
     },

@@ -2045,11 +2045,11 @@
             "title": "Sichere deine Wallet",
             "description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung.",
             "encryption_title": "Sichere Verschlüsselung",
-            "encryption_description": "Deine Daten werden vor dem Hochladen lokal mit deinem Verschlüsselungsschlüssel verschlüsselt.",
+            "encryption_description": "Vor dem Hochladen lokal mit deiner Passphrase und deinem Verschlüsselungsschlüssel verschlüsselt.",
             "sync_title": "Synchronisierung über alle Geräte",
-            "sync_description": "Greife auf all deinen Geräten nahtlos auf deine Kontakte und Kontonamen zu.",
+            "sync_description": "Deine Kontakte und Spitznamen, auf jedem Gerät.",
             "recovery_title": "Kontowiederherstellung",
-            "recovery_description": "Stelle deine Daten ganz einfach wieder her, wenn du das Telefon wechselst oder die App neu installierst.",
+            "recovery_description": "Telefon wechseln oder neu installieren? Deine Daten kommen mit.",
             "continue": "Weiter"
         }
     },

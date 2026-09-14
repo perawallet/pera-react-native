@@ -2053,11 +2053,11 @@
             "title": "Haz una copia de seguridad de tu wallet",
             "description": "Protege tus cuentas y contactos con una sincronización segura en la nube.",
             "encryption_title": "Cifrado seguro",
-            "encryption_description": "Tus datos se cifran localmente con tu clave de cifrado antes de subirse.",
+            "encryption_description": "Tus datos se cifran localmente con tu passphrase y tu clave de cifrado antes de subirse.",
             "sync_title": "Sincronización entre dispositivos",
-            "sync_description": "Accede a tus contactos y a los nombres de tus cuentas sin complicaciones en todos tus dispositivos.",
+            "sync_description": "Tus contactos y alias, en todos tus dispositivos.",
             "recovery_title": "Recuperación de cuentas",
-            "recovery_description": "Restaura fácilmente tu información al cambiar de teléfono o reinstalar la app.",
+            "recovery_description": "¿Cambias de teléfono o reinstalas la app? Tus datos van contigo.",
             "continue": "Continuar"
         }
     },
