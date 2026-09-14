@@ -380,7 +380,6 @@
         "rekey_option_standard_description": "Transaktionen werden von einem anderen Konto in deinem Wallet autorisiert.",
         "rekey_option_quantum_title": "Zu einem Quantum-Konto",
         "rekey_option_quantum_description": "Transaktionen werden von einem quantensicheren Konto in deinem Wallet autorisiert.",
-        "rekey_option_quantum_badge": "NEU",
         "export_share_account": "Konto exportieren/teilen",
         "scan_rekeyed": "Nach rekeyed Konten suchen",
         "rename_account": "Konto umbenennen",

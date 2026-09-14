@@ -380,7 +380,6 @@
         "rekey_option_standard_description": "Las transacciones se autorizarán por otra cuenta de tu wallet.",
         "rekey_option_quantum_title": "A una cuenta cuántica",
         "rekey_option_quantum_description": "Las transacciones se autorizarán por una cuenta cuántica de tu wallet.",
-        "rekey_option_quantum_badge": "NUEVO",
         "export_share_account": "Exportar/compartir cuenta",
         "scan_rekeyed": "Buscar cuentas con rekey",
         "rename_account": "Renombrar cuenta",

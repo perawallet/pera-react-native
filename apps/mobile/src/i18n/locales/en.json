@@ -380,7 +380,6 @@
         "rekey_option_standard_description": "Transactions will be authorized by another account in your wallet.",
         "rekey_option_quantum_title": "To a quantum account",
         "rekey_option_quantum_description": "Transactions will be authorized by a quantum-secure account in your wallet.",
-        "rekey_option_quantum_badge": "NEW",
         "export_share_account": "Export/Share Account",
         "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",

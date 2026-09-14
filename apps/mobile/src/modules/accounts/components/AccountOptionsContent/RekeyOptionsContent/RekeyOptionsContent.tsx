@@ -64,12 +64,6 @@ export const RekeyOptionsContent = () => {
                         )}
                         titleWeight='h3'
                         leftIcon='quantum'
-                        badge={{
-                            label: t(
-                                'account_options.rekey_option_quantum_badge',
-                            ),
-                            variant: 'new',
-                        }}
                         onPress={() => resolve('quantum')}
                     />
                 )}
