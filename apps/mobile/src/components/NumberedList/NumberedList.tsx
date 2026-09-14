@@ -14,48 +14,74 @@ import { PWText, PWView } from '@components/core'
 import type { TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
 
+export type NumberedListItem = string | { title: string; description: string }
+
 export type NumberedListProps = {
-    items: string[]
+    items: NumberedListItem[]
     /** Item text size. Defaults to `bodyLarge`. */
     textVariant?: TypographyVariant
+    isDense?: boolean
     testID?: string
 }
 
-/** Vertical list of steps, each prefixed by a circled number. Shared across the
- *  rekey and onramp intro flows. */
+/** Vertical list of steps, each prefixed by a circled number. */
 export const NumberedList = ({
     items,
     textVariant = 'bodyLarge',
+    isDense = false,
     testID = 'numbered-list',
 }: NumberedListProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ isDense })
 
     return (
         <PWView
             style={styles.container}
             testID={testID}
         >
-            {items.map((text, index) => (
-                <PWView
-                    key={`${index}-${text}`}
-                    style={styles.row}
-                >
-                    <PWView style={styles.bullet}>
-                        <PWText
-                            variant='bodyLarge'
-                            style={styles.bulletText}
-                        >
-                            {String(index + 1)}
-                        </PWText>
-                    </PWView>
-                    <PWText
-                        variant={textVariant}
-                        style={styles.itemText}
+            {items.map((item, index) => {
+                const isDetailed = typeof item !== 'string'
+                const label = isDetailed ? item.title : item
+
+                return (
+                    <PWView
+                        key={`${index}-${label}`}
+                        style={[styles.row, isDetailed && styles.detailedRow]}
                     >
-                        {text}
-                    </PWText>
-                </PWView>
-            ))}
+                        <PWView style={styles.bullet}>
+                            <PWText
+                                variant='bodyLarge'
+                                style={styles.bulletText}
+                            >
+                                {String(index + 1)}
+                            </PWText>
+                        </PWView>
+                        {isDetailed ? (
+                            <PWView style={styles.detailedBody}>
+                                <PWText
+                                    variant={textVariant}
+                                    weight={500}
+                                    style={styles.itemText}
+                                >
+                                    {item.title}
+                                </PWText>
+                                <PWText
+                                    variant={textVariant}
+                                    style={styles.itemDescription}
+                                >
+                                    {item.description}
+                                </PWText>
+                            </PWView>
+                        ) : (
+                            <PWText
+                                variant={textVariant}
+                                style={styles.itemText}
+                            >
+                                {item}
+                            </PWText>
+                        )}
+                    </PWView>
+                )
+            })}
         </PWView>
     )
 }

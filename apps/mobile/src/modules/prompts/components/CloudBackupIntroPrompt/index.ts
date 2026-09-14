@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { TurnOffBackupSheet } from './TurnOffBackupSheet'
-export type { TurnOffBackupChoice } from './useTurnOffBackupSheet'
+export { CloudBackupIntroPrompt } from './CloudBackupIntroPrompt'

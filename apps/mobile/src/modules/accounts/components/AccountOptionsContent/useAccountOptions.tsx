@@ -421,27 +421,22 @@ export const useAccountOptions = ({
         [showToast, t, finishRemove, account.address],
     )
 
-    const handleDeleteFromBackup = useCallback(
-        () =>
-            finishRemoveWithBackupChoice(
-                () =>
-                    getBackupSyncManager().deleteAccountFromBackup(
-                        account.address,
-                    ),
-                'cloud_backup.accounts.delete_error',
-            ),
-        [finishRemoveWithBackupChoice, account.address],
-    )
+    const handleDeleteFromBackup = useCallback(() => {
+        trackEvent(AccountOptionsEvent.DeleteFromCloudBackup)
+        return finishRemoveWithBackupChoice(
+            () =>
+                getBackupSyncManager().deleteAccountFromBackup(account.address),
+            'cloud_backup.accounts.delete_error',
+        )
+    }, [finishRemoveWithBackupChoice, account.address])
 
-    const handleKeepInBackup = useCallback(
-        () =>
-            finishRemoveWithBackupChoice(
-                () =>
-                    getBackupSyncManager().keepAccountInBackup(account.address),
-                'cloud_backup.accounts.keep_error',
-            ),
-        [finishRemoveWithBackupChoice, account.address],
-    )
+    const handleKeepInBackup = useCallback(() => {
+        trackEvent(AccountOptionsEvent.KeepInCloudBackup)
+        return finishRemoveWithBackupChoice(
+            () => getBackupSyncManager().keepAccountInBackup(account.address),
+            'cloud_backup.accounts.keep_error',
+        )
+    }, [finishRemoveWithBackupChoice, account.address])
 
     const handleCancelRemove = useCallback(() => {
         setRemoveConfirmView('none')

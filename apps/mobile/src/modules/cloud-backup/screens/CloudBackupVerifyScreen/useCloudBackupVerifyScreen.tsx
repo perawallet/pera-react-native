@@ -21,6 +21,7 @@ import {
     pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -153,5 +154,10 @@ export const useCloudBackupVerifyScreen =
             onWrong,
         )
 
-        return { items, onSelect, onSubmit, isFilled, isEnabling }
+        const handleSubmit = useCallback(() => {
+            trackEvent(CloudBackupEvent.VerifyProceed)
+            onSubmit()
+        }, [onSubmit])
+
+        return { items, onSelect, onSubmit: handleSubmit, isFilled, isEnabling }
     }

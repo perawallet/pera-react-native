@@ -33,4 +33,13 @@ describe('UserPreferences', () => {
             UserPreferences.quantumDappWarningAcknowledged,
         )
     })
+
+    it('resets the cloud backup intro alongside the other one-time flags', () => {
+        expect(UserPreferences._cloudBackupIntroPrompt).toBe(
+            'cloud_backup_intro_prompt',
+        )
+        expect(OneTimeUserPreferenceFlags).toContain(
+            UserPreferences._cloudBackupIntroPrompt,
+        )
+    })
 })

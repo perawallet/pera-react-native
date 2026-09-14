@@ -17,6 +17,7 @@ export enum SettingsEvent {
     ChangeCurrency = 'currency_change', // Changed the display currency (currency id)
     ChangeNotificationFilter = 'notification_filter_change', // Changed notification setting for an account (address, on/off)
     PassKey = 'settingsscr_passkeys_tap', // Opened passkeys in settings
+    CloudBackup = 'settingsscr_backup_tap', // Opened cloud backup in settings
 }
 
 export interface SettingsRequiredPayloads {

@@ -15,9 +15,15 @@ import { renderHook, act } from '@testing-library/react'
 import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useClipboard } from '@hooks/useClipboard'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useEncryptionKeyConfirmSheet } from '../useEncryptionKeyConfirmSheet'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useCloudBackupDraftStore: vi.fn(
@@ -71,11 +77,25 @@ describe('useEncryptionKeyConfirmSheet', () => {
         expect(result.current.isConfirmed).toBe(true)
     })
 
+    test('tracks ticking the confirmation but not unticking it', () => {
+        const { result } = renderHook(() => useEncryptionKeyConfirmSheet())
+
+        act(() => result.current.toggleConfirmed())
+        act(() => result.current.toggleConfirmed())
+
+        expect(result.current.isConfirmed).toBe(false)
+        expect(trackEvent).toHaveBeenCalledTimes(1)
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.ConfirmStoredCheck,
+        )
+    })
+
     test('copies the salt through the in-sheet notifier', () => {
         const { result } = renderHook(() => useEncryptionKeyConfirmSheet())
 
         result.current.handleCopy()
 
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ConfirmCopyKey)
         expect(mockCopyToClipboard).toHaveBeenCalledWith(
             SALT,
             bottomSheetNotifier.current,
@@ -86,9 +106,13 @@ describe('useEncryptionKeyConfirmSheet', () => {
         const { result } = renderHook(() => useEncryptionKeyConfirmSheet())
 
         result.current.handleEnable()
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ConfirmEnable)
         expect(mockResolve).toHaveBeenCalledWith('enable')
 
         result.current.handleShowCredentials()
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.ConfirmShowCredentials,
+        )
         expect(mockResolve).toHaveBeenCalledWith('show-credentials')
     })
 })

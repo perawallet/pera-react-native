@@ -12,8 +12,14 @@
 
 import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupQuiz } from '@modules/backup'
 import { useCloudBackupVerifyScreen } from '../useCloudBackupVerifyScreen'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 const { navigateMock, popToMock, requestMock, enableBackupMock } = vi.hoisted(
     () => ({
@@ -133,6 +139,23 @@ describe('useCloudBackupVerifyScreen', () => {
 
         expect(result.current.isFilled).toBe(true)
         expect(result.current.items).toHaveLength(1)
+    })
+
+    test('tracks the proceed tap and forwards it to the quiz', () => {
+        const quizSubmit = vi.fn()
+        ;(useBackupQuiz as Mock).mockReturnValueOnce({
+            items: [],
+            onSelect: vi.fn(),
+            onSubmit: quizSubmit,
+            isFilled: true,
+            hasError: false,
+        })
+        const { result } = renderHook(() => useCloudBackupVerifyScreen())
+
+        result.current.onSubmit()
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.VerifyProceed)
+        expect(quizSubmit).toHaveBeenCalledTimes(1)
     })
 
     test("enables cloud backup when the confirm sheet resolves 'enable'", async () => {

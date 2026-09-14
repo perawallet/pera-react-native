@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     RestoreBackupSheet,
@@ -31,10 +32,12 @@ export const useCloudBackupScreen = (): UseCloudBackupScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
 
     const handleSetUpBackup = useCallback(() => {
+        trackEvent(CloudBackupEvent.SetUpNew)
         navigation.navigate('CloudBackupSetup')
     }, [navigation])
 
     const handleRestoreBackup = useCallback(async () => {
+        trackEvent(CloudBackupEvent.Restore)
         const result = await requestBottomSheet<RestoreBackupSheetResult>({
             contents: <RestoreBackupSheet />,
             options: { size: 'auto', enablePanDownToClose: true },

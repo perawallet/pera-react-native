@@ -46,6 +46,8 @@ import {
     BiometricsDisabledPrompt,
     BIOMETRICS_DISABLED_PROMPT_ID,
 } from '@modules/prompts/components/BiometricsDisabledPrompt'
+import { useCloudBackupIntroPrompt } from '@modules/prompts/hooks/useCloudBackupIntroPrompt'
+import { CloudBackupIntroPrompt } from '@modules/prompts/components/CloudBackupIntroPrompt'
 
 export type Prompt = {
     id: string
@@ -97,6 +99,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const bannerPrompt = useBannerPrompt()
     const legacyQuantumPrompt = useLegacyQuantumPrompt()
     const biometricsDisabledPrompt = useBiometricsDisabledPrompt()
+    const cloudBackupIntroPrompt = useCloudBackupIntroPrompt()
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
     const dismissedIds = usePromptStore(state => state.dismissedIds)
     const dismiss = usePromptStore(state => state.dismiss)
@@ -157,6 +160,16 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 component: BiometricsDisabledPrompt,
                 isDue: biometricsDisabledPrompt.isDue,
             },
+            {
+                id: UserPreferences._cloudBackupIntroPrompt,
+                priority: PromptPriority.cloudBackupIntro,
+                isGate: false,
+                isFullBleed: true,
+                component: CloudBackupIntroPrompt,
+                isDue:
+                    !getPreference(UserPreferences._cloudBackupIntroPrompt) &&
+                    cloudBackupIntroPrompt.isDue,
+            },
         ],
         [
             needsTermsAcceptance,
@@ -165,6 +178,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             bannerPrompt.isForced,
             legacyQuantumPrompt.isDue,
             biometricsDisabledPrompt.isDue,
+            cloudBackupIntroPrompt.isDue,
         ],
     )
 

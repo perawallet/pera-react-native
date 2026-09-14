@@ -16,6 +16,7 @@ import {
     useRestoreCloudBackupMutation,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
 
@@ -53,6 +54,7 @@ const useRestoreRunner = (
 ): (() => void) =>
     useCallback(() => {
         if (!hasMnemonic || salt.length === 0) return
+        trackEvent(CloudBackupEvent.RestoreEncryptionKeyProceed)
         restore({ salt })
     }, [hasMnemonic, salt, restore])
 

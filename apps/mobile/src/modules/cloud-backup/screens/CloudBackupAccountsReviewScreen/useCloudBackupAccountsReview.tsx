@@ -12,6 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '../../components/DeleteFromBackupSheet'
 import { useBackupAccountReview } from '../../hooks/useBackupAccountReview'
@@ -45,15 +46,43 @@ export const useCloudBackupAccountsReview =
             () => notBackedUpAccounts.length === 0,
         )
 
+        const onToggleExpanded = useCallback(() => {
+            trackEvent(CloudBackupEvent.ReviewAddFromBackupToggle)
+            setIsExpanded(current => !current)
+        }, [])
+
+        const onAdd = useCallback(
+            (address: string) => {
+                trackEvent(CloudBackupEvent.ReviewAdd)
+                addFromBackup(address)
+            },
+            [addFromBackup],
+        )
+
         const onDelete = useCallback(
             async (address: string) => {
+                trackEvent(CloudBackupEvent.ReviewDelete)
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: <DeleteFromBackupSheet />,
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
-                if (confirmed === true) deleteFromBackup(address)
+                // Cancel resolves false; a swipe-away resolves nothing.
+                if (confirmed === true) {
+                    trackEvent(CloudBackupEvent.ReviewDeleteConfirm)
+                    deleteFromBackup(address)
+                } else if (confirmed === false) {
+                    trackEvent(CloudBackupEvent.ReviewDeleteCancel)
+                }
             },
             [requestBottomSheet, deleteFromBackup],
+        )
+
+        const onBackUp = useCallback(
+            (address: string) => {
+                trackEvent(CloudBackupEvent.ReviewBackUp)
+                backUpAccount(address)
+            },
+            [backUpAccount],
         )
 
         return {
@@ -61,12 +90,9 @@ export const useCloudBackupAccountsReview =
             notBackedUpAccounts,
             isExpanded,
             busyAddress,
-            onToggleExpanded: useCallback(
-                () => setIsExpanded(current => !current),
-                [],
-            ),
-            onAdd: addFromBackup,
+            onToggleExpanded,
+            onAdd,
             onDelete,
-            onBackUp: backUpAccount,
+            onBackUp,
         }
     }

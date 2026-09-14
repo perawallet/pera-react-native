@@ -27,6 +27,7 @@ import {
     formatDatetime,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
@@ -129,17 +130,18 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         // TODO: wire the credential-info destination as its screen lands.
     }, [])
 
-    const onPressAccounts = useCallback(
-        () => navigation.navigate('CloudBackupAccounts'),
-        [navigation],
-    )
+    const onPressAccounts = useCallback(() => {
+        trackEvent(CloudBackupEvent.OverviewAccounts)
+        navigation.navigate('CloudBackupAccounts')
+    }, [navigation])
 
-    const onPressContacts = useCallback(
-        () => navigation.navigate('CloudBackupContacts'),
-        [navigation],
-    )
+    const onPressContacts = useCallback(() => {
+        trackEvent(CloudBackupEvent.OverviewContacts)
+        navigation.navigate('CloudBackupContacts')
+    }, [navigation])
 
     const onPressCredentialAddress = useCallback(async () => {
+        trackEvent(CloudBackupEvent.OverviewCredentialAddress)
         if (!(await requirePinVerification())) return
 
         await requestBottomSheet({
@@ -152,7 +154,13 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         })
     }, [requirePinVerification, requestBottomSheet])
 
+    const onPressSyncDevices = useCallback(async () => {
+        trackEvent(CloudBackupEvent.OverviewSyncDevices)
+        await showSyncQr()
+    }, [showSyncQr])
+
     const onPressTurnOff = useCallback(async () => {
+        trackEvent(CloudBackupEvent.OverviewTurnOff)
         const choice = await requestBottomSheet<TurnOffBackupChoice>({
             contents: <TurnOffBackupSheet />,
             options: { size: 'auto', enablePanDownToClose: true },
@@ -193,7 +201,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressContacts,
         onPressCredentialAddress,
         onPressCredentialInfo: noop,
-        onPressSyncDevices: showSyncQr,
+        onPressSyncDevices,
         onPressTurnOff,
     }
 }

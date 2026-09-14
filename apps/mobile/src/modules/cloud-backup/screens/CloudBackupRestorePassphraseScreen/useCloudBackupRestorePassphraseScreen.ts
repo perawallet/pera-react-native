@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import type { PWInputRef } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -93,6 +94,7 @@ export const useCloudBackupRestorePassphraseScreen =
 
         const handleContinue = useCallback(() => {
             if (!canContinue) return
+            trackEvent(CloudBackupEvent.RestorePassphraseProceed)
             setMnemonic(words)
             navigation.navigate('CloudBackupRestoreEncryptionKey')
         }, [canContinue, setMnemonic, words, navigation])

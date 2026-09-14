@@ -19,10 +19,16 @@ import {
     useCloudBackupDraftStore,
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupSetupScreen } from '../useCloudBackupSetupScreen'
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: vi.fn(),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -105,11 +111,12 @@ describe('useCloudBackupSetupScreen', () => {
         expect(mockCopyToClipboard).toHaveBeenCalledWith(SALT)
     })
 
-    test('on proceed, stores the draft and navigates to verify', () => {
+    test('on proceed, tracks the tap, stores the draft and navigates to verify', () => {
         const { result } = renderHook(() => useCloudBackupSetupScreen())
 
         result.current.handleProceed()
 
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.SetupProceed)
         expect(mockSetDraft).toHaveBeenCalledWith({
             mnemonicIndices: indices,
             salt: SALT,

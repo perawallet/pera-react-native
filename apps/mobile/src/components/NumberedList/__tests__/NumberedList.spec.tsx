@@ -24,4 +24,16 @@ describe('NumberedList', () => {
         expect(screen.getByText('1')).toBeTruthy()
         expect(screen.getByText('2')).toBeTruthy()
     })
+
+    it('renders a heading with its description beneath it', () => {
+        render(
+            <NumberedList
+                items={[{ title: 'Encrypt', description: 'Before upload' }]}
+            />,
+        )
+
+        expect(screen.getByText('1')).toBeTruthy()
+        expect(screen.getByText('Encrypt')).toBeTruthy()
+        expect(screen.getByText('Before upload')).toBeTruthy()
+    })
 })

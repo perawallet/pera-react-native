@@ -12,6 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { useCloudBackupDraftStore } from '@perawallet/wallet-core-backup'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useClipboard } from '@hooks/useClipboard'
@@ -35,23 +36,27 @@ export const useEncryptionKeyConfirmSheet =
 
         const [isConfirmed, setIsConfirmed] = useState(false)
 
-        const toggleConfirmed = useCallback(
-            () => setIsConfirmed(value => !value),
-            [],
-        )
+        const toggleConfirmed = useCallback(() => {
+            if (!isConfirmed) trackEvent(CloudBackupEvent.ConfirmStoredCheck)
+            setIsConfirmed(value => !value)
+        }, [isConfirmed])
 
         const handleCopy = useCallback(() => {
+            trackEvent(CloudBackupEvent.ConfirmCopyKey)
             // Without the sheet's own notifier the "Copied" toast renders
             // behind the sheet, and it is the only feedback this button gives.
             void copyToClipboard(salt, bottomSheetNotifier.current ?? undefined)
         }, [copyToClipboard, salt])
 
-        const handleEnable = useCallback(() => resolve('enable'), [resolve])
+        const handleEnable = useCallback(() => {
+            trackEvent(CloudBackupEvent.ConfirmEnable)
+            resolve('enable')
+        }, [resolve])
 
-        const handleShowCredentials = useCallback(
-            () => resolve('show-credentials'),
-            [resolve],
-        )
+        const handleShowCredentials = useCallback(() => {
+            trackEvent(CloudBackupEvent.ConfirmShowCredentials)
+            resolve('show-credentials')
+        }, [resolve])
 
         return {
             salt,

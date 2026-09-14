@@ -84,6 +84,18 @@ vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
     LegacyQuantumPrompt: () => null,
 }))
 
+const { mockUseCloudBackupIntroPrompt } = vi.hoisted(() => ({
+    mockUseCloudBackupIntroPrompt: vi.fn(() => ({ isDue: false })),
+}))
+
+vi.mock('@modules/prompts/hooks/useCloudBackupIntroPrompt', () => ({
+    useCloudBackupIntroPrompt: () => mockUseCloudBackupIntroPrompt(),
+}))
+
+vi.mock('@modules/prompts/components/CloudBackupIntroPrompt', () => ({
+    CloudBackupIntroPrompt: () => null,
+}))
+
 vi.mock('@modules/prompts/components/BannerPrompt', () => ({
     BannerPrompt: () => null,
     BANNER_PROMPT_ID: 'banner_prompt',
@@ -126,6 +138,7 @@ describe('usePromptContainer', () => {
             isDue: false,
             shouldUseDependentAwareCopy: false,
         })
+        mockUseCloudBackupIntroPrompt.mockReturnValue({ isDue: false })
         mockIsLockOverlayVisible.mockReturnValue(false)
     })
 
@@ -279,6 +292,55 @@ describe('usePromptContainer', () => {
             // Blanket true: every preference (including this prompt's own) is
             // already answered, so nothing in the queue is due.
             mockGetPreference.mockReturnValue(true)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
+        it('runs the cloud backup intro last, after even a select banner', async () => {
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: false,
+            })
+            mockUseCloudBackupIntroPrompt.mockReturnValue({ isDue: true })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+
+            await act(async () => {
+                result.current.hidePrompt(
+                    UserPreferences._securityPinSetupPrompt,
+                )
+            })
+            expect(result.current.nextPrompt?.id).toBe('banner_prompt')
+
+            await act(async () => {
+                result.current.hidePrompt('banner_prompt')
+            })
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._cloudBackupIntroPrompt,
+            )
+        })
+
+        it('does not show the cloud backup intro once its preference is set', async () => {
+            mockUseCloudBackupIntroPrompt.mockReturnValue({ isDue: true })
+            mockGetPreference.mockImplementation(
+                (key: string) =>
+                    key === UserPreferences._securityPinSetupPrompt ||
+                    key === UserPreferences._cloudBackupIntroPrompt,
+            )
 
             const { result } = renderHook(() => usePromptContainer())
             await act(async () => {})

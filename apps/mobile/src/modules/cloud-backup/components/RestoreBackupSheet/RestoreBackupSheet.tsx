@@ -12,16 +12,15 @@
 
 import { PWSheetLayout, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import { RestoreOptionRow } from './RestoreOptionRow'
+import { useRestoreBackupSheet } from './useRestoreBackupSheet'
 import { useStyles } from './styles'
-
-export type RestoreBackupSheetResult = 'scan' | 'manual'
 
 export const RestoreBackupSheet = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
+    const { handleScan, handleManual } = useRestoreBackupSheet()
 
     return (
         <PWSheetLayout
@@ -44,13 +43,13 @@ export const RestoreBackupSheet = () => {
                     <RestoreOptionRow
                         icon='qr'
                         label={t('cloud_backup.restore.sheet_scan')}
-                        onPress={() => resolve('scan')}
+                        onPress={handleScan}
                         testID='cloud_backup_restore_sheet_scan'
                     />
                     <RestoreOptionRow
                         icon='key'
                         label={t('cloud_backup.restore.sheet_manual')}
-                        onPress={() => resolve('manual')}
+                        onPress={handleManual}
                         testID='cloud_backup_restore_sheet_manual'
                     />
                 </PWView>
