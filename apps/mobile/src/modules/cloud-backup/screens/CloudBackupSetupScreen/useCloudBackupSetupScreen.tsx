@@ -19,6 +19,7 @@ import {
     type CloudBackupCredentials,
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useClipboard } from '@hooks/useClipboard'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -72,6 +73,7 @@ export const useCloudBackupSetupScreen =
         }, [copyToClipboard, credentials.salt])
 
         const handleProceed = useCallback(() => {
+            trackEvent(CloudBackupEvent.SetupProceed)
             setDraft({
                 mnemonicIndices: credentials.mnemonicIndices,
                 salt: credentials.salt,

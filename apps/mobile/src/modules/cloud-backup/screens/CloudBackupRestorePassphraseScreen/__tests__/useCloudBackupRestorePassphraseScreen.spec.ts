@@ -37,6 +37,12 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ readText: async () => '' }),
 }))
 
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
+
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupRestorePassphraseScreen } from '../useCloudBackupRestorePassphraseScreen'
 
 describe('useCloudBackupRestorePassphraseScreen', () => {
@@ -44,6 +50,7 @@ describe('useCloudBackupRestorePassphraseScreen', () => {
         navigate.mockReset()
         setMnemonic.mockReset()
         errorToast.mockReset()
+        vi.mocked(trackEvent).mockClear()
     })
 
     it('is not submittable until all words are filled', () => {
@@ -51,6 +58,11 @@ describe('useCloudBackupRestorePassphraseScreen', () => {
             useCloudBackupRestorePassphraseScreen(),
         )
         expect(result.current.canContinue).toBe(false)
+
+        act(() => result.current.handleContinue())
+
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(navigate).not.toHaveBeenCalled()
     })
 
     it('saves the mnemonic and navigates to the encryption-key screen', async () => {
@@ -64,6 +76,9 @@ describe('useCloudBackupRestorePassphraseScreen', () => {
         })
         expect(result.current.canContinue).toBe(true)
         act(() => result.current.handleContinue())
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.RestorePassphraseProceed,
+        )
         expect(setMnemonic).toHaveBeenCalled()
         expect(navigate).toHaveBeenCalledWith('CloudBackupRestoreEncryptionKey')
     })

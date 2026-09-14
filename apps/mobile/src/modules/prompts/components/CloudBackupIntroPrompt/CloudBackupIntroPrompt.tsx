@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import {
     PWButton,
     PWChip,
@@ -61,6 +62,7 @@ export const CloudBackupIntroPrompt = ({ onDismiss }: PromptViewProps) => {
     }))
 
     const handleContinue = useCallback(() => {
+        trackEvent(CloudBackupEvent.IntroContinue)
         onDismiss(UserPreferences._cloudBackupIntroPrompt)
     }, [onDismiss])
 

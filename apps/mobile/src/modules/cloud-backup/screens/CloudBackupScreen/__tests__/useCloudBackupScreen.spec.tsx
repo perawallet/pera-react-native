@@ -13,11 +13,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useNavigation } from '@react-navigation/native'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupScreen } from '../useCloudBackupScreen'
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: vi.fn(),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -43,11 +49,12 @@ beforeEach(() => {
 })
 
 describe('useCloudBackupScreen', () => {
-    it('navigates to the setup screen on set-up', () => {
+    it('tracks set-up and navigates to the setup screen', () => {
         const { result } = renderHook(() => useCloudBackupScreen())
 
         result.current.handleSetUpBackup()
 
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.SetUpNew)
         expect(mockNavigate).toHaveBeenCalledWith('CloudBackupSetup')
     })
 
@@ -77,7 +84,7 @@ describe('useCloudBackupScreen', () => {
         )
     })
 
-    it('navigates nowhere when the sheet is dismissed', async () => {
+    it('tracks the restore tap but navigates nowhere when the sheet is dismissed', async () => {
         mockRequest.mockResolvedValue(undefined)
         const { result } = renderHook(() => useCloudBackupScreen())
 
@@ -85,6 +92,7 @@ describe('useCloudBackupScreen', () => {
             await result.current.handleRestoreBackup()
         })
 
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.Restore)
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

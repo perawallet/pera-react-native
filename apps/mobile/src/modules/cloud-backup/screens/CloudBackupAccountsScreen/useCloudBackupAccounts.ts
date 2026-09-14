@@ -17,6 +17,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupAccountReview } from '../../hooks/useBackupAccountReview'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -42,9 +43,17 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         backUpAccount,
     } = useBackupAccountReview()
 
-    const onReview = useCallback(
-        () => navigation.navigate('CloudBackupAccountsReview'),
-        [navigation],
+    const onReview = useCallback(() => {
+        trackEvent(CloudBackupEvent.AccountsReview)
+        navigation.navigate('CloudBackupAccountsReview')
+    }, [navigation])
+
+    const onBackUp = useCallback(
+        (address: string) => {
+            trackEvent(CloudBackupEvent.AccountsBackUp)
+            backUpAccount(address)
+        },
+        [backUpAccount],
     )
 
     return {
@@ -53,7 +62,7 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         notBackedUpCount: notBackedUpAccounts.length,
         availableFromBackupCount: availableFromBackup.length,
         busyAddress,
-        onBackUp: backUpAccount,
+        onBackUp,
         onReview,
     }
 }

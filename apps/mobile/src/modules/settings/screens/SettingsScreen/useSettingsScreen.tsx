@@ -91,6 +91,8 @@ export const useSettingsScreen = () => {
         if (page.route) {
             if (page.route === 'PasskeysSettings') {
                 trackEvent(SettingsEvent.PassKey)
+            } else if (page.route === 'CloudBackupSettings') {
+                trackEvent(SettingsEvent.CloudBackup)
             }
             goToSettingsPage(page.route)
         } else if (page.url) {

@@ -23,4 +23,6 @@ export enum AccountOptionsEvent {
     Remove = 'accountscr_remove_tap', // Started removing the account
     ViewPassphrase = 'accountscr_view_passphrase_tap', // Opened view-passphrase
     CopyAddress = 'accountscr_copy_address_tap', // Copied the account address
+    DeleteFromCloudBackup = 'accountscr_deleteAccount_cloudDelete', // Removed a backed-up account and its backup copy
+    KeepInCloudBackup = 'accountscr_deleteAccount_cloudCancel', // Removed a backed-up account but kept its backup copy
 }

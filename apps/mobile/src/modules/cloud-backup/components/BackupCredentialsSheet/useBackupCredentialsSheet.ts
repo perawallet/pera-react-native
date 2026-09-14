@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useClipboard } from '@hooks/useClipboard'
@@ -120,6 +121,7 @@ export const useBackupCredentialsSheet =
             // Guard the empty buffer: copying '' would wipe whatever the user
             // had on the clipboard and still report success.
             if (wordIndices.length === 0) return
+            trackEvent(CloudBackupEvent.CredentialsCopyPassphrase)
             // The words exist only for the length of this call; the retained
             // form stays the zeroable index buffer.
             // Without the sheet's own notifier the "Copied" toast renders
@@ -134,13 +136,17 @@ export const useBackupCredentialsSheet =
 
         const handleCopyEncryptionKey = useCallback(() => {
             if (!encryptionKey) return
+            trackEvent(CloudBackupEvent.CredentialsCopyKey)
             void copyToClipboard(
                 encryptionKey,
                 bottomSheetNotifier.current ?? undefined,
             )
         }, [copyToClipboard, encryptionKey])
 
-        const handleClose = useCallback(() => dismiss(), [dismiss])
+        const handleClose = useCallback(() => {
+            trackEvent(CloudBackupEvent.CredentialsStore)
+            dismiss()
+        }, [dismiss])
 
         return {
             credentialAddress,

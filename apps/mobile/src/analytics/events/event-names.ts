@@ -32,6 +32,7 @@ import type { AccountOptionsEvent } from './contexts/account-options'
 import type { ContactsEvent } from './contexts/contacts'
 import type { WebviewEvent } from './contexts/webview'
 import type { NavigationEvent } from './contexts/navigation'
+import type { CloudBackupEvent } from './contexts/cloud-backup'
 
 /**
  * Every analytics event, as a union of the per-context enums. Each enum lives in
@@ -62,3 +63,4 @@ export type AnalyticsEventName =
     | ContactsEvent
     | WebviewEvent
     | NavigationEvent
+    | CloudBackupEvent

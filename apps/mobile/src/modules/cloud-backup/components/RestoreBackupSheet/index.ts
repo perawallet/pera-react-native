@@ -11,4 +11,4 @@
  */
 
 export { RestoreBackupSheet } from './RestoreBackupSheet'
-export type { RestoreBackupSheetResult } from './RestoreBackupSheet'
+export type { RestoreBackupSheetResult } from './useRestoreBackupSheet'

@@ -19,8 +19,14 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupOverview } from '../useCloudBackupOverview'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 // The bucket rules live in the package; import the real ones so this spec
 // exercises what the screen actually renders.
@@ -285,6 +291,26 @@ describe('useCloudBackupOverview', () => {
         expect(result.current.credentialAddressLabel).toBe('truncated(abc)')
     })
 
+    test('tracks opening the accounts and contacts rows', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        const { result } = renderHook(() => useCloudBackupOverview())
+
+        act(() => result.current.onPressAccounts())
+        act(() => result.current.onPressContacts())
+
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewAccounts,
+        )
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewContacts,
+        )
+    })
+
     test('opens the turn off confirmation sheet when pressing turn off', async () => {
         mockStores({
             backupId: 'did:pera:abc',
@@ -296,6 +322,9 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
 
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewTurnOff,
+        )
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
@@ -383,7 +412,7 @@ describe('useCloudBackupOverview', () => {
         ).toBeLessThan(mockRequestBottomSheet.mock.invocationCallOrder[0])
     })
 
-    test('does not open the credentials sheet when PIN verification fails', async () => {
+    test('tracks the credential address tap but opens nothing when PIN verification fails', async () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
@@ -395,6 +424,9 @@ describe('useCloudBackupOverview', () => {
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressCredentialAddress()
 
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewCredentialAddress,
+        )
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
@@ -410,6 +442,9 @@ describe('useCloudBackupOverview', () => {
 
         await act(() => result.current.onPressSyncDevices())
 
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.OverviewSyncDevices,
+        )
         expect(showSyncQrMock).toHaveBeenCalledTimes(1)
         expect(syncNowMock).not.toHaveBeenCalled()
     })

@@ -12,7 +12,13 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupAccounts } from '../useCloudBackupAccounts'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 const { navigateMock, backUpAccountMock, isBackedUpMock } = vi.hoisted(() => ({
     navigateMock: vi.fn(),
@@ -56,11 +62,21 @@ describe('useCloudBackupAccounts', () => {
         expect(result.current.busyAddress).toBe('B')
     })
 
-    it('opens the review screen', () => {
+    it('tracks and opens the review screen', () => {
         const { result } = renderHook(() => useCloudBackupAccounts())
 
         act(() => result.current.onReview())
 
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.AccountsReview)
         expect(navigateMock).toHaveBeenCalledWith('CloudBackupAccountsReview')
+    })
+
+    it('tracks and backs up a device account', () => {
+        const { result } = renderHook(() => useCloudBackupAccounts())
+
+        act(() => result.current.onBackUp('B'))
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.AccountsBackUp)
+        expect(backUpAccountMock).toHaveBeenCalledWith('B')
     })
 })

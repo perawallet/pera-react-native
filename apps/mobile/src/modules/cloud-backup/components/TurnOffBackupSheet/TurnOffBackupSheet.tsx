@@ -12,13 +12,15 @@
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-
-export type TurnOffBackupChoice = 'turnOff' | 'turnOffAndRemove'
+import {
+    useTurnOffBackupSheet,
+    type TurnOffBackupChoice,
+} from './useTurnOffBackupSheet'
 
 export const TurnOffBackupSheet = () => {
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<TurnOffBackupChoice>()
+    const { handleKeep, handleTurnOff, handleTurnOffAndRemove } =
+        useTurnOffBackupSheet()
 
     return (
         <ConfirmActionContent<TurnOffBackupChoice>
@@ -28,13 +30,13 @@ export const TurnOffBackupSheet = () => {
             message={t('cloud_backup.turn_off_sheet.description')}
             confirmLabel={t('cloud_backup.turn_off_sheet.keep_enabled')}
             confirmVariant='primary'
-            onConfirm={dismiss}
+            onConfirm={handleKeep}
             cancelLabel={t('cloud_backup.turn_off_sheet.turn_off')}
             cancelVariant='secondary'
-            onCancel={() => resolve('turnOff')}
+            onCancel={handleTurnOff}
             tertiaryLabel={t('cloud_backup.turn_off_sheet.turn_off_and_remove')}
             tertiaryVariant='errorLink'
-            onTertiary={() => resolve('turnOffAndRemove')}
+            onTertiary={handleTurnOffAndRemove}
         />
     )
 }

@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { trackEvent, AccountOptionsEvent } from '@analytics'
 import { useAccountOptions } from '../useAccountOptions'
 import {
     AccountTypes,
@@ -141,6 +142,11 @@ vi.mock('@modules/bottom-sheet', () => ({
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -740,6 +746,9 @@ describe('useAccountOptions', () => {
                 await result.current.handleDeleteFromBackup()
             })
 
+            expect(trackEvent).toHaveBeenCalledWith(
+                AccountOptionsEvent.DeleteFromCloudBackup,
+            )
             expect(mockDeleteAccountFromBackup).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
             )
@@ -763,6 +772,9 @@ describe('useAccountOptions', () => {
                 await result.current.handleKeepInBackup()
             })
 
+            expect(trackEvent).toHaveBeenCalledWith(
+                AccountOptionsEvent.KeepInCloudBackup,
+            )
             expect(mockKeepAccountInBackup).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
             )

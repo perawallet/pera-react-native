@@ -11,4 +11,4 @@
  */
 
 export { TurnOffBackupSheet } from './TurnOffBackupSheet'
-export type { TurnOffBackupChoice } from './TurnOffBackupSheet'
+export type { TurnOffBackupChoice } from './useTurnOffBackupSheet'

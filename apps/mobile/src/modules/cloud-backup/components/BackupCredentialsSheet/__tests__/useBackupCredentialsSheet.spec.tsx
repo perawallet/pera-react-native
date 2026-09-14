@@ -20,7 +20,13 @@ import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useClipboard } from '@hooks/useClipboard'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupCredentialsSheet } from '../useBackupCredentialsSheet'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 const BACKUP_ID = 'did:pera:CREDENTIALADDRESS'
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
@@ -145,6 +151,7 @@ describe('useBackupCredentialsSheet', () => {
         result.current.handleCopyPassphrase()
 
         expect(mockCopyToClipboard).not.toHaveBeenCalled()
+        expect(trackEvent).not.toHaveBeenCalled()
     })
 
     test('zeroes the retained buffer when the sheet unmounts', async () => {
@@ -168,23 +175,32 @@ describe('useBackupCredentialsSheet', () => {
         )
 
         result.current.handleCopyPassphrase()
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.CredentialsCopyPassphrase,
+        )
         expect(mockCopyToClipboard).toHaveBeenCalledWith(
             INDICES.map(index => mnemonicIndexToWord(index)).join(' '),
             bottomSheetNotifier.current,
         )
 
         result.current.handleCopyEncryptionKey()
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.CredentialsCopyKey,
+        )
         expect(mockCopyToClipboard).toHaveBeenCalledWith(
             SALT,
             bottomSheetNotifier.current,
         )
     })
 
-    test('handleClose dismisses the sheet', async () => {
+    test('handleClose tracks the store tap and dismisses the sheet', async () => {
         const { result } = renderHook(() => useBackupCredentialsSheet())
 
         result.current.handleClose()
 
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.CredentialsStore,
+        )
         expect(mockDismiss).toHaveBeenCalled()
         await waitFor(() =>
             expect(result.current.passphraseStatus).toBe('ready'),

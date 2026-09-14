@@ -12,7 +12,13 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupAccountsReview } from '../useCloudBackupAccountsReview'
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
 
 const {
     requestBottomSheetMock,
@@ -59,6 +65,9 @@ describe('useCloudBackupAccountsReview', () => {
         expect(result.current.isExpanded).toBe(false)
         act(() => result.current.onToggleExpanded())
         expect(result.current.isExpanded).toBe(true)
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.ReviewAddFromBackupToggle,
+        )
     })
 
     test('starts expanded when the card is the only section', () => {
@@ -76,6 +85,22 @@ describe('useCloudBackupAccountsReview', () => {
         await act(() => result.current.onDelete('GONE'))
 
         expect(deleteFromBackupMock).toHaveBeenCalledWith('GONE')
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ReviewDelete)
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.ReviewDeleteConfirm,
+        )
+    })
+
+    test('tracks a cancelled delete without touching the backup', async () => {
+        requestBottomSheetMock.mockResolvedValue(false)
+        const { result } = renderHook(() => useCloudBackupAccountsReview())
+
+        await act(() => result.current.onDelete('GONE'))
+
+        expect(deleteFromBackupMock).not.toHaveBeenCalled()
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.ReviewDeleteCancel,
+        )
     })
 
     test('leaves the backup alone when the sheet is dismissed', async () => {
@@ -85,5 +110,29 @@ describe('useCloudBackupAccountsReview', () => {
         await act(() => result.current.onDelete('GONE'))
 
         expect(deleteFromBackupMock).not.toHaveBeenCalled()
+        expect(trackEvent).not.toHaveBeenCalledWith(
+            CloudBackupEvent.ReviewDeleteConfirm,
+        )
+        expect(trackEvent).not.toHaveBeenCalledWith(
+            CloudBackupEvent.ReviewDeleteCancel,
+        )
+    })
+
+    test('tracks and adds an account from the backup', () => {
+        const { result } = renderHook(() => useCloudBackupAccountsReview())
+
+        act(() => result.current.onAdd('GONE'))
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ReviewAdd)
+        expect(addFromBackupMock).toHaveBeenCalledWith('GONE')
+    })
+
+    test('tracks and backs up a not-backed-up account', () => {
+        const { result } = renderHook(() => useCloudBackupAccountsReview())
+
+        act(() => result.current.onBackUp('B'))
+
+        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.ReviewBackUp)
+        expect(backUpAccountMock).toHaveBeenCalledWith('B')
     })
 })

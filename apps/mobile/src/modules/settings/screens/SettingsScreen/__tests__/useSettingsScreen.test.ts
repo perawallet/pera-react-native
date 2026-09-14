@@ -16,9 +16,15 @@ import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
+import { trackEvent, SettingsEvent } from '@analytics'
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -118,6 +124,21 @@ describe('useSettingsScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('SecuritySettings')
         expect(mockPushWebView).not.toHaveBeenCalled()
+    })
+
+    it('tracks the tap when opening cloud backup', () => {
+        const { result } = renderHook(() => useSettingsScreen())
+
+        act(() => {
+            result.current.handleTapEvent({
+                title: 'Cloud Backup',
+                icon: 'cloud-check',
+                route: 'CloudBackupSettings',
+            })
+        })
+
+        expect(trackEvent).toHaveBeenCalledWith(SettingsEvent.CloudBackup)
+        expect(mockPush).toHaveBeenCalledWith('CloudBackupSettings')
     })
 
     it('opens webview when url is provided', () => {

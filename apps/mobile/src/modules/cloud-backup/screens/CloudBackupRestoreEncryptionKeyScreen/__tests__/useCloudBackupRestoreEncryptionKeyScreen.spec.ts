@@ -44,6 +44,12 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     },
 }))
 
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics/events/contexts')),
+    trackEvent: vi.fn(),
+}))
+
+import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupRestoreEncryptionKeyScreen } from '../useCloudBackupRestoreEncryptionKeyScreen'
 
 const renderScreen = () =>
@@ -61,6 +67,9 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         act(() => result.current.handleKeyChange('c2FsdA=='))
         act(() => result.current.handleRestore())
 
+        expect(trackEvent).toHaveBeenCalledWith(
+            CloudBackupEvent.RestoreEncryptionKeyProceed,
+        )
         expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
     })
 
@@ -70,6 +79,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         act(() => result.current.handleKeyChange('c2FsdA=='))
         act(() => result.current.handleRestore())
 
+        expect(trackEvent).not.toHaveBeenCalled()
         expect(restore).not.toHaveBeenCalled()
     })
 
