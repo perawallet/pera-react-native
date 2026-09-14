@@ -11,10 +11,8 @@
  */
 
 import {
-    PWIcon,
     PWScreen,
     PWText,
-    PWTouchableOpacity,
     PWView,
     type IconName,
     type PWIconVariant,
@@ -54,7 +52,6 @@ export const CloudBackupOverviewScreen = () => {
         onPressAccounts,
         onPressContacts,
         onPressCredentialAddress,
-        onPressCredentialInfo,
         onPressSyncDevices,
         onPressTurnOff,
     } = useCloudBackupOverview()
@@ -164,17 +161,6 @@ export const CloudBackupOverviewScreen = () => {
                                 'cloud_backup.overview.credential_address',
                             )}
                             subtitle={credentialAddressLabel}
-                            titleAccessory={
-                                <PWTouchableOpacity
-                                    onPress={onPressCredentialInfo}
-                                    testID='cloud_backup_overview_credential_info'
-                                >
-                                    <PWIcon
-                                        name='info'
-                                        variant='secondary'
-                                    />
-                                </PWTouchableOpacity>
-                            }
                             showChevron
                             onPress={() => void onPressCredentialAddress()}
                             testID='cloud_backup_overview_credential_address'

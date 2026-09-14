@@ -31,7 +31,6 @@ type OverviewRowProps = {
     subtitleIconVariant?: PWIconVariant
     variant: 'filled' | 'bordered'
     tone?: 'default' | 'negative'
-    titleAccessory?: ReactNode
     trailing?: ReactNode
     showChevron?: boolean
     onPress?: () => void
@@ -47,7 +46,6 @@ export const OverviewRow = ({
     subtitleIconVariant = 'primary',
     variant,
     tone = 'default',
-    titleAccessory,
     trailing,
     showChevron = false,
     onPress,
@@ -67,17 +65,14 @@ export const OverviewRow = ({
                 variant={iconVariant}
             />
             <PWView style={styles.textContainer}>
-                <PWView style={styles.titleRow}>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                        style={styles.title}
-                        numberOfLines={1}
-                    >
-                        {title}
-                    </PWText>
-                    {titleAccessory}
-                </PWView>
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                    style={styles.title}
+                    numberOfLines={1}
+                >
+                    {title}
+                </PWText>
                 {subtitle != null && (
                     <PWView style={styles.subtitleRow}>
                         {subtitleIcon != null && (

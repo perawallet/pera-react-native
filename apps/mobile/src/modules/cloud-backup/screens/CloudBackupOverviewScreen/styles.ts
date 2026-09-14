@@ -55,11 +55,6 @@ export const useOverviewRowStyles = makeStyles(
             flex: 1,
             minWidth: 0,
         },
-        titleRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-        },
         title: {
             color:
                 tone === 'negative'
