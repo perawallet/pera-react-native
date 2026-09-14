@@ -380,7 +380,6 @@
         "rekey_option_standard_description": "İşlemler cüzdanındaki başka bir hesap tarafından yetkilendirilecek.",
         "rekey_option_quantum_title": "Bir Quantum hesabına",
         "rekey_option_quantum_description": "İşlemler cüzdanındaki bir Quantum hesabı tarafından yetkilendirilecek.",
-        "rekey_option_quantum_badge": "YENİ",
         "export_share_account": "Hesabı dışa aktar/paylaş",
         "scan_rekeyed": "Rekey yapılmış hesapları tara",
         "rename_account": "Hesabı yeniden adlandır",
