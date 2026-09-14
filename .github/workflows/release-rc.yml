@@ -1,6 +1,6 @@
 name: Release / RC
 
-# Mints a vX.Y.Z-rc.N tag every Friday and pushes it. The pushed tag fires
+# Mints a vX.Y.Z-rc.N tag every other Friday and pushes it. The pushed tag fires
 # Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,
 # production + staging) — same path as the nightly alpha tags, just on the rc
 # channel and the same base version. Idempotent: tools/create-nightly-tag.sh
@@ -8,7 +8,8 @@ name: Release / RC
 
 on:
   schedule:
-    # Fridays 10:00 UTC. GitHub cron is UTC-only (no DST).
+    # Fridays 10:00 UTC; the `slot` job drops the off-weeks, since cron cannot
+    # express a fortnightly cadence. GitHub cron is UTC-only (no DST).
     - cron: "0 10 * * 5"
   # Allow cutting an rc on demand from the Actions tab.
   workflow_dispatch: {}
@@ -18,8 +19,41 @@ permissions:
   contents: read
 
 jobs:
+  slot:
+    name: Check fortnightly slot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+    steps:
+      - name: Decide whether this Friday is an rc week
+        id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          # First bi-weekly rc; whole weeks elapsed from here must be even.
+          ANCHOR: "2026-09-18"
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != schedule ]; then
+            echo "Manual dispatch - cutting an rc regardless of the slot."
+            echo "proceed=true" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Weeks on the epoch clock rather than ISO week numbers: a 53-week
+          # year flips ISO parity and would stretch one gap to three weeks.
+          weeks=$(( ( $(date -u +%s) - $(date -u -d "$ANCHOR" +%s) ) / 604800 ))
+          if [ "$(( weeks % 2 ))" -eq 0 ]; then
+            echo "Week $weeks since $ANCHOR - cutting an rc."
+            echo "proceed=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "Week $weeks since $ANCHOR - off-week, skipping."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+          fi
+
   mint:
     name: Mint release-candidate tag
+    needs: slot
+    if: needs.slot.outputs.proceed == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
