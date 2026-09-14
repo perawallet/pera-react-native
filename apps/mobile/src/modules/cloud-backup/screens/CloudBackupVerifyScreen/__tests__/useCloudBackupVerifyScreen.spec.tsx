@@ -21,14 +21,19 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
-const { navigateMock, popToMock, requestMock, enableBackupMock } = vi.hoisted(
-    () => ({
-        navigateMock: vi.fn(),
-        popToMock: vi.fn(),
-        requestMock: vi.fn(),
-        enableBackupMock: vi.fn(),
-    }),
-)
+const {
+    navigateMock,
+    popToMock,
+    requestMock,
+    enableBackupMock,
+    requirePinVerificationMock,
+} = vi.hoisted(() => ({
+    navigateMock: vi.fn(),
+    popToMock: vi.fn(),
+    requestMock: vi.fn(),
+    enableBackupMock: vi.fn(),
+    requirePinVerificationMock: vi.fn(),
+}))
 
 const MNEMONIC = [
     'marble',
@@ -84,6 +89,12 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: vi.fn(() => ({ request: requestMock })),
 }))
 
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: requirePinVerificationMock,
+    }),
+}))
+
 vi.mock('../../../hooks', () => ({
     useEnableCloudBackup: vi.fn(() => ({
         enableBackup: enableBackupMock,
@@ -111,7 +122,13 @@ vi.mock('expo-haptics', () => ({
 beforeEach(() => {
     vi.clearAllMocks()
     pickCallCount = 0
+    requirePinVerificationMock.mockResolvedValue(true)
 })
+
+const flushPromises = () =>
+    act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+    })
 
 describe('useCloudBackupVerifyScreen', () => {
     test('builds a 3-word quiz from the draft index buffer', () => {
@@ -158,7 +175,13 @@ describe('useCloudBackupVerifyScreen', () => {
         expect(quizSubmit).toHaveBeenCalledTimes(1)
     })
 
-    test("enables cloud backup when the confirm sheet resolves 'enable'", async () => {
+    test("enables cloud backup only after the PIN gate passes when the confirm sheet resolves 'enable'", async () => {
+        let passGate: (verified: boolean) => void = () => undefined
+        requirePinVerificationMock.mockReturnValueOnce(
+            new Promise<boolean>(resolve => {
+                passGate = resolve
+            }),
+        )
         requestMock.mockResolvedValue('enable')
         renderHook(() => useCloudBackupVerifyScreen())
         const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
@@ -166,9 +189,31 @@ describe('useCloudBackupVerifyScreen', () => {
         await act(async () => {
             await onSuccess()
         })
+        await flushPromises()
+
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+        expect(enableBackupMock).not.toHaveBeenCalled()
+
+        passGate(true)
+        await flushPromises()
 
         expect(enableBackupMock).toHaveBeenCalledTimes(1)
         expect(popToMock).not.toHaveBeenCalled()
+    })
+
+    test('does not enable cloud backup when the PIN gate is cancelled', async () => {
+        requirePinVerificationMock.mockResolvedValueOnce(false)
+        requestMock.mockResolvedValue('enable')
+        renderHook(() => useCloudBackupVerifyScreen())
+        const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
+
+        await act(async () => {
+            await onSuccess()
+        })
+        await flushPromises()
+
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+        expect(enableBackupMock).not.toHaveBeenCalled()
     })
 
     // `popTo`, not `navigate`: navigate would push a second Setup screen, which
@@ -185,6 +230,7 @@ describe('useCloudBackupVerifyScreen', () => {
         expect(popToMock).toHaveBeenCalledWith('CloudBackupSetup')
         expect(navigateMock).not.toHaveBeenCalled()
         expect(enableBackupMock).not.toHaveBeenCalled()
+        expect(requirePinVerificationMock).not.toHaveBeenCalled()
     })
 
     // Fixed positions leave a 27-combination quiz that can be ground through

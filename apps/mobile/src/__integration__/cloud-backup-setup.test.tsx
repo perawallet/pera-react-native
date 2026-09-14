@@ -26,8 +26,16 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
@@ -39,6 +47,7 @@ import {
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
 import { buildRegisterHandler } from '@perawallet/wallet-core-backup/test-handlers'
+import { usePinCode } from '@perawallet/wallet-core-security'
 
 import { CloudBackupSetupScreen } from '@modules/cloud-backup/screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '@modules/cloud-backup/screens/CloudBackupVerifyScreen'
@@ -151,10 +160,32 @@ const confirmEncryptionKey = async (): Promise<void> => {
     fireEvent.click(screen.getByTestId('cloud_backup_confirm_enable_button'))
 }
 
+const TEST_PIN = '123456'
+
+const seedPin = async (): Promise<void> => {
+    const { result } = renderHook(() => usePinCode())
+    await waitFor(async () => {
+        await result.current.savePin(TEST_PIN)
+        expect(await result.current.checkPinEnabled()).toBe(true)
+    })
+}
+
+const enterPin = async (pin: string): Promise<void> => {
+    for (const digit of pin) {
+        await act(async () => {
+            fireEvent.click(
+                within(screen.getByTestId('PWNumpad')).getByText(digit),
+            )
+        })
+    }
+}
+
 beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
 afterAll(() => server.close())
 
 beforeEach(() => {
+    // Also wipes the PIN, so a PIN test can't gate the tests after it.
+    resetTestKeystore()
     useDeviceStore.getState().setDeviceID('mainnet', 'device-integration')
     useDeviceStore.getState().setDeviceID('testnet', 'device-integration')
     useCloudBackupStore.getState().resetState()
@@ -367,6 +398,89 @@ describe('cloud backup verification and enable', () => {
                 ).toBeTruthy(),
             )
             expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})
+
+describe('cloud backup enable with a PIN set', () => {
+    it(
+        'asks for the PIN before storing keys or registering, and does neither when the PIN sheet is closed',
+        async () => {
+            const registered = vi.fn()
+            server.use(buildRegisterHandler({ onRegister: registered }))
+            await seedPin()
+            seedDraft()
+            renderVerifyFlow()
+
+            await answerQuizCorrectly()
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_verify_proceed_button'),
+            )
+            await confirmEncryptionKey()
+
+            await waitFor(() =>
+                expect(screen.getByTestId('PWNumpad')).toBeTruthy(),
+            )
+
+            fireEvent.click(screen.getByTestId('close-button'))
+
+            await waitFor(() =>
+                expect(screen.queryByTestId('PWNumpad')).toBeNull(),
+            )
+            await expect(
+                waitFor(() => expect(registered).toHaveBeenCalled(), {
+                    timeout: 2000,
+                }),
+            ).rejects.toThrow()
+            expect(
+                await withBackupMnemonicIndices(i => Array.from(i)),
+            ).toBeNull()
+            expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
+
+            expect(
+                screen.queryByTestId('cloud_backup_confirm_enable_button'),
+            ).toBeNull()
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_verify_proceed_button'),
+            )
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('cloud_backup_confirm_enable_button'),
+                ).toBeTruthy(),
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'registers the backup once the correct PIN is entered',
+        async () => {
+            const registered = vi.fn()
+            server.use(buildRegisterHandler({ onRegister: registered }))
+            await seedPin()
+            seedDraft()
+            renderVerifyFlow()
+
+            await answerQuizCorrectly()
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_verify_proceed_button'),
+            )
+            await confirmEncryptionKey()
+            await waitFor(() =>
+                expect(screen.getByTestId('PWNumpad')).toBeTruthy(),
+            )
+
+            await enterPin(TEST_PIN)
+
+            await waitFor(
+                () =>
+                    expect(useCloudBackupStore.getState().isConfigured()).toBe(
+                        true,
+                    ),
+                { timeout: SLOW_TEST_TIMEOUT_MS },
+            )
+            expect(registered).toHaveBeenCalledTimes(1)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
