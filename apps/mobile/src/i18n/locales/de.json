@@ -565,7 +565,6 @@
             "title": "Neues Cloud-Backup einrichten",
             "description": "Bewahre deinen 12-Wort-Schlüssel und deine Verschlüsselungsschlüssel sicher auf, um dein Backup später abrufen zu können.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "In die Zwischenablage kopieren",
             "encryption_key_label": "Verschlüsselungsschlüssel",
             "info_title": "Für die lokale Verschlüsselung erforderlich",
             "info_body": "Diese Zugangsdaten können nicht wiederhergestellt werden, wenn sie verloren gehen. Bewahre sie sicher auf, damit du den Zugriff auf dein Backup nicht verlierst.",
@@ -592,7 +591,6 @@
             "title": "Backup-Zugangsdaten",
             "credential_address_label": "Zugangsdaten-Adresse",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "In die Zwischenablage kopieren",
             "passphrase_missing": "Auf diesem Gerät ist keine Passphrase gespeichert.",
             "passphrase_unreadable": "Deine gespeicherte Passphrase konnte auf diesem Gerät nicht gelesen werden.",
             "done_button": "Bewahre deine Zugangsdaten sicher auf"

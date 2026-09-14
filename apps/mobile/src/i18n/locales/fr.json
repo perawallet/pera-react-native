@@ -573,7 +573,6 @@
             "title": "Configurer une nouvelle sauvegarde cloud",
             "description": "Conservez votre clé de 12 mots et vos clés de chiffrement en lieu sûr afin de pouvoir récupérer votre sauvegarde plus tard.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copier dans le presse-papiers",
             "encryption_key_label": "Clé de chiffrement",
             "info_title": "Requis pour le chiffrement local",
             "info_body": "Ces identifiants sont irrécupérables en cas de perte. Conservez-les en lieu sûr pour ne pas perdre l’accès à votre sauvegarde.",
@@ -600,7 +599,6 @@
             "title": "Identifiants de sauvegarde",
             "credential_address_label": "Adresse d’identification",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copier dans le presse-papiers",
             "passphrase_missing": "Aucune Passphrase n’est enregistrée sur cet appareil.",
             "passphrase_unreadable": "Votre Passphrase enregistrée sur cet appareil n’a pas pu être lue.",
             "done_button": "Conservez vos identifiants en lieu sûr"

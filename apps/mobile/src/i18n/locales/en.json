@@ -573,7 +573,6 @@
             "title": "Set Up a new Cloud Backup",
             "description": "Store your 12-word key and encryption keys securely to retrieve your backup in the future.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copy to Clipboard",
             "encryption_key_label": "Encryption Key",
             "info_title": "Required for local encryption",
             "info_body": "These credentials are unrecoverable if lost. Store them securely to avoid losing access to your backup.",
@@ -600,7 +599,6 @@
             "title": "Backup Credentials",
             "credential_address_label": "Credential Address",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copy to Clipboard",
             "passphrase_missing": "No Passphrase is stored on this device.",
             "passphrase_unreadable": "Your stored Passphrase couldn’t be read on this device.",
             "done_button": "Store your Credentials Securely"

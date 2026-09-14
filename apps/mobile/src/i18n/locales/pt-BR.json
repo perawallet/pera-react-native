@@ -573,7 +573,6 @@
             "title": "Configurar um novo backup na nuvem",
             "description": "Guarde sua chave de 12 palavras e suas chaves de criptografia com segurança para recuperar seu backup no futuro.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copiar para a área de transferência",
             "encryption_key_label": "Chave de criptografia",
             "info_title": "Necessário para a criptografia local",
             "info_body": "Essas credenciais não podem ser recuperadas se forem perdidas. Guarde-as com segurança para não perder o acesso ao seu backup.",
@@ -600,7 +599,6 @@
             "title": "Credenciais do backup",
             "credential_address_label": "Endereço das credenciais",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copiar para a área de transferência",
             "passphrase_missing": "Nenhuma Passphrase está armazenada neste dispositivo.",
             "passphrase_unreadable": "Não foi possível ler sua Passphrase armazenada neste dispositivo.",
             "done_button": "Guarde suas credenciais com segurança"

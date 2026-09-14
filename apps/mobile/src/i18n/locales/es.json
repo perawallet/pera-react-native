@@ -573,7 +573,6 @@
             "title": "Configurar una nueva copia de seguridad en la nube",
             "description": "Guarda tu clave de 12 palabras y tus claves de cifrado en un lugar seguro para poder recuperar tu copia de seguridad en el futuro.",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copiar al portapapeles",
             "encryption_key_label": "Clave de cifrado",
             "info_title": "Necesario para el cifrado local",
             "info_body": "Estas credenciales no se pueden recuperar si las pierdes. Guárdalas en un lugar seguro para no perder el acceso a tu copia de seguridad.",
@@ -600,7 +599,6 @@
             "title": "Credenciales de la copia de seguridad",
             "credential_address_label": "Dirección de credenciales",
             "passphrase_label": "Passphrase",
-            "copy_passphrase": "Copiar al portapapeles",
             "passphrase_missing": "No hay ninguna Passphrase guardada en este dispositivo.",
             "passphrase_unreadable": "No se ha podido leer tu Passphrase guardada en este dispositivo.",
             "done_button": "Guarda tus credenciales de forma segura"

@@ -22,20 +22,9 @@ export const useStyles = makeStyles(theme => ({
     label: {
         color: theme.colors.textGray,
     },
-    copyLink: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.sm,
-    },
-    copyLinkText: {
-        color: theme.colors.positive,
-    },
     keyField: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
         minHeight: theme.spacing['3xl'] + theme.spacing.sm,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.sm,

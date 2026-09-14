@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWSheetLayout,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { PassphraseGrid } from '@components/PassphraseGrid'
 import { useLanguage } from '@hooks/useLanguage'
@@ -61,14 +54,9 @@ const CredentialAddressSection = ({
 type PassphraseSectionProps = {
     wordIndices: Uint16Array
     status: PassphraseStatus
-    onCopy: () => void
 }
 
-const PassphraseSection = ({
-    wordIndices,
-    status,
-    onCopy,
-}: PassphraseSectionProps) => {
+const PassphraseSection = ({ wordIndices, status }: PassphraseSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
@@ -88,28 +76,7 @@ const PassphraseSection = ({
                     />
                 </PWView>
             )}
-            {status === 'ready' && (
-                <>
-                    <PassphraseGrid wordIndices={wordIndices} />
-                    <PWTouchableOpacity
-                        style={styles.copyLink}
-                        onPress={onCopy}
-                        {...getTestProps('backup_credentials_copy_passphrase')}
-                    >
-                        <PWIcon
-                            name='copy'
-                            variant='positive'
-                        />
-                        <PWText
-                            variant='bodyLarge'
-                            weight={500}
-                            style={styles.copyLinkText}
-                        >
-                            {t('cloud_backup.credentials.copy_passphrase')}
-                        </PWText>
-                    </PWTouchableOpacity>
-                </>
-            )}
+            {status === 'ready' && <PassphraseGrid wordIndices={wordIndices} />}
             {status === 'unavailable' && (
                 <PWText
                     variant='bodyLarge'
@@ -142,8 +109,6 @@ export const BackupCredentialsSheet = () => {
         encryptionKey,
         wordIndices,
         passphraseStatus,
-        handleCopyPassphrase,
-        handleCopyEncryptionKey,
         handleClose,
     } = useBackupCredentialsSheet()
 
@@ -172,13 +137,8 @@ export const BackupCredentialsSheet = () => {
                 <PassphraseSection
                     wordIndices={wordIndices}
                     status={passphraseStatus}
-                    onCopy={handleCopyPassphrase}
                 />
-                <EncryptionKeyField
-                    encryptionKey={encryptionKey}
-                    onCopy={handleCopyEncryptionKey}
-                    copyTestID='backup_credentials_copy_encryption_key'
-                />
+                <EncryptionKeyField encryptionKey={encryptionKey} />
             </PWView>
         </PWSheetLayout>
     )

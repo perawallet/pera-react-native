@@ -10,18 +10,10 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { PassphraseGrid } from '@components/PassphraseGrid'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { ConfirmationCheckbox } from '../../components/ConfirmationCheckbox'
 import { useCloudBackupSetupScreen } from './useCloudBackupSetupScreen'
@@ -37,8 +29,6 @@ export const CloudBackupSetupScreen = () => {
         saltB64,
         isConfirmed,
         toggleConfirmed,
-        handleCopyPassphrase,
-        handleCopyEncryptionKey,
         handleProceed,
     } = useCloudBackupSetupScreen()
 
@@ -70,23 +60,6 @@ export const CloudBackupSetupScreen = () => {
                         {t('cloud_backup.setup.passphrase_label')}
                     </PWText>
                     <PassphraseGrid wordIndices={mnemonicIndices} />
-                    <PWTouchableOpacity
-                        style={styles.copyLink}
-                        onPress={handleCopyPassphrase}
-                        {...getTestProps('cloud_backup_setup_copy_passphrase')}
-                    >
-                        <PWIcon
-                            name='copy'
-                            variant='positive'
-                        />
-                        <PWText
-                            variant='bodyLarge'
-                            weight={500}
-                            style={styles.copyLinkText}
-                        >
-                            {t('cloud_backup.setup.copy_passphrase')}
-                        </PWText>
-                    </PWTouchableOpacity>
                 </PWView>
 
                 <PWView style={styles.section}>
@@ -104,17 +77,6 @@ export const CloudBackupSetupScreen = () => {
                         >
                             {saltB64}
                         </PWText>
-                        <PWTouchableOpacity
-                            onPress={handleCopyEncryptionKey}
-                            {...getTestProps(
-                                'cloud_backup_setup_copy_encryption_key',
-                            )}
-                        >
-                            <PWIcon
-                                name='copy'
-                                variant='positive'
-                            />
-                        </PWTouchableOpacity>
                     </PWView>
                 </PWView>
 

@@ -89,7 +89,6 @@ export const EncryptionKeyConfirmSheet = () => {
         salt,
         isConfirmed,
         toggleConfirmed,
-        handleCopy,
         handleEnable,
         handleShowCredentials,
     } = useEncryptionKeyConfirmSheet()
@@ -97,11 +96,7 @@ export const EncryptionKeyConfirmSheet = () => {
     return (
         <PWView style={styles.container}>
             <ConfirmHeader />
-            <EncryptionKeyField
-                encryptionKey={salt}
-                onCopy={handleCopy}
-                copyTestID='cloud_backup_confirm_copy_key'
-            />
+            <EncryptionKeyField encryptionKey={salt} />
             <ConfirmationCheckbox
                 label={t('cloud_backup.confirm.checkbox_label')}
                 isConfirmed={isConfirmed}

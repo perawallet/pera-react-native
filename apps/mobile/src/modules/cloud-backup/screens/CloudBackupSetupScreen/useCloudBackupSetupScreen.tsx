@@ -18,9 +18,8 @@ import {
     useCloudBackupDraftStore,
     type CloudBackupCredentials,
 } from '@perawallet/wallet-core-backup'
-import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { trackEvent, CloudBackupEvent } from '@analytics'
-import { useClipboard } from '@hooks/useClipboard'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
 type UseCloudBackupSetupScreenResult = {
@@ -28,14 +27,11 @@ type UseCloudBackupSetupScreenResult = {
     saltB64: string
     isConfirmed: boolean
     toggleConfirmed: () => void
-    handleCopyPassphrase: () => void
-    handleCopyEncryptionKey: () => void
     handleProceed: () => void
 }
 
 export const useCloudBackupSetupScreen =
     (): UseCloudBackupSetupScreenResult => {
-        const { copyToClipboard } = useClipboard()
         const navigation =
             useNavigation<
                 NativeStackNavigationProp<CloudBackupStackParamList>
@@ -65,20 +61,6 @@ export const useCloudBackupSetupScreen =
             setIsConfirmed(value => !value)
         }, [])
 
-        const handleCopyPassphrase = useCallback(() => {
-            // The words exist only for the length of this call; the retained
-            // form stays the zeroable index buffer.
-            void copyToClipboard(
-                Array.from(credentials.mnemonicIndices, index =>
-                    mnemonicIndexToWord(index),
-                ).join(' '),
-            )
-        }, [copyToClipboard, credentials.mnemonicIndices])
-
-        const handleCopyEncryptionKey = useCallback(() => {
-            void copyToClipboard(credentials.salt)
-        }, [copyToClipboard, credentials.salt])
-
         const handleProceed = useCallback(() => {
             trackEvent(CloudBackupEvent.SetupProceed)
             setDraft({
@@ -93,8 +75,6 @@ export const useCloudBackupSetupScreen =
             saltB64: credentials.salt,
             isConfirmed,
             toggleConfirmed,
-            handleCopyPassphrase,
-            handleCopyEncryptionKey,
             handleProceed,
         }
     }

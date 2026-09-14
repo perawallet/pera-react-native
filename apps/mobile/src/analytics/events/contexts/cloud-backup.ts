@@ -21,7 +21,6 @@ export enum CloudBackupEvent {
     Restore = 'backupscr_cloud_restore', // Chose to restore an existing backup
     SetupProceed = 'backupscr_setup_proceed', // Proceeded past the generated credentials
     VerifyProceed = 'backupscr_verify_proceed', // Submitted the passphrase quiz
-    ConfirmCopyKey = 'backupscr_encryptedKey_copy', // Copied the encryption key on the confirm sheet
     ConfirmShowCredentials = 'backupscr_encryptedKey_showCredentials', // Went back to see the credentials again
     ConfirmStoredCheck = 'backupscr_encryptedKey_yesCheck', // Ticked "I stored my encryption key"
     ConfirmEnable = 'backupscr_encryptedKey_backup', // Enabled the backup from the confirm sheet
@@ -45,7 +44,5 @@ export enum CloudBackupEvent {
     ReviewDeleteConfirm = 'backupscr_accounts_review_delete_yes', // Confirmed that delete
     ReviewDeleteCancel = 'backupscr_accounts_review_delete_no', // Cancelled that delete
     ReviewBackUp = 'backupscr_accounts_review_backup', // Backed up a not-backed-up account
-    CredentialsCopyPassphrase = 'backupscr_credentials_copyPassphrase', // Copied the passphrase from the credentials sheet
-    CredentialsCopyKey = 'backupscr_credentials_copyKey', // Copied the encryption key from the credentials sheet
     CredentialsStore = 'backupscr_credentials_store', // Tapped "Store your Credentials Securely"
 }

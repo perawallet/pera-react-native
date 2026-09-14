@@ -30,14 +30,4 @@ export const useStyles = makeStyles(theme => ({
     errorText: {
         color: theme.colors.textGray,
     },
-    copyLink: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.sm,
-    },
-    copyLinkText: {
-        color: theme.colors.positive,
-    },
 }))

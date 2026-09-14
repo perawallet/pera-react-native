@@ -17,12 +17,10 @@ import {
     useCloudBackupStore,
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
-import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
-import { bottomSheetNotifier } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useClipboard } from '@hooks/useClipboard'
 
 /**
  * `unavailable` — nothing is stored, so this device isn't configured.
@@ -39,14 +37,11 @@ type UseBackupCredentialsSheetResult = {
     encryptionKey: string
     wordIndices: Uint16Array
     passphraseStatus: PassphraseStatus
-    handleCopyPassphrase: () => void
-    handleCopyEncryptionKey: () => void
     handleClose: () => void
 }
 
 export const useBackupCredentialsSheet =
     (): UseBackupCredentialsSheetResult => {
-        const { copyToClipboard } = useClipboard()
         const { dismiss } = useBottomSheetResult()
         const backupId = useCloudBackupStore(state => state.backupId)
         const salt = useCloudBackupStore(state => state.salt)
@@ -117,32 +112,6 @@ export const useBackupCredentialsSheet =
             }
         }, [clearIndices])
 
-        const handleCopyPassphrase = useCallback(() => {
-            // Guard the empty buffer: copying '' would wipe whatever the user
-            // had on the clipboard and still report success.
-            if (wordIndices.length === 0) return
-            trackEvent(CloudBackupEvent.CredentialsCopyPassphrase)
-            // The words exist only for the length of this call; the retained
-            // form stays the zeroable index buffer.
-            // Without the sheet's own notifier the "Copied" toast renders
-            // behind the sheet, and it is the only feedback this button gives.
-            void copyToClipboard(
-                Array.from(wordIndices, index =>
-                    mnemonicIndexToWord(index),
-                ).join(' '),
-                bottomSheetNotifier.current ?? undefined,
-            )
-        }, [copyToClipboard, wordIndices])
-
-        const handleCopyEncryptionKey = useCallback(() => {
-            if (!encryptionKey) return
-            trackEvent(CloudBackupEvent.CredentialsCopyKey)
-            void copyToClipboard(
-                encryptionKey,
-                bottomSheetNotifier.current ?? undefined,
-            )
-        }, [copyToClipboard, encryptionKey])
-
         const handleClose = useCallback(() => {
             trackEvent(CloudBackupEvent.CredentialsStore)
             dismiss()
@@ -153,8 +122,6 @@ export const useBackupCredentialsSheet =
             encryptionKey,
             wordIndices,
             passphraseStatus,
-            handleCopyPassphrase,
-            handleCopyEncryptionKey,
             handleClose,
         }
     }

@@ -13,12 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useNavigation } from '@react-navigation/native'
-import { useClipboard } from '@hooks/useClipboard'
 import {
     generateCloudBackupCredentials,
     useCloudBackupDraftStore,
 } from '@perawallet/wallet-core-backup'
-import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupSetupScreen } from '../useCloudBackupSetupScreen'
 
@@ -31,21 +29,16 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
-vi.mock('@hooks/useClipboard', () => ({
-    useClipboard: vi.fn(),
-}))
-
 vi.mock('@perawallet/wallet-core-backup', () => ({
     generateCloudBackupCredentials: vi.fn(),
     useCloudBackupDraftStore: vi.fn(),
 }))
 
 // Two positions deliberately share an index: a repeated word must still render
-// and copy at both of its positions.
+// at both of its positions.
 const INDICES = [412, 1337, 88, 7, 2045, 601, 19, 943, 7, 1500, 260, 1111]
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 
-const mockCopyToClipboard = vi.fn()
 const mockNavigate = vi.fn()
 const mockSetDraft = vi.fn()
 const mockClearDraft = vi.fn()
@@ -55,10 +48,6 @@ let indices: Uint16Array
 beforeEach(() => {
     vi.clearAllMocks()
     indices = Uint16Array.from(INDICES)
-    ;(useClipboard as ReturnType<typeof vi.fn>).mockReturnValue({
-        copyToClipboard: mockCopyToClipboard,
-        readText: vi.fn(),
-    })
     ;(useNavigation as ReturnType<typeof vi.fn>).mockReturnValue({
         navigate: mockNavigate,
     })
@@ -91,24 +80,6 @@ describe('useCloudBackupSetupScreen', () => {
         rerender()
 
         expect(generateCloudBackupCredentials).toHaveBeenCalledTimes(1)
-    })
-
-    test('copies the passphrase as a space-joined string', () => {
-        const { result } = renderHook(() => useCloudBackupSetupScreen())
-
-        result.current.handleCopyPassphrase()
-
-        expect(mockCopyToClipboard).toHaveBeenCalledWith(
-            INDICES.map(index => mnemonicIndexToWord(index)).join(' '),
-        )
-    })
-
-    test('copies the encryption key (salt)', () => {
-        const { result } = renderHook(() => useCloudBackupSetupScreen())
-
-        result.current.handleCopyEncryptionKey()
-
-        expect(mockCopyToClipboard).toHaveBeenCalledWith(SALT)
     })
 
     test('starts unconfirmed and toggleConfirmed flips the confirmation', () => {
