@@ -36,26 +36,31 @@ export const getHttpStatus = (error: unknown): Optional<number> => {
 export const toError = (e: unknown): Error =>
     e instanceof Error ? e : new Error(String(e))
 
+// Base32 Algorand address, as it appears in account-scoped API paths.
+const ALGORAND_ADDRESS = /[A-Z2-7]{58}/g
+
 /**
  * One-line summary for log messages: `name status url` for an HTTP-shaped
- * error (ky's `response`/`request`), otherwise `name: message`. Belongs in the
- * message itself, since Expo's log forwarder blanks any context object that
- * carries a stack.
+ * error (ky's `response`/`request`), just the name otherwise. Deliberately
+ * omits the error message and masks address-shaped path segments: log lines
+ * reach the dev log and crash-reporter breadcrumbs, and backend messages can
+ * carry addresses or user data. The error object itself belongs in the log
+ * context, which is classified centrally.
  */
 export const describeError = (error: unknown): string => {
     const shaped = error as {
         name?: string
-        message?: string
         response?: { status?: number; url?: string }
         request?: { url?: string }
     }
-    const name = shaped?.name ?? 'Error'
-    const status = shaped?.response?.status
     const url = shaped?.response?.url ?? shaped?.request?.url
-    if (status === undefined && url === undefined) {
-        return shaped?.message ? `${name}: ${shaped.message}` : name
-    }
-    return [name, status, url].filter(part => part !== undefined).join(' ')
+    return [
+        shaped?.name ?? 'Error',
+        shaped?.response?.status,
+        url?.replace(ALGORAND_ADDRESS, '<address>'),
+    ]
+        .filter(part => part !== undefined)
+        .join(' ')
 }
 
 /** Asserts a value is non-null, throwing a descriptive error if it is. */

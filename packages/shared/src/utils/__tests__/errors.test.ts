@@ -102,9 +102,26 @@ describe('describeError', () => {
         ).toBe('TimeoutError https://api.example/slow')
     })
 
-    test('uses name and message for a plain error', () => {
-        expect(describeError(new Error('boom'))).toBe('Error: boom')
-        expect(describeError(new TypeError('bad'))).toBe('TypeError: bad')
+    test('never includes the message, which can carry addresses or user data', () => {
+        const address = 'A'.repeat(58)
+        expect(describeError(new Error(`account ${address} rejected`))).toBe(
+            'Error',
+        )
+        expect(describeError(new TypeError('bad'))).toBe('TypeError')
+    })
+
+    test('masks address-shaped path segments in the url', () => {
+        const address =
+            'HTJGYF56HKP5YLV6MLBOWROMYPZUONKBFLY2P2LNS3AHG5FFLHUKY7DCDY'
+        expect(
+            describeError({
+                name: 'HTTPError',
+                response: {
+                    status: 404,
+                    url: `https://api.example/v1/accounts/${address}/assets`,
+                },
+            }),
+        ).toBe('HTTPError 404 https://api.example/v1/accounts/<address>/assets')
     })
 
     test('degrades to a bare name for non-errors', () => {

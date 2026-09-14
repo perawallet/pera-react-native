@@ -85,7 +85,7 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed: Error: boom',
+            'Mutation failed: Error',
             expect.objectContaining({ mutationKey: ['test-mutation'] }),
         )
     })
@@ -213,7 +213,7 @@ describe('queryClient query error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Query failed: Error: boom',
+            'Query failed: Error',
             expect.objectContaining({ error: expect.any(Error) }),
         )
     })
