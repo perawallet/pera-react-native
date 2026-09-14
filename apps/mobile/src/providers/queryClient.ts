@@ -21,6 +21,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    describeError,
     isPeraServiceUnavailableError,
     isTransientNetworkError,
     logger,
@@ -52,22 +53,6 @@ export const setOnPeraBackendUnavailable = (
             peraBackendUnavailableHandler = undefined
         }
     }
-}
-
-// Expo's log forwarder renders any context object that carries a `stack` as a
-// "Call Stack" block and blanks the rest, so name/status/url must ride in the
-// message to be readable in the dev log. `error` stays in context for the crash
-// reporter. Shape-based: no ky import.
-const describeError = (error: unknown): string => {
-    const shaped = error as {
-        name?: string
-        response?: { status?: number; url?: string }
-        request?: { url?: string }
-    }
-    const url = shaped?.response?.url ?? shaped?.request?.url
-    return [shaped?.name ?? 'Error', shaped?.response?.status, url]
-        .filter(part => part !== undefined)
-        .join(' ')
 }
 
 const cache = new QueryCache({

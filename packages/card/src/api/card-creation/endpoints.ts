@@ -25,12 +25,12 @@ import {
 } from './errors'
 import { createCardResponseSchema } from './schema'
 
-/** ARC-60 `StdSigData`, base64-encoded for the wire. */
 // The backend mints the card on-chain and waits for confirmation; ky's 10 s
 // default aborts that mid-flight and reports a failure for a call that is
 // still succeeding server-side.
 const CARD_CREATE_TIMEOUT_MS = 60_000
 
+/** ARC-60 `StdSigData`, base64-encoded for the wire. */
 export type CardSiwaSignData = {
     data: string
     authenticatorData: string

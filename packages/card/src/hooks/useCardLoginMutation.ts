@@ -15,10 +15,13 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { acquireCardSessionTokens, loginRequest } from '../api/auth'
 import { fetchOnboardingDetails } from '../api/onboarding'
+import {
+    OnboardingStep,
+    type CardSessionTokens,
+    type LoginResult,
+} from '../models'
 import { setCardSession } from '../session'
-import { OnboardingStep } from '../models'
 import { useCardStore } from '../store'
-import type { CardSessionTokens, LoginResult } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type CardLoginParams = {
@@ -96,16 +99,12 @@ export const useCardLoginMutation = (): UseCardLoginMutationResult => {
             // unfinished.
             if (result.tokens) {
                 await setCardSession(result.tokens)
-                // Scope the device's setup state to this user so another
-                // account's escrow card cannot masquerade as a completed setup.
                 if (result.userId !== null) {
                     useCardStore.getState().adoptCardUser(result.userId)
                 }
-                // Baanx issues an access token only once registration (details
-                // + address) is complete, so the checklist's "Enter Your
-                // Details" step is done for this user even if this device never
-                // saw the address response (e.g. it errored after creating the
-                // user). Mirrors what useSubmitAddressMutation sets on success.
+                // Baanx only issues an access token once registration is done,
+                // so the details step is complete even if this device never saw
+                // the address response.
                 useCardStore
                     .getState()
                     .setOnboardingStep(OnboardingStep.Completed)

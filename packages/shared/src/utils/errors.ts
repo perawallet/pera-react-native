@@ -36,6 +36,28 @@ export const getHttpStatus = (error: unknown): Optional<number> => {
 export const toError = (e: unknown): Error =>
     e instanceof Error ? e : new Error(String(e))
 
+/**
+ * One-line summary for log messages: `name status url` for an HTTP-shaped
+ * error (ky's `response`/`request`), otherwise `name: message`. Belongs in the
+ * message itself, since Expo's log forwarder blanks any context object that
+ * carries a stack.
+ */
+export const describeError = (error: unknown): string => {
+    const shaped = error as {
+        name?: string
+        message?: string
+        response?: { status?: number; url?: string }
+        request?: { url?: string }
+    }
+    const name = shaped?.name ?? 'Error'
+    const status = shaped?.response?.status
+    const url = shaped?.response?.url ?? shaped?.request?.url
+    if (status === undefined && url === undefined) {
+        return shaped?.message ? `${name}: ${shaped.message}` : name
+    }
+    return [name, status, url].filter(part => part !== undefined).join(' ')
+}
+
 /** Asserts a value is non-null, throwing a descriptive error if it is. */
 export function assertDefined<T>(value: Maybe<T>, name: string): T {
     if (value == null) {

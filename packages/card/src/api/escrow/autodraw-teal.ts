@@ -14,7 +14,9 @@
 // KEEP IT BYTE-IDENTICAL — the compiled program is what the delegation
 // authorizes, so any drift changes the LogicSig address AB's contract expects.
 // Replace wholesale when AB updates the contract. Source:
-// appliedblockchain/baanx-algo-contracts artifacts/AutoDraw.teal (main @ a3d4e6a).
+// algorandfoundation/auto-draw-card
+// projects/auto-draw-card/smart_contracts/artifacts/auto_draw/AutoDraw.teal
+// (main @ 633c742ef; identical to the earlier baanx-algo-contracts a3d4e6a).
 //
 // The three `TMPL_` placeholders are substituted with the escrow chain config
 // and compiled by algod before the user signs. The settlement asset is

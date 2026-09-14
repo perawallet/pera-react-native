@@ -101,10 +101,8 @@ export const useCardStore: UseBoundStore<
             adoptCardUser: userId =>
                 set(state => {
                     if (state.cardUserId === userId) return {}
-                    // Another (or unknown) user owned this state: the escrow
-                    // card is bound to their Baanx account, so drop it along
-                    // with the funding selection rather than let the new user
-                    // land on a dashboard for a card that is not theirs.
+                    // The escrow card belongs to the previous user's Baanx
+                    // account, so it goes along with the funding selection.
                     return {
                         cardUserId: userId,
                         connectedFundingSourceAddress:

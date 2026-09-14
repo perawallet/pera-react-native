@@ -415,9 +415,8 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
         const account = await pickFundingSource()
         if (!account || account.address === fundingAddress) return
-        // Connecting is a local selection: Baanx has no funding-source
-        // endpoint for a non-custodial wallet. The address is registered with
-        // the Baanx user by the Pera backend during card creation.
+        // Local only: the Pera backend registers the address with Baanx at
+        // card creation; Baanx has no funding-source endpoint for our wallets.
         useCardStore
             .getState()
             .setConnectedFundingSourceAddress(account.address)

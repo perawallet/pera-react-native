@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { PeraNetworkError } from '../../errors/network'
-import { getHttpStatus, toError, assertDefined } from '../errors'
+import { describeError, getHttpStatus, toError, assertDefined } from '../errors'
 
 describe('getHttpStatus', () => {
     test('returns the status from a ky-style error object', () => {
@@ -79,5 +79,36 @@ describe('assertDefined', () => {
         expect(() => assertDefined(undefined, 'other')).toThrow(
             'expected other to be defined',
         )
+    })
+})
+
+describe('describeError', () => {
+    test('names an HTTP-shaped error by status and url, without its message', () => {
+        const error = Object.assign(new Error('Request failed'), {
+            name: 'HTTPError',
+            response: { status: 502, url: 'https://api.example/card' },
+        })
+        expect(describeError(error)).toBe(
+            'HTTPError 502 https://api.example/card',
+        )
+    })
+
+    test('falls back to the request url when the response has none', () => {
+        expect(
+            describeError({
+                name: 'TimeoutError',
+                request: { url: 'https://api.example/slow' },
+            }),
+        ).toBe('TimeoutError https://api.example/slow')
+    })
+
+    test('uses name and message for a plain error', () => {
+        expect(describeError(new Error('boom'))).toBe('Error: boom')
+        expect(describeError(new TypeError('bad'))).toBe('TypeError: bad')
+    })
+
+    test('degrades to a bare name for non-errors', () => {
+        expect(describeError(undefined)).toBe('Error')
+        expect(describeError({ name: 'Weird' })).toBe('Weird')
     })
 })
