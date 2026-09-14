@@ -156,6 +156,7 @@ describe('useHandleMultisigSignTap', () => {
                 signRequest,
                 signerAddress: 'A',
                 decodeTransaction: decodeTransactionMock,
+                localAccounts: [],
             })
             expect(addSignRequestMock).toHaveBeenCalledTimes(1)
             expect(addSignRequestMock).toHaveBeenCalledWith(cosignRequestStub)

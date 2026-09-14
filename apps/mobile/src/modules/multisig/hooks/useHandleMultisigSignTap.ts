@@ -76,6 +76,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                     signRequest,
                                     signerAddress: address,
                                     decodeTransaction,
+                                    localAccounts: accounts,
                                 }),
                             )
                         } catch (error) {

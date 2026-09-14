@@ -290,6 +290,7 @@ export const usePendingSignaturesContent =
                         signRequest,
                         signerAddress: address,
                         decodeTransaction,
+                        localAccounts: accounts,
                     })
                     addSignRequest(cosignRequest)
                 } catch (error) {
@@ -300,7 +301,7 @@ export const usePendingSignaturesContent =
                     })
                 }
             },
-            [signRequest, decodeTransaction, addSignRequest],
+            [signRequest, decodeTransaction, addSignRequest, accounts],
         )
 
         const handleSign = useCallback(() => {
