@@ -41,6 +41,7 @@ describe('fetchInternalWallets', () => {
             expect.objectContaining({
                 method: 'GET',
                 path: '/v1/wallet/internal',
+                authenticated: true,
             }),
         )
         expect(wallets).toHaveLength(1)
@@ -67,6 +68,7 @@ describe('withdrawFromCard', () => {
             expect.objectContaining({
                 method: 'POST',
                 path: '/v1/wallet/internal/withdraw',
+                authenticated: true,
                 data: {
                     amount: '25.5',
                     recipientAddrss: 'ALGO_RECIPIENT',

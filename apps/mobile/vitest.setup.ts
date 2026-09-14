@@ -2448,6 +2448,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/utils/bytes')
     >('../../packages/shared/src/utils/bytes')
 
+    // errors.ts imports only types, so the real one-line summary is safe to use.
+    const { describeError } = await vi.importActual<
+        typeof import('../../packages/shared/src/utils/errors')
+    >('../../packages/shared/src/utils/errors')
+
     // Same reasoning again: expected.ts only imports the AppError type from
     // base.ts, so pulling in the real classifier is side-effect free. Its
     // `instanceof AppError` check targets the real class, not this mock's
@@ -2782,6 +2787,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),
+        describeError,
         isPromiseLike: (value: unknown) =>
             typeof value === 'object' &&
             value !== null &&

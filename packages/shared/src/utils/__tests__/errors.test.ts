@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { PeraNetworkError } from '../../errors/network'
-import { getHttpStatus, toError, assertDefined } from '../errors'
+import { describeError, getHttpStatus, toError, assertDefined } from '../errors'
 
 describe('getHttpStatus', () => {
     test('returns the status from a ky-style error object', () => {
@@ -79,5 +79,53 @@ describe('assertDefined', () => {
         expect(() => assertDefined(undefined, 'other')).toThrow(
             'expected other to be defined',
         )
+    })
+})
+
+describe('describeError', () => {
+    test('names an HTTP-shaped error by status and url, without its message', () => {
+        const error = Object.assign(new Error('Request failed'), {
+            name: 'HTTPError',
+            response: { status: 502, url: 'https://api.example/card' },
+        })
+        expect(describeError(error)).toBe(
+            'HTTPError 502 https://api.example/card',
+        )
+    })
+
+    test('falls back to the request url when the response has none', () => {
+        expect(
+            describeError({
+                name: 'TimeoutError',
+                request: { url: 'https://api.example/slow' },
+            }),
+        ).toBe('TimeoutError https://api.example/slow')
+    })
+
+    test('never includes the message, which can carry addresses or user data', () => {
+        const address = 'A'.repeat(58)
+        expect(describeError(new Error(`account ${address} rejected`))).toBe(
+            'Error',
+        )
+        expect(describeError(new TypeError('bad'))).toBe('TypeError')
+    })
+
+    test('masks address-shaped path segments in the url', () => {
+        const address =
+            'HTJGYF56HKP5YLV6MLBOWROMYPZUONKBFLY2P2LNS3AHG5FFLHUKY7DCDY'
+        expect(
+            describeError({
+                name: 'HTTPError',
+                response: {
+                    status: 404,
+                    url: `https://api.example/v1/accounts/${address}/assets`,
+                },
+            }),
+        ).toBe('HTTPError 404 https://api.example/v1/accounts/<address>/assets')
+    })
+
+    test('degrades to a bare name for non-errors', () => {
+        expect(describeError(undefined)).toBe('Error')
+        expect(describeError({ name: 'Weird' })).toBe('Weird')
     })
 })

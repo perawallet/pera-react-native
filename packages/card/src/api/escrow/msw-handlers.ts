@@ -18,7 +18,7 @@ import {
 } from './schema'
 
 export type MockApproveEscrowCardParams = {
-    /** Escrow card address the mock server echoes back. */
+    /** Escrow card address AB echoes back as `address`. */
     cardAddress?: string
     status?: number
     /** Captures each request body for assertions. */
@@ -30,7 +30,8 @@ export const mockApproveEscrowCard = ({
     status = 200,
     onRequest,
 }: MockApproveEscrowCardParams = {}): HttpHandler => {
-    const response = { cardAddress }
+    // AB echoes the stored approval record, keyed by the card address.
+    const response = { address: cardAddress }
     validateMockResponse(
         escrowCardApprovalResponseSchema,
         response,

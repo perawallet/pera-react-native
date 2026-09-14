@@ -27,7 +27,6 @@ import type {
 } from '../../models'
 import {
     addressResponseSchema,
-    connectFundingSourceResponseSchema,
     consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
@@ -182,6 +181,7 @@ export type OnboardingDetails = {
     dateOfBirth: Nullable<string>
     /** ISO 3166-1 alpha-2; null until the user provides it. */
     countryOfNationality: Nullable<string>
+    countryOfBirth: Nullable<string>
 }
 /** Pre-auth onboarding status — polled for KYC and read to prefill the form. */
 export const fetchOnboardingDetails = async (
@@ -206,6 +206,7 @@ export const fetchOnboardingDetails = async (
         lastName: parsed.lastName ?? null,
         dateOfBirth: parsed.dateOfBirth ?? null,
         countryOfNationality: parsed.countryOfNationality ?? null,
+        countryOfBirth: parsed.countryOfBirth ?? null,
     }
 }
 
@@ -381,26 +382,6 @@ export const linkOnboardingConsent = async (
         if (isConflictError(apiError)) return
         throw error
     }
-}
-
-// Connects a Pera (Algorand) account as the card's funding source on the setup
-// checklist's Connect Funds step. Authenticated (the transport attaches the
-// bearer issued by the address step). ASSUMPTION: the exact contract is pending
-// the live Baanx API (sandbox down) — it's mocked in installCardDevMocks for now.
-export type ConnectFundingSourceParams = NetworkParams & { address: string }
-export type ConnectFundingSourceResult = { fundingSourceId: string }
-export const connectFundingSource = async (
-    params: ConnectFundingSourceParams,
-): Promise<ConnectFundingSourceResult> => {
-    const response = await getCardTransport().request({
-        network: params.network,
-        method: 'POST',
-        path: '/v1/card/funding-source',
-        authenticated: true,
-        data: { address: params.address },
-        signal: params.signal,
-    })
-    return connectFundingSourceResponseSchema.parse(response.data)
 }
 
 export const fetchRegistrationSettings = async (

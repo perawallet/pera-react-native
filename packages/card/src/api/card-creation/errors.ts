@@ -53,3 +53,56 @@ export class CardUserUnavailableError extends Error {
         this.name = 'CardUserUnavailableError'
     }
 }
+
+/**
+ * Backend 409: another request still holds this account's creation lock (the
+ * backend serialises card creation per funding address). Retry after a moment.
+ */
+export class CardCreateInProgressError extends Error {
+    constructor(
+        message = 'Card creation is already in progress for this account.',
+    ) {
+        super(message)
+        this.name = 'CardCreateInProgressError'
+    }
+}
+
+/**
+ * Backend 404 BAANX_ACCOUNT_NOT_FOUND: the Baanx account has no card record to
+ * attach the escrow card to yet, so the remaining setup must finish first.
+ */
+export class CardSetupIncompleteError extends Error {
+    constructor(message = 'Your Pera Card account setup is not complete yet.') {
+        super(message)
+        this.name = 'CardSetupIncompleteError'
+    }
+}
+
+/**
+ * Backend 401: the ARC-60 ownership proof was rejected. The common cause is a
+ * funding account rekeyed on-chain that signed with its own, no longer
+ * authorised key. Terminal for this account.
+ */
+export class CardOwnershipProofRejectedError extends Error {
+    constructor(
+        public readonly code?: string,
+        message = 'This account could not prove ownership for card creation.',
+    ) {
+        super(message)
+        this.name = 'CardOwnershipProofRejectedError'
+    }
+}
+
+/**
+ * Backend 5xx: creation could not be completed on-chain, or the service or its
+ * node is unavailable. Nothing was minted for the caller, so retrying is safe.
+ */
+export class CardCreateUnavailableError extends Error {
+    constructor(
+        public readonly code?: string,
+        message = 'Card creation is temporarily unavailable.',
+    ) {
+        super(message)
+        this.name = 'CardCreateUnavailableError'
+    }
+}

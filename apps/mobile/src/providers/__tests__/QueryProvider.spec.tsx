@@ -85,8 +85,39 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed:',
+            'Mutation failed: Error',
             expect.objectContaining({ mutationKey: ['test-mutation'] }),
+        )
+    })
+
+    it('names the error, status and url of an HTTP mutation failure in the log message', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        // A 4xx is not transient, so it must reach the central logger with the
+        // flat fields; the raw Error alone prints as an empty string there.
+        const httpError = Object.assign(new Error('Bad Request'), {
+            name: 'HTTPError',
+            response: { status: 400, url: 'https://escrow.test/api/approvals' },
+        })
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationKey: ['http-failure'],
+                    mutationFn: () => Promise.reject(httpError),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        // The dev log forwarder blanks stack-bearing context objects, so the
+        // identifying fields must be in the message itself.
+        expect(errorSpy).toHaveBeenCalledWith(
+            'Mutation failed: HTTPError 400 https://escrow.test/api/approvals',
+            expect.objectContaining({ mutationKey: ['http-failure'] }),
         )
     })
 
@@ -182,7 +213,7 @@ describe('queryClient query error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'An error has occurred:',
+            'Query failed: Error',
             expect.objectContaining({ error: expect.any(Error) }),
         )
     })

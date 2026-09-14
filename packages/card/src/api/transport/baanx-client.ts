@@ -72,6 +72,7 @@ export const baanxDirectRequest = async <TData, TVars = unknown>(
             searchParams: req.params as SearchParamsOption,
             ...(req.data !== undefined ? { json: req.data } : {}),
             signal: req.signal,
+            ...(req.timeoutMs !== undefined ? { timeout: req.timeoutMs } : {}),
             headers: {
                 ...req.headers,
                 ...(authHeader ? { Authorization: authHeader } : {}),

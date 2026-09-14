@@ -35,6 +35,9 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isKycRequired,
         handleVerifyIdentity,
         handleSelectNationality,
+        selectedBirthCountry,
+        isBirthCountryLocked,
+        handleSelectBirthCountry,
         handleConfirm,
     } = useCardOnboardingPersonalDetailsScreen()
 
@@ -166,6 +169,26 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 : undefined
                         }
                         testID='card-onboarding-nationality-field'
+                    />
+
+                    <CountrySelectorField
+                        label={t(
+                            'peraCard.personal_details.birth_country_label',
+                        )}
+                        placeholder={t(
+                            'peraCard.personal_details.birth_country_placeholder',
+                        )}
+                        country={selectedBirthCountry}
+                        onPress={handleSelectBirthCountry}
+                        disabled={isBirthCountryLocked}
+                        errorMessage={
+                            errors.countryOfBirth
+                                ? t(
+                                      'peraCard.personal_details.birth_country_required',
+                                  )
+                                : undefined
+                        }
+                        testID='card-onboarding-birth-country-field'
                     />
                 </PWView>
 

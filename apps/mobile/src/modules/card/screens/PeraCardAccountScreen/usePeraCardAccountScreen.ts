@@ -42,17 +42,26 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     // key keeps the two coordinated.
     useCardIssuance()
 
+    const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const cardDisplay = useMemo<AccountDisplayCard>(() => {
         const account = connectedAddress
             ? accounts.find(item => item.address === connectedAddress)
             : undefined
+        // "Linked" is the on-chain binding (escrow card), not the locally
+        // selected funding account: without the card nothing is linked yet.
+        if (escrowCardAddress === null) {
+            return {
+                title: t('peraCard.account.navigation_title'),
+                subtitle: t('peraCard.account.setup_incomplete'),
+            }
+        }
         return {
             title: t('peraCard.account.navigation_title'),
             subtitle: account?.name
                 ? t('peraCard.account.linked_to', { name: account.name })
                 : t('peraCard.account.linked_to_fallback'),
         }
-    }, [accounts, connectedAddress, t])
+    }, [accounts, connectedAddress, escrowCardAddress, t])
 
     // Picking a wallet account from the switcher returns to the wallet home.
     // Names AccountDetails explicitly: a bare 'Home' resolves to this screen,

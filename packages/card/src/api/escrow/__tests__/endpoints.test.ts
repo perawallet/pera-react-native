@@ -19,20 +19,33 @@ import { approveEscrowCard, postDelegatorLsig } from '../endpoints'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
+const approveParams = {
+    network: 'testnet' as const,
+    cardAddress: 'ESCROW_CARD',
+    currency: 'usdc',
+    signData,
+    signature: 'c2ln',
+    txId: 'TX123',
+}
+
+// AB echoes the stored record; only `address` is read back.
+const approvalEcho = {
+    blockchain: 'algorand',
+    address: 'ESCROW_CARD',
+    currency: 'usdc',
+    amount: '0',
+    transaction: { hash: 'TX123', blockNumber: null },
+    status: 'UNKNOWN',
+    userId: 'ANONYMOUS',
+}
+
 describe('approveEscrowCard', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('POSTs /api/approvals on the escrow route with the txId and returns the card address', async () => {
-        request.mockResolvedValue({ data: { cardAddress: 'ESCROW_CARD' } })
+    it("POSTs exactly AB's approval schema, keyed by the card address, with the tx hash nested", async () => {
+        request.mockResolvedValue({ data: approvalEcho })
 
-        const result = await approveEscrowCard({
-            network: 'testnet',
-            address: 'FUNDING_ADDR',
-            currency: 'usdc',
-            signData,
-            signature: 'c2ln',
-            txId: 'TX123',
-        })
+        const result = await approveEscrowCard(approveParams)
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -40,50 +53,70 @@ describe('approveEscrowCard', () => {
                 method: 'POST',
                 path: '/api/approvals',
                 data: {
-                    address: 'FUNDING_ADDR',
+                    blockchain: 'algorand',
+                    address: 'ESCROW_CARD',
                     currency: 'usdc',
                     amount: '0',
+                    transaction: { hash: 'TX123' },
                     signData,
                     signature: 'c2ln',
-                    txId: 'TX123',
-                    blockchain: 'algorand',
                 },
             }),
         )
+        // AB rejects unknown fields, so the legacy top-level txId must be gone.
+        const sent = request.mock.calls[0][0].data
+        expect(sent).not.toHaveProperty('txId')
         expect(result).toEqual({ cardAddress: 'ESCROW_CARD' })
     })
 
-    it('rejects on a malformed response', async () => {
+    it('resolves null when AB reports the card was already created', async () => {
+        request.mockRejectedValue({
+            response: {
+                status: 400,
+                text: async () =>
+                    JSON.stringify({ message: 'Card already created' }),
+            },
+        })
+
+        await expect(approveEscrowCard(approveParams)).resolves.toBeNull()
+    })
+
+    it('rethrows a non-already-created approval failure', async () => {
+        request.mockRejectedValue({
+            response: {
+                status: 422,
+                text: async () =>
+                    JSON.stringify({ message: 'Invalid signature' }),
+            },
+        })
+
+        await expect(approveEscrowCard(approveParams)).rejects.toBeTruthy()
+    })
+
+    it('rejects when the echo carries no card address', async () => {
         request.mockResolvedValue({ data: {} })
 
-        await expect(
-            approveEscrowCard({
-                network: 'testnet',
-                address: 'FUNDING_ADDR',
-                currency: 'usdc',
-                signData,
-                signature: 'c2ln',
-                txId: 'TX123',
-            }),
-        ).rejects.toThrow()
+        await expect(approveEscrowCard(approveParams)).rejects.toThrow()
     })
 })
 
 describe('postDelegatorLsig', () => {
     beforeEach(() => vi.clearAllMocks())
 
+    const lsigParams = {
+        network: 'testnet' as const,
+        token: 'usdc',
+        delegatorAddress: 'FUNDING_ADDR',
+        lsigBytes: 'bHNpZw==',
+        cardAddress: 'ESCROW_CARD',
+    }
+
     it('POSTs /api/internal/delegator-lsig on the escrow route', async () => {
         request.mockResolvedValue({
             data: { delegatorAddress: 'FUNDING_ADDR' },
         })
 
-        const result = await postDelegatorLsig({
-            network: 'testnet',
-            token: 'usdc',
-            delegatorAddress: 'FUNDING_ADDR',
-            lsigBytes: 'bHNpZw==',
-            cardAddress: 'ESCROW_CARD',
-        })
+        const result = await postDelegatorLsig(lsigParams)
 
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -102,17 +135,13 @@ describe('postDelegatorLsig', () => {
         expect(result).toEqual({ delegatorAddress: 'FUNDING_ADDR' })
     })
 
-    it('rejects on a malformed response', async () => {
+    it('falls back to the sent delegator address when the 201 body omits it', async () => {
+        // AB has not published the 201 body; the caller only needs the call
+        // to have succeeded.
         request.mockResolvedValue({ data: {} })
 
-        await expect(
-            postDelegatorLsig({
-                network: 'testnet',
-                token: 'usdc',
-                delegatorAddress: 'FUNDING_ADDR',
-                lsigBytes: 'bHNpZw==',
-                cardAddress: 'ESCROW_CARD',
-            }),
-        ).rejects.toThrow()
+        await expect(postDelegatorLsig(lsigParams)).resolves.toEqual({
+            delegatorAddress: 'FUNDING_ADDR',
+        })
     })
 })

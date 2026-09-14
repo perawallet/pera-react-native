@@ -18,6 +18,7 @@ import {
     addressSchema,
     getCardApiError,
     isDuplicateError,
+    isUserAlreadyCreatedError,
     OnboardingNotVerifiedError,
     useCardStore,
     useLinkConsentMutation,
@@ -355,7 +356,10 @@ export const useCardOnboardingAddressScreen =
                 // user with locked steps and 401s. Otherwise prefer Baanx's
                 // own message so the real reason shows.
                 const apiError = await getCardApiError(error)
-                if (isDuplicateError(apiError)) {
+                if (
+                    isDuplicateError(apiError) ||
+                    isUserAlreadyCreatedError(apiError)
+                ) {
                     infoToast(
                         t('peraCard.address.already_registered_title'),
                         t('peraCard.address.already_registered_body'),

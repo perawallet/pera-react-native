@@ -19,6 +19,10 @@ export {
 export { createCardResponseSchema } from './schema'
 export {
     CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
 } from './errors'

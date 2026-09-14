@@ -345,6 +345,8 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
                 onboardingId: 'mock-onboarding-id',
                 firstName: 'YASIN',
                 dateOfBirth: '1997-11-08',
+                // Preselected from the residence country (GB), like nationality.
+                countryOfBirth: 'GB',
             }),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()

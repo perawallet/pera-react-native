@@ -83,6 +83,11 @@ export type PersonalDetailsInput = {
     /** ISO date, YYYY-MM-DD. */
     dateOfBirth: string
     countryOfNationality: string
+    /**
+     * ISO 3166-1 alpha-2. Baanx requires it for European/UK residents; sent
+     * for everyone since the form preselects it from the residence country.
+     */
+    countryOfBirth: string
     /** US residents only. */
     ssn?: string
 }
@@ -231,6 +236,8 @@ export const personalDetailsSchema = z.object({
     dateOfBirth: z.string().refine(isValidPastDob),
     /** ISO 3166-1 alpha-2 of the selected nationality. */
     countryOfNationality: z.string().length(2),
+    /** ISO 3166-1 alpha-2 of the birth country (required by Baanx for EU/UK). */
+    countryOfBirth: z.string().length(2),
 })
 
 export type PersonalDetailsFormValues = z.infer<typeof personalDetailsSchema>

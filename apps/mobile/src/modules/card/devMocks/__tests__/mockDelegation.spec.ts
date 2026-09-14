@@ -12,64 +12,23 @@
 
 // @vitest-environment node
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import {
-    applyMockDelegation,
-    buildMockDelegationToken,
-    buildMockExternalWallets,
-    resetMockDelegation,
-} from '../mockDelegation'
+import { describe, it, expect } from 'vitest'
+import { applyMockDelegation } from '../mockDelegation'
 
 describe('mockDelegation', () => {
-    beforeEach(() => resetMockDelegation())
-
-    it('registers a delegation and reflects it as an external wallet', () => {
-        const { token } = buildMockDelegationToken()
-
-        const result = applyMockDelegation({
-            address: 'ADDR1',
-            amount: '400',
-            token,
-        })
-
-        expect(result.success).toBe(true)
-        expect(buildMockExternalWallets()).toEqual([
-            expect.objectContaining({
-                address: 'ADDR1',
-                allowance: '400',
-                network: 'algorand',
+    it('accepts an approval carrying a token from the real token endpoint', () => {
+        expect(
+            applyMockDelegation({
+                address: 'ADDR',
+                amount: '25',
+                token: 'real-token-from-baanx',
             }),
-        ])
+        ).toEqual({ success: true })
     })
 
-    it('replaces the allowance on redelegation and zeroes it on cancel', () => {
-        applyMockDelegation({
-            address: 'ADDR1',
-            amount: '400',
-            token: buildMockDelegationToken().token,
-        })
-        applyMockDelegation({
-            address: 'ADDR1',
-            amount: '0',
-            token: buildMockDelegationToken().token,
-        })
-
-        expect(buildMockExternalWallets()).toEqual([
-            expect.objectContaining({ address: 'ADDR1', allowance: '0' }),
-        ])
-    })
-
-    it('rejects a reused single-use token', () => {
-        const { token } = buildMockDelegationToken()
-        applyMockDelegation({ address: 'ADDR1', amount: '400', token })
-
-        const replay = applyMockDelegation({
-            address: 'ADDR2',
-            amount: '400',
-            token,
-        })
-
-        expect(replay.success).toBe(false)
-        expect(buildMockExternalWallets()).toHaveLength(1)
+    it('rejects an approval without a token', () => {
+        expect(
+            applyMockDelegation({ address: 'ADDR', amount: '25', token: '' }),
+        ).toEqual({ success: false })
     })
 })

@@ -257,6 +257,7 @@ describe('onboarding endpoints', () => {
             lastName: null,
             dateOfBirth: null,
             countryOfNationality: null,
+            countryOfBirth: null,
         })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -290,6 +291,7 @@ describe('onboarding endpoints', () => {
             lastName: 'ÇALIŞKAN',
             dateOfBirth: '1997-11-08T00:00:00.000Z',
             countryOfNationality: null,
+            countryOfBirth: null,
         })
     })
 

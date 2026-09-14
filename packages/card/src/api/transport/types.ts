@@ -50,6 +50,8 @@ export type CardTransportRequest<TVars = unknown> = {
      * or a stale token from a prior session leaks in ("Missing User Data").
      */
     authenticated?: boolean
+    /** Per-call override in ms of the client default (ky's 10 s), for calls that wait on chain confirmation. */
+    timeoutMs?: number
 }
 
 export type CardTransportResponse<TData> = {

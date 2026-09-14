@@ -36,6 +36,7 @@ export const fetchInternalWallets = async (
         network,
         method: 'GET',
         path: '/v1/wallet/internal',
+        authenticated: true,
         signal,
     })
 
@@ -88,6 +89,7 @@ export const withdrawFromCard = async (
         network,
         method: 'POST',
         path: '/v1/wallet/internal/withdraw',
+        authenticated: true,
         data,
         signal,
     })

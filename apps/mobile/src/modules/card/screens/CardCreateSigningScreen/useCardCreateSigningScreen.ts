@@ -13,7 +13,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
-    CardAccountLinkedElsewhereError,
     FundingType,
     useCardStore,
     type CardOwnershipProof,
@@ -73,12 +72,6 @@ export const useCardCreateSigningScreen =
         const { requirePinVerification } = useRequirePinVerification()
         const { finish } = useFinishCardCreation()
         const showError = useCardErrorToast()
-        // Linked-elsewhere is terminal for this funding account — the generic
-        // "try again" copy would mislead, so it gets its own wording.
-        const showLinkedElsewhereError = useCardErrorToast({
-            titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
-            bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
-        })
 
         const stepIds = useMemo<CardCreateStepId[]>(
             () =>
@@ -161,11 +154,7 @@ export const useCardCreateSigningScreen =
                 try {
                     await runSignStep(connectedAccount)
                 } catch (error) {
-                    if (error instanceof CardAccountLinkedElsewhereError) {
-                        await showLinkedElsewhereError(error)
-                    } else {
-                        await showError(error)
-                    }
+                    await showError(error)
                 } finally {
                     setIsProceeding(false)
                 }
@@ -180,7 +169,6 @@ export const useCardCreateSigningScreen =
             navigation,
             runSignStep,
             showError,
-            showLinkedElsewhereError,
         ])
 
         return { steps, isProceeding, isComplete, onProceed }

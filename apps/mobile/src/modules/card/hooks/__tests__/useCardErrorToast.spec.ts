@@ -14,9 +14,18 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    AutoDrawProgramUnverifiedError,
+    CardAccountLinkedElsewhereError,
+    CardCreateInProgressError,
+    CardCreateUnavailableError,
+    CardOwnershipProofRejectedError,
+    CardSetupIncompleteError,
+} from '@perawallet/wallet-core-card'
+import {
     NoConnectionError,
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
@@ -29,7 +38,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-import { useCardErrorToast } from '../useCardErrorToast'
+import { resolveCardErrorCopy, useCardErrorToast } from '../useCardErrorToast'
 
 describe('useCardErrorToast', () => {
     beforeEach(() => {
@@ -154,5 +163,115 @@ describe('useCardErrorToast', () => {
             'peraCard.verification.error_title',
             'Registration is not in the expected phase',
         )
+    })
+
+    it('shows the typed card-creation copy instead of the generic keys', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new CardAccountLinkedElsewhereError())
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.setup_status.linked_elsewhere_error_title',
+            'peraCard.setup_status.linked_elsewhere_error_body',
+        )
+    })
+
+    it('lets precise copy win over shouldUseBackendMessage=false', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.auto_funding_signing.error_title',
+                bodyKey: 'peraCard.auto_funding_signing.error_body',
+                shouldUseBackendMessage: false,
+            }),
+        )
+
+        await act(async () => {
+            await result.current({
+                response: { status: 400 },
+                data: {
+                    type: 'SIGNATURE_VERIFICATION_FAILED',
+                    details: 'bad signature',
+                },
+            })
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.account.auto_funding_rejected_title',
+            'peraCard.account.auto_funding_rejected_body',
+        )
+    })
+
+    it('shows the timeout copy when the request ran out of time', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new PeraNetworkError('timeout'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.timeout.title',
+            'errors.network.timeout.body',
+        )
+    })
+
+    it('stays silent when the user declined the signing prompt', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new UserRejectedSigningError())
+        })
+
+        expect(mocks.errorToast).not.toHaveBeenCalled()
+    })
+})
+
+describe('resolveCardErrorCopy', () => {
+    it.each([
+        [
+            new CardCreateInProgressError(),
+            'peraCard.setup_status.create_in_progress',
+        ],
+        [
+            new CardSetupIncompleteError(),
+            'peraCard.setup_status.setup_incomplete_error',
+        ],
+        [
+            new CardOwnershipProofRejectedError('ARC60_SIGNATURE_INVALID'),
+            'peraCard.setup_status.create_card_account_error',
+        ],
+        [
+            new CardCreateUnavailableError('CARD_CREATE_FAILED'),
+            'peraCard.setup_status.create_card_unavailable',
+        ],
+        [
+            new AutoDrawProgramUnverifiedError('testnet'),
+            'peraCard.account.auto_funding_unavailable',
+        ],
+    ])('maps %s to its own copy', (error, prefix) => {
+        expect(resolveCardErrorCopy(error)).toEqual({
+            titleKey: `${prefix}_title`,
+            bodyKey: `${prefix}_body`,
+        })
+    })
+
+    it('maps the escrow ownership mismatch code to the unavailable copy', () => {
+        expect(
+            resolveCardErrorCopy(new Error('HTTP 400'), {
+                status: 400,
+                code: 'CARD_OWNERSHIP_MISMATCH',
+            }),
+        ).toEqual({
+            titleKey: 'peraCard.account.auto_funding_unavailable_title',
+            bodyKey: 'peraCard.account.auto_funding_unavailable_body',
+        })
+    })
+
+    it('returns undefined for errors it cannot name', () => {
+        expect(resolveCardErrorCopy(new Error('boom'))).toBeUndefined()
+        expect(
+            resolveCardErrorCopy(new Error('boom'), { status: 500 }),
+        ).toBeUndefined()
     })
 })

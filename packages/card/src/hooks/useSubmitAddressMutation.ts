@@ -69,6 +69,11 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
                 await setCardSession(tokens)
             }
             useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
+            // Registration just completed for this user: bind the device's
+            // setup state to them (clears a previous user's escrow card).
+            if (result.userId !== null) {
+                useCardStore.getState().adoptCardUser(result.userId)
+            }
         },
         // Surface Baanx's real (often nested-stringified) error for diagnosis —
         // the screen only shows a generic toast, so this is where the actual

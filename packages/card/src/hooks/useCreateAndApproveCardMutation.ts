@@ -137,7 +137,7 @@ export const useCreateAndApproveCardMutation =
                 if (!approved) {
                     await approveEscrowCard({
                         network,
-                        address,
+                        cardAddress,
                         currency,
                         signData: proof.signData,
                         signature: proof.signature,

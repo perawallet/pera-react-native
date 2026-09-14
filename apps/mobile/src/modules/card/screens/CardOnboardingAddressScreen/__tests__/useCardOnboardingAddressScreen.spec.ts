@@ -485,6 +485,31 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it("routes Baanx's 'Create user failed' to sign-in (user already created on an earlier attempt)", async () => {
+        // Seen live: the first address call created the user but errored, so
+        // every retry fails with this generic text. The account exists, so
+        // signing in is the only way to obtain the session token.
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 400 },
+            data: { message: 'Create user failed' },
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        fillValidAddress(result)
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn'),
+        )
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'peraCard.address.already_registered_title',
+            'peraCard.address.already_registered_body',
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
     it('opens the intl Baanx card T&C and Pera platform T&C links', () => {
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
 

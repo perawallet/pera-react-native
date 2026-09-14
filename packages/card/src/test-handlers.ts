@@ -112,11 +112,9 @@ export {
     mockSubmitAddress,
     mockSubmitOnboardingConsent,
     mockLinkOnboardingConsent,
-    mockConnectFundingSource,
     mockGetRegistrationSettings,
 } from './api/onboarding/msw-handlers'
 export type {
-    MockConnectFundingSourceParams,
     MockGetRegistrationSettingsParams,
     MockSubmitOnboardingConsentParams,
     MockLinkOnboardingConsentParams,

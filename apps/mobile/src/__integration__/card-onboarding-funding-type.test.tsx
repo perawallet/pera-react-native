@@ -312,12 +312,15 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
         expect(approvalBody).toEqual(
             expect.objectContaining({
-                address: FUNDING_ADDRESS,
+                address: 'ESCROWCARD1',
                 blockchain: 'algorand',
                 amount: '0',
-                txId: 'TX1',
+                transaction: { hash: 'TX1' },
             }),
         )
+        // AB keys the approval by the card, not the funding wallet, and rejects
+        // unknown properties, so the legacy top-level txId must be gone.
+        expect(approvalBody).not.toHaveProperty('txId')
         // The same ARC-60 proof is reused for both calls.
         expect(approvalBody).toEqual(
             expect.objectContaining({
@@ -379,7 +382,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
 
         await waitFor(() => expect(lsigBody).not.toBeNull())
-        expect(approvalBody).toEqual(expect.objectContaining({ txId: 'TX1' }))
+        expect(approvalBody).toEqual(
+            expect.objectContaining({ transaction: { hash: 'TX1' } }),
+        )
         expect(lsigBody).toEqual(
             expect.objectContaining({
                 delegatorAddress: FUNDING_ADDRESS,

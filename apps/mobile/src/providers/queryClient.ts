@@ -21,6 +21,7 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    describeError,
     isPeraServiceUnavailableError,
     isTransientNetworkError,
     logger,
@@ -74,7 +75,7 @@ const cache = new QueryCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('An error has occurred:', { error })
+        logger.error(`Query failed: ${describeError(error)}`, { error })
     },
 })
 
@@ -89,7 +90,7 @@ const mutationCache = new MutationCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error('Mutation failed:', {
+        logger.error(`Mutation failed: ${describeError(error)}`, {
             error,
             mutationKey: mutation.options.mutationKey,
         })

@@ -15,6 +15,8 @@ import {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isAlreadyCreatedError,
+    isUserAlreadyCreatedError,
     isDuplicateError,
     isNotVerifiedError,
 } from '../errors'
@@ -43,6 +45,15 @@ describe('getCardApiError', () => {
             code: undefined,
             message: 'That email is already in use',
         })
+    })
+
+    it('drops an HTML error body instead of surfacing the markup', async () => {
+        const error = {
+            response: { status: 404 },
+            data: '<!DOCTYPE html><html><body><pre>Cannot POST /x</pre></body></html>',
+        }
+
+        expect(await getCardApiError(error)).toEqual({ status: 404 })
     })
 
     it('treats a plain-text error.data as the message', async () => {
@@ -87,6 +98,36 @@ describe('getCardApiError', () => {
             status: 400,
             code: 'INVALID_CODE',
             message: 'The code has expired',
+        })
+    })
+
+    it("reads AppliedBlockchain's escrow shape (type + details, or data.message)", async () => {
+        expect(
+            await getCardApiError({
+                response: { status: 400 },
+                data: {
+                    type: 'SIGNATURE_VERIFICATION_FAILED',
+                    details: 'signature does not match the delegator',
+                },
+            }),
+        ).toEqual({
+            status: 400,
+            code: 'SIGNATURE_VERIFICATION_FAILED',
+            message: 'signature does not match the delegator',
+        })
+
+        expect(
+            await getCardApiError({
+                response: { status: 400 },
+                data: {
+                    type: 'CARD_OWNERSHIP_MISMATCH',
+                    data: { message: 'card is not owned by delegator' },
+                },
+            }),
+        ).toEqual({
+            status: 400,
+            code: 'CARD_OWNERSHIP_MISMATCH',
+            message: 'card is not owned by delegator',
         })
     })
 
@@ -193,6 +234,52 @@ describe('isInvalidInputError', () => {
 
     it.each([409, 404, 500, undefined])('is false for %s', status => {
         expect(isInvalidInputError({ status })).toBe(false)
+    })
+})
+
+describe('isUserAlreadyCreatedError', () => {
+    it('matches the address step re-run after the user was created', () => {
+        expect(
+            isUserAlreadyCreatedError({
+                status: 400,
+                message: 'Create user failed',
+            }),
+        ).toBe(true)
+    })
+
+    it('does not match other address failures', () => {
+        expect(
+            isUserAlreadyCreatedError({
+                status: 400,
+                message: 'Invalid onboarding ID',
+            }),
+        ).toBe(false)
+        expect(isUserAlreadyCreatedError({})).toBe(false)
+    })
+})
+
+describe('isAlreadyCreatedError', () => {
+    it('matches AB approval re-runs by message text', () => {
+        expect(
+            isAlreadyCreatedError({
+                status: 400,
+                message: 'Card already created',
+            }),
+        ).toBe(true)
+        expect(
+            isAlreadyCreatedError({ message: 'Approval already approved' }),
+        ).toBe(true)
+    })
+
+    it('does not match other failures', () => {
+        expect(
+            isAlreadyCreatedError({
+                status: 422,
+                message: 'Invalid signature',
+            }),
+        ).toBe(false)
+        expect(isAlreadyCreatedError({ status: 409 })).toBe(false)
+        expect(isAlreadyCreatedError({})).toBe(false)
     })
 })
 

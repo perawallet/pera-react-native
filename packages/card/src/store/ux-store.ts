@@ -45,6 +45,7 @@ const initialState = {
     // lockstep (change-funding is blocked while Auto is on); scope this per
     // account+network if that constraint is ever lifted.
     selectedFundingType: null,
+    cardUserId: null,
     escrowCardAddress: null,
     escrowCardOwner: null,
     escrowCardNetwork: null,
@@ -97,6 +98,23 @@ export const useCardStore: UseBoundStore<
                 }),
             setTransactionFilters: filters =>
                 set({ transactionFilters: filters }),
+            adoptCardUser: userId =>
+                set(state => {
+                    if (state.cardUserId === userId) return {}
+                    // The escrow card belongs to the previous user's Baanx
+                    // account, so it goes along with the funding selection.
+                    return {
+                        cardUserId: userId,
+                        connectedFundingSourceAddress:
+                            initialState.connectedFundingSourceAddress,
+                        selectedFundingType: initialState.selectedFundingType,
+                        escrowCardAddress: initialState.escrowCardAddress,
+                        escrowCardOwner: initialState.escrowCardOwner,
+                        escrowCardNetwork: initialState.escrowCardNetwork,
+                        escrowCardTxId: initialState.escrowCardTxId,
+                        escrowCardApproved: initialState.escrowCardApproved,
+                    }
+                }),
             // Reset only the onboarding-flow fields (so a fresh sign-up
             // re-locks the setup checklist); card-snapshot/filters stay intact.
             resetOnboardingProgress: () =>
@@ -140,6 +158,7 @@ export const useCardStore: UseBoundStore<
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,
                 selectedFundingType: state.selectedFundingType,
+                cardUserId: state.cardUserId,
                 escrowCardAddress: state.escrowCardAddress,
                 escrowCardOwner: state.escrowCardOwner,
                 escrowCardNetwork: state.escrowCardNetwork,
