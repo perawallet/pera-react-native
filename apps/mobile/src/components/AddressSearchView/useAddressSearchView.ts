@@ -14,6 +14,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
     useAllAccounts,
+    useAccountValueTotalsQuery,
+    useSortedAccounts,
     type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -71,7 +73,15 @@ export const useAddressSearchView = (
         useState<Nullable<string>>(null)
     const { findContacts } = useContacts()
     const { readText } = useClipboard()
-    const accounts = useAllAccounts()
+    const allAccounts = useAllAccounts()
+    const { accountValueTotals } = useAccountValueTotalsQuery(allAccounts)
+    // The switcher and the sort sheet render the user's chosen account order,
+    // so the picker has to sort too — otherwise the same accounts read in a
+    // different order here than everywhere else in the app.
+    const { sortedAccounts: accounts } = useSortedAccounts(
+        allAccounts,
+        accountValueTotals,
+    )
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
 
