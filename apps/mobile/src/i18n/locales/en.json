@@ -577,6 +577,7 @@
             "encryption_key_label": "Encryption Key",
             "info_title": "Required for local encryption",
             "info_body": "These credentials are unrecoverable if lost. Store them securely to avoid losing access to your backup.",
+            "checkbox_label": "Yes, I stored my Passphrase",
             "proceed": "Proceed"
         },
         "verify": {

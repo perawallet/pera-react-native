@@ -26,6 +26,8 @@ import type { CloudBackupStackParamList } from '../../routes/types'
 type UseCloudBackupSetupScreenResult = {
     mnemonicIndices: Uint16Array
     saltB64: string
+    isConfirmed: boolean
+    toggleConfirmed: () => void
     handleCopyPassphrase: () => void
     handleCopyEncryptionKey: () => void
     handleProceed: () => void
@@ -44,6 +46,7 @@ export const useCloudBackupSetupScreen =
         const [credentials] = useState<CloudBackupCredentials>(
             generateCloudBackupCredentials,
         )
+        const [isConfirmed, setIsConfirmed] = useState(false)
 
         // Wipe the generated recovery credentials from memory when the user
         // leaves the setup flow. This screen stays mounted across Setup →
@@ -57,6 +60,10 @@ export const useCloudBackupSetupScreen =
             },
             [credentials, clearDraft],
         )
+
+        const toggleConfirmed = useCallback(() => {
+            setIsConfirmed(value => !value)
+        }, [])
 
         const handleCopyPassphrase = useCallback(() => {
             // The words exist only for the length of this call; the retained
@@ -84,6 +91,8 @@ export const useCloudBackupSetupScreen =
         return {
             mnemonicIndices: credentials.mnemonicIndices,
             saltB64: credentials.salt,
+            isConfirmed,
+            toggleConfirmed,
             handleCopyPassphrase,
             handleCopyEncryptionKey,
             handleProceed,

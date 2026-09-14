@@ -577,6 +577,7 @@
             "encryption_key_label": "Clé de chiffrement",
             "info_title": "Requis pour le chiffrement local",
             "info_body": "Ces identifiants sont irrécupérables en cas de perte. Conservez-les en lieu sûr pour ne pas perdre l’accès à votre sauvegarde.",
+            "checkbox_label": "Oui, j’ai enregistré ma Passphrase",
             "proceed": "Continuer"
         },
         "verify": {

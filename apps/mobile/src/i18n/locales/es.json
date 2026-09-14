@@ -577,6 +577,7 @@
             "encryption_key_label": "Clave de cifrado",
             "info_title": "Necesario para el cifrado local",
             "info_body": "Estas credenciales no se pueden recuperar si las pierdes. Guárdalas en un lugar seguro para no perder el acceso a tu copia de seguridad.",
+            "checkbox_label": "Sí, he guardado mi Passphrase",
             "proceed": "Continuar"
         },
         "verify": {

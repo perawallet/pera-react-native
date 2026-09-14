@@ -23,6 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { getTestProps } from '@utils/test-id-helper'
 
+import { ConfirmationCheckbox } from '../../components/ConfirmationCheckbox'
 import { useCloudBackupSetupScreen } from './useCloudBackupSetupScreen'
 import { useStyles } from './styles'
 
@@ -34,6 +35,8 @@ export const CloudBackupSetupScreen = () => {
     const {
         mnemonicIndices,
         saltB64,
+        isConfirmed,
+        toggleConfirmed,
         handleCopyPassphrase,
         handleCopyEncryptionKey,
         handleProceed,
@@ -48,6 +51,7 @@ export const CloudBackupSetupScreen = () => {
                 <PWButton
                     variant='primary'
                     title={t('cloud_backup.setup.proceed')}
+                    isDisabled={!isConfirmed}
                     onPress={handleProceed}
                     testID='cloud_backup_setup_proceed_button'
                 />
@@ -131,6 +135,13 @@ export const CloudBackupSetupScreen = () => {
                         {t('cloud_backup.setup.info_body')}
                     </PWText>
                 </PWView>
+
+                <ConfirmationCheckbox
+                    label={t('cloud_backup.setup.checkbox_label')}
+                    isConfirmed={isConfirmed}
+                    onToggle={toggleConfirmed}
+                    testID='cloud_backup_setup_checkbox'
+                />
             </PWView>
         </PWScreen>
     )

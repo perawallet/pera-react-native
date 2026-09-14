@@ -172,7 +172,7 @@ describe('cloud backup setup screen', () => {
     // pushed-from screen mounted, but the web navigator unmounts it, which
     // fires Setup's cleanup and wipes the draft before Verify can read it.
     // `useCloudBackupSetupScreen.spec.tsx` covers the draft write.
-    it('reveals a numbered twelve-word phrase, moves on to verification and leaves no draft behind', async () => {
+    it('reveals a numbered twelve-word phrase, holds Proceed until the phrase is confirmed stored, moves on to verification and leaves no draft behind', async () => {
         renderWithNavigation(CloudBackupSetupScreen, 'CloudBackupSetup', {
             additionalScreens: [
                 {
@@ -192,7 +192,14 @@ describe('cloud backup setup screen', () => {
         }
         expect(screen.queryByText('13')).toBeNull()
 
-        fireEvent.click(screen.getByTestId('cloud_backup_setup_proceed_button'))
+        const proceed = screen.getByTestId(
+            'cloud_backup_setup_proceed_button',
+        ) as HTMLButtonElement
+        expect(proceed.disabled).toBe(true)
+
+        fireEvent.click(screen.getByTestId('cloud_backup_setup_checkbox'))
+        await waitFor(() => expect(proceed.disabled).toBe(false))
+        fireEvent.click(proceed)
 
         await waitFor(() =>
             expect(

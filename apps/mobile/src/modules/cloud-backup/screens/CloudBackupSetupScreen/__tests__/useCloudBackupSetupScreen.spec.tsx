@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { useNavigation } from '@react-navigation/native'
 import { useClipboard } from '@hooks/useClipboard'
 import {
@@ -109,6 +109,18 @@ describe('useCloudBackupSetupScreen', () => {
         result.current.handleCopyEncryptionKey()
 
         expect(mockCopyToClipboard).toHaveBeenCalledWith(SALT)
+    })
+
+    test('starts unconfirmed and toggleConfirmed flips the confirmation', () => {
+        const { result } = renderHook(() => useCloudBackupSetupScreen())
+
+        expect(result.current.isConfirmed).toBe(false)
+
+        act(() => result.current.toggleConfirmed())
+        expect(result.current.isConfirmed).toBe(true)
+
+        act(() => result.current.toggleConfirmed())
+        expect(result.current.isConfirmed).toBe(false)
     })
 
     test('on proceed, tracks the tap, stores the draft and navigates to verify', () => {

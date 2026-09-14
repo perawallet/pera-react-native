@@ -12,17 +12,10 @@
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-    PWButton,
-    PWCheckbox,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 
+import { ConfirmationCheckbox } from '../ConfirmationCheckbox'
 import { EncryptionKeyField } from '../EncryptionKeyField'
 import { useEncryptionKeyConfirmSheet } from './useEncryptionKeyConfirmSheet'
 import { useStyles } from './styles'
@@ -46,35 +39,6 @@ const ConfirmHeader = () => {
                 {t('cloud_backup.confirm.title')}
             </PWText>
         </>
-    )
-}
-
-type ConfirmationCheckboxProps = {
-    isConfirmed: boolean
-    onToggle: () => void
-}
-
-const ConfirmationCheckbox = ({
-    isConfirmed,
-    onToggle,
-}: ConfirmationCheckboxProps) => {
-    const { t } = useLanguage()
-    const styles = useStyles()
-
-    return (
-        <PWTouchableOpacity
-            style={styles.checkboxRow}
-            onPress={onToggle}
-            {...getTestProps('cloud_backup_confirm_checkbox')}
-        >
-            <PWCheckbox
-                checked={isConfirmed}
-                onPress={onToggle}
-            />
-            <PWText variant='bodyLarge'>
-                {t('cloud_backup.confirm.checkbox_label')}
-            </PWText>
-        </PWTouchableOpacity>
     )
 }
 
@@ -118,6 +82,7 @@ const ShowCredentialsButton = ({ onPress }: ShowCredentialsButtonProps) => {
 }
 
 export const EncryptionKeyConfirmSheet = () => {
+    const { t } = useLanguage()
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
     const {
@@ -138,8 +103,10 @@ export const EncryptionKeyConfirmSheet = () => {
                 copyTestID='cloud_backup_confirm_copy_key'
             />
             <ConfirmationCheckbox
+                label={t('cloud_backup.confirm.checkbox_label')}
                 isConfirmed={isConfirmed}
                 onToggle={toggleConfirmed}
+                testID='cloud_backup_confirm_checkbox'
             />
             <PWView style={styles.actions}>
                 <EnableBackupButton

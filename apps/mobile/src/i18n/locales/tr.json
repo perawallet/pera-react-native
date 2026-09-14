@@ -577,6 +577,7 @@
             "encryption_key_label": "Şifreleme anahtarı",
             "info_title": "Yerel şifreleme için gerekli",
             "info_body": "Bu kimlik bilgileri kaybolursa geri alınamaz. Yedeklemene erişimini kaybetmemek için onları güvenli bir yerde sakla.",
+            "checkbox_label": "Evet, Passphrase’imi sakladım",
             "proceed": "Devam et"
         },
         "verify": {

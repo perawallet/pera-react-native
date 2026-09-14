@@ -36,17 +36,6 @@ export const useStyles = makeStyles(
         title: {
             textAlign: 'center',
         },
-        checkboxRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-            alignSelf: 'stretch',
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.md,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGray,
-        },
         actions: {
             alignSelf: 'stretch',
             gap: theme.spacing.xs,

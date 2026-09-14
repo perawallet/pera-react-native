@@ -569,6 +569,7 @@
             "encryption_key_label": "Verschlüsselungsschlüssel",
             "info_title": "Für die lokale Verschlüsselung erforderlich",
             "info_body": "Diese Zugangsdaten können nicht wiederhergestellt werden, wenn sie verloren gehen. Bewahre sie sicher auf, damit du den Zugriff auf dein Backup nicht verlierst.",
+            "checkbox_label": "Ja, ich habe meine Passphrase gespeichert",
             "proceed": "Fortfahren"
         },
         "verify": {

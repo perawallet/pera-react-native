@@ -577,6 +577,7 @@
             "encryption_key_label": "Chave de criptografia",
             "info_title": "Necessário para a criptografia local",
             "info_body": "Essas credenciais não podem ser recuperadas se forem perdidas. Guarde-as com segurança para não perder o acesso ao seu backup.",
+            "checkbox_label": "Sim, guardei minha Passphrase",
             "proceed": "Continuar"
         },
         "verify": {
