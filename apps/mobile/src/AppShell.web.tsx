@@ -16,11 +16,8 @@ initDecimalConfig()
 
 import React from 'react'
 import './i18n'
-// Side-effect: binds every entry in the bottom-sheet manager's typed
-// registry (see modules/bottom-sheet/registrations.ts) before anything in
-// the React tree mounts, so deep links and other non-React callers can
-// safely call useBottomSheetStore.getState().requestByType(...) from the
-// moment the app boots.
+// Side-effect import: binds the bottom-sheet registry before the React tree
+// mounts so non-React callers (deep links) can request sheets from boot.
 import '@modules/bottom-sheet/registrations'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { ThemeProvider, makeStyles } from '@rneui/themed'
@@ -69,7 +66,6 @@ import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidatio
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
-import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration.web'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.
@@ -81,32 +77,15 @@ const persister = createAsyncStoragePersister({
 
 updateQueryHeaders()
 
-// Native does this at App.tsx module scope; the extension can't, because
-// App.web.tsx must stay free of store-bearing static imports (see its
-// BOOT-ORDER CONTRACT). Here is the earliest boot-order-safe equivalent, and
-// still before QueryProvider mounts below — which is what the seeding is for,
-// so early queries don't fire-and-fail against a dead link. Without it web had
-// no onlineManager binding at all and every query treated the app as online.
+// App.web.tsx must stay free of store-bearing imports (BOOT-ORDER CONTRACT), so
+// this is the earliest safe point, still before QueryProvider mounts. Without
+// it there is no onlineManager binding and every query treats the app as online.
 void initNetworkStatus()
 
-// Boot-order-safe here for the same reason `persister` above is: App.web.tsx
-// only dynamically imports this module after `hydratePlatform()` resolves, so
-// `getProvider()` is ready. Registered once per UI realm (popup, expanded tab,
-// approval surface).
-registerWcStoreRehydration()
-
-// Authoritative theme-aware paint for the whole app area. Sits below
-// ThemeProvider so it sees in-app theme overrides, not just the OS theme, and
-// covers gaps individual screens leave so nothing falls through to unstyled
-// html/body grey. build.mjs's global CSS is only the pre-mount fallback.
-//
-// `card` caps content to a popup-like width and centers it — the UI was
-// designed for a 360px popup and looks broken stretched across a desktop tab.
-// The cap never binds on the popup/approval surfaces, so `root`'s tone is only
-// ever visible on the expanded one; no surface check needed.
-//
-// PWBottomSheet.web applies the same cap to its own stage, since gorhom-on-web
-// portals to document.body and would otherwise bypass this card.
+// Theme-aware paint for the whole app area, below ThemeProvider so it sees
+// in-app overrides; build.mjs's global CSS is only the pre-mount fallback.
+// `card` caps content to a popup-like width: the UI was designed for a 360px
+// popup. PWBottomSheet.web applies the same cap, since gorhom-on-web portals to document.body.
 const useAppShellRootStyles = makeStyles(theme => ({
     root: {
         flex: 1,
@@ -142,12 +121,9 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
     )
 }
 
-// Same RootComponent-replacement contract as useNetworkStatusListener below:
-// the single owner of the on-network-switch invalidation lives in this shell.
-// It mounts INSIDE QueryProvider (and outside VaultGate, so it's never
-// unmounted by the lock) because useNetworkSwitchInvalidation reads the query
-// client from context since #1336 — calling it from the shell body crashed
-// every web surface at boot with "No QueryClient set".
+// Mounts INSIDE QueryProvider (and outside VaultGate so the lock never unmounts
+// it): useNetworkSwitchInvalidation reads the query client from context, and
+// calling it from the shell body crashes at boot with "No QueryClient set".
 const NetworkSwitchInvalidation = (): null => {
     useNetworkSwitchInvalidation()
     return null
@@ -157,10 +133,9 @@ const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    // Its own ref rather than the shared `routes/navigationRef`: that one is
-    // read by global handlers (deep links, notification taps) that only know
-    // main-shell routes, and binding it here would turn their isReady()===false
-    // no-op during onboarding into a navigate at a route that doesn't exist.
+    // Not the shared `routes/navigationRef`: global handlers (deep links,
+    // notification taps) only know main-shell routes, and binding it here would
+    // turn their isReady()===false no-op during onboarding into a bad navigate.
     const onboardingNavigationRef = useNavigationContainerRef<ParamListBase>()
     const handleOnboardingReady = useOnboardingExpandedFlowNavigation(
         (screen, params) => {
@@ -190,9 +165,8 @@ const ShellRouter = (): React.JSX.Element => {
         }
         case 'onboarding': {
             return (
-                // Theme the container so React Navigation's DefaultTheme grey
-                // background (rgb(242,242,242)) doesn't paint the onboarding
-                // scene — same fix as WebMainRoutes and the sheet flows.
+                // Themed so React Navigation's DefaultTheme grey background
+                // doesn't paint the onboarding scene.
                 <NavigationContainer
                     ref={onboardingNavigationRef}
                     theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
@@ -219,21 +193,17 @@ const ShellRouter = (): React.JSX.Element => {
     }
 }
 
-// Sibling of VaultGate (not a child): activity on the unlock screen itself
-// must NOT re-arm auto-lock — an attacker with the device open to the lock
-// screen shouldn't get a sliding window extension. useVaultLockState's
-// isUnlocked gate handles that (null/false ⇒ useAutoLockActivity no-ops).
+// Sibling of VaultGate, not a child: activity on the unlock screen must NOT
+// re-arm auto-lock, or an attacker at the lock screen gets a sliding window.
+// useVaultLockState's isUnlocked gate makes useAutoLockActivity a no-op there.
 const ActivityAutoLock = (): null => {
     const { isUnlocked } = useVaultLockState()
     useAutoLockActivity(isUnlocked === true)
     return null
 }
 
-// Recoverable fallback for any uncaught throw in the shell tree. A crypto
-// wallet must never white-screen silently, so this renders a themed
-// "something went wrong" screen with a reload affordance instead of letting
-// React unmount the whole root. It lives INSIDE ThemeProvider so its own
-// makeStyles/EmptyView have a theme to read.
+// A crypto wallet must never white-screen silently, so this renders a themed
+// reload screen. It lives INSIDE ThemeProvider so its makeStyles have a theme.
 type ShellErrorFallbackProps = {
     reset: () => void
 }
@@ -287,11 +257,9 @@ const WebShellErrorBoundary = ({
     )
 }
 
-// Everything under ThemeProvider: useAppShellRootStyles and every other
-// makeStyles hook in the tree resolve a theme here. Splitting this out of
-// AppShellContent is load-bearing — calling a makeStyles hook in the same
-// component that *renders* ThemeProvider runs it with no theme context and
-// throws `Cannot read properties of undefined (reading 'colors')`.
+// Splitting this out of AppShellContent is load-bearing: a makeStyles hook in
+// the same component that *renders* ThemeProvider runs with no theme context
+// and throws `Cannot read properties of undefined (reading 'colors')`.
 const AppShellThemedRoot = (): React.JSX.Element => {
     const rootStyles = useAppShellRootStyles()
 

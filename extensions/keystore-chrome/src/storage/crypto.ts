@@ -16,8 +16,7 @@
 import { gcm } from '@noble/ciphers/aes.js'
 import { bytesToUtf8, utf8ToBytes } from '@noble/ciphers/utils.js'
 import { base64 } from '@scure/base'
-import { VaultLockedError } from '../errors'
-import { getSessionMasterKey } from '../vault/session'
+import { requireSessionMasterKey } from '../vault/session'
 import type { AuthenticationOptions } from '../types'
 
 const GCM_TAG_LENGTH = 16
@@ -33,13 +32,7 @@ const GCM_TAG_LENGTH = 16
 export async function readMasterKey(
     _options?: AuthenticationOptions,
 ): Promise<Uint8Array> {
-    const key = await getSessionMasterKey()
-    if (!key) {
-        throw new VaultLockedError(
-            'Vault is locked. Unlock it before using the keystore.',
-        )
-    }
-    return key
+    return requireSessionMasterKey()
 }
 
 /**

@@ -13,7 +13,7 @@
 import { PinEntry } from '@modules/security/components/PinEntry'
 import {
     type PinEntryMode,
-    type SavePinHandlerResult,
+    type PinConfirmedResult,
     usePinEditView,
 } from './usePinEditView'
 import { useStyles } from './styles'
@@ -24,14 +24,20 @@ export type PinEditViewProps = {
     mode: PinEntryMode
     onSuccess: () => void
     testID?: string
-    savePinHandler?: (pin: string) => Promise<SavePinHandlerResult>
+    onPinConfirmed?: (pin: string) => Promise<PinConfirmedResult>
+    /** Overrides the `setup` step's title. Ignored in the verify modes. */
+    title?: string
+    /** Overrides the `confirm` step's title. */
+    confirmTitle?: string
 }
 
 export const PinEditView = ({
     mode,
     onSuccess,
     testID,
-    savePinHandler,
+    onPinConfirmed,
+    title: titleOverride,
+    confirmTitle,
 }: PinEditViewProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ insets })
@@ -42,7 +48,13 @@ export const PinEditView = ({
         isDisabled,
         handlePinComplete,
         handleErrorAnimationComplete,
-    } = usePinEditView({ mode, onSuccess, savePinHandler })
+    } = usePinEditView({
+        mode,
+        onSuccess,
+        onPinConfirmed,
+        title: titleOverride,
+        confirmTitle,
+    })
 
     return (
         <PWView

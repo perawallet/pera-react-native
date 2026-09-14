@@ -43,9 +43,19 @@ vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
 // Overrides the global mock from `vitest.setup.ts` for this file only, so
 // individual tests can make it throw to simulate an unrelated extension
 // failing during construction.
-const platformMock = vi.hoisted(() => ({
-    impl: vi.fn(() => ({})),
-}))
+const platformMock = vi.hoisted(() => {
+    // `keyValueStorage` is not incidental: `WithConnections` composes after
+    // the platform extension and refuses to build its store without one, so a
+    // stub that omits it fails provider construction before any assertion.
+    const defaultImpl = () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    })
+    return { defaultImpl, impl: vi.fn(defaultImpl) }
+})
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: (...args: unknown[]) => platformMock.impl(...args),
 }))
@@ -110,7 +120,7 @@ describe('singleton migrations construction wiring', () => {
         vi.resetModules()
         migrationsMock.controller = null
         platformMock.impl.mockReset()
-        platformMock.impl.mockImplementation(() => ({}))
+        platformMock.impl.mockImplementation(platformMock.defaultImpl)
     })
 
     it('threads the deferred into the keystore as `before`, resolving it once provider.migrations.ready settles', async () => {

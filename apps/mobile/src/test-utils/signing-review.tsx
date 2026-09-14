@@ -257,12 +257,15 @@ export const buildArbitraryDataSignRequest = ({
 export const buildArc60SignRequest = ({
     domain = 'arc60.io',
     signer = REVIEW_SIGNER_ADDRESS,
+    accountAddress = signer,
     verifiedOrigin,
     sourceType = 'webview',
     overrides = {},
 }: {
     domain?: string
     signer?: string
+    /** SIWA `account_address`; defaults to `signer` (the un-rekeyed shape). */
+    accountAddress?: string
     verifiedOrigin?: string
     sourceType?: Arc60SignRequest['sourceType']
     overrides?: Partial<Arc60SignRequest>
@@ -272,7 +275,7 @@ export const buildArc60SignRequest = ({
     // Keys inserted in lexicographic order so JSON.stringify yields the RFC-8785
     // canonical form parseSiwa requires (flat ASCII string values only).
     const siwa = {
-        account_address: signer,
+        account_address: accountAddress,
         chain_id: '283',
         domain,
         nonce: 'nonce-12345',

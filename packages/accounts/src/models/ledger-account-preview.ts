@@ -11,6 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
 
 export type LedgerAccountPreviewAsset = {
@@ -27,8 +28,11 @@ export type LedgerAccountPreviewAsset = {
     hasKnownDecimals: boolean
     /** Holding amount in display units (base units when decimals unknown) */
     amount: Decimal
-    /** Holding value in the user's preferred currency */
-    fiatValue: Decimal
+    /**
+     * Holding value in the user's preferred currency; `null` when the rate is
+     * unresolved (offline, not yet synced) — not 0.
+     */
+    fiatValue: Nullable<Decimal>
     /** Asset USD price (0 when unknown) */
     usdPrice: Decimal
     verificationTier: PeraAssetVerificationTier
@@ -47,8 +51,11 @@ export type LedgerAccountPreview = {
     address: string
     /** ALGO balance in display units */
     algoBalance: Decimal
-    /** Total account value in the user's preferred currency */
-    totalFiatValue: Decimal
+    /**
+     * Total account value in the user's preferred currency; `null` when the
+     * rate is unresolved (offline, not yet synced) — not 0.
+     */
+    totalFiatValue: Nullable<Decimal>
     /** ALGO first, then the account's on-chain holdings in algod order */
     assets: LedgerAccountPreviewAsset[]
     rekey: LedgerAccountRekeyRelationship

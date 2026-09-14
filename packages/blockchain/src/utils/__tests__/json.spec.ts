@@ -330,11 +330,41 @@ describe('algorandSafeQuerySerialize / algorandSafeQueryParse', () => {
         expect(Array.from(parsed.note)).toEqual([104, 105, 33])
     })
 
-    it('still serializes a non-byte-like value through its own toJSON', () => {
-        const input = { price: new Decimal('1.5') }
-        const serialized = algorandSafeQuerySerialize(input)
-        const parsed = JSON.parse(serialized) as { price: string }
+    it('round-trips a Decimal field to a real Decimal with the same value', () => {
+        const input = { usdPrice: new Decimal('0.85') }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
 
-        expect(parsed.price).toBe(input.price.toJSON())
+        expect(Decimal.isDecimal(parsed.usdPrice)).toBe(true)
+        expect(parsed.usdPrice.isZero()).toBe(false)
+        expect(parsed.usdPrice.toString()).toBe('0.85')
+    })
+
+    it('round-trips Decimals nested inside arrays alongside bigint and bytes', () => {
+        const input = {
+            fee: 1000n,
+            note: new Uint8Array([1, 2]),
+            history: [{ usdPrice: new Decimal('12345678.123456789') }],
+            zero: new Decimal(0),
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.fee).toBe(1000n)
+        expect(Array.from(parsed.note)).toEqual([1, 2])
+        expect(Decimal.isDecimal(parsed.history[0].usdPrice)).toBe(true)
+        expect(parsed.history[0].usdPrice.toString()).toBe('12345678.123456789')
+        expect(parsed.zero.isZero()).toBe(true)
+    })
+
+    it('does not resurrect a plain string that merely looks numeric as a Decimal', () => {
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize({ id: 'EUR', code: '0.85' }),
+        ) as { id: string; code: string }
+
+        expect(typeof parsed.code).toBe('string')
+        expect(parsed.code).toBe('0.85')
     })
 })

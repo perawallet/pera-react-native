@@ -19,14 +19,10 @@ export type HydratableStore = {
 }
 
 /**
- * Resolve once `store` has rehydrated, or once `timeoutMs` elapses.
- *
  * The timeout is not a nicety: zustand's persist middleware never fires
- * `onFinishHydration` if rehydration rejects (corrupt persisted JSON, storage
- * read failure) and `hasHydrated()` stays false forever. An unguarded wait
- * would hang whatever bootstrap branch awaits it — and with it the splash gate
- * — with no recovery short of a reinstall. Timing out just means this launch
- * reads the store's defaults instead of saved values.
+ * `onFinishHydration` if rehydration rejects (corrupt JSON, storage failure) and
+ * `hasHydrated()` stays false forever, hanging the splash gate. Timing out means
+ * this launch reads the store's defaults.
  */
 export const waitForStoreHydration = (
     store: HydratableStore,

@@ -13,6 +13,22 @@
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack'
 import { Easing } from 'react-native-reanimated'
 
+/**
+ * Stands in for a monetary value the app genuinely doesn't know — an
+ * unresolved exchange rate, an unsynced price. Never substitute 0: a rendered
+ * 0 has to mean a real zero balance.
+ */
+export const UNKNOWN_AMOUNT_PLACEHOLDER = '---'
+
+/** Android's own phone/tablet boundary (the `sw600dp` resource qualifier). */
+export const LARGE_SCREEN_MIN_WIDTH_DP = 600
+
+/**
+ * Widest a dialog or a confirm-control group gets, in dp. Past this a slide
+ * track is a long drag and a button stops reading as one.
+ */
+export const CONTROL_MAX_WIDTH_DP = 560
+
 export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140
 export const CHART_ANIMATION_DURATION = 200

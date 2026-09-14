@@ -39,6 +39,7 @@ export const CardTransactionDetailHeader = ({
             <CurrencyAmount
                 value={transaction.amountInTransactionCurrency.abs()}
                 currency={transaction.transactionCurrency}
+                assetId={null}
                 precision='compact'
                 prefix={isDebit ? '-' : '+'}
                 symbolPosition='end'

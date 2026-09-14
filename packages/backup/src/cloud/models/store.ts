@@ -18,11 +18,19 @@ export type CloudBackupState = BaseStoreState & {
     backupId: BackupId | null
     /** Base64-encoded salt used for key derivation; null until configured. */
     salt: string | null
+    /** Device id this backup was registered with. Held here rather than read
+     *  from the device store at call time, so every signed request uses the id
+     *  the server knows. Null for backups configured before it was stored. */
+    deviceId: string | null
 }
 
 export type CloudBackupActions = {
     /** Marks the backup configured and stores its identity. */
-    setConfigured: (params: { backupId: BackupId; salt: string }) => void
+    setConfigured: (params: {
+        backupId: BackupId
+        salt: string
+        deviceId: string
+    }) => void
     isConfigured: () => boolean
 }
 

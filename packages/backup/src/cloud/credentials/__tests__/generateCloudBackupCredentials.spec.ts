@@ -11,15 +11,21 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { generateCloudBackupCredentials } from '../generateCloudBackupCredentials'
 
 describe('generateCloudBackupCredentials', () => {
-    test('produces a 12-word mnemonic of non-empty words', () => {
-        const { mnemonic } = generateCloudBackupCredentials()
+    test('produces 12 wordlist indices that resolve to non-empty words', () => {
+        const { mnemonicIndices } = generateCloudBackupCredentials()
 
-        expect(mnemonic).toHaveLength(12)
-        expect(mnemonic.every(word => word.length > 0)).toBe(true)
+        expect(mnemonicIndices).toBeInstanceOf(Uint16Array)
+        expect(mnemonicIndices).toHaveLength(12)
+        expect(
+            Array.from(mnemonicIndices, index =>
+                mnemonicIndexToWord(index),
+            ).every(word => word.length > 0),
+        ).toBe(true)
     })
 
     test('produces a base64 salt that decodes to 16 bytes', () => {
@@ -32,7 +38,9 @@ describe('generateCloudBackupCredentials', () => {
         const first = generateCloudBackupCredentials()
         const second = generateCloudBackupCredentials()
 
-        expect(first.mnemonic.join(' ')).not.toBe(second.mnemonic.join(' '))
+        expect(Array.from(first.mnemonicIndices)).not.toEqual(
+            Array.from(second.mnemonicIndices),
+        )
         expect(first.salt).not.toBe(second.salt)
     })
 })

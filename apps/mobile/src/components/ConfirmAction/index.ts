@@ -12,3 +12,4 @@
 
 export { ConfirmAction } from './ConfirmAction'
 export type { ConfirmActionProps } from './ConfirmAction'
+export { CONFIRM_ACTION_LAYOUT } from './styles'

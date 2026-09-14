@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, it, expect, vi, beforeEach } from 'vitest'
 
 const hasHardwareAsyncMock = vi.hoisted(() => vi.fn())
 const isEnrolledAsyncMock = vi.hoisted(() => vi.fn())
 const supportedAuthenticationTypesAsyncMock = vi.hoisted(() => vi.fn())
-const authenticateAsyncMock = vi.hoisted(() => vi.fn())
 const getEnrolledLevelAsyncMock = vi.hoisted(() => vi.fn())
 
 // AuthenticationType / SecurityLevel numeric values match
@@ -35,7 +34,6 @@ vi.mock('expo-local-authentication', () => ({
     hasHardwareAsync: hasHardwareAsyncMock,
     isEnrolledAsync: isEnrolledAsyncMock,
     supportedAuthenticationTypesAsync: supportedAuthenticationTypesAsyncMock,
-    authenticateAsync: authenticateAsyncMock,
     getEnrolledLevelAsync: getEnrolledLevelAsyncMock,
 }))
 
@@ -48,10 +46,11 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 const bindingMocks = vi.hoisted(() => ({
     module: null as {
-        createBinding: ReturnType<typeof vi.fn>
         checkBinding: ReturnType<typeof vi.fn>
         clearBinding: ReturnType<typeof vi.fn>
         getAvailability: ReturnType<typeof vi.fn>
+        armBinding: ReturnType<typeof vi.fn>
+        unwrapToken: ReturnType<typeof vi.fn>
     } | null,
 }))
 
@@ -60,6 +59,16 @@ vi.mock('expo', () => ({
 }))
 
 import { RNBiometricsService } from '../services/biometrics'
+
+const emptyBindingModule = {
+    checkBinding: vi.fn(),
+    clearBinding: vi.fn(),
+    getAvailability: vi.fn(),
+    armBinding: vi.fn().mockResolvedValue(null),
+    unwrapToken: vi.fn().mockResolvedValue(new Uint8Array()),
+}
+
+const PROMPT = { title: 'Unlock', cancelLabel: 'Cancel' }
 
 describe('RNBiometricsService', () => {
     const service = new RNBiometricsService()
@@ -73,7 +82,6 @@ describe('RNBiometricsService', () => {
         hasHardwareAsyncMock.mockReset()
         isEnrolledAsyncMock.mockReset()
         supportedAuthenticationTypesAsyncMock.mockReset()
-        authenticateAsyncMock.mockReset()
         getEnrolledLevelAsyncMock.mockReset()
     })
 
@@ -159,127 +167,15 @@ describe('RNBiometricsService', () => {
         })
     })
 
-    describe('authenticate', () => {
-        test('returns a success result when the native call succeeds', async () => {
-            authenticateAsyncMock.mockResolvedValue({ success: true })
-            expect(
-                await service.authenticate({
-                    title: 't',
-                    description: 'd',
-                    cancelLabel: 'Cancel',
-                }),
-            ).toEqual({ success: true })
-        })
-
-        test.each([
-            ['user_cancel', 'user-cancel'],
-            ['user_fallback', 'user-cancel'],
-            ['system_cancel', 'system-cancel'],
-            ['app_cancel', 'system-cancel'],
-            ['lockout', 'lockout'],
-            ['not_available', 'unavailable'],
-            ['not_enrolled', 'unavailable'],
-            ['passcode_not_set', 'unavailable'],
-            ['authentication_failed', 'failed'],
-            ['timeout', 'unknown'],
-            ['no_space', 'unknown'],
-            ['unable_to_process', 'unknown'],
-            ['invalid_context', 'unknown'],
-            ['unknown', 'unknown'],
-        ])('maps native error %j to reason %j', async (native, reason) => {
-            authenticateAsyncMock.mockResolvedValue({
-                success: false,
-                error: native,
-            })
-            expect(await service.authenticate()).toEqual({
-                success: false,
-                reason,
-            })
-        })
-
-        // iOS's default error branch returns prefixed strings rather than a
-        // member of the documented union, and some strings (e.g.
-        // missing_usage_description) aren't in the TS type at all.
-        test.each([
-            'unknown: -1004, Caller moved to background.',
-            'missing_usage_description',
-        ])('maps unrecognized native error %j to "unknown"', async native => {
-            authenticateAsyncMock.mockResolvedValue({
-                success: false,
-                error: native,
-            })
-            expect(await service.authenticate()).toEqual({
-                success: false,
-                reason: 'unknown',
-            })
-        })
-
-        test('returns an unknown failure when the native call throws', async () => {
-            authenticateAsyncMock.mockRejectedValue(new Error('cancelled'))
-            expect(await service.authenticate()).toEqual({
-                success: false,
-                reason: 'unknown',
-            })
-        })
-
-        test('disables device PIN/password fallback (biometric-only)', async () => {
-            authenticateAsyncMock.mockResolvedValue({ success: true })
-            await service.authenticate({ title: 'Unlock' })
-            expect(authenticateAsyncMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    promptMessage: 'Unlock',
-                    disableDeviceFallback: true,
-                }),
-            )
-        })
-
-        // Wallet unlock and biometric enrolment must require a hardware-backed
-        // class-3 authenticator; a spoofable class-2 ("weak") modality must not
-        // be accepted. See the service comment for the full rationale.
-        test('requires a strong (class-3) authenticator', async () => {
-            authenticateAsyncMock.mockResolvedValue({ success: true })
-            await service.authenticate({ title: 'Unlock' })
-            expect(authenticateAsyncMock).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    biometricsSecurityLevel: 'strong',
-                }),
-            )
-        })
-
-        // Regression: AndroidX BiometricPrompt's PromptInfo.Builder#build()
-        // throws IllegalArgumentException unless a non-empty negative button
-        // text is supplied whenever DEVICE_CREDENTIAL isn't in the allowed
-        // authenticators. Forwarding cancelLabel keeps the prompt buildable.
-        test('forwards cancelLabel to the native call', async () => {
-            authenticateAsyncMock.mockResolvedValue({ success: true })
-            await service.authenticate({
-                title: 'Unlock',
-                cancelLabel: 'Dismiss',
-            })
-            expect(authenticateAsyncMock).toHaveBeenCalledWith(
-                expect.objectContaining({ cancelLabel: 'Dismiss' }),
-            )
-        })
-
-        test('falls back to a non-empty cancelLabel when caller omits it', async () => {
-            authenticateAsyncMock.mockResolvedValue({ success: true })
-            await service.authenticate({ title: 'Unlock' })
-            const call = authenticateAsyncMock.mock.calls[0][0]
-            expect(call.cancelLabel).toEqual(expect.any(String))
-            expect(call.cancelLabel.length).toBeGreaterThan(0)
-        })
-    })
-
     describe('enrollment binding', () => {
         const nativeModule = {
-            createBinding: vi.fn(),
+            ...emptyBindingModule,
             checkBinding: vi.fn(),
             clearBinding: vi.fn(),
             getAvailability: vi.fn(),
         }
 
         beforeEach(() => {
-            nativeModule.createBinding.mockReset()
             nativeModule.checkBinding.mockReset()
             nativeModule.clearBinding.mockReset()
             nativeModule.getAvailability.mockReset()
@@ -317,13 +213,6 @@ describe('RNBiometricsService', () => {
             expect(await service.checkEnrollmentBinding()).toBe('unavailable')
         })
 
-        test('swallows a failed createBinding rather than rejecting', async () => {
-            nativeModule.createBinding.mockResolvedValue(false)
-            await expect(
-                service.createEnrollmentBinding(),
-            ).resolves.toBeUndefined()
-        })
-
         test('swallows a throwing clearBinding rather than rejecting', async () => {
             nativeModule.clearBinding.mockRejectedValue(new Error('keystore'))
             await expect(
@@ -334,7 +223,7 @@ describe('RNBiometricsService', () => {
 
     describe('getAvailability', () => {
         const nativeModule = {
-            createBinding: vi.fn(),
+            ...emptyBindingModule,
             checkBinding: vi.fn(),
             clearBinding: vi.fn(),
             getAvailability: vi.fn(),
@@ -374,6 +263,141 @@ describe('RNBiometricsService', () => {
         test('reports "unknown" when the native module is absent', async () => {
             bindingMocks.module = null
             expect(await service.getAvailability()).toBe('unknown')
+        })
+    })
+
+    describe('armBiometricBinding', () => {
+        it('passes the native ciphertext and hash straight through', async () => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                armBinding: vi
+                    .fn()
+                    .mockResolvedValue({ blob: 'ct', tokenHash: 'ab12' }),
+            }
+
+            const result = await new RNBiometricsService().armBiometricBinding()
+
+            expect(result).toEqual({ blob: 'ct', tokenHash: 'ab12' })
+        })
+
+        it('resolves null when no native module is present', async () => {
+            bindingMocks.module = null
+
+            await expect(
+                new RNBiometricsService().armBiometricBinding(),
+            ).resolves.toBeNull()
+        })
+
+        it('resolves null when the native call throws', async () => {
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                armBinding: vi
+                    .fn()
+                    .mockRejectedValue(new Error('keystore full')),
+            }
+
+            await expect(
+                new RNBiometricsService().armBiometricBinding(),
+            ).resolves.toBeNull()
+        })
+    })
+
+    describe('unwrapBiometricToken', () => {
+        it('returns the released token on success', async () => {
+            const token = new Uint8Array([1, 2, 3])
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockResolvedValue(token),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+                { title: 'Unlock', cancelLabel: 'Cancel' },
+            )
+
+            expect(result).toEqual({ success: true, token })
+        })
+
+        it('forwards the prompt copy to the native call', async () => {
+            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
+            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
+
+            await new RNBiometricsService().unwrapBiometricToken('ct', {
+                title: 'Unlock Pera',
+                cancelLabel: 'Not now',
+            })
+
+            expect(unwrapToken).toHaveBeenCalledWith('ct', {
+                title: 'Unlock Pera',
+                cancelLabel: 'Not now',
+            })
+        })
+
+        it('never substitutes its own copy for the caller prompt', async () => {
+            const unwrapToken = vi.fn().mockResolvedValue(new Uint8Array(32))
+            bindingMocks.module = { ...emptyBindingModule, unwrapToken }
+
+            await new RNBiometricsService().unwrapBiometricToken('ct', {
+                title: '',
+                cancelLabel: '',
+            })
+
+            expect(unwrapToken).toHaveBeenCalledWith('ct', {
+                title: '',
+                cancelLabel: '',
+            })
+        })
+
+        it.each([
+            ['invalidated', 'invalidated'],
+            ['decrypt-failed', 'decrypt-failed'],
+            ['no-binding', 'no-binding'],
+            ['user-cancel', 'user-cancel'],
+            ['system-cancel', 'system-cancel'],
+            ['lockout', 'lockout'],
+            ['unavailable', 'unavailable'],
+            ['failed', 'failed'],
+        ])('maps native code %s to reason %s', async (code, reason) => {
+            const error = new Error('native failure')
+            ;(error as Error & { code?: string }).code = code
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockRejectedValue(error),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+                PROMPT,
+            )
+
+            expect(result).toEqual({ success: false, reason })
+        })
+
+        it('maps an unrecognized native code to unknown', async () => {
+            const error = new Error('native failure')
+            ;(error as Error & { code?: string }).code = 'something-new'
+            bindingMocks.module = {
+                ...emptyBindingModule,
+                unwrapToken: vi.fn().mockRejectedValue(error),
+            }
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+                PROMPT,
+            )
+
+            expect(result).toEqual({ success: false, reason: 'unknown' })
+        })
+
+        it('reports no-binding when the native module is absent', async () => {
+            bindingMocks.module = null
+
+            const result = await new RNBiometricsService().unwrapBiometricToken(
+                'ct',
+                PROMPT,
+            )
+
+            expect(result).toEqual({ success: false, reason: 'no-binding' })
         })
     })
 })

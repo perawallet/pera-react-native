@@ -12,6 +12,7 @@
 
 export * from './querykeys'
 export * from './useAlgorandClient'
+export * from './useAccountSigTypeQuery'
 export * from './useSuggestedParametersQuery'
 export * from './useTransactionDetailQuery'
 export * from './useGroupTransactionsQuery'

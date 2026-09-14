@@ -10,16 +10,10 @@
  limitations under the License
  */
 
-// Web sibling of MainRoutes: the web-capable subset of the root routes.
-// Onboarding and migration gating live in useWebAppShell, not here, which is
-// why both are absent below along with the native-only stacks.
-//
-// Search and Messages navigate in-place inside the popup's own navigator, NOT
-// via createExpandedRedirect — their entry screens are web-safe, and the deep
-// leaf screens are off-capability and unreachable here.
-//
-// Sharing `navigationRef` across both containers is safe: onboarding and main
-// are exclusive shell states, so they never mount simultaneously.
+// The web-capable subset of the root routes; onboarding and migration gating
+// live in useWebAppShell. Search and Messages navigate in-place: their entry
+// screens are web-safe and the deep leaves are off-capability. Sharing
+// `navigationRef` with the onboarding container is safe: the two never mount together.
 import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
@@ -59,7 +53,7 @@ import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { headeredScreen } from './screen-options'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
-import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { ConnectionsProvider } from '@modules/connections'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
@@ -72,13 +66,9 @@ import type { RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
 
-// Blur-fragile flows deep-link out of the popup: it mounts a redirect stand-in
-// that opens the expanded tab instead of the real stack navigator.
-//
-// AddAccount is the exception and runs in-place on every surface — opening it
-// in a new tab severed the in-extension flow. Backup stays redirected: it
-// renders the recovery phrase, where a focus-steal mid-flow is a data-loss
-// risk, not just an annoyance.
+// Blur-fragile flows mount a redirect stand-in that opens the expanded tab.
+// AddAccount runs in-place on every surface (a new tab severs the flow); Backup
+// stays redirected because a focus-steal while the recovery phrase is shown risks data loss.
 const isPopup = getSurface() === 'popup'
 const AddAccountComponent = AddAccountStackNavigator
 const BackupComponent = isPopup
@@ -88,12 +78,8 @@ const BackupComponent = isPopup
 // Staking is age-gated at the navigator exactly as native routes/index.tsx.
 const GatedStakingScreen = withAgeGate(StakingScreen)
 
-// Mirrors native RootComponent's overlay error boundary: SigningOverlays hosts
-// money flows (sign-review sheet), so an unhandled render-throw here must not
-// unwind the whole popup. react-native-error-boundary is a plain class
-// component (no native deps) and OverlayErrorFallback only touches
-// `useEffect`, so both are web-safe as-is — reused verbatim rather than
-// duplicated.
+// SigningOverlays hosts money flows, so an unhandled render-throw must not
+// unwind the whole popup. react-native-error-boundary and OverlayErrorFallback are web-safe as-is.
 const handleOverlayError = (error: string | Error) => {
     logger.critical(error, { source: 'WebMainRoutesOverlaysErrorBoundary' })
 }
@@ -108,10 +94,8 @@ export const WebMainRoutes = ({
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     useDeviceRegistration(useDeviceAccountRegistrations())
-    // Native mounts all of these in RootComponent, which the web shell
-    // replaces — without them the extension registers devices with no push
-    // token and drops notification-tap deeplinks. The received listener is a
-    // no-op where the platform lacks a foreground receive path.
+    // Native mounts these in RootComponent, which the web shell replaces; without
+    // them devices register with no push token and notification-tap deeplinks drop.
     useTokenListener(fcmToken)
     useNotificationDeeplinkListener()
     useNotificationReceivedListener()
@@ -127,31 +111,14 @@ export const WebMainRoutes = ({
             theme={navTheme}
             onReady={handleReady}
         >
-            {/* BottomSheetManager sits OUTSIDE WalletConnectProvider, mirroring
-                native's BottomSheetModalProvider, which sits above both the WC
-                provider and the overlays error boundary (RootComponent.tsx):
-                the sheet host must survive a WC-boundary trip, since
-                SigningOverlays (below) depends on it. JSX order still puts it
-                first so it registers before the provider's effects can call
-                request(). */}
+            {/* Outside ConnectionsProvider, as native's BottomSheetModalProvider
+                sits above the provider: SigningOverlays needs the sheet host
+                to survive a nav-tree crash. */}
             <BottomSheetManager />
-            {/* Mirrors native RootComponent's AutoLockGuard > WalletConnectProvider
-                nesting: this tree only renders with the vault unlocked.
-                Unlike native, no WC socket is scoped to this mount — the
-                offscreen document is the sole owner of WC v1 connectors on
-                web (see apps/browser/src/offscreen/walletconnect/wcHost.ts),
-                long-lived independent of whether this popup/tab is open at
-                all. `useWalletConnectProvider.web.ts` is accordingly an
-                inert no-op; this stays mounted purely for
-                WalletConnectErrorBoundary, a real crash guard for the nav
-                tree that has nothing to do with WC. The provider wraps ONLY
-                the nav tree, same as native wraps only
-                RootContentContainer — its WalletConnectErrorBoundary's
-                fallback REPLACES children on an uncaught
-                non-WalletConnectError, so anything that must survive a
-                nav-tree crash (the sheet host, SigningOverlays below) has to
-                live outside it. */}
-            <WalletConnectProvider>
+            {/* Wraps only the nav tree: its WalletConnectErrorBoundary
+                REPLACES children on an uncaught throw, so the sheet host and
+                SigningOverlays stay outside. */}
+            <ConnectionsProvider>
                 <RootStack.Navigator
                     screenOptions={{
                         headerShown: false,
@@ -272,39 +239,14 @@ export const WebMainRoutes = ({
                         </>
                     )}
                 </RootStack.Navigator>
-            </WalletConnectProvider>
+            </ConnectionsProvider>
             {/* Native mounts this in RootComponent, which this shell replaces.
-                Outside the WC provider so a nav-tree crash caught by
-                WalletConnectErrorBoundary can't take the blocking prompt down.
-                Not parity with native: there the prompt is inside
-                RootContentContainer's own ErrorBoundary, so a MainRoutes throw
-                does drop it. */}
+                Outside the provider so a nav-tree crash cannot take the
+                blocking prompt down. */}
             <PromptContainer />
-            {/* Sibling of WalletConnectProvider (not nested inside it),
-                mirroring native RootComponent's arrangement: there,
-                `<ErrorBoundary><SigningOverlays/>...</ErrorBoundary>` is a
-                sibling of `<WalletConnectProvider><RootContentContainer/></WalletConnectProvider>`,
-                both under AutoLockGuard — never inside the WC provider. The
-                provider exposes no context, so nothing needs to be inside it,
-                and nesting SigningOverlays there would let an unrelated
-                nav-tree crash (caught by WalletConnectErrorBoundary, whose
-                fallback replaces children) tear down an in-progress WC sign
-                review along with it.
-                SigningOverlays itself is needed because WalletConnectProvider
-                (mounted above since M7 task 2) delivers interactive sign
-                requests into the shared signing queue regardless of platform,
-                and nothing else on web watches that queue to open the review
-                sheet — without this, a WC-delivered sign request enqueues and
-                never renders on web.
-                MultisigOverlays is NOT mounted: multisig is native-only on
-                this shell (see the omissions note atop this file).
-                SwapOverlays is NOT mounted: its only job is
-                useSwapCosignResolver, which is scoped to shared-account
-                (multisig) swap completion (@perawallet/wallet-core-swaps
-                useSwapCosignResolver.ts) — i.e. the same native-only
-                multisig feature. Regular single-key swap signing on web is
-                headless (not an INTERACTIVE_SOURCES sourceType) and doesn't
-                route through either overlay. */}
+            {/* Sibling of ConnectionsProvider: nothing else on web watches the
+                signing queue, so a connection-delivered sign request would enqueue
+                and never render. MultisigOverlays and SwapOverlays are native-only. */}
             <ErrorBoundary
                 onError={handleOverlayError}
                 FallbackComponent={OverlayErrorFallback}

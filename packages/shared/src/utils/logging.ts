@@ -55,6 +55,14 @@ const SENSITIVE_KEY_FRAGMENTS = [
     'password',
     'pin',
     'signature',
+    'token',
+    'authorization',
+    'bearer',
+    // PKCE code_verifier and friends.
+    'verifier',
+    'cvv',
+    'cvc',
+    'entropy',
 ] as const
 
 // Whole-key (exact) matches only, for keys carrying raw transaction or signing
@@ -76,6 +84,12 @@ const SENSITIVE_EXACT_KEYS = [
     // WC v1 pairing URIs carry the symmetric handshake key as `key=`;
     // exact so `keyregType`/`keyPairId` style params survive.
     'key',
+    // Exact, not fragments: `pan` as a substring would wipe `panLast4`,
+    // `isExpanded` and `participants`, and any `*shotP*` word contains `otp`.
+    'pan',
+    'otp',
+    'otpcode',
+    'otp_code',
 ] as const
 
 const REDACTED = '[REDACTED]'

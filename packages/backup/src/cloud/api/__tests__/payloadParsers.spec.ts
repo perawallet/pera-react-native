@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import {
     parseAddressPayload,
+    parseContactPayload,
     parseSecretsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
@@ -238,6 +239,34 @@ describe('parseSecretsPayload', () => {
     it('throws on an unknown secrets type', () => {
         expect(() =>
             parseSecretsPayload(JSON.stringify({ type: 'hardware' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parseContactPayload', () => {
+    it('parses an address, name and updatedAt', () => {
+        expect(
+            parseContactPayload(
+                JSON.stringify({
+                    address: 'ADDR',
+                    name: 'Alice',
+                    updatedAt: 42,
+                }),
+            ),
+        ).toEqual({ address: 'ADDR', name: 'Alice', updatedAt: 42 })
+    })
+
+    it('accepts a payload with no updatedAt', () => {
+        expect(
+            parseContactPayload(
+                JSON.stringify({ address: 'ADDR', name: 'Alice' }),
+            ),
+        ).toEqual({ address: 'ADDR', name: 'Alice' })
+    })
+
+    it('rejects a payload with no name', () => {
+        expect(() =>
+            parseContactPayload(JSON.stringify({ address: 'ADDR' })),
         ).toThrow(BackupPayloadParseError)
     })
 })

@@ -14,40 +14,209 @@ import CryptoKit
 import ExpoModulesCore
 import LocalAuthentication
 
-/// Detects changes to the enrolled biometric set, so a Face ID / Touch ID
-/// enrollment added *after* the user opted in cannot inherit that opt-in.
+/// The raw values are the contract RNBiometricsService maps; anything it does
+/// not recognise degrades to 'unknown'. There is no `invalidated` here: iOS
+/// removes a key whose biometric set changed rather than marking it unusable,
+/// so that case reads as `noBinding`.
+internal enum UnwrapError: String {
+  case decryptFailed = "decrypt-failed"
+  case noBinding = "no-binding"
+  case userCancel = "user-cancel"
+  case systemCancel = "system-cancel"
+  case lockout
+  case unavailable
+  case failed
+
+  init(from error: LAError) {
+    switch error.code {
+    // userFallback is the "Enter Passcode" button, which is the user declining;
+    // appCancel is the OS interrupting with no user action. JS only needs
+    // "declined" apart from "retry".
+    case .userCancel, .userFallback: self = .userCancel
+    case .systemCancel, .appCancel: self = .systemCancel
+    case .biometryLockout: self = .lockout
+    case .biometryNotEnrolled, .biometryNotAvailable: self = .unavailable
+    default: self = .failed
+    }
+  }
+}
+
+/// Expo surfaces a thrown `Exception`'s `code` on the rejected promise, which is
+/// the only channel the classification has to reach JavaScript.
+internal final class UnwrapException: Exception, @unchecked Sendable {
+  // `Exception` already declares `reason`, and a stored property cannot shadow it.
+  private let failure: UnwrapError
+
+  init(_ failure: UnwrapError) {
+    self.failure = failure
+    super.init()
+  }
+
+  override var code: String { failure.rawValue }
+  override var reason: String { "Biometric unwrap failed" }
+}
+
+/// The token the wallet needs is wrapped to a Secure Enclave key that only a
+/// successful biometric evaluation can use and that the OS destroys when the
+/// enrolled set changes.
 ///
-/// `LAContext.evaluatedPolicyDomainState` is an opaque blob whose value changes
-/// whenever the biometric database changes; only its equality is meaningful, so
-/// this stores a SHA-256 of it rather than the blob itself. Nothing here ever
-/// prompts — `canEvaluatePolicy` only reports policy availability.
-///
-/// Status contract consumed by RNBiometricsService: `checkBinding` resolves
-/// 'valid' | 'changed' | 'absent' | 'unavailable', and only 'changed' is an
-/// affirmative report that the set was modified.
+/// `checkBinding` resolves 'valid' | 'absent' | 'unavailable', never 'changed':
+/// a re-enrollment is indistinguishable from a restore or a device upgrade, and
+/// all of them are recovered by opting in again.
 public class PeraBiometricBindingModule: Module {
-  private static let service = "pera.biometricEnrollmentBinding"
-  private static let account = "domain-state"
+  private static let keyTag = "pera.biometric.unlock".data(using: .utf8)!
+  private static let logTag = "PeraBiometricBinding"
 
   public func definition() -> ModuleDefinition {
     Name("PeraBiometricBinding")
 
-    AsyncFunction("createBinding") { () -> Bool in
-      guard let digest = Self.currentDigest() else { return false }
-      return Self.save(digest)
+    // Ceremony-free on purpose: the public half does the wrapping, and the
+    // legacy migration arms with no user present.
+    AsyncFunction("armBinding") { () -> [String: String]? in
+      // A stale key with the same tag makes SecKeyCreateRandomKey fail, so
+      // delete first to stay idempotent.
+      Self.deleteKeyPair()
+
+      let privateKey: SecKey
+      do {
+        privateKey = try Self.createKeyPair()
+      } catch {
+        // A nil return reads the same in JS whatever the cause, so the reason
+        // lives only here: no passcode set, no Secure Enclave, denied Face ID.
+        NSLog(
+          "[%@] creating the key pair failed: %@",
+          Self.logTag,
+          error.localizedDescription
+        )
+        return nil
+      }
+
+      guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
+        NSLog("[%@] the new key pair has no readable public half", Self.logTag)
+        Self.deleteKeyPair()
+        return nil
+      }
+
+      var token = Data(count: 32)
+      let status = token.withUnsafeMutableBytes {
+        SecRandomCopyBytes(kSecRandomDefault, 32, $0.baseAddress!)
+      }
+      guard status == errSecSuccess else {
+        NSLog("[%@] the token RNG failed: %d", Self.logTag, status)
+        Self.deleteKeyPair()
+        return nil
+      }
+      defer { token.resetBytes(in: 0..<token.count) }
+
+      var error: Unmanaged<CFError>?
+      guard
+        let ciphertext = SecKeyCreateEncryptedData(
+          publicKey,
+          .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
+          token as CFData,
+          &error
+        ) as Data?
+      else {
+        Self.logCFError(error, "wrapping the token failed")
+        // The reconcile early-returns without a blob, so a key left behind is
+        // never cleared.
+        Self.deleteKeyPair()
+        return nil
+      }
+
+      let digest = SHA256.hash(data: token)
+      return [
+        "blob": ciphertext.base64EncodedString(),
+        "tokenHash": digest.map { String(format: "%02x", $0) }.joined(),
+      ]
+    }
+
+    AsyncFunction("unwrapToken") {
+      (blob: String, prompt: [String: String]) async throws -> Data in
+      guard let ciphertext = Data(base64Encoded: blob) else {
+        throw UnwrapException(.failed)
+      }
+      // The copy is translated by the caller. An empty reason makes
+      // `evaluatePolicy` raise an NSInvalidArgumentException, which is a crash
+      // rather than a rejection.
+      guard let reason = prompt["title"], !reason.isEmpty else {
+        throw UnwrapException(.failed)
+      }
+
+      let context = LAContext()
+      if let cancelLabel = prompt["cancelLabel"], !cancelLabel.isEmpty {
+        context.localizedCancelTitle = cancelLabel
+      }
+      // Evaluate first, then hand the same context to the Keychain, so the user
+      // sees one ceremony and the key is released against that evaluation.
+      do {
+        _ = try await context.evaluatePolicy(
+          .deviceOwnerAuthenticationWithBiometrics,
+          localizedReason: reason
+        )
+      } catch let error as LAError {
+        throw UnwrapException(UnwrapError(from: error))
+      } catch {
+        throw UnwrapException(.failed)
+      }
+
+      // `withExtendedLifetime` is load-bearing: `context` has no use after the
+      // lookup, an optimised build releases it there, and `LAContext.deinit`
+      // invalidates the evaluated credential. Debug hides this by construction.
+      return try withExtendedLifetime(context) { () -> Data in
+        // Named rather than `Self`, which would capture the module in a closure
+        // the concurrent overload requires to be @Sendable.
+        guard
+          let privateKey = PeraBiometricBindingModule.loadKeyPair(context: context)
+        else {
+          throw UnwrapException(.noBinding)
+        }
+
+        var error: Unmanaged<CFError>?
+        guard
+          let token = SecKeyCreateDecryptedData(
+            privateKey,
+            .eciesEncryptionCofactorVariableIVX963SHA256AESGCM,
+            ciphertext as CFData,
+            &error
+          ) as Data?
+        else {
+          PeraBiometricBindingModule.logCFError(
+            error,
+            "unwrapping the token failed"
+          )
+          // Not classified further: nothing here can tell a dead key from a
+          // transient refusal, and JS only drops the opt-in once it repeats.
+          throw UnwrapException(.decryptFailed)
+        }
+        return token
+      }
     }
 
     AsyncFunction("checkBinding") { () -> String in
-      guard let stored = Self.load() else { return "absent" }
-      // No reading available: nothing enrolled, or biometry is locked out and
-      // the policy cannot be evaluated. Either way it is not a report that the
-      // enrollment set changed, so the caller must keep the opt-in.
-      guard let current = Self.currentDigest() else { return "unavailable" }
-      return current == stored ? "valid" : "changed"
+      // Runs on every mount of the lock screen, where a sheet would be a bug;
+      // `interactionNotAllowed` makes the silence structural.
+      let silent = LAContext()
+      silent.interactionNotAllowed = true
+
+      switch Self.copyKeyPair(context: silent).status {
+      case errSecSuccess:
+        return "valid"
+      // Presence, not absence: the item is there and would need the UI this
+      // call just refused.
+      case errSecInteractionNotAllowed:
+        return "valid"
+      case errSecItemNotFound:
+        return "absent"
+      // Only 'absent' destroys the opt-in, so an unexpected status reports no
+      // reading.
+      default:
+        return "unavailable"
+      }
     }
 
     AsyncFunction("clearBinding") { () -> Void in
-      Self.delete()
+      Self.deleteKeyPair()
     }
 
     // `LAContext` distinguishes what expo's `isEnrolledAsync` boolean cannot:
@@ -68,9 +237,8 @@ public class PeraBiometricBindingModule: Module {
         return "none-enrolled"
       case LAError.biometryLockout.rawValue:
         return "unavailable"
-      // Covers both "the user denied Face ID for this app" and "no biometric
-      // hardware". Only the first is reachable for someone who had biometric
-      // unlock switched on, and it is the case worth telling them about.
+      // Also "no biometric hardware", but only the denied-permission case is
+      // reachable for someone who had biometric unlock switched on.
       case LAError.biometryNotAvailable.rawValue:
         return "denied"
       default:
@@ -79,55 +247,101 @@ public class PeraBiometricBindingModule: Module {
     }
   }
 
-  /// `evaluatedPolicyDomainState` is only populated once the policy has been
-  /// evaluated on that context, hence the `canEvaluatePolicy` call first.
-  private static func currentDigest() -> Data? {
-    let context = LAContext()
-    var error: NSError?
+  private static func accessControl() throws -> SecAccessControl {
+    var error: Unmanaged<CFError>?
+    // WhenPasscodeSetThisDeviceOnly: the key must not survive passcode removal,
+    // leave the device or enter a backup.
     guard
-      context.canEvaluatePolicy(
-        .deviceOwnerAuthenticationWithBiometrics,
-        error: &error
-      ),
-      let state = context.evaluatedPolicyDomainState
+      let control = SecAccessControlCreateWithFlags(
+        nil,
+        kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly,
+        [.privateKeyUsage, .biometryCurrentSet],
+        &error
+      )
     else {
-      return nil
+      throw error!.takeRetainedValue() as Error
     }
-    return Data(SHA256.hash(data: state))
+    return control
   }
 
-  private static func baseQuery() -> [String: Any] {
-    [
-      kSecClass as String: kSecClassGenericPassword,
-      kSecAttrService as String: service,
-      kSecAttrAccount as String: account,
+  private static func createKeyPair() throws -> SecKey {
+    let attributes: [String: Any] = [
+      kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+      kSecAttrKeySizeInBits as String: 256,
+      kSecAttrTokenID as String: kSecAttrTokenIDSecureEnclave,
+      kSecPrivateKeyAttrs as String: [
+        kSecAttrIsPermanent as String: true,
+        kSecAttrApplicationTag as String: keyTag,
+        kSecAttrAccessControl as String: try accessControl(),
+      ],
     ]
-  }
-
-  private static func save(_ digest: Data) -> Bool {
-    delete()
-    var query = baseQuery()
-    query[kSecValueData as String] = digest
-    // A digest, not a secret: no access control, and never synced off-device.
-    // It has to be readable in the same pass that decides whether the opt-in
-    // survives, which runs without user interaction.
-    query[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
-  }
-
-  private static func load() -> Data? {
-    var query = baseQuery()
-    query[kSecReturnData as String] = true
-    query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-    var item: CFTypeRef?
-    guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess else {
-      return nil
+    var error: Unmanaged<CFError>?
+    guard let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error)
+    else {
+      throw error!.takeRetainedValue() as Error
     }
-    return item as? Data
+    return key
   }
 
-  private static func delete() {
-    SecItemDelete(baseQuery() as CFDictionary)
+  /// Authentication is required at use, not at retrieval, which is what makes
+  /// `checkBinding` silent and the public-key wrap ceremony-free.
+  private static func loadKeyPair(context: LAContext? = nil) -> SecKey? {
+    return copyKeyPair(context: context).key
+  }
+
+  /// The status matters to `checkBinding`, which has to tell "no key" apart from
+  /// "could not take a reading".
+  private static func copyKeyPair(
+    context: LAContext? = nil
+  ) -> (status: OSStatus, key: SecKey?) {
+    var query: [String: Any] = [
+      kSecClass as String: kSecClassKey,
+      kSecAttrApplicationTag as String: keyTag,
+      kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+      kSecReturnRef as String: true,
+    ]
+    if let context {
+      query[kSecUseAuthenticationContext as String] = context
+    }
+    var item: CFTypeRef?
+    let status = SecItemCopyMatching(query as CFDictionary, &item)
+    guard status == errSecSuccess else { return (status, nil) }
+    // Swift rejects `as?` to a CF type, so the type id is the check.
+    guard let item, CFGetTypeID(item) == SecKeyGetTypeID() else {
+      return (status, nil)
+    }
+    return (status, (item as! SecKey))
+  }
+
+  private static func deleteKeyPair() {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassKey,
+      kSecAttrApplicationTag as String: keyTag,
+    ]
+    let status = SecItemDelete(query as CFDictionary)
+    if status != errSecSuccess && status != errSecItemNotFound {
+      NSLog("[%@] deleting the key pair failed: %d", logTag, status)
+    }
+    Self.deleteLegacyEnrollmentBindingItem()
+  }
+
+  /// The pre-OS-bound-key digest item. Keychain items survive app deletion, so
+  /// an upgrading install never clears it on its own; absence is the normal case.
+  private static func deleteLegacyEnrollmentBindingItem() {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "pera.biometricEnrollmentBinding",
+    ]
+    SecItemDelete(query as CFDictionary)
+  }
+
+  /// Takes the `+1` reference the `Sec*` calls hand back; leaving it would leak
+  /// the `CFError` and lose the only account of why a device failed.
+  private static func logCFError(_ error: Unmanaged<CFError>?, _ what: String) {
+    guard let cfError = error?.takeRetainedValue() else {
+      NSLog("[%@] %@, with no reason reported", logTag, what)
+      return
+    }
+    NSLog("[%@] %@: %@", logTag, what, (cfError as Error).localizedDescription)
   }
 }

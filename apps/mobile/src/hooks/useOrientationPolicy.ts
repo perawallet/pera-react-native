@@ -14,8 +14,7 @@ import { useEffect } from 'react'
 import { Dimensions, Platform } from 'react-native'
 import * as ScreenOrientation from 'expo-screen-orientation'
 
-/** Android's own phone/tablet boundary (the `sw600dp` resource qualifier). */
-const LARGE_SCREEN_MIN_WIDTH_DP = 600
+import { isLargeScreen } from '@utils/screen'
 
 /**
  * Locks phones to portrait while large screens follow the device.
@@ -42,15 +41,14 @@ export const useOrientationPolicy = (): void => {
 
         const applyPolicy = () => {
             const { width, height } = Dimensions.get('screen')
-            const isLargeScreen =
-                Math.min(width, height) >= LARGE_SCREEN_MIN_WIDTH_DP
+            const isLarge = isLargeScreen(width, height)
 
-            if (isLargeScreen === lastIsLargeScreen) return
-            lastIsLargeScreen = isLargeScreen
+            if (isLarge === lastIsLargeScreen) return
+            lastIsLargeScreen = isLarge
 
             // Orientation is cosmetic; a rejected request must not crash boot.
             void (
-                isLargeScreen
+                isLarge
                     ? ScreenOrientation.unlockAsync()
                     : ScreenOrientation.lockAsync(
                           ScreenOrientation.OrientationLock.PORTRAIT_UP,

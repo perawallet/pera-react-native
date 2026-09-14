@@ -11,8 +11,9 @@
  */
 
 import { Dialog, useTheme } from '@rneui/themed'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Network } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
+import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
 
 import {
     PWBadge,
@@ -41,22 +42,29 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     'WalletConnectSettingsDetails'
 >
 
-const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
+// `custom` names a runtime-configurable node slot, not a network a user picks.
+const ConnectedNetworks = ({ networks }: { networks: Network[] }) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const textStyles = {
+        mainnet: styles.mainnetText,
+        testnet: styles.testnetText,
+        betanet: styles.otherNetworkText,
+        custom: styles.otherNetworkText,
+    } satisfies Record<Network, unknown>
 
     return (
         <PWView style={styles.networkContainer}>
-            {(chainId === 4160 || chainId === 416_001) && (
-                <PWText style={styles.mainnetText}>
-                    {t('walletconnect.request.networks_mainnet')}
-                </PWText>
-            )}
-            {(chainId === 4160 || chainId === 416_002) && (
-                <PWText style={styles.testnetText}>
-                    {t('walletconnect.request.networks_testnet')}
-                </PWText>
-            )}
+            {networks
+                .filter(network => network !== 'custom')
+                .map(network => (
+                    <PWText
+                        key={network}
+                        style={textStyles[network]}
+                    >
+                        {t(NETWORK_LABEL_KEYS[network])}
+                    </PWText>
+                ))}
         </PWView>
     )
 }
@@ -67,17 +75,17 @@ export const SettingsWalletConnectDetailsScreen = ({
     const { t } = useLanguage()
     const styles = useStyles()
     const { theme } = useTheme()
-    const { session } = route.params
+    const { connection } = route.params
+    const { peer } = connection
 
     const {
-        peerMeta,
         preferredIcon,
         connectedAccounts,
         isLoading,
         deleteModalState,
         handleDelete,
         handleOpenLink,
-    } = useSettingsWalletConnectDetailsScreen(session)
+    } = useSettingsWalletConnectDetailsScreen(connection)
 
     return (
         <PWScreen testID='wallet_connect_details_screen'>
@@ -94,33 +102,33 @@ export const SettingsWalletConnectDetailsScreen = ({
                         size='xl'
                     />
                 )}
-                <PWText variant='h3'>
-                    {peerMeta?.name ?? t('walletconnect.settings.unknown_peer')}
-                </PWText>
-                {peerMeta?.url && (
+                <PWText variant='h3'>{peer.name}</PWText>
+                {!!peer.url && (
                     <PWTouchableOpacity
                         onPress={handleOpenLink}
                         testID='wallet_connect_details_url_link'
                     >
-                        <PWText style={styles.link}>{peerMeta?.url}</PWText>
+                        <PWText style={styles.link}>{peer.url}</PWText>
                     </PWTouchableOpacity>
                 )}
-                {peerMeta?.description && (
+                {!!peer.description && (
                     <PWText style={styles.description}>
-                        {peerMeta?.description}
+                        {peer.description}
                     </PWText>
                 )}
-                <PWView style={styles.versionContainer}>
-                    <PWBadge
-                        variant='secondary'
-                        value={`WCV${session?.version}`}
-                    />
-                    <PWText style={styles.version}>
-                        {t('walletconnect.settings.version', {
-                            version: session?.version,
-                        })}
-                    </PWText>
-                </PWView>
+                {connection.protocolVersion !== undefined && (
+                    <PWView style={styles.versionContainer}>
+                        <PWBadge
+                            variant='secondary'
+                            value={`WCV${connection.protocolVersion}`}
+                        />
+                        <PWText style={styles.version}>
+                            {t('walletconnect.settings.version', {
+                                version: connection.protocolVersion,
+                            })}
+                        </PWText>
+                    </PWView>
+                )}
                 <PWView style={styles.connectionContainer}>
                     <KeyValueRow
                         title={t('walletconnect.settings.created_at', {
@@ -129,7 +137,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                     >
                         <PWText style={styles.createdAt}>
                             {formatDatetime(
-                                session?.createdAt ?? new Date(),
+                                new Date(connection.createdAt),
                                 undefined,
                                 'medium',
                             )}
@@ -152,7 +160,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                                     style={styles.accountDisplay}
                                 />
                                 <ConnectedNetworks
-                                    chainId={session.session?.chainId ?? 4160}
+                                    networks={connection.networks}
                                 />
                             </PWView>
                         ))}
@@ -180,7 +188,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                     }
                 >
                     <PWView style={styles.permissionsContainer}>
-                        {session.session?.permissions?.map(permission => (
+                        {connection.permissions.map(permission => (
                             <PermissionItem
                                 key={permission}
                                 permission={permission as AlgorandPermission}

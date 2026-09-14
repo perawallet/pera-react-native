@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    type ComponentRef,
+    type MutableRefObject,
+} from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -20,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import type { PWFlatList } from '@components/core'
 import type { AccountMenuProps } from './AccountMenu'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -32,6 +40,7 @@ type UseAccountMenuResult = {
     listItems: AccountMenuListItem[]
     selectedAccountAddress: Nullable<string>
     sortMode: string
+    flatListRef: MutableRefObject<ComponentRef<typeof PWFlatList> | null>
     handleTap: (acct: WalletAccount) => void
 }
 
@@ -58,10 +67,36 @@ export const useAccountMenu = (
         [accounts, props.accountFilter],
     )
 
-    const { sortedAccounts, sortMode } = useSortedAccounts(
+    const { sortedAccounts, sortMode, manualAccountOrder } = useSortedAccounts(
         filteredAccounts,
         accountValueTotals,
     )
+
+    const flatListRef = useRef<ComponentRef<typeof PWFlatList>>(null)
+
+    // The drawer stays mounted under the sort sheet, so a committed sort
+    // reorders the on-screen list in place and has to land the user back at
+    // the top. Keyed on the commit signals (mode, and the order itself while
+    // manual) rather than the sorted rows, so a background balance refresh
+    // re-sorting under a balance mode can't yank the viewport mid-scroll.
+    const sortCommitKey =
+        sortMode === 'manual'
+            ? `manual:${manualAccountOrder.join(',')}`
+            : sortMode
+    const appliedSortKeyRef = useRef(sortCommitKey)
+
+    useEffect(() => {
+        if (appliedSortKeyRef.current === sortCommitKey) return
+
+        // Next frame, not this commit: FlashList settles its own offset on the
+        // layout pass that follows a data change, and a scroll issued before
+        // that pass loses to it.
+        const frame = requestAnimationFrame(() => {
+            appliedSortKeyRef.current = sortCommitKey
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
+        })
+        return () => cancelAnimationFrame(frame)
+    }, [sortCommitKey])
 
     const { isAuthenticated } = useCardSession()
     const connectedFundingSourceAddress = useCardStore(
@@ -117,6 +152,7 @@ export const useAccountMenu = (
         listItems,
         selectedAccountAddress: effectiveSelectedAddress,
         sortMode,
+        flatListRef,
         handleTap,
     }
 }

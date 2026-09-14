@@ -57,6 +57,9 @@ export type RootStackParamList = {
     RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
     UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>
     Staking: undefined
+    /** Discover page pushed over the current screen; `path` is a relative
+     * Discover route (e.g. `token-detail/ALGO`), validated on load. */
+    DiscoverDetail: { path: string }
     BannersCarouselModal: { bannerId?: string } | undefined
     GroupTransactionList: {
         groupId: string

@@ -91,6 +91,7 @@ const CreditRow = ({
                     <CurrencyAmount
                         value={amount}
                         currency={currency}
+                        assetId={null}
                         precision='compact'
                         symbolPosition='end'
                         variant='bodyLarge'

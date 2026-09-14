@@ -10,16 +10,11 @@
  limitations under the License
  */
 
-// Threat model: content scripts land in every user tab and share
-// chrome.runtime.onMessage with the rest of the extension (popup, expanded
-// tab, approval window, offscreen document, service worker). A content
-// script's sender.url is the WEB PAGE it was injected into (e.g.
-// https://dapp.example) — never an extension-origin URL — so gating on the
-// extension's own chrome-extension://<id>/ origin is what separates "one of
-// our own pages" from "a script we shipped into every user tab." sender.id
-// additionally guards against a spoofed cross-extension sender. The service
-// worker's own script is also served from chrome.runtime.getURL(''), so this
-// check admits SW-originated messages (pings/execs) with no special-casing.
+// Content scripts land in every user tab and share chrome.runtime.onMessage with
+// the extension's own pages. Their sender.url is the injected WEB PAGE, so gating
+// on the extension origin separates our pages from scripts we shipped into every
+// tab; sender.id guards against a spoofed cross-extension sender. The service
+// worker is served from the same origin, so its messages pass without special-casing.
 export const isTrustedExtensionPageSender = (
     sender: chrome.runtime.MessageSender | undefined,
     chromeLike: typeof chrome = chrome,

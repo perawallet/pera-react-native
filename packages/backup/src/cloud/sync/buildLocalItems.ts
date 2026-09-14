@@ -20,18 +20,13 @@ import type {
 } from './types'
 
 /** Content hash ignores `updatedAt` so a pure timestamp bump is not "dirty". */
-const hashOf = (item: SerializedItem): string => {
+export const withContentHash = (item: SerializedItem): LocalItem => {
     const { updatedAt: _ignored, ...content } = item.payload as Record<
         string,
         unknown
     >
-    return contentHash(canonicalJson(content))
+    return { ...item, contentHash: contentHash(canonicalJson(content)) }
 }
-
-const withHash = (item: SerializedItem): LocalItem => ({
-    ...item,
-    contentHash: hashOf(item),
-})
 
 export const buildLocalItems = async (
     accounts: WalletAccount[],
@@ -55,7 +50,7 @@ export const buildLocalItems = async (
         ]
         for (const item of items) {
             if (!item) continue
-            const local = withHash(item)
+            const local = withContentHash(item)
             byKey.set(local.key, local)
         }
     }

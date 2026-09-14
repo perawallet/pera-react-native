@@ -54,9 +54,15 @@ export const WealthTrend = ({
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
     // value is flat for an all-ALGO account no matter what the price does.
+    // Unpriced points are dropped first: defaulting one end to 0 would report
+    // a swing between a real value and a rate we simply don't have.
     const [absolute, percentage, isPositive] = useMemo(() => {
-        const firstDp = data?.at(0)?.preferredValue ?? new Decimal(0)
-        const lastDp = data?.at(-1)?.preferredValue ?? new Decimal(0)
+        const priced =
+            data?.flatMap(point =>
+                point.preferredValue ? [point.preferredValue] : [],
+            ) ?? []
+        const firstDp = priced.at(0) ?? new Decimal(0)
+        const lastDp = priced.at(-1) ?? new Decimal(0)
 
         return [
             lastDp.minus(firstDp),

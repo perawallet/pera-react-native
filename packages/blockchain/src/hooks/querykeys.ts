@@ -29,6 +29,11 @@ export const getTransactionDetailQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'transaction-detail', { transactionId, network }]
 
+export const getAccountSigTypeQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'account-sig-type', { address, network }]
+
 export const getGroupTransactionsQueryKey = (
     groupId: string,
     network: Network,

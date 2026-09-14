@@ -86,8 +86,8 @@ export default defineConfig({
             {
                 // `@perawallet/walletconnect` (WC v1 fork) opens a relay
                 // socket on construction — no good in jsdom. Route every
-                // consumer (including the deep
-                // `@perawallet/wallet-core-walletconnect` hooks) through a
+                // consumer (including `@perawallet/wallet-core-walletconnect`'s
+                // v1 handler) through a
                 // stub class that captures `on()` handlers and
                 // `approveSession()` calls so integration tests can drive the
                 // pairing flow end-to-end. The stub also exports
@@ -96,6 +96,26 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     './src/test-utils/walletconnect-client-stub.ts',
+                ),
+            },
+            {
+                // v2's transport, same reasoning: `useConnectionsProvider`
+                // registers the WalletConnect v2 handler, so every suite that
+                // mounts `ConnectionsProvider` would otherwise build a real
+                // WalletKit and dial the Reown relay. One stub module serves
+                // both specifiers — the handler's only imports are
+                // `WalletKit`, `Core` and `EXPIRER_EVENTS`.
+                find: '@reown/walletkit',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/walletkit-stub.ts',
+                ),
+            },
+            {
+                find: '@walletconnect/core',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/walletkit-stub.ts',
                 ),
             },
             {
@@ -160,6 +180,13 @@ export default defineConfig({
             {
                 find: '@utils',
                 replacement: path.resolve(__dirname, './src/utils'),
+            },
+            {
+                // Test-only: a spec that has to reach a package module by
+                // path (because the barrel is hand-mocked) should not have to
+                // count how deep it sits to do it.
+                find: '@packages',
+                replacement: path.resolve(__dirname, '../../packages'),
             },
             { find: '@', replacement: path.resolve(__dirname, './src') },
             {
@@ -258,6 +285,17 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../extensions/platform/src/index.ts',
+                ),
+            },
+            {
+                // `vitest.setup.ts` builds the provider's connection store from
+                // this package, so EVERY mobile unit test loads it. Left on
+                // `dist` that is a global stale-build hazard, the same one the
+                // core connections alias above avoids.
+                find: '@perawallet/wallet-extension-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/connections/src/index.ts',
                 ),
             },
             {
@@ -375,10 +413,31 @@ export default defineConfig({
                 ),
             },
             {
+                // Ahead of the package root, which would otherwise match
+                // this specifier as a prefix and resolve it to
+                // `…/src/index.ts/v2`. The v2 handler has no barrel export —
+                // that is what keeps @reown/walletkit out of `apps/browser`.
+                find: '@perawallet/wallet-core-walletconnect/v2',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/walletconnect/src/v2/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-walletconnect',
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/walletconnect/src/index.ts',
+                ),
+            },
+            {
+                // Actively developed alongside the rest of this plan —
+                // aliased to source rather than `dist` to avoid the stale-
+                // build hazard this project has already hit repeatedly.
+                find: '@perawallet/wallet-core-connections',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/connections/src/index.ts',
                 ),
             },
             {
@@ -684,6 +743,22 @@ export default defineConfig({
             },
             {
                 extends: true,
+                resolve: {
+                    alias: [
+                        {
+                            // Node < 24 has no `crypto.argon2`, and the app gets
+                            // it from react-native-quick-crypto. Flow tests that
+                            // reach the cloud-backup KDF would throw without a
+                            // stand-in; unit tests don't, so scope this to the
+                            // integration project.
+                            find: /^crypto$/,
+                            replacement: path.resolve(
+                                __dirname,
+                                './src/test-utils/node-crypto-with-argon2.ts',
+                            ),
+                        },
+                    ],
+                },
                 test: {
                     name: 'integration',
                     setupFiles: [

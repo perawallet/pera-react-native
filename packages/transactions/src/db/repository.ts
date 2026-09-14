@@ -21,6 +21,8 @@ import {
     gte,
     sql,
     notExists,
+    type SQL,
+    type SQLWrapper,
 } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -301,6 +303,29 @@ type GetTransactionHistoryParams = {
     beforeTime?: string
 }
 
+/**
+ * A JSON column read that yields NULL instead of raising on a malformed value,
+ * so one bad cached row cannot fail the whole history query.
+ */
+const jsonPathAsText = (column: SQLWrapper, path: string): SQL =>
+    sql`CASE WHEN json_valid(${column}) THEN CAST(json_extract(${column}, ${path}) AS TEXT) END`
+
+/**
+ * The backend sets a row's top-level `asset` only for pay/axfer, so swap and
+ * app-call rows carry their assets in the balance impacts and swap detail.
+ * Matching the indexed column alone hides every swap from an asset's history.
+ */
+const involvesAsset = (assetId: string): SQL =>
+    sql`(${eq(AccountTransactionsSchema.assetId, new Decimal(assetId))}
+        OR CASE WHEN json_valid(${TransactionsSchema.balanceImpactsJson})
+            THEN EXISTS (
+                SELECT 1 FROM json_each(${TransactionsSchema.balanceImpactsJson})
+                WHERE CAST(json_extract(json_each.value, '$.assetId') AS TEXT) = ${assetId}
+            )
+            ELSE 0 END
+        OR ${jsonPathAsText(TransactionsSchema.swapGroupDetailJson, '$.assetInId')} = ${assetId}
+        OR ${jsonPathAsText(TransactionsSchema.swapGroupDetailJson, '$.assetOutId')} = ${assetId})`
+
 export async function getTransactionHistory({
     db = getDatabase(),
     accountAddress,
@@ -317,9 +342,7 @@ export async function getTransactionHistory({
     ]
 
     if (assetId !== undefined) {
-        conditions.push(
-            eq(AccountTransactionsSchema.assetId, new Decimal(assetId)),
-        )
+        conditions.push(involvesAsset(assetId))
     }
 
     if (atOrBeforeRoundTime !== undefined) {

@@ -104,23 +104,20 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('falls back to the auth account for arc60 when the signer holds no key', () => {
-        // Unlike ARC-1, the SIWA payload names the authenticated account
-        // (`account_address`) separately from the signing key, so the auth
-        // account is the correct producer for a keyless rekeyed signer.
+    it('returns the keyless signer itself for arc60 even when its auth account holds a key', () => {
+        // An ARC-60 signature verifies against `signer`'s own pubkey, so a
+        // signature from the auth key would fail every verifier. The signer
+        // is returned as-is and the leaf signer refuses it (no key).
         const result = resolveSigningAccount(
             keylessRekeyedSigner,
             localSource,
             'arc60',
             [keylessRekeyedSigner, authAccount],
         )
-        expect(result.address).toBe(AUTH)
+        expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('does not hop for arc60 when the rekeyed signer holds its own key', () => {
-        // A dApp that resolved the auth address itself names THAT account as
-        // the signer; hopping again off its own chained rekey would sign with
-        // a key the authenticated account's auth-addr never designated.
+    it('returns the rekeyed signer itself for arc60 when it holds its own key', () => {
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
@@ -130,12 +127,14 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('throws RekeyTargetNotFoundError on arc60 when a keyless signer has no rekey target', () => {
-        expect(() =>
-            resolveSigningAccount(keylessRekeyedSigner, localSource, 'arc60', [
-                keylessRekeyedSigner,
-            ]),
-        ).toThrow(RekeyTargetNotFoundError)
+    it('never consults the rekey target for arc60, so a missing target does not throw', () => {
+        const result = resolveSigningAccount(
+            keylessRekeyedSigner,
+            localSource,
+            'arc60',
+            [keylessRekeyedSigner],
+        )
+        expect(result.address).toBe(PARTICIPANT)
     })
 
     it('returns the signer itself for arc60 when not rekeyed', () => {

@@ -14,6 +14,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { DiscoverDetailScreen } from '@modules/discover/screens/DiscoverDetailScreen'
 import { withAgeGate } from '@components/AgeGated'
 import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -179,6 +180,14 @@ export const MainRoutes = () => {
                             options={headeredScreen('staking.title')}
                             layout={fullScreenLayout}
                             component={GatedStakingScreen}
+                        />
+                        <RootStack.Screen
+                            name='DiscoverDetail'
+                            options={headeredScreen(
+                                'asset_details.markets.title',
+                            )}
+                            layout={fullScreenLayout}
+                            component={DiscoverDetailScreen}
                         />
                         <RootStack.Screen
                             name='BannersCarouselModal'

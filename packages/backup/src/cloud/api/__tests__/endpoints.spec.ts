@@ -11,6 +11,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import type { BatchUpsertRequest, UpsertItemRequest } from '../types'
 import { BackupResponseParseError } from '../responseParsers'
 
@@ -27,6 +28,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 import {
+    FromSeqTooOldError,
     batchUpsertItems,
     deleteItem,
     destroyBackup,
@@ -86,6 +88,26 @@ describe('fetchDelta', () => {
         )
 
         expect(result).toEqual([])
+    })
+
+    it('turns a 410 into a typed FromSeqTooOldError carrying the cursor', async () => {
+        signedBackupRequestMock.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 410 }),
+        )
+
+        await expect(
+            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 42),
+        ).rejects.toMatchObject({ name: 'FromSeqTooOldError', fromSeq: 42 })
+    })
+
+    it('leaves any other failure alone', async () => {
+        signedBackupRequestMock.mockRejectedValueOnce(
+            new PeraNetworkError('server', { status: 500 }),
+        )
+
+        await expect(
+            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 42),
+        ).rejects.not.toBeInstanceOf(FromSeqTooOldError)
     })
 })
 

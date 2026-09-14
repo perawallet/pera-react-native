@@ -16,6 +16,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    secretsItemKey,
     BackupAccountType,
     BackupItemType,
     type SecretsBackupPayload,
@@ -83,7 +84,7 @@ const serializeHdAccount = async (
     if (!base) return null
 
     const seedSecret: SerializedItem = {
-        key: `secrets/${resolved.seedFirstDerivedAddress}`,
+        key: secretsItemKey(resolved.seedFirstDerivedAddress),
         type: BackupItemType.ACCOUNT,
         payload: {
             type: BackupAccountType.hdSeed,

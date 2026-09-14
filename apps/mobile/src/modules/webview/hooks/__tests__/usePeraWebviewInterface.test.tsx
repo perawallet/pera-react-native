@@ -21,13 +21,15 @@ import {
 } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
-import { resetPairingStateForTesting } from '@modules/walletconnect/hooks/useWalletConnectPairing'
-import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
+import {
+    CONNECTION_LATE_PAIRING_GRACE_MS,
+    resetConnectionPairingStateForTesting,
+} from '@perawallet/wallet-core-connections'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent } from '@analytics'
 
@@ -62,7 +64,14 @@ vi.mock('react-native-notifier', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    // The pairing sequence's timeout and promise guards, real: both modules
+    // are side-effect free and a stand-in would prove nothing about timing.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/shared/src/utils/async')
+    >('../../../../../../../packages/shared/src/utils/async')),
+    toError: (error: unknown) =>
+        error instanceof Error ? error : new Error(String(error)),
     logger: {
         debug: vi.fn(),
         warn: vi.fn(),
@@ -99,7 +108,12 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(() => 'device-id'),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+    // The connections package composes its request schema from the real
+    // ARC-0001 schema at load, so the stand-in must carry it.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/blockchain/src/arc0001/schema')
+    >('../../../../../../../packages/blockchain/src/arc0001/schema')),
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
     })),
@@ -138,29 +152,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isRekeyedAccount: vi.fn(() => false),
     canSignWith: vi.fn(() => true),
     canSignArbitraryData: vi.fn(() => true),
-    // Mirrors the real predicate, including the same `canSignDirectly` key
-    // check: a signer that can sign for itself needs no hop, and a keyless
-    // rekeyed signer falls back to an auth account that must be present,
-    // non-multisig, non-quantum, and itself directly signable.
+    // Mirrors the real predicate's `canSignDirectly` key check. ARC-60 is
+    // signed by the named signer's own key, so the check is account-local and
+    // a rekey is never followed.
     canSignArc60: vi.fn(
-        (
-            account: MockAccount,
-            allAccounts: readonly MockAccount[] = [],
-        ): boolean => {
-            const canSignDirectly = (a: MockAccount | undefined) =>
-                !!a && (!!a.keyPairId || a.type === 'hardware')
-            if (canSignDirectly(account)) return true
-            if (!account?.rekeyAddress) return false
-            const auth = allAccounts.find(
-                a => a.address === account.rekeyAddress,
-            )
-            return (
-                !!auth &&
-                auth.type !== 'multisig' &&
-                auth.type !== 'quantum' &&
-                canSignDirectly(auth)
-            )
-        },
+        (account: MockAccount): boolean =>
+            !!account && (!!account.keyPairId || account.type === 'hardware'),
     ),
     useSigningAccounts: vi.fn(() => [
         {
@@ -252,7 +249,11 @@ const fakeEnqueue = (resolved: any, transport: any) => {
     mockAddSignRequest(signRequest)
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
-vi.mock('@perawallet/wallet-core-signing', () => ({
+vi.mock('@perawallet/wallet-core-signing', async () => ({
+    // The connections package reads the request cap at load.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../packages/signing/src/constants')
+    >('../../../../../../../packages/signing/src/constants')),
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     useArc0001Resolver: () => fakeArc0001Resolve,
     useEnqueueArc0001SignRequest: () => fakeEnqueue,
@@ -291,22 +292,84 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     })),
 }))
 
+// The real `useConnectionPairing` runs here — only the registry underneath
+// it is faked, so the topic de-dupe, the origin recording and the
+// pairing-scoped outcome wait are all exercised rather than stubbed.
 const mockConnect = vi.fn(() => Promise.resolve('pairing-client'))
-const mockWaitForSessionOutcome = vi.fn(async () => ({ type: 'session' }))
+const mockAbandonPairing = vi.fn()
+
+// The v1 handler's own `describeUri`, mirrored from
+// packages/walletconnect/src/shared/uri.ts. Can't `importOriginal` the real
+// barrel here: it pulls in the store/hook modules this file's other package
+// mocks exist to stub out.
+const describeWalletConnectUri = (
+    uri: string,
+): { topic: string | null; bridgeOrigin: string | null } => {
+    const topic = /^wc:([^@?#]+)@/.exec(uri)?.[1] ?? null
+    const bridgeValue = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
+    let bridgeOrigin: string | null = null
+    if (bridgeValue) {
+        try {
+            const origin = new URL(decodeURIComponent(bridgeValue)).origin
+            bridgeOrigin = origin === 'null' ? null : origin
+        } catch {
+            // A malformed bridge value only costs this diagnostic field.
+        }
+    }
+    return { topic, bridgeOrigin }
+}
+const proposalListeners = new Set<(proposal: { pairingId?: string }) => void>()
+type ErrorScope = { pairingId?: string }
+const errorListeners = new Set<(error: Error, scope?: ErrorScope) => void>()
+
+/** Answers the pairing the way a handler would, once `pair` has resolved. */
+const answerPairing = (
+    outcome: { type: 'proposal' } | { type: 'error'; error: Error },
+    pairingId = 'pairing-client',
+): void => {
+    if (outcome.type === 'proposal') {
+        for (const listener of proposalListeners) listener({ pairingId })
+        return
+    }
+    for (const listener of errorListeners) {
+        listener(outcome.error, { pairingId })
+    }
+}
+
+vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-connections')
+    >()),
+    useOptionalConnectionRegistry: () => ({
+        pair: mockConnect,
+        abandonPairing: mockAbandonPairing,
+        describeUri: describeWalletConnectUri,
+        subscribeToProposals: (
+            listener: (proposal: { pairingId?: string }) => void,
+        ) => {
+            proposalListeners.add(listener)
+            return () => proposalListeners.delete(listener)
+        },
+        subscribeToErrors: (
+            listener: (error: Error, scope?: ErrorScope) => void,
+        ) => {
+            errorListeners.add(listener)
+            return () => errorListeners.delete(listener)
+        },
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-walletconnect', () => {
     class MockBridgeConnectionError extends Error {}
     return {
-        useWalletConnect: () => ({ connect: mockConnect }),
-        waitForSessionOutcome: (...args: unknown[]) =>
-            mockWaitForSessionOutcome(...(args as [])),
-        // The socket-open fail-safe never beats a real outcome, so the
-        // pairing always resolves on waitForSessionOutcome here.
-        waitForPairingSocketOpen: () => Promise.resolve(true),
-        abandonPairing: vi.fn(),
         WalletConnectBridgeConnectionError: MockBridgeConnectionError,
-        // Real values from packages/walletconnect/src/constants.ts.
-        WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+        // Real value from packages/walletconnect/src/shared/constants.ts.
         WC_DELIVERY_TIMEOUT_MS: 8000,
+        parseWalletConnectUri: vi.fn((uri: string) =>
+            uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
+                ? { uri: uri.replace('perawallet-wc:', 'wc:') }
+                : null,
+        ),
     }
 })
 
@@ -346,25 +409,6 @@ vi.mock('@hooks/useDeepLink', () => ({
 vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
-
-vi.mock('@hooks/deeplink/walletconnect-parser', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@hooks/deeplink/walletconnect-parser')
-        >()
-    return {
-        walletConnectLogContext: actual.walletConnectLogContext,
-        parseWalletConnectUri: vi.fn((uri: string) =>
-            uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
-                ? {
-                      type: 'WALLET_CONNECT',
-                      sourceUrl: uri,
-                      uri: uri.replace('perawallet-wc:', 'wc:'),
-                  }
-                : null,
-        ),
-    }
-})
 
 const { mockUseLanguage } = vi.hoisted(() => ({
     mockUseLanguage: vi.fn(),
@@ -1471,11 +1515,10 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
-    it('queues an ARC-60 request whose signer is a keyless rekeyed account', async () => {
-        // In-app-browser counterpart of the WC gate: the dApp names the
-        // connected account, which is rekeyed and holds no key of its own —
-        // the auth account signs, so the request must reach the review sheet
-        // instead of being refused up front.
+    it('rejects an ARC-60 request whose signer is a keyless rekeyed account, even when its auth account holds keys', async () => {
+        // In-app-browser counterpart of the WC gate. An ARC-60 signature
+        // verifies against `signer`'s own pubkey, so the auth key cannot sign
+        // in its place; the request is refused before the review sheet.
         const accounts = await import('@perawallet/wallet-core-accounts')
         vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
             {
@@ -1511,50 +1554,9 @@ describe('usePeraWebviewInterface', () => {
             })
         })
 
-        expect(mockAddSignRequest).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'arc60',
-                stdSigData: expect.objectContaining({
-                    signer: 'rekeyed-addr',
-                }),
-            }),
-        )
-    })
-
-    it('rejects an ARC-60 request whose rekeyed signer has no signable auth account', async () => {
-        const accounts = await import('@perawallet/wallet-core-accounts')
-        vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
-            {
-                address: 'rekeyed-addr',
-                name: 'Rekeyed',
-                type: 'watch',
-                rekeyAddress: 'auth-addr',
-            },
-            { address: 'auth-addr', name: 'Auth', type: 'watch' },
-        ] as never)
-
-        const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true, null),
-        )
-
-        await act(async () => {
-            result.current.handleMessage({
-                id: '14-arc60-stranded',
-                jsonrpc: '2.0',
-                method: 'requestDataSigning',
-                params: {
-                    data: 'AQID',
-                    signer: 'rekeyed-addr',
-                    domain: 'example.com',
-                    authenticatorData: 'YXV0aA==',
-                    metadata: { scope: 1, encoding: 'base64' },
-                },
-            })
-        })
-
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"id":"14-arc60-stranded"'),
+            expect.stringContaining('"id":"14-arc60-rekeyed"'),
         )
     })
 
@@ -1809,10 +1811,12 @@ describe('usePeraWebviewInterface', () => {
     describe('openWalletConnect handling', () => {
         beforeEach(() => {
             mockConnect.mockClear()
-            // The handshake-topic join in useWalletConnectPairing is
+            proposalListeners.clear()
+            errorListeners.clear()
+            // The handshake-topic join in useConnectionPairing is
             // module-level; clear it so one test's pending pairing can't
-            // swallow another test's connect.
-            resetPairingStateForTesting()
+            // swallow another test's pair.
+            resetConnectionPairingStateForTesting()
         })
 
         it('rejects non-WalletConnect URIs with InvalidParams', () => {
@@ -1862,11 +1866,12 @@ describe('usePeraWebviewInterface', () => {
 
             // No autoConnect, even on a trusted origin: the connection always
             // goes through the user-facing approval sheet.
-            expect(mockConnect).toHaveBeenCalledWith({
-                connection: {
-                    uri: 'wc:topic@2?relay-protocol=irn',
-                },
-            })
+            expect(mockConnect).toHaveBeenCalledWith(
+                'wc:topic@2?relay-protocol=irn',
+                expect.objectContaining({
+                    origin: expect.objectContaining({ source: 'in-app' }),
+                }),
+            )
         })
 
         it('opens the approval flow for an untrusted origin with a valid wc URI', () => {
@@ -1887,17 +1892,16 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
-            expect(mockConnect).toHaveBeenCalledWith({
-                connection: {
-                    uri: 'wc:topic@2?relay-protocol=irn',
-                },
-            })
+            expect(mockConnect).toHaveBeenCalledWith(
+                'wc:topic@2?relay-protocol=irn',
+                expect.objectContaining({
+                    origin: expect.objectContaining({ source: 'in-app' }),
+                }),
+            )
         })
 
         it('answers the page with a readable error when the pairing outcome times out', async () => {
-            mockWaitForSessionOutcome.mockResolvedValueOnce({
-                type: 'timeout',
-            } as never)
+            vi.useFakeTimers()
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(mockWebview, true, null),
             )
@@ -1909,9 +1913,10 @@ describe('usePeraWebviewInterface', () => {
                     method: 'walletConnect',
                     params: { uri: 'wc:topic@2?relay-protocol=irn' },
                 })
-                await Promise.resolve()
-                await Promise.resolve()
+                // Nothing ever answers: run out the outcome budget.
+                await vi.advanceTimersByTimeAsync(9000)
             })
+            vi.useRealTimers()
 
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
                 expect.stringContaining('"id":"wc-timeout"'),
@@ -1921,11 +1926,61 @@ describe('usePeraWebviewInterface', () => {
             )
         })
 
+        // The deeplink path keeps watching a timed-out pairing; without the
+        // same treatment here an in-app pairing stayed bound forever, and a
+        // reviving bridge popped an approval sheet over an unrelated page.
+        it('abandons a timed-out pairing once its late grace passes', async () => {
+            vi.useFakeTimers()
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-late',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+                await vi.advanceTimersByTimeAsync(9000)
+            })
+            expect(mockAbandonPairing).not.toHaveBeenCalled()
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(
+                    CONNECTION_LATE_PAIRING_GRACE_MS,
+                )
+            })
+            vi.useRealTimers()
+
+            expect(mockAbandonPairing).toHaveBeenCalledWith('pairing-client')
+        })
+
+        it('keeps a timed-out pairing alive when the peer answers inside the grace', async () => {
+            vi.useFakeTimers()
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-late-answer',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+                await vi.advanceTimersByTimeAsync(9000)
+                answerPairing({ type: 'proposal' })
+                await vi.advanceTimersByTimeAsync(
+                    CONNECTION_LATE_PAIRING_GRACE_MS,
+                )
+            })
+            vi.useRealTimers()
+
+            expect(mockAbandonPairing).not.toHaveBeenCalled()
+        })
+
         it('relays a pairing rejection (e.g. wrong network) back to the page', async () => {
-            mockWaitForSessionOutcome.mockResolvedValueOnce({
-                type: 'error',
-                error: new Error('wrong network'),
-            } as never)
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(mockWebview, true, null),
             )
@@ -1936,6 +1991,12 @@ describe('usePeraWebviewInterface', () => {
                     jsonrpc: '2.0',
                     method: 'walletConnect',
                     params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+                await Promise.resolve()
+                await Promise.resolve()
+                answerPairing({
+                    type: 'error',
+                    error: new Error('wrong network'),
                 })
                 await Promise.resolve()
                 await Promise.resolve()
@@ -2065,14 +2126,15 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
-            // mockConnect resolves 'pairing-client'; the real pairing hook
-            // writes the origin under that id.
+            // The origin travels with `pair`; the handler writes it onto the
+            // approved connection.
             await waitFor(() => {
-                expect(
-                    useReturnToDappStore.getState().returnContexts[
-                        'pairing-client'
-                    ],
-                ).toMatchObject({ origin: 'in-app' })
+                expect(mockConnect).toHaveBeenCalledWith(
+                    'wc:origin-topic@2?relay-protocol=irn',
+                    expect.objectContaining({
+                        origin: expect.objectContaining({ source: 'in-app' }),
+                    }),
+                )
             })
         })
 

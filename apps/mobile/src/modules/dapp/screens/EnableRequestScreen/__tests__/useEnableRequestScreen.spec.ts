@@ -123,14 +123,17 @@ describe('useEnableRequestScreen', () => {
         expect(mocks.reject).toHaveBeenCalledTimes(1)
     })
 
-    it('exposes the verified requester origin for a page-initiated wc-connect', () => {
+    it('exposes the verified requester origin for a page-initiated proposal', () => {
         mocks.useDappRequest.mockReturnValue({
             approval: {
-                kind: 'wc-connect',
+                kind: 'connection-proposal',
                 requestId: 'req-1',
                 origin: 'https://peer.example',
-                clientId: 'client-1',
-                chainId: 416_001,
+                proposalId: 'proposal-1',
+                connectionKind: 'walletconnect-v1',
+                peer: { name: 'Peer', url: 'https://peer.example' },
+                requested: { networks: ['mainnet'], methods: [] },
+                expiresAt: 0,
                 requesterOrigin: 'https://dapp.example',
             },
             isLoading: false,
@@ -162,14 +165,17 @@ describe('useEnableRequestScreen', () => {
         expect(result.current.requesterOrigin).toBeUndefined()
     })
 
-    it('qualifies originLabel as a site claim for a wc-connect approval, since peerMeta.url is attacker-forgeable', () => {
+    it('qualifies originLabel as a site claim for a proposal, since the peer url is attacker-forgeable', () => {
         mocks.useDappRequest.mockReturnValue({
             approval: {
-                kind: 'wc-connect',
+                kind: 'connection-proposal',
                 requestId: 'req-1',
                 origin: 'https://peer.example',
-                clientId: 'client-1',
-                chainId: 416_001,
+                proposalId: 'proposal-1',
+                connectionKind: 'walletconnect-v1',
+                peer: { name: 'Peer', url: 'https://peer.example' },
+                requested: { networks: ['mainnet'], methods: [] },
+                expiresAt: 0,
                 requesterOrigin: 'https://dapp.example',
             },
             isLoading: false,

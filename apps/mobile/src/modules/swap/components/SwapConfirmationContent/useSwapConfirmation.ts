@@ -103,12 +103,15 @@ export const useSwapConfirmation = ({
     const payFiatDisplay = useMemo(() => {
         if (!quote?.amountInUsdValue) return undefined
         const value = usdToPreferred(new Decimal(quote.amountInUsdValue))
+        // No rate yet — omit the fiat line rather than quoting the swap at 0.
+        if (!value) return undefined
         return formatCurrency(value, 2, preferredCurrency)
     }, [quote?.amountInUsdValue, usdToPreferred, preferredCurrency])
 
     const receiveFiatDisplay = useMemo(() => {
         if (!quote?.amountOutUsdValue) return undefined
         const value = usdToPreferred(new Decimal(quote.amountOutUsdValue))
+        if (!value) return undefined
         return formatCurrency(value, 2, preferredCurrency)
     }, [quote?.amountOutUsdValue, usdToPreferred, preferredCurrency])
 

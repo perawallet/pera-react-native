@@ -20,6 +20,7 @@ import {
     BACKUP_ACCESS_DOMAIN,
 } from './constants'
 import { KeyManagementError } from './errors'
+import { zeroBytes } from './crypto/secure-memory'
 
 /**
  * Nested under `metadata.pera` because the keystore reserves top-level metadata
@@ -197,5 +198,8 @@ export const hexToBytes = (hex: string): Uint8Array => {
  */
 export const algo25SeedToAddress = (seed: Uint8Array): string => {
     const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
+    // fromSeed copies the seed into secretKey[0..32); wipe it here or the
+    // caller's own zeroBytes(seed) leaves this second copy on the heap.
+    zeroBytes(naclKeyPair.secretKey)
     return encodeAddress(naclKeyPair.publicKey)
 }

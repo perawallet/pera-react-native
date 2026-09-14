@@ -10,62 +10,55 @@
  limitations under the License
  */
 
-import WalletConnect from '@perawallet/walletconnect'
+import type WalletConnect from '@perawallet/walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
-import { PERA_CLIENT_META, WC_DELIVERY_TIMEOUT_MS } from '../constants'
+import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
-} from '../errors'
+} from '../shared/errors'
 import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
-import { useWalletConnectStore } from '../store'
+import { createWalletConnectConnector } from './createConnector'
 
 /**
- * Registry of live WalletConnect v1 connectors, one bridge WebSocket each.
- *
- * The OS suspends that socket while backgrounded, and v1's transport then
- * silently queues outgoing messages into the dead socket — no error, no
- * rejection — so a signed transaction handed back after backgrounding never
- * reaches the dApp while the UI reports success.
- *
- * State lives in {@link useConnectorRegistryStore}; this file owns the
- * side-effectful lifecycle on top — readiness checks, recreation on dead
- * sockets, and the reconnect sweep.
- *
- * The SDK has no ping/heartbeat, so a half-open socket is undetectable until a
- * delivery fails and those sweeps are the only recovery. Revisit at v2.
+ * Live v1 connectors, one bridge WebSocket each. The OS suspends that socket
+ * while backgrounded and v1 silently queues outgoing messages into it, so a
+ * post-background delivery "succeeds" without reaching the dApp. The SDK has
+ * no heartbeat, so a half-open socket is undetectable until a delivery fails.
  */
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
 type HandlerBinder = (connector: WalletConnect) => void
 
+/** The connector events the v1 handler binds; teardown unbinds exactly these. */
+export const BOUND_EVENTS = [
+    'session_request',
+    'algo_signTxn',
+    'algo_signData',
+    'disconnect',
+    'error',
+    'transport_error',
+] as const
+
 /** Poll cadence while waiting for a recreated socket to report open. */
 const POLL_INTERVAL_MS = 50
 
-// Transient runtime artifacts: not state (no React consumers, never
-// observed), so kept at module scope to avoid polluting the store.
+// Not store state: nothing renders off these.
 
 /** De-dupes concurrent readiness requests for the same session. */
 const readinessInFlight = new Map<string, Promise<WalletConnect>>()
 
 /**
- * A recreated connector starts with no request handlers, so this re-attaches
- * them and it can still receive `algo_signTxn` after recovery.
- *
- * A connector's listeners live outside React and reach the handlers through
- * this slot, so its owner must outlive every connector: a binder belonging to
- * an unmounted React instance keeps working, but frozen on the render state it
- * last saw (accounts, network), which is how a mid-session rekey stopped
- * reaching a live session.
+ * A recreated connector starts with no request handlers. The binder's owner must
+ * outlive every connector: a binder from an unmounted React instance keeps
+ * working but frozen on the render state it last saw (accounts, network).
  */
 let handlerBinder: HandlerBinder | null = null
 
 /**
- * v1 exposes no public socket-state API, and the `transport_open`/`_close`
- * events it subscribes to are never emitted — the bundled transport only fires
- * `message` and `error`. The one real signal is the private `_transport`, whose
- * `connected` getter is `readyState === 1`. Safe to reach for: the package is
- * pinned to an exact version.
+ * v1 exposes no socket-state API and never emits `transport_open`/`_close`; the
+ * private `_transport.connected` (`readyState === 1`) is the one real signal.
+ * Safe to reach for because the package is pinned to an exact version.
  */
 const isSocketOpen = (connector: WalletConnect): boolean =>
     Boolean(
@@ -75,18 +68,14 @@ const isSocketOpen = (connector: WalletConnect): boolean =>
 
 /**
  * Register how dApp request handlers get (re)bound onto a connector. Reserved
- * for a single long-lived owner per realm: `useWalletConnect`'s
- * `ownsRequestHandlers` opt-in on native, the offscreen host on web.
+ * for a single long-lived owner per realm: the v1 handler's `initialize` on
+ * native, the offscreen host on web.
  */
 export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
     handlerBinder = binder
 }
 
-/**
- * Symmetric counterpart to {@link setConnectorHandlerBinder}. No-ops unless
- * `binder` is still the registered one — a departing owner must never clear a
- * successor that registered after it.
- */
+/** No-op unless `binder` is still the registered one: a departing owner must never clear its successor. */
 export const clearConnectorHandlerBinder = (binder: HandlerBinder): void => {
     if (handlerBinder === binder) {
         handlerBinder = null
@@ -94,11 +83,8 @@ export const clearConnectorHandlerBinder = (binder: HandlerBinder): void => {
 }
 
 /**
- * Binds dApp request handlers onto `connector` through the registered owner.
- *
- * `fallback` is a last resort used only when no owner has registered yet, to
- * keep the connector functional in the meantime. It accepts the freeze risk
- * this change exists to eliminate, since nothing re-binds the connector later.
+ * `fallback` is used only before an owner has registered; it accepts the freeze
+ * risk described on `handlerBinder`, since nothing re-binds the connector later.
  */
 export const bindConnectorHandlers = (
     connector: WalletConnect,
@@ -135,21 +121,16 @@ export const registerConnector = (
 }
 
 /**
- * Stops a superseded connector's dead socket running its own background
- * reconnect loop instead of leaking.
+ * Unbinds and closes a connector so a dead or superseded socket cannot run its
+ * own reconnect loop or fire a late `session_request`. Best-effort: the
+ * connector is being discarded, so a failure here has nothing left to break.
  */
-const teardownConnector = (connector: WalletConnect): void => {
+export const teardownConnector = (connector: WalletConnect): void => {
     try {
-        connector.off('algo_signData')
-        connector.off('algo_signTxn')
-        connector.off('disconnect')
-        connector.off('session_request')
-        connector.off('error')
-        connector.off('transport_error')
+        for (const event of BOUND_EVENTS) connector.off(event)
         connector.transportClose()
     } catch {
-        // Teardown of a superseded connector is best-effort; a failure
-        // here is non-fatal and intentionally swallowed.
+        // Discarding the connector anyway.
     }
 }
 
@@ -163,24 +144,15 @@ export const forgetConnector = (clientId: string): void => {
 }
 
 /**
- * Deterministically kills a pairing that never produced a session. A timed-out
- * pairing's connector keeps its `session_request` handler bound for the full
- * request TTL, so a slow dApp response can pop a "ghost" approval sheet
- * minutes after the user was told pairing failed — unbinding the handlers and
- * closing the transport is the only way to prevent that (`forgetConnector`
- * alone leaves them bound). Refuses to touch a connector that connected or
- * has a persisted session: abandonment is strictly for failed pairings.
+ * A timed-out pairing keeps `session_request` bound for the full request TTL, so
+ * a slow dApp can pop a ghost approval sheet minutes later. `connected` flips
+ * inside `approveSession` and alone says whether a session exists; reading the
+ * legacy store here would re-persist the plaintext keys the importer just deleted.
  */
 export const abandonPairing = (clientId: string): void => {
     const connector = useConnectorRegistryStore.getState().connectors[clientId]
     if (!connector) return
     if (connector.connected) return
-    const hasStoredConnection = useWalletConnectStore
-        .getState()
-        .walletConnectConnections.some(
-            connection => connection.clientId === clientId,
-        )
-    if (hasStoredConnection) return
     teardownConnector(connector)
     forgetConnector(clientId)
 }
@@ -207,12 +179,9 @@ const waitForSocketOpen = (
     })
 
 /**
- * Pure observation for pairing fail-fast: resolves `true` the moment
- * `clientId`'s socket reports open, `false` once `timeoutMs` elapses without
- * it EVER opening. Never rejects and never touches the connector — the
- * caller decides whether a dead pairing socket means abandoning the pairing.
- * A pairing connector can't go through `ensureConnectorReady` (no `peerId`
- * yet, so recreation is impossible); watching is all that's available.
+ * Never rejects and never touches the connector; the caller decides whether a
+ * dead pairing socket means abandoning. A pairing connector has no `peerId`
+ * yet, so recreation is impossible and watching is all there is.
  */
 export const waitForPairingSocketOpen = (
     clientId: string,
@@ -254,7 +223,7 @@ const recreateConnector = async (
 
     teardownConnector(staleConnector)
 
-    const fresh = new WalletConnect({ session, clientMeta: PERA_CLIENT_META })
+    const fresh = createWalletConnectConnector({ session })
     registerConnector(clientId, fresh)
 
     bindConnectorHandlers(fresh)
@@ -273,9 +242,8 @@ const recreateConnector = async (
 }
 
 /**
- * A connector whose socket is verified open: resolved as-is in the common
- * connect-then-sign case, otherwise recreated from the stored session and
- * awaited (or timed out). Concurrent calls share one recreation.
+ * Resolved as-is when the socket is open, otherwise recreated from the stored
+ * session. Concurrent calls share one recreation.
  */
 export const ensureConnectorReady = (
     clientId: string,
@@ -325,7 +293,7 @@ export const reconnectAllConnectors = (
             continue
         }
         void ensureConnectorReady(clientId, timeoutMs).catch(() => {
-            // Swallowed — see the fire-and-forget note above.
+            // Fire-and-forget; see above.
         })
     }
 }

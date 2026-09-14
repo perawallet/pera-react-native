@@ -38,6 +38,7 @@ const lastChildProps = () =>
         | {
               precision?: string
               currency?: string
+              assetId?: string | null
               value?: Decimal
               isLoading?: boolean
           }
@@ -82,6 +83,31 @@ describe('PreferredAmount preferred-currency precision policy', () => {
         expect(props?.value?.toString()).toBe('12.34')
         expect(props?.currency).toBe('USD')
         expect(props?.precision).toBe('preferredFull')
+    })
+
+    it('translates a fiat display currency to a null asset id (fiat symbols allowed, no glyph)', () => {
+        render(
+            <PreferredAmount
+                sourceAmount={new Decimal(1)}
+                sourceAssetId='0'
+            />,
+        )
+        expect(lastChildProps()?.assetId).toBeNull()
+    })
+
+    it("translates the trusted ALGO ticker to Algo's asset id so the glyph still renders", () => {
+        mockUsePreferredAmount.mockReturnValue({
+            displayCurrency: 'ALGO',
+            convertedValue: new Decimal('1.23456'),
+            isPending: false,
+        })
+        render(
+            <PreferredAmount
+                sourceAmount={new Decimal(1)}
+                sourceAssetId='31566704'
+            />,
+        )
+        expect(lastChildProps()?.assetId).toBe('0')
     })
 
     it("precomputed value honors density='compact'", () => {

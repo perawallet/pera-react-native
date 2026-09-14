@@ -12,8 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { Dialog } from '@rneui/themed'
-import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
-import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
 import {
     PWButton,
@@ -29,19 +28,20 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
+import { ConnectionSettingsItem } from '@modules/settings/components/ConnectionSettingsItem'
+import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import { useStyles } from './styles'
 
-const renderItem = ({ item }: { item: WalletConnectConnection }) => {
-    return <WalletConnectSessionItem session={item} />
-}
+const renderItem = ({ item }: { item: ConnectionSettingsRow }) => (
+    <ConnectionSettingsItem connection={item} />
+)
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
-    // main's error surfacing, kept; this branch's connector-free hook, kept —
-    // no UI surface may own a WC connector on the extension.
+    // No UI surface may own a WC connector on the extension.
     const { showError } = useErrorToast()
-    const { connections, deleteAllSessions } = useWalletConnectSessionsControl()
+    const { connections, isHydrated, revokeAll, keyExtractor } =
+        useConnectionSettingsList()
     const scannerState = useModalState()
     const deleteState = useModalState()
     const styles = useStyles()
@@ -62,22 +62,17 @@ export const SettingsWalletConnectScreen = () => {
 
     const handleDeleteAll = useCallback(() => {
         setIsLoading(true)
-        void deleteAllSessions()
+        void revokeAll()
             .catch((error: unknown) => {
-                // Partial failure is possible: sessions that were killed stay
-                // killed, but the store may be stale afterwards — an
-                // already-killed session can reappear in the list. Cause:
-                // `useWalletConnect.deleteAllSessions` runs `Promise.all` over
-                // `disconnect()` calls that each filter one shared stale
-                // closure, so the last resolver wins. Known follow-up work,
-                // out of scope here — report, don't roll back.
+                // Partial failure is possible: `registry.disconnectAll` settles every
+                // peer independently, so surviving rows stay on screen. Report; don't roll back.
                 showError(error, t('common.error.title'))
             })
             .finally(() => {
                 setIsLoading(false)
                 deleteState.close()
             })
-    }, [deleteAllSessions, deleteState, showError, t])
+    }, [revokeAll, deleteState, showError, t])
 
     return (
         <PWScreen
@@ -87,11 +82,13 @@ export const SettingsWalletConnectScreen = () => {
             <PWFlatList
                 contentContainerStyle={styles.listContainer}
                 data={connections}
+                keyExtractor={keyExtractor}
                 renderItem={renderItem}
                 ListEmptyComponent={
                     <EmptyView
                         style={styles.emptyView}
                         icon='wallet-connect'
+                        isLoading={!isHydrated}
                         title={t('walletconnect.settings.empty_title')}
                         body={t('walletconnect.settings.empty_body')}
                         button={

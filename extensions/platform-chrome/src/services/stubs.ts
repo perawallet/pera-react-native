@@ -16,12 +16,13 @@ import type {
     AgeGateService,
     AppIntegrityAttestation,
     AppIntegrityService,
+    BiometricArmResult,
     BiometricAvailability,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricType,
-    BiometricsAuthenticateResult,
     BiometricsService,
+    BiometricUnwrapResult,
     LegacyMigrationData,
     LegacyMigrationSourcePlatform,
     MigrationPlanSummary,
@@ -52,14 +53,16 @@ export class ChromeBiometricsService implements BiometricsService {
     async getSecurityLevel(): Promise<BiometricSecurityLevel> {
         return 'none'
     }
-    async authenticate(): Promise<BiometricsAuthenticateResult> {
-        return { success: false, reason: 'unavailable' }
-    }
-    async createEnrollmentBinding(): Promise<void> {}
     async checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding> {
         return 'unavailable'
     }
     async clearEnrollmentBinding(): Promise<void> {}
+    async armBiometricBinding(): Promise<BiometricArmResult | null> {
+        return null
+    }
+    async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
+        return { success: false, reason: 'unavailable' }
+    }
 }
 
 export class ChromeAgeGateService implements AgeGateService {

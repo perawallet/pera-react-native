@@ -12,6 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 
 // surface values the real module uses
 type Surface = 'popup' | 'expanded' | 'approval'
@@ -40,6 +41,14 @@ const mocks = vi.hoisted(() => ({
     platformInitialize: vi
         .fn<() => Promise<{ token: string | undefined }>>()
         .mockResolvedValue({ token: undefined }),
+    resealLegacyMaterial: vi.fn<() => Promise<unknown>>().mockResolvedValue({
+        resealed: 0,
+        reminted: 0,
+        unrecoverable: [],
+        legacyKeyRemoved: false,
+    }),
+    setEngineKeySource: vi.fn(),
+    requireSessionMasterKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
@@ -81,6 +90,9 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
             database: {},
             initialize: mocks.platformInitialize,
         }),
+        resealLegacyMaterial: () => mocks.resealLegacyMaterial(),
+        setEngineKeySource: (source: unknown) =>
+            mocks.setEngineKeySource(source),
     }
 })
 
@@ -94,6 +106,7 @@ vi.mock(
         return {
             ...original,
             armAutoLock: () => mocks.armAutoLock(),
+            requireSessionMasterKey: mocks.requireSessionMasterKey,
         }
     },
 )
@@ -152,6 +165,14 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
 
 import { useWebAppShell } from '../useWebAppShell.web'
 
+describe('useWebAppShell module import', () => {
+    it('registers the vault session key as the engine key source at import', () => {
+        expect(mocks.setEngineKeySource).toHaveBeenCalledWith(
+            mocks.requireSessionMasterKey,
+        )
+    })
+})
+
 describe('useWebAppShell', () => {
     beforeEach(() => {
         mocks.surface = 'popup'
@@ -166,6 +187,12 @@ describe('useWebAppShell', () => {
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
         mocks.platformInitialize.mockResolvedValue({ token: undefined })
+        mocks.resealLegacyMaterial.mockResolvedValue({
+            resealed: 0,
+            reminted: 0,
+            unrecoverable: [],
+            legacyKeyRemoved: false,
+        })
     })
 
     it('initializes platform services (crash reporting, remote config, analytics) while still locked', async () => {
@@ -444,5 +471,60 @@ describe('useWebAppShell', () => {
         const { result } = renderHook(() => useWebAppShell())
 
         await waitFor(() => expect(result.current.shellState).toBe('error'))
+    })
+
+    it('re-seals legacy material after keystore ready and before the database initialises', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+
+        const callOrder: string[] = []
+        mocks.keystoreReady.mockImplementation(async () => {
+            callOrder.push('keystoreReady')
+        })
+        mocks.resealLegacyMaterial.mockImplementation(async () => {
+            callOrder.push('resealLegacyMaterial')
+            return {
+                resealed: 0,
+                reminted: 0,
+                unrecoverable: [],
+                legacyKeyRemoved: false,
+            }
+        })
+        mocks.initializeDatabase.mockImplementation(async () => {
+            callOrder.push('initializeDatabase')
+        })
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        expect(callOrder).toEqual([
+            'keystoreReady',
+            'resealLegacyMaterial',
+            'initializeDatabase',
+        ])
+    })
+
+    it('logs unrecoverable ids from the re-seal report through logger.warn', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.resealLegacyMaterial.mockResolvedValue({
+            resealed: 1,
+            reminted: 1,
+            unrecoverable: ['k1'],
+            legacyKeyRemoved: true,
+        })
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ ids: ['k1'] }),
+        )
+
+        warnSpy.mockRestore()
     })
 })

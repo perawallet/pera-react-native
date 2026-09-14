@@ -220,6 +220,26 @@ describe('validateArc60AuthRequest', () => {
         expect(decodedData).toBeInstanceOf(Uint8Array)
     })
 
+    test('throws Arc60InvalidSignerError when account_address is the signer but that account is rekeyed', () => {
+        // SIWA proves control of account_address, and on chain that control
+        // moved to the auth address; the old key must not keep authenticating.
+        const rekeyedSelf = [
+            { address: SIGNER, rekeyAddress: 'AUTH_ADDR' },
+        ] as unknown as WalletAccount[]
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: validData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                rekeyedSelf,
+            ),
+        ).toThrow(Arc60InvalidSignerError)
+    })
+
     test('throws Arc60InvalidSignerError when no known account rekeys to the signer', () => {
         expect(() =>
             validateArc60AuthRequest(

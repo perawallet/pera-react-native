@@ -16,7 +16,6 @@ import {
     PWScreen,
     PWText,
     PWView,
-    type IconName,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { AppVersion } from '@modules/settings/components/AppVersion'
@@ -46,8 +45,9 @@ export const SettingsScreen = () => {
                             <PWListItem
                                 key={`settings-sectionrow-${page.title}`}
                                 onPress={() => handleTapEvent(page)}
-                                icon={page.icon as IconName}
+                                icon={page.icon}
                                 title={page.title}
+                                value={page.value}
                                 style={styles.sectionRow}
                                 testID={`settings_item_${page.title.toLowerCase().replace(/\s+/g, '_')}`}
                             />

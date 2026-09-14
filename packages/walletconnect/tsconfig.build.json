@@ -5,7 +5,10 @@
   ],
   "compilerOptions": {
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    // tsconfig.json maps the connections package to its source for typechecking;
+    // an emitting program would pull those files in from outside rootDir.
+    "paths": {}
   },
   "include": [
     "src"

@@ -111,7 +111,7 @@ describe('useSettingsScreen', () => {
         act(() => {
             result.current.handleTapEvent({
                 title: 'Security',
-                icon: 'shield',
+                icon: 'shield-check',
                 route: 'SecuritySettings',
             })
         })
@@ -126,7 +126,7 @@ describe('useSettingsScreen', () => {
         act(() => {
             result.current.handleTapEvent({
                 title: 'Support',
-                icon: 'help',
+                icon: 'question-mark',
                 url: 'https://support.example.com',
             })
         })

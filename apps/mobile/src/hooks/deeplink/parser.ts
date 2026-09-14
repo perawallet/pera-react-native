@@ -15,24 +15,22 @@ import {
     type AnyParsedDeeplink,
     DeeplinkType,
     type PeraWebImportDeeplink,
+    type WalletConnectDeeplink,
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
 import { normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
-import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import {
     ALGO_SCHEME,
     ALGORAND_SCHEME,
-    ALGORAND_WC_SCHEME,
     FIDO_SCHEME,
     LIQUID_SCHEME,
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
-    WC_SCHEME,
 } from './constants'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
@@ -40,6 +38,23 @@ import {
     PeraWebImportError,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isWalletConnectScheme,
+    parseWalletConnectUri,
+} from '@perawallet/wallet-core-walletconnect'
+
+const parseWalletConnectDeeplink = (
+    url: string,
+): Nullable<WalletConnectDeeplink> => {
+    const link = parseWalletConnectUri(url)
+    if (!link) return null
+    return {
+        type: DeeplinkType.WALLET_CONNECT,
+        sourceUrl: url,
+        uri: link.uri,
+        browserName: link.browserName,
+    }
+}
 
 /**
  * Parse Universal Links: https://perawallet.app/...
@@ -64,7 +79,7 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
             `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_WC_SCHEME}/`,
             `${PERAWALLET_WC_SCHEME}://`,
         )
-        return parseWalletConnectUri(convertedUrl)
+        return parseWalletConnectDeeplink(convertedUrl)
     } else if (normalizedUrl.includes(`/qr/${PERAWALLET_SCHEME}/`)) {
         const convertedUrl = url.replace(
             `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_SCHEME}/`,
@@ -77,13 +92,9 @@ const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
 }
 
 /**
- * Both supported JSON QR formats start with `{`, so we sniff the first
- * character to avoid running JSON.parse on every scanned barcode.
- *
- * Try the Pera Web import shape first (more specific — keyed `{backupId,
- * encryptionKey, ...}`); if that doesn't recognise the payload, fall back
- * to the legacy recover-account JSON shape (`{"version":1,"mnemonic":"..."}`)
- * emitted by older pera-android / pera-ios builds.
+ * Both JSON QR formats start with `{`, so sniff the first character before
+ * JSON.parse. Pera Web import shape first (more specific), then the legacy
+ * recover-account shape from older pera-android / pera-ios builds.
  */
 const parseJsonQr = (url: string): Nullable<AnyParsedDeeplink> => {
     const trimmed = url.trim()
@@ -96,10 +107,9 @@ const parseJsonQr = (url: string): Nullable<AnyParsedDeeplink> => {
 }
 
 /**
- * Pera Web "Transfer Accounts" QR. Raw JSON document with `backupId` +
- * 32-byte secretbox `encryptionKey`. The payload IS the secret — we drop
- * `sourceUrl` rather than echoing it back so a downstream logger /
- * breadcrumb can't leak the cipher key to a crash reporter.
+ * Pera Web "Transfer Accounts" QR: `backupId` + 32-byte secretbox `encryptionKey`.
+ * The payload IS the secret, so `sourceUrl` is dropped rather than echoed to a
+ * logger or crash reporter.
  */
 const parsePeraWebJsonQr = (
     trimmed: string,
@@ -123,15 +133,9 @@ const parsePeraWebJsonQr = (
 }
 
 /**
- * Legacy recover-account QR format from native pera-android / pera-ios:
- * the QR encodes a JSON document `{"version":1,"mnemonic":"word1 word2 ..."}`
- * directly (no scheme). Lifts the mnemonic out so the RECOVER_ADDRESS
- * dispatch path can handle it.
- *
- * `sourceUrl` is deliberately dropped (set to '') — the raw payload IS the
- * mnemonic, so echoing it back risks a downstream logger / error sheet
- * leaking the secret. Mirrors parsePeraWebJsonQr, whose payload is the
- * encryption key.
+ * Legacy recover-account QR from native pera-android / pera-ios: raw JSON
+ * `{"version":1,"mnemonic":"..."}` with no scheme. `sourceUrl` is dropped:
+ * the payload IS the mnemonic.
  */
 const parseLegacyMnemonicJson = (
     trimmed: string,
@@ -155,9 +159,6 @@ const parseLegacyMnemonicJson = (
     }
 }
 
-/**
- * Main deeplink parser - determines format and calls appropriate parser
- */
 export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (!url || typeof url !== 'string') return null
 
@@ -194,16 +195,10 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
         }
     }
 
-    if (
-        normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`) ||
-        // Legacy @perawallet/connect (< Feb 2025) Android pairing wrapper.
-        // Must win over the ARC-90 branch below; only the `wc?uri=` shape
-        // is WalletConnect.
-        normalizedUrl.startsWith(`${ALGORAND_SCHEME}://wc?`)
-    ) {
-        return parseWalletConnectUri(url)
+    // Ahead of the ARC-90 branch: the legacy `algorand://wc?uri=` wrapper is
+    // WalletConnect, and only that shape is.
+    if (isWalletConnectScheme(url)) {
+        return parseWalletConnectDeeplink(url)
     }
 
     if (normalizedUrl.startsWith(`${ALGORAND_SCHEME}://`)) {

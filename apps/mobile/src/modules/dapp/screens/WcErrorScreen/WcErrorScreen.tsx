@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-// Notification-only approval surface: tells the user why a WalletConnect
-// handshake they started was refused. Reuses mobile's own
-// WalletConnectErrorContent so the copy and layout cannot drift from the
-// sheet mobile shows for the same class of failure — passing `onConfirm`
-// switches that component to its sheet-free host (see its prop doc).
+// Reuses WalletConnectErrorContent so copy and layout cannot drift from mobile's
+// sheet; passing `onConfirm` switches it to its sheet-free host.
 import React from 'react'
 import { PWScreen } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'

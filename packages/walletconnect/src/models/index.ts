@@ -10,12 +10,6 @@
  limitations under the License
  */
 
-import type {
-    IClientMeta,
-    IWalletConnectSession,
-} from '@perawallet/walletconnect/types'
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
-
 export type AlgorandChainId = 416_001 | 416_002 | 416_003 | 4160
 
 export const AlgorandChainId = {
@@ -41,90 +35,8 @@ export const AlgorandPermission = {
 export type AlgorandPermission =
     (typeof AlgorandPermission)[keyof typeof AlgorandPermission]
 
-export type WalletConnectConnection = {
-    clientId?: string
-    version?: number
-    bridge?: string
-    uri?: string
-    signingMethods?: string[]
-    session?: {
-        permissions?: string[]
-    } & IWalletConnectSession
-    connected?: boolean
-    lastActiveAt?: Date
-    createdAt?: Date
-}
-
-export type WalletConnectSessionRequest = {
-    peerMeta: IClientMeta
-    chainId: AlgorandChainId
-    permissions: string[]
-    clientId: string
-    handshakeId?: number
-    /**
-     * Epoch ms when the request was queued (stamped by
-     * `addSessionRequest`). Requests older than `SESSION_REQUEST_TTL_MS`
-     * are pruned instead of popping an approval sheet — the dApp side of
-     * the handshake has long timed out, so approving one only feeds a
-     * dead socket.
-     */
-    createdAt?: number
-}
-
-/**
- * Where a WC pairing entered the wallet. Post-action sheets key off this:
- * 'external-browser' gets the "Return to the dApp" hand-off, 'in-app'
- * (Discover / in-app browser) suppresses the sheets entirely — the dApp is
- * right behind them — and 'qr' (desktop dApps, pasted links) keeps the
- * plain sheet as the only feedback surface.
- */
-export type WalletConnectPairingOriginSource =
-    | 'external-browser'
-    | 'in-app'
-    | 'qr'
-
-/** Recorded at approval time, keyed by the session's clientId. */
-export type WalletConnectDappOrigin = {
-    source: WalletConnectPairingOriginSource
-    /** iOS wrapper's `browser=` hint; absent on Android (raw wc: intent). */
-    browserName?: string
-    /** Epoch ms, stamped by `setDappOrigin`. */
-    createdAt: number
-}
-
-export type WalletConnectStore = BaseStoreState & {
-    walletConnectConnections: WalletConnectConnection[]
-    sessionRequests: WalletConnectSessionRequest[]
-    /** Transient — the most recent error to surface in the WC error bottom sheet. */
-    connectionError: Nullable<Error>
-    /** Persisted, keyed by the session's clientId — see `WalletConnectDappOrigin`. */
-    dappOrigins: Record<string, WalletConnectDappOrigin>
-    setWalletConnectConnections: (
-        walletConnectConnections: WalletConnectConnection[],
-    ) => void
-    setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
-    setConnectionError: (connectionError: Nullable<Error>) => void
-    setDappOrigin: (
-        clientId: string,
-        origin: Omit<WalletConnectDappOrigin, 'createdAt'>,
-    ) => void
-    removeDappOrigin: (clientId: string) => void
-    /** Drops every origin whose clientId is not in `retainedClientIds`. */
-    pruneDappOrigins: (retainedClientIds: string[]) => void
-}
-
-export type WalletConnectTransactionPayload = {
-    id: number
-    jsonrpc: string
-    method: 'algo_signTxn'
-    params: WalletConnectTransactionParam[][]
-}
-
-export type WalletConnectTransactionParam = {
-    message?: string
-    txn: string
-    /** ARC-0001: addresses that must sign. Empty array = do not sign. Absent = sign with sender/auth. */
-    signers?: string[]
-    /** ARC-0001: rekeyed auth address that should sign on behalf of the sender. */
-    authAddr?: string
-}
+/** Whitelist for peer-supplied method names; anything else is never persisted. */
+export const isAlgorandPermission = (
+    value: string,
+): value is AlgorandPermission =>
+    (Object.values(AlgorandPermission) as readonly string[]).includes(value)

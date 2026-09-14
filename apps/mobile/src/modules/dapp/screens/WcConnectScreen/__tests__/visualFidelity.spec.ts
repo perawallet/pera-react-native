@@ -11,10 +11,10 @@
  */
 
 // Guards the ONE promise the web twin makes: it looks like mobile's
-// ConnectionView. Phase one deliberately duplicates that component rather than
-// refactoring it (owner decision, 2026-07-30), and a duplicate with nothing
-// holding it to its original silently drifts — the twin gets a tweak, mobile
-// doesn't, and "make it look the same" quietly stops being true.
+// ConnectionApprovalView. The twin duplicates that component rather than
+// reusing it, and a duplicate with nothing holding it to its original silently
+// drifts — the twin gets a tweak, mobile doesn't, and "make it look the same"
+// quietly stops being true.
 //
 // Source-scanning rather than rendering, for the same reason
 // webConnectorOwnership.test.ts scans source: the claim is about what the code
@@ -26,14 +26,17 @@ import { join } from 'node:path'
 
 const MOBILE_DIR = join(
     __dirname,
-    '../../../../walletconnect/components/ConnectionView',
+    '../../../../walletconnect/components/ConnectionApprovalView',
 )
 const TWIN_DIR = join(__dirname, '..')
 
 const read = (path: string): string => readFileSync(path, 'utf8')
 
-const mobileHeader = read(join(MOBILE_DIR, 'ConnectionViewHeader.tsx'))
-const mobileView = read(join(MOBILE_DIR, 'ConnectionView.tsx'))
+const mobileHeader = read(join(MOBILE_DIR, 'ConnectionApprovalViewHeader.tsx'))
+// Mobile splits the account row into its own file; the twin renders it inline.
+const mobileView =
+    read(join(MOBILE_DIR, 'ConnectionApprovalView.tsx')) +
+    read(join(MOBILE_DIR, 'ConnectionApprovalAccountRow.tsx'))
 const twinHeader = read(join(TWIN_DIR, 'WcConnectHeader.tsx'))
 const twinView = read(join(TWIN_DIR, 'WcConnectScreen.tsx'))
 const twinStyles = read(join(TWIN_DIR, 'styles.ts'))
@@ -47,7 +50,7 @@ const styleKeys = (source: string): Set<string> =>
 const i18nKeys = (source: string): Set<string> =>
     new Set([...source.matchAll(/\bt\(\s*[`']([^`'$]+)[`']/g)].map(m => m[1]))
 
-describe('WcConnectScreen visual fidelity with mobile ConnectionView', () => {
+describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', () => {
     it('applies no style key that mobile does not, so nothing is styled ad hoc', () => {
         const mobileKeys = new Set([
             ...styleKeys(mobileHeader),
@@ -68,9 +71,9 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionView', () => {
         expect(extra).toEqual([])
     })
 
-    it('takes those styles from ConnectionView’s own stylesheet instead of redeclaring them', () => {
+    it('takes those styles from the shared approval stylesheet instead of redeclaring them', () => {
         const shared =
-            "from '@modules/walletconnect/components/ConnectionView/styles'"
+            "from '@modules/walletconnect/components/connection-approval/styles'"
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 

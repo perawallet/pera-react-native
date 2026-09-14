@@ -20,6 +20,8 @@ import {
 } from '../api'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import {
+    isAccountItemKey,
+    isContactItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -49,13 +51,16 @@ export type PushDirtyDeps = {
     ) => Promise<DeleteItemResponse>
 }
 
-/** Inject the LWW timestamp into the address payload before encrypting. */
+/** Inject the LWW timestamp into payloads that carry one before encrypting.
+ *  Secrets have no `updatedAt` field, so they are deliberately left alone. */
 const withUpdatedAt = (
     item: LocalItem,
     updatedAt: number | null | undefined,
 ): string => {
+    const carriesUpdatedAt =
+        isAccountItemKey(item.key) || isContactItemKey(item.key)
     const payload =
-        item.key.startsWith('accounts/') && updatedAt != null
+        carriesUpdatedAt && updatedAt != null
             ? { ...(item.payload as Record<string, unknown>), updatedAt }
             : item.payload
     return canonicalJson(payload)
@@ -85,7 +90,17 @@ export const pushDirty = async ({
                 key,
             )
             lastSyncedSeq = Math.max(lastSyncedSeq, res.seq)
-            delete items[key]
+            // Tombstone rather than drop: if another device backs this account
+            // up again, the returning delta must read as "the user removed
+            // this here" and go to review, not as a brand-new item to import.
+            items[key] = {
+                ...item,
+                status: BackupItemStatus.IGNORED,
+                isDirty: false,
+                pendingDelete: false,
+                localContentHash: null,
+                localUpdatedAt: null,
+            }
         } catch (error) {
             logger.warn('pushDirty: delete failed', {
                 key,

@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { isAlgoAssetId } from '../algo'
+import { displayCurrencyToAssetId, isAlgoAssetId } from '../algo'
 
 describe('isAlgoAssetId', () => {
     test('returns true for the ALGO string id', () => {
@@ -25,5 +25,26 @@ describe('isAlgoAssetId', () => {
     test('returns false for non-ALGO ids', () => {
         expect(isAlgoAssetId('31566704')).toBe(false)
         expect(isAlgoAssetId(31566704)).toBe(false)
+    })
+
+    test('returns false for a missing id', () => {
+        expect(isAlgoAssetId(null)).toBe(false)
+        expect(isAlgoAssetId(undefined)).toBe(false)
+    })
+})
+
+describe('displayCurrencyToAssetId', () => {
+    test("maps the ALGO ticker to Algo's asset id", () => {
+        expect(displayCurrencyToAssetId('ALGO')).toBe('0')
+    })
+
+    test('maps fiat codes to null', () => {
+        expect(displayCurrencyToAssetId('USD')).toBeNull()
+        expect(displayCurrencyToAssetId('EUR')).toBeNull()
+    })
+
+    test('only the exact ticker qualifies', () => {
+        expect(displayCurrencyToAssetId('algo')).toBeNull()
+        expect(displayCurrencyToAssetId('')).toBeNull()
     })
 })

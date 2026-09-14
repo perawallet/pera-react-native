@@ -38,6 +38,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-config',
                 '@algorandfoundation/algokit-utils',
                 '@algorandfoundation/xhd-wallet-api',
+                'algosdk',
                 'base32-encode',
                 'base64-js',
                 'decimal.js',

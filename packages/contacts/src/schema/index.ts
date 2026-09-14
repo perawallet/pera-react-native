@@ -11,15 +11,18 @@
  */
 
 import { z } from 'zod'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 export const contactSchema = z.object({
     id: z.string().optional(),
     name: z
         .string('Please enter a valid name')
         .min(1, { message: 'Please enter a valid name' }),
+    // Checksum validation (not just shape) is what catches address typos;
+    // a name attached to a mistyped address defeats the contact feature.
     address: z
         .string('Please enter a valid Algorand address')
-        .regex(new RegExp('^[a-zA-Z0-9]{58}$'), {
+        .refine(isValidAlgorandAddress, {
             message: 'Please enter a valid Algorand address',
         }),
     //TODO we can probably do better with the NFD regex

@@ -17,6 +17,7 @@ import {
 import { createIndexedDBDriver } from '@algorandfoundation/keystore-web'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { PeraKeystoreDeps } from './createKeystore'
+import { resolveEngineKey } from './engineKeySource'
 
 /**
  * Web build of {@link createPeraKeystore}, picked by Metro's `.web.ts`
@@ -32,7 +33,10 @@ import type { PeraKeystoreDeps } from './createKeystore'
  *
  * `subtle` and `indexedDB` are deliberately left to the driver's own
  * `globalThis` defaults: in an extension this runs in the service worker and
- * the offscreen document alike, and both supply their own.
+ * the offscreen document alike, and both supply their own. The engine key
+ * comes from `resolveEngineKey`, registered by the web shell through
+ * `setEngineKeySource`; an offscreen document registers nothing and so
+ * cannot open material.
  *
  * The return type is the native one because `tsc` only ever resolves the
  * non-platform file; the two are structurally the same `KeyStore`, differing
@@ -50,10 +54,24 @@ import type { PeraKeystoreDeps } from './createKeystore'
 export const createPeraKeystore = (
     deps: PeraKeystoreDeps,
 ): ReactNativeKeyStore => {
-    const driver = createIndexedDBDriver({ host: globalThis.crypto.subtle })
+    const driver = createIndexedDBDriver({
+        host: globalThis.crypto.subtle,
+        // Resolved per operation; the driver then never touches its own
+        // auto-generated `__keystore.master__`, which a copied profile could
+        // use without a password.
+        masterKey: resolveEngineKey,
+    })
+    // With the native capability on, core stores Ed25519 children as
+    // non-extractable CryptoKeys that the driver never seals — usable from a
+    // copied profile with no password. Off, they persist as sealed PKCS#8
+    // bytes, the same layout as the React Native driver.
+    const sealedDriver = {
+        ...driver,
+        capabilities: { ...driver.capabilities, nativeCryptoKey: false },
+    }
     const gatedDriver = deps.before
-        ? { ...driver, ready: deps.before.then(() => driver.ready) }
-        : driver
+        ? { ...sealedDriver, ready: deps.before.then(() => driver.ready) }
+        : sealedDriver
 
     const keystore = createKeyStore({
         driver: gatedDriver,

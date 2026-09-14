@@ -1,0 +1,60 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useLanguage } from '@hooks/useLanguage'
+
+type DeleteFromBackupSheetProps = {
+    /** Defaults to the account copy; contacts pass their own. */
+    title?: string
+    message?: string
+    /** Overrides the decline label where declining is not "abort" but "keep the
+     *  backup's copy". */
+    declineLabel?: string
+    onConfirm?: () => void
+    onDecline?: () => void
+}
+
+export const DeleteFromBackupSheet = ({
+    title,
+    message,
+    declineLabel,
+    onConfirm,
+    onDecline,
+}: DeleteFromBackupSheetProps = {}) => {
+    const { t } = useLanguage()
+
+    return (
+        <ConfirmActionContent
+            icon='cloud-off'
+            iconVariant='error'
+            title={title ?? t('cloud_backup.accounts.delete_sheet_title')}
+            message={message ?? t('cloud_backup.accounts.delete_sheet_body')}
+            isMessageCentered
+            confirmLabel={t('cloud_backup.accounts.delete_sheet_confirm')}
+            confirmVariant='destructiveLight'
+            // Declining is an answer the caller acts on, so it takes the
+            // tertiary slot, which resolves a value. The cancel slot only ever
+            // dismisses, which is what a swipe-away already means here.
+            tertiaryLabel={
+                declineLabel ?? t('cloud_backup.accounts.delete_sheet_cancel')
+            }
+            tertiaryVariant='secondary'
+            tertiaryValue={false}
+            onConfirm={onConfirm}
+            onTertiary={onDecline}
+            testID='delete_from_backup_sheet'
+            confirmTestID='delete_from_backup_confirm'
+            tertiaryTestID='delete_from_backup_cancel'
+        />
+    )
+}

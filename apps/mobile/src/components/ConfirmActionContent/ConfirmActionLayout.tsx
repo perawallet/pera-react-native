@@ -55,6 +55,7 @@ export type ConfirmActionLayoutProps = {
     testID?: string
     confirmTestID?: string
     cancelTestID?: string
+    tertiaryTestID?: string
 }
 
 export const ConfirmActionLayout = ({
@@ -77,6 +78,7 @@ export const ConfirmActionLayout = ({
     testID,
     confirmTestID,
     cancelTestID,
+    tertiaryTestID,
 }: ConfirmActionLayoutProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({
@@ -148,6 +150,7 @@ export const ConfirmActionLayout = ({
                             title={tertiaryLabel}
                             onPress={onTertiary}
                             paddingStyle={buttonPaddingStyle}
+                            testID={tertiaryTestID}
                         />
                     )}
                 </PWView>

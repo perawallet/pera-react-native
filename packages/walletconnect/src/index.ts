@@ -13,20 +13,34 @@
 export const name = '@perawallet/wallet-core-walletconnect'
 
 export * from './models'
-export * from './errors'
 export * from './connection'
-export * from './utils/chain'
 export * from './validation/inboundRequestGate'
-export * from './hooks/useWalletConnectSessionRequests'
-export * from './hooks/useWalletConnect'
-export * from './hooks/useWalletConnectReconnect'
+export * from './v1/deliver'
+export * from './shared/errors'
+export * from './shared/chain'
+export * from './shared/constants'
+export * from './shared/deeplink'
+export * from './shared/uri'
+export { toPeer } from './shared/peer'
+export * from './v1/connection'
+export * from './v1/handler'
 export {
-    deliverApprove,
-    deliverReject,
-    deliverRejectInBackground,
-} from './hooks/useWalletConnectHandlers'
-export * from './constants'
-export { useWalletConnectStore } from './store'
+    commitSessionKey,
+    createKeystoreSessionKeyStore,
+    createStorageSessionKeyStore,
+    type WalletConnectV1SessionKeyStore,
+} from './v1/secrets'
+export {
+    importLegacyConnections,
+    LEGACY_IMPORTED_IDS_KEY,
+    LEGACY_STORE_KEY,
+} from './migration/importLegacyConnections'
+export * from './v2/connection'
+export * from './v2/caip'
+export {
+    clearWalletConnectV2Storage,
+    WALLET_CONNECT_V2_STORAGE_PREFIX,
+} from './v2/storage'
 export {
     useConnectorRegistryStore,
     type ConnectorRegistryStore,

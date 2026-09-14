@@ -11,7 +11,13 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { HardwareWalletError, SigningError, TransportError } from '../errors'
+import {
+    CannotSignError,
+    HardwareWalletError,
+    SIGNING_ERROR_KEYS,
+    SigningError,
+    TransportError,
+} from '../errors'
 
 describe('pipeline error retryable flags', () => {
     it('marks unsupported_data_type hardware errors as non-retryable', () => {
@@ -47,5 +53,36 @@ describe('pipeline error retryable flags', () => {
             new TransportError('x', undefined, { retryable: false }).metadata
                 .retryable,
         ).toBe(false)
+    })
+})
+
+describe('signing errors carry user-facing keys', () => {
+    it('SigningError forwards a declared messageKey with the signing title', () => {
+        const error = new SigningError('x', undefined, {
+            messageKey: 'errors.kms.key_not_found',
+            params: { keyId: 'k' },
+        })
+
+        expect(error.metadata.messageKey).toBe('errors.kms.key_not_found')
+        expect(error.metadata.titleKey).toBe('errors.signing.title')
+        expect(error.metadata.params).toEqual({ keyId: 'k' })
+    })
+
+    it('SigningError without a messageKey stays key-less (generic banner)', () => {
+        const error = new SigningError('x')
+
+        expect(error.metadata.messageKey).toBeUndefined()
+        expect(error.metadata.titleKey).toBeUndefined()
+    })
+
+    it('CannotSignError always renders the signing-specific body', () => {
+        const error = new CannotSignError('ADDR', 'no keys')
+
+        expect(error.metadata.messageKey).toBe(SIGNING_ERROR_KEYS.cannotSign)
+        expect(error.metadata.titleKey).toBe(SIGNING_ERROR_KEYS.title)
+        expect(error.metadata.params).toEqual({
+            address: 'ADDR',
+            reason: 'no keys',
+        })
     })
 })

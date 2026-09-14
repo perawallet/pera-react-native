@@ -12,7 +12,7 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-import type { BackupId } from '../models'
+import type { Argon2idConfig, BackupId } from '../models'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
 import { deriveBackupId } from './deriveBackupId'
 import { deriveBackupChildKeys } from './deriveBackupChildKeys'
@@ -33,11 +33,15 @@ type DeriveBackupKeysParams = {
     mnemonic: string[]
     /** Base64-encoded salt generated at setup. */
     salt: string
+    /** Defaults to this build's `ARGON2ID_CONFIG`; pass the backup's own only
+     *  when it travelled alongside the phrase, as it does in a sync QR. */
+    argon2id?: Argon2idConfig
 }
 
 export const deriveBackupKeys = async ({
     mnemonic,
     salt,
+    argon2id,
 }: DeriveBackupKeysParams): Promise<BackupKeys> => {
     let password: Uint8Array | null = null
     let masterKey: Uint8Array | null = null
@@ -50,6 +54,7 @@ export const deriveBackupKeys = async ({
         masterKey = await deriveBackupMasterKey(
             password,
             decodeFromBase64(salt),
+            argon2id,
         )
         ;({ encryptionKey, authSeed } = deriveBackupChildKeys(masterKey))
 

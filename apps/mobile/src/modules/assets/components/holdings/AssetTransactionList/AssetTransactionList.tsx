@@ -50,6 +50,7 @@ export const AssetTransactionList = ({
     const {
         rows,
         isInitialLoad,
+        isOfflineEmpty,
         isFetchingNextPage,
         isRefreshing,
         handleLoadMore,
@@ -133,11 +134,27 @@ export const AssetTransactionList = ({
                     </PWView>
                 }
                 ListEmptyComponent={
-                    <EmptyView
-                        style={styles.emptyView}
-                        body={t('asset_details.transaction_list.empty_body')}
-                        isLoading={isInitialLoad}
-                    />
+                    // Offline with nothing cached isn't the same claim as "this
+                    // asset has no transactions" — we were never able to read.
+                    isOfflineEmpty ? (
+                        <EmptyView
+                            style={styles.emptyView}
+                            title={t(
+                                'asset_details.transaction_list.offline_empty_title',
+                            )}
+                            body={t(
+                                'asset_details.transaction_list.offline_empty_body',
+                            )}
+                        />
+                    ) : (
+                        <EmptyView
+                            style={styles.emptyView}
+                            body={t(
+                                'asset_details.transaction_list.empty_body',
+                            )}
+                            isLoading={isInitialLoad}
+                        />
+                    )
                 }
                 ListFooterComponent={
                     !isFetchingNextPage ? null : (

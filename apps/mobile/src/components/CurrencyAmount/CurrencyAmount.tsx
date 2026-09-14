@@ -16,7 +16,7 @@ import { useMemo } from 'react'
 import {
     formatCurrency,
     formatRawNumberInput,
-    isAlgoAssetName,
+    isAlgoAssetId,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -29,6 +29,7 @@ import {
     type FontWeight,
     type TypographyVariant,
 } from '@theme/typography'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 import { resolvePrecision, type PrecisionVariant } from './precision'
 
 const ALGO_SYMBOL = '¦'
@@ -56,7 +57,22 @@ type PrecisionProps =
     | { precision: 'assetFull'; assetDecimals?: number }
 
 export type CurrencyAmountProps = {
+    /**
+     * The displayed unit. With a non-null `assetId` this is the on-chain unit
+     * name — attacker-controlled, rendered as plain text only. With a null
+     * `assetId` it is a trusted display-currency code from settings or a
+     * first-party backend, and may map to a fiat symbol (USD → $).
+     */
     currency: string
+    /**
+     * On-chain asset id when the amount is an asset amount ('0' for ALGO, ''
+     * for an asset whose id is unknown), or null for a display-currency
+     * amount. Currency identity — the native ALGO glyph, fiat-symbol mapping
+     * — is decided by this id, never by `currency`: an ASA can name itself
+     * "ALGO" or "USD". Chain-sourced unit names MUST come with their asset id;
+     * trusted ALGO-ticker codes translate via `displayCurrencyToAssetId`.
+     */
+    assetId: Nullable<string>
     value: Maybe<Decimal>
     prefix?: string
     /**
@@ -82,6 +98,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const themeStyle = useStyles(props)
     const {
         currency,
+        assetId,
         value,
         precision: precisionVariant,
         assetDecimals,
@@ -104,25 +121,32 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         value,
     )
 
-    const isAlgo = useMemo(() => isAlgoAssetName(currency), [currency])
+    // Identity comes from the asset id alone; `currency` never earns the glyph.
+    const isAssetMode = assetId != null
+    const isAlgo = isAlgoAssetId(assetId)
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { currentLanguage } = useLanguage()
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
-    // With a `sign`, render the unit as its own leading element so the sign can
-    // sit between it and the amount. ALGO already has a separate leading glyph;
-    // an ASA's unit is otherwise baked into the formatted string, which would
-    // push the sign in front of it ("+HIPO 1000" instead of "HIPO +1000").
-    const showAsaSymbolStart =
+    // An asset amount's unit always renders as its own element: baking it into
+    // the formatted string would route the on-chain unit name through
+    // formatCurrency's fiat-symbol mapping (a "USD"-named ASA must never render
+    // as "$"). A display-currency amount keeps the unit in the formatted string
+    // — except with a `sign`, which must sit between the unit and the amount
+    // ("HIPO +1000", not "+HIPO 1000").
+    const showUnitSymbolStart =
         showSymbol &&
         symbolPosition === 'start' &&
         !isAlgo &&
-        sign != null &&
+        (isAssetMode || sign != null) &&
         !privacyMode
     const shouldShowSymbolInFormat =
-        showSymbol && symbolPosition === 'start' && !showAsaSymbolStart
+        showSymbol &&
+        symbolPosition === 'start' &&
+        !showUnitSymbolStart &&
+        !isAssetMode
 
     const algoSymbolWeight = getAlgoSymbolWeight(variant, props.weight)
 
@@ -134,7 +158,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         }
 
         if (value == null) {
-            return '---'
+            return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
         return privacyMode
@@ -190,7 +214,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     {ALGO_SYMBOL}
                 </PWText>
             )}
-            {showAsaSymbolStart && (
+            {showUnitSymbolStart && (
                 <PWText
                     variant={variant}
                     style={[themeStyle.symbol, props.style]}

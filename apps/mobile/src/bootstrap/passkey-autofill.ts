@@ -55,17 +55,10 @@ export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
 }
 
 /**
- * App-lifetime side effects for the passkey autofill subsystem:
- *
- *  - Re-bootstrap when the keystore's reactive store changes (keys hydrated
- *    on cold start, or a wallet imported/created mid-session). This is the
- *    primary path that hands the HD root key id to the native side — the
- *    first cold-start bootstrap can run before hydration has populated the
- *    store, so we must re-run once the seed key appears.
- *  - Re-bootstrap when the app returns to the foreground (e.g. after the user
- *    enabled the credential provider in system settings).
- *  - Re-bootstrap when the native side reports a passkey was registered or
- *    authenticated via the system credential provider.
+ * Re-bootstraps on keystore store changes (the first cold-start bootstrap can
+ * run before hydration populates the seed key), on foreground return (the user
+ * may have enabled the credential provider in settings), and when the native
+ * side reports a passkey registered or authenticated.
  */
 export const usePasskeyAutofillLifecycle = (): void => {
     useEffect(() => {
@@ -73,10 +66,8 @@ export const usePasskeyAutofillLifecycle = (): void => {
         if (!service) return
 
         const handleRefresh = () => {
-            // Pull any keys the credential provider wrote to MMKV out-of-process
-            // (e.g. a passkey just registered via the system UI) into the
-            // reactive store so the Settings list reflects them without a
-            // cold-start re-hydration.
+            // Keys the credential provider wrote to MMKV out-of-process must be
+            // pulled into the reactive store, or Settings misses them until a cold start.
             reconcileKeystore()
                 .then(({ failedIds }) => {
                     if (failedIds.length > 0) {

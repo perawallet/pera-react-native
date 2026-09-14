@@ -38,11 +38,21 @@ a missing key fails, and so does an extra one.
 German set the house style and it is deliberate:
 
 - Translate general finance and UI vocabulary where the language has a natural
-  term: `Recovery Phrase` → `Wiederherstellungsphrase`, `Minimum Balance` →
+  term: `recovery passphrase` → `Wiederherstellungsphrase`, `Minimum Balance` →
   `Mindestguthaben`, `Shared Account` → `Gemeinschaftskonto`.
 - Keep Algorand and crypto ecosystem terms in English: `Asset`, `Vault`,
   `Staking`, `Rekey`, `Passphrase`, `passkey`. German even inflects them
   natively (`rekeyen`, `deines Vaults`) rather than inventing a calque.
+
+The 25-word Algorand mnemonic has exactly one user-facing name: **recovery
+passphrase** (`passphrase` alone where the context already says which). Never
+`recovery phrase`, `seed phrase` or `mnemonic` in a string — `mnemonic` lives
+only in keys and code. Each bundle renders it with one term as well: de
+`Wiederherstellungsphrase`, es `passphrase de recuperación`, fr `passphrase de
+récupération`, tr `kurtarma passphrase’i`, pt-BR `passphrase de recuperação`. The
+`view_passphrase.acknowledge.*` rows are where a user confirms they can lose all
+their funds, so a second name for the same artefact there is the worst place for
+drift.
 
 Languages borrow English at different rates, so three terms deliberately diverge
 between bundles. Do not "harmonise" these without reading why:
@@ -215,13 +225,6 @@ LatAm-only (`celular`) vocabulary. `cantidad` for "amount", not Spain-leaning
 Translators keep hitting these; they are source-string bugs, not translation
 decisions:
 
-- `en.json` calls the recovery phrase both "recovery passphrase"
-  (13 strings) and "Recovery Phrase" (3 strings in `view_passphrase.acknowledge`),
-  including both in one sentence (`onboarding.import_info.body`). `de`, `es`
-  and `tr` mirror the split; `fr` flattens it. Wants an English-side fix driving
-  a coordinated bundle update, not per-language patching.
-- `walletconnect.request.networks_mainnet` / `networks_testnet` spell it
-  `Mainnet`/`Testnet` where the rest of the app uses `MainNet`/`TestNet`.
 - `signing.arc60_view.details_title` misspells "Athentication".
 
 ## Workflow that works

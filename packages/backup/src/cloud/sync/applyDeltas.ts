@@ -11,11 +11,12 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import { logger } from '@perawallet/wallet-core-shared'
-import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import {
+    BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
     DeltaOperation,
+    isContactItemKey,
     type BackupId,
     type BackupItemKey,
     type DeltaEntry,
@@ -24,62 +25,25 @@ import {
     type SyncItemState,
     type SyncState,
 } from '../models'
-import { buildPulledAccounts, type PulledAccount } from '../restore'
-import { canonicalJson, contentHash } from './canonicalize'
-import type { ImportSummary } from './types'
+import { collectAccountPayloads } from './collectAccountPayloads'
+import { collectContactPayloads } from './collectContactPayloads'
+import type { CollectPayloadsDeps } from './collectPayloads'
+import type { ContactImportFn, SyncImportFn } from './types'
 
-const ACCOUNTS_PREFIX = 'accounts/'
-const SECRETS_PREFIX = 'secrets/'
-
-export type ApplyDeltasDeps = {
-    network: Network
-    backupId: BackupId
-    deviceId: DeviceId
-    encryptionKey: Uint8Array
-    importAccounts: (accounts: PulledAccount[]) => Promise<ImportSummary>
+export type ApplyDeltasDeps = CollectPayloadsDeps & {
+    importAccounts: SyncImportFn
+    importContacts: ContactImportFn
     readItems: (
         network: Network,
         backupId: BackupId,
         deviceId: DeviceId,
         keys: BackupItemKey[],
     ) => Promise<FetchedItem[]>
-    decrypt: (
-        payload: string,
-        ctx: {
-            encryptionKey: Uint8Array
-            backupId: BackupId
-            key: BackupItemKey
-        },
-    ) => string
 }
 
-const addressOf = (key: BackupItemKey): string | null =>
-    key.startsWith(ACCOUNTS_PREFIX)
-        ? key.slice(ACCOUNTS_PREFIX.length)
-        : key.startsWith(SECRETS_PREFIX)
-          ? key.slice(SECRETS_PREFIX.length)
-          : null
-
-const remoteUpdatedAt = (plaintext: string): number => {
-    try {
-        const v = (JSON.parse(plaintext) as { updatedAt?: unknown }).updatedAt
-        return typeof v === 'number' ? v : 0
-    } catch {
-        return 0
-    }
-}
-
-const contentHashSansUpdatedAt = (plaintext: string): string => {
-    try {
-        const { updatedAt: _drop, ...rest } = JSON.parse(plaintext) as Record<
-            string,
-            unknown
-        >
-        return contentHash(canonicalJson(rest))
-    } catch {
-        return contentHash(plaintext)
-    }
-}
+const isAccountFamilyKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+    key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
 
 export const applyDeltas = async ({
     state,
@@ -112,10 +76,22 @@ export const applyDeltas = async ({
                 status: BackupItemStatus.IGNORED,
                 isDirty: false,
                 pendingDelete: false,
+                pendingImport: false,
                 lastRemoteHash: d.hash,
             }
             continue
         }
+        const isContactKey = isContactItemKey(d.key)
+        const isKnownKey = isAccountFamilyKey(d.key) || isContactKey
+        // The user deleted this here and another device has since backed it up
+        // again. Re-importing would undo that deletion behind their back, so
+        // hold it for review instead.
+        const pendingImport =
+            isKnownKey &&
+            d.status === BackupItemStatus.ACTIVE &&
+            (existing?.pendingImport === true ||
+                existing?.status === BackupItemStatus.IGNORED)
+
         items[d.key] = {
             ...(existing ?? {
                 type: d.type,
@@ -132,15 +108,13 @@ export const applyDeltas = async ({
             baseVer: existing?.baseVer ?? d.ver,
             localContentHash: existing?.localContentHash ?? null,
             localUpdatedAt: existing?.localUpdatedAt ?? null,
+            pendingImport,
         }
         if (d.status !== BackupItemStatus.ACTIVE) continue
-        if (
-            !(
-                d.key.startsWith(ACCOUNTS_PREFIX) ||
-                d.key.startsWith(SECRETS_PREFIX)
-            )
-        )
-            continue
+        if (!isKnownKey) continue
+        // A held account is never downloaded; a held contact is, because the
+        // cached name is the whole record and the review row has to show it.
+        if (pendingImport && !isContactKey) continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||
@@ -157,72 +131,19 @@ export const applyDeltas = async ({
         downloadKeys,
     )
 
-    const addressPayloads = new Map<
-        string,
-        ReturnType<typeof parseAddressPayload>
-    >()
-    const secretsPayloads = new Map<
-        string,
-        ReturnType<typeof parseSecretsPayload>
-    >()
+    const accounts = collectAccountPayloads({
+        fetched: fetched.filter(item => isAccountFamilyKey(item.key)),
+        items,
+        deps,
+    })
+    const contacts = collectContactPayloads({
+        fetched: fetched.filter(item => isContactItemKey(item.key)),
+        items,
+        deps,
+    })
 
-    for (const item of fetched) {
-        const address = addressOf(item.key)
-        if (!address) continue
-        let plaintext: string
-        try {
-            plaintext = deps.decrypt(item.payload, {
-                encryptionKey: deps.encryptionKey,
-                backupId: deps.backupId,
-                key: item.key,
-            })
-        } catch {
-            logger.warn('applyDeltas: failed to decrypt', { key: item.key })
-            continue
-        }
-
-        const existing = items[item.key]
-        const isAddress = item.key.startsWith(ACCOUNTS_PREFIX)
-        // Last-write-wins: keep local only if the local edit is STRICTLY newer.
-        // On a tie (equal timestamps) remote wins (spec §8) — hence `>`, not `>=`.
-        if (
-            isAddress &&
-            existing?.isDirty &&
-            (existing.localUpdatedAt ?? 0) > remoteUpdatedAt(plaintext)
-        ) {
-            items[item.key] = {
-                ...existing,
-                knownVer: item.ver,
-                baseVer: item.ver,
-                lastRemoteHash: item.hash,
-            }
-            continue
-        }
-
-        try {
-            if (isAddress)
-                addressPayloads.set(address, parseAddressPayload(plaintext))
-            else secretsPayloads.set(address, parseSecretsPayload(plaintext))
-        } catch {
-            logger.warn('applyDeltas: failed to parse', { key: item.key })
-            continue
-        }
-        items[item.key] = {
-            ...(items[item.key] as SyncItemState),
-            knownVer: item.ver,
-            baseVer: item.ver,
-            isDirty: false,
-            lastRemoteHash: item.hash,
-            localContentHash: contentHashSansUpdatedAt(plaintext),
-            localUpdatedAt: null,
-        }
-    }
-
-    // Join address+secrets and surface orphan hdSeed secrets as standalone
-    // entries — shared with the full-restore path so the incremental/realtime
-    // sync path restores HD seeds whose first account was removed.
-    const toImport = buildPulledAccounts(addressPayloads, secretsPayloads)
-    if (toImport.length > 0) await deps.importAccounts(toImport)
+    if (accounts.length > 0) await deps.importAccounts(accounts)
+    if (contacts.length > 0) await deps.importContacts(contacts)
 
     return { ...state, items, lastSyncedSeq }
 }

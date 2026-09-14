@@ -49,9 +49,10 @@ export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
  *
  * The addressless-but-parseable set this exists for is WalletConnect v1,
  * liquid-auth (`fido:`/`liquid:`), Pera web import and the legacy mnemonic JSON
- * payloads. Note a WalletConnect *v2* URI never reaches here: the parser only
- * accepts a `wc:` URI carrying `bridge=`, so a v2 pairing code fails
- * `isValidDeepLink` and the scanner rejects it upstream.
+ * payloads. Anything the parser rejects outright — a WalletConnect *v2* pairing
+ * code, say — also lands here rather than upstream, because the address-field
+ * scanners pass `skipDeepLinkHandler` and so opt out of the recognition gate.
+ * Both cases resolve to `null` and get the same toast.
  *
  * Callers must dismiss the scanner too, but the toast does not depend on doing
  * so first: it routes to the global Notifier, which renders in the root tree and

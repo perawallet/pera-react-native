@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import nacl from 'tweetnacl'
 import type { Key } from '@algorandfoundation/keystore-core'
 
 vi.mock('algosdk', async importOriginal => ({
@@ -22,6 +23,7 @@ vi.mock('algosdk', async importOriginal => ({
 import {
     aclOf,
     algo25AddressOf,
+    algo25SeedToAddress,
     buildSeedMetadata,
     createdAtOf,
     entropyChildIdOf,
@@ -151,6 +153,24 @@ describe('algo25AddressOf', () => {
     test('returns "" when an algo25 seed lacks a publicKey on its reactive snapshot', () => {
         const key = seedKey({ metadata: { scheme: SeedScheme.Algo25 } })
         expect(algo25AddressOf(key)).toBe('')
+    })
+})
+
+describe('algo25SeedToAddress', () => {
+    test('encodes the public key and zeroes the derived secretKey, whose first 32 bytes are the seed', () => {
+        const seed = new Uint8Array(32).fill(7)
+        const fromSeedSpy = vi.spyOn(nacl.sign.keyPair, 'fromSeed')
+
+        const address = algo25SeedToAddress(seed)
+
+        const keyPair = fromSeedSpy.mock.results[0].value as nacl.SignKeyPair
+        expect(address).toBe(
+            `ADDR_${Buffer.from(keyPair.publicKey).toString('hex')}`,
+        )
+        expect(Array.from(keyPair.secretKey)).toEqual(new Array(64).fill(0))
+        // The input buffer is the caller's to wipe.
+        expect(Array.from(seed)).toEqual(new Array(32).fill(7))
+        fromSeedSpy.mockRestore()
     })
 })
 

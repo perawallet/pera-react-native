@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, afterEach } from 'vitest'
-import { truncateAlgorandAddress } from '../addresses'
+import { isValidAlgorandAddress, truncateAlgorandAddress } from '../addresses'
 
 afterEach(() => {
     vi.restoreAllMocks()
@@ -34,5 +34,36 @@ describe('utils/addresses - truncateAlgorandAddress', () => {
         expect(
             truncateAlgorandAddress('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 8),
         ).toEqual('ABCD...WXYZ')
+    })
+})
+
+describe('utils/addresses - isValidAlgorandAddress', () => {
+    // Zero-key address (all-zero 32-byte public key)
+    const validAddress =
+        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+
+    test('returns true for a checksum-valid address', () => {
+        expect(isValidAlgorandAddress(validAddress)).toBe(true)
+    })
+
+    test('returns false for a 58-char string with a bad checksum', () => {
+        const typo = `${validAddress.slice(0, -1)}A`
+        expect(isValidAlgorandAddress(typo)).toBe(false)
+    })
+
+    test('returns false for a lowercased valid address', () => {
+        expect(isValidAlgorandAddress(validAddress.toLowerCase())).toBe(false)
+    })
+
+    test('returns false for wrong length or invalid characters', () => {
+        expect(isValidAlgorandAddress(validAddress.slice(1))).toBe(false)
+        expect(isValidAlgorandAddress(`${validAddress.slice(0, -1)}@`)).toBe(
+            false,
+        )
+    })
+
+    test('returns false for empty or undefined', () => {
+        expect(isValidAlgorandAddress('')).toBe(false)
+        expect(isValidAlgorandAddress(undefined)).toBe(false)
     })
 })

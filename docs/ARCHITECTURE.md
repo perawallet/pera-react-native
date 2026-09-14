@@ -158,3 +158,4 @@ Platform service abstractions live in `extensions/*`, not in a package.
 ## Learn more
 
 - Where files go and what to call them: [Code Layout](CODE_LAYOUT.md)
+- How dApp sessions reach the wallet on native and in the extension: [Connections](CONNECTIONS.md)

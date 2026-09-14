@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
+import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
@@ -22,6 +23,21 @@ vi.mock('@hooks/useLanguage', () => ({
 
 vi.mock('@hooks/useIsLanguageSelectionEnabled', () => ({
     useIsLanguageSelectionEnabled: vi.fn(),
+}))
+
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: vi.fn(),
+}))
+
+// The hook reads the store through a selector, so the mock has to run the
+// selector rather than return a value.
+const { mockCloudBackupState } = vi.hoisted(() => ({
+    mockCloudBackupState: { isConfigured: (): boolean => false },
+}))
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useCloudBackupStore: (selector: (state: unknown) => unknown) =>
+        selector(mockCloudBackupState),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -74,6 +90,8 @@ describe('useSettingsOptions', () => {
             t: mockT,
         })
         ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(false)
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(false)
+        mockCloudBackupState.isConfigured = () => false
         Object.assign(mockCapabilities, {
             discoverTab: true,
             swapTab: true,
@@ -370,5 +388,39 @@ describe('useSettingsOptions', () => {
                 title: 'settings.main.connections_title',
             })
         })
+    })
+
+    it('hides the cloud backup row when the feature flag is off', () => {
+        const { result } = renderHook(() => useSettingsOptions())
+        const accountItems = result.current.settingsOptions[0].items
+
+        expect(
+            accountItems.some(item => item.route === 'CloudBackupSettings'),
+        ).toBe(false)
+    })
+
+    it('shows the cloud backup row first, marked off until it is configured', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+
+        const { result } = renderHook(() => useSettingsOptions())
+        const accountItems = result.current.settingsOptions[0].items
+
+        expect(accountItems[0]).toEqual({
+            route: 'CloudBackupSettings',
+            icon: 'cloud-check',
+            title: 'settings.main.cloud_backup_title',
+            value: 'settings.main.cloud_backup_off',
+        })
+    })
+
+    it('marks the cloud backup row on once a backup is configured', () => {
+        ;(useIsCloudBackupEnabled as Mock).mockReturnValue(true)
+        mockCloudBackupState.isConfigured = () => true
+
+        const { result } = renderHook(() => useSettingsOptions())
+
+        expect(result.current.settingsOptions[0].items[0].value).toBe(
+            'settings.main.cloud_backup_on',
+        )
     })
 })

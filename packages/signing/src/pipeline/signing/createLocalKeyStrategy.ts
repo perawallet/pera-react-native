@@ -19,8 +19,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import {
+    AppError,
     encodeToBase64,
+    ErrorCategory,
     isRetryableError,
+    logger,
     toError,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -30,7 +33,7 @@ import type {
     SigningCallbacks,
     SignerInfo,
 } from '../types'
-import { CannotSignError, SigningError } from '../errors'
+import { CannotSignError, SIGNING_ERROR_KEYS, SigningError } from '../errors'
 import { signArbitraryDataCase, signArc60Case } from './standardDataSigning'
 
 // Re-exported for backward compatibility with the many call sites that
@@ -161,9 +164,31 @@ export const createLocalKeyStrategy = (
                 }
             } catch (error) {
                 const cause = toError(error)
+                const causeMetadata =
+                    cause instanceof AppError ? cause.metadata : undefined
+                // ARC-60 and arbitrary-data validation run inside this try:
+                // a malformed request is the dApp's fault, never a key fault.
+                const isRequestFault =
+                    causeMetadata?.category === ErrorCategory.VALIDATION
+                const causeKey = causeMetadata?.messageKey
                 const signingError = new SigningError(cause.message, cause, {
                     retryable: isRetryableError(cause),
+                    messageKey:
+                        causeKey ??
+                        (isRequestFault
+                            ? undefined
+                            : SIGNING_ERROR_KEYS.localKeyFailed),
+                    params: causeKey ? causeMetadata?.params : undefined,
                 })
+                if (!isRequestFault) {
+                    // The toast never shows the reason, so without this report
+                    // a keystore fault is indistinguishable from a network one.
+                    logger.error('Local-key signing failed', {
+                        error: cause,
+                        accountType: account.type,
+                        dataType: group.data.type,
+                    })
+                }
                 callbacks?.onError?.(signingError)
                 throw signingError
             }

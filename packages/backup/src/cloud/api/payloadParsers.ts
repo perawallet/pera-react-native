@@ -13,8 +13,10 @@
 import type { z } from 'zod'
 import {
     addressBackupPayloadSchema,
+    contactBackupPayloadSchema,
     secretsBackupPayloadSchema,
     type AddressBackupPayload,
+    type ContactBackupPayload,
     type SecretsBackupPayload,
 } from '../models'
 
@@ -54,3 +56,6 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload =>
 
 export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
     parsePayload(secretsBackupPayloadSchema, raw, 'secrets')
+
+export const parseContactPayload = (raw: string): ContactBackupPayload =>
+    parsePayload(contactBackupPayloadSchema, raw, 'contact')

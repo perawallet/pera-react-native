@@ -12,6 +12,7 @@
 
 export * from './api'
 export * from './credentials'
+export * from './hooks'
 export * from './models'
 export * from './restore'
 export * from './store'
@@ -19,3 +20,16 @@ export * from './sync'
 export { backupIdToAddress } from './crypto/backupIdToAddress'
 export { deriveBackupKeys } from './crypto/deriveBackupKeys'
 export type { BackupKeys } from './crypto/deriveBackupKeys'
+export {
+    BACKUP_SYNC_QR_TYPE,
+    BACKUP_SYNC_QR_VERSION,
+    BackupSyncQrError,
+    BackupSyncQrUnsupportedVersionError,
+    encryptBackupSyncQr,
+    decryptBackupSyncQr,
+    parseBackupSyncQrEnvelope,
+} from './crypto/syncQrPayload'
+export type {
+    BackupSyncQrContents,
+    BackupSyncQrEnvelope,
+} from './crypto/syncQrPayload'

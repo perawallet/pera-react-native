@@ -20,7 +20,11 @@ import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import { isAlgoAssetId, pow10 } from '@perawallet/wallet-core-shared'
+import {
+    displayCurrencyToAssetId,
+    isAlgoAssetId,
+    pow10,
+} from '@perawallet/wallet-core-shared'
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
 import { CollectibleListItem } from '@modules/assets/components/CollectibleListItem'
 import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
@@ -110,6 +114,7 @@ const AssetListItemViewBase = ({
                 value). */}
             <CurrencyAmount
                 currency={fiat.displayCurrency}
+                assetId={displayCurrencyToAssetId(fiat.displayCurrency)}
                 value={fiat.value}
                 precision='compact'
                 showSymbol

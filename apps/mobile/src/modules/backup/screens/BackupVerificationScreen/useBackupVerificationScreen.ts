@@ -30,14 +30,14 @@ import { useToast } from '@hooks/useToast'
 import {
     useBackupQuiz,
     useRandomMnemonicForAddress,
-    type BackupQuizItem,
+    type BackupQuizQuestion,
 } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 const VERIFICATION_WORD_COUNT = 3
 
 export type UseBackupVerificationScreenResult = {
-    items: BackupQuizItem[]
+    items: BackupQuizQuestion[]
     onSelect: (questionIdx: number, word: string) => void
     onSubmit: () => void
     isFilled: boolean

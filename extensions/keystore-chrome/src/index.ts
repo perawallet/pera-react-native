@@ -38,7 +38,11 @@ export {
     PBKDF2_MAX_ITERATIONS,
 } from './vault/vault'
 export { getLockoutRemainingSeconds } from './vault/lockout'
-export { getSessionMasterKey, SESSION_MASTER_KEY } from './vault/session'
+export {
+    getSessionMasterKey,
+    requireSessionMasterKey,
+    SESSION_MASTER_KEY,
+} from './vault/session'
 export {
     AUTO_LOCK_ALARM,
     AUTO_LOCK_MINUTES_KEY,

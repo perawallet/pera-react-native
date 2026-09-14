@@ -13,7 +13,7 @@ const ROOT = resolve(import.meta.dirname, '..')
 const warnOnly = process.argv.includes('--warn-only')
 const asJson = process.argv.includes('--json')
 
-const WORK_ITEM = /\b(?:PERA-\d+|PQ-0\d\d|IAB-\d+|WB-\d+|Task \d+|M\d+ [Tt]ask)\b/
+const WORK_ITEM = /\b(?:PERA-\d+|PQ-0\d\d|IAB-\d+|WB-\d+|F-\d{4}-\d+|Task \d+|M\d+ [Tt]ask)\b/
 const DOC_LINE_BUDGET = 400
 
 // Wrongness fails the check. Length is a smell that needs a human to judge, so

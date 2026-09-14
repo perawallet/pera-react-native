@@ -27,19 +27,12 @@ export type UseReturnToDappResult = {
 }
 
 /**
- * Maps the initiating iOS browser to its bare launch scheme, which
- * foregrounds the app on whatever tab it was showing. Deliberately carries
- * NO url payload: navigation-style schemes (`googlechromes://<url>`,
- * `firefox://open-url?...`) reload the dApp page, wiping in-flight state
- * like a pending swap result — the exact QA regression on this ticket.
- *
- * Null for browsers with no focus-only scheme (Safari, DuckDuckGo, Opera,
- * unknown): reloading them would be worse than showing no button, and the
- * iOS back-to-app chevron still covers the return.
- *
- * `Linking.openURL` needs no LSApplicationQueriesSchemes entry (only
- * `canOpenURL` does); a scheme with no installed handler rejects, which the
- * caller catches.
+ * Bare launch scheme only, NO url payload: navigation schemes
+ * (`googlechromes://<url>`, `firefox://open-url?...`) reload the dApp page and
+ * wipe in-flight state such as a pending swap result. Null for browsers with no
+ * focus-only scheme (Safari, DuckDuckGo, Opera); the iOS back-to-app chevron
+ * covers those. `Linking.openURL` needs no LSApplicationQueriesSchemes entry
+ * (only `canOpenURL` does); a scheme with no handler rejects.
  */
 export const buildIosBrowserFocusUrl = (
     browserName: string | undefined,
@@ -55,15 +48,9 @@ export const buildIosBrowserFocusUrl = (
     return null
 }
 
-/**
- * Sends the user back to the dApp after a WalletConnect action that arrived
- * via an OS deep link from a mobile browser.
- *
- * Android: the browser task that fired the wc: intent sits directly behind
- * ours, so exiting the activity reveals the exact tab, state intact — no
- * browser hint needed. iOS has no task-stack equivalent, so we foreground
- * the initiating browser via its bare launch scheme.
- */
+// Android: the browser task that fired the wc: intent sits directly behind ours,
+// so exiting the activity reveals the exact tab. iOS has no task stack, so the
+// initiating browser is foregrounded via its bare launch scheme.
 export const useReturnToDapp = (): UseReturnToDappResult => {
     const canReturnToDapp = useCallback(
         (args: ReturnToDappArgs): boolean =>
@@ -83,10 +70,8 @@ export const useReturnToDapp = (): UseReturnToDappResult => {
             try {
                 await Linking.openURL(focusUrl)
             } catch (error) {
-                // The hinted browser is gone (uninstalled since pairing).
-                // Deliberately NO navigation fallback: opening the dApp's
-                // url would reload the page and wipe in-flight state — the
-                // exact regression this hook exists to avoid.
+                // The hinted browser was uninstalled since pairing. NO navigation
+                // fallback: opening the dApp url would reload the page and wipe in-flight state.
                 logger.warn('[wc/return-to-dapp] failed to focus browser', {
                     error,
                 })

@@ -28,6 +28,12 @@ export const useStyles = makeStyles(theme => {
         textTransform: 'uppercase' as const,
         fontSize: NETWORK_TEXT_FONT_SIZE,
     }
+    const otherNetworkText = {
+        ...getTypography(theme, 'caption'),
+        color: theme.colors.textGray,
+        textTransform: 'uppercase' as const,
+        fontSize: NETWORK_TEXT_FONT_SIZE,
+    }
     return {
         container: {
             flex: 1,
@@ -79,6 +85,7 @@ export const useStyles = makeStyles(theme => {
         },
         mainnetText,
         testnetText,
+        otherNetworkText,
         accountContainer: {
             marginTop: theme.spacing.md,
             gap: theme.spacing.lg,

@@ -44,6 +44,7 @@ export const useAlgo25 = () => {
         const seedKeyId = params?.id ?? generateOrderedUniqueId()
 
         let seed: Optional<Uint8Array>
+        let signKeyPair: Optional<nacl.SignKeyPair>
         let address: string
         let committedSeed = false
         // Which step we're in, so a field report can tell a bad mnemonic from
@@ -85,7 +86,10 @@ export const useAlgo25 = () => {
             // verify the pair against the seed, so any drift throws here
             // rather than at submit time.
             const signKeyId = algo25SignKeyId(seedKeyId)
-            const { publicKey } = nacl.sign.keyPair.fromSeed(seed)
+            // Held in the outer scope so the finally wipes its secretKey,
+            // whose first 32 bytes are the seed itself.
+            signKeyPair = nacl.sign.keyPair.fromSeed(seed)
+            const { publicKey } = signKeyPair
             stage = 'signChild'
             await keyStore.import(
                 {
@@ -124,7 +128,7 @@ export const useAlgo25 = () => {
             logger.error('createAlgo25Key failed', { error: e, stage })
             throw e
         } finally {
-            zeroBytes(seed)
+            zeroBytes(seed, signKeyPair?.secretKey)
         }
     }
 

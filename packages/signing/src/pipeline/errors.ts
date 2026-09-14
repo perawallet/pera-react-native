@@ -19,8 +19,26 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Base pipeline error
+ * Bodies live under `errors.signing` next to the existing title so the app
+ * layer resolves both from one key family.
  */
+export const SIGNING_ERROR_KEYS = {
+    title: 'errors.signing.title',
+    localKeyFailed: 'errors.signing.local_key_failed',
+    cannotSign: 'errors.signing.cannot_sign',
+} as const
+
+export type SigningErrorOptions = {
+    retryable?: boolean
+    /**
+     * i18n body key. Set by the local-key strategy from the cause (a KMS
+     * error) or its own fallback; left unset by the hardware/multisig
+     * paths, which keep the generic banner.
+     */
+    messageKey?: string
+    params?: Record<string, unknown>
+}
+
 export class PipelineError extends AppError {
     constructor(
         message: string,
@@ -40,9 +58,6 @@ export class PipelineError extends AppError {
     }
 }
 
-/**
- * User cancelled the operation
- */
 export class UserCancelledError extends PipelineError {
     constructor() {
         super('User cancelled the operation', undefined, {
@@ -52,9 +67,6 @@ export class UserCancelledError extends PipelineError {
     }
 }
 
-/**
- * Cannot sign with the given account
- */
 export class CannotSignError extends PipelineError {
     constructor(address: string, reason?: string) {
         super(
@@ -63,15 +75,14 @@ export class CannotSignError extends PipelineError {
                 : `Cannot sign with account ${address}`,
             undefined,
             {
+                messageKey: SIGNING_ERROR_KEYS.cannotSign,
+                titleKey: SIGNING_ERROR_KEYS.title,
                 params: { address, reason },
             },
         )
     }
 }
 
-/**
- * No local participants found for multisig account
- */
 export class NoLocalParticipantsError extends PipelineError {
     constructor(address: string) {
         super(
@@ -84,9 +95,6 @@ export class NoLocalParticipantsError extends PipelineError {
     }
 }
 
-/**
- * Source failed to provide signable data
- */
 export class SourceError extends PipelineError {
     constructor(message: string, originalError?: Error) {
         super(`Failed to get signable data: ${message}`, originalError, {
@@ -95,9 +103,6 @@ export class SourceError extends PipelineError {
     }
 }
 
-/**
- * Analysis failed
- */
 export class AnalysisError extends PipelineError {
     constructor(message: string, originalError?: Error) {
         super(`Analysis failed: ${message}`, originalError, {
@@ -106,17 +111,21 @@ export class AnalysisError extends PipelineError {
     }
 }
 
-/**
- * Signing failed
- */
 export class SigningError extends PipelineError {
     constructor(
         message: string,
         originalError?: Error,
-        options?: { retryable?: boolean },
+        options?: SigningErrorOptions,
     ) {
         super(`Signing failed: ${message}`, originalError, {
             retryable: options?.retryable ?? true,
+            ...(options?.messageKey
+                ? {
+                      messageKey: options.messageKey,
+                      titleKey: SIGNING_ERROR_KEYS.title,
+                      params: options.params,
+                  }
+                : {}),
         })
     }
 }
@@ -184,9 +193,6 @@ export class SubmissionError extends PipelineError {
     }
 }
 
-/**
- * Transport failed to deliver signed data
- */
 export class TransportError extends PipelineError {
     constructor(
         message: string,
@@ -199,9 +205,6 @@ export class TransportError extends PipelineError {
     }
 }
 
-/**
- * Hardware wallet connection error
- */
 export type HardwareWalletErrorReason =
     | 'unsupported_data_type'
     | 'transport_unavailable'
@@ -222,9 +225,6 @@ export class HardwareWalletError extends PipelineError {
     }
 }
 
-/**
- * Invalid signable data
- */
 export class InvalidSignableDataError extends PipelineError {
     constructor(reason: string) {
         super(`Invalid signable data: ${reason}`, undefined, {
@@ -250,33 +250,25 @@ export class TransactionRoundTripError extends PipelineError {
     }
 }
 
-/**
- * A fee-adjusted ARC-0001 response (fees raised to a required minimum — see
- * `assignMinimumFeesToGroup`; today's only rule is the post-quantum minimum
- * for quantum signers) failed to deliver: the transport's
- * `respondWithResult` rejected. Distinguishes "this dApp may not support
- * the adjusted fees" from an ordinary transport failure so the UI can show
- * a targeted message instead of the raw delivery error. Extends
- * `TransportError` (rather than wrapping it) so its `retryable` semantics —
- * WC delivery retry — are unchanged.
- *
- * NOTE: for WalletConnect, the `respondWithError` callback rebuilds a fresh
- * `WalletConnectSignRequestError` from only the thrown error's `.message`
- * before it reaches `connectionError`
- * (packages/walletconnect/src/hooks/useWalletConnectHandlers.ts) — `.name`
- * does not survive that hop. `FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER` is a
- * substring of every message this error is constructed with, so consumers
- * reading `connectionError` after that rewrap can still recognize it by
- * matching the message; `.name` remains the correct check for callers that
- * see the error directly.
- */
+// WalletConnect's rejection path rewraps the error keeping only `.message`, so
+// every FeeAdjustmentDeliveryError message contains this marker.
 export const FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER = 'fee-adjusted'
 
+/**
+ * A fee-adjusted ARC-0001 response (`assignMinimumFeesToGroup`) failed to
+ * deliver: "this dApp may not support the adjusted fees" rather than an ordinary
+ * transport failure. Extends `TransportError` so `retryable` is unchanged.
+ */
 export class FeeAdjustmentDeliveryError extends TransportError {
     constructor(message: string, options?: { cause?: Error }) {
         super(message, options?.cause)
     }
 }
+
+// `.name` for callers that see the error directly; the marker after the WalletConnect rewrap.
+export const isFeeAdjustmentDeliveryError = (error: Error): boolean =>
+    error.name === FeeAdjustmentDeliveryError.name ||
+    error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER)
 
 /**
  * The active network changed between actor creation and submission.

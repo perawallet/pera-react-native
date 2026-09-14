@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { encodeAlgorandAddress } from './addresses'
 
 const BIGINT_TAG = '__bigint__'
 const MAP_TAG = '__map__'
 const BYTES_TAG = '__bytes__'
+const DECIMAL_TAG = '__decimal__'
 
 export const algorandSafeJsonStringify = (value: unknown) => {
     return JSON.stringify(
@@ -39,8 +41,8 @@ export const algorandSafeJsonStringify = (value: unknown) => {
 }
 
 /**
- * Round-trip safe JSON serialization that preserves bigint, Map and Uint8Array types.
- * Use with {@link algorandSafeQueryParse} to restore them.
+ * Round-trip safe JSON serialization that preserves bigint, Map, Uint8Array
+ * and Decimal types. Use with {@link algorandSafeQueryParse} to restore them.
  */
 export const algorandSafeQuerySerialize = (value: unknown): string => {
     // JSON.stringify applies toJSON before the replacer, and Buffer has one, so a
@@ -53,6 +55,12 @@ export const algorandSafeQuerySerialize = (value: unknown): string => {
         }
         if (raw instanceof Map) {
             return { [MAP_TAG]: Array.from(raw.entries()) }
+        }
+        // Decimal's own toJSON emits a bare string, which parses back as a
+        // string and takes every Decimal method with it. isDecimal rather than
+        // instanceof so a Decimal from another decimal.js copy is still caught.
+        if (Decimal.isDecimal(raw)) {
+            return { [DECIMAL_TAG]: (raw as Decimal).toString() }
         }
         // Buffer reports [object Uint8Array] too, and unlike `instanceof` the tag
         // survives the realm split between Node's Buffer and jsdom's Uint8Array
@@ -71,7 +79,7 @@ export const algorandSafeQuerySerialize = (value: unknown): string => {
 
 /**
  * Parses JSON produced by {@link algorandSafeQuerySerialize},
- * restoring tagged bigint, Map and Uint8Array values.
+ * restoring tagged bigint, Map, Uint8Array and Decimal values.
  */
 export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
     return JSON.parse(data, (_key, value) => {
@@ -93,6 +101,14 @@ export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
             typeof value[BYTES_TAG] === 'string'
         ) {
             return new Uint8Array(Buffer.from(value[BYTES_TAG], 'base64'))
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            DECIMAL_TAG in value &&
+            typeof value[DECIMAL_TAG] === 'string'
+        ) {
+            return new Decimal(value[DECIMAL_TAG])
         }
         return value
     })

@@ -87,8 +87,14 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         isChartShown,
     )
 
+    // Points with no preferred value have no rate behind them; keeping them
+    // would let a `?? 0` fallback below invent a cliff from (or to) zero and
+    // report a swing that never happened.
     const historyDataPoints = useMemo(
-        () => historyData?.map(p => p.preferredValue) ?? [],
+        () =>
+            historyData?.flatMap(p =>
+                p.preferredValue ? [p.preferredValue] : [],
+            ) ?? [],
         [historyData],
     )
 

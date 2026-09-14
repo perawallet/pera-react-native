@@ -130,8 +130,10 @@ export const runExtrasMigration = async (
     // lacks the WC v2 keychain/session material and Pera RN has no WC v2
     // client. See LegacyWalletConnectV2Session.
     if (enabled.has('walletConnect'))
-        runStep(result, 'walletConnect', () => {
-            result.walletConnect = migrateWalletConnect(data.walletConnectV1)
+        await runAsyncStep(result, 'walletConnect', async () => {
+            result.walletConnect = await migrateWalletConnect(
+                data.walletConnectV1,
+            )
         })
 
     if (enabled.has('passkeys'))

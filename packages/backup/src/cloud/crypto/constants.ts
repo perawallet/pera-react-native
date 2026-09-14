@@ -36,10 +36,3 @@ export const HKDF_INFO_AUTH_SEED = 'backup-auth-seed'
 
 /** DID prefix for the backup identifier: `did:pera:<base64 auth public key>`. */
 export const BACKUP_ID_PREFIX = 'did:pera:'
-
-/**
- * AEAD cipher for backup item payloads. MUST stay fixed and identical across
- * encrypt/decrypt and platforms — changing it breaks decryption of existing
- * backups.
- */
-export const BACKUP_CIPHER_ALGORITHM = 'aes-256-gcm'

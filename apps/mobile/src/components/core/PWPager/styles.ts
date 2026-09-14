@@ -17,16 +17,23 @@ type StyleProps = {
     pageCount: number
 }
 
-export const useStyles = makeStyles((_theme, { pageWidth }: StyleProps) => ({
-    viewport: {
-        flex: 1,
-        overflow: 'hidden',
-    },
-    track: {
-        flex: 1,
-        flexDirection: 'row',
-    },
-    page: {
-        width: pageWidth,
-    },
-}))
+export const useStyles = makeStyles(
+    (_theme, { pageWidth, pageCount }: StyleProps) => ({
+        viewport: {
+            flex: 1,
+            overflow: 'hidden',
+        },
+        // Wide enough to contain every page: Android's framework touch dispatch
+        // clips to each view's own rect, so a one-page-wide track hides a
+        // translated page's native ScrollView from the scroll gesture. Taps still
+        // land there, because RN's own hit-testing tolerates the overflow.
+        track: {
+            flex: 1,
+            flexDirection: 'row',
+            width: pageWidth * pageCount,
+        },
+        page: {
+            width: pageWidth,
+        },
+    }),
+)

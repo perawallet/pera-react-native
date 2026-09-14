@@ -32,8 +32,8 @@ import { QRScannerContent } from './QRScannerContent.web'
 // Mirrors the native module's export so `@components/QRScannerView`'s barrel
 // (`export { scannerNotifier } from './QRScannerView'`) resolves on both
 // platforms. The web view renders no local NotifierWrapper, so this ref stays
-// `null` — consumers (e.g. useWalletConnectProvider) already treat a null
-// `current` as "fall back to the global notifier", which is correct here.
+// `null` — consumers already treat a null `current` as "fall back to the
+// global notifier", which is correct here.
 export const scannerNotifier = createRef<Nullable<NotifierRoot>>()
 
 export type QRScannerViewProps = {

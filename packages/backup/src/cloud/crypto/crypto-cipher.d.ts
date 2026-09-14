@@ -10,37 +10,10 @@
  limitations under the License
  */
 
-// Augments the `crypto` module with AES-GCM cipher primitives that
+// Augments the `crypto` module with the random-bytes primitive that
 // react-native-quick-crypto exposes when the app aliases `crypto` to it on
-// React Native. These types use Uint8Array so that the backup package can
-// avoid a @types/node dependency. Any other frontend must alias `crypto` to an
-// implementation providing these same functions.
+// React Native. Typed as Uint8Array so this package needs no @types/node.
+// The AES-GCM and Argon2id primitives live in `@perawallet/wallet-core-kms`.
 declare module 'crypto' {
-    interface GcmCipher {
-        setAAD(buffer: Uint8Array): this
-        update(data: Uint8Array): Uint8Array
-        final(): Uint8Array
-        getAuthTag(): Uint8Array
-    }
-
-    interface GcmDecipher {
-        setAAD(buffer: Uint8Array): this
-        setAuthTag(tag: Uint8Array): this
-        update(data: Uint8Array): Uint8Array
-        final(): Uint8Array
-    }
-
     export function randomBytes(size: number): Uint8Array
-
-    export function createCipheriv(
-        algorithm: 'aes-256-gcm',
-        key: Uint8Array,
-        iv: Uint8Array,
-    ): GcmCipher
-
-    export function createDecipheriv(
-        algorithm: 'aes-256-gcm',
-        key: Uint8Array,
-        iv: Uint8Array,
-    ): GcmDecipher
 }

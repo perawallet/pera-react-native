@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AppState } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import {
@@ -22,8 +22,8 @@ import {
     deliverApprove,
     deliverReject,
     deliverRejectInBackground,
-    useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
+import { isConnectionAlive } from '@perawallet/wallet-core-connections'
 import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
 import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
@@ -36,10 +36,6 @@ export const MultisigOverlays = () => {
     return null
 }
 
-/**
- * RN + i18n shell over `useWalletConnectHandoffResolver`: pauses polling while
- * the app is backgrounded and builds the localized message bag.
- */
 const useResolverWiring = (): void => {
     const { t } = useTranslation()
 
@@ -67,8 +63,7 @@ const useResolverWiring = (): void => {
     )
 
     // Answers the dApp for a handoff resumed after an app kill, keyed by the
-    // persisted clientId / payloadId (the in-memory closures are gone). Static —
-    // the WalletConnect primitives resolve the live connector by clientId.
+    // persisted clientId / payloadId since the in-memory closures are gone.
     const delivery = useMemo<HandoffPeerDelivery>(
         () => ({
             deliverResult: (clientId, payloadId, result) =>
@@ -85,21 +80,6 @@ const useResolverWiring = (): void => {
         [],
     )
 
-    // Session-list check, read lazily per poll (no subscription): the
-    // persisted connections are the source of truth for whether a session
-    // exists — socket state is irrelevant, reconnects keep the entry.
-    // Before rehydration the list reads empty, which would falsely cancel a
-    // live handoff right after launch — report alive until hydration lands
-    // (the next poll re-checks).
-    const isPeerSessionAlive = useCallback((clientId: string) => {
-        if (!useWalletConnectStore.persist.hasHydrated()) return true
-        return useWalletConnectStore
-            .getState()
-            .walletConnectConnections.some(
-                connection => connection.clientId === clientId,
-            )
-    }, [])
-
     const markUndelivered = useUndeliveredSignRequestsStore(
         store => store.markUndelivered,
     )
@@ -108,7 +88,8 @@ const useResolverWiring = (): void => {
         isAppActive,
         messages,
         delivery,
-        isPeerSessionAlive,
+        // A v1 clientId IS the connection record's id.
+        isPeerSessionAlive: isConnectionAlive,
         onUndeliverable: markUndelivered,
     })
 }

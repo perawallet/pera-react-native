@@ -17,6 +17,7 @@ import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-dri
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 import type {
@@ -27,17 +28,9 @@ import type {
 
 export type PeraProvider = PeraProviderShape
 
-/**
- * The Pera Wallet Provider — web build. Metro's `.web.ts` platform-file
- * resolution picks this file in place of `pera-provider.ts` for web
- * bundles (the mobile web export and the browser extension it ships as),
- * swapping the native Ledger BLE/USB transports for their Web
- * Bluetooth/WebHID counterparts, and the keystore extension for
- * keystore-web's (the singleton injects a concrete engine through
- * `options.api.keystore`, so this only decides which package's Provider
- * wrapper reads it). Platform services and passkey autofill are composed
- * identically to the native file.
- */
+// Metro picks this over `pera-provider.ts` for web bundles: Web Bluetooth/WebHID
+// Ledger transports and keystore-web's extension (the singleton injects the engine
+// via `options.api.keystore`; this only picks the wrapper). Keep the order in step.
 export const PeraProvider: {
     new (
         config: ProviderOptions,
@@ -52,12 +45,13 @@ export const PeraProvider: {
     WithPlatformExtension,
     WithLedgerWebBleExtension,
     WithLedgerWebUsbExtension,
-    // Metro resolves the `.web.ts` no-op sibling here. Kept in the same slot as
-    // the native file so the two arrays can't drift out of order.
+    // `.web.ts` no-op sibling; same slot as the native file.
     WithPeraKeystorePreflight,
     WithKeyStore,
-    // Metro resolves the `.web.ts` no-op sibling here too. Kept in the same
-    // slot as the native file so the two arrays can't drift out of order.
+    // `.web.ts` no-op sibling; same slot as the native file.
     WithPeraKeystoreRepairs,
     WithPasskeyAutofill,
+    // Last, and load-bearing: reads `provider.keyValueStorage`, which
+    // WithPlatformExtension supplies.
+    WithConnections,
 ] as const)

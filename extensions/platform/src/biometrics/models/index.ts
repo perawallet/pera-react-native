@@ -28,17 +28,18 @@ export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
  */
 export type BiometricSecurityLevel = 'none' | 'secret' | 'weak' | 'strong'
 
+/**
+ * Translated copy for the OS sheet. Both fields are required: the platform
+ * layer holds no fallback copy, and AndroidX BiometricPrompt rejects a
+ * PromptInfo without a title or a negative button text.
+ */
 export type BiometricsAuthenticatePrompt = {
-    title?: string
-    description?: string
-    // Required on Android when device-credential fallback is disabled:
-    // AndroidX BiometricPrompt rejects PromptInfo without a non-empty
-    // negative button text. Ignored on iOS (LAContext provides its own).
-    cancelLabel?: string
+    title: string
+    cancelLabel: string
 }
 
 /**
- * Why an authenticate call failed. Only `system-cancel` (the OS dropping a
+ * Why a biometric ceremony failed. Only `system-cancel` (the OS dropping a
  * prompt without user action, e.g. the app was not active yet) is safe to
  * retry; every other reason is terminal. Android folds its OS cancel into
  * `user-cancel`, so `system-cancel` is effectively iOS-only.
@@ -51,10 +52,6 @@ export type BiometricsAuthenticateFailureReason =
     | 'failed'
     | 'unknown'
 
-export type BiometricsAuthenticateResult =
-    | { success: true }
-    | { success: false; reason: BiometricsAuthenticateFailureReason }
-
 /**
  * Whether the biometric set enrolled right now is the one the user opted in
  * with. Neither {@link BiometricsService.checkBiometricsAvailable} nor
@@ -62,14 +59,12 @@ export type BiometricsAuthenticateResult =
  * of a fingerprint never passes through an observable bad state, so both keep
  * reporting an enrolled strong biometric across the change.
  *
- * - `valid`       — unchanged since the binding was recorded.
- * - `changed`     — a biometric was added, or all of them removed. The only
- *                   affirmative report here, and the only one that may destroy
- *                   an opt-in.
- * - `absent`      — nothing recorded: opted in before bindings existed, or
- *                   arrived through the legacy-app migration.
- * - `unavailable` — no reading could be taken (no native module, nothing
- *                   enrolled to read, a lockout hiding the enrollment, a native
+ * - `valid`       — the key pair is present and intact.
+ * - `changed`     — a biometric was added, or all of them removed. Android
+ *                   only; iOS removes the key instead and reports `absent`.
+ * - `absent`      — no key pair: a restored backup, a keystore reset, or an
+ *                   iOS re-enrollment. Affirmative, unlike `unavailable`.
+ * - `unavailable` — no reading could be taken (no native module, a native
  *                   failure). Not a revocation.
  */
 export type BiometricEnrollmentBinding =
@@ -107,6 +102,45 @@ export type BiometricAvailability =
     | 'unavailable'
     | 'unknown'
 
+/**
+ * The wrapped unlock token and the SHA-256 of its plaintext, hex-encoded. The
+ * token itself is minted natively and never crosses the bridge on the way in —
+ * only `unwrapBiometricToken` returns it, during an unlock.
+ */
+export type BiometricArmResult = {
+    blob: string
+    tokenHash: string
+}
+
+/**
+ * Why an unwrap failed.
+ *
+ * - `invalidated`    — the OS destroyed the key because the enrolled biometric
+ *                      set changed. Affirmative; the opt-in is gone. Android
+ *                      only: iOS removes the key instead, which reads as
+ *                      `no-binding`.
+ * - `decrypt-failed` — the ceremony passed, or the cipher could not be set up,
+ *                      and the key still did not release the token. Usually a
+ *                      dead key/blob pair, occasionally a keystore operation
+ *                      pruned under load, so callers count it rather than act
+ *                      on a single one.
+ * - `no-binding`     — there is no key to unwrap with: a restored backup, a
+ *                      keystore reset, or an iOS re-enrollment.
+ *
+ * Everything else is a prompt outcome. `system-cancel` in particular must
+ * survive: it is the only reason the lock screen retries on, and it exists for
+ * the deeplink cold start.
+ */
+export type BiometricUnwrapFailureReason =
+    | BiometricsAuthenticateFailureReason
+    | 'invalidated'
+    | 'decrypt-failed'
+    | 'no-binding'
+
+export type BiometricUnwrapResult =
+    | { success: true; token: Uint8Array }
+    | { success: false; reason: BiometricUnwrapFailureReason }
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
@@ -122,19 +156,28 @@ export interface BiometricsService {
      * authenticator, such as the passkey credential provider, must check this.
      */
     getSecurityLevel(): Promise<BiometricSecurityLevel>
-    authenticate(
-        prompt?: BiometricsAuthenticatePrompt,
-    ): Promise<BiometricsAuthenticateResult>
-    /**
-     * Records the currently enrolled biometric set as the bound one. Call after
-     * the opt-in prompt succeeds, and never on its own — a binding without the
-     * secret it guards is meaningless.
-     */
-    createEnrollmentBinding(): Promise<void>
     /**
      * Never prompts: it runs on every mount of the biometrics hook, so it has
      * to be silent.
      */
     checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding>
     clearEnrollmentBinding(): Promise<void>
+    /**
+     * Creates the OS-bound key pair, mints a random unlock token, wraps it, and
+     * returns the ciphertext with the token's hash. Requires no biometric
+     * ceremony — the wrap uses the public half — so it is safe on paths with no
+     * user present, such as the legacy import. Resolves null when no key could
+     * be created. Idempotent: it destroys any existing binding first.
+     */
+    armBiometricBinding(): Promise<BiometricArmResult | null>
+    /**
+     * Releases the unlock token, which requires a real biometric ceremony
+     * against the Secure Enclave or TEE. Returns the token rather than a
+     * verdict on purpose: a boolean here would be the defect this exists to
+     * close.
+     */
+    unwrapBiometricToken(
+        blob: string,
+        prompt: BiometricsAuthenticatePrompt,
+    ): Promise<BiometricUnwrapResult>
 }

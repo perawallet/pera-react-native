@@ -93,7 +93,11 @@ export const useQRScannerView = ({
                 if (handlingRef.current) return
                 const url = barcodes.at(0)?.rawValue
                 if (!url) return
-                if (!isValidDeepLink(url)) {
+                // `skipDeepLinkHandler` callers validate the payload
+                // themselves and scan things that are not deeplinks at all
+                // (e.g. a raw JSON backup envelope), so the gate is theirs to
+                // apply, not ours.
+                if (!skipDeepLinkHandler && !isValidDeepLink(url)) {
                     // Unrecognized code — leave the scanner armed so the
                     // user can try again without closing the modal.
                     return

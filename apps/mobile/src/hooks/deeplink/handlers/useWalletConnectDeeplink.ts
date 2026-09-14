@@ -11,20 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { CONNECTION_DEEPLINK_OUTCOME_TIMEOUT_MS } from '@perawallet/wallet-core-connections'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    abandonPairing,
-    waitForSessionOutcome,
-    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS,
-    WC_LATE_SESSION_GRACE_MS,
-    type WalletConnectPairingOriginSource,
-} from '@perawallet/wallet-core-walletconnect'
-import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletConnectPairing'
+import type { ConnectionOriginSource } from '@perawallet/wallet-extension-connections'
+import { useConnectionPairing } from '@modules/connections/hooks/useConnectionPairing'
 import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairingProgressStore'
-import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { useToast } from '../../useToast'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
-import { walletConnectLogContext } from '../walletconnect-parser'
 import type { LinkSource, WalletConnectDeeplink } from '../types'
 
 export type WalletConnectDeeplinkParams = {
@@ -44,16 +37,16 @@ export type WalletConnectDeeplinkHandler = (
 ) => Promise<boolean>
 
 /**
- * Owns the WC pairing branch of the deeplink dispatcher: kick off the
- * pairing, keep the user informed while it runs, and translate the outcome
- * into the dispatcher's callbacks.
- *
- * WC v1 bridges were sunset in mid-2024, so most public ones (including the
- * legacy pera bridge older QR codes embed) now 404 without a sync throw —
- * `pair` detects that by waiting for a session_request or error.
+ * Owns the pairing branch of the deeplink dispatcher: hand the URI to the
+ * connection registry, keep the user informed while it runs, and translate
+ * the outcome into the dispatcher's callbacks. The registry decides which
+ * protocol owns the URI and redacts it for the logs. Two WalletConnect-named
+ * residues stay: the pairing progress store and the analytics variant names,
+ * both of them user- and dashboard-facing vocabulary rather than a protocol
+ * decision, and both renameable without touching this sequence.
  */
 export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
-    const { pair } = useWalletConnectPairing()
+    const { pair, describeUri } = useConnectionPairing()
     const { hideToast } = useToast()
     const showError = useDeeplinkErrorHandler()
 
@@ -64,7 +57,7 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
             // hand-off, and 'in-app' sessions suppress the post-action
             // sheets. Notification-delivered links behave like QR: sheet
             // shown, no hand-off.
-            const originSource: WalletConnectPairingOriginSource = isOsDeeplink
+            const originSource: ConnectionOriginSource = isOsDeeplink
                 ? 'external-browser'
                 : source === 'in-app'
                   ? 'in-app'
@@ -85,7 +78,7 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
                         browserName: data.browserName,
                     },
                     outcomeTimeoutMs: isOsDeeplink
-                        ? WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS
+                        ? CONNECTION_DEEPLINK_OUTCOME_TIMEOUT_MS
                         : undefined,
                 })
             } finally {
@@ -99,7 +92,7 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
                 // secret.
                 logger.error('[deeplink/wc] connect failed', {
                     error: result.error,
-                    ...walletConnectLogContext(data.uri),
+                    ...describeUri(data.uri),
                 })
                 showError({
                     variant: 'walletconnect',
@@ -118,37 +111,19 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
             }
             if (result.type === 'timeout') {
                 showError({
-                    variant: 'walletconnect',
+                    variant: 'walletconnect_timeout',
                     parsedType: 'WALLET_CONNECT',
-                    error: 'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
                 })
                 onError?.()
-                // The timed-out connector's session_request handler stays
-                // bound for the full request TTL (5 min) — without this, a
-                // straggler dApp response pops a ghost approval sheet long
-                // after the error. A late session within the grace hides the
-                // stale toast and the sheet opens normally; past it the
-                // pairing is abandoned so nothing ever pops.
-                if (result.clientId) {
-                    const timedOutClientId = result.clientId
-                    void waitForSessionOutcome(
-                        timedOutClientId,
-                        WC_LATE_SESSION_GRACE_MS,
-                    ).then(lateOutcome => {
-                        if (lateOutcome.type === 'session') {
-                            hideToast()
-                            return
-                        }
-                        abandonPairing(timedOutClientId)
-                        useReturnToDappStore
-                            .getState()
-                            .clearReturnContext(timedOutClientId)
-                    })
-                }
+                // A late answer within the grace still opens the sheet, so
+                // the stale toast has to go.
+                void result.lateOutcome?.then(lateOutcome => {
+                    if (lateOutcome.type === 'proposal') hideToast()
+                })
                 return false
             }
             return true
         },
-        [pair, showError, hideToast],
+        [pair, describeUri, showError, hideToast],
     )
 }

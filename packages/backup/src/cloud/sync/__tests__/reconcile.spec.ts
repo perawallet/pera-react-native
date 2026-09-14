@@ -84,7 +84,7 @@ describe('reconcile', () => {
         })
     })
 
-    it('flags pending-delete for an ACTIVE account item with no local counterpart', () => {
+    it('leaves an ACTIVE account item alone when it is no longer local', () => {
         const base = createEmptySyncState('b')
         base.items['accounts/GONE'] = {
             type: BackupItemType.ACCOUNT,
@@ -97,23 +97,8 @@ describe('reconcile', () => {
             localUpdatedAt: 1,
         }
         const next = reconcile(base, snapshot([]), NOW)
-        expect(next.items['accounts/GONE'].pendingDelete).toBe(true)
-    })
-
-    it('does not flag pending-delete when an account could not be serialized', () => {
-        const base = createEmptySyncState('b')
-        base.items['accounts/GONE'] = {
-            type: BackupItemType.ACCOUNT,
-            knownVer: 2,
-            baseVer: 2,
-            isDirty: false,
-            status: BackupItemStatus.ACTIVE,
-            lastRemoteHash: 'r',
-            localContentHash: 'h',
-            localUpdatedAt: null,
-        }
-        const next = reconcile(base, snapshot([], 1), NOW)
         expect(next.items['accounts/GONE'].pendingDelete).toBeUndefined()
+        expect(next.items['accounts/GONE'].status).toBe(BackupItemStatus.ACTIVE)
     })
 
     it('never marks an IGNORED item dirty or pending-delete', () => {
@@ -131,5 +116,39 @@ describe('reconcile', () => {
         const next = reconcile(base, snapshot([]), NOW)
         expect(next.items['accounts/IG'].isDirty).toBe(false)
         expect(next.items['accounts/IG'].pendingDelete).toBeFalsy()
+    })
+
+    it('does not queue a delete for an item awaiting review', () => {
+        const base = createEmptySyncState('b')
+        base.items['accounts/AWAY'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'r',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+        const next = reconcile(base, snapshot([]), NOW)
+        expect(next.items['accounts/AWAY'].pendingDelete).toBeUndefined()
+    })
+
+    it('clears the review flag once the address is on the device again', () => {
+        const base = createEmptySyncState('b')
+        base.items['accounts/A'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'r',
+            localContentHash: 'h1',
+            localUpdatedAt: null,
+        }
+        const next = reconcile(base, snapshot([item('accounts/A', 'h1')]), NOW)
+        expect(next.items['accounts/A'].pendingImport).toBe(false)
     })
 })

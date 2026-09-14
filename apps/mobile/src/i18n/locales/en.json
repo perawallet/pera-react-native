@@ -20,7 +20,7 @@
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
             "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
             "unauthorized_signer": "This site isn't authorized to request a signature for that account.",
-            "no_session": "This connection is no longer valid. Reconnect the site and try again."
+            "connection_revoked": "This connection was disconnected. Reconnect from the site and try again."
         },
         "passkey": {
             "create": {
@@ -160,7 +160,8 @@
             "title_generic": "Couldn't open link",
             "body_generic": "We couldn't process the link. Please try again.",
             "title_walletconnect": "WalletConnect failed",
-            "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the bridge may be unreachable.",
+            "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the dApp may be unreachable.",
+            "body_walletconnect_timeout": "No response from the dApp. The session may be expired or the dApp may be unreachable.",
             "title_wc_unsupported": "Connection link not supported",
             "body_wc_unsupported": "This WalletConnect link can't be used by Pera. Please reconnect from the dApp and try again.",
             "title_keyreg": "Couldn't prepare key registration",
@@ -262,6 +263,8 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "offline_empty_title": "You're offline",
+            "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "filter": "Filter",
             "csv": "CSV"
         },
@@ -295,8 +298,8 @@
     "accounts": {
         "legacyQuantum": {
             "title": "About your quantum account",
-            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
-            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery passphrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery passphrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
             "markerLabel": "About this quantum account",
             "dismiss": "Got it"
         }
@@ -460,9 +463,9 @@
             "title": "Keep it secret. Keep it safe.",
             "description": "Confirm and acknowledge the following:",
             "row_screen": "Nobody can see my screen.",
-            "row_share": "I risk losing all my funds if I share my Recovery Phrase with anyone.",
-            "row_lose": "My funds are permanently lost if I lose my Recovery Phrase and lose access to my wallet.",
-            "row_pera": "Pera employees will NEVER ask for my Recovery Phrase.",
+            "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
+            "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
+            "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
             "cta_reveal": "Reveal Passphrase",
             "cta_cancel": "Cancel"
         },
@@ -553,6 +556,199 @@
         },
         "one_year": {
             "label": "1Y"
+        }
+    },
+    "cloud_backup": {
+        "encryption_key_label": "Encryption Key",
+        "deleted_remotely": "Cloud backup was deleted on another device",
+        "main": {
+            "title": "Cloud Backup",
+            "subtitle": "Choose an option to proceed",
+            "setup_title": "Set Up a new Cloud Backup",
+            "setup_description": "Protect your accounts and contacts with secure cloud synchronization. This will allow you to sync them with your other devices.",
+            "restore_title": "Restore/Retrieve a Backup",
+            "restore_description": "Restore your accounts and contacts on a fresh app or get synched with your other devices."
+        },
+        "setup": {
+            "title": "Set Up a new Cloud Backup",
+            "description": "Store your 12-word key and encryption keys securely to retrieve your backup in the future.",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copy to Clipboard",
+            "encryption_key_label": "Encryption Key",
+            "info_title": "Required for local encryption",
+            "info_body": "These credentials are unrecoverable if lost. Store them securely to avoid losing access to your backup.",
+            "proceed": "Proceed"
+        },
+        "verify": {
+            "title": "Verify Passphrase",
+            "description": "Choose the correct words to confirm you’ve stored your 12-word key securely.",
+            "proceed": "Proceed",
+            "error_message": "Incorrect selection. Please try again."
+        },
+        "confirm": {
+            "title": "Have you stored your Encryption Key?",
+            "checkbox_label": "Yes, I stored my Encryption Key",
+            "enable_button": "Enable Cloud Backup now",
+            "show_again_button": "Show my credentials again"
+        },
+        "enable": {
+            "success": "Cloud Backup enabled",
+            "error": "Couldn’t enable Cloud Backup. Please try again."
+        },
+        "credentials": {
+            "title": "Backup Credentials",
+            "credential_address_label": "Credential Address",
+            "passphrase_label": "Passphrase",
+            "copy_passphrase": "Copy to Clipboard",
+            "passphrase_missing": "No Passphrase is stored on this device.",
+            "passphrase_unreadable": "Your stored Passphrase couldn’t be read on this device.",
+            "done_button": "Store your Credentials Securely"
+        },
+        "overview": {
+            "title": "Cloud Backup",
+            "latest_sync": "Latest Sync",
+            "status_success": "SUCCESS",
+            "status_failed": "FAILED",
+            "status_syncing": "SYNCING",
+            "protected_data": "Protected Data",
+            "accounts": "Accounts",
+            "accounts_in_sync": "{{count}} accounts in sync",
+            "accounts_in_sync_one": "{{count}} account in sync",
+            "accounts_not_backed_up": "You have {{count}} accounts not backed up",
+            "accounts_not_backed_up_one": "You have {{count}} account not backed up",
+            "contacts": "Contacts",
+            "contacts_in_sync": "{{count}} contacts in sync",
+            "contacts_in_sync_one": "{{count}} contact in sync",
+            "contacts_not_backed_up": "You have {{count}} contacts not backed up",
+            "contacts_not_backed_up_one": "You have {{count}} contact not backed up",
+            "backup_details": "Backup Details",
+            "credential_address": "Credential Address",
+            "sync_devices": "Sync with other devices",
+            "sync_devices_description": "Access your data on all devices",
+            "turn_off": "Turn Off Cloud Backup",
+            "turn_off_description": "Stop syncing data to the cloud"
+        },
+        "sync_devices": {
+            "title": "Sync with other devices",
+            "description": "Use your other device to scan this QR code, then enter the code you just chose to begin syncing.",
+            "warning": "A photo of this QR can be broken open given time. Don’t let anyone photograph it, and don’t share your 6-digit code.",
+            "error": "Couldn’t create a sync QR code on this device."
+        },
+        "encryption_code": {
+            "setup_title": "Choose a 6-digit code to protect this QR",
+            "confirm_title": "Re-enter your code"
+        },
+        "accounts": {
+            "title": "Accounts",
+            "review_title": "Accounts to review",
+            "review_action": "Review",
+            "count_label": "({{count}})",
+            "asset_count": "{{count}} assets",
+            "asset_count_one": "{{count}} asset",
+            "not_backed_up_count": "{{count}} not backed up",
+            "not_backed_up_count_one": "{{count}} not backed up",
+            "available_count": "{{count}} available from back up",
+            "available_count_one": "{{count}} available from back up",
+            "device_title": "Accounts",
+            "device_subtitle": "Available on this device",
+            "add_from_backup_title": "Add from Backup",
+            "add_from_backup_subtitle": "In your Cloud Backup, not on this device",
+            "not_backed_up_title": "Not Backed Up",
+            "not_backed_up_subtitle": "On this device, not in your Cloud Backup",
+            "back_up_action": "Back Up",
+            "add_action": "Add",
+            "review_empty_title": "Nothing to review",
+            "review_empty_body": "Every account on this device is in your Cloud Backup.",
+            "back_up_success": "Account backed up",
+            "back_up_error": "Couldn’t back up this account. Please try again.",
+            "add_success": "Account added",
+            "add_error": "Couldn’t add this account. Please try again.",
+            "delete_sheet_title": "Delete from Cloud Backup?",
+            "delete_sheet_body": "This will permanently remove the backup of this account from the cloud. You can re-backup from your local device at any time.",
+            "delete_sheet_confirm": "Delete",
+            "delete_sheet_cancel": "Cancel",
+            "keep_action": "Keep it",
+            "delete_success": "Removed from Cloud Backup",
+            "delete_error": "Couldn’t remove this account from the backup. Please try again.",
+            "keep_error": "Couldn’t remove this account from this device. Please try again."
+        },
+        "contacts": {
+            "title": "Contacts",
+            "review_title": "Contacts to review",
+            "review_action": "Review",
+            "not_backed_up_count": "{{count}} not backed up",
+            "not_backed_up_count_one": "{{count}} not backed up",
+            "available_count": "{{count}} available from back up",
+            "available_count_one": "{{count}} available from back up",
+            "device_title": "Contacts",
+            "device_subtitle": "Available on this device",
+            "add_from_backup_title": "Add from Backup",
+            "add_from_backup_subtitle": "In your Cloud Backup, not on this device",
+            "not_backed_up_title": "Not Backed Up",
+            "not_backed_up_subtitle": "On this device, not in your Cloud Backup",
+            "back_up_action": "Back Up",
+            "add_action": "Add",
+            "unnamed": "Unnamed contact",
+            "empty_title": "No contacts yet",
+            "empty_body": "Contacts you save on this device will be protected by your Cloud Backup.",
+            "review_empty_title": "Nothing to review",
+            "review_empty_body": "Every contact on this device is in your Cloud Backup.",
+            "back_up_success": "Contact backed up",
+            "back_up_error": "Couldn’t back up this contact. Please try again.",
+            "add_success": "Contact added",
+            "add_error": "Couldn’t add this contact. Please try again.",
+            "delete_sheet_title": "Delete from Cloud Backup?",
+            "delete_sheet_body": "This will permanently remove the backup of this contact from the cloud. You can re-backup from your local device at any time.",
+            "delete_success": "Removed from Cloud Backup",
+            "delete_error": "Couldn’t remove this contact from the backup. Please try again.",
+            "keep_error": "Couldn’t remove this contact from this device. Please try again."
+        },
+        "turn_off_sheet": {
+            "title": "Turn Off Cloud Backup",
+            "description": "Your data will no longer be synced across devices and local-only data may be lost if this device is reset.",
+            "keep_enabled": "Keep Enabled",
+            "turn_off": "Turn Off Backup",
+            "turn_off_and_remove": "Turn Off & Remove Backup"
+        },
+        "turn_off": {
+            "success": "Cloud Backup turned off",
+            "error": "Couldn’t turn off Cloud Backup. Please try again."
+        },
+        "turn_off_and_remove": {
+            "success": "Cloud Backup turned off and removed",
+            "error": "Couldn’t remove Cloud Backup. Please try again."
+        },
+        "restore": {
+            "sheet_title": "Restore/Retrieve a Backup",
+            "sheet_description": "Restore your backup by scanning a QR code or entering your credentials manually.",
+            "sheet_scan": "Scan QR Code",
+            "sheet_manual": "Enter Details Manually",
+            "passphrase_title": "Enter your backup phrase",
+            "passphrase_continue": "Continue",
+            "too_many_words_title": "Invalid backup phrase",
+            "too_many_words_body": "The phrase you pasted contains too many words.",
+            "insufficient_slots_title": "Invalid backup phrase",
+            "insufficient_slots_body": "The phrase you pasted does not fit in the remaining slots.",
+            "encryption_key_title": "Enter your encryption key",
+            "encryption_key_placeholder": "Paste your encryption key",
+            "encryption_key_restore": "Restore backup",
+            "restoring": "Restoring your backup…",
+            "error_not_found": "No backup found for these credentials.",
+            "error_invalid_credentials": "Incorrect backup phrase or encryption key.",
+            "error_unknown": "Something went wrong. Please try again.",
+            "success": "Backup restored",
+            "partial_success": "{{count}} accounts couldn’t be restored.",
+            "partial_success_one": "{{count}} account couldn’t be restored."
+        },
+        "restore_scan": {
+            "title": "Scan QR Code",
+            "instructions": "Open Cloud Backup on your other device, choose “Sync with other devices”, and scan the code it shows.",
+            "scan_button": "Open Camera",
+            "code_title": "Enter the 6-digit code",
+            "invalid_qr_title": "Not a backup QR code",
+            "invalid_qr_body": "Scan the code shown by “Sync with other devices” on your other device.",
+            "unsupported_version_title": "Update Pera to continue",
+            "unsupported_version_body": "This QR code was made by a newer version of Pera."
         }
     },
     "common": {
@@ -806,6 +1002,16 @@
             "invalid_key": "The signing key for this account is invalid.",
             "generic": "Something went wrong accessing your signing key."
         },
+        "connections": {
+            "invalid_payload": "An app sent a request Pera couldn't understand. Please check the app and try again.",
+            "no_handler": "Pera couldn't handle this connection request. Please check the app and try again.",
+            "unknown_connection": "Pera couldn't find that connection. It may have already been disconnected.",
+            "duplicate_kind": "Something went wrong setting up app connections. Please restart Pera and try again.",
+            "already_initialized": "Something went wrong setting up app connections. Please restart Pera and try again.",
+            "already_answered": "This request has already been answered.",
+            "no_subscriber": "Pera wasn't ready to handle this request. Please try again.",
+            "not_initialized": "Pera is still starting up. Please try connecting again in a moment."
+        },
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
@@ -816,10 +1022,13 @@
             "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again.",
             "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
             "bridge_connection_body": "Couldn't connect to WalletConnect. Check your internet connection and try again.",
-            "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
+            "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again.",
+            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again."
         },
         "signing": {
-            "title": "An error occurred processing the signing request"
+            "title": "An error occurred processing the signing request",
+            "local_key_failed": "The signing key for this account couldn't be used on this device. Please try again and contact support if the issue persists.",
+            "cannot_sign": "This account can't sign on this device. Please try again and contact support if the issue persists."
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
@@ -1550,23 +1759,23 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Select your mnemonic type",
+            "title": "Select your passphrase type",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you derive new accounts, all using the same mnemonic",
+                "description": "Wallet that lets you derive new accounts, all using the same passphrase",
                 "chip": "new"
             },
             "algo25": {
                 "title": "ALGO25",
                 "description": "Legacy format that is specific to Algorand ecosystem",
                 "chip": "legacy",
-                "mnemonic_info": "25 words mnemonic keys"
+                "mnemonic_info": "25-word passphrase"
             },
-            "mnemonic_info": "24 words mnemonic keys"
+            "mnemonic_info": "24-word passphrase"
         },
         "import_info": {
             "title": "Recover an Algorand Wallet",
-            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery phrase handy before you begin.",
+            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery passphrase handy before you begin.",
             "button": "Recover an Algorand Wallet"
         },
         "import_account": {
@@ -1659,7 +1868,7 @@
             "watch_address_option_title": "Watch an Address",
             "watch_address_option_description": "Monitor an Algorand address by providing its address",
             "create_universal_wallet_option_title": "Create a Universal Wallet",
-            "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24 word mnemonic",
+            "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24-word passphrase",
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "quantum_account_option_title": "Add Quantum Account",
@@ -1686,6 +1895,10 @@
             "pair_ledger_usb_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet via USB cable",
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
+            "cloud_backup_title": "Import from Cloud Backup",
+            "cloud_backup_description": "I want to restore my accounts and contacts using my 12-word backup phrase and encryption key",
+            "cloud_backup_already_enabled_title": "Cloud Backup is already on",
+            "cloud_backup_already_enabled_body": "This device already has a Cloud Backup. Manage it in Settings › Cloud Backup.",
             "asb_title": "Algorand Secure Backup",
             "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
             "quantum_title": "Import Quantum account",
@@ -1895,7 +2108,7 @@
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
                 "expect_1": "Future transactions for this account can only be signed by the new account's key.",
-                "expect_2": "Back up that account's recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_2": "Back up that account's recovery passphrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
                 "expect_3": "Your account's address, balances, and configuration will not change.",
                 "expect_4": "If you close out this account later, the rekey is removed. Funding the address again restores control to the original key, not the account you're setting up now.",
                 "cta": "Start process"
@@ -1933,7 +2146,7 @@
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
                 "expect_1": "Future transactions for this account can only be signed by the quantum account's post-quantum key.",
-                "expect_2": "Back up that account's 25-word recovery phrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
+                "expect_2": "Back up that account's 25-word recovery passphrase before you continue. Losing it means losing the ability to sign for this account, even though everything else about it stays intact.",
                 "expect_3": "Your account's address, balances, and configuration will not change.",
                 "expect_4": "Future transactions will pay a higher minimum network fee, and rekeying back to a standard account will itself require a quantum-signed transaction.",
                 "cta": "Start process"
@@ -2109,6 +2322,7 @@
         "edit_contact": "Edit Contact",
         "add_contact": "Add New Contact",
         "settings": "Settings",
+        "cloud_backup": "Cloud Backup",
         "launch_settings": "Launch Setting",
         "advanced_preferences": "Advanced Preferences",
         "confirmation_action": "Confirmation Action",
@@ -2179,7 +2393,8 @@
             "cancel": "Not now",
             "unavailable_title": "Biometrics unavailable",
             "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again.",
-            "body_not-available": "Biometric unlock isn't working because your device has no biometric set up for Pera. Set one up in your device settings, then turn it back on here."
+            "body_not-available": "Biometric unlock isn't working because your device has no biometric set up for Pera. Set one up in your device settings, then turn it back on here.",
+            "body_rebind-required": "Pera needs to set up biometric unlock again on this device. Turn it back on to keep unlocking with biometrics."
         }
     },
     "send_funds": {
@@ -2314,6 +2529,9 @@
         },
         "main": {
             "account_section": "Account",
+            "cloud_backup_title": "Cloud Backup",
+            "cloud_backup_on": "On",
+            "cloud_backup_off": "Off",
             "security_title": "Security",
             "notifications_title": "Notifications",
             "scan_rekeyed_title": "Scan for Rekeyed Accounts",
@@ -2832,13 +3050,14 @@
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",
             "success_sheet_return_to_dapp_generic": "Return to the dApp",
-            "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
+            "networks_mainnet": "MainNet",
+            "networks_testnet": "TestNet",
             "networks_betanet": "Betanet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request.",
-            "error_network_mismatch": "This app asked to connect on {{requested}}, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
+            "error_network_mismatch": "This app asked to connect on a different network, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
+            "error_delivery_failed": "Pera couldn't reach the app to deliver your answer, so it may still be waiting. Try again from the app.",
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts."
         },
         "connection": {
@@ -2858,7 +3077,6 @@
             "delete_all_title": "Delete All Sessions",
             "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
             "disconnect_failed_title": "Couldn't disconnect",
-            "unknown_peer": "Unknown",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
             "permissions": "Advanced Permissions",

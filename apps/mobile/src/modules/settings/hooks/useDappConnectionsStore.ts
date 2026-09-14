@@ -13,11 +13,9 @@
 import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
-// From the platform-agnostic ARC-0027 core, NOT platform-chrome. The store is
-// pure over an injectable storage area and touches no chrome API — only
-// platform-chrome's barrel re-exported it, and importing through that barrel
-// dragged chrome-only code into a file the shared settings routes reach, i.e.
-// into the native bundle.
+// From the platform-agnostic ARC-0027 core, NOT platform-chrome: importing
+// through that barrel drags chrome-only code into the native bundle via the
+// shared settings routes.
 import {
     DappPermissionStore,
     type DappPermission,
@@ -26,10 +24,8 @@ import {
 
 export const DAPP_CONNECTIONS_QUERY_KEY = ['dapp-connections'] as const
 
-// apps/mobile's tsconfig doesn't declare the ambient `chrome` global (only
-// extensions/platform-chrome does, via its own @types/chrome devDependency),
-// so read it off globalThis with a narrow local shape instead of pulling
-// @types/chrome into this program.
+// apps/mobile's tsconfig has no ambient `chrome` global, so read it off
+// globalThis with a narrow local shape instead of pulling in @types/chrome.
 type ChromeGlobal = { storage?: { local?: LocalStorageArea } }
 
 const getChromeLocalStorage = (): LocalStorageArea | null => {
@@ -61,12 +57,9 @@ export const useDappConnectionsStore = (): UseDappConnectionsStoreResult => {
         queryKey: DAPP_CONNECTIONS_QUERY_KEY,
         queryFn: async () => {
             if (!store) return []
-            // Deleting a wallet account left its address granted to every
-            // origin that had it, which later surfaced as a confusing
-            // "unauthorized signer" rather than an honest missing grant.
-            // Nothing observes account removal from here, so self-heal on the
-            // one screen that shows these grants — and prune BEFORE listing so
-            // the user never sees an address they no longer hold.
+            // Deleting a wallet account leaves its address granted to every origin
+            // that had it, surfacing later as a confusing "unauthorized signer".
+            // Nothing observes account removal here, so prune BEFORE listing.
             await store.pruneAddresses(
                 new Set(accounts.map(account => account.address)),
             )

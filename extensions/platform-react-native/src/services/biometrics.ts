@@ -14,7 +14,6 @@ import { requireOptionalNativeModule } from 'expo'
 import {
     AuthenticationType,
     SecurityLevel,
-    authenticateAsync,
     getEnrolledLevelAsync,
     hasHardwareAsync,
     isEnrolledAsync,
@@ -22,24 +21,29 @@ import {
 } from 'expo-local-authentication'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricArmResult,
     BiometricAvailability,
     BiometricEnrollmentBinding,
     BiometricSecurityLevel,
-    BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
-    BiometricsAuthenticateResult,
     BiometricsService,
     BiometricType,
+    BiometricUnwrapFailureReason,
+    BiometricUnwrapResult,
 } from '@perawallet/wallet-extension-platform'
 
 const LOG_SOURCE = 'RNBiometricsService'
 
 /** `apps/mobile/native-modules/biometric-binding`. */
 interface NativePeraBiometricBinding {
-    createBinding(): Promise<boolean>
     checkBinding(): Promise<string>
     clearBinding(): Promise<void>
     getAvailability(): Promise<string>
+    armBinding(): Promise<{ blob: string; tokenHash: string } | null>
+    unwrapToken(
+        blob: string,
+        prompt: { title: string; cancelLabel: string },
+    ): Promise<Uint8Array>
 }
 
 const AVAILABILITIES: readonly BiometricAvailability[] = [
@@ -74,28 +78,26 @@ const asBinding = (status: string): BiometricEnrollmentBinding =>
         ? (status as BiometricEnrollmentBinding)
         : 'unavailable'
 
-// Unmapped errors fall through to 'unknown': iOS returns prefixed strings
-// ("unknown: <code>") and strings outside the TS union. Android folds its OS
-// cancel into 'user_cancel', so 'system-cancel' is iOS-only.
-const AUTH_FAILURE_REASONS: Record<
-    string,
-    BiometricsAuthenticateFailureReason
-> = {
-    user_cancel: 'user-cancel',
-    user_fallback: 'user-cancel',
-    system_cancel: 'system-cancel',
-    app_cancel: 'system-cancel',
-    lockout: 'lockout',
-    not_available: 'unavailable',
-    not_enrolled: 'unavailable',
-    passcode_not_set: 'unavailable',
-    authentication_failed: 'failed',
-}
+const UNWRAP_FAILURE_REASONS = [
+    'invalidated',
+    'decrypt-failed',
+    'no-binding',
+    'user-cancel',
+    'system-cancel',
+    'lockout',
+    'unavailable',
+    'failed',
+] as const satisfies readonly BiometricUnwrapFailureReason[]
 
-const mapAuthFailureReason = (
-    error: string | undefined,
-): BiometricsAuthenticateFailureReason =>
-    (error && AUTH_FAILURE_REASONS[error]) || 'unknown'
+// Only the native side can tell a destroyed key from a declined prompt, so it
+// classifies and this only maps; an unrecognized code degrades rather than
+// guessing.
+const mapUnwrapFailureReason = (
+    error: unknown,
+): BiometricUnwrapFailureReason => {
+    const code = (error as { code?: unknown } | null)?.code
+    return UNWRAP_FAILURE_REASONS.find(reason => reason === code) ?? 'unknown'
+}
 
 // Backed by `expo-local-authentication` (Expo SDK 57), which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
@@ -151,45 +153,6 @@ export class RNBiometricsService implements BiometricsService {
         }
     }
 
-    async authenticate(
-        prompt: BiometricsAuthenticatePrompt = {},
-    ): Promise<BiometricsAuthenticateResult> {
-        try {
-            const result = await authenticateAsync({
-                promptMessage: prompt.title ?? 'Authenticate',
-                cancelLabel: prompt.cancelLabel || 'Cancel',
-                disableDeviceFallback: true,
-                // The single choke point for both enrollment and unlock, so
-                // requiring class-3 means a spoofable "weak" modality can
-                // neither be bound nor used to unlock. Weak-only Android devices
-                // fail the OS prompt and fall back to PIN; iOS ignores this,
-                // since Face ID / Touch ID are always strong.
-                //
-                // Deliberately stricter than the legacy Android app, which uses
-                // BIOMETRIC_WEAK for unlock.
-                biometricsSecurityLevel: 'strong',
-            })
-            if (!result.success) {
-                logger.warn('Biometric authentication did not succeed', {
-                    source: LOG_SOURCE,
-                    error: result.error ?? null,
-                    warning: result.warning ?? null,
-                })
-                return {
-                    success: false,
-                    reason: mapAuthFailureReason(result.error),
-                }
-            }
-            return { success: true }
-        } catch (error) {
-            logger.error('Biometric authentication threw', {
-                source: LOG_SOURCE,
-                error,
-            })
-            return { success: false, reason: 'unknown' }
-        }
-    }
-
     async getAvailability(): Promise<BiometricAvailability> {
         const module = getBindingModule()
         // Without the native module there is no status code to read. 'unknown'
@@ -204,24 +167,6 @@ export class RNBiometricsService implements BiometricsService {
                 error,
             })
             return 'unknown'
-        }
-    }
-
-    async createEnrollmentBinding(): Promise<void> {
-        const module = getBindingModule()
-        if (!module) return
-        try {
-            const created = await module.createBinding()
-            if (!created) {
-                logger.warn('Biometric enrollment binding was not recorded', {
-                    source: LOG_SOURCE,
-                })
-            }
-        } catch (error) {
-            logger.warn('createBinding native call threw', {
-                source: LOG_SOURCE,
-                error,
-            })
         }
     }
 
@@ -251,6 +196,41 @@ export class RNBiometricsService implements BiometricsService {
                 source: LOG_SOURCE,
                 error,
             })
+        }
+    }
+
+    async armBiometricBinding(): Promise<BiometricArmResult | null> {
+        const module = getBindingModule()
+        if (!module) return null
+        try {
+            return (await module.armBinding()) ?? null
+        } catch (error) {
+            logger.error('Arming the biometric binding failed', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return null
+        }
+    }
+
+    async unwrapBiometricToken(
+        blob: string,
+        prompt: BiometricsAuthenticatePrompt,
+    ): Promise<BiometricUnwrapResult> {
+        const module = getBindingModule()
+        // No module means no key, which is indistinguishable from a key that
+        // was never created — and both are recoverable by re-opting in.
+        if (!module) return { success: false, reason: 'no-binding' }
+        try {
+            const token = await module.unwrapToken(blob, prompt)
+            return { success: true, token }
+        } catch (error) {
+            const reason = mapUnwrapFailureReason(error)
+            logger.warn('Biometric unwrap did not succeed', {
+                source: LOG_SOURCE,
+                reason,
+            })
+            return { success: false, reason }
         }
     }
 }

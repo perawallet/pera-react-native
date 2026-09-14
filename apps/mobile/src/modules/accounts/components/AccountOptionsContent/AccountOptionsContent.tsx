@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { DeleteFromBackupSheet } from '@modules/cloud-backup'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import { type AccountOption, useAccountOptions } from './useAccountOptions'
@@ -96,6 +97,8 @@ export const AccountOptionsContent = ({
         removeConfirmView,
         handleConfirmBackupWarning,
         handleConfirmRemove,
+        handleDeleteFromBackup,
+        handleKeepInBackup,
         handleCancelRemove,
     } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
@@ -137,6 +140,16 @@ export const AccountOptionsContent = ({
                 cancelTestID='remove_account_cancel_button'
                 onConfirm={handleConfirmRemove}
                 onCancel={handleCancelRemove}
+            />
+        )
+    }
+
+    if (removeConfirmView === 'cloud-backup-delete') {
+        return (
+            <DeleteFromBackupSheet
+                declineLabel={t('cloud_backup.accounts.keep_action')}
+                onConfirm={() => void handleDeleteFromBackup()}
+                onDecline={() => void handleKeepInBackup()}
             />
         )
     }

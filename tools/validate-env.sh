@@ -128,6 +128,19 @@ case "$PROFILE" in
     ;;
 esac
 
+# tools/generate-config.sh already fails a production build with no Reown
+# project id; validating it here names the missing Bitrise secret instead. In
+# staging a build without one is legal — v2 pairing is simply unavailable.
+case "$PROFILE" in
+  ios|android|web)
+    if [ "${ENVIRONMENT:-}" = "production" ]; then
+      required_prefixed+=( "REOWN_PROJECT_ID" )
+    else
+      optional_prefixed+=( "REOWN_PROJECT_ID" )
+    fi
+    ;;
+esac
+
 # The smoke gate runs at the end of the staging workflows and only reaches
 # BrowserStack after a full native build and a store upload. Validate here so a
 # missing credential costs seconds rather than a finished archive.

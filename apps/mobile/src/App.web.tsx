@@ -22,10 +22,8 @@ import {
     hydratePlatform,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
-// Bootstrap-only subpath: exports hydrateKeystoreStorage without pulling the
-// extension's vendored ./keystore graph, which reaches xhd-wallet-api (and,
-// through libs.ts, dp256) — a large pure-JS crypto graph with no business
-// loading before hydration. The /bootstrap subpath is storage-only.
+// Bootstrap-only subpath: hydrateKeystoreStorage without the vendored ./keystore
+// graph, whose large pure-JS crypto has no business loading before hydration.
 import { hydrateKeystoreStorage } from '@perawallet/wallet-extension-keystore-chrome/bootstrap'
 
 type ShellComponent = React.ComponentType
@@ -36,13 +34,9 @@ const OffscreenStatus = (): React.JSX.Element => (
     </View>
 )
 
-// Outermost mount guard, ABOVE ThemeProvider. AppShell.web has its own themed
-// WebShellErrorBoundary, but that boundary lives *inside* ThemeProvider — a
-// throw in AppShell's own render body (theme construction) or in ThemeProvider
-// itself is above it and would white-screen the whole tree. This boundary is
-// the last line of defence, so it stays store-free and unthemed (plain RN
-// primitives only, per this file's boot-order contract) and renders a
-// reload-to-recover fallback instead of a blank page.
+// Outermost mount guard ABOVE ThemeProvider: AppShell's own boundary lives
+// inside it, so a throw in theme construction or ThemeProvider itself would
+// white-screen. Store-free and unthemed per this file's boot-order contract.
 class RootBoundary extends React.Component<
     { children: React.ReactNode },
     { hasError: boolean }
@@ -103,31 +97,24 @@ export const App = (): React.JSX.Element => {
             ])
 
             if (isOffscreen) {
-                // Headless surface: no shell, no React tree beyond the status
-                // line. Store-bearing imports stay behind this dynamic import
-                // (same boot-order contract as AppShell).
+                // Headless surface; store-bearing imports stay behind this dynamic
+                // import (same boot-order contract as AppShell).
                 const mod = await import('@browser/offscreen/runOffscreenApp')
                 await mod.runOffscreenApp()
                 setShell(() => OffscreenStatus)
                 return
             }
 
-            // BOOT-ORDER CONTRACT: Zustand persist stores read
-            // getProvider().keyValueStorage at module evaluation, which throws
-            // before hydrate() resolves. Everything that (transitively)
-            // imports a store MUST live behind this dynamic import. Never add
-            // a static import of app code to this file.
+            // BOOT-ORDER CONTRACT: Zustand persist stores read getProvider().keyValueStorage
+            // at module evaluation, which throws before hydrate() resolves. Everything
+            // that transitively imports a store MUST stay behind this dynamic import.
             const mod = await import('./AppShell.web')
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {
-            // The offscreen document has no user to read an error, and leaving
-            // it alive is actively harmful: `chrome.offscreen.hasDocument()`
-            // keeps returning true, so `ensureOffscreenDocument` stays a no-op
-            // and nothing can ever recreate it — the database stays unreachable
-            // until the user manually reloads the extension. Closing makes the
-            // next `ensure-offscreen` rebuild it, which is the same recovery
-            // runOffscreenApp uses when the db worker dies under it.
+            // A dead offscreen document is worse than none: `hasDocument()` keeps
+            // returning true so nothing ever recreates it and the database stays
+            // unreachable until a manual reload. Closing lets `ensure-offscreen` rebuild it.
             if (getSurface() === 'offscreen') {
                 console.error('[pera] offscreen bootstrap failed:', err)
                 window.close()

@@ -93,6 +93,11 @@ export const configSchema = z
         // until set.
         sentryDsn: z.string(),
 
+        // The WalletConnect v2 relay rejects clients with no Reown Cloud
+        // project id. Empty in open-source builds, where v2 is unavailable;
+        // a production build without one fails in tools/generate-config.sh.
+        reownProjectId: z.string(),
+
         notificationRefreshTime: z.number().int(),
         remoteConfigRefreshTime: z.number().int(),
 
@@ -295,6 +300,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     gaMeasurementApiSecret: '',
     firebaseVapidKey: '',
     sentryDsn: '',
+    reownProjectId: '',
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -452,6 +458,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
     sentryDsn: 'SENTRY_DSN',
+    reownProjectId: 'REOWN_PROJECT_ID',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',

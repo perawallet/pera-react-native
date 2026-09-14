@@ -85,7 +85,11 @@ export const QRScannerContent = ({
         (value: string) => {
             try {
                 if (handlingRef.current) return
-                if (!isValidDeepLink(value)) {
+                // `skipDeepLinkHandler` callers validate the payload
+                // themselves and scan things that are not deeplinks at all
+                // (e.g. a raw JSON backup envelope), so the gate is theirs to
+                // apply, not ours.
+                if (!skipDeepLinkHandler && !isValidDeepLink(value)) {
                     // Unrecognized payload — re-arm so the user can retry
                     // (camera stops after its first decode; paste can
                     // always be resubmitted).

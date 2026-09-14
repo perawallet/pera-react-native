@@ -88,6 +88,16 @@ describe('tools/generate-config.sh', () => {
         )
     })
 
+    test('emits reownProjectId from REOWN_PROJECT_ID', () => {
+        const output = run({ REOWN_PROJECT_ID: 'test-project-id' })
+        expect(output).toContain('reownProjectId: "test-project-id"')
+    })
+
+    test('omits reownProjectId when REOWN_PROJECT_ID is unset', () => {
+        const output = run({ REOWN_PROJECT_ID: '' })
+        expect(output).not.toContain('reownProjectId')
+    })
+
     test('ignores obsolete web-feature URL environment variables', () => {
         const output = run({
             DISCOVER_BASE_URL: 'https://discover.example.com/',
@@ -147,6 +157,26 @@ describe('tools/generate-config.sh', () => {
 
         test('leaves non-production builds alone with no backend URLs set', () => {
             expect(() => run({ APP_ENV: 'staging' })).not.toThrow()
+        })
+
+        // Same argument as the backend URLs: the relay rejects a client with no
+        // project id, so v2 pairing is dead in a build that is already signed.
+        test('fails a production build when REOWN_PROJECT_ID is unset', () => {
+            expect(
+                runExpectingFailure({
+                    APP_ENV: 'production',
+                    MAINNET_BACKEND_URL: 'https://mainnet.api.perawallet.app',
+                    TESTNET_BACKEND_URL: 'https://testnet.api.perawallet.app',
+                    BACKUP_BASE_URL: 'https://backup.perawallet.app/',
+                    REOWN_PROJECT_ID: '',
+                }),
+            ).toMatch(/REOWN_PROJECT_ID is unset in a production build/)
+        })
+
+        test('leaves a non-production build with no project id alone', () => {
+            expect(() =>
+                run({ APP_ENV: 'staging', REOWN_PROJECT_ID: '' }),
+            ).not.toThrow()
         })
 
         // main.ts derives its guard from the config VALUES, so a new staging

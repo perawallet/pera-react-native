@@ -18,7 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AssetAmount } from '@components/AssetAmount'
@@ -68,7 +68,7 @@ export const TransactionConfirmationScreen = () => {
     return (
         <PWScreen
             footer={
-                <>
+                <PWView style={CONFIRM_ACTION_LAYOUT}>
                     {isCloseAccount && <CloseAccountWarning />}
                     {isRecipientBelowMbr && (
                         <RecipientBelowMbrWarning
@@ -78,13 +78,13 @@ export const TransactionConfirmationScreen = () => {
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
-                        isLoading={isRecipientInfoPending || isSigning}
+                        isLoading={isSigning}
                         isDisabled={
                             isRecipientBelowMbr || isRecipientInfoPending
                         }
                         testID='send_confirm_button'
                     />
-                </>
+                </PWView>
             }
         >
             <PWView style={styles.scrollContent}>

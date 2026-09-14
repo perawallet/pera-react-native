@@ -182,19 +182,31 @@ export const validateArc60AuthRequest = (
             `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
         )
     }
-    if (siwa.account_address !== stdSigData.signer) {
-        if (
-            !accounts.find(
-                a =>
-                    a.address === siwa.account_address &&
-                    a.rekeyAddress === stdSigData.signer,
-            )
-        ) {
+    // SIWA proves control of `account_address`, and on chain that control is
+    // whatever the account's auth address is on the active network. ARC-60
+    // itself is network-unaware, so the caller resolves the signer and the
+    // wallet only checks the result: an account that is not rekeyed signs for
+    // itself; a rekeyed one must be signed for by its auth address, never by
+    // its own (revoked) key.
+    if (siwa.account_address === stdSigData.signer) {
+        const named = accounts.find(a => a.address === stdSigData.signer)
+        if (named?.rekeyAddress) {
             throw new Arc60InvalidSignerError(
                 stdSigData.signer,
-                `SIWA signer is not a valid signer for "${siwa.account_address}"`,
+                `"${siwa.account_address}" is rekeyed to "${named.rekeyAddress}" on the active network; the SIWA signer must be that auth address`,
             )
         }
+    } else if (
+        !accounts.find(
+            a =>
+                a.address === siwa.account_address &&
+                a.rekeyAddress === stdSigData.signer,
+        )
+    ) {
+        throw new Arc60InvalidSignerError(
+            stdSigData.signer,
+            `SIWA signer is not a valid signer for "${siwa.account_address}"`,
+        )
     }
 
     return { decodedData }

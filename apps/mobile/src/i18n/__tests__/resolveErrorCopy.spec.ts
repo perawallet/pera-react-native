@@ -19,7 +19,7 @@ import {
     logger,
 } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
-import { SubmissionError } from '@perawallet/wallet-core-signing'
+import { SubmissionError, SigningError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
 // Use the real blockchain package — this spec relies on actual AlgodError
@@ -213,6 +213,36 @@ describe('resolveErrorCopy', () => {
         )
 
         expect(result.title).toBe('caller title')
+    })
+
+    it('renders a SigningError that forwards a KMS key under the signing title', () => {
+        const result = resolveErrorCopy(
+            new SigningError('key missing', undefined, {
+                messageKey: 'errors.kms.key_not_found',
+            }),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+
+        expect(result).toEqual({
+            title: 'errors.signing.title',
+            body: 'errors.kms.key_not_found',
+        })
+    })
+
+    it('keeps a key-less SigningError on the generic banner', () => {
+        const result = resolveErrorCopy(
+            new SigningError('hardware path'),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+
+        expect(result).toEqual({
+            title: 'errors.general.title',
+            body: 'errors.general.body',
+        })
     })
 })
 

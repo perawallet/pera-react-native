@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -138,7 +138,7 @@ export const OptOutConfirmationContent = ({
                     })}
                 </PWText>
 
-                <PWView style={styles.buttonContainer}>
+                <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={() => resolve('confirm')}

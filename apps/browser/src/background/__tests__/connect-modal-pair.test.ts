@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import {
-    WC_CONTROL_SCOPE,
+    CONNECTIONS_CONTROL_SCOPE,
     WC_PAGE_PAIR_SCOPE,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { installConnectModalPairRoute } from '../connect-modal-pair'
@@ -62,11 +62,8 @@ describe('installConnectModalPairRoute', () => {
             { origin: 'https://dapp.example', tab: { id: 7 } },
         )
 
-        // I2: the listener must return false synchronously on the path it
-        // consumes, not just on paths it ignores — chrome.runtime.onMessage
-        // is shared with the DB-control listener, the approval bridge and
-        // the dapp router, and a stray `true` here would make chrome wait
-        // on this listener for a response that never comes.
+        // onMessage is shared with other listeners: a stray `true` here would
+        // make chrome wait on this listener for a response that never comes.
         expect(result).toBe(false)
 
         await vi.waitFor(() => {
@@ -74,14 +71,9 @@ describe('installConnectModalPairRoute', () => {
         })
 
         expect(ensureOffscreenDocumentLike).toHaveBeenCalled()
-        // M2: an exact-shape assertion (not objectContaining) so a future
-        // `{ ...message, requesterOrigin: origin }` refactor that rides
-        // page-controlled keys onto the control message fails this test.
-        // No `correlationId`: nothing on this route awaits a `pair-outcome`
-        // broadcast, so one is deliberately never minted here (see the
-        // source comment on this route for why the host tolerates that).
+        // Exact shape, so page-controlled keys can never ride onto the control message.
         expect(chromeMock.runtime.sendMessage).toHaveBeenCalledWith({
-            scope: WC_CONTROL_SCOPE,
+            scope: CONNECTIONS_CONTROL_SCOPE,
             kind: 'pair',
             uri: URI,
             requesterOrigin: 'https://dapp.example',
@@ -131,30 +123,6 @@ describe('installConnectModalPairRoute', () => {
         errorSpy.mockRestore()
     })
 
-    it('sends one pair message per request, with no correlationId to collide across requests', async () => {
-        chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
-            { origin: 'https://dapp.example', tab: { id: 7 } },
-        )
-        await vi.waitFor(() => {
-            expect(chromeMock.runtime.sendMessage).toHaveBeenCalledTimes(1)
-        })
-
-        chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
-            { origin: 'https://dapp.example', tab: { id: 7 } },
-        )
-        await vi.waitFor(() => {
-            expect(chromeMock.runtime.sendMessage).toHaveBeenCalledTimes(2)
-        })
-
-        for (const [sent] of chromeMock.runtime.sendMessage.mock.calls) {
-            expect(
-                (sent as Record<string, unknown>).correlationId,
-            ).toBeUndefined()
-        }
-    })
-
     it('ignores a page-supplied requesterOrigin and uses sender.origin', async () => {
         chromeMock.deliver(
             {
@@ -181,14 +149,6 @@ describe('installConnectModalPairRoute', () => {
     })
 
     it('rejects the opaque "null" origin', () => {
-        // Note (M3): this clause is defensive/redundant-by-regex — the
-        // /^https?:\/\// test below already rejects the literal string
-        // 'null' on its own, so this case cannot be made to discriminate
-        // between "the clause is present" and "the clause is deleted"
-        // purely from the outside; both states already produce this exact
-        // outcome. It's kept for explicit parity with
-        // ChromeDappRouter.handleMessage and to document intent rather than
-        // leaving it implicit in the regex (see source comment).
         chromeMock.deliver(
             { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
             { origin: 'null' },

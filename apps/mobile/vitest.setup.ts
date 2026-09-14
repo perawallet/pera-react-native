@@ -68,12 +68,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi
-                .fn()
-                .mockResolvedValue({ success: false, reason: 'unavailable' }),
-            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
             checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
             clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            armBiometricBinding: vi.fn().mockResolvedValue(null),
+            unwrapBiometricToken: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),
@@ -174,12 +174,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getAvailability: vi.fn().mockResolvedValue('unknown'),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi
-                .fn()
-                .mockResolvedValue({ success: false, reason: 'unavailable' }),
-            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
             checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
             clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            armBiometricBinding: vi.fn().mockResolvedValue(null),
+            unwrapBiometricToken: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),
@@ -217,12 +217,31 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
                 sign: vi.fn(),
             },
         },
+        // Real store over the same in-memory map as `keyValueStorage`, matching
+        // production where `WithConnections` persists through `provider.keyValueStorage`.
+        connections: {
+            store: require('@perawallet/wallet-extension-connections').createConnectionStore(
+                {
+                    storage: {
+                        getItem: (key: string) => store.get(key) ?? null,
+                        setItem: (key: string, value: string) =>
+                            store.set(key, value),
+                        removeItem: (key: string) => {
+                            store.delete(key)
+                        },
+                    },
+                },
+            ),
+        },
     }
     return {
         getProvider: () => providerValue,
         PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
             children,
         usePeraProvider: () => providerValue,
+        // Keystore hydration completes before `RootComponent` (and so
+        // `ConnectionsProvider`) mounts, so an already-resolved promise is faithful.
+        getKeystore: () => ({ ready: Promise.resolve() }),
     }
 })
 
@@ -2650,6 +2669,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isAlgoAssetId: (assetId: string | number | bigint) =>
             String(assetId) === '0',
         isAlgoAssetName: (value: string) => value === 'ALGO',
+        displayCurrencyToAssetId: (code: string) =>
+            code === 'ALGO' ? '0' : null,
         logger: {
             debug: vi.fn(),
             info: vi.fn(),
@@ -2691,6 +2712,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return value
         },
         truncateAlgorandAddress: vi.fn(a => a),
+        // Real checksum validation — contactSchema gates its address rule on
+        // it, so a constant stub would make every form-validity assertion
+        // meaningless.
+        isValidAlgorandAddress: (
+            await vi.importActual<
+                typeof import('../../packages/shared/src/utils/addresses')
+            >('../../packages/shared/src/utils/addresses')
+        ).isValidAlgorandAddress,
         SHORT_ADDRESS_LENGTH: 11,
         LONG_ADDRESS_LENGTH: 20,
         dedupeSecondaryLabel: (primary: string, secondary?: string | null) =>
@@ -2759,6 +2788,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             e instanceof Error ? e : new Error(String(e)),
         ),
         describeError,
+        isPromiseLike: (value: unknown) =>
+            typeof value === 'object' &&
+            value !== null &&
+            'then' in value &&
+            typeof value.then === 'function',
         // Mirrors the real semantics (packages/shared/src/utils/async.ts):
         // reject with rejectWith(operation, ms) after `ms`, clear the timer
         // when the promise settles. Ledger timeout tests drive this with
@@ -2869,47 +2903,21 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
     })),
 }))
 
-// Mock @perawallet/wallet-core-walletconnect
-vi.mock('@perawallet/wallet-core-walletconnect', () => {
-    // Minimal stateful twin of the real store's dappOrigins slice so
-    // consumers that reach it via `useWalletConnectStore.getState()`
-    // (signing-completed driver, WC provider) work without each spec
-    // re-mocking the package.
-    type MockDappOrigin = { browserName?: string; createdAt: number }
-    const storeState = {
-        walletConnectConnections: [] as unknown[],
-        sessionRequests: [] as unknown[],
-        connectionError: null as unknown,
-        dappOrigins: {} as Record<string, MockDappOrigin>,
-        setDappOrigin: (clientId: string, origin: Record<string, unknown>) => {
-            storeState.dappOrigins = {
-                ...storeState.dappOrigins,
-                [clientId]: {
-                    ...origin,
-                    createdAt: Date.now(),
-                } as MockDappOrigin,
-            }
-        },
-        removeDappOrigin: (clientId: string) => {
-            const { [clientId]: _removed, ...rest } = storeState.dappOrigins
-            storeState.dappOrigins = rest
-        },
-        pruneDappOrigins: (retainedClientIds: string[]) => {
-            const retained = new Set(retainedClientIds)
-            storeState.dappOrigins = Object.fromEntries(
-                Object.entries(storeState.dappOrigins).filter(([clientId]) =>
-                    retained.has(clientId),
-                ),
-            )
-        },
-    }
-    const useWalletConnectStore = vi.fn() as ReturnType<typeof vi.fn> & {
-        getState: () => typeof storeState
-    }
-    useWalletConnectStore.getState = () => storeState
+vi.mock('@perawallet/wallet-core-walletconnect', async () => {
+    // The deep-link parser is a pure leaf the app needs for real. Loaded by path:
+    // the package barrel registers stores at module-eval, which every spec's
+    // minimal shared mock would then have to satisfy.
+    const {
+        isWalletConnectFocusHint,
+        isWalletConnectScheme,
+        parseWalletConnectUri,
+    } = await vi.importActual<
+        typeof import('../../packages/walletconnect/src/shared/deeplink')
+    >('../../packages/walletconnect/src/shared/deeplink')
     return {
-        useWalletConnect: vi.fn(() => ({ connections: [] })),
-        useWalletConnectStore,
+        isWalletConnectFocusHint,
+        isWalletConnectScheme,
+        parseWalletConnectUri,
         AlgorandChainId: {
             MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
             TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
@@ -3014,6 +3022,23 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     // to satisfy `new Set(MNEMONIC_WORDLIST)` at import time without dragging
     // the real wordlist into the test bundle.
     MNEMONIC_WORDLIST: ['abandon', 'ability', 'able', 'about'],
+    // The real helpers map against the 2048-word list. Tests only need a
+    // stable, injective index <-> word pair, so synthesize one rather than
+    // pulling the full wordlist in alongside the placeholder above.
+    mnemonicIndexToWord: (index: number) => `word-${index}`,
+    // Mirrors the real contract: null when a token isn't a wordlist word.
+    mnemonicWordsToIndices: (words: string[]) => {
+        const indices = new Uint16Array(words.length)
+        for (let i = 0; i < words.length; i++) {
+            const synthesized = /^word-(\d+)$/.exec(words[i])
+            const index = synthesized
+                ? Number(synthesized[1])
+                : ['abandon', 'ability', 'able', 'about'].indexOf(words[i])
+            if (index < 0) return null
+            indices[i] = index
+        }
+        return indices
+    },
     // Seed-access origins consumed at import time by the signing pipeline and
     // the backup flow (SIGNING_KEY_DOMAIN, useMnemonicForAddress). kms is fully
     // stubbed here, so both the constant and its consumers read these values —
@@ -3207,19 +3232,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 !!account?.keyPairId && account?.type !== 'hardware',
         ),
-        // Mirrors the real predicate, rekey hop included: for a rekeyed
-        // signer the auth account decides, and it must be non-multisig with a
-        // local key or hardware.
-        canSignArc60: vi.fn((account: any, accounts: any[] = []) => {
-            const signer = account?.rekeyAddress
-                ? accounts.find((a: any) => a.address === account.rekeyAddress)
-                : account
-            return (
-                !!signer &&
-                signer.type !== 'multisig' &&
-                (!!signer.keyPairId || signer.type === 'hardware')
-            )
-        }),
+        // Mirrors the real predicate: account-local (no rekey hop), non-multisig
+        // with a local key, or hardware.
+        canSignArc60: vi.fn(
+            (account: any) =>
+                !!account &&
+                account.type !== 'multisig' &&
+                (!!account.keyPairId || account.type === 'hardware'),
+        ),
         canSignProgram: vi.fn(
             (account: any) =>
                 account?.type !== 'hardware' &&
@@ -3295,26 +3315,39 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 // Mock @perawallet/wallet-core-contacts
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: vi.fn(() => ({
-        contacts: [],
-        findContacts: vi.fn(() => []),
+vi.mock('@perawallet/wallet-core-contacts', () => {
+    const state = {
+        contacts: [] as unknown[],
         addContact: vi.fn(),
         editContact: vi.fn(),
         deleteContact: vi.fn(),
         selectedContact: null,
         setSelectedContact: vi.fn(),
-    })),
-    useContactsStore: vi.fn(() => ({
-        contacts: [],
-        addContact: vi.fn(),
-        editContact: vi.fn(),
-        deleteContact: vi.fn(),
-        selectedContact: null,
-        setSelectedContact: vi.fn(),
-    })),
-    DuplicateAddressError: class DuplicateAddressError extends Error {},
-}))
+        resetState: vi.fn(),
+    }
+    // Shaped like the zustand store, not just its hook call: the backup sync
+    // manager reads it through `getState`/`subscribe`.
+    const useContactsStore = Object.assign(
+        vi.fn((selector?: (s: any) => any) =>
+            selector ? selector(state) : state,
+        ),
+        {
+            getState: () => state,
+            setState: vi.fn(),
+            subscribe: vi.fn(() => () => undefined),
+        },
+    )
+
+    return {
+        useContacts: vi.fn(() => ({
+            ...state,
+            findContacts: vi.fn(() => []),
+        })),
+        useContactsStore,
+        DuplicateAddressError: class DuplicateAddressError extends Error {},
+        ContactNotFoundError: class ContactNotFoundError extends Error {},
+    }
+})
 
 // Mock @perawallet/wallet-core-staking (dist schema.d.ts uses z.infer<typeof ...> which
 // cannot be parsed as JS; mock the whole package to avoid the SyntaxError)
@@ -3388,8 +3421,15 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     } = await vi.importActual<
         typeof import('../../packages/blockchain/src/store/custom-network-store')
     >('../../packages/blockchain/src/store/custom-network-store')
+    // Real ARC-0001 module: `packages/connections` composes its request
+    // schema from `arc0001SignTxnRequestSchema` at load, so a hand-written
+    // stand-in would silently disarm the resolver's own refusals.
+    const arc0001 = await vi.importActual<
+        typeof import('../../packages/blockchain/src/arc0001')
+    >('../../packages/blockchain/src/arc0001')
 
     return {
+        ...arc0001,
         useAlgorandClient: vi.fn(),
         useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
         useTransactionEncoder: vi.fn(() => ({

@@ -27,7 +27,8 @@ import {
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
+import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -36,6 +37,8 @@ import { routeCapabilities } from '@routes/capabilities'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
+import { useIsAccountBackedUp } from '@modules/cloud-backup'
+import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import {
     SharedAccountDetailsContent,
@@ -69,7 +72,11 @@ export type UseAccountOptionsParams = {
     onShowAddress: () => void
 }
 
-export type RemoveConfirmView = 'none' | 'backup-warning' | 'remove-confirm'
+export type RemoveConfirmView =
+    | 'none'
+    | 'backup-warning'
+    | 'remove-confirm'
+    | 'cloud-backup-delete'
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
@@ -81,6 +88,8 @@ export type UseAccountOptionsResult = {
     removeConfirmView: RemoveConfirmView
     handleConfirmBackupWarning: () => void
     handleConfirmRemove: () => void
+    handleDeleteFromBackup: () => Promise<void>
+    handleKeepInBackup: () => Promise<void>
     handleCancelRemove: () => void
     handleToggleNotifications: () => void
 }
@@ -102,6 +111,8 @@ export const useAccountOptions = ({
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
+    const isCloudBackupEnabled = useIsCloudBackupEnabled()
+    const isBackedUp = useIsAccountBackedUp(account.address)
 
     useMultisigDetailsBackfill(account)
 
@@ -303,23 +314,28 @@ export const useAccountOptions = ({
         onClose,
     ])
 
-    const performRemoveAccount = useCallback(() => {
+    /** Runs before the cloud-backup question, not with the removal: answering
+     *  "Delete" would drop the backup copy of an account the guard then
+     *  refuses to remove. */
+    const blockedByRekeyedDependents = useCallback((): boolean => {
         const rekeyedToThisAccount = accounts.filter(
             a =>
                 a.rekeyAddress === account.address &&
                 a.address !== account.address,
         )
+        if (rekeyedToThisAccount.length === 0) return false
 
-        if (rekeyedToThisAccount.length > 0) {
-            showToast({
-                title: t('account_options.remove_rekey_error_title'),
-                body: t('account_options.remove_rekey_error_message', {
-                    count: rekeyedToThisAccount.length,
-                }),
-                type: 'error',
-            })
-            return
-        }
+        showToast({
+            title: t('account_options.remove_rekey_error_title'),
+            body: t('account_options.remove_rekey_error_message', {
+                count: rekeyedToThisAccount.length,
+            }),
+            type: 'error',
+        })
+        return true
+    }, [accounts, account.address, showToast, t])
+
+    const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
         void removeAccount(account.address)
         showToast(
@@ -356,11 +372,76 @@ export const useAccountOptions = ({
         setRemoveConfirmView('remove-confirm')
     }, [])
 
-    const handleConfirmRemove = useCallback(() => {
+    const finishRemove = useCallback(() => {
         setRemoveConfirmView('none')
         onClose()
         performRemoveAccount()
     }, [onClose, performRemoveAccount])
+
+    const handleConfirmRemove = useCallback(() => {
+        if (blockedByRekeyedDependents()) {
+            setRemoveConfirmView('none')
+            onClose()
+            return
+        }
+        if (isCloudBackupEnabled && isBackedUp) {
+            setRemoveConfirmView('cloud-backup-delete')
+            return
+        }
+        finishRemove()
+    }, [
+        blockedByRekeyedDependents,
+        isCloudBackupEnabled,
+        isBackedUp,
+        onClose,
+        finishRemove,
+    ])
+
+    /** Both branches settle the backup's copy before the account leaves the
+     *  device: a refused choice must not strand a removed account in a state
+     *  the user never picked. */
+    const finishRemoveWithBackupChoice = useCallback(
+        async (choose: () => Promise<boolean>, errorKey: string) => {
+            let isSettled = false
+            try {
+                isSettled = await choose()
+            } catch (error) {
+                logger.warn('useAccountOptions: backup choice failed', {
+                    address: account.address,
+                    error:
+                        error instanceof Error ? error.message : String(error),
+                })
+            }
+            if (!isSettled) {
+                showToast({ title: t(errorKey), body: '', type: 'error' })
+                return
+            }
+            finishRemove()
+        },
+        [showToast, t, finishRemove, account.address],
+    )
+
+    const handleDeleteFromBackup = useCallback(
+        () =>
+            finishRemoveWithBackupChoice(
+                () =>
+                    getBackupSyncManager().deleteAccountFromBackup(
+                        account.address,
+                    ),
+                'cloud_backup.accounts.delete_error',
+            ),
+        [finishRemoveWithBackupChoice, account.address],
+    )
+
+    const handleKeepInBackup = useCallback(
+        () =>
+            finishRemoveWithBackupChoice(
+                () =>
+                    getBackupSyncManager().keepAccountInBackup(account.address),
+                'cloud_backup.accounts.keep_error',
+            ),
+        [finishRemoveWithBackupChoice, account.address],
+    )
 
     const handleCancelRemove = useCallback(() => {
         setRemoveConfirmView('none')
@@ -514,6 +595,8 @@ export const useAccountOptions = ({
         removeConfirmView,
         handleConfirmBackupWarning,
         handleConfirmRemove,
+        handleDeleteFromBackup,
+        handleKeepInBackup,
         handleCancelRemove,
         handleToggleNotifications,
     }

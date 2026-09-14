@@ -13,20 +13,17 @@
 import { useEffect } from 'react'
 import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from './useDeepLink'
 import {
     isWalletConnectFocusHint,
     isWalletConnectScheme,
-} from './deeplink/walletconnect-parser'
+} from '@perawallet/wallet-core-walletconnect'
+import { useDeepLink } from './useDeepLink'
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 
-// Every layout mounts this hook, so several instances coexist and each fires
-// for the same URL. The guards below are module-level so a link is handled once.
-//
-// `hasHandledInitialUrl` is needed because `Linking.getInitialURL()` keeps
-// returning the launch URL all session — without it, every newly mounted layout
-// re-handles it (the "modal keeps popping up" bug). `lastHandledUrl` +
-// `DUPLICATE_WINDOW_MS` collapse the warm-start fan-out.
+// Every layout mounts this hook, so several instances fire for the same URL;
+// the guards are module-level so a link is handled once. `Linking.getInitialURL()`
+// keeps returning the launch URL all session, so without `hasHandledInitialUrl`
+// every newly mounted layout re-handles it. `lastHandledUrl` collapses the warm-start fan-out.
 let hasHandledInitialUrl = false
 let lastHandledUrl: string | null = null
 let lastHandledAt = 0
@@ -59,9 +56,11 @@ export const useDeeplinkListener = () => {
         const shouldDispatch = (url: string): boolean => {
             if (isDuplicateUrl(url)) return false
             if (isValidDeepLink(url)) return true
-            // Unparseable wc-schemed links (WC v2, bridge-less v1, mangled
-            // wrappers) get a toast instead of silence. Focus hints only
-            // exist to foreground the wallet, so they stay silent.
+            // A wc-schemed link the parser refuses is a mangled wrapper (bad
+            // percent-encoding, a non-wc payload): a toast, not silence. A
+            // pairing URI no handler claims is refused further in, by the
+            // registry. Focus hints only exist to foreground the wallet, so
+            // they stay silent.
             if (isWalletConnectScheme(url) && !isWalletConnectFocusHint(url)) {
                 logger.warn('Deeplink: unsupported WalletConnect URI dropped')
                 showError({

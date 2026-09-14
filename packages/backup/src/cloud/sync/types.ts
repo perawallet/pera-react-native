@@ -22,9 +22,11 @@ import type {
     BackupId,
     BackupItemKey,
     BackupItemType,
+    ContactBackupPayload,
     DeviceId,
     SecretsBackupPayload,
 } from '../models'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { PulledAccount } from '../restore'
 
 export class UnsupportedBackupAccountTypeError extends Error {
@@ -38,7 +40,7 @@ export class UnsupportedBackupAccountTypeError extends Error {
 export type SerializedItem = {
     key: BackupItemKey
     type: BackupItemType
-    payload: AddressBackupPayload | SecretsBackupPayload
+    payload: AddressBackupPayload | SecretsBackupPayload | ContactBackupPayload
 }
 
 export type SerializedAccount = {
@@ -82,6 +84,17 @@ export type ImportSummary = {
 
 export type SyncImportFn = (accounts: PulledAccount[]) => Promise<ImportSummary>
 
+/** A contact import never reports duplicates: an address already held is
+ *  updated in place, because last-write-wins settled the winner upstream. */
+export type ContactImportSummary = {
+    imported: number
+    failed: { address: string; reason: string }[]
+}
+
+export type ContactImportFn = (
+    contacts: ContactBackupPayload[],
+) => Promise<ContactImportSummary>
+
 export type SyncEngineDeps = {
     network: Network
     backupId: BackupId
@@ -97,6 +110,10 @@ export type SyncEngineDeps = {
     ) => Promise<SerializedAccount | null>
     /** Decrypted remote accounts → wallet (import/update). */
     importAccounts: SyncImportFn
+    /** Snapshot of local contacts to serialize/push. */
+    listContacts: () => Contact[]
+    /** Decrypted remote contacts → contacts store (insert or update). */
+    importContacts: ContactImportFn
 }
 
 export type { PulledAccount }

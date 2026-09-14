@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -65,7 +65,7 @@ export const ARC59SendSummaryScreen = () => {
     return (
         <PWScreen
             footer={
-                <PWView style={styles.footer}>
+                <PWView style={[styles.footer, CONFIRM_ACTION_LAYOUT]}>
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}

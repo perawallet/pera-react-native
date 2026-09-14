@@ -281,6 +281,8 @@ vi.mock('react-native-pager-view', () => {
 // neither of which fires under jsdom — the gesture mock makes `onEnd` a no-op.
 // Flow tests only need to TRIGGER confirmation, so this keeps the same testID
 // and calls `onConfirm` on click. The gesture mechanics have their own spec.
+// `isLoading` is exposed as `data-loading` (distinct from `disabled`, which
+// merges both flags) so flow tests can assert the in-flight phase.
 vi.mock('@components/core/PWSlideToConfirm', () => {
     const React = require('react')
     return {
@@ -301,6 +303,7 @@ vi.mock('@components/core/PWSlideToConfirm', () => {
                 'button',
                 {
                     'data-testid': testID,
+                    'data-loading': isLoading ? 'true' : 'false',
                     disabled: !!isLoading || !!isDisabled,
                     onClick: () => {
                         if (!isLoading && !isDisabled) onConfirm?.()

@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 // pera-provider.web.ts composes the real Ledger web-transport extensions and
-// keystore-web's WithKeyStore (see pera-provider.web.test.ts for the same
+// keystore-web's WithKeyStore (see pera-provider.web.spec.ts for the same
 // mocks) so the module can be imported under jsdom.
 vi.mock('@ledgerhq/hw-transport-web-ble', () => ({
     default: {

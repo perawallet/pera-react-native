@@ -72,10 +72,13 @@ export const AssetHoldings = ({
         return currentCrypto
     }, [assetHolding, selectedPoint])
 
-    const selectedPreferredValue = useMemo(() => {
-        if (!selectedPoint) return null
-        return selectedPoint.preferredValue ?? new Decimal(0)
-    }, [selectedPoint])
+    // A scrubbed point with no preferred value has no rate behind it; passing
+    // null through renders the placeholder rather than claiming the holding
+    // was worth 0 on that date.
+    const selectedPreferredValue = useMemo(
+        () => selectedPoint?.preferredValue ?? null,
+        [selectedPoint],
+    )
 
     return (
         <AssetTransactionList

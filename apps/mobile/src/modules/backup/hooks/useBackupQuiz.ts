@@ -27,7 +27,7 @@ const shuffle = <T>(arr: T[]): T[] => {
     return copy
 }
 
-export type BackupQuizItem = {
+export type BackupQuizQuestion = {
     position: number
     correctWord: string
     options: string[]
@@ -35,7 +35,7 @@ export type BackupQuizItem = {
 }
 
 export type UseBackupQuizResult = {
-    items: BackupQuizItem[]
+    items: BackupQuizQuestion[]
     onSelect: (questionIdx: number, word: string) => void
     onSubmit: () => void
     isFilled: boolean
@@ -45,7 +45,7 @@ export type UseBackupQuizResult = {
 const buildQuestions = (
     correctPairs: MnemonicWordAtPosition[],
     distractorPool: string[],
-): BackupQuizItem[] => {
+): BackupQuizQuestion[] => {
     const correctSet = new Set(correctPairs.map(p => p.word))
     const pool = distractorPool.filter(w => !correctSet.has(w))
     const distractorsPerQuestion = OPTIONS_PER_QUESTION - 1
@@ -76,7 +76,7 @@ export const useBackupQuiz = (
     onSuccess: () => void,
     onWrong?: () => void,
 ): UseBackupQuizResult => {
-    const [items, setItems] = useState<BackupQuizItem[]>(() =>
+    const [items, setItems] = useState<BackupQuizQuestion[]>(() =>
         buildQuestions(correctPairs, distractorPool),
     )
     const [hasError, setHasError] = useState(false)

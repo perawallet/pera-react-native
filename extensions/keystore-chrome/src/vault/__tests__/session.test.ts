@@ -21,7 +21,9 @@ import {
     getSessionMasterKey,
     hasSessionMasterKey,
     putSessionMasterKey,
+    requireSessionMasterKey,
 } from '../session'
+import { VaultLockedError } from '../../errors'
 
 const KEY = Uint8Array.from({ length: 32 }, (_, i) => i)
 
@@ -73,6 +75,21 @@ describe('session master key', () => {
         fake.sessionData.set(SESSION_MASTER_KEY, value)
 
         expect(await getSessionMasterKey()).toBeNull()
+    })
+
+    it('requireSessionMasterKey returns the key while unlocked', async () => {
+        await putSessionMasterKey(KEY)
+
+        expect(await requireSessionMasterKey()).toEqual(KEY)
+    })
+
+    // The provider's engine-key resolver propagates whatever the source
+    // throws, so the class identity is what routes a locked vault to the
+    // unlock screen instead of a generic failure.
+    it('requireSessionMasterKey rejects with VaultLockedError while locked', async () => {
+        await expect(requireSessionMasterKey()).rejects.toBeInstanceOf(
+            VaultLockedError,
+        )
     })
 
     // chrome.storage.session defaults to TRUSTED_CONTEXTS, but saying so

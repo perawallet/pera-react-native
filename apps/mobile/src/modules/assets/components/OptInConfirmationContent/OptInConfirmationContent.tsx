@@ -12,7 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
-import { ConfirmAction } from '@components/ConfirmAction'
+import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -148,7 +148,7 @@ export const OptInConfirmationContent = ({
                 <ConfirmAction
                     title={t('common.slide_to_confirm.label')}
                     onConfirm={handleConfirm}
-                    style={styles.confirmButton}
+                    style={[styles.confirmButton, CONFIRM_ACTION_LAYOUT]}
                     testID='opt_in_confirm'
                 />
             </PWView>

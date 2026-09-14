@@ -39,7 +39,7 @@ type ConnectionRowProps = {
 const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const isWalletConnect = connection.kind === 'walletconnect'
+    const isWalletConnect = connection.kind !== 'dapp'
 
     return (
         <PWView
@@ -96,12 +96,17 @@ const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
 export const ConnectionsSettingsScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { connections, isLoading, handleRevoke, keyExtractor, scannerState } =
-        useConnectionsSettingsScreen()
+    const {
+        connections,
+        isLoading,
+        isHydrated,
+        handleRevoke,
+        keyExtractor,
+        scannerState,
+    } = useConnectionsSettingsScreen()
 
-    // Mirrors SettingsWalletConnectScreen's split entry point: the header
-    // icon covers "add another connection" once the list is non-empty, and
-    // the empty state's own button covers the first one — never both at once.
+    // The header icon covers "add another" once the list is non-empty and the
+    // empty state's button covers the first; never both at once.
     useNavigationHeader({
         right:
             connections.length > 0 ? (
@@ -135,7 +140,7 @@ export const ConnectionsSettingsScreen = () => {
                     <EmptyView
                         style={styles.emptyView}
                         icon='globe'
-                        isLoading={isLoading}
+                        isLoading={isLoading || !isHydrated}
                         title={t('settings.connections.empty_title')}
                         body={t('settings.connections.empty_body')}
                         button={

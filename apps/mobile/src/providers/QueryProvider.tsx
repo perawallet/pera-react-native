@@ -19,7 +19,10 @@ import {
 import { type OmitKeyof, focusManager } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import { isActiveAppState } from '@utils/app-state'
-import { shouldDehydrateQuery } from './query-persistence'
+import {
+    PERSISTED_CACHE_BUSTER,
+    shouldDehydrateQuery,
+} from './query-persistence'
 import { queryClient } from './queryClient'
 import { usePeraServiceUnavailableToast } from '@hooks/usePeraServiceUnavailableToast'
 
@@ -56,6 +59,7 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
             persistOptions={{
                 persister,
                 maxAge: config.reactQueryPersistenceAge,
+                buster: PERSISTED_CACHE_BUSTER,
                 dehydrateOptions: { shouldDehydrateQuery },
             }}
         >

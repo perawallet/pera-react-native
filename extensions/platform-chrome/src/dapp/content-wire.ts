@@ -48,4 +48,4 @@ export {
 // / `WcPagePairMessage` are NOT re-exported: they're consumed only by
 // `connect-modal-pair.ts` (a service-worker file, not a content script),
 // which imports the full package barrel (`../index.ts`) instead of this one.
-export { WC_PAGE_PAIR_SCOPE } from '../walletconnect/page-pair'
+export { WC_PAGE_PAIR_SCOPE } from '../connections/page-pair'

@@ -31,6 +31,7 @@ describe('useCloudBackupStore', () => {
             result.current.setConfigured({
                 backupId: 'did:pera:abc',
                 salt: 'c2FsdA==',
+                deviceId: 'device-123',
             }),
         )
         expect(result.current.backupId).toBe('did:pera:abc')
@@ -44,6 +45,7 @@ describe('useCloudBackupStore', () => {
             result.current.setConfigured({
                 backupId: 'did:pera:abc',
                 salt: 'c2FsdA==',
+                deviceId: 'device-123',
             }),
         )
         act(() => result.current.resetState())

@@ -68,6 +68,23 @@ describe('config/main', () => {
         expect(overrideEnvironmentMap).not.toHaveProperty('onrampBaseUrl')
     })
 
+    // Empty is a legitimate committed default: open-source builds have no
+    // Reown project id, and the v2 handler treats an empty one as unavailable.
+    test('defaults reownProjectId to the empty string', () => {
+        expect(getConfig({}).reownProjectId).toBe('')
+    })
+
+    test('schema rejects a config with no reownProjectId key', () => {
+        const withoutProjectId: Record<string, unknown> = { ...config }
+        delete withoutProjectId.reownProjectId
+
+        expect(configSchema.safeParse(withoutProjectId).success).toBe(false)
+    })
+
+    test('maps reownProjectId onto REOWN_PROJECT_ID', () => {
+        expect(overrideEnvironmentMap.reownProjectId).toBe('REOWN_PROJECT_ID')
+    })
+
     test('exposes bounded-timeout defaults in milliseconds', () => {
         expect(config.algodReadTimeout).toBe(10_000)
         expect(config.algodSubmitTimeout).toBe(30_000)

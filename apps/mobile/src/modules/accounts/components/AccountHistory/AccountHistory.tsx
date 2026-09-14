@@ -39,6 +39,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         isInitialLoad,
         isFetchingNextPage,
         isEmpty,
+        isOfflineEmpty,
         isRefreshing,
         handleLoadMore,
         handleRefresh,
@@ -98,6 +99,19 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                     {titleBar}
                     {isInitialLoad ? (
                         <HistorySkeleton />
+                    ) : isOfflineEmpty ? (
+                        // Nothing cached and no way to fetch — saying "no
+                        // transactions found" here would assert an empty
+                        // history we haven't actually been able to read.
+                        <EmptyView
+                            title={t(
+                                'asset_details.transaction_list.offline_empty_title',
+                            )}
+                            body={t(
+                                'asset_details.transaction_list.offline_empty_body',
+                            )}
+                            style={styles.emptyView}
+                        />
                     ) : (
                         <EmptyView
                             body={t(

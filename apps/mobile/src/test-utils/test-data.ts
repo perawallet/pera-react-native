@@ -137,6 +137,7 @@ export const createMockButtonProps = (overrides = {}) => ({
 
 export const createMockCurrencyAmountProps = (overrides = {}) => ({
     currency: 'ALGO',
+    assetId: '0',
     value: new Decimal('100.5'),
     precision: 2,
     testID: 'test-currency-display',

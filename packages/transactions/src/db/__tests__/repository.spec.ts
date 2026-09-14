@@ -360,6 +360,118 @@ describe('transaction repository', () => {
         expect(all).toHaveLength(2)
     })
 
+    it('matches swap and app-call rows by their balance impacts and swap detail', async () => {
+        const usdcImpact = {
+            assetId: '31566704',
+            unitName: 'USDC',
+            fractionDecimals: 6,
+            amount: new Decimal(-50388),
+        }
+        const algoImpact = {
+            assetId: '0',
+            unitName: 'ALGO',
+            fractionDecimals: 6,
+            amount: new Decimal(529082),
+        }
+        const swapDetail = {
+            assetInId: '31566704',
+            assetInUnitName: 'USDC',
+            assetInDecimals: 6,
+            assetOutId: '0',
+            assetOutUnitName: 'ALGO',
+            assetOutDecimals: 6,
+            amountIn: new Decimal(50388),
+            amountOut: new Decimal(529082),
+        }
+
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    id: 'TX_SWAP_APPL',
+                    txType: 'appl',
+                    roundTime: 1_700_000_300,
+                    balanceImpacts: [usdcImpact, algoImpact],
+                }),
+                makeTx({
+                    id: 'TX_SWAP_DETAIL_ONLY',
+                    txType: 'appl',
+                    roundTime: 1_700_000_200,
+                    swapGroupDetail:
+                        swapDetail as TransactionHistoryItem['swapGroupDetail'],
+                }),
+                makeTx({
+                    id: 'TX_OTHER_ASSET',
+                    txType: 'appl',
+                    roundTime: 1_700_000_100,
+                    balanceImpacts: [{ ...usdcImpact, assetId: '999' }],
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const usdc = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+            assetId: '31566704',
+        })
+        const algo = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+            assetId: '0',
+        })
+
+        expect(usdc.map(tx => tx.id)).toEqual([
+            'TX_SWAP_APPL',
+            'TX_SWAP_DETAIL_ONLY',
+        ])
+        expect(algo.map(tx => tx.id)).toEqual([
+            'TX_SWAP_APPL',
+            'TX_SWAP_DETAIL_ONLY',
+        ])
+    })
+
+    it('keeps the asset filter working when a cached row holds malformed JSON', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    id: 'TX_BROKEN',
+                    balanceImpacts: [
+                        {
+                            assetId: '31566704',
+                            unitName: 'USDC',
+                            fractionDecimals: 6,
+                            amount: new Decimal(-1),
+                        },
+                    ],
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+        await db
+            .update(TransactionsSchema)
+            .set({
+                balanceImpactsJson: '{not json',
+                swapGroupDetailJson: '{not json',
+            })
+            .where(eq(TransactionsSchema.id, 'TX_BROKEN'))
+            .run()
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+            assetId: '31566704',
+        })
+
+        expect(result).toEqual([])
+    })
+
     it('respects limit parameter', async () => {
         const items = Array.from({ length: 10 }, (_, i) =>
             makeTx({ id: `TX${i}`, roundTime: 1700000000 + i }),

@@ -126,6 +126,73 @@ describe('Deeplink Parser - Main Parser', () => {
     })
 })
 
+describe('Deeplink Parser - WalletConnect routing', () => {
+    it('parses WalletConnect URI', () => {
+        const result = parseDeeplink(
+            'wc:34e3389c-afef-47ea-8843-d88d63609e93@1?bridge=https%3A%2F%2Fwallet-connect-c.perawallet.app&key=9844b76265fad3b8e1b9af9e1ede8c56a192e6f029d02f47a31bed2c82f104d0',
+        )
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+        if (result?.type === DeeplinkType.WALLET_CONNECT) {
+            expect(result.uri).toContain('wc:')
+            expect(result.uri).toContain('34e3389c-afef-47ea-8843-d88d63609e93')
+        }
+    })
+
+    it('normalizes perawallet-wc:// to wc://', () => {
+        const result = parseDeeplink(
+            'perawallet-wc:test@1?bridge=test&key=test',
+        )
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+        if (result?.type === DeeplinkType.WALLET_CONNECT) {
+            expect(result.uri).toContain('wc:')
+        }
+    })
+
+    it('routes algorand-wc: through to WALLET_CONNECT', () => {
+        const result = parseDeeplink('algorand-wc:test@1?bridge=test&key=test')
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+        if (result?.type === DeeplinkType.WALLET_CONNECT) {
+            expect(result.uri).toContain('wc:')
+        }
+    })
+
+    it('routes the legacy algorand://wc?uri= wrapper to WALLET_CONNECT', () => {
+        // @perawallet/connect < Feb 2025 used algorand:// as the Android
+        // deep-link base; dApps pinning old SDK versions still emit it.
+        const inner = 'wc:test@1?bridge=test&key=test'
+        const result = parseDeeplink(
+            'algorand://wc?uri=' + encodeURIComponent(inner),
+        )
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+        if (result?.type === DeeplinkType.WALLET_CONNECT) {
+            expect(result.uri).toBe(inner)
+            expect(result.sourceUrl).toBe(
+                'algorand://wc?uri=' + encodeURIComponent(inner),
+            )
+        }
+    })
+
+    it('carries the wrapper browser name onto the deeplink', () => {
+        const inner = 'wc:test@1?bridge=test&key=test'
+        const result = parseDeeplink(
+            'perawallet-wc://wc?uri=' +
+                encodeURIComponent(inner) +
+                '&browser=chrome',
+        )
+        expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+        if (result?.type === DeeplinkType.WALLET_CONNECT) {
+            expect(result.browserName).toBe('chrome')
+        }
+    })
+
+    it('still routes non-wc algorand:// links to the ARC-90 parser path', () => {
+        const result = parseDeeplink(
+            'algorand://GYBK7O4DIDJKR2G5PCSTQDNI2NUIC7DXNZ25M2UN4WBMJH77QSFHU7IVPU?amount=1000000',
+        )
+        expect(result?.type).not.toBe(DeeplinkType.WALLET_CONNECT)
+    })
+})
+
 describe('Deeplink Parser - Edge Cases', () => {
     it('handles missing required parameters', () => {
         // Falls back to HOME via old parser
