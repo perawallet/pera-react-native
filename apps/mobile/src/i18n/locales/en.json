@@ -399,7 +399,7 @@
         "notifications_muted": "Notifications muted",
         "notifications_unmuted": "Notifications unmuted",
         "backup_warning_title": "Have you backed up your account?",
-        "backup_warning_message": "If you don't have a copy of this account's passphrase or the account is not backed up with a Ledger device or managed by an Auth Account, access to this account and its funds will be lost forever.",
+        "backup_warning_message": "If you don't have a copy of this account's recovery passphrase or the account is not backed up with a Ledger device or managed by an Auth Account, access to this account and its funds will be lost forever.",
         "backup_warning_continue": "Yes, continue",
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
@@ -480,18 +480,18 @@
     },
     "backup": {
         "banner": {
-            "text": "You need to backup the passphrase",
+            "text": "You need to backup the recovery passphrase",
             "cta": "Backup now"
         },
         "info": {
-            "title": "Create a passphrase backup for your account",
-            "body": "Creating a passphrase backup will allow you to recover your account. Without the passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "title": "Create a recovery passphrase backup for your account",
+            "body": "Creating a recovery passphrase backup will allow you to recover your account. Without the recovery passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
             "cta": "I Understand"
         },
         "write_down": {
             "title": "Prepare to write down your recovery passphrase",
             "body": "The only way to recover an Algorand account is with this recovery passphrase.",
-            "warning": "Do not share this passphrase with anyone, as it grants full access to your account.",
+            "warning": "Do not share this recovery passphrase with anyone, as it grants full access to your account.",
             "cta": "I'm Ready to Begin"
         },
         "mnemonic": {

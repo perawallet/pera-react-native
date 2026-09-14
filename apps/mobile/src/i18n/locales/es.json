@@ -399,7 +399,7 @@
         "notifications_muted": "Notificaciones silenciadas",
         "notifications_unmuted": "Notificaciones activadas",
         "backup_warning_title": "¿Has hecho una copia de seguridad de tu cuenta?",
-        "backup_warning_message": "Si no tienes una copia de la passphrase de esta cuenta y la cuenta no está respaldada con un dispositivo Ledger ni gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
+        "backup_warning_message": "Si no tienes una copia de la passphrase de recuperación de esta cuenta y la cuenta no está respaldada con un dispositivo Ledger ni gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
         "backup_warning_continue": "Sí, continuar",
         "backup_warning_cancel": "No, conservar la cuenta",
         "remove_rekey_error_title": "No se puede eliminar la cuenta",
@@ -480,18 +480,18 @@
     },
     "backup": {
         "banner": {
-            "text": "Debes hacer una copia de seguridad de la passphrase",
+            "text": "Debes hacer una copia de seguridad de la passphrase de recuperación",
             "cta": "Hacer copia ahora"
         },
         "info": {
-            "title": "Crea una copia de seguridad de la passphrase de tu cuenta",
-            "body": "Crear una copia de seguridad de la passphrase te permitirá recuperar tu cuenta. Sin la passphrase, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
+            "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",
+            "body": "Crear una copia de seguridad de la passphrase de recuperación te permitirá recuperar tu cuenta. Sin la passphrase de recuperación, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
             "cta": "Lo entiendo"
         },
         "write_down": {
             "title": "Prepárate para anotar tu passphrase de recuperación",
             "body": "La única forma de recuperar una cuenta de Algorand es con esta passphrase de recuperación.",
-            "warning": "No compartas esta passphrase con nadie, ya que otorga acceso total a tu cuenta.",
+            "warning": "No compartas esta passphrase de recuperación con nadie, ya que otorga acceso total a tu cuenta.",
             "cta": "Todo listo, empezar"
         },
         "mnemonic": {
