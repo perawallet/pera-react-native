@@ -455,6 +455,15 @@ describe('buildAppConfig — Android manifest parity', () => {
         expect(android.buildToolsVersion).toBe('36.0.0')
     })
 
+    // Losing these silently fails `:app:minifyReleaseWithR8` on the release
+    // build only, which CI surfaces as a truncated Gradle error.
+    it('suppresses the JNA desktop-AWT references R8 cannot resolve', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain('-dontwarn com.sun.jna.**')
+        expect(android.extraProguardRules).toContain('-dontwarn java.awt.**')
+    })
+
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
         const { permissions } = build({ APP_ENV: 'production' }).android
 
