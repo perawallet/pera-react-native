@@ -370,9 +370,9 @@ function buildAppConfig(env) {
           },
           android: {
             minSdkVersion: 29,
-            targetSdkVersion: 36,
-            compileSdkVersion: 36,
-            buildToolsVersion: '36.0.0',
+            targetSdkVersion: 37,
+            compileSdkVersion: 37,
+            buildToolsVersion: '37.0.0',
             // R8 minification + resource shrinking for release builds.
             // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
             // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`

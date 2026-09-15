@@ -450,9 +450,9 @@ describe('buildAppConfig — Android manifest parity', () => {
         const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
 
         expect(android.minSdkVersion).toBe(29)
-        expect(android.targetSdkVersion).toBe(36)
-        expect(android.compileSdkVersion).toBe(36)
-        expect(android.buildToolsVersion).toBe('36.0.0')
+        expect(android.targetSdkVersion).toBe(37)
+        expect(android.compileSdkVersion).toBe(37)
+        expect(android.buildToolsVersion).toBe('37.0.0')
     })
 
     // Losing these silently fails `:app:minifyReleaseWithR8` on the release

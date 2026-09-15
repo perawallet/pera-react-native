@@ -311,7 +311,7 @@ workflows:
     - _smoke-ios
     meta:
       bitrise.io:
-        stack: osx-xcode-26.2.x
+        stack: osx-xcode-27.0.x
         machine_type_id: g2.mac.large
   ios-production:
     description: Build and deploy iOS Production to TestFlight
@@ -327,7 +327,7 @@ workflows:
     - _publish-result
     meta:
       bitrise.io:
-        stack: osx-xcode-26.2.x
+        stack: osx-xcode-27.0.x
         machine_type_id: g2.mac.large
   _ios-build:
     steps:
