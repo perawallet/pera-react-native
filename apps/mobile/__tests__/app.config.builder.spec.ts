@@ -464,6 +464,22 @@ describe('buildAppConfig — Android manifest parity', () => {
         expect(android.extraProguardRules).toContain('-dontwarn java.awt.**')
     })
 
+    // Without these the release build succeeds and the app dies on launch in
+    // Native.initIDs, which only a device run catches.
+    it('keeps the JNA members native code resolves by name', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain(
+            '-keep class com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keepclassmembers class * extends com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keep class uniffi.** { *; }',
+        )
+    })
+
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
         const { permissions } = build({ APP_ENV: 'production' }).android
 
