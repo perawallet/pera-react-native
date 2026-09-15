@@ -138,6 +138,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
     const { addSignRequest } = useSigningRequest()
     const {
         encodeTransaction,
+        encodeTransactionRaw,
         encodeSignedTransactions,
         decodeTransaction,
         decodeSignedTransaction,
@@ -158,8 +159,13 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
 
             const { txnGroup } = await requestFeeDelegation(
                 {
+                    // ARC-0001 carries prefix-free msgpack; `encodeTransaction`
+                    // emits the signable bytes, which lead with the "TX" domain
+                    // separator and are not wire-safe. (The match check below
+                    // keeps using the signable form on BOTH sides, so it is
+                    // unaffected.)
                     txnGroup: transactions.map(txn => ({
-                        txn: encodeToBase64(encodeTransaction(txn)),
+                        txn: encodeToBase64(encodeTransactionRaw(txn)),
                     })),
                     account,
                     includeAssetOptInMbr,
@@ -252,6 +258,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             network,
             addSignRequest,
             encodeTransaction,
+            encodeTransactionRaw,
             encodeSignedTransactions,
             decodeTransaction,
             decodeSignedTransaction,
