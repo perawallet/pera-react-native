@@ -56,13 +56,11 @@ export const PeraCardOverview = () => {
                 onGetUsdc={onGetUsdc}
             />
 
-            {isAutoFunding && (
-                <PeraCardCreditsSection
-                    credits={credits}
-                    currency={currency}
-                    onCreditPress={onCreditPress}
-                />
-            )}
+            <PeraCardCreditsSection
+                credits={credits}
+                currency={currency}
+                onCreditPress={onCreditPress}
+            />
 
             <PeraCardTransactionsSection
                 sections={transactionSections}

@@ -158,6 +158,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [navigation],
     )
 
+    const onCreditPress = useCallback(() => {
+        trackEvent(CardEvent.HomeCashback)
+        navigation.navigate('CardCashback')
+    }, [navigation])
+
     return {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
@@ -174,6 +179,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onGetUsdc,
         onShowAllTransactions,
         onPressTransaction,
-        onCreditPress: showComingSoon,
+        onCreditPress,
     }
 }

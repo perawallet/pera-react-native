@@ -259,6 +259,17 @@ describe('usePeraCardOverview', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
     })
 
+    // Cashback is earned on purchases whatever tops the card up, so this has to
+    // work on manual funding too, where the credits section used to be hidden.
+    it('navigates to the Cashback screen from a credit row', () => {
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onCreditPress()
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardCashback')
+        expect(mockInfoToast).not.toHaveBeenCalled()
+    })
+
     it('unwired action handlers surface the coming-soon toast', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
