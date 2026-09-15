@@ -1214,7 +1214,11 @@
             "select_asset_empty_body": "Nenhum ativo corresponde ao termo buscado",
             "swap_success_title": "Conversão concluída",
             "swap_success_body": "Seus ativos foram convertidos para USDC.",
-            "swap_error_title": "Falha na conversão"
+            "swap_error_title": "Falha na conversão",
+            "deposit_success_title": "Fundos adicionados",
+            "deposit_success_body": "Seu USDC está a caminho do seu cartão.",
+            "deposit_error_title": "Não foi possível adicionar fundos",
+            "deposit_error_body": "Seu USDC não foi enviado para o seu cartão. Tente novamente."
         },
         "withdraw": {
             "navigation_title": "Sacar",

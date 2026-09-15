@@ -1214,7 +1214,11 @@
             "select_asset_empty_body": "No assets matched your search term",
             "swap_success_title": "Swap complete",
             "swap_success_body": "Your assets were swapped to USDC.",
-            "swap_error_title": "Swap failed"
+            "swap_error_title": "Swap failed",
+            "deposit_success_title": "Funds added",
+            "deposit_success_body": "Your USDC is on its way to your card.",
+            "deposit_error_title": "Couldn't add funds",
+            "deposit_error_body": "Your USDC was not sent to your card. Please try again."
         },
         "withdraw": {
             "navigation_title": "Withdraw",

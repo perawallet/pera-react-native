@@ -1214,7 +1214,11 @@
             "select_asset_empty_body": "Ningún activo coincide con tu búsqueda",
             "swap_success_title": "Swap completado",
             "swap_success_body": "Tus activos se intercambiaron por USDC.",
-            "swap_error_title": "El swap ha fallado"
+            "swap_error_title": "El swap ha fallado",
+            "deposit_success_title": "Fondos añadidos",
+            "deposit_success_body": "Tu USDC está en camino a tu tarjeta.",
+            "deposit_error_title": "No se pudieron añadir los fondos",
+            "deposit_error_body": "Tu USDC no se envió a tu tarjeta. Inténtalo de nuevo."
         },
         "withdraw": {
             "navigation_title": "Retirar",

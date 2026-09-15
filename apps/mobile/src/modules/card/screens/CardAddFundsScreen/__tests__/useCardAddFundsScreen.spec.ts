@@ -13,15 +13,16 @@
 import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { CardFundingUnavailableError } from '@perawallet/wallet-core-card'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
-const mockComingSoon = vi.fn()
+const mockDeposit = vi.fn()
+const mockDepositErrorToast = vi.fn()
+const mockGoBack = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockErrorToast = vi.fn()
 const mockInvalidate = vi.fn()
 const mockRequestSheet = vi.fn()
 const mockNavigate = vi.fn()
-const mockDepositMutateAsync = vi.fn()
 const mockExecuteSwap = vi.fn()
 const mockSwap = vi.hoisted(() => ({
     quote: null as unknown,
@@ -68,18 +69,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
-    return {
-        ...actual,
-        useDepositToCardMutation: () => ({
-            mutateAsync: mockDepositMutateAsync,
-            isPending: false,
-            isFundingAvailable: false,
-        }),
-    }
-})
-
 vi.mock('../useCardAddFundsSwap', () => ({
     useCardAddFundsSwap: () => ({
         quote: mockSwap.quote,
@@ -99,7 +88,7 @@ vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useNavigation: () => ({ navigate: mockNavigate }),
+        useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
     }
 })
 
@@ -108,7 +97,11 @@ vi.mock('../../../components/CardSelectAssetContent', () => ({
 }))
 
 vi.mock('../../../hooks', () => ({
-    useCardComingSoonToast: () => mockComingSoon,
+    useCardManualDeposit: () => ({
+        deposit: mockDeposit,
+        isDepositing: false,
+    }),
+    useCardErrorToast: () => mockDepositErrorToast,
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -147,9 +140,7 @@ describe('useCardAddFundsScreen', () => {
         mockSwap.usdcOut = null
         mockSwap.isQuoteFetching = false
         mockSwap.isSwapping = false
-        mockDepositMutateAsync.mockRejectedValue(
-            new CardFundingUnavailableError(),
-        )
+        mockDeposit.mockResolvedValue({ txIds: ['TX1'] })
         mockExecuteSwap.mockResolvedValue({ kind: 'success' })
     })
 
@@ -170,14 +161,42 @@ describe('useCardAddFundsScreen', () => {
         expect(result.current.isDepositDisabled).toBe(false)
     })
 
-    it('USDC Deposit routes through the gated provider → coming-soon', async () => {
+    it('USDC Deposit transfers to the card and returns to the previous screen', async () => {
         const { result } = renderHook(() => useCardAddFundsScreen())
         type(result, ['5'])
 
         act(() => result.current.handleDeposit())
 
-        await waitFor(() => expect(mockComingSoon).toHaveBeenCalled())
+        await waitFor(() => expect(mockDeposit).toHaveBeenCalled())
+        expect(mockDeposit.mock.calls[0][0].amount.toFixed()).toBe('5')
+        expect(mockSuccessToast).toHaveBeenCalled()
+        expect(mockGoBack).toHaveBeenCalled()
         expect(mockExecuteSwap).not.toHaveBeenCalled()
+    })
+
+    it('surfaces a failed deposit and stays on the screen', async () => {
+        mockDeposit.mockRejectedValueOnce(new Error('algod said no'))
+        const { result } = renderHook(() => useCardAddFundsScreen())
+        type(result, ['5'])
+
+        act(() => result.current.handleDeposit())
+
+        await waitFor(() => expect(mockDepositErrorToast).toHaveBeenCalled())
+        expect(mockSuccessToast).not.toHaveBeenCalled()
+        expect(mockGoBack).not.toHaveBeenCalled()
+    })
+
+    // Backing out of the signing review is a user action, not a failure.
+    it('stays silent when the user rejects the signing review', async () => {
+        mockDeposit.mockRejectedValueOnce(new UserRejectedSigningError())
+        const { result } = renderHook(() => useCardAddFundsScreen())
+        type(result, ['5'])
+
+        act(() => result.current.handleDeposit())
+
+        await waitFor(() => expect(mockDeposit).toHaveBeenCalled())
+        expect(mockDepositErrorToast).not.toHaveBeenCalled()
+        expect(mockSuccessToast).not.toHaveBeenCalled()
     })
 
     it('selecting a non-USDC asset switches to swap mode and navigates to confirm on Deposit', async () => {
@@ -216,7 +235,7 @@ describe('useCardAddFundsScreen', () => {
         act(() => result.current.handleDeposit())
 
         expect(result.current.isUsdc).toBe(false)
-        expect(mockDepositMutateAsync).not.toHaveBeenCalled()
+        expect(mockDeposit).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 

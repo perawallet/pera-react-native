@@ -1206,7 +1206,11 @@
             "select_asset_empty_body": "Keine Assets entsprechen deinem Suchbegriff",
             "swap_success_title": "Tausch abgeschlossen",
             "swap_success_body": "Deine Assets wurden in USDC getauscht.",
-            "swap_error_title": "Tausch fehlgeschlagen"
+            "swap_error_title": "Tausch fehlgeschlagen",
+            "deposit_success_title": "Guthaben hinzugefügt",
+            "deposit_success_body": "Dein USDC ist auf dem Weg zu deiner Karte.",
+            "deposit_error_title": "Guthaben konnte nicht hinzugefügt werden",
+            "deposit_error_body": "Dein USDC wurde nicht an deine Karte gesendet. Bitte versuche es erneut."
         },
         "withdraw": {
             "navigation_title": "Auszahlen",
