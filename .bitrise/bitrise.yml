@@ -651,6 +651,10 @@ workflows:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
   _android-build:
+    # AGP resolves this NDK for react-native-falcon's CMake build. Pinned so the
+    # cache key and the install step below cannot drift apart.
+    envs:
+    - ANDROID_NDK_VERSION: 27.0.12077973
     steps:
     - git-clone@8:
         inputs:
@@ -882,6 +886,42 @@ workflows:
             # Set JAVA_HOME for Gradle
             JAVA_HOME=$(asdf where java)
             envman add --key JAVA_HOME --value "$JAVA_HOME"
+    - restore-cache@3:
+        inputs:
+        - key: android-ndk-$ANDROID_NDK_VERSION
+    - script@1:
+        title: Ensure Android NDK
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            # Gradle otherwise auto-installs this NDK while configuring
+            # react-native-falcon, and a truncated download takes the whole
+            # build down at configuration time with "Archive is not a ZIP
+            # archive". Installing it here costs a retry instead of the build.
+            SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+            if [ -z "$SDK_ROOT" ]; then
+              echo "Neither ANDROID_HOME nor ANDROID_SDK_ROOT is set" >&2
+              exit 1
+            fi
+            NDK_DIR="$SDK_ROOT/ndk/$ANDROID_NDK_VERSION"
+            SDKMANAGER=$(command -v sdkmanager \
+              || echo "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager")
+
+            for attempt in 1 2 3; do
+              if [ -x "$NDK_DIR/ndk-build" ]; then break; fi
+              echo "Installing NDK $ANDROID_NDK_VERSION (attempt $attempt)"
+              # sdkmanager treats a half-written dir as installed, so clear it.
+              rm -rf "$NDK_DIR"
+              yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
+                --install "ndk;$ANDROID_NDK_VERSION" || true
+            done
+
+            if [ ! -x "$NDK_DIR/ndk-build" ]; then
+              echo "NDK $ANDROID_NDK_VERSION unavailable after 3 attempts" >&2
+              exit 1
+            fi
+            envman add --key ANDROID_NDK_HOME --value "$NDK_DIR"
     - script@1:
         title: Android KeyStore
         inputs:
@@ -947,6 +987,12 @@ workflows:
         inputs:
         - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
         - paths: "~/.ccache"
+    - save-cache@1:
+        inputs:
+        - key: android-ndk-$ANDROID_NDK_VERSION
+        # Resolved and verified by the install step, so this cannot point at a
+        # path that does not exist.
+        - paths: $ANDROID_NDK_HOME
     - script@1:
         is_always_run: true
         title: Collect signed artifacts
