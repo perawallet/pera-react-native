@@ -144,4 +144,15 @@ describe('postDelegatorLsig', () => {
             delegatorAddress: 'FUNDING_ADDR',
         })
     })
+
+    it('succeeds when the 201 body is not an object at all', async () => {
+        // AB answers with a bare status line, so the echo simply is not there.
+        // Rejecting that shape would fail a delegation they already registered.
+        for (const data of ['Created', undefined, null, 42]) {
+            request.mockResolvedValue({ data })
+            await expect(postDelegatorLsig(lsigParams)).resolves.toEqual({
+                delegatorAddress: 'FUNDING_ADDR',
+            })
+        }
+    })
 })

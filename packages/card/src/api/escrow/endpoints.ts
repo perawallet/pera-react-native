@@ -122,6 +122,13 @@ export const postDelegatorLsig = async (
         signal,
     })
 
-    const parsed = delegatorLsigResponseSchema.parse(response.data)
-    return { delegatorAddress: parsed.delegatorAddress ?? delegatorAddress }
+    // AB has not published this body and answers 201 with a bare status line, so
+    // a shape we cannot read is not a failure: the delegation is registered by the
+    // time we get here. The echo is used only when it is actually there.
+    const parsed = delegatorLsigResponseSchema.safeParse(response.data)
+    return {
+        delegatorAddress:
+            (parsed.success ? parsed.data.delegatorAddress : undefined) ??
+            delegatorAddress,
+    }
 }

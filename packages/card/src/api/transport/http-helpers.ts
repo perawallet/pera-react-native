@@ -19,7 +19,18 @@ export const toKyPath = (path: string): string =>
 // Decode a fetch Response into a CardTransportResponse by the requested body
 // type. The default (json) reads text first and only JSON.parses a non-empty
 // body — ky's response.json() throws "Unexpected end of input" on 204 / empty
-// 200 responses.
+// 200 responses, and a success that is not JSON at all (AppliedBlockchain's
+// delegation route answers 201 with a bare status line) would throw a
+// SyntaxError that hides an otherwise successful call. Such a body is handed
+// back as raw text for the caller to ignore or validate.
+const parseJsonOrText = (text: string): unknown => {
+    try {
+        return JSON.parse(text)
+    } catch {
+        return text
+    }
+}
+
 export const parseResponse = async <TData>(
     response: Response,
     responseType?: CardResponseType,
@@ -40,7 +51,7 @@ export const parseResponse = async <TData>(
         }
         default: {
             const text = await response.text()
-            data = (text.trim() ? JSON.parse(text) : undefined) as TData
+            data = (text.trim() ? parseJsonOrText(text) : undefined) as TData
         }
     }
     return { data, status: response.status, statusText: response.statusText }
