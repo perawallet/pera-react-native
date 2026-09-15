@@ -18,7 +18,12 @@ import {
     type AddressSearchItem,
 } from '../useAddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useAllAccounts, AccountTypes } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSortedAccounts,
+    useAccountValueTotalsQuery,
+    AccountTypes,
+} from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
@@ -28,6 +33,8 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
+    useSortedAccounts: vi.fn(),
+    useAccountValueTotalsQuery: vi.fn(),
     AccountTypes: {
         algo25: 'algo25',
         hdWallet: 'hdWallet',
@@ -84,6 +91,15 @@ describe('useAddressSearchView', () => {
         } as unknown as ReturnType<typeof useContacts>)
 
         vi.mocked(useAllAccounts).mockReturnValue([])
+        vi.mocked(useSortedAccounts).mockImplementation(
+            accounts =>
+                ({ sortedAccounts: accounts }) as unknown as ReturnType<
+                    typeof useSortedAccounts
+                >,
+        )
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+            accountValueTotals: new Map(),
+        } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
         vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [],
@@ -647,6 +663,61 @@ describe('useAddressSearchView', () => {
             expect(
                 itemsOfType(result.current.matchingItems, 'paste'),
             ).toHaveLength(1)
+        })
+    })
+
+    describe('account ordering', () => {
+        const storeOrder = [
+            { address: 'ZEBRA1', name: 'Zebra' },
+            { address: 'APPLE1', name: 'Apple' },
+        ]
+
+        const mockSortedAs = (accounts: typeof storeOrder) =>
+            vi.mocked(useSortedAccounts).mockReturnValue({
+                sortedAccounts: accounts,
+            } as unknown as ReturnType<typeof useSortedAccounts>)
+
+        it('lists accounts in the sorted order, not the raw store order', () => {
+            vi.mocked(useAllAccounts).mockReturnValue(
+                storeOrder as unknown as ReturnType<typeof useAllAccounts>,
+            )
+            mockSortedAs([storeOrder[1]!, storeOrder[0]!])
+
+            const { result } = renderHook(() => useAddressSearchView())
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'account').map(
+                    item =>
+                        (item as { account: { address: string } }).account
+                            .address,
+                ),
+            ).toEqual(['APPLE1', 'ZEBRA1'])
+        })
+
+        it('keeps the sorted order once a search narrows the list', () => {
+            const accounts = [
+                { address: 'ZEBRA1', name: 'Shared Zebra' },
+                { address: 'APPLE1', name: 'Shared Apple' },
+                { address: 'OTHER1', name: 'Unrelated' },
+            ]
+            vi.mocked(useAllAccounts).mockReturnValue(
+                accounts as unknown as ReturnType<typeof useAllAccounts>,
+            )
+            mockSortedAs([accounts[1]!, accounts[0]!, accounts[2]!])
+
+            const { result } = renderHook(() => useAddressSearchView())
+
+            act(() => {
+                result.current.setValue('Shared')
+            })
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'account').map(
+                    item =>
+                        (item as { account: { address: string } }).account
+                            .address,
+                ),
+            ).toEqual(['APPLE1', 'ZEBRA1'])
         })
     })
 })
