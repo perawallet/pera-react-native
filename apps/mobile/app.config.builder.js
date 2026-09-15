@@ -396,6 +396,15 @@ function buildAppConfig(env) {
               // Android has no classes for, so R8 fails the release minify outright.
               '-dontwarn com.sun.jna.**',
               '-dontwarn java.awt.**',
+              // Suppressing those warnings is not enough: JNA resolves its own Java
+              // members from native code by name (Native.initIDs looks up Pointer.peer
+              // over JNI) and maps Structure subclasses field-by-field in declaration
+              // order, so letting R8 rename or reorder them turns the build error into
+              // an UnsatisfiedLinkError at launch instead. uniffi generates the
+              // Structure subclasses the WalletConnect Pay module passes across.
+              '-keep class com.sun.jna.** { *; }',
+              '-keepclassmembers class * extends com.sun.jna.** { *; }',
+              '-keep class uniffi.** { *; }',
               '-keep class org.bouncycastle.** { *; }',
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
