@@ -128,6 +128,13 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
                 await appClient.params.call({
                     method: 'enable',
                     args: [cardAddress, BigInt(asset)],
+                    // The call reaches the card's asset holding, which resource
+                    // population would otherwise discover as unnamed and then
+                    // place by JSON-stringifying every transaction field — a
+                    // path that throws on algosdk's native bigints (algokit
+                    // 9.2.x). Naming the pair short-circuits that scan.
+                    accountReferences: [cardAddress],
+                    assetReferences: [BigInt(asset)],
                     // Simulate-only, and stripped after populating. The
                     // resource-population simulate validates like a real
                     // submission with no fee waiver, so a zero-fee group dies
