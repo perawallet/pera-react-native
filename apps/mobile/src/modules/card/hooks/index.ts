@@ -23,6 +23,10 @@ export {
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
 export { useCardComingSoonToast } from './useCardComingSoonToast'
+export {
+    useCardEscrowBalance,
+    type UseCardEscrowBalanceResult,
+} from './useCardEscrowBalance'
 export { useCardFundingAccount } from './useCardFundingAccount'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'

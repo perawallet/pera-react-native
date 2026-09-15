@@ -3097,7 +3097,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isPriceAlertEnabled: false,
     },
     useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
-    useAssetsQuery: vi.fn(() => ({ data: [], isPending: false })),
+    // The real hook resolves to a Map keyed by asset id, not an array.
+    useAssetsQuery: vi.fn(() => ({ data: new Map(), isPending: false })),
     useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
         isPending: false,
@@ -3275,6 +3276,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useSignerResolution: vi.fn(() => ({ kind: 'accountNotFound' })),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
+            isPending: false,
+        })),
+        useOnChainAccountInformationQuery: vi.fn(() => ({
+            data: undefined,
             isPending: false,
         })),
         useFindAccountByAddress: vi.fn(() => null),

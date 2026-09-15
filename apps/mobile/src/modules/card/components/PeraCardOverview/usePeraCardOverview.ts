@@ -16,7 +16,6 @@ import {
     AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
     useCardExternalWalletsQuery,
-    useCardInternalWalletsQuery,
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
@@ -27,6 +26,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useCardComingSoonToast,
+    useCardEscrowBalance,
     useCardFundingAccount,
     useIsCardAutoFundingActive,
 } from '../../hooks'
@@ -78,10 +78,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [transactions],
     )
 
-    const { usdcWallet, isLoading: isCardBalanceLoading } =
-        useCardInternalWalletsQuery()
-    // Only the allowance is taken from Baanx; the linked balance is read from
-    // the chain below.
+    const { balance: cardBalance, isLoading: isCardBalanceLoading } =
+        useCardEscrowBalance()
+    // Only the allowance is taken from Baanx; both balances are read from the
+    // chain, which is the only source Pera's platform is served.
     const { delegatedWallet } = useCardExternalWalletsQuery({
         address: connectedAddress,
     })
@@ -109,7 +109,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [],
     )
 
-    const cardBalance = usdcWallet?.balance ?? ZERO_BALANCE
     const linkedBalance = canReadLinkedBalance
         ? (linkedUsdc?.amount ?? ZERO_BALANCE)
         : ZERO_BALANCE
