@@ -23,6 +23,7 @@ export {
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
 export { useCardComingSoonToast } from './useCardComingSoonToast'
+export { useCardFundingAccount } from './useCardFundingAccount'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'
 export {

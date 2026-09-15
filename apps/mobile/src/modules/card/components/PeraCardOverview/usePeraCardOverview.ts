@@ -20,9 +20,16 @@ import {
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
+import { useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
+import { getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCardComingSoonToast, useIsCardAutoFundingActive } from '../../hooks'
+import {
+    useCardComingSoonToast,
+    useCardFundingAccount,
+    useIsCardAutoFundingActive,
+} from '../../hooks'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -59,6 +66,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
+    const { network } = useNetwork()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
@@ -72,8 +80,28 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const { usdcWallet, isLoading: isCardBalanceLoading } =
         useCardInternalWalletsQuery()
-    const { delegatedWallet, isLoading: isLinkedBalanceLoading } =
-        useCardExternalWalletsQuery({ address: connectedAddress })
+    // Only the allowance is taken from Baanx; the linked balance is read from
+    // the chain below.
+    const { delegatedWallet } = useCardExternalWalletsQuery({
+        address: connectedAddress,
+    })
+
+    // Auto funding never moves USDC onto the card: it is drawn from the linked
+    // account at spend time, so that account's own holding is the spendable
+    // figure. Reading it from the chain also keeps it right on platforms Baanx
+    // does not serve wallet balances to.
+    const fundingAccount = useCardFundingAccount()
+    const usdcAssetId = useMemo(
+        () => getKnownAssetId('USDC', network),
+        [network],
+    )
+    const { data: linkedUsdc, isPending: isLinkedBalancePending } =
+        useAccountAssetBalanceQuery(
+            isAutoFunding ? (fundingAccount ?? undefined) : undefined,
+            usdcAssetId ?? undefined,
+        )
+    const canReadLinkedBalance =
+        isAutoFunding && fundingAccount != null && usdcAssetId !== null
 
     // TODO(card): credits are stubbed — no Baanx API exposes them yet.
     const credits = useMemo<PeraCardCredits>(
@@ -82,8 +110,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     )
 
     const cardBalance = usdcWallet?.balance ?? ZERO_BALANCE
-    const linkedBalance = isAutoFunding
-        ? (delegatedWallet?.balance ?? ZERO_BALANCE)
+    const linkedBalance = canReadLinkedBalance
+        ? (linkedUsdc?.amount ?? ZERO_BALANCE)
         : ZERO_BALANCE
 
     // Baanx enforces the delegation allowance per transaction; fall back to
@@ -135,7 +163,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         balance: cardBalance.plus(linkedBalance),
         spendablePerTx,
         isBalanceLoading:
-            isCardBalanceLoading || (isAutoFunding && isLinkedBalanceLoading),
+            isCardBalanceLoading ||
+            (canReadLinkedBalance && isLinkedBalancePending),
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
