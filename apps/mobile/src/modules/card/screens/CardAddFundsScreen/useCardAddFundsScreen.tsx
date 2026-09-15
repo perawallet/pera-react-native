@@ -23,18 +23,21 @@ import {
     useAssetsQuery,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import {
-    CardFundingUnavailableError,
-    useDepositToCardMutation,
-} from '@perawallet/wallet-core-card'
+    logger,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useNumberPadAmount } from '@components/NumberPad'
+import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
-import { useCardComingSoonToast } from '../../hooks'
+import { useCardErrorToast, useCardManualDeposit } from '../../hooks'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
@@ -63,6 +66,8 @@ type UseCardAddFundsScreenResult = {
 
 export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     const { network } = useNetwork()
+    const { t } = useTranslation()
+    const { successToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -164,29 +169,33 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         !isValidAmount ||
         (!isUsdc && (!swap.quote || swap.isQuoteFetching))
 
-    const deposit = useDepositToCardMutation()
-    const showComingSoon = useCardComingSoonToast()
+    const { deposit, isDepositing } = useCardManualDeposit()
+    const showDepositError = useCardErrorToast({
+        titleKey: 'peraCard.add_funds.deposit_error_title',
+        bodyKey: 'peraCard.add_funds.deposit_error_body',
+        shouldUseBackendMessage: false,
+    })
 
     const handleDeposit = useCallback(() => {
         trackEvent(CardEvent.AddFundsDeposit)
-        // USDC → gated deposit-to-card (no Baanx backend yet → coming-soon).
+        // USDC → transfer straight to the card's escrow account.
         if (isUsdc) {
-            // isUsdc being true already implies a non-null usdcAssetId; this
-            // guard only narrows the type for the call below.
-            if (usdcAssetId === null) return
+            if (!fundingAccount) return
 
-            void deposit
-                .mutateAsync({
-                    sourceAsset: usdcAssetId,
-                    sourceAmount: amountDecimal,
+            void deposit({ account: fundingAccount, amount: amountDecimal })
+                .then(() => {
+                    successToast(
+                        t('peraCard.add_funds.deposit_success_title'),
+                        t('peraCard.add_funds.deposit_success_body'),
+                    )
+                    navigation.goBack()
                 })
-                .catch(error => {
-                    // TODO(card): surface real failures once the provider ships.
-                    if (error instanceof CardFundingUnavailableError) {
-                        showComingSoon()
-                        return
-                    }
-                    showComingSoon()
+                .catch(async error => {
+                    // Backing out of the signing review is a normal action, not
+                    // a failure worth logging or toasting.
+                    if (error instanceof UserRejectedSigningError) return
+                    logger.error('Card manual deposit failed', { error })
+                    await showDepositError(error)
                 })
             return
         }
@@ -203,9 +212,11 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     }, [
         isUsdc,
         deposit,
-        usdcAssetId,
+        fundingAccount,
         amountDecimal,
-        showComingSoon,
+        showDepositError,
+        successToast,
+        t,
         navigation,
         sourceAssetId,
         value,
@@ -222,7 +233,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         handleKey,
         onSelectAsset,
         isDepositDisabled,
-        isDepositing: isUsdc ? deposit.isPending : false,
+        isDepositing: isUsdc ? isDepositing : false,
         handleDeposit,
     }
 }

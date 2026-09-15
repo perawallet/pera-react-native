@@ -42,7 +42,6 @@ export * from './useCardTransactionsQuery'
 export * from './useExportCardStatementMutation'
 
 // Funding (deposit / top-up)
-export * from './useDepositToCardMutation'
 
 // Internal wallet (balance / withdraw)
 export * from './useCardInternalWalletsQuery'

@@ -1214,7 +1214,11 @@
             "select_asset_empty_body": "Arama terimiyle eşleşen varlık bulunamadı",
             "swap_success_title": "Swap tamamlandı",
             "swap_success_body": "Varlıkların USDC’ye takas edildi.",
-            "swap_error_title": "Swap başarısız"
+            "swap_error_title": "Swap başarısız",
+            "deposit_success_title": "Bakiye eklendi",
+            "deposit_success_body": "USDC bakiyen kartına doğru yolda.",
+            "deposit_error_title": "Bakiye eklenemedi",
+            "deposit_error_body": "USDC bakiyen kartına gönderilemedi. Lütfen tekrar dene."
         },
         "withdraw": {
             "navigation_title": "Para çek",

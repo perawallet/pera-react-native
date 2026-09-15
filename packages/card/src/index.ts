@@ -30,14 +30,6 @@ export type {
     CardTransportResponse,
 } from './api/transport/types'
 
-// Funding seam — the deposit pipeline routes through getCardFundingProvider().
-// Defaults to unavailableFundingProvider until the Baanx Algorand provider ships.
-export {
-    getCardFundingProvider,
-    setCardFundingProvider,
-    resetCardFundingProvider,
-} from './api/funding'
-
 // AutoDraw delegation helpers — the compile → sign → POST /lsig leg, shared by
 // onboarding card creation and the post-onboarding funding-type switch.
 export {

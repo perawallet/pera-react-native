@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useCardFundingAccount } from './useCardFundingAccount'
 import { canAutoFund } from './useCardFundingSourcePicker'
 
 /**
@@ -28,16 +28,13 @@ import { canAutoFund } from './useCardFundingSourcePicker'
  */
 export const useIsCardAutoFundingActive = (): boolean => {
     const selectedFundingType = useCardStore(state => state.selectedFundingType)
-    const connectedAddress = useCardStore(
-        state => state.connectedFundingSourceAddress,
-    )
-    const accounts = useAllAccounts()
+    const connectedAccount = useCardFundingAccount()
 
-    return useMemo(() => {
-        if (selectedFundingType !== FundingType.Auto) return false
-        const connectedAccount = accounts.find(
-            account => account.address === connectedAddress,
-        )
-        return connectedAccount != null && canAutoFund(connectedAccount)
-    }, [selectedFundingType, connectedAddress, accounts])
+    return useMemo(
+        () =>
+            selectedFundingType === FundingType.Auto &&
+            connectedAccount != null &&
+            canAutoFund(connectedAccount),
+        [selectedFundingType, connectedAccount],
+    )
 }

@@ -63,6 +63,7 @@ export {
     isAccountQuery,
     isAccountBalancesHistoryQuery,
     getRekeyedAddressesQueryKey,
+    getOnChainAccountInformationQueryKey,
 } from './querykeys'
 export * from './useAccountFundedNetworksQuery'
 export * from './useAccountSummaryQuery'
