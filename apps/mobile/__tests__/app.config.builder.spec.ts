@@ -450,9 +450,34 @@ describe('buildAppConfig — Android manifest parity', () => {
         const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
 
         expect(android.minSdkVersion).toBe(29)
-        expect(android.targetSdkVersion).toBe(36)
-        expect(android.compileSdkVersion).toBe(36)
-        expect(android.buildToolsVersion).toBe('36.0.0')
+        expect(android.targetSdkVersion).toBe(37)
+        expect(android.compileSdkVersion).toBe(37)
+        expect(android.buildToolsVersion).toBe('37.0.0')
+    })
+
+    // Losing these silently fails `:app:minifyReleaseWithR8` on the release
+    // build only, which CI surfaces as a truncated Gradle error.
+    it('suppresses the JNA desktop-AWT references R8 cannot resolve', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain('-dontwarn com.sun.jna.**')
+        expect(android.extraProguardRules).toContain('-dontwarn java.awt.**')
+    })
+
+    // Without these the release build succeeds and the app dies on launch in
+    // Native.initIDs, which only a device run catches.
+    it('keeps the JNA members native code resolves by name', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.extraProguardRules).toContain(
+            '-keep class com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keepclassmembers class * extends com.sun.jna.** { *; }',
+        )
+        expect(android.extraProguardRules).toContain(
+            '-keep class uniffi.** { *; }',
+        )
     })
 
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {

@@ -370,9 +370,9 @@ function buildAppConfig(env) {
           },
           android: {
             minSdkVersion: 29,
-            targetSdkVersion: 36,
-            compileSdkVersion: 36,
-            buildToolsVersion: '36.0.0',
+            targetSdkVersion: 37,
+            compileSdkVersion: 37,
+            buildToolsVersion: '37.0.0',
             // R8 minification + resource shrinking for release builds.
             // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
             // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`
@@ -392,6 +392,19 @@ function buildAppConfig(env) {
               '-dontwarn okio.**',
               '-dontwarn javax.annotation.**',
               '-dontwarn org.conscrypt.**',
+              // JNA's Native reaches into desktop-Java AWT for window handles, which
+              // Android has no classes for, so R8 fails the release minify outright.
+              '-dontwarn com.sun.jna.**',
+              '-dontwarn java.awt.**',
+              // Suppressing those warnings is not enough: JNA resolves its own Java
+              // members from native code by name (Native.initIDs looks up Pointer.peer
+              // over JNI) and maps Structure subclasses field-by-field in declaration
+              // order, so letting R8 rename or reorder them turns the build error into
+              // an UnsatisfiedLinkError at launch instead. uniffi generates the
+              // Structure subclasses the WalletConnect Pay module passes across.
+              '-keep class com.sun.jna.** { *; }',
+              '-keepclassmembers class * extends com.sun.jna.** { *; }',
+              '-keep class uniffi.** { *; }',
               '-keep class org.bouncycastle.** { *; }',
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
