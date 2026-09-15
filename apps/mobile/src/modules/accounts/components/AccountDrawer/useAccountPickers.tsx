@@ -17,6 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { AccountDrawerSelectHeader } from './AccountDrawerSelectHeader'
 import type { AccountDrawerPickerProps } from './types'
 
@@ -25,7 +26,7 @@ import type { AccountDrawerPickerProps } from './types'
  * than the props themselves: the props include a header element rebuilt on every
  * render, and pushing that through context state would re-render on a loop.
  */
-export type AccountPickerKind = 'portfolio' | 'select'
+export type AccountPickerKind = 'portfolio' | 'select' | 'card'
 
 /** Browsing: portfolio value on top, search, and the Pera Card row. */
 export const usePortfolioPicker = (): AccountDrawerPickerProps =>
@@ -54,7 +55,31 @@ export const useSigningPicker = (): AccountDrawerPickerProps => {
 }
 
 /**
- * Both shapes, so the drawer can pick one without calling a hook conditionally.
+ * Browsing from a screen that is not an account: the same list as `portfolio`,
+ * but picking one has to navigate, since the screen underneath shows the card
+ * rather than the selected account and would otherwise stay put. Names
+ * AccountDetails explicitly: a bare 'Home' resolves to whatever that stack has
+ * on top, which is the card screen itself.
+ */
+export const useCardPicker = (): AccountDrawerPickerProps => {
+    const navigation = useAppNavigation()
+    const portfolio = usePortfolioPicker()
+
+    const onSelected = useCallback(() => {
+        navigation.navigate('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
+    }, [navigation])
+
+    return useMemo(
+        () => ({ ...portfolio, onSelected }),
+        [portfolio, onSelected],
+    )
+}
+
+/**
+ * Every shape, so the drawer can pick one without calling a hook conditionally.
  * Screens use the specific hook directly and spread it into their own
  * `AccountSelection`, which keeps one definition behind the drawer and the
  * bottom-sheet fallback alike.
@@ -65,6 +90,10 @@ export const useAccountPickers = (): Record<
 > => {
     const portfolio = usePortfolioPicker()
     const select = useSigningPicker()
+    const card = useCardPicker()
 
-    return useMemo(() => ({ portfolio, select }), [portfolio, select])
+    return useMemo(
+        () => ({ portfolio, select, card }),
+        [portfolio, select, card],
+    )
 }

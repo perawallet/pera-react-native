@@ -110,4 +110,22 @@ describe('useAuthorizeCardDelegation', () => {
             result.current.authorizeDelegation(account, delegate),
         ).rejects.toThrow('baanx down')
     })
+
+    it('opens the sheet at its content height, not full screen', async () => {
+        mockRequest.mockResolvedValueOnce('confirm')
+        const { result } = renderHook(() => useAuthorizeCardDelegation())
+
+        await result.current.authorizeDelegation(account, delegate)
+
+        // 'modal' is full-height (see SheetHeader), which leaves this short
+        // confirm copy sitting above a screen of empty sheet.
+        const [{ options }] = mockRequest.mock.calls[0] as [
+            { options: Record<string, unknown> },
+        ]
+        expect(options.size).toBe('auto')
+        // ConfirmActionContent brings no container, so the host must create one
+        // for 'auto' to have anything to measure; otherwise the sheet is invisible
+        // and the confirm promise never settles.
+        expect(options.autoCreateContainer).toBeUndefined()
+    })
 })

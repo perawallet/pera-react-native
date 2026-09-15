@@ -112,6 +112,12 @@ describe('useKillswitchAutoDraw', () => {
             expect.objectContaining({
                 method: 'enable',
                 args: ['CARD', 10458941n],
+                // Naming the card's account and asset keeps resource population
+                // off its unnamed-assetHolding path, which places the resource by
+                // JSON-stringifying transaction fields and throws on algosdk's
+                // native bigints (algokit 9.2.x).
+                accountReferences: ['CARD'],
+                assetReferences: [10458941n],
             }),
         )
         // The build carries a simulate-only fee (call + one inner txn) so the

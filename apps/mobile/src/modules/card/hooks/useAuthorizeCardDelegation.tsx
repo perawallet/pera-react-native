@@ -78,9 +78,13 @@ export const useAuthorizeCardDelegation =
                         />
                     ),
                     options: {
-                        size: 'modal',
+                        // Short confirm copy: 'modal' is full-height (see
+                        // SheetHeader), which leaves most of the sheet empty.
+                        // ConfirmActionContent owns no container of its own, so
+                        // 'auto' must let the host create one — without it there
+                        // is nothing to measure and the sheet never appears.
+                        size: 'auto',
                         enablePanDownToClose: true,
-                        autoCreateContainer: false,
                     },
                 })
                 if (confirmed !== 'confirm') return false

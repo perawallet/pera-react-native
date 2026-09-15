@@ -10,18 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
 import type { AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import {
+    useAccountDrawerPickerKind,
+    useCardPicker,
+    type AccountDrawerPickerProps,
+} from '@modules/accounts/components/AccountDrawer'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardComingSoonToast } from '../../hooks'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
     cardDisplay: AccountDisplayCard
-    onSelectAccount: () => void
+    /** List shape and post-selection navigation for the account switcher. */
+    accountPicker: AccountDrawerPickerProps
     onMore: () => void
     onScan: () => void
     onInbox: () => void
@@ -29,7 +34,6 @@ type UsePeraCardAccountScreenResult = {
 
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const { t } = useLanguage()
-    const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
@@ -63,22 +67,19 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
         }
     }, [accounts, connectedAddress, escrowCardAddress, t])
 
-    // Picking a wallet account from the switcher returns to the wallet home.
-    // Names AccountDetails explicitly: a bare 'Home' resolves to this screen,
-    // since the card home lives in that stack too.
-    const onSelectAccount = useCallback(() => {
-        navigation.navigate('TabBar', {
-            screen: 'Home',
-            params: { screen: 'AccountDetails' },
-        })
-    }, [navigation])
+    // The switcher here is the shared drawer, which reads its behaviour from the
+    // published kind rather than from props on the trigger. Publishing is what
+    // makes selection navigate; the same shape is handed to the trigger for the
+    // bottom-sheet fallback used where no drawer wraps the screen.
+    const accountPicker = useCardPicker()
+    useAccountDrawerPickerKind('card')
 
     // TODO(card): wire the more/scan/inbox actions once their destinations exist.
     const showComingSoon = useCardComingSoonToast()
 
     return {
         cardDisplay,
-        onSelectAccount,
+        accountPicker,
         onMore: showComingSoon,
         onScan: showComingSoon,
         onInbox: showComingSoon,

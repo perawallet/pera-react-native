@@ -126,4 +126,42 @@ describe('escrowRequest', () => {
             statusText: 'OK',
         })
     })
+
+    it('hands back a non-JSON success body as raw text instead of throwing', async () => {
+        // AB's delegation route answers 201 with a bare status line; a SyntaxError
+        // here would fail a call that already succeeded on their side.
+        clientCall.mockResolvedValue({
+            status: 201,
+            statusText: 'Created',
+            text: async () => 'Created',
+        })
+
+        const res = await escrowRequest({
+            network: 'testnet',
+            method: 'POST',
+            path: '/api/internal/delegator-lsig',
+        })
+
+        expect(res).toEqual({
+            data: 'Created',
+            status: 201,
+            statusText: 'Created',
+        })
+    })
+
+    it('leaves an empty success body undefined', async () => {
+        clientCall.mockResolvedValue({
+            status: 204,
+            statusText: 'No Content',
+            text: async () => '',
+        })
+
+        const res = await escrowRequest({
+            network: 'testnet',
+            method: 'POST',
+            path: '/api/internal/delegator-lsig',
+        })
+
+        expect(res.data).toBeUndefined()
+    })
 })

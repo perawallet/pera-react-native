@@ -147,8 +147,10 @@ export const AccountSelection = ({
         ...props,
         style: [styles.trigger, props.style],
         activeOpacity: 0.8,
-        // Inside the drawer's subtree the trigger opens it instead; elsewhere
-        // (swap, onramp, card) there's no drawer and the sheet still opens.
+        // The drawer wraps the whole tab bar, so inside it the trigger opens the
+        // drawer and `onSelected` here is never consulted: that behaviour comes
+        // from the kind the screen publishes. The sheet is the fallback for
+        // surfaces mounted outside the tabs.
         onPress: () => {
             if (drawerControls) {
                 drawerControls.openDrawer()

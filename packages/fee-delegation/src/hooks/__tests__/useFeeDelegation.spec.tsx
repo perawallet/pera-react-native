@@ -56,7 +56,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         expected.length === polled.length &&
         expected.every((value, index) => value === polled[index]),
     useTransactionEncoder: () => ({
+        // Mirrors the real pair: the signable form leads with the "TX" domain
+        // separator, the wire form does not. Only the wire form goes to the
+        // backend, so the ids assertions track come from the raw encoder.
         encodeTransaction: (txn: { id: string }) =>
+            new Uint8Array([...`TX${txn.id}`].map(c => c.charCodeAt(0))),
+        encodeTransactionRaw: (txn: { id: string }) =>
             new Uint8Array([...txn.id].map(c => c.charCodeAt(0))),
         encodeSignedTransactions: vi.fn(),
         // Decoders turn the base64-decoded bytes back into readable ids so
@@ -228,6 +233,8 @@ describe('fee-delegation/useFeeDelegation', () => {
         // authenticated with the attestation token, on the active network.
         expect(requestFeeDelegationMock).toHaveBeenCalledWith(
             {
+                // 'optin', not 'TXoptin': ARC-0001 carries the prefix-free wire
+                // form. Sending the signable bytes fails the backend decoder.
                 txnGroup: [{ txn: toBase64('optin') }],
                 account: ACCOUNT,
                 includeAssetOptInMbr: true,

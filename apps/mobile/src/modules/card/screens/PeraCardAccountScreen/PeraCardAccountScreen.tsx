@@ -20,7 +20,7 @@ import { useStyles } from './styles'
 export const PeraCardAccountScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { cardDisplay, onSelectAccount, onMore, onScan, onInbox } =
+    const { cardDisplay, accountPicker, onMore, onScan, onInbox } =
         usePeraCardAccountScreen()
 
     return (
@@ -33,10 +33,8 @@ export const PeraCardAccountScreen = () => {
                 style={styles.iconBar}
                 left={
                     <AccountSelection
+                        {...accountPicker}
                         card={cardDisplay}
-                        showSearch
-                        showPeraCardActivation
-                        onSelected={onSelectAccount}
                         style={styles.accountSelectionToolbar}
                     />
                 }

@@ -19,6 +19,10 @@ const mockState = vi.hoisted(() => ({
 }))
 const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
+const { mockPublishPickerKind, mockCardPicker } = vi.hoisted(() => ({
+    mockPublishPickerKind: vi.fn(),
+    mockCardPicker: { showSearch: true, onSelected: vi.fn() },
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -52,6 +56,13 @@ vi.mock('@hooks/useToast', () => ({
         successToast: vi.fn(),
         showToast: vi.fn(),
     }),
+}))
+
+// The switcher on this screen is the shared drawer, so what the screen owns is
+// publishing its kind; the picker's own behaviour is covered by its spec.
+vi.mock('@modules/accounts/components/AccountDrawer', () => ({
+    useCardPicker: () => mockCardPicker,
+    useAccountDrawerPickerKind: mockPublishPickerKind,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -123,15 +134,18 @@ describe('usePeraCardAccountScreen', () => {
         )
     })
 
-    it('returns to the wallet home when a wallet account is selected', () => {
+    // The drawer ignores props on the trigger, so publishing the kind is the
+    // only thing that makes picking an account leave this screen.
+    it('publishes the card picker kind to the shared drawer', () => {
+        renderHook(() => usePeraCardAccountScreen())
+
+        expect(mockPublishPickerKind).toHaveBeenCalledWith('card')
+    })
+
+    it('hands the card picker to the trigger for the bottom-sheet fallback', () => {
         const { result } = renderHook(() => usePeraCardAccountScreen())
 
-        result.current.onSelectAccount()
-
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-            screen: 'Home',
-            params: { screen: 'AccountDetails' },
-        })
+        expect(result.current.accountPicker).toBe(mockCardPicker)
     })
 
     it('header actions surface the coming-soon toast', () => {
