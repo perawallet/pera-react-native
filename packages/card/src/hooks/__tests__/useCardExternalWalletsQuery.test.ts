@@ -120,4 +120,22 @@ describe('useCardExternalWalletsQuery', () => {
         await new Promise(resolve => setTimeout(resolve, 10))
         expect(fetchExternalWallets).not.toHaveBeenCalled()
     })
+
+    // Manual funding has no delegation, so the caller turns the lookup off
+    // rather than spending a request on a guaranteed miss.
+    it('stays idle without fetching when the caller disables it', async () => {
+        fetchExternalWallets.mockResolvedValue([wallet({})])
+
+        renderHook(
+            () =>
+                useCardExternalWalletsQuery({
+                    address: 'ALGO_ADDR',
+                    enabled: false,
+                }),
+            { wrapper },
+        )
+
+        await new Promise(resolve => setTimeout(resolve, 10))
+        expect(fetchExternalWallets).not.toHaveBeenCalled()
+    })
 })

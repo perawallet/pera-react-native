@@ -23,6 +23,8 @@ import { useCardSession } from './useCardSession'
 export type UseCardExternalWalletsQueryParams = {
     /** Funding-source address to look up; pass null to skip matching. */
     address: Nullable<string>
+    /** Defaults to true; pass false where no delegation can exist. */
+    enabled?: boolean
 }
 
 export type UseCardExternalWalletsQueryResult = {
@@ -43,7 +45,7 @@ export type UseCardExternalWalletsQueryResult = {
 export const useCardExternalWalletsQuery = (
     params: UseCardExternalWalletsQueryParams,
 ): UseCardExternalWalletsQueryResult => {
-    const { address } = params
+    const { address, enabled = true } = params
     const { network } = useNetwork()
     const { isAuthenticated } = useCardSession()
 
@@ -52,7 +54,7 @@ export const useCardExternalWalletsQuery = (
         queryFn: ({ signal }) => fetchExternalWallets({ network, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
         // The delegation routes require a Baanx session — stay idle otherwise.
-        enabled: isAuthenticated,
+        enabled: isAuthenticated && enabled,
     })
 
     const delegatedWallet = useMemo(

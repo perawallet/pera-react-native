@@ -81,9 +81,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const { balance: cardBalance, isLoading: isCardBalanceLoading } =
         useCardEscrowBalance()
     // Only the allowance is taken from Baanx; both balances are read from the
-    // chain, which is the only source Pera's platform is served.
+    // chain, which is the only source Pera's platform is served. Manual funding
+    // has no delegation at all, so asking for one is a guaranteed failure.
     const { delegatedWallet } = useCardExternalWalletsQuery({
         address: connectedAddress,
+        enabled: isAutoFunding,
     })
 
     // Auto funding never moves USDC onto the card: it is drawn from the linked

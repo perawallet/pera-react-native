@@ -30,6 +30,7 @@ const mockState = vi.hoisted(() => ({
     isWalletsLoading: false,
     delegatedWallet: null as unknown,
 }))
+const mockExternalWalletsParams: { enabled?: boolean }[] = []
 const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
 
@@ -69,14 +70,17 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
         }),
-        useCardExternalWalletsQuery: () => ({
-            delegatedWallet: mockState.delegatedWallet,
-            hasActiveDelegation: false,
-            isLoading: false,
-            isError: false,
-            error: null,
-            refetch: vi.fn(),
-        }),
+        useCardExternalWalletsQuery: (params: { enabled?: boolean }) => {
+            mockExternalWalletsParams.push(params)
+            return {
+                delegatedWallet: mockState.delegatedWallet,
+                hasActiveDelegation: false,
+                isLoading: false,
+                isError: false,
+                error: null,
+                refetch: vi.fn(),
+            }
+        },
     }
 })
 
@@ -151,6 +155,7 @@ describe('usePeraCardOverview', () => {
         mockState.cardBalance = '0'
         mockState.isWalletsLoading = false
         mockState.delegatedWallet = null
+        mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
     })
@@ -179,6 +184,17 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.balance.toFixed(2)).toBe('150.25')
+    })
+
+    // Baanx only knows about a delegation under auto funding, so asking for one
+    // on manual is a guaranteed 400.
+    it('asks Baanx for the delegation only when auto funding is on', () => {
+        renderHook(() => usePeraCardOverview())
+        expect(mockExternalWalletsParams.at(-1)?.enabled).toBe(false)
+
+        mockState.selectedFundingType = 'AUTO'
+        renderHook(() => usePeraCardOverview())
+        expect(mockExternalWalletsParams.at(-1)?.enabled).toBe(true)
     })
 
     it('reports auto funding when the selected type is AUTO', () => {
