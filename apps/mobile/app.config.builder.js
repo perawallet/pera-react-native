@@ -392,6 +392,10 @@ function buildAppConfig(env) {
               '-dontwarn okio.**',
               '-dontwarn javax.annotation.**',
               '-dontwarn org.conscrypt.**',
+              // JNA's Native reaches into desktop-Java AWT for window handles, which
+              // Android has no classes for, so R8 fails the release minify outright.
+              '-dontwarn com.sun.jna.**',
+              '-dontwarn java.awt.**',
               '-keep class org.bouncycastle.** { *; }',
               '-keepnames class org.bouncycastle.** { *; }',
               '-dontwarn org.bouncycastle.**',
