@@ -75,12 +75,10 @@ type CloudBackupRestoreDraftState = BaseStoreState & {
     mnemonicIndices: Uint16Array | null
     /** UTF-8 fallback for an entry containing a non-wordlist token. */
     mnemonicRawBytes: Uint8Array | null
-    salt: string | null
 }
 
 type CloudBackupRestoreDraftActions = {
     setMnemonic: (mnemonic: string[]) => void
-    setSalt: (salt: string) => void
     clearDraft: () => void
 }
 
@@ -90,7 +88,6 @@ export type CloudBackupRestoreDraftStore = CloudBackupRestoreDraftState &
 const initialRestoreDraftState = {
     mnemonicIndices: null as Uint16Array | null,
     mnemonicRawBytes: null as Uint8Array | null,
-    salt: null as string | null,
 }
 
 /**
@@ -124,7 +121,6 @@ export const useCloudBackupRestoreDraftStore =
                           },
                 )
             },
-            setSalt: (salt: string) => set({ salt }),
             clearDraft: clear,
             resetState: clear,
         }
