@@ -51,7 +51,10 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: mockResolve }),
 }))
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+// importOriginal, not a bare factory: the hook also calls the package's pure
+// helpers (rampTokenAssetId), and a wholesale mock drops them.
+vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
+    ...(await importOriginal()),
     useRampPairsQuery: mockUseRampPairsQuery,
 }))
 
