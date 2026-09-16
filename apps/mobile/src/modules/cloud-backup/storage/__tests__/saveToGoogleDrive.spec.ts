@@ -17,7 +17,8 @@ import {
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
 import { GoogleDriveNotConfiguredError } from '../errors'
-import { DRIVE_APPDATA_SCOPE, saveToGoogleDrive } from '../saveToGoogleDrive'
+import { DRIVE_APPDATA_SCOPE } from '../googleDriveSession'
+import { saveToGoogleDrive } from '../saveToGoogleDrive'
 
 const google = vi.hoisted(() => ({
     configure: vi.fn(),
