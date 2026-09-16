@@ -20,6 +20,11 @@ const showToast = vi.fn()
 const clearDraft = vi.fn()
 let hasMnemonic = true
 let isRestoring = false
+let routeParams: unknown
+
+vi.mock('@react-navigation/native', () => ({
+    useRoute: () => ({ params: routeParams }),
+}))
 
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
 vi.mock('@hooks/useLanguage', () => ({
@@ -52,6 +57,16 @@ vi.mock('@analytics', async () => ({
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useCloudBackupRestoreEncryptionKeyScreen } from '../useCloudBackupRestoreEncryptionKeyScreen'
 
+const IMPORTED_KEY = {
+    salt: 'q311Z4ReDNWpMVuH8XdvSw==',
+    argon2id: {
+        timeCost: 3,
+        memoryCost: 256,
+        parallelism: 1,
+        outputLength: 32,
+    },
+}
+
 const renderScreen = () =>
     renderHook(() => useCloudBackupRestoreEncryptionKeyScreen({ onDone }))
 
@@ -60,6 +75,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         vi.clearAllMocks()
         hasMnemonic = true
         isRestoring = false
+        routeParams = undefined
     })
 
     it('runs restore with the entered key', () => {
@@ -70,6 +86,35 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         expect(trackEvent).toHaveBeenCalledWith(
             CloudBackupEvent.RestoreEncryptionKeyProceed,
         )
+        expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
+    })
+
+    it('starts empty when no key was imported', () => {
+        const { result } = renderScreen()
+
+        expect(result.current.encryptionKey).toBe('')
+        expect(result.current.canRestore).toBe(false)
+    })
+
+    it('starts filled in with the imported key and restores with its Argon2id settings', () => {
+        routeParams = { importedKey: IMPORTED_KEY }
+        const { result } = renderScreen()
+
+        expect(result.current.encryptionKey).toBe(IMPORTED_KEY.salt)
+        expect(result.current.canRestore).toBe(true)
+
+        act(() => result.current.handleRestore())
+
+        expect(restore).toHaveBeenCalledWith(IMPORTED_KEY)
+    })
+
+    it('restores an edited imported key on the default Argon2id settings', () => {
+        routeParams = { importedKey: IMPORTED_KEY }
+        const { result } = renderScreen()
+
+        act(() => result.current.handleKeyChange('c2FsdA=='))
+        act(() => result.current.handleRestore())
+
         expect(restore).toHaveBeenCalledWith({ salt: 'c2FsdA==' })
     })
 
