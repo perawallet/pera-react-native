@@ -17,6 +17,7 @@ import {
     useCreateRampQuoteMutation,
     toOnrampUserMessage,
     filterQuotesByPaymentMethod,
+    isSourceAmountTooLowError,
     parseRampAmount,
     pickBestQuote,
     resolveRampQuoteLimits,
@@ -141,7 +142,9 @@ export const useOnrampQuotes = ({
                               ? t('onramp.form.amount_below_min', {
                                     min: limits.min.toString(),
                                 })
-                              : toOnrampUserMessage(error),
+                              : isSourceAmountTooLowError(error)
+                                ? t('onramp.form.amount_below_min_unknown')
+                                : toOnrampUserMessage(error),
                     )
                     setIsQuoting(false)
                 }

@@ -3338,6 +3338,7 @@
             "max": "MAX",
             "no_payment_methods": "No payment methods available for your device.",
             "amount_below_min": "Amount must be greater than {{min}}",
+            "amount_below_min_unknown": "Amount is below the provider's minimum",
             "amount_above_max": "Amount must be less than {{max}}"
         },
         "pair_selection": {

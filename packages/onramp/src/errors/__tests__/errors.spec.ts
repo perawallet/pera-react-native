@@ -13,7 +13,11 @@
 import { describe, it, expect } from 'vitest'
 import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { resolveRampQuoteLimits, toOnrampUserMessage } from '..'
+import {
+    isSourceAmountTooLowError,
+    resolveRampQuoteLimits,
+    toOnrampUserMessage,
+} from '..'
 
 // The Pera API returns SourceAmountIsTooLow errors with this shape:
 // {
@@ -217,5 +221,63 @@ describe('resolveRampQuoteLimits', () => {
         expect(resolveRampQuoteLimits(new Error('boom'))).toBeNull()
         expect(resolveRampQuoteLimits(undefined)).toBeNull()
         expect(resolveRampQuoteLimits(null)).toBeNull()
+    })
+})
+
+// Verbatim /v1/ramp/quotes/ 400 for the TRY pair: the backend interpolates the
+// literal word "for" where the limit belongs, in every field it fills.
+const corruptLimitError = {
+    type: 'SourceAmountIsTooLow',
+    fallback_message:
+        "{'message': 'Source amount is below the minimum allowed, which is for.', 'min_amount': 'for'}",
+    detail: {
+        non_field_errors: [
+            "{'message': 'Source amount is below the minimum allowed, which is for.', 'min_amount': 'for'}",
+        ],
+    },
+}
+
+describe('toOnrampUserMessage with a corrupt limit', () => {
+    it('never surfaces the non-numeric limit token or the prose carrying it', () => {
+        const result = toOnrampUserMessage(corruptLimitError)
+
+        expect(result).not.toContain('for.')
+        expect(result).not.toContain('min_amount')
+        expect(result).toBe("Amount is below the provider's minimum.")
+    })
+
+    it('falls back rather than echoing a serialised dict as the message', () => {
+        const result = toOnrampUserMessage({
+            type: 'SomeOtherError',
+            fallback_message: "{'message': 'nope'}",
+            detail: {},
+        })
+
+        expect(result).not.toContain('{')
+        expect(result).toMatch(/something went wrong/i)
+    })
+})
+
+describe('isSourceAmountTooLowError', () => {
+    it('is true whether or not the payload carries a usable limit', () => {
+        expect(isSourceAmountTooLowError(sourceAmountIsTooLowError)).toBe(true)
+        expect(isSourceAmountTooLowError(corruptLimitError)).toBe(true)
+    })
+
+    it('is false for other errors', () => {
+        expect(
+            isSourceAmountTooLowError({
+                type: 'SomeOtherError',
+                fallback_message: 'Nope.',
+                detail: {},
+            }),
+        ).toBe(false)
+        expect(isSourceAmountTooLowError(new Error('boom'))).toBe(false)
+    })
+})
+
+describe('resolveRampQuoteLimits with a corrupt limit', () => {
+    it('returns null so the UI does not offer an unusable tap-to-fix', () => {
+        expect(resolveRampQuoteLimits(corruptLimitError)).toBeNull()
     })
 })
