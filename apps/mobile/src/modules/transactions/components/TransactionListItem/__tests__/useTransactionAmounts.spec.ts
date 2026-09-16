@@ -247,3 +247,28 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts[0].value.toString()).toBe('6638534')
     })
 })
+
+// PERA-5138: `sender` on a clawback is the clawback authority, so the account
+// whose holding was seized used to see "+100 USDC" — the history reported the
+// direction of funds backwards for every clawback-enabled ASA.
+describe('useTransactionAmounts — clawback', () => {
+    it('signs a seized holding as outgoing for the drained account', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: 'CLAWBACK_AUTHORITY',
+            assetSender: USER_ADDRESS,
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                fractionDecimals: 0,
+            },
+        } as Partial<TransactionHistoryItem>)
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+})

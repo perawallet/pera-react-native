@@ -19,6 +19,7 @@ import m0003 from './0003_add_is_frozen.sql?raw'
 import m0004 from './0004_add_asset_price_misses.sql?raw'
 import m0005 from './0005_add_assets_pera_first_seen_at.sql?raw'
 import m0006 from './0006_add_submission_attempts.sql?raw'
+import m0007 from './0007_add_asset_sender.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -38,6 +39,10 @@ const migrations: MigrationConfig = {
     // Submission ledger: one row per broadcast attempt, written
     // before the POST and resolved by confirmation / rejection / reconciler.
     '0006_add_submission_attempts': m0006,
+    // A clawback's `asnd`. Rows cached before it stay NULL, which reads as
+    // "the sender is the debited account" — the pre-fix behaviour — and heal
+    // on the next sync of that transaction.
+    '0007_add_asset_sender': m0007,
 }
 
 export default migrations

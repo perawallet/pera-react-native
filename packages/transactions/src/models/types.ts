@@ -87,6 +87,13 @@ export interface TransactionHistoryItem {
     id: string
     txType: TransactionType
     sender: string
+    /**
+     * The account actually debited by an asset transfer (`asnd`), set only
+     * when it differs from `sender`. On a clawback `sender` is the clawback
+     * authority, so direction and sign must be read from here first or a
+     * seizure renders as an incoming transfer.
+     */
+    assetSender: Nullable<string>
     /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
     confirmedRound: number

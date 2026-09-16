@@ -51,6 +51,7 @@ describe('transformTransactionItem', () => {
             id: 'TX123',
             txType: 'pay',
             sender: 'SENDER_ADDR',
+            assetSender: null,
             receiver: 'RECEIVER_ADDR',
             confirmedRound: 12345,
             roundTime: 1700000000,
@@ -677,5 +678,75 @@ describe('Pera backend wire contract', () => {
         expect(item.asset?.unitName).toBe('ALGO')
         expect(item.asset?.decimals).toBe(6)
         expect(item.balanceImpacts[0]?.fractionDecimals).toBe(6)
+    })
+})
+
+// PERA-5138: on a clawback the Pera backend's `sender` is the clawback
+// authority, so the row read as an incoming transfer for the account that was
+// actually drained.
+describe('transformTransactionItem — clawback direction', () => {
+    const clawback = (overrides = {}) =>
+        makeApiItem({
+            tx_type: 'axfer',
+            sender: 'CLAWBACK_AUTHORITY',
+            receiver: 'SEIZER_ADDR',
+            amount: '100',
+            asset: {
+                asset_id: '31566704',
+                name: 'USDC',
+                unit_name: 'USDC',
+                fraction_decimals: 6,
+            },
+            balance_impacts: [
+                {
+                    asset_id: '31566704',
+                    unit_name: 'USDC',
+                    fraction_decimals: 6,
+                    amount: '-100',
+                },
+            ],
+            ...overrides,
+        })
+
+    it('names the drained account as the asset sender', () => {
+        const result = transformTransactionItem(clawback(), 'DRAINED_ADDR')
+
+        expect(result.assetSender).toBe('DRAINED_ADDR')
+    })
+
+    it('prefers an explicit asset_sender over the derivation', () => {
+        const result = transformTransactionItem(
+            clawback({ asset_sender: 'FROM_BACKEND' }),
+            'DRAINED_ADDR',
+        )
+
+        expect(result.assetSender).toBe('FROM_BACKEND')
+    })
+
+    it('leaves an ordinary incoming transfer alone', () => {
+        const result = transformTransactionItem(
+            clawback({
+                balance_impacts: [
+                    {
+                        asset_id: '31566704',
+                        unit_name: 'USDC',
+                        fraction_decimals: 6,
+                        amount: '100',
+                    },
+                ],
+            }),
+            'RECEIVER_ADDR',
+        )
+
+        expect(result.assetSender).toBeNull()
+    })
+
+    it('leaves a transfer this account sent alone', () => {
+        const result = transformTransactionItem(
+            clawback({ sender: 'DRAINED_ADDR' }),
+            'DRAINED_ADDR',
+        )
+
+        expect(result.assetSender).toBeNull()
     })
 })
