@@ -63,6 +63,7 @@ const {
     CONNECTION_LATE_PAIRING_GRACE_MS,
     CONNECTION_OUTCOME_TIMEOUT_MS,
     resetConnectionPairingStateForTesting,
+    setActiveConnectionRegistry,
 } = await import('@perawallet/wallet-core-connections')
 
 const emitProposal = (pairingId?: string): void => {
@@ -81,6 +82,7 @@ describe('useConnectionPairing', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         registry = fakeRegistry
+        setActiveConnectionRegistry(null)
         mockPair.mockClear()
         mockPair.mockResolvedValue('pairing-a')
         mockAbandonPairing.mockClear()
@@ -108,8 +110,29 @@ describe('useConnectionPairing', () => {
         })
     })
 
-    // Onboarding renders the deep-link hook above the provider.
-    it('reports a connect failure rather than throwing when no provider is mounted', async () => {
+    // Sheet content is portaled to a host mounted above `ConnectionsProvider`,
+    // so the in-app browser bridge pairs with no context at all; the published
+    // registry is what keeps a dApp's Connect button working there.
+    it('pairs through the published registry when the context is absent', async () => {
+        registry = null
+        setActiveConnectionRegistry(fakeRegistry)
+        const { result } = renderHook(() => useConnectionPairing())
+
+        const pairing = result.current.pair('wc:topic@1?bridge=b', {
+            origin: { source: 'in-app' },
+        })
+        await settlePairCall()
+        emitProposal('pairing-a')
+
+        await expect(pairing).resolves.toEqual({ type: 'session' })
+        expect(mockPair).toHaveBeenCalledWith('wc:topic@1?bridge=b', {
+            origin: { source: 'in-app' },
+        })
+    })
+
+    // Onboarding renders the deep-link hook before the registry boots, so
+    // neither source has one.
+    it('reports a connect failure rather than throwing when no registry exists', async () => {
         registry = null
         const { result } = renderHook(() => useConnectionPairing())
 
