@@ -11,16 +11,53 @@
  */
 
 import { PWSheetLayout, PWText, PWView } from '@components/core'
+import { PanelButton, type PanelButtonProps } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { RestoreOptionRow } from './RestoreOptionRow'
-import { useRestoreBackupSheet } from './useRestoreBackupSheet'
+import iCloudLogo from '@assets/images/icloud-logo.png'
+import {
+    useRestoreBackupSheet,
+    type RestoreBackupSheetResult,
+} from './useRestoreBackupSheet'
 import { useStyles } from './styles'
+
+type OptionRow = Pick<
+    PanelButtonProps,
+    'leftIcon' | 'leftImage' | 'title' | 'testID'
+>
 
 export const RestoreBackupSheet = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { handleScan, handleManual } = useRestoreBackupSheet()
+    const { options, descriptionKey, handleSelect } = useRestoreBackupSheet()
+
+    const rows: Record<RestoreBackupSheetResult, OptionRow> = {
+        scan: {
+            leftIcon: 'qr',
+            title: t('cloud_backup.restore.sheet_scan'),
+            testID: 'cloud_backup_restore_sheet_scan',
+        },
+        device: {
+            leftIcon: 'device',
+            title: t('cloud_backup.restore.sheet_device'),
+            testID: 'cloud_backup_restore_sheet_device',
+        },
+        icloud: {
+            leftImage: iCloudLogo,
+            title: t('cloud_backup.restore.sheet_icloud'),
+            testID: 'cloud_backup_restore_sheet_icloud',
+        },
+        googleDrive: {
+            leftIcon: 'google-drive',
+            title: t('cloud_backup.restore.sheet_google_drive'),
+            testID: 'cloud_backup_restore_sheet_google_drive',
+        },
+        manual: {
+            leftIcon: 'key',
+            title: t('cloud_backup.restore.sheet_manual'),
+            testID: 'cloud_backup_restore_sheet_manual',
+        },
+    }
 
     return (
         <PWSheetLayout
@@ -37,21 +74,18 @@ export const RestoreBackupSheet = () => {
                     variant='bodyLarge'
                     style={styles.description}
                 >
-                    {t('cloud_backup.restore.sheet_description')}
+                    {t(descriptionKey)}
                 </PWText>
                 <PWView style={styles.options}>
-                    <RestoreOptionRow
-                        icon='qr'
-                        label={t('cloud_backup.restore.sheet_scan')}
-                        onPress={handleScan}
-                        testID='cloud_backup_restore_sheet_scan'
-                    />
-                    <RestoreOptionRow
-                        icon='key'
-                        label={t('cloud_backup.restore.sheet_manual')}
-                        onPress={handleManual}
-                        testID='cloud_backup_restore_sheet_manual'
-                    />
+                    {options.map(option => (
+                        <PanelButton
+                            key={option}
+                            {...rows[option]}
+                            titleWeight='h3'
+                            accessibilityRole='button'
+                            onPress={() => handleSelect(option)}
+                        />
+                    ))}
                 </PWView>
             </PWView>
         </PWSheetLayout>

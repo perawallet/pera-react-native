@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWScreen, PWText, PWView } from '@components/core'
+import { PWLoadingOverlay, PWScreen, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCloudBackupScreen } from './useCloudBackupScreen'
@@ -19,46 +19,54 @@ import { useStyles } from './styles'
 export const CloudBackupScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { handleSetUpBackup, handleRestoreBackup } = useCloudBackupScreen()
+    const { handleSetUpBackup, handleRestoreBackup, isReadingCredentials } =
+        useCloudBackupScreen()
 
     return (
-        <PWScreen
-            testID='cloud_backup_screen'
-            footer={
-                <PWText
-                    variant='footnoteMedium'
-                    weight={400}
-                    style={styles.note}
-                >
-                    {t('cloud_backup.main.storage_note')}
-                </PWText>
-            }
-        >
-            <PWView style={styles.header}>
-                <PWText variant='h1'>{t('cloud_backup.main.title')}</PWText>
-                <PWText variant='bodyLarge'>
-                    {t('cloud_backup.main.subtitle')}
-                </PWText>
-            </PWView>
+        <>
+            <PWScreen
+                testID='cloud_backup_screen'
+                footer={
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.note}
+                    >
+                        {t('cloud_backup.main.storage_note')}
+                    </PWText>
+                }
+            >
+                <PWView style={styles.header}>
+                    <PWText variant='h1'>{t('cloud_backup.main.title')}</PWText>
+                    <PWText variant='bodyLarge'>
+                        {t('cloud_backup.main.subtitle')}
+                    </PWText>
+                </PWView>
 
-            <PWView style={styles.options}>
-                <PanelButton
-                    leftIcon='cloud-upload'
-                    titleWeight='h3'
-                    title={t('cloud_backup.main.setup_title')}
-                    description={t('cloud_backup.main.setup_description')}
-                    onPress={handleSetUpBackup}
-                    testID='cloud_backup_setup_option'
-                />
-                <PanelButton
-                    leftIcon='cloud-download'
-                    titleWeight='h3'
-                    title={t('cloud_backup.main.restore_title')}
-                    description={t('cloud_backup.main.restore_description')}
-                    onPress={() => void handleRestoreBackup()}
-                    testID='cloud_backup_restore_option'
-                />
-            </PWView>
-        </PWScreen>
+                <PWView style={styles.options}>
+                    <PanelButton
+                        leftIcon='cloud-upload'
+                        titleWeight='h3'
+                        title={t('cloud_backup.main.setup_title')}
+                        description={t('cloud_backup.main.setup_description')}
+                        onPress={handleSetUpBackup}
+                        testID='cloud_backup_setup_option'
+                    />
+                    <PanelButton
+                        leftIcon='cloud-download'
+                        titleWeight='h3'
+                        title={t('cloud_backup.main.restore_title')}
+                        description={t('cloud_backup.main.restore_description')}
+                        onPress={() => void handleRestoreBackup()}
+                        testID='cloud_backup_restore_option'
+                    />
+                </PWView>
+            </PWScreen>
+
+            <PWLoadingOverlay
+                isVisible={isReadingCredentials}
+                title={t('cloud_backup.restore.import_reading')}
+            />
+        </>
     )
 }

@@ -10,8 +10,17 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    test,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Platform } from 'react-native'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRestoreBackupSheet } from '../useRestoreBackupSheet'
@@ -26,6 +35,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const mockResolve = vi.fn()
+const originalOS = Platform.OS
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -35,24 +45,53 @@ beforeEach(() => {
     })
 })
 
+afterEach(() => {
+    Platform.OS = originalOS
+})
+
 describe('useRestoreBackupSheet', () => {
-    test('tracks and resolves the QR scan option', () => {
+    test.each([
+        [
+            'ios',
+            ['scan', 'device', 'icloud', 'googleDrive', 'manual'],
+            'cloud_backup.restore.sheet_description_with_import',
+        ],
+        [
+            'android',
+            ['scan', 'device', 'googleDrive', 'manual'],
+            'cloud_backup.restore.sheet_description_with_import',
+        ],
+        ['web', ['scan', 'manual'], 'cloud_backup.restore.sheet_description'],
+    ] as const)(
+        'offers the sources available on %s and describes only those',
+        (os, expectedOptions, expectedDescriptionKey) => {
+            Platform.OS = os
+
+            const { result } = renderHook(() => useRestoreBackupSheet())
+
+            expect(result.current.options).toEqual(expectedOptions)
+            expect(result.current.descriptionKey).toBe(expectedDescriptionKey)
+        },
+    )
+
+    test.each([
+        ['scan', CloudBackupEvent.RestoreScanQr],
+        ['manual', CloudBackupEvent.RestoreEnterManually],
+    ] as const)('tracks and resolves %s', (option, event) => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleScan()
+        result.current.handleSelect(option)
 
-        expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.RestoreScanQr)
-        expect(mockResolve).toHaveBeenCalledWith('scan')
+        expect(trackEvent).toHaveBeenCalledWith(event)
+        expect(mockResolve).toHaveBeenCalledWith(option)
     })
 
-    test('tracks and resolves the manual entry option', () => {
+    test('resolves a file source without an event of its own', () => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleManual()
+        result.current.handleSelect('googleDrive')
 
-        expect(trackEvent).toHaveBeenCalledWith(
-            CloudBackupEvent.RestoreEnterManually,
-        )
-        expect(mockResolve).toHaveBeenCalledWith('manual')
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(mockResolve).toHaveBeenCalledWith('googleDrive')
     })
 })
