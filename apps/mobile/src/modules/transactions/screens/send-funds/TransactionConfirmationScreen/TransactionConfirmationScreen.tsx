@@ -120,6 +120,11 @@ export const TransactionConfirmationScreen = () => {
                         <AddressDisplay
                             address={destination}
                             showCopy={false}
+                            // The address stays visible even when a name
+                            // resolves: an NFD name is a backend assertion
+                            // about who owns this address, and this is the
+                            // screen where trusting it wrongly costs funds.
+                            showSecondaryAddress
                         />
                     </KeyValueRow>
                 )}

@@ -130,7 +130,13 @@ export const ARC59SendSummaryScreen = () => {
                         <PWText style={styles.rowLabel}>
                             {t('send_funds.arc59_summary.recipient_label')}
                         </PWText>
-                        <AddressDisplay address={recipientAddress} />
+                        <AddressDisplay
+                            address={recipientAddress}
+                            // See TransactionConfirmationScreen: a resolved
+                            // name never replaces the address on a screen the
+                            // user signs from.
+                            showSecondaryAddress
+                        />
                     </PWView>
 
                     <PWView style={styles.divider} />

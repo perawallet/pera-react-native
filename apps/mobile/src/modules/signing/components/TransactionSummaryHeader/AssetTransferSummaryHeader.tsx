@@ -51,6 +51,8 @@ export const AssetTransferSummaryHeader = ({
                     textProps={{ style: styles.addressText }}
                     iconProps={{ color: theme.colors.textMain }}
                     address={receiver}
+                    // See PaymentSummaryHeader.
+                    showSecondaryAddress
                 />
             </PWView>
 
