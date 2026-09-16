@@ -232,18 +232,30 @@ vi.mock('expo-file-system', () => {
     // the native picker and then reads `.text()` on the returned instance.
     // Tests override the `pickFileAsync` vi.fn() per-case to supply backup
     // contents — see `__integration__/onboarding-import-asb.test.tsx`.
+    // `shareFile` instead constructs `new File(Paths.cache, fileName)` and
+    // calls `create`/`write`/`uri`/`exists`/`delete`.
     class File {
         name = 'mock-file.txt'
-        constructor(uri?: string) {
-            if (typeof uri === 'string') this.name = uri
+        uri = 'file:///test/mock-file.txt'
+        exists = true
+        constructor(...parts: unknown[]) {
+            const path = parts
+                .filter((part): part is string => typeof part === 'string')
+                .join('/')
+            if (path) {
+                this.name = path
+                this.uri = `file://${path}`
+            }
         }
+        create(_options?: unknown): void {}
+        delete(): void {}
         async text(): Promise<string> {
             return ''
         }
         async read(): Promise<string> {
             return ''
         }
-        async write(_data: unknown): Promise<void> {}
+        write(_data: unknown): void {}
         static pickFileAsync = vi.fn(async () => new File())
     }
     return {
