@@ -22,19 +22,17 @@ import { useRequirePinVerification } from '@modules/security'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import {
-    StoreBackupCredentialsSheet,
-    type StoreCredentialsDestination,
-} from '../components/StoreBackupCredentialsSheet'
+import { StoreBackupCredentialsSheet } from '../components/StoreBackupCredentialsSheet'
 import {
     saveToDevice,
     saveToGoogleDrive,
     saveToICloud,
     type CredentialsFileSaver,
+    type CredentialsFileSource,
 } from '../storage'
 
-const SAVERS: Record<StoreCredentialsDestination, CredentialsFileSaver> = {
-    local: saveToDevice,
+const SAVERS: Record<CredentialsFileSource, CredentialsFileSaver> = {
+    device: saveToDevice,
     icloud: saveToICloud,
     googleDrive: saveToGoogleDrive,
 }
@@ -58,21 +56,20 @@ export const useStoreBackupCredentials =
         const storeCredentials = useCallback(async () => {
             if (isStoringRef.current) return
             isStoringRef.current = true
-            let destination: Optional<StoreCredentialsDestination>
+            let destination: Optional<CredentialsFileSource>
             try {
                 if (!useCloudBackupStore.getState().salt) {
                     throw new Error(NO_SALT_MESSAGE)
                 }
 
-                destination =
-                    await requestBottomSheet<StoreCredentialsDestination>({
-                        contents: <StoreBackupCredentialsSheet />,
-                        options: {
-                            size: 'auto',
-                            enablePanDownToClose: true,
-                            autoCreateContainer: false,
-                        },
-                    })
+                destination = await requestBottomSheet<CredentialsFileSource>({
+                    contents: <StoreBackupCredentialsSheet />,
+                    options: {
+                        size: 'auto',
+                        enablePanDownToClose: true,
+                        autoCreateContainer: false,
+                    },
+                })
                 if (!destination) return
                 if (!(await requirePinVerification())) return
 

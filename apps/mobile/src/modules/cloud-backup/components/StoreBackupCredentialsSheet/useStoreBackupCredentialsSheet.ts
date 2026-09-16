@@ -11,33 +11,22 @@
  */
 
 import { useCallback } from 'react'
-import { Platform } from 'react-native'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-
-export type StoreCredentialsDestination = 'local' | 'icloud' | 'googleDrive'
+import type { CredentialsFileSource } from '../../storage'
+import { getCredentialsFileSaveSources } from '../../storage/credentialsFileSources'
 
 type UseStoreBackupCredentialsSheetResult = {
-    destinations: StoreCredentialsDestination[]
-    handleSelect: (destination: StoreCredentialsDestination) => void
+    destinations: CredentialsFileSource[]
+    handleSelect: (destination: CredentialsFileSource) => void
 }
-
-// iCloud has no Android client, and the browser extension ships neither
-// native SDK.
-const DESTINATIONS_BY_OS: Partial<
-    Record<typeof Platform.OS, StoreCredentialsDestination[]>
-> = {
-    ios: ['local', 'icloud', 'googleDrive'],
-    android: ['local', 'googleDrive'],
-}
-const LOCAL_ONLY: StoreCredentialsDestination[] = ['local']
 
 export const useStoreBackupCredentialsSheet =
     (): UseStoreBackupCredentialsSheetResult => {
-        const { resolve } = useBottomSheetResult<StoreCredentialsDestination>()
-        const destinations = DESTINATIONS_BY_OS[Platform.OS] ?? LOCAL_ONLY
+        const { resolve } = useBottomSheetResult<CredentialsFileSource>()
+        const destinations = getCredentialsFileSaveSources()
 
         const handleSelect = useCallback(
-            (destination: StoreCredentialsDestination) => resolve(destination),
+            (destination: CredentialsFileSource) => resolve(destination),
             [resolve],
         )
 

@@ -16,11 +16,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import iCloudLogo from '@assets/images/icloud-logo.png'
 
+import type { CredentialsFileSource } from '../../storage'
 import { StoreCredentialsWarning } from './StoreCredentialsWarning'
-import {
-    useStoreBackupCredentialsSheet,
-    type StoreCredentialsDestination,
-} from './useStoreBackupCredentialsSheet'
+import { useStoreBackupCredentialsSheet } from './useStoreBackupCredentialsSheet'
 import { useStyles } from './styles'
 
 type DestinationRow = Pick<
@@ -33,8 +31,8 @@ export const StoreBackupCredentialsSheet = () => {
     const styles = useStyles()
     const { destinations, handleSelect } = useStoreBackupCredentialsSheet()
 
-    const rows: Record<StoreCredentialsDestination, DestinationRow> = {
-        local: {
+    const rows: Record<CredentialsFileSource, DestinationRow> = {
+        device: {
             leftIcon: 'device',
             title: t('cloud_backup.store_credentials.store_locally'),
             testID: 'store_backup_credentials_local',

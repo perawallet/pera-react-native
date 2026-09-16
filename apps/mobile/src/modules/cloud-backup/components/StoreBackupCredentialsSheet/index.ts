@@ -11,4 +11,3 @@
  */
 
 export { StoreBackupCredentialsSheet } from './StoreBackupCredentialsSheet'
-export type { StoreCredentialsDestination } from './useStoreBackupCredentialsSheet'
