@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-export { saveToDevice } from './saveToDevice'
-export { saveToICloud } from './saveToICloud'
-export { saveToGoogleDrive } from './saveToGoogleDrive'
-export { readBackupCredentials } from './readBackupCredentials'
-export type {
-    CredentialsFileSaver,
-    CredentialsFileSource,
-    SaveResult,
-} from './types'
+import type { ReadResult } from './types'
+
+// Never offered on web; the twin keeps the native module out of the web bundle.
+export const readFromICloud = async (): Promise<ReadResult> => {
+    throw new Error('iCloud is not available in the browser extension')
+}

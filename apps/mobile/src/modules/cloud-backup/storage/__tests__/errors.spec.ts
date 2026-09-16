@@ -14,8 +14,11 @@ import { describe, expect, test, vi } from 'vitest'
 import { isExpectedError } from '@perawallet/wallet-core-shared'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import {
+    CredentialsFileNotFoundError,
     GoogleDriveNotConfiguredError,
     ICloudUnavailableError,
+    InvalidCredentialsFileError,
+    UnsupportedCredentialsFileError,
 } from '../errors'
 
 // The global unit-test stub re-implements AppError as its own class, so an
@@ -65,4 +68,31 @@ describe('storage errors', () => {
     test('a build without Google OAuth clients is not expected, so it reports', () => {
         expect(isExpectedError(new GoogleDriveNotConfiguredError())).toBe(false)
     })
+
+    test.each([
+        [
+            new CredentialsFileNotFoundError('icloud'),
+            'cloud_backup.restore.import_not_found_icloud',
+        ],
+        [
+            new CredentialsFileNotFoundError('googleDrive'),
+            'cloud_backup.restore.import_not_found_google_drive',
+        ],
+        [
+            new InvalidCredentialsFileError(),
+            'cloud_backup.restore.import_invalid_file',
+        ],
+        [
+            new UnsupportedCredentialsFileError(),
+            'cloud_backup.restore.import_unsupported_version',
+        ],
+    ])(
+        'a credentials-file problem keeps the caller title, names the problem and files no crash report',
+        (error, body) => {
+            expect(
+                resolveErrorCopy(error, t, 'fallback', getAlgodMessage),
+            ).toEqual({ title: 'fallback', body })
+            expect(isExpectedError(error)).toBe(true)
+        },
+    )
 })

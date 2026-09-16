@@ -10,10 +10,32 @@
  limitations under the License
  */
 
-/** `cancelled` is the user backing out of a picker or sign-in, not a failure. */
+/**
+ * `cancelled` means nothing was saved: the user backed out, or a
+ * picker failed silently.
+ */
 export type SaveResult = 'saved' | 'cancelled'
 
 export type CredentialsFileSaver = (
     fileName: string,
     contents: string,
 ) => Promise<SaveResult>
+
+export type CredentialsFileSource = 'device' | 'icloud' | 'googleDrive'
+
+/**
+ * `cancelled` means nothing was read: the user backed out, or a
+ * picker failed silently.
+ */
+export type ReadResult =
+    | { status: 'read'; contents: string }
+    | { status: 'cancelled' }
+
+/**
+ * `onReading` fires once nothing but the read itself is left, so a
+ * progress overlay can't collide with a picker or sign-in sheet.
+ */
+export type CredentialsFileReader = (
+    fileName: string,
+    onReading?: () => void,
+) => Promise<ReadResult>
