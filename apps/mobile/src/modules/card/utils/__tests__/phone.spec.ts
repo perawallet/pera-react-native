@@ -31,6 +31,11 @@ describe('maskPhoneNumber', () => {
         },
     )
 
+    // One "x" is not a mask: an extension suffix must not leak the full number.
+    it('still masks a number whose only mask-like character is an extension marker', () => {
+        expect(maskPhoneNumber('+1 555 0100 ext 12')).toBe('••••0012')
+    })
+
     it.each([null, undefined, '', '   '])(
         'is null when there is nothing to show: %s',
         value => {

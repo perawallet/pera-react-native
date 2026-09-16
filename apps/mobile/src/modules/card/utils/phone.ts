@@ -12,7 +12,9 @@
 
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
-const MASK_CHARACTERS = /[*x#•·]/i
+const MASK_CHARACTERS = /[*x#•·]/gi
+// A mask hides several digits; one stray character (an "ext" suffix) does not.
+const MIN_MASK_CHARACTERS = 2
 const VISIBLE_DIGITS = 4
 const MASK = '••••'
 
@@ -30,7 +32,9 @@ export const maskPhoneNumber = (
 ): Nullable<string> => {
     const trimmed = phoneNumber?.trim()
     if (!trimmed) return null
-    if (MASK_CHARACTERS.test(trimmed)) return trimmed
+    if ((trimmed.match(MASK_CHARACTERS) ?? []).length >= MIN_MASK_CHARACTERS) {
+        return trimmed
+    }
 
     const digits = trimmed.replace(/\D/g, '')
     // Too short to reveal a tail without effectively revealing the number.

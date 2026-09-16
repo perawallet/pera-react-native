@@ -11,12 +11,11 @@
  */
 
 import { useCallback, useMemo, useRef } from 'react'
-import { Decimal } from 'decimal.js'
 import {
     CardWalletKind,
     useCardWalletBalanceQuery,
 } from '@perawallet/wallet-core-card'
-import { type Maybe } from '@perawallet/wallet-core-shared'
+import { type Maybe, ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
 import {
     useNavigation,
     useRoute,
@@ -32,10 +31,7 @@ import {
     CARD_WALLET_PRESENTATION,
     type CardWalletCopy,
 } from '../../utils/cardWalletPresentation'
-import {
-    USDC_DISPLAY_PRECISION,
-    USDC_FALLBACK_DECIMALS,
-} from '../../utils/usdc'
+import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 
 type UseCardWalletBalanceWithdrawScreenResult = {
     copy: CardWalletCopy
@@ -62,16 +58,15 @@ export const useCardWalletBalanceWithdrawScreen =
         const { successToast } = useToast()
 
         const { wallet } = useCardWalletBalanceQuery(kind)
-        const balance = useMemo(
-            () => wallet?.balance ?? new Decimal(0),
-            [wallet],
-        )
+        const balance = wallet?.balance ?? ZERO_DECIMAL
 
+        // The request carries the amount at display precision, so the pad
+        // stops there too: what the user types is exactly what is claimed.
         const {
             amount: value,
             amountDecimal,
             handleKey,
-        } = useNumberPadAmount({ decimals: USDC_FALLBACK_DECIMALS })
+        } = useNumberPadAmount({ decimals: USDC_DISPLAY_PRECISION })
 
         const balanceDisplay = useMemo(
             () => balance.toFixed(USDC_DISPLAY_PRECISION),

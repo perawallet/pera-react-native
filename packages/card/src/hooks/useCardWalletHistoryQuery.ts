@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -61,14 +61,16 @@ export const useCardWalletHistoryQuery = (
         [query.data],
     )
 
+    const fetchNextPage = useCallback(() => {
+        void query.fetchNextPage()
+    }, [query.fetchNextPage])
+
     return {
         entries,
         isLoading: query.isLoading,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         hasNextPage: query.hasNextPage,
-        fetchNextPage: () => {
-            void query.fetchNextPage()
-        },
+        fetchNextPage,
     }
 }

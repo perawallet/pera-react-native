@@ -27,7 +27,8 @@ export type UseWalletWithdrawEstimationQueryResult = {
 
 /**
  * Fee quote for the confirm step. `isEnabled` gates the fetch to when the
- * confirm UI is actually shown; quotes go stale quickly, so no staleTime.
+ * confirm UI is actually shown; `staleTime: 0` opts out of the client's
+ * one-minute default so reopening the sheet always re-quotes.
  */
 export const useWalletWithdrawEstimationQuery = (
     kind: CardWalletKind,
@@ -41,6 +42,7 @@ export const useWalletWithdrawEstimationQuery = (
         queryFn: ({ signal }) =>
             fetchWalletWithdrawEstimation({ kind, network, signal }),
         enabled: isEnabled && isAuthenticated,
+        staleTime: 0,
     })
 
     return {

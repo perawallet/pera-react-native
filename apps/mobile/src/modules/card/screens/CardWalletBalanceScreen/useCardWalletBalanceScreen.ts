@@ -12,13 +12,13 @@
 
 import { useCallback, useMemo } from 'react'
 import type { ImageSourcePropType } from 'react-native'
-import { Decimal } from 'decimal.js'
 import {
     type CardWalletHistoryEntry,
     CardWalletKind,
     useCardWalletBalanceQuery,
     useCardWalletHistoryQuery,
 } from '@perawallet/wallet-core-card'
+import { ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { PeraCardFlowParamList } from '../../routes/types'
@@ -31,8 +31,6 @@ import {
     type CardWalletCopy,
 } from '../../utils/cardWalletPresentation'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
-
-const ZERO_BALANCE = new Decimal(0)
 
 type UseCardWalletBalanceScreenResult = {
     kind: CardWalletKind
@@ -96,7 +94,7 @@ export const useCardWalletBalanceScreen =
             // query with no wallet is a zero balance, not a pending one.
             balanceDisplay: isLoading
                 ? null
-                : (wallet?.balance ?? ZERO_BALANCE).toFixed(
+                : (wallet?.balance ?? ZERO_DECIMAL).toFixed(
                       USDC_DISPLAY_PRECISION,
                   ),
             currencyDisplay: (wallet?.currency ?? 'usdc').toUpperCase(),

@@ -28,6 +28,8 @@ load_env_file() {
     key="${key#"${key%%[![:space:]]*}"}"
     key="${key%"${key##*[![:space:]]}"}"
     case "$key" in export' '*) key="${key#export }" ;; esac
+    value="${value%$'\r'}"
+    case "$key" in ''|*[!A-Za-z0-9_]*) continue ;; esac
     # Strip one layer of surrounding quotes, the way a .env reader would.
     case "$value" in
       \"*\") value="${value#\"}"; value="${value%\"}" ;;
