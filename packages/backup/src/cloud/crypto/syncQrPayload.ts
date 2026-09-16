@@ -22,6 +22,13 @@ import {
     decodeFromBase64,
 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
+import {
+    isDerivableArgon2idConfig,
+    isDerivableSaltLength,
+    isPositiveInteger,
+    isRecord,
+    readArgon2idConfig,
+} from './argon2idConfig'
 import { ARGON2ID_CONFIG } from './constants'
 import { serializeArgon2idConfig } from './serializeArgon2idConfig'
 
@@ -117,50 +124,16 @@ export const encryptBackupSyncQr = async ({
     }
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null && !Array.isArray(value)
-
-const isPositiveInteger = (value: unknown): value is number =>
-    typeof value === 'number' && Number.isInteger(value) && value > 0
-
 const readConfig = (value: unknown): Argon2idConfig => {
-    if (!isRecord(value)) throw new BackupSyncQrError()
-    const { time_cost, memory_cost, parallelism, output_length } = value
-    if (
-        !isPositiveInteger(time_cost) ||
-        !isPositiveInteger(memory_cost) ||
-        !isPositiveInteger(parallelism) ||
-        !isPositiveInteger(output_length)
-    ) {
-        throw new BackupSyncQrError()
-    }
-    return {
-        timeCost: time_cost,
-        memoryCost: memory_cost,
-        parallelism,
-        outputLength: output_length,
-    }
+    const config = readArgon2idConfig(value)
+    if (!config) throw new BackupSyncQrError()
+    return config
 }
 
-// Both KDF blocks are attacker-chosen — the inner one only proves whoever built
-// the QR knew the code — and each value sizes an allocation. Bound before deriving.
-const MAX_MEMORY_COST_MIB = 512
-const MAX_TIME_COST = 10
-const MAX_PARALLELISM = 4
-// Argon2's own floor is 8 bytes; this build seals with 16.
-const MIN_SALT_LENGTH = 8
-const MAX_SALT_LENGTH = 64
-// aes-256-gcm takes 32 and nothing else; a bound would let a bad length reach
-// createDecipheriv and surface as a wrong-code error.
-const REQUIRED_OUTPUT_LENGTH = 32
-
+// Both KDF blocks are attacker-chosen: the inner one only proves whoever built
+// the QR knew the code.
 const assertDerivable = (config: Argon2idConfig): void => {
-    if (
-        config.memoryCost > MAX_MEMORY_COST_MIB ||
-        config.timeCost > MAX_TIME_COST ||
-        config.parallelism > MAX_PARALLELISM ||
-        config.outputLength !== REQUIRED_OUTPUT_LENGTH
-    ) {
+    if (!isDerivableArgon2idConfig(config)) {
         throw new BackupSyncQrError(
             'Sync QR asks for an unreasonable derivation',
         )
@@ -174,7 +147,7 @@ const readSalt = (value: string): Uint8Array => {
     } catch {
         throw new BackupSyncQrError('Not a sync QR payload')
     }
-    if (salt.length < MIN_SALT_LENGTH || salt.length > MAX_SALT_LENGTH) {
+    if (!isDerivableSaltLength(salt.length)) {
         throw new BackupSyncQrError(
             'Sync QR asks for an unreasonable derivation',
         )
