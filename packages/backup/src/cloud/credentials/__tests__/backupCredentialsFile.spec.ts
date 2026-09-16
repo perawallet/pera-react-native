@@ -14,7 +14,10 @@ import { describe, expect, test } from 'vitest'
 import { ARGON2ID_CONFIG } from '../../crypto/constants'
 import {
     BACKUP_CREDENTIALS_FILE_NAME,
+    BackupCredentialsFileError,
+    BackupCredentialsFileUnsupportedVersionError,
     buildBackupCredentialsFile,
+    parseBackupCredentialsFile,
 } from '../backupCredentialsFile'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
@@ -49,5 +52,63 @@ describe('buildBackupCredentialsFile', () => {
         expect(BACKUP_CREDENTIALS_FILE_NAME).toBe(
             'pera-backup-encryption-key.json',
         )
+    })
+})
+
+describe('parseBackupCredentialsFile', () => {
+    const fileWith = (overrides: Record<string, unknown>): string =>
+        JSON.stringify({
+            ...JSON.parse(buildBackupCredentialsFile(SALT)),
+            ...overrides,
+        })
+
+    test('reads back the salt and KDF a saved file carries', () => {
+        expect(
+            parseBackupCredentialsFile(buildBackupCredentialsFile(SALT)),
+        ).toEqual({ salt: SALT, argon2id: ARGON2ID_CONFIG })
+    })
+
+    test.each([
+        ['text that is not JSON', 'pera'],
+        ['a JSON array', '[]'],
+        ['another Pera file type', fileWith({ t: 'backup-sync' })],
+        ['a version that is not a positive integer', fileWith({ v: 1.5 })],
+        ['a zero version', fileWith({ v: 0 })],
+        ['a string version', fileWith({ v: '1' })],
+        ['a missing salt', fileWith({ salt: undefined })],
+        ['a salt whose length is not base64', fileWith({ salt: '!!!' })],
+        ['a salt too short to derive under', fileWith({ salt: 'c2FsdA==' })],
+        ['a malformed KDF block', fileWith({ argon2id: { time_cost: -1 } })],
+    ])('rejects %s', (_, contents) => {
+        let error: unknown
+        try {
+            parseBackupCredentialsFile(contents)
+        } catch (caught) {
+            error = caught
+        }
+
+        expect(error).toBeInstanceOf(BackupCredentialsFileError)
+        expect(error).not.toBeInstanceOf(
+            BackupCredentialsFileUnsupportedVersionError,
+        )
+    })
+
+    test('refuses a KDF that would allocate absurd memory, since any file can be picked', () => {
+        const file = fileWith({
+            argon2id: {
+                ...JSON.parse(buildBackupCredentialsFile(SALT)).argon2id,
+                memory_cost: 4_194_304,
+            },
+        })
+
+        expect(() => parseBackupCredentialsFile(file)).toThrow(
+            BackupCredentialsFileError,
+        )
+    })
+
+    test('names a newer file version instead of calling the file invalid', () => {
+        expect(() =>
+            parseBackupCredentialsFile(fileWith({ v: 2, salt: undefined })),
+        ).toThrow(BackupCredentialsFileUnsupportedVersionError)
     })
 })
