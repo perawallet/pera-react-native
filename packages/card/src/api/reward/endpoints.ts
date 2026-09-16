@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isHTTPError } from 'ky'
 import { getCardTransport } from '../transport'
 import type {
     CardRewardWallet,
@@ -26,26 +27,36 @@ import {
     transformRewardWithdrawEstimation,
     transformRewardWithdraw,
 } from './transformers'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
 type NetworkParams = {
     network: Network
     signal?: AbortSignal
 }
 
+/**
+ * Null until the user earns their first cashback: Baanx only creates the reward
+ * wallet when the first reward is credited, and answers 404 "Wallet not found"
+ * until then. That is the normal state for a new card, not a failure.
+ */
 export const fetchRewardWallet = async (
     params: NetworkParams,
-): Promise<CardRewardWallet> => {
-    const response = await getCardTransport().request({
-        network: params.network,
-        method: 'GET',
-        path: '/v1/wallet/reward',
-        authenticated: true,
-        signal: params.signal,
-    })
-    return transformRewardWallet(
-        rewardWalletResponseSchema.parse(response.data),
-    )
+): Promise<Nullable<CardRewardWallet>> => {
+    try {
+        const response = await getCardTransport().request({
+            network: params.network,
+            method: 'GET',
+            path: '/v1/wallet/reward',
+            authenticated: true,
+            signal: params.signal,
+        })
+        return transformRewardWallet(
+            rewardWalletResponseSchema.parse(response.data),
+        )
+    } catch (error) {
+        if (isHTTPError(error) && error.response?.status === 404) return null
+        throw error
+    }
 }
 
 export const fetchRewardWithdrawEstimation = async (

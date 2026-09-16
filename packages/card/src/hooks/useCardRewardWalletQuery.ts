@@ -21,7 +21,7 @@ import { useCardSession } from './useCardSession'
 import { cardQueryKeys } from './querykeys'
 
 export type UseCardRewardWalletQueryResult = {
-    /** Null until the wallet loads. */
+    /** Null while loading, and while the user has yet to earn any cashback. */
     rewardWallet: Nullable<CardRewardWallet>
     isLoading: boolean
     isError: boolean

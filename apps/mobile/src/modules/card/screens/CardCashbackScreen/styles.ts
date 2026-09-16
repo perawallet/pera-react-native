@@ -14,14 +14,66 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
+        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.xxl,
+    },
+    heroSection: {
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+    },
+    artwork: {
+        alignSelf: 'stretch',
+        alignItems: 'center',
+    },
+    hero: {
+        width: '100%',
+        maxWidth: theme.spacing['5xl'] * 3,
+        height: theme.spacing['5xl'] * 2,
+    },
+    balanceSection: {
+        alignItems: 'center',
+        alignSelf: 'stretch',
+        gap: theme.spacing.sm,
+    },
+    balance: {
+        textAlign: 'center',
+    },
+    balanceSkeleton: {
+        width: theme.spacing['5xl'] * 2,
+        height: theme.spacing['3xl'],
+        borderRadius: theme.spacing.sm,
+    },
+    secondaryText: {
+        color: theme.colors.textGray,
+    },
+    centeredText: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
+    status: {
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        paddingTop: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    guide: {
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    guideRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: theme.spacing.md,
     },
-    balanceLabel: {
-        color: theme.colors.textGray,
+    iconContainer: {
+        backgroundColor: theme.colors.background,
+        borderRadius: theme.spacing.md,
+        padding: theme.spacing.md,
     },
-    body: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.lg,
+    guideText: {
+        flex: 1,
+        gap: theme.spacing.xs,
     },
 }))

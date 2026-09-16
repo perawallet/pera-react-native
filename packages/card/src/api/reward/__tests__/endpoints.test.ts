@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { HTTPError } from 'ky'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
@@ -53,7 +54,37 @@ describe('fetchRewardWallet', () => {
         })
 
         const wallet = await fetchRewardWallet({ network: 'mainnet' })
-        expect(wallet.isWithdrawable).toBe(false)
+        expect(wallet?.isWithdrawable).toBe(false)
+    })
+
+    // Baanx creates the reward wallet on the first credited reward, so every
+    // card answers 404 until then. That is an empty balance, not a failure.
+    it('resolves null when no reward wallet exists yet', async () => {
+        request.mockRejectedValue(
+            new HTTPError(
+                new Response('{"message":"Wallet not found"}', { status: 404 }),
+                new Request('https://dev.api.baanx.com/v1/wallet/reward'),
+                {} as never,
+            ),
+        )
+
+        await expect(
+            fetchRewardWallet({ network: 'mainnet' }),
+        ).resolves.toBeNull()
+    })
+
+    it('still rejects on any other failure', async () => {
+        request.mockRejectedValue(
+            new HTTPError(
+                new Response('nope', { status: 500 }),
+                new Request('https://dev.api.baanx.com/v1/wallet/reward'),
+                {} as never,
+            ),
+        )
+
+        await expect(
+            fetchRewardWallet({ network: 'mainnet' }),
+        ).rejects.toThrow()
     })
 })
 

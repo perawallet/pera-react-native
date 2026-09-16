@@ -29,6 +29,7 @@ const mockState = vi.hoisted(() => ({
     cardBalance: '0',
     isWalletsLoading: false,
     delegatedWallet: null as unknown,
+    rewardBalance: null as string | null,
 }))
 const mockExternalWalletsParams: { enabled?: boolean }[] = []
 const mockInfoToast = vi.fn()
@@ -69,6 +70,21 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardTransactionsQuery: () => ({
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
+        }),
+        useCardRewardWalletQuery: () => ({
+            rewardWallet:
+                mockState.rewardBalance === null
+                    ? null
+                    : {
+                          id: 'reward-1',
+                          balance: new Decimal(mockState.rewardBalance),
+                          currency: 'usdc',
+                          isWithdrawable: false,
+                      },
+            isLoading: false,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
         }),
         useCardExternalWalletsQuery: (params: { enabled?: boolean }) => {
             mockExternalWalletsParams.push(params)
@@ -155,6 +171,7 @@ describe('usePeraCardOverview', () => {
         mockState.cardBalance = '0'
         mockState.isWalletsLoading = false
         mockState.delegatedWallet = null
+        mockState.rewardBalance = null
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
@@ -219,6 +236,29 @@ describe('usePeraCardOverview', () => {
 
         expect(result.current.isAutoFunding).toBe(false)
         expect(result.current.spendablePerTx.toString()).toBe('0')
+    })
+
+    // The credits row used to be a hardcoded zero while the Cashback screen read
+    // the real wallet, so the two disagreed the moment any reward landed.
+    it('shows the reward wallet balance as cashback credits', () => {
+        mockState.rewardBalance = '12.34'
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.credits.cashbacks.toFixed(2)).toBe('12.34')
+        expect(result.current.credits.refunds.toString()).toBe('0')
+    })
+
+    // Cashback sits in a separate Baanx wallet that has to be withdrawn first,
+    // so counting it would promise more per transaction than the card can draw.
+    it('leaves cashback out of the spendable-per-transaction figure', () => {
+        mockState.cardBalance = '240'
+        mockState.rewardBalance = '50'
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.balance.toFixed()).toBe('240')
+        expect(result.current.spendablePerTx.toFixed()).toBe('240')
     })
 
     it('groups transactions by month, newest first', () => {

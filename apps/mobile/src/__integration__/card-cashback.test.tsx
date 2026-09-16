@@ -30,12 +30,12 @@ import { useCardSessionStore } from '@perawallet/wallet-core-card'
 import { CardCashbackScreen } from '@modules/card/screens/CardCashbackScreen'
 import { CardCashbackWithdrawScreen } from '@modules/card/screens/CardCashbackWithdrawScreen'
 
-const rewardWalletHandler = (isWithdrawable = true) =>
+const rewardWalletHandler = (isWithdrawable = true, balance = '42.50') =>
     http.get('*/v1/wallet/reward', () =>
         HttpResponse.json(
             {
                 id: 'rw_1',
-                balance: '42.50',
+                balance,
                 currency: 'usdc',
                 isWithdrawable,
             },
@@ -135,5 +135,50 @@ describe('Flow: Card cashback', () => {
         )
         const cta = screen.getByTestId('card-cashback-withdraw-cta')
         expect(cta.getAttribute('disabled')).not.toBeNull()
+    })
+    it('shows an earning introduction for an empty wallet', async () => {
+        server.use(rewardWalletHandler(true, '0'))
+        renderCashback()
+        expect(
+            await screen.findByText('peraCard.cashback.empty_title'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('card-cashback-balance').textContent,
+        ).toContain('0.00')
+        expect(
+            screen
+                .getByTestId('card-cashback-withdraw-cta')
+                .getAttribute('disabled'),
+        ).not.toBeNull()
+    })
+
+    it('retries a failed balance request without showing a false zero', async () => {
+        server.use(
+            http.get(
+                '*/v1/wallet/reward',
+                () => new HttpResponse(null, { status: 500 }),
+            ),
+        )
+        renderCashback()
+        const retry = await screen.findByTestId('card-cashback-retry')
+        expect(screen.queryByTestId('card-cashback-balance')).toBeNull()
+        expect(
+            screen
+                .getByTestId('card-cashback-withdraw-cta')
+                .getAttribute('disabled'),
+        ).not.toBeNull()
+        server.use(rewardWalletHandler())
+        fireEvent.click(retry)
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-cashback-balance').textContent,
+            ).toContain('42.50'),
+        )
+        expect(screen.queryByTestId('card-cashback-retry')).toBeNull()
+        expect(
+            screen
+                .getByTestId('card-cashback-withdraw-cta')
+                .getAttribute('disabled'),
+        ).toBeNull()
     })
 })
