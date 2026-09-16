@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import type { ImageRequireSource } from 'react-native'
 import { useStyles } from './styles'
 import {
     type IconName,
     PWBadge,
     type PWBadgeProps,
     PWIcon,
+    PWImage,
     PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
@@ -25,6 +27,7 @@ import { getTestProps } from '@utils/test-id-helper'
 
 export type PanelButtonProps = {
     leftIcon?: IconName
+    leftImage?: ImageRequireSource
     rightIcon?: IconName
     title: string
     description?: string
@@ -46,6 +49,7 @@ export const PanelButton = (props: PanelButtonProps) => {
     const {
         style,
         leftIcon,
+        leftImage,
         rightIcon,
         title,
         titleWeight,
@@ -72,6 +76,15 @@ export const PanelButton = (props: PanelButtonProps) => {
                     <PWIcon
                         name={leftIcon}
                         variant={variant === 'error' ? 'error' : 'primary'}
+                    />
+                )}
+                {leftImage !== undefined && (
+                    <PWImage
+                        source={leftImage}
+                        style={themeStyle.leftImageStyle}
+                        showLoadingIndicator={false}
+                        transition={false}
+                        testID={testID && `${testID}_image`}
                     />
                 )}
                 <PWView style={themeStyle.textContainerStyle}>
