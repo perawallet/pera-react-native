@@ -594,6 +594,20 @@
             "passphrase_unreadable": "Votre Passphrase enregistrée sur cet appareil n’a pas pu être lue.",
             "done_button": "Conservez vos identifiants en lieu sûr"
         },
+        "store_credentials": {
+            "title": "Conserver les identifiants de sauvegarde",
+            "description": "Choisissez un emplacement pour conserver votre clé de chiffrement en toute sécurité. Aucune clé privée n’est jamais stockée de notre côté.",
+            "warning_title": "Nous ne conservons que votre clé de chiffrement",
+            "warning_body": "Vous devez conserver vous-même votre Passphrase de 12 mots en lieu sûr.",
+            "store_locally": "Enregistrer localement",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Clé de chiffrement enregistrée",
+            "error": "Impossible d’enregistrer votre clé de chiffrement",
+            "icloud_unavailable_title": "iCloud n’est pas disponible",
+            "icloud_unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez.",
+            "google_drive_unavailable": "Google Drive n’est pas configuré dans cette version de l’application."
+        },
         "overview": {
             "title": "Sauvegarde cloud",
             "latest_sync": "Dernière synchronisation",

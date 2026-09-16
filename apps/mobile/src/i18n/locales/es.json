@@ -594,6 +594,20 @@
             "passphrase_unreadable": "No se ha podido leer tu Passphrase guardada en este dispositivo.",
             "done_button": "Guarda tus credenciales de forma segura"
         },
+        "store_credentials": {
+            "title": "Guardar las credenciales de la copia de seguridad",
+            "description": "Elige dónde guardar tu clave de cifrado de forma segura. Nunca almacenamos claves privadas.",
+            "warning_title": "Solo guardamos tu clave de cifrado",
+            "warning_body": "Tu Passphrase de 12 palabras debes guardarla tú en un lugar seguro.",
+            "store_locally": "Guardar localmente",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Clave de cifrado guardada",
+            "error": "No se pudo guardar tu clave de cifrado",
+            "icloud_unavailable_title": "iCloud no está disponible",
+            "icloud_unavailable": "Inicia sesión en iCloud, activa iCloud Drive y vuelve a intentarlo.",
+            "google_drive_unavailable": "Google Drive no está configurado en esta versión de la aplicación."
+        },
         "overview": {
             "title": "Copia de seguridad en la nube",
             "latest_sync": "Última sincronización",

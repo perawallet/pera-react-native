@@ -594,6 +594,20 @@
             "passphrase_unreadable": "Bu cihazda kayıtlı Passphrase okunamadı.",
             "done_button": "Kimlik bilgilerini güvenle sakla"
         },
+        "store_credentials": {
+            "title": "Yedekleme kimlik bilgilerini sakla",
+            "description": "Şifreleme anahtarını güvenle saklamak için bir yer seç. Özel anahtarlar hiçbir zaman bizim tarafımızda saklanmaz.",
+            "warning_title": "Yalnızca şifreleme anahtarını saklıyoruz",
+            "warning_body": "12 kelimelik Passphrase’ini kendin güvenli bir yerde saklamalısın.",
+            "store_locally": "Yerel olarak sakla",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Şifreleme anahtarı saklandı",
+            "error": "Şifreleme anahtarın saklanamadı",
+            "icloud_unavailable_title": "iCloud kullanılamıyor",
+            "icloud_unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene.",
+            "google_drive_unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış."
+        },
         "overview": {
             "title": "Bulut yedekleme",
             "latest_sync": "Son eşitleme",

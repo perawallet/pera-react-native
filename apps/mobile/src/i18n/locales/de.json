@@ -586,6 +586,20 @@
             "passphrase_unreadable": "Deine gespeicherte Passphrase konnte auf diesem Gerät nicht gelesen werden.",
             "done_button": "Bewahre deine Zugangsdaten sicher auf"
         },
+        "store_credentials": {
+            "title": "Backup-Zugangsdaten speichern",
+            "description": "Wähle einen Ort, an dem du deinen Verschlüsselungsschlüssel sicher aufbewahrst. Private Schlüssel werden bei uns niemals gespeichert.",
+            "warning_title": "Wir speichern nur deinen Verschlüsselungsschlüssel",
+            "warning_body": "Deine 12-Wort-Passphrase musst du selbst sicher aufbewahren.",
+            "store_locally": "Lokal speichern",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Verschlüsselungsschlüssel gespeichert",
+            "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
+            "icloud_unavailable_title": "iCloud ist nicht verfügbar",
+            "icloud_unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut.",
+            "google_drive_unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet."
+        },
         "overview": {
             "title": "Cloud-Backup",
             "latest_sync": "Letzte Synchronisierung",
