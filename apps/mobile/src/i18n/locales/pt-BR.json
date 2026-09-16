@@ -594,6 +594,20 @@
             "passphrase_unreadable": "Não foi possível ler sua Passphrase armazenada neste dispositivo.",
             "done_button": "Guarde suas credenciais com segurança"
         },
+        "store_credentials": {
+            "title": "Guardar credenciais do backup",
+            "description": "Escolha um local para guardar sua chave de criptografia com segurança. Nenhuma chave privada é armazenada do nosso lado.",
+            "warning_title": "Guardamos apenas sua chave de criptografia",
+            "warning_body": "Sua Passphrase de 12 palavras precisa ser guardada com segurança por você.",
+            "store_locally": "Salvar localmente",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Chave de criptografia salva",
+            "error": "Não foi possível salvar sua chave de criptografia",
+            "icloud_unavailable_title": "O iCloud não está disponível",
+            "icloud_unavailable": "Entre no iCloud e ative o iCloud Drive, depois tente novamente.",
+            "google_drive_unavailable": "O Google Drive não está configurado nesta versão do app."
+        },
         "overview": {
             "title": "Backup na nuvem",
             "latest_sync": "Última sincronização",

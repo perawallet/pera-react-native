@@ -594,6 +594,20 @@
             "passphrase_unreadable": "Your stored Passphrase couldn’t be read on this device.",
             "done_button": "Store your Credentials Securely"
         },
+        "store_credentials": {
+            "title": "Store Backup Credentials",
+            "description": "Choose a location to securely store your Encryption Key. No private keys are ever stored on our end.",
+            "warning_title": "We only store your Encryption Key",
+            "warning_body": "Your 12-word Passphrase must be stored safely by you.",
+            "store_locally": "Store Locally",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "success": "Encryption Key stored",
+            "error": "Couldn’t store your Encryption Key",
+            "icloud_unavailable_title": "iCloud isn’t available",
+            "icloud_unavailable": "Sign in to iCloud and turn on iCloud Drive, then try again.",
+            "google_drive_unavailable": "Google Drive isn’t set up in this version of the app."
+        },
         "overview": {
             "title": "Cloud Backup",
             "latest_sync": "Latest Sync",
