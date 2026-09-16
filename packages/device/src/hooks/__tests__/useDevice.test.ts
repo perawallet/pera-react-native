@@ -222,6 +222,7 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
             },
         })
         // This is the no-id create path's own `createdNew: true` return —
@@ -500,6 +501,7 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
                 id: 'DEV-1',
             },
         }
@@ -570,6 +572,7 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
             },
         }
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
@@ -1098,6 +1101,7 @@ describe('services/device/hooks', () => {
             platform: 'ios',
             locale: 'en-US',
             appVersion: '7.0.1',
+            currency: 'USD',
             accounts: [],
         })
     })

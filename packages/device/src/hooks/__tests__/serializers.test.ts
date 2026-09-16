@@ -50,6 +50,32 @@ describe('toDeviceRegistrationRequest', () => {
         })
     })
 
+    it('sends the display currency the user picked', () => {
+        const request = toDeviceRegistrationRequest({
+            ...baseRegistration,
+            currency: 'TRY',
+        })
+
+        expect(request.currency).toBe('TRY')
+    })
+
+    it('omits currency when the registration carries none', () => {
+        const request = toDeviceRegistrationRequest(baseRegistration)
+
+        expect('currency' in request).toBe(false)
+    })
+
+    // The backend 422s the whole registration over a 9th character, taking the
+    // push token and the account list down with it — so clamp, never forward.
+    it('clamps an over-long currency to the column width', () => {
+        const request = toDeviceRegistrationRequest({
+            ...baseRegistration,
+            currency: 'TOOLONGCURRENCY',
+        })
+
+        expect(request.currency).toBe('TOOLONGC')
+    })
+
     it('omits id when the registration has none', () => {
         const request = toDeviceRegistrationRequest(baseRegistration)
 

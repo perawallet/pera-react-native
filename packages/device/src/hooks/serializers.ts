@@ -24,6 +24,9 @@ import type {
  * array keeps the request auditable and removes the dependency on that
  * behaviour.
  */
+/** The backend column's width; anything longer 422s the registration. */
+const MAX_CURRENCY_LENGTH = 8
+
 const dedupeByAddress = (
     accounts: DeviceAccountRegistration[],
 ): DeviceAccountRegistration[] => {
@@ -49,6 +52,12 @@ export const toDeviceRegistrationRequest = (
     platform: registration.platform,
     locale: registration.locale,
     app_version: registration.appVersion,
+    // Truncated rather than rejected: the backend 422s the ENTIRE registration
+    // over a 9th character, which would take push notifications and the
+    // account list down with it over a display preference.
+    ...(registration.currency
+        ? { currency: registration.currency.slice(0, MAX_CURRENCY_LENGTH) }
+        : {}),
     accounts: dedupeByAddress(registration.accounts).map(account => ({
         address: account.address,
         account_type: account.accountType,
