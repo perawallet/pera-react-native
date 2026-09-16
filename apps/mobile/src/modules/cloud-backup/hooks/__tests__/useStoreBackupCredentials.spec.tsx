@@ -80,7 +80,7 @@ const FILE_NAME = 'pera-backup-encryption-key.json'
 beforeEach(() => {
     vi.clearAllMocks()
     storeState.salt = SALT
-    mockRequest.mockResolvedValue('local')
+    mockRequest.mockResolvedValue('device')
     mockRequirePin.mockResolvedValue(true)
     saveToDevice.mockResolvedValue('saved')
     saveToICloud.mockResolvedValue('saved')
@@ -165,7 +165,7 @@ describe('useStoreBackupCredentials', () => {
     })
 
     test.each([
-        ['local', saveToDevice],
+        ['device', saveToDevice],
         ['icloud', saveToICloud],
         ['googleDrive', saveToGoogleDrive],
     ] as const)(
@@ -223,7 +223,7 @@ describe('useStoreBackupCredentials', () => {
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockLoggerError).toHaveBeenCalledWith(
             expect.any(String),
-            expect.objectContaining({ destination: 'local', error }),
+            expect.objectContaining({ destination: 'device', error }),
         )
         expect(JSON.stringify(mockLoggerError.mock.calls)).not.toContain(SALT)
     })

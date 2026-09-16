@@ -45,9 +45,9 @@ afterEach(() => {
 
 describe('useStoreBackupCredentialsSheet', () => {
     test.each([
-        ['ios', ['local', 'icloud', 'googleDrive']],
-        ['android', ['local', 'googleDrive']],
-        ['web', ['local']],
+        ['ios', ['device', 'icloud', 'googleDrive']],
+        ['android', ['device', 'googleDrive']],
+        ['web', ['device']],
     ] as const)('offers the destinations available on %s', (os, expected) => {
         Platform.OS = os
 
