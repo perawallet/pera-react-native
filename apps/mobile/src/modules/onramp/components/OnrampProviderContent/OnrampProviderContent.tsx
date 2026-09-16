@@ -11,11 +11,13 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import type { Decimal } from 'decimal.js'
 import { PWSheetLayout, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
+    filterQuotesByPaymentMethod,
     pickBestQuote,
     sortQuotesByDestinationDesc,
     type RampQuote,
@@ -29,24 +31,37 @@ export type OnrampProviderContentProps = {
     /** Raw source amount string — XO destination amounts are computed from it. */
     sourceAmount: string
     selectedQuoteId: Nullable<string>
+    /** Narrows the list to one row per provider; null lists every quote. */
+    selectedPaymentMethodId: Nullable<string>
+    /** Destination token price in USD, for each row's fiat value line. */
+    destinationPriceInUsd: Nullable<Decimal>
 }
 
 export const OnrampProviderContent = ({
     quotes,
     sourceAmount,
     selectedQuoteId,
+    selectedPaymentMethodId,
+    destinationPriceInUsd,
 }: OnrampProviderContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve } = useBottomSheetResult<string>()
 
+    // Providers are compared within one payment method: quotes on different
+    // rails price differently, and every provider quotes each rail it supports.
+    const methodQuotes = useMemo(
+        () => filterQuotesByPaymentMethod(quotes, selectedPaymentMethodId),
+        [quotes, selectedPaymentMethodId],
+    )
+
     const sortedQuotes = useMemo(
-        () => sortQuotesByDestinationDesc(quotes, sourceAmount),
-        [quotes, sourceAmount],
+        () => sortQuotesByDestinationDesc(methodQuotes, sourceAmount),
+        [methodQuotes, sourceAmount],
     )
     const bestQuoteId = useMemo(
-        () => pickBestQuote(quotes, sourceAmount)?.quoteId,
-        [quotes, sourceAmount],
+        () => pickBestQuote(methodQuotes, sourceAmount)?.quoteId,
+        [methodQuotes, sourceAmount],
     )
 
     const handleSelect = useCallback(
@@ -67,6 +82,7 @@ export const OnrampProviderContent = ({
                         label={getOnrampProviderName(quote)}
                         quote={quote}
                         sourceAmount={sourceAmount}
+                        destinationPriceInUsd={destinationPriceInUsd}
                         isBest={quote.quoteId === bestQuoteId}
                         isSelected={quote.quoteId === selectedQuoteId}
                         onPress={() => handleSelect(quote.quoteId)}
