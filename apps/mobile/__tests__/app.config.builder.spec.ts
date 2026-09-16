@@ -560,3 +560,102 @@ describe('buildAppConfig — deep-link scheme parity', () => {
         ])
     })
 })
+
+describe('credential storage plugins', () => {
+    const CONTAINER = 'iCloud.com.algorandllc.algorand'
+    const CLIENT_ID = '1234-abc.apps.googleusercontent.com'
+    const findPluginOptions = (config: ResolvedConfig, name: string) => {
+        const entry = config.plugins.find(
+            (plugin: unknown) => Array.isArray(plugin) && plugin[0] === name,
+        )
+        return Array.isArray(entry)
+            ? (entry[1] as Record<string, unknown>)
+            : undefined
+    }
+
+    it('leaves both plugins out when their settings are absent', () => {
+        const config = build({ APP_ENV: 'staging' })
+
+        expect(
+            findPluginOptions(config, 'react-native-cloud-storage'),
+        ).toBeUndefined()
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toBeUndefined()
+    })
+
+    it.each([
+        ['dev', 'Development'],
+        ['staging', 'Production'],
+        ['production', 'Production'],
+    ])(
+        'adds only the iCloud plugin for %s, in the %s container environment',
+        (APP_ENV, environment) => {
+            const config = build({
+                APP_ENV,
+                IOS_ICLOUD_CONTAINER_ID: CONTAINER,
+            })
+
+            expect(
+                findPluginOptions(config, 'react-native-cloud-storage'),
+            ).toEqual({
+                iCloudContainerIdentifier: CONTAINER,
+                iCloudContainerEnvironment: environment,
+            })
+            expect(
+                findPluginOptions(
+                    config,
+                    '@react-native-google-signin/google-signin',
+                ),
+            ).toBeUndefined()
+        },
+    )
+
+    it('adds only the Google plugin, with the trimmed, reversed client id as the URL scheme', () => {
+        const config = build({
+            APP_ENV: 'production',
+            GOOGLE_IOS_CLIENT_ID: `${CLIENT_ID} `,
+        })
+
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toEqual({ iosUrlScheme: 'com.googleusercontent.apps.1234-abc' })
+        expect(
+            findPluginOptions(config, 'react-native-cloud-storage'),
+        ).toBeUndefined()
+    })
+
+    it('trims the iCloud container id', () => {
+        const config = build({
+            APP_ENV: 'production',
+            IOS_ICLOUD_CONTAINER_ID: `${CONTAINER} `,
+        })
+
+        expect(findPluginOptions(config, 'react-native-cloud-storage')).toEqual(
+            {
+                iCloudContainerIdentifier: CONTAINER,
+                iCloudContainerEnvironment: 'Production',
+            },
+        )
+    })
+
+    it('treats a whitespace-only Google client id as unset', () => {
+        const config = build({
+            APP_ENV: 'production',
+            GOOGLE_IOS_CLIENT_ID: '  ',
+        })
+
+        expect(
+            findPluginOptions(
+                config,
+                '@react-native-google-signin/google-signin',
+            ),
+        ).toBeUndefined()
+    })
+})
