@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
 import { ARGON2ID_CONFIG } from './constants'
+import { serializeArgon2idConfig } from './serializeArgon2idConfig'
 
 export const BACKUP_SYNC_QR_TYPE = 'backup-sync'
 export const BACKUP_SYNC_QR_VERSION = 1
@@ -79,13 +80,6 @@ const deriveQrKey = (
     )
 }
 
-const serializeConfig = (config: Argon2idConfig) => ({
-    time_cost: config.timeCost,
-    memory_cost: config.memoryCost,
-    parallelism: config.parallelism,
-    output_length: config.outputLength,
-})
-
 /**
  * Seals the backup phrase and setup salt under a user-chosen code and returns
  * the QR's string contents. The sealed object is self-contained: a scanner
@@ -104,7 +98,7 @@ export const encryptBackupSyncQr = async ({
             JSON.stringify({
                 mnemonic,
                 salt: backupSalt,
-                argon2id: serializeConfig(ARGON2ID_CONFIG),
+                argon2id: serializeArgon2idConfig(ARGON2ID_CONFIG),
             }),
             key,
             aadFor(BACKUP_SYNC_QR_TYPE, BACKUP_SYNC_QR_VERSION),
@@ -114,7 +108,7 @@ export const encryptBackupSyncQr = async ({
             t: BACKUP_SYNC_QR_TYPE,
             kdf: {
                 salt: encodeToBase64(qrSalt),
-                ...serializeConfig(ARGON2ID_CONFIG),
+                ...serializeArgon2idConfig(ARGON2ID_CONFIG),
             },
             payload,
         })
