@@ -12,7 +12,7 @@
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import type { CardTransactionFilters } from '../models'
+import type { CardTransactionFilters, CardWalletKind } from '../models'
 
 export const MODULE_PREFIX = 'card'
 
@@ -41,6 +41,19 @@ export const cardQueryKeys = {
         ] as const,
     internalWallets: (network: Network) =>
         [MODULE_PREFIX, 'internal-wallets', { network }] as const,
+    walletBalance: (network: Network, kind: CardWalletKind) =>
+        [MODULE_PREFIX, 'wallet-balance', { network, kind }] as const,
+    walletWithdrawEstimation: (network: Network, kind: CardWalletKind) =>
+        [
+            MODULE_PREFIX,
+            'wallet-withdraw-estimation',
+            { network, kind },
+        ] as const,
+    walletHistory: (network: Network, kind: CardWalletKind, walletId: string) =>
+        [MODULE_PREFIX, 'wallet-history', { network, kind, walletId }] as const,
+    // Prefix of `walletHistory` for invalidating every page of one wallet kind.
+    walletHistoryByKind: (network: Network, kind: CardWalletKind) =>
+        [MODULE_PREFIX, 'wallet-history', { network, kind }] as const,
     externalWallets: (network: Network) =>
         [MODULE_PREFIX, 'external-wallets', { network }] as const,
     // OS-wallet push provisioning state is device-local, so these two are

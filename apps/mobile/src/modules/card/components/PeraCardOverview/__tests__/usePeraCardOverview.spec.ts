@@ -29,9 +29,12 @@ const mockState = vi.hoisted(() => ({
     cardBalance: '0',
     isWalletsLoading: false,
     delegatedWallet: null as unknown,
+    rewardBalance: null as string | null,
+    creditBalance: null as string | null,
 }))
 const mockExternalWalletsParams: { enabled?: boolean }[] = []
 const mockInfoToast = vi.fn()
+const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
 
 vi.mock('@react-navigation/native', async () => {
@@ -70,6 +73,27 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
         }),
+        useCardWalletBalanceQuery: (kind: 'reward' | 'credit') => {
+            const balance =
+                kind === 'reward'
+                    ? mockState.rewardBalance
+                    : mockState.creditBalance
+            return {
+                wallet:
+                    balance === null
+                        ? null
+                        : {
+                              id: `${kind}-1`,
+                              balance: new Decimal(balance),
+                              currency: 'usdc',
+                              isWithdrawable: false,
+                          },
+                isLoading: false,
+                isError: false,
+                error: null,
+                refetch: vi.fn(),
+            }
+        },
         useCardExternalWalletsQuery: (params: { enabled?: boolean }) => {
             mockExternalWalletsParams.push(params)
             return {
@@ -91,6 +115,11 @@ vi.mock('../../../hooks', async () => ({
         isLoading: mockState.isWalletsLoading,
     }),
 }))
+
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
@@ -155,6 +184,8 @@ describe('usePeraCardOverview', () => {
         mockState.cardBalance = '0'
         mockState.isWalletsLoading = false
         mockState.delegatedWallet = null
+        mockState.rewardBalance = null
+        mockState.creditBalance = null
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
@@ -174,7 +205,7 @@ describe('usePeraCardOverview', () => {
         expect(result.current.isAutoFunding).toBe(false)
         expect(result.current.currency).toBe('USDC')
         expect(result.current.balance.toString()).toBe('0')
-        expect(result.current.credits.cashbacks.toString()).toBe('0')
+        expect(result.current.credits.rewards.toString()).toBe('0')
         expect(result.current.credits.refunds.toString()).toBe('0')
     })
 
@@ -221,6 +252,29 @@ describe('usePeraCardOverview', () => {
         expect(result.current.spendablePerTx.toString()).toBe('0')
     })
 
+    it('shows each Baanx wallet balance as its credits row', () => {
+        mockState.rewardBalance = '12.34'
+        mockState.creditBalance = '5.5'
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.credits.rewards.toFixed(2)).toBe('12.34')
+        expect(result.current.credits.refunds.toFixed(2)).toBe('5.50')
+    })
+
+    // Baanx draws the refund balance first on a card purchase; rewards sit in a
+    // wallet that has to be claimed first, so they would overstate the figure.
+    it('counts refunds but not rewards toward spendable per transaction', () => {
+        mockState.cardBalance = '240'
+        mockState.rewardBalance = '50'
+        mockState.creditBalance = '10'
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.balance.toFixed()).toBe('240')
+        expect(result.current.spendablePerTx.toFixed()).toBe('250')
+    })
+
     it('groups transactions by month, newest first', () => {
         mockState.transactions = [
             tx('a', '2026-06-10T10:00:00Z'),
@@ -258,6 +312,26 @@ describe('usePeraCardOverview', () => {
 
         expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
     })
+
+    // Rewards are earned on purchases whatever tops the card up, so this has to
+    // work on manual funding too, where the credits section used to be hidden.
+    it.each([
+        ['reward', 'card_home_rewards'],
+        ['credit', 'card_home_refunds'],
+    ] as const)(
+        'opens the %s wallet screen from its credits row',
+        (kind, event) => {
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            result.current.onCreditPress(kind)
+
+            expect(mockNavigate).toHaveBeenCalledWith('CardWalletBalance', {
+                kind,
+            })
+            expect(mockTrackEvent).toHaveBeenCalledWith(event)
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        },
+    )
 
     it('unwired action handlers surface the coming-soon toast', () => {
         const { result } = renderHook(() => usePeraCardOverview())

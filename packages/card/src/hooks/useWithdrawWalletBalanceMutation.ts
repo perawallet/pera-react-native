@@ -1,0 +1,55 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { withdrawWalletBalance } from '../api/wallet-balance'
+import type { CardWalletKind, WalletWithdrawResult } from '../models'
+import { cardQueryKeys } from './querykeys'
+import { toCardMutationResult, type CardMutationResult } from './types'
+
+export type WithdrawWalletBalanceVariables = {
+    /** Decimal string in display units (e.g. "10.5"). */
+    amount: string
+}
+
+export type UseWithdrawWalletBalanceMutationResult = CardMutationResult<
+    WithdrawWalletBalanceVariables,
+    WalletWithdrawResult
+>
+
+export const useWithdrawWalletBalanceMutation = (
+    kind: CardWalletKind,
+): UseWithdrawWalletBalanceMutationResult => {
+    const { network } = useNetwork()
+    const queryClient = useQueryClient()
+
+    const mutation = useMutation<
+        WalletWithdrawResult,
+        Error,
+        WithdrawWalletBalanceVariables
+    >({
+        mutationFn: ({ amount }) =>
+            withdrawWalletBalance({ kind, amount, network }),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({
+                queryKey: cardQueryKeys.walletBalance(network, kind),
+            })
+            void queryClient.invalidateQueries({
+                queryKey: cardQueryKeys.walletHistoryByKind(network, kind),
+            })
+        },
+        throwOnError: false,
+    })
+
+    return toCardMutationResult(mutation)
+}

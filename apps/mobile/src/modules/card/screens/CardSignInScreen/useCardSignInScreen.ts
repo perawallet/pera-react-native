@@ -22,6 +22,7 @@ import {
     useSendLoginOtpMutation,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -29,6 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { PeraCardStackParamList } from '../../routes/types'
+import { maskPhoneNumber } from '../../utils/phone'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 
@@ -42,6 +44,8 @@ export type UseCardSignInScreenResult = {
     isSubmitting: boolean
     /** When true, login returned `isOtpRequired`; reveal the 2FA code input. */
     isOtpRequired: boolean
+    /** Masked destination of the code, or null when Baanx did not name one. */
+    otpPhone: Nullable<string>
     otpCode: string
     onChangeOtp: (text: string) => void
     isOtpValid: boolean
@@ -87,6 +91,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     }, [route.params?.email, setValue])
 
     const [isOtpRequired, setIsOtpRequired] = useState(false)
+    // Where Baanx says it sent the code. Only the login response carries it, so
+    // it has to be held from that call through to the OTP step.
+    const [otpPhone, setOtpPhone] = useState<Nullable<string>>(null)
     // `userId` from the login attempt that required 2FA — /v1/auth/login/otp
     // is keyed on it for both the initial send and resends.
     const [otpUserId, setOtpUserId] = useState<string | null>(null)
@@ -154,6 +161,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     }
                     setIsOtpRequired(true)
                     setOtpUserId(result.userId)
+                    setOtpPhone(maskPhoneNumber(result.phoneNumber))
                     requestOtpCode(result.userId)
                     return
                 }
@@ -304,6 +312,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         isValid,
         isSubmitting: login.isPending,
         isOtpRequired,
+        otpPhone,
         otpCode,
         onChangeOtp,
         isOtpValid: otpCode.trim().length === CARD_VERIFICATION_CODE_LENGTH,

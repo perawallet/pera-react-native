@@ -15,8 +15,10 @@ import { Decimal } from 'decimal.js'
 import {
     AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
+    CardWalletKind,
     useCardExternalWalletsQuery,
     useCardStore,
+    useCardWalletBalanceQuery,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
 import { useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
@@ -24,6 +26,7 @@ import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
     useCardComingSoonToast,
     useCardEscrowBalance,
@@ -35,8 +38,8 @@ import {
     type CardTransactionSection,
 } from '../../utils/cardTransactions'
 
-type PeraCardCredits = {
-    cashbacks: Decimal
+export type PeraCardCredits = {
+    rewards: Decimal
     refunds: Decimal
 }
 
@@ -59,7 +62,7 @@ type UsePeraCardOverviewResult = {
     onGetUsdc: () => void
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
-    onCreditPress: () => void
+    onCreditPress: (kind: CardWalletKind) => void
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
@@ -105,10 +108,19 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const canReadLinkedBalance =
         isAutoFunding && fundingAccount != null && usdcAssetId !== null
 
-    // TODO(card): credits are stubbed — no Baanx API exposes them yet.
+    // Both live in their own Baanx wallets, null until something is credited.
+    const { wallet: rewardWallet } = useCardWalletBalanceQuery(
+        CardWalletKind.Reward,
+    )
+    const { wallet: creditWallet } = useCardWalletBalanceQuery(
+        CardWalletKind.Credit,
+    )
     const credits = useMemo<PeraCardCredits>(
-        () => ({ cashbacks: new Decimal(0), refunds: new Decimal(0) }),
-        [],
+        () => ({
+            rewards: rewardWallet?.balance ?? ZERO_BALANCE,
+            refunds: creditWallet?.balance ?? ZERO_BALANCE,
+        }),
+        [rewardWallet, creditWallet],
     )
 
     const linkedBalance = canReadLinkedBalance
@@ -121,12 +133,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         ? delegatedWallet.allowance
         : AUTO_FUNDING_PER_TX_LIMIT_USD
 
-    const creditsTotal = credits.cashbacks.plus(credits.refunds)
+    // Baanx draws the refund (credit) balance first on a card purchase, so it
+    // counts. Rewards do not: that wallet has to be claimed before it can be
+    // spent, so counting it would promise more than the card can draw.
     const spendablePerTx = (
         isAutoFunding ? Decimal.min(perTxLimit, linkedBalance) : ZERO_BALANCE
     )
         .plus(cardBalance)
-        .plus(creditsTotal)
+        .plus(credits.refunds)
 
     const showComingSoon = useCardComingSoonToast()
 
@@ -158,6 +172,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [navigation],
     )
 
+    const onCreditPress = useCallback(
+        (kind: CardWalletKind) => {
+            trackEvent(CARD_WALLET_PRESENTATION[kind].homeEvent)
+            navigation.navigate('CardWalletBalance', { kind })
+        },
+        [navigation],
+    )
+
     return {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
@@ -174,6 +196,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onGetUsdc,
         onShowAllTransactions,
         onPressTransaction,
-        onCreditPress: showComingSoon,
+        onCreditPress,
     }
 }

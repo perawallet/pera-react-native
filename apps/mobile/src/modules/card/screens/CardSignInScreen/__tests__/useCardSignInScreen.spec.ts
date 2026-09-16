@@ -329,6 +329,46 @@ describe('useCardSignInScreen', () => {
         })
     })
 
+    describe('OTP destination hint', () => {
+        const signInRequiringOtp = async (phoneNumber: unknown) => {
+            mockMutateAsync.mockResolvedValue({
+                accessToken: null,
+                userId: 'user-1',
+                isOtpRequired: true,
+                phoneNumber,
+                phase: null,
+                verificationState: null,
+                isLinked: true,
+            })
+            const { result } = renderHook(() => useCardSignInScreen())
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    email: 'user@example.com',
+                    password: 'hunter2hunter22!',
+                })
+            })
+            await act(async () => {
+                result.current.handleSignIn()
+            })
+            return result
+        }
+
+        it('masks the number Baanx sent the code to', async () => {
+            const result = await signInRequiringOtp('+905551234567')
+
+            expect(result.current.isOtpRequired).toBe(true)
+            expect(result.current.otpPhone).toBe('••••4567')
+        })
+
+        // Without a destination the screen falls back to copy that does not
+        // name one, so null has to reach it rather than an empty string.
+        it('is null when login names no destination', async () => {
+            const result = await signInRequiringOtp(null)
+
+            expect(result.current.otpPhone).toBeNull()
+        })
+    })
+
     it('does not request a resend before a login has required OTP', async () => {
         // The OTP endpoint is keyed on the login's userId; without one (no
         // isOtpRequired login yet) resend must be a no-op, not a bad request.
