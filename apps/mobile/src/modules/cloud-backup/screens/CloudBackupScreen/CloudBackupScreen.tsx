@@ -22,7 +22,18 @@ export const CloudBackupScreen = () => {
     const { handleSetUpBackup, handleRestoreBackup } = useCloudBackupScreen()
 
     return (
-        <PWScreen testID='cloud_backup_screen'>
+        <PWScreen
+            testID='cloud_backup_screen'
+            footer={
+                <PWText
+                    variant='footnoteMedium'
+                    weight={400}
+                    style={styles.note}
+                >
+                    {t('cloud_backup.main.storage_note')}
+                </PWText>
+            }
+        >
             <PWView style={styles.header}>
                 <PWText variant='h1'>{t('cloud_backup.main.title')}</PWText>
                 <PWText variant='bodyLarge'>
