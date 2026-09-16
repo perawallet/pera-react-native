@@ -22,17 +22,4 @@ export const useStyles = makeStyles(theme => ({
     options: {
         gap: theme.spacing.md,
     },
-    optionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    optionLabel: {
-        flex: 1,
-        minWidth: 0,
-    },
 }))

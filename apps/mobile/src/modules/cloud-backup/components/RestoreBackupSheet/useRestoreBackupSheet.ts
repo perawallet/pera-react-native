@@ -10,29 +10,48 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import type { CredentialsFileSource } from '../../storage'
+import { getCredentialsFileReadSources } from '../../storage/credentialsFileSources'
 
-export type RestoreBackupSheetResult = 'scan' | 'manual'
+export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
 type UseRestoreBackupSheetResult = {
-    handleScan: () => void
-    handleManual: () => void
+    options: RestoreBackupSheetResult[]
+    descriptionKey: string
+    handleSelect: (option: RestoreBackupSheetResult) => void
+}
+
+const EVENTS: Partial<Record<RestoreBackupSheetResult, CloudBackupEvent>> = {
+    scan: CloudBackupEvent.RestoreScanQr,
+    manual: CloudBackupEvent.RestoreEnterManually,
 }
 
 export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
     const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
+    const fileSources = getCredentialsFileReadSources()
+    const options = useMemo<RestoreBackupSheetResult[]>(
+        () => ['scan', ...fileSources, 'manual'],
+        [fileSources],
+    )
 
-    const handleScan = useCallback(() => {
-        trackEvent(CloudBackupEvent.RestoreScanQr)
-        resolve('scan')
-    }, [resolve])
+    const handleSelect = useCallback(
+        (option: RestoreBackupSheetResult) => {
+            const event = EVENTS[option]
+            if (event) trackEvent(event)
+            resolve(option)
+        },
+        [resolve],
+    )
 
-    const handleManual = useCallback(() => {
-        trackEvent(CloudBackupEvent.RestoreEnterManually)
-        resolve('manual')
-    }, [resolve])
-
-    return { handleScan, handleManual }
+    return {
+        options,
+        descriptionKey:
+            fileSources.length > 0
+                ? 'cloud_backup.restore.sheet_description_with_import'
+                : 'cloud_backup.restore.sheet_description',
+        handleSelect,
+    }
 }

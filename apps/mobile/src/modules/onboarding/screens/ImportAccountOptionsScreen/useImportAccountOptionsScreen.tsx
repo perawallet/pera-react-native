@@ -31,10 +31,7 @@ import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import type { AccountOption } from '@modules/onboarding/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    RestoreBackupSheet,
-    type RestoreBackupSheetResult,
-} from '@modules/cloud-backup'
+import { useRestoreBackupOptions } from '@modules/cloud-backup'
 import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
@@ -45,6 +42,7 @@ export type UseImportAccountOptionsScreenResult = {
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
     handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
+    isReadingCredentials: boolean
 }
 
 export const useImportAccountOptionsScreen =
@@ -54,6 +52,8 @@ export const useImportAccountOptionsScreen =
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
+        const { chooseRestoreRoute, isReadingCredentials } =
+            useRestoreBackupOptions()
         const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
         const isCloudBackupEnabled = useIsCloudBackupEnabled()
         const isCloudBackupConfigured = useCloudBackupStore(state =>
@@ -165,21 +165,15 @@ export const useImportAccountOptionsScreen =
                 return
             }
 
-            const result = await requestBottomSheet<RestoreBackupSheetResult>({
-                contents: <RestoreBackupSheet />,
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (!result) return
-            navigation.push(
-                result === 'scan'
-                    ? 'CloudBackupRestoreScan'
-                    : 'CloudBackupRestorePassphrase',
-            )
+            const route = await chooseRestoreRoute()
+            if (!route) return
+            const [screen, params] = route
+            navigation.push(screen, params)
         }, [
             isCloudBackupConfigured,
             errorToast,
             t,
-            requestBottomSheet,
+            chooseRestoreRoute,
             navigation,
         ])
 
@@ -305,5 +299,6 @@ export const useImportAccountOptionsScreen =
             isQRScannerVisible,
             handleCloseQRScanner: closeQRScanner,
             handleQRScannerSuccess,
+            isReadingCredentials,
         }
     }
