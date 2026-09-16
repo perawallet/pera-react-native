@@ -1301,6 +1301,7 @@
             "success_title": "Giriş yapıldı",
             "success_body": "Pera Card hesabına giriş yaptın.",
             "otp_body": "Girişi tamamlamak için sana gönderdiğimiz doğrulama kodunu gir.",
+            "otp_body_with_phone": "{{phone}} numarasına gönderdiğimiz doğrulama kodunu girerek girişi tamamla.",
             "otp_invalid": "Bu kod doğru değil. Lütfen tekrar dene.",
             "send_again": "Tekrar gönder",
             "send_again_in": "{{count}} sn içinde tekrar gönder"

@@ -1301,6 +1301,7 @@
             "success_title": "Sesión iniciada",
             "success_body": "Has iniciado sesión en tu cuenta de Pera Card.",
             "otp_body": "Introduce el código de verificación que te enviamos para terminar de iniciar sesión.",
+            "otp_body_with_phone": "Introduce el código de verificación que enviamos a {{phone}} para terminar de iniciar sesión.",
             "otp_invalid": "Ese código no es correcto. Vuelve a intentarlo.",
             "send_again": "Reenviar",
             "send_again_in": "Reenviar en {{count}}s"

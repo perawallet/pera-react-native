@@ -1293,6 +1293,7 @@
             "success_title": "Angemeldet",
             "success_body": "Du bist bei deinem Pera Card Konto angemeldet.",
             "otp_body": "Gib den Bestätigungscode ein, den wir dir gesendet haben, um die Anmeldung abzuschließen.",
+            "otp_body_with_phone": "Gib den Bestätigungscode ein, den wir an {{phone}} gesendet haben, um die Anmeldung abzuschließen.",
             "otp_invalid": "Dieser Code ist nicht korrekt. Bitte versuche es erneut.",
             "send_again": "Erneut senden",
             "send_again_in": "Erneut senden in {{count}}s"

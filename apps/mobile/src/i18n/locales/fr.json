@@ -1301,6 +1301,7 @@
             "success_title": "Connexion réussie",
             "success_body": "Vous êtes connecté à votre compte Pera Card.",
             "otp_body": "Saisissez le code de vérification que nous vous avons envoyé pour terminer la connexion.",
+            "otp_body_with_phone": "Saisissez le code de vérification que nous avons envoyé au {{phone}} pour terminer la connexion.",
             "otp_invalid": "Ce code est incorrect. Veuillez réessayer.",
             "send_again": "Renvoyer",
             "send_again_in": "Renvoyer dans {{count}} s"

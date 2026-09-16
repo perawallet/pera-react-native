@@ -1301,6 +1301,7 @@
             "success_title": "Login realizado",
             "success_body": "Você entrou na sua conta Pera Card.",
             "otp_body": "Digite o código de verificação que enviamos para concluir o login.",
+            "otp_body_with_phone": "Digite o código de verificação que enviamos para {{phone}} para concluir o login.",
             "otp_invalid": "Esse código não está correto. Tente novamente.",
             "send_again": "Enviar novamente",
             "send_again_in": "Enviar novamente em {{count}}s"

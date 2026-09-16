@@ -72,6 +72,12 @@ export type LoginResult = {
     accessToken: Nullable<string>
     userId: Nullable<string>
     isOtpRequired: boolean
+    /**
+     * Where Baanx sent the 2FA code. Shown as a hint on the OTP step, and the
+     * only source for it there: `GET /v1/user` needs a session we do not have
+     * yet. Baanx may or may not mask it, so never render it unmasked.
+     */
+    phoneNumber: Nullable<string>
     phase: Nullable<OnboardingPhase>
     verificationState: Nullable<VerificationState>
     isLinked: boolean

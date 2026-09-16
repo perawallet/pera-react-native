@@ -1301,6 +1301,7 @@
             "success_title": "Signed in",
             "success_body": "You're signed in to your Pera Card account.",
             "otp_body": "Enter the verification code we sent you to finish signing in.",
+            "otp_body_with_phone": "Enter the verification code we sent to {{phone}} to finish signing in.",
             "otp_invalid": "That code isn't correct. Please try again.",
             "send_again": "Send again",
             "send_again_in": "Send again in {{count}}s"
