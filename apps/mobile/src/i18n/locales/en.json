@@ -368,9 +368,9 @@
         "copy_address": "Copy Address",
         "shared_account_detail": "Shared Account Detail ({{count}})",
         "show_address": "Show Address",
-        "view_passphrase_hd": "View root wallet passphrase",
-        "view_passphrase_algo25": "View wallet passphrase",
-        "view_passphrase_quantum": "View Quantum account passphrase",
+        "view_passphrase_hd": "View root wallet recovery passphrase",
+        "view_passphrase_algo25": "View recovery passphrase",
+        "view_passphrase_quantum": "View Quantum account recovery passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
@@ -465,7 +465,7 @@
             "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
             "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
             "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
-            "cta_reveal": "Reveal Passphrase",
+            "cta_reveal": "Reveal Recovery Passphrase",
             "cta_cancel": "Cancel"
         },
         "screen": {

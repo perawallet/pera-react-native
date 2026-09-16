@@ -368,9 +368,9 @@
         "copy_address": "Copiar endereço",
         "shared_account_detail": "Detalhes da conta compartilhada ({{count}})",
         "show_address": "Ver endereço",
-        "view_passphrase_hd": "Ver passphrase da wallet raiz",
-        "view_passphrase_algo25": "Ver passphrase da wallet",
-        "view_passphrase_quantum": "Ver passphrase da conta Quantum",
+        "view_passphrase_hd": "Ver passphrase de recuperação da wallet raiz",
+        "view_passphrase_algo25": "Ver passphrase de recuperação",
+        "view_passphrase_quantum": "Ver passphrase de recuperação da conta Quantum",
         "undo_rekey": "Desfazer rekey",
         "rekeyed_to": "Rekey feito para",
         "rekey_account": "Fazer rekey da conta",
@@ -465,7 +465,7 @@
             "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha passphrase de recuperação com alguém.",
             "row_lose": "Meus fundos serão perdidos permanentemente se eu perder minha passphrase de recuperação e perder o acesso à minha wallet.",
             "row_pera": "Funcionários da Pera NUNCA vão pedir minha passphrase de recuperação.",
-            "cta_reveal": "Revelar passphrase",
+            "cta_reveal": "Revelar passphrase de recuperação",
             "cta_cancel": "Cancelar"
         },
         "screen": {

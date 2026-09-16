@@ -368,9 +368,9 @@
         "copy_address": "Adresi kopyala",
         "shared_account_detail": "Paylaşılan hesap detayı ({{count}})",
         "show_address": "Adresi göster",
-        "view_passphrase_hd": "Ana cüzdan passphrase’ini görüntüle",
-        "view_passphrase_algo25": "Cüzdan passphrase’ini görüntüle",
-        "view_passphrase_quantum": "Quantum hesabı passphrase’ini görüntüle",
+        "view_passphrase_hd": "Ana cüzdan kurtarma passphrase’ini görüntüle",
+        "view_passphrase_algo25": "Kurtarma passphrase’ini görüntüle",
+        "view_passphrase_quantum": "Quantum hesabı kurtarma passphrase’ini görüntüle",
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
@@ -465,7 +465,7 @@
             "row_share": "Kurtarma passphrase’imi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
             "row_lose": "Kurtarma passphrase’imi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
             "row_pera": "Pera çalışanları kurtarma passphrase’imi ASLA istemez.",
-            "cta_reveal": "Passphrase’i göster",
+            "cta_reveal": "Kurtarma passphrase’ini göster",
             "cta_cancel": "İptal"
         },
         "screen": {

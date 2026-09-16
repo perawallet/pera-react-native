@@ -368,9 +368,9 @@
         "copy_address": "Adresse kopieren",
         "shared_account_detail": "Gemeinschaftskonto-Details ({{count}})",
         "show_address": "Adresse anzeigen",
-        "view_passphrase_hd": "Passphrase des Root-Wallets anzeigen",
-        "view_passphrase_algo25": "Wallet-Passphrase anzeigen",
-        "view_passphrase_quantum": "Passphrase des Quantum-Kontos anzeigen",
+        "view_passphrase_hd": "Wiederherstellungsphrase des Root-Wallets anzeigen",
+        "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
+        "view_passphrase_quantum": "Wiederherstellungsphrase des Quantum-Kontos anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
@@ -465,7 +465,7 @@
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
-            "cta_reveal": "Passphrase anzeigen",
+            "cta_reveal": "Wiederherstellungsphrase anzeigen",
             "cta_cancel": "Abbrechen"
         },
         "screen": {
