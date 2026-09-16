@@ -109,7 +109,7 @@ export const BackupCredentialsSheet = () => {
         encryptionKey,
         wordIndices,
         passphraseStatus,
-        handleClose,
+        handleStore,
     } = useBackupCredentialsSheet()
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)
@@ -127,7 +127,7 @@ export const BackupCredentialsSheet = () => {
                 <PWButton
                     variant='primary'
                     title={t('cloud_backup.credentials.done_button')}
-                    onPress={handleClose}
+                    onPress={handleStore}
                     testID='backup_credentials_done_button'
                 />
             }
