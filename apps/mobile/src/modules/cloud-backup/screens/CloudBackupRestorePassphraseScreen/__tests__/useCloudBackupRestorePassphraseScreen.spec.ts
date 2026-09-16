@@ -15,8 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 
 const navigate = vi.fn()
 const setMnemonic = vi.fn()
+let routeParams: unknown
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate }),
+    useRoute: () => ({ params: routeParams }),
 }))
 vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     ...(await importOriginal<object>()),
@@ -51,6 +53,7 @@ describe('useCloudBackupRestorePassphraseScreen', () => {
         setMnemonic.mockReset()
         errorToast.mockReset()
         vi.mocked(trackEvent).mockClear()
+        routeParams = undefined
     })
 
     it('is not submittable until all words are filled', () => {
@@ -80,7 +83,29 @@ describe('useCloudBackupRestorePassphraseScreen', () => {
             CloudBackupEvent.RestorePassphraseProceed,
         )
         expect(setMnemonic).toHaveBeenCalled()
-        expect(navigate).toHaveBeenCalledWith('CloudBackupRestoreEncryptionKey')
+        expect(navigate).toHaveBeenCalledWith(
+            'CloudBackupRestoreEncryptionKey',
+            undefined,
+        )
+    })
+
+    it('hands a key imported from a file on to the encryption-key screen', async () => {
+        routeParams = { importedKey: { salt: 'c2FsdA==' } }
+        const { result } = renderHook(() =>
+            useCloudBackupRestorePassphraseScreen(),
+        )
+        await act(async () => {
+            for (let i = 0; i < result.current.words.length; i += 1) {
+                await result.current.handleWordChange(`w${i}`, i)
+            }
+        })
+
+        act(() => result.current.handleContinue())
+
+        expect(navigate).toHaveBeenCalledWith(
+            'CloudBackupRestoreEncryptionKey',
+            routeParams,
+        )
     })
 
     it('distributes a pasted 12-word phrase across every slot', async () => {

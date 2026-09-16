@@ -37,7 +37,10 @@ import { useCloudBackupRestoreExit } from '../hooks/useCloudBackupRestoreExit'
 import { useCloudBackupInitialRoute } from '../hooks/useCloudBackupInitialRoute'
 import type { CloudBackupStackParamList } from './types'
 
-export type { CloudBackupStackParamList } from './types'
+export type {
+    CloudBackupRestoreKeyParams,
+    CloudBackupStackParamList,
+} from './types'
 
 const CloudBackupStack = createNativeStackNavigator<CloudBackupStackParamList>()
 
