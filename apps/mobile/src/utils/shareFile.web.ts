@@ -10,24 +10,25 @@
  limitations under the License
  */
 
-/**
- * Web/extension twin of `shareFile`. A browser has neither a filesystem nor a
- * native share sheet, so the content becomes a Blob downloaded through a
- * temporary off-DOM anchor with a `download` attribute.
- */
+import type { ShareFileOptions, ShareFileResult } from './shareFile'
+
+// The extension has no filesystem or share sheet, so this is a browser
+// download, and the browser reports no cancel.
 export const shareFile = async (
-    filename: string,
-    content: string | Uint8Array<ArrayBuffer>,
-    mimeType: string,
-): Promise<void> => {
-    const blob = new Blob([content], { type: mimeType })
-    const url = URL.createObjectURL(blob)
+    fileName: string,
+    contents: string | Uint8Array<ArrayBuffer>,
+    { mimeType }: ShareFileOptions,
+): Promise<ShareFileResult> => {
+    const objectUrl = URL.createObjectURL(
+        new Blob([contents], { type: mimeType }),
+    )
     try {
         const anchor = document.createElement('a')
-        anchor.href = url
-        anchor.download = filename
+        anchor.href = objectUrl
+        anchor.download = fileName
         anchor.click()
     } finally {
-        URL.revokeObjectURL(url)
+        URL.revokeObjectURL(objectUrl)
     }
+    return 'shared'
 }

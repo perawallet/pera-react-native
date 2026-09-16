@@ -13,20 +13,44 @@
 import { File, Paths } from 'expo-file-system'
 import Share from 'react-native-share'
 
-/** Writes `content` to the cache directory and hands it to the OS share sheet. */
-export const shareFile = async (
-    filename: string,
-    content: string | Uint8Array<ArrayBuffer>,
-    mimeType: string,
-): Promise<void> => {
-    const file = new File(Paths.cache, filename)
-    file.create({ overwrite: true })
-    file.write(content)
+export type ShareFileResult = 'shared' | 'cancelled'
 
-    await Share.open({
-        url: file.uri,
-        filename,
-        type: mimeType,
-        failOnCancel: false,
-    })
+export type ShareFileOptions = {
+    mimeType: string
+    /** iOS only: opens Save to Files instead of the share sheet. */
+    saveToFiles?: boolean
+}
+
+const SHARE_CANCELLED_CODE = 'CANCELLED'
+
+export const shareFile = async (
+    fileName: string,
+    contents: string | Uint8Array<ArrayBuffer>,
+    { mimeType, saveToFiles = false }: ShareFileOptions,
+): Promise<ShareFileResult> => {
+    const staged = new File(Paths.cache, fileName)
+    staged.create({ overwrite: true })
+    staged.write(contents)
+    try {
+        const { success } = await Share.open({
+            url: staged.uri,
+            filename: fileName,
+            type: mimeType,
+            saveToFiles,
+            failOnCancel: false,
+        })
+        return success ? 'shared' : 'cancelled'
+    } catch (error) {
+        // Save to Files rejects on cancel even with failOnCancel off.
+        if (
+            (error as { code?: unknown } | null)?.code === SHARE_CANCELLED_CODE
+        ) {
+            return 'cancelled'
+        }
+        throw error
+    } finally {
+        // Android resolves once a target app is picked, before it reads the
+        // file; only Save to Files has copied it by now.
+        if (saveToFiles && staged.exists) staged.delete()
+    }
 }

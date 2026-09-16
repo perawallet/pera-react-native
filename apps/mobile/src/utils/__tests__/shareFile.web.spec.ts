@@ -25,37 +25,56 @@ describe('shareFile (web)', () => {
         vi.clearAllMocks()
         mockAnchor.href = ''
         mockAnchor.download = ''
+
         URL.createObjectURL = vi.fn().mockReturnValue(mockObjectUrl)
         URL.revokeObjectURL = vi.fn()
+
         vi.spyOn(document, 'createElement').mockReturnValue(
             mockAnchor as unknown as HTMLAnchorElement,
         )
     })
 
-    it('downloads binary content as a typed blob through an anchor', async () => {
-        await shareFile(
-            'statement.pdf',
-            new Uint8Array([37, 80, 68, 70]),
-            'application/pdf',
-        )
+    it('downloads a blob of the given type through a temporary anchor', async () => {
+        await expect(
+            shareFile('tx.csv', 'a,b,c', { mimeType: 'text/csv' }),
+        ).resolves.toBe('shared')
 
-        const [blob] = (URL.createObjectURL as ReturnType<typeof vi.fn>).mock
-            .calls[0] as [Blob]
-        expect(blob.type).toBe('application/pdf')
-        expect(blob.size).toBe(4)
+        expect(URL.createObjectURL).toHaveBeenCalledTimes(1)
+        const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0]
+        expect(blob).toBeInstanceOf(Blob)
+        expect((blob as Blob).type).toBe('text/csv')
+
         expect(mockAnchor.href).toBe(mockObjectUrl)
-        expect(mockAnchor.download).toBe('statement.pdf')
+        expect(mockAnchor.download).toBe('tx.csv')
         expect(mockAnchor.click).toHaveBeenCalledTimes(1)
     })
 
-    it('revokes the object URL even when the click throws', async () => {
+    it('downloads binary contents as a blob of the same length', async () => {
+        await expect(
+            shareFile('statement.pdf', new Uint8Array([37, 80, 68, 70]), {
+                mimeType: 'application/pdf',
+            }),
+        ).resolves.toBe('shared')
+
+        const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0]
+        expect((blob as Blob).type).toBe('application/pdf')
+        expect((blob as Blob).size).toBe(4)
+    })
+
+    it('revokes the object URL after triggering the download', async () => {
+        await shareFile('tx.csv', 'data', { mimeType: 'text/csv' })
+
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
+    })
+
+    it('revokes the object URL even if the click throws', async () => {
         mockAnchor.click.mockImplementationOnce(() => {
-            throw new Error('blocked')
+            throw new Error('click failed')
         })
 
         await expect(
-            shareFile('statement.pdf', 'x', 'application/pdf'),
-        ).rejects.toThrow('blocked')
+            shareFile('tx.csv', 'data', { mimeType: 'text/csv' }),
+        ).rejects.toThrow('click failed')
         expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
     })
 })

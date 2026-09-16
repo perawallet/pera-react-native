@@ -91,11 +91,9 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
                 const statement = await exportStatement({
                     format: StatementFormat.Pdf,
                 })
-                await shareFile(
-                    buildStatementFilename(),
-                    statement.bytes,
-                    PDF_MIME_TYPE,
-                )
+                await shareFile(buildStatementFilename(), statement.bytes, {
+                    mimeType: PDF_MIME_TYPE,
+                })
             } catch (error) {
                 void showExportError(error)
             }
