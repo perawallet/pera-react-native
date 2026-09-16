@@ -137,12 +137,20 @@ describe('shouldDehydrateQuery', () => {
         ).toBe(false)
     })
 
-    it('persists other successful queries and skips non-success ones', () => {
+    // The default decides what a module added tomorrow does, so it is the
+    // whole point of the allowlist: an unclassified prefix stays off disk.
+    it('never persists a prefix the policy does not list', () => {
         expect(
             shouldDehydrateQuery(asQuery(['discover', 'feed'], 'success')),
+        ).toBe(false)
+    })
+
+    it('persists an allowlisted prefix and skips non-success ones', () => {
+        expect(
+            shouldDehydrateQuery(asQuery(['currencies', 'list'], 'success')),
         ).toBe(true)
         expect(
-            shouldDehydrateQuery(asQuery(['discover', 'feed'], 'pending')),
+            shouldDehydrateQuery(asQuery(['currencies', 'list'], 'pending')),
         ).toBe(false)
     })
 })

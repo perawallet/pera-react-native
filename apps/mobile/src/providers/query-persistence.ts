@@ -11,51 +11,80 @@
  */
 
 import type { Query } from '@tanstack/react-query'
-import {
-    isAccountBalancesHistoryQuery,
-    isAccountQuery,
-} from '@perawallet/wallet-core-accounts'
-import {
-    isAssetPriceHistoryQuery,
-    isAssetQuery,
-} from '@perawallet/wallet-core-assets'
-import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
-import { isCardQuery } from '@perawallet/wallet-core-card'
-import { isBlockchainQuery } from '@perawallet/wallet-core-blockchain'
+import { isAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
+import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 
 // Caches written before the serializer tagged Decimals hold them as bare
 // strings, and consumers call Decimal methods on hydrated data during render.
 // Bump whenever the persisted shape changes incompatibly so such caches are
 // discarded instead of rehydrated.
-export const PERSISTED_CACHE_BUSTER = 'decimal-tagged'
+//
+// Bumped with the allowlist below: without it, up to
+// `reactQueryPersistenceAge` (60 days) of caches written under the old
+// deny-list stay on disk and rehydrate, so the modules this change stops
+// persisting would keep theirs.
+export const PERSISTED_CACHE_BUSTER = 'prefix-allowlist'
+
+type PersistencePolicy = 'persist' | 'never'
+
+/**
+ * What each query-key prefix may write to the persisted cache.
+ *
+ * The persister writes to plaintext MMKV on device and `chrome.storage.local`
+ * on web, so this is a disk-exposure decision, not a caching one. It is an
+ * allowlist rather than a deny-list because the default decides what a module
+ * added tomorrow does: unlisted means never persisted, so a new query carrying
+ * a token or a payment link cannot reach unencrypted storage by omission.
+ * `__tests__/query-persistence-coverage.spec.ts` fails until a new prefix is
+ * classified here.
+ */
+export const QUERY_PREFIX_POLICY = {
+    // Address-linked, PII-carrying, secret-adjacent or worthless once stale.
+    // The DB-backed ones (accounts, assets, transactions) also have SQLite as
+    // their source of truth; blockchain carries raw indexer/algod bytes that
+    // crashed when round-tripped through disk.
+    accounts: 'never',
+    'asa-inbox': 'never',
+    assets: 'never',
+    'balance-impact-simulation': 'never',
+    blockchain: 'never',
+    card: 'never',
+    'dapp-connections': 'never',
+    multisig: 'never',
+    nfd: 'never',
+    notifications: 'never',
+    onramp: 'never',
+    passkeys: 'never',
+    'rekey-transaction-fee': 'never',
+    swaps: 'never',
+    transactions: 'never',
+    // Global, non-identifying content that is useful before the first fetch
+    // lands. None of these keys carry an address.
+    banners: 'persist',
+    currencies: 'persist',
+    projects: 'persist',
+    staking: 'persist',
+} as const satisfies Record<string, PersistencePolicy>
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
-    // chart-history snapshots are allowlisted AHEAD of the module
-    // exclusions below. They are network-only (no SQLite history table backs
-    // them) and carry no PII, so persisting the last successful snapshot is
-    // what lets charts render last-known data offline across restarts.
+    if (query.state.status !== 'success') return false
+
+    // Narrower than the prefix table and checked first: chart snapshots live
+    // under otherwise-never modules. They are network-only (no SQLite history
+    // table backs them) and carry no PII, so persisting the last successful
+    // snapshot is what lets charts render last-known data offline.
     if (
         isAccountBalancesHistoryQuery(query.queryKey) ||
         isAssetPriceHistoryQuery(query.queryKey)
     ) {
-        return query.state.status === 'success'
+        return true
     }
-    // Don't persist DB-backed queries — SQLite is the source of truth.
-    // Card queries are excluded too: their responses can carry KYC
-    // PII that must never land in the unencrypted disk cache.
-    // Blockchain queries are indexer/algod-backed, and the raw byte fields
-    // they carry are what crashed on once round-tripped through
-    // disk. Both consumers degrade acceptably without a disk copy: Transaction
-    // Details falls back to the mapped SQLite row (losing only the indexer
-    // enrichment), and the group list renders empty until the fetch lands.
-    if (
-        isAccountQuery(query.queryKey) ||
-        isAssetQuery(query.queryKey) ||
-        isTransactionQuery(query.queryKey) ||
-        isCardQuery(query.queryKey) ||
-        isBlockchainQuery(query.queryKey)
-    ) {
-        return false
-    }
-    return query.state.status === 'success'
+
+    const prefix = query.queryKey[0]
+
+    return (
+        typeof prefix === 'string' &&
+        QUERY_PREFIX_POLICY[prefix as keyof typeof QUERY_PREFIX_POLICY] ===
+            'persist'
+    )
 }
