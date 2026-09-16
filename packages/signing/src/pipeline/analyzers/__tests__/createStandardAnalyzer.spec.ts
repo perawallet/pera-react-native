@@ -98,7 +98,10 @@ const makeRealRekeyTx = (sender: Address = REAL_SENDER): Transaction =>
         rekeyTo: REKEY_TARGET,
     })
 
-const makeGroup = (transactions: unknown[]): SignableGroup =>
+const makeGroup = (
+    transactions: unknown[],
+    signerAddress: string = ACCOUNT_A,
+): SignableGroup =>
     ({
         data: {
             type: 'transactions',
@@ -106,7 +109,7 @@ const makeGroup = (transactions: unknown[]): SignableGroup =>
             indicesToSign: transactions.map((_, i) => i),
         },
         source: { type: 'local' },
-        signerAddress: ACCOUNT_A,
+        signerAddress,
     }) as SignableGroup
 
 describe('createStandardAnalyzer', () => {
@@ -204,7 +207,10 @@ describe('createStandardAnalyzer', () => {
         )
     })
 
-    test('sums fees only for transactions from user accounts', async () => {
+    // The machine emits one group per authorizer, so every fee in it is one
+    // this wallet pays — including a transaction whose sender is foreign and
+    // whose authorizer came from an ARC-0001 `signers` override.
+    test("sums every fee in the authorizer's group", async () => {
         const analyzer = createStandardAnalyzer()
         const group = makeGroup([
             makeTx({ sender: ACCOUNT_A, fee: 1000n }),
@@ -213,8 +219,20 @@ describe('createStandardAnalyzer', () => {
         ])
         const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
 
-        expect(result.totalFees).toBe(3000n)
+        expect(result.totalFees).toBe(3500n)
         expect(result.signableAddresses).toEqual([ACCOUNT_A])
+    })
+
+    test('reports no fees when the group authorizer is not one of ours', async () => {
+        const analyzer = createStandardAnalyzer()
+        const group = makeGroup(
+            [makeTx({ sender: EXTERNAL_ADDR, fee: 1000n })],
+            EXTERNAL_ADDR,
+        )
+        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+
+        expect(result.totalFees).toBe(0n)
+        expect(result.signableAddresses).toEqual([])
     })
 
     test('skips missing fee field without crashing', async () => {
@@ -306,7 +324,10 @@ describe('createStandardAnalyzer', () => {
 
     test('detects a danger close-account warning from a real payment closeRemainderTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([makeRealPaymentCloseTx()])
+        const group = makeGroup(
+            [makeRealPaymentCloseTx()],
+            REAL_SENDER.toString(),
+        )
         const result = await analyzer.analyze(
             group,
             makeContext([REAL_SENDER.toString()]),
@@ -322,7 +343,10 @@ describe('createStandardAnalyzer', () => {
 
     test('detects a danger opt-out warning from a real asset-transfer closeRemainderTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([makeRealAssetCloseTx()])
+        const group = makeGroup(
+            [makeRealAssetCloseTx()],
+            REAL_SENDER.toString(),
+        )
         const result = await analyzer.analyze(
             group,
             makeContext([REAL_SENDER.toString()]),
@@ -338,7 +362,7 @@ describe('createStandardAnalyzer', () => {
 
     test('detects a danger rekey warning from a real transaction rekeyTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([makeRealRekeyTx()])
+        const group = makeGroup([makeRealRekeyTx()], REAL_SENDER.toString())
         const result = await analyzer.analyze(
             group,
             makeContext([REAL_SENDER.toString()]),
@@ -355,14 +379,35 @@ describe('createStandardAnalyzer', () => {
 
     test('skips warnings for real close and rekey txs not signed by us', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([
-            makeRealPaymentCloseTx(REAL_EXTERNAL_SENDER),
-            makeRealRekeyTx(REAL_EXTERNAL_SENDER),
-        ])
+        const group = makeGroup(
+            [
+                makeRealPaymentCloseTx(REAL_EXTERNAL_SENDER),
+                makeRealRekeyTx(REAL_EXTERNAL_SENDER),
+            ],
+            REAL_EXTERNAL_SENDER.toString(),
+        )
         const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
 
         expect(result.warnings).toEqual([])
         expect(result.riskLevel).toBe('low')
+    })
+
+    // A dApp may set a `sender` this wallet never imported and name one of our
+    // accounts in ARC-0001 `signers`. The machine groups by that authorizer and
+    // signs it, so keying the analyzer off `tx.sender` dropped the danger
+    // warnings for exactly the requests that warrant them.
+    test('warns on a rekey the wallet authorizes for a foreign sender', async () => {
+        const analyzer = createStandardAnalyzer()
+        const tx = makeRealRekeyTx(REAL_EXTERNAL_SENDER)
+        const result = await analyzer.analyze(
+            makeGroup([tx]),
+            makeContext([ACCOUNT_A]),
+        )
+
+        expect(result.warnings.map(w => w.type)).toEqual(['rekey'])
+        expect(result.riskLevel).toBe('high')
+        expect(result.signableAddresses).toEqual([ACCOUNT_A])
+        expect(result.totalFees).toBe(tx.fee)
     })
 
     test('wraps unexpected errors in AnalysisError', async () => {
