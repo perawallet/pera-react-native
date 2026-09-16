@@ -11,13 +11,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { shareCsvFile } from '../shareCsvFile.web'
+import { shareFile } from '../shareFile.web'
 
-vi.mock('@perawallet/wallet-core-transactions', () => ({
-    CSV_MIME_TYPE: 'text/csv',
-}))
-
-describe('shareCsvFile (web)', () => {
+describe('shareFile (web)', () => {
     const mockObjectUrl = 'blob:mock-object-url'
     const mockAnchor = {
         href: '',
@@ -38,8 +34,10 @@ describe('shareCsvFile (web)', () => {
         )
     })
 
-    it('builds a CSV blob and triggers a download via a temporary anchor', async () => {
-        await shareCsvFile('tx.csv', 'a,b,c')
+    it('downloads a blob of the given type through a temporary anchor', async () => {
+        await expect(
+            shareFile('tx.csv', 'a,b,c', { mimeType: 'text/csv' }),
+        ).resolves.toBe('shared')
 
         expect(URL.createObjectURL).toHaveBeenCalledTimes(1)
         const [blob] = vi.mocked(URL.createObjectURL).mock.calls[0]
@@ -52,7 +50,7 @@ describe('shareCsvFile (web)', () => {
     })
 
     it('revokes the object URL after triggering the download', async () => {
-        await shareCsvFile('tx.csv', 'data')
+        await shareFile('tx.csv', 'data', { mimeType: 'text/csv' })
 
         expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
     })
@@ -62,9 +60,9 @@ describe('shareCsvFile (web)', () => {
             throw new Error('click failed')
         })
 
-        await expect(shareCsvFile('tx.csv', 'data')).rejects.toThrow(
-            'click failed',
-        )
+        await expect(
+            shareFile('tx.csv', 'data', { mimeType: 'text/csv' }),
+        ).rejects.toThrow('click failed')
         expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
     })
 })

@@ -10,27 +10,25 @@
  limitations under the License
  */
 
-import { CSV_MIME_TYPE } from '@perawallet/wallet-core-transactions'
+import type { ShareFileOptions, ShareFileResult } from './shareFile'
 
-/**
- * Web/extension twin of `shareCsvFile`. There's no filesystem or native share
- * sheet in a browser context, so instead this builds a `Blob` from the CSV
- * string and triggers a standard browser download via a temporary,
- * off-DOM anchor element with a `download` attribute.
- */
-export const shareCsvFile = async (
-    filename: string,
-    csvContent: string,
-): Promise<void> => {
-    const blob = new Blob([csvContent], { type: CSV_MIME_TYPE })
-    const url = URL.createObjectURL(blob)
-
+// The extension has no filesystem or share sheet, so this is a browser
+// download, and the browser reports no cancel.
+export const shareFile = async (
+    fileName: string,
+    contents: string,
+    { mimeType }: ShareFileOptions,
+): Promise<ShareFileResult> => {
+    const objectUrl = URL.createObjectURL(
+        new Blob([contents], { type: mimeType }),
+    )
     try {
         const anchor = document.createElement('a')
-        anchor.href = url
-        anchor.download = filename
+        anchor.href = objectUrl
+        anchor.download = fileName
         anchor.click()
     } finally {
-        URL.revokeObjectURL(url)
+        URL.revokeObjectURL(objectUrl)
     }
+    return 'shared'
 }

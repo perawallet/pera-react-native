@@ -10,22 +10,17 @@
  limitations under the License
  */
 
-import { File, Paths } from 'expo-file-system'
-import Share from 'react-native-share'
-import { CSV_MIME_TYPE } from '@perawallet/wallet-core-transactions'
+import { shareFile } from '@utils/shareFile'
 
-export const shareCsvFile = async (
-    filename: string,
-    csvContent: string,
-): Promise<void> => {
-    const file = new File(Paths.cache, filename)
-    file.create({ overwrite: true })
-    file.write(csvContent)
+import type { SaveResult } from './types'
 
-    await Share.open({
-        url: file.uri,
-        filename,
-        type: CSV_MIME_TYPE,
-        failOnCancel: false,
+// The twin keeps expo-file-system's folder picker out of the web bundle.
+export const saveToDevice = async (
+    fileName: string,
+    contents: string,
+): Promise<SaveResult> => {
+    const result = await shareFile(fileName, contents, {
+        mimeType: 'application/json',
     })
+    return result === 'shared' ? 'saved' : 'cancelled'
 }
