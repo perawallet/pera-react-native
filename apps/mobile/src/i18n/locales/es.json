@@ -1194,7 +1194,8 @@
             "confirm_button": "Confirmar",
             "fee_label": "Comisión de red",
             "fee_loading": "Estimando...",
-            "success_title": "Reclamo enviado"
+            "success_title": "Reclamo enviado",
+            "history_title": "Actividad"
         },
         "transactions": {
             "navigation_title": "Transacciones",

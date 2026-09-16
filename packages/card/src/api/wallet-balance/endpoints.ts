@@ -15,17 +15,20 @@ import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import type {
     CardWalletBalance,
+    CardWalletHistoryPage,
     CardWalletKind,
     WalletWithdrawEstimation,
     WalletWithdrawResult,
 } from '../../models'
 import {
     walletBalanceResponseSchema,
+    walletHistoryResponseSchema,
     walletWithdrawEstimationResponseSchema,
     walletWithdrawResponseSchema,
 } from './schema'
 import {
     transformWalletBalance,
+    transformWalletHistoryEntry,
     transformWalletWithdrawEstimation,
     transformWalletWithdraw,
 } from './transformers'
@@ -37,6 +40,15 @@ export type WalletParams = {
 }
 
 const walletPath = (kind: CardWalletKind): string => `/v1/wallet/${kind}`
+
+/** `walletType` values for GET /v1/wallet/history; an explicit map, not a casing rule. */
+export const WALLET_TYPE_BY_KIND: Record<CardWalletKind, string> = {
+    reward: 'REWARD',
+    credit: 'CREDIT',
+}
+
+// Baanx returns a fixed page size and no total.
+const HISTORY_PAGE_SIZE = 10
 
 /**
  * Null until the wallet exists: Baanx only creates it when the first reward
@@ -96,4 +108,29 @@ export const withdrawWalletBalance = async (
     return transformWalletWithdraw(
         walletWithdrawResponseSchema.parse(response.data),
     )
+}
+
+export type FetchWalletHistoryParams = WalletParams & {
+    /** The wallet's `id` from GET /v1/wallet/{kind}. */
+    walletId: string
+    /** Zero-indexed page. */
+    page?: number
+}
+export const fetchWalletHistory = async (
+    params: FetchWalletHistoryParams,
+): Promise<CardWalletHistoryPage> => {
+    const { kind, walletId, page = 0, network, signal } = params
+    const response = await getCardTransport().request({
+        network,
+        method: 'GET',
+        path: '/v1/wallet/history',
+        authenticated: true,
+        params: { walletId, walletType: WALLET_TYPE_BY_KIND[kind], page },
+        signal,
+    })
+    const items = walletHistoryResponseSchema
+        .parse(response.data)
+        .map(transformWalletHistoryEntry)
+    // A short page is the last one; a full page may or may not be.
+    return { items, page, hasMore: items.length === HISTORY_PAGE_SIZE }
 }

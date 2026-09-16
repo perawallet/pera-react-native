@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { toDecimal } from '@perawallet/wallet-core-shared'
-import type {
-    CardWalletBalance,
-    WalletWithdrawEstimation,
-    WalletWithdrawResult,
+import { toDecimal, toEnumValueOrNull } from '@perawallet/wallet-core-shared'
+import {
+    type CardWalletBalance,
+    type CardWalletHistoryEntry,
+    TransactionSign,
+    type WalletWithdrawEstimation,
+    type WalletWithdrawResult,
 } from '../../models'
 import type {
     WalletBalanceApiResponse,
+    WalletHistoryEntryApiResponse,
     WalletWithdrawEstimationApiResponse,
     WalletWithdrawApiResponse,
 } from './schema'
@@ -44,4 +47,15 @@ export const transformWalletWithdraw = (
     txHash: response.txHash,
     network: response.network,
     isConfirmed: response.confirmed ?? false,
+})
+
+export const transformWalletHistoryEntry = (
+    response: WalletHistoryEntryApiResponse,
+): CardWalletHistoryEntry => ({
+    name: response.name,
+    amount: toDecimal(response.amount),
+    currency: response.currency,
+    // Baanx sends the direction lowercase; the shared enum is uppercase.
+    sign: toEnumValueOrNull(TransactionSign, response.sign.toUpperCase()),
+    dateTime: response.date,
 })

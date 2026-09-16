@@ -15,7 +15,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     CardWalletKind,
+    TransactionSign,
     useCardWalletBalanceQuery,
+    useCardWalletHistoryQuery,
 } from '@perawallet/wallet-core-card'
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +30,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     useCardWalletBalanceQuery: vi.fn(),
+    useCardWalletHistoryQuery: vi.fn(),
 }))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mocks.navigate }),
@@ -52,12 +55,79 @@ const query = {
     error: null,
     refetch: vi.fn(),
 }
+const entry = (name: string, dateTime: string) => ({
+    name,
+    amount: new Decimal('4.5'),
+    currency: 'usdc',
+    sign: TransactionSign.Credit,
+    dateTime,
+})
+const history = {
+    entries: [] as ReturnType<typeof entry>[],
+    isLoading: false,
+    isFetchingNextPage: false,
+    isError: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+}
 
 describe('useCardWalletBalanceScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.routeParams = { kind: 'reward' }
         vi.mocked(useCardWalletBalanceQuery).mockReturnValue(query)
+        vi.mocked(useCardWalletHistoryQuery).mockReturnValue(history)
+    })
+
+    // History is keyed on the wallet id, so it must follow the balance query's
+    // wallet rather than be asked for blindly.
+    it('reads history for the loaded wallet', () => {
+        renderHook(useCardWalletBalanceScreen)
+
+        expect(useCardWalletHistoryQuery).toHaveBeenCalledWith(
+            CardWalletKind.Reward,
+            'reward-1',
+        )
+    })
+
+    it('groups history into month sections, newest first', () => {
+        vi.mocked(useCardWalletHistoryQuery).mockReturnValue({
+            ...history,
+            entries: [
+                entry('older', '2026-07-02T10:00:00Z'),
+                entry('newer', '2026-09-10T09:15:00Z'),
+            ],
+        })
+
+        const { result } = renderHook(useCardWalletBalanceScreen)
+
+        expect(result.current.hasHistory).toBe(true)
+        expect(result.current.historySections.map(s => s.key)).toEqual([
+            '2026-09',
+            '2026-07',
+        ])
+    })
+
+    it('asks for the next history page only while one exists and none is in flight', () => {
+        const fetchNextPage = vi.fn()
+        vi.mocked(useCardWalletHistoryQuery).mockReturnValue({
+            ...history,
+            hasNextPage: true,
+            fetchNextPage,
+        })
+        const { result, rerender } = renderHook(useCardWalletBalanceScreen)
+        result.current.handleLoadMore()
+        expect(fetchNextPage).toHaveBeenCalledTimes(1)
+
+        vi.mocked(useCardWalletHistoryQuery).mockReturnValue({
+            ...history,
+            hasNextPage: true,
+            isFetchingNextPage: true,
+            fetchNextPage,
+        })
+        rerender()
+        result.current.handleLoadMore()
+        expect(fetchNextPage).toHaveBeenCalledTimes(1)
     })
 
     it.each([

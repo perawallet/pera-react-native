@@ -1194,7 +1194,8 @@
             "confirm_button": "Confirmer",
             "fee_label": "Frais de réseau",
             "fee_loading": "Estimation...",
-            "success_title": "Réclamation envoyée"
+            "success_title": "Réclamation envoyée",
+            "history_title": "Activité"
         },
         "transactions": {
             "navigation_title": "Transactions",

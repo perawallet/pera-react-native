@@ -10,13 +10,27 @@
  limitations under the License
  */
 
-export {
-    fetchWalletBalance,
-    fetchWalletHistory,
-    fetchWalletWithdrawEstimation,
-    withdrawWalletBalance,
-    WALLET_TYPE_BY_KIND,
-    type FetchWalletHistoryParams,
-    type WalletParams,
-    type WithdrawWalletBalanceParams,
-} from './endpoints'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    textBlock: {
+        flex: 1,
+        minWidth: 0,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
+    },
+    amountDebit: {
+        color: theme.colors.negative,
+    },
+    amountCredit: {
+        color: theme.colors.positive,
+    },
+}))

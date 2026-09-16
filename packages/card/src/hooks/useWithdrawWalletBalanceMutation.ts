@@ -44,6 +44,9 @@ export const useWithdrawWalletBalanceMutation = (
             void queryClient.invalidateQueries({
                 queryKey: cardQueryKeys.walletBalance(network, kind),
             })
+            void queryClient.invalidateQueries({
+                queryKey: cardQueryKeys.walletHistoryByKind(network, kind),
+            })
         },
         throwOnError: false,
     })

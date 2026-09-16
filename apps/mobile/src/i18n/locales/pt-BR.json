@@ -1194,7 +1194,8 @@
             "confirm_button": "Confirmar",
             "fee_label": "Taxa de rede",
             "fee_loading": "Estimando...",
-            "success_title": "Resgate enviado"
+            "success_title": "Resgate enviado",
+            "history_title": "Atividade"
         },
         "transactions": {
             "navigation_title": "Transações",

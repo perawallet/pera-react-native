@@ -13,11 +13,14 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import type { CardWalletKind } from '../../models'
+import { WALLET_TYPE_BY_KIND } from './endpoints'
 import {
     walletBalanceResponseSchema,
+    walletHistoryResponseSchema,
     walletWithdrawEstimationResponseSchema,
     walletWithdrawResponseSchema,
     type WalletBalanceApiResponse,
+    type WalletHistoryEntryApiResponse,
     type WalletWithdrawEstimationApiResponse,
     type WalletWithdrawApiResponse,
 } from './schema'
@@ -85,4 +88,46 @@ export const mockWithdrawWalletBalance = ({
     return http.post(`*/v1/wallet/${kind}/withdraw`, () =>
         HttpResponse.json(response, { status }),
     )
+}
+
+export type MockGetWalletHistoryParams = {
+    kind: CardWalletKind
+    response?: WalletHistoryEntryApiResponse[]
+    status?: number
+}
+/**
+ * History is one route for every wallet, so the handler answers only requests
+ * whose `walletType` matches its kind and lets the rest fall through, which
+ * keeps one registration per kind in a test.
+ */
+export const mockGetWalletHistory = ({
+    kind,
+    response = [
+        {
+            name: 'Coffee refund',
+            amount: '4.50',
+            currency: 'usdc',
+            sign: 'credit',
+            date: '2026-09-10T09:15:00.000Z',
+        },
+        {
+            name: 'Claimed to wallet',
+            amount: '10.00',
+            currency: 'usdc',
+            sign: 'debit',
+            date: '2026-08-28T17:40:00.000Z',
+        },
+    ],
+    status = 200,
+}: MockGetWalletHistoryParams): HttpHandler => {
+    validateMockResponse(
+        walletHistoryResponseSchema,
+        response,
+        'mockGetWalletHistory',
+    )
+    return http.get('*/v1/wallet/history', ({ request }) => {
+        const walletType = new URL(request.url).searchParams.get('walletType')
+        if (walletType !== WALLET_TYPE_BY_KIND[kind]) return undefined
+        return HttpResponse.json(response, { status })
+    })
 }

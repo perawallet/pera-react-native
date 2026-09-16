@@ -43,3 +43,17 @@ export const walletWithdrawResponseSchema = z.object({
 export type WalletWithdrawApiResponse = z.infer<
     typeof walletWithdrawResponseSchema
 >
+
+// GET /v1/wallet/history. `sign` is 'debit' or 'credit'; `date` is ISO 8601.
+export const walletHistoryResponseSchema = z.array(
+    z.object({
+        name: z.string(),
+        amount: z.string(),
+        currency: z.string(),
+        sign: z.string(),
+        date: z.string(),
+    }),
+)
+export type WalletHistoryEntryApiResponse = z.infer<
+    typeof walletHistoryResponseSchema
+>[number]

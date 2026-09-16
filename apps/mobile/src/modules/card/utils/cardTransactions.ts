@@ -15,12 +15,12 @@ import {
     TransactionSign,
 } from '@perawallet/wallet-core-card'
 
-export type CardTransactionSection = {
+export type CardTransactionSection<T = CardTransaction> = {
     /** Stable `YYYY-MM` key for the month. */
     key: string
     /** Display title, e.g. "July". */
     title: string
-    data: CardTransaction[]
+    data: T[]
 }
 
 // Month names come from `Intl` (the same `en-US` convention as `formatDisplayDate`
@@ -57,17 +57,18 @@ const parseDateTime = (dateTime: string): Date | null => {
 }
 
 /**
- * Groups card transactions into month sections, newest month first and newest
- * transaction first within each. Uses UTC so grouping is timezone-stable.
+ * Groups dated rows (card transactions, wallet history) into month sections,
+ * newest month first and newest row first within each. Uses UTC so grouping is
+ * timezone-stable.
  */
-export const groupCardTransactionsByMonth = (
-    transactions: CardTransaction[],
-): CardTransactionSection[] => {
+export const groupCardTransactionsByMonth = <T extends { dateTime: string }>(
+    transactions: T[],
+): CardTransactionSection<T>[] => {
     const sorted = [...transactions].sort((a, b) =>
         b.dateTime.localeCompare(a.dateTime),
     )
 
-    const sections: CardTransactionSection[] = []
+    const sections: CardTransactionSection<T>[] = []
     const indexByKey = new Map<string, number>()
 
     for (const transaction of sorted) {

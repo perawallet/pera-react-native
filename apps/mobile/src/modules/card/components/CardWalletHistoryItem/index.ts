@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-export {
-    fetchWalletBalance,
-    fetchWalletHistory,
-    fetchWalletWithdrawEstimation,
-    withdrawWalletBalance,
-    WALLET_TYPE_BY_KIND,
-    type FetchWalletHistoryParams,
-    type WalletParams,
-    type WithdrawWalletBalanceParams,
-} from './endpoints'
+export { CardWalletHistoryItem } from './CardWalletHistoryItem'

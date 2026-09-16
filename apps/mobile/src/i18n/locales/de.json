@@ -1186,7 +1186,8 @@
             "confirm_button": "Bestätigen",
             "fee_label": "Netzwerkgebühr",
             "fee_loading": "Wird geschätzt...",
-            "success_title": "Einlösung übermittelt"
+            "success_title": "Einlösung übermittelt",
+            "history_title": "Aktivität"
         },
         "transactions": {
             "navigation_title": "Transaktionen",

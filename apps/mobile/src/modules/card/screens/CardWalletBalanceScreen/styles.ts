@@ -13,6 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    list: {
+        flex: 1,
+    },
+    listContent: {
+        paddingBottom: theme.spacing.xl,
+    },
     content: {
         paddingTop: theme.spacing.lg,
         gap: theme.spacing.xxl,
@@ -75,5 +81,14 @@ export const useStyles = makeStyles(theme => ({
     guideText: {
         flex: 1,
         gap: theme.spacing.xs,
+    },
+    // The list's section headers follow; this only needs a little breathing
+    // room from the guide card above it.
+    historyTitle: {
+        paddingBottom: theme.spacing.xs,
+    },
+    loadingFooter: {
+        paddingVertical: theme.spacing.lg,
+        alignItems: 'center',
     },
 }))

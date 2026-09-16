@@ -32,6 +32,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import {
     mockGetWalletBalance,
+    mockGetWalletHistory,
     mockGetWalletWithdrawEstimation,
 } from '@perawallet/wallet-core-card/test-handlers'
 import { CardWalletBalanceScreen } from '@modules/card/screens/CardWalletBalanceScreen'
@@ -93,6 +94,7 @@ describe('Flow: card wallet balance claim', () => {
                         kind,
                         response: { gas: '6219123007416', fee: '0.000006219' },
                     }),
+                    mockGetWalletHistory({ kind }),
                 )
             })
 
@@ -122,6 +124,8 @@ describe('Flow: card wallet balance claim', () => {
                 renderWallet(kind)
 
                 await waitFor(() => expect(balanceText()).toContain('42.50'))
+                // History for this wallet rendered under the balance.
+                expect(await screen.findByText('Coffee refund')).toBeTruthy()
 
                 fireEvent.click(claimCta())
 

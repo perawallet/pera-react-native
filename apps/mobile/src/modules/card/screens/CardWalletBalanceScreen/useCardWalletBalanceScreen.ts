@@ -10,16 +10,22 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { ImageSourcePropType } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
+    type CardWalletHistoryEntry,
     CardWalletKind,
     useCardWalletBalanceQuery,
+    useCardWalletHistoryQuery,
 } from '@perawallet/wallet-core-card'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { PeraCardFlowParamList } from '../../routes/types'
+import {
+    groupCardTransactionsByMonth,
+    type CardTransactionSection,
+} from '../../utils/cardTransactions'
 import {
     CARD_WALLET_PRESENTATION,
     type CardWalletCopy,
@@ -43,6 +49,11 @@ type UseCardWalletBalanceScreenResult = {
     canWithdraw: boolean
     handleWithdraw: () => void
     refetch: () => void
+    /** Wallet movements grouped by month, newest first. */
+    historySections: CardTransactionSection<CardWalletHistoryEntry>[]
+    hasHistory: boolean
+    isFetchingHistory: boolean
+    handleLoadMore: () => void
 }
 
 export const useCardWalletBalanceScreen =
@@ -54,6 +65,8 @@ export const useCardWalletBalanceScreen =
         const { copy, hero } = CARD_WALLET_PRESENTATION[kind]
         const { wallet, isLoading, isError, refetch } =
             useCardWalletBalanceQuery(kind)
+        const { entries, isFetchingNextPage, hasNextPage, fetchNextPage } =
+            useCardWalletHistoryQuery(kind, wallet?.id ?? null)
 
         const hasBalance = wallet?.balance.gt(0) ?? false
         const canWithdraw =
@@ -62,9 +75,18 @@ export const useCardWalletBalanceScreen =
             (wallet?.isWithdrawable ?? false) &&
             hasBalance
 
+        const historySections = useMemo(
+            () => groupCardTransactionsByMonth(entries),
+            [entries],
+        )
+
         const handleWithdraw = useCallback(() => {
             navigation.navigate('CardWalletBalanceWithdraw', { kind })
         }, [navigation, kind])
+
+        const handleLoadMore = useCallback(() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+        }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
         return {
             kind,
@@ -84,5 +106,9 @@ export const useCardWalletBalanceScreen =
             canWithdraw,
             handleWithdraw,
             refetch,
+            historySections,
+            hasHistory: entries.length > 0,
+            isFetchingHistory: isFetchingNextPage,
+            handleLoadMore,
         }
     }

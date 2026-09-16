@@ -1194,7 +1194,8 @@
             "confirm_button": "Onayla",
             "fee_label": "Ağ ücreti",
             "fee_loading": "Tahmin ediliyor...",
-            "success_title": "Talep gönderildi"
+            "success_title": "Talep gönderildi",
+            "history_title": "Hareketler"
         },
         "transactions": {
             "navigation_title": "İşlemler",

@@ -18,6 +18,7 @@ vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
 import {
     fetchWalletBalance,
+    fetchWalletHistory,
     fetchWalletWithdrawEstimation,
     withdrawWalletBalance,
 } from '../endpoints'
@@ -33,9 +34,9 @@ const httpError = (status: number, path: string) =>
 // Both Baanx wallets share one contract and differ only by path segment, so
 // every case runs once per kind to prove neither is hardwired to the other.
 describe.each([
-    [CardWalletKind.Reward, '/v1/wallet/reward'],
-    [CardWalletKind.Credit, '/v1/wallet/credit'],
-])('wallet balance endpoints for %s', (kind, basePath) => {
+    [CardWalletKind.Reward, '/v1/wallet/reward', 'REWARD'],
+    [CardWalletKind.Credit, '/v1/wallet/credit', 'CREDIT'],
+])('wallet balance endpoints for %s', (kind, basePath, walletType) => {
     beforeEach(() => vi.clearAllMocks())
 
     describe('fetchWalletBalance', () => {
@@ -123,6 +124,88 @@ describe.each([
             )
             expect(estimation.fee.toString()).toBe('0.000006219123007416')
             expect(estimation.gas).toBe('6219123007416')
+        })
+    })
+
+    describe('fetchWalletHistory', () => {
+        const row = (overrides: Record<string, string> = {}) => ({
+            name: 'Coffee refund',
+            amount: '4.50',
+            currency: 'usdc',
+            sign: 'credit',
+            date: '2026-09-10T09:15:00.000Z',
+            ...overrides,
+        })
+
+        it('GETs the shared history route scoped to this wallet', async () => {
+            request.mockResolvedValue({ data: [row()] })
+
+            const page = await fetchWalletHistory({
+                kind,
+                walletId: 'w_1',
+                page: 2,
+                network: 'mainnet',
+            })
+
+            expect(request).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'GET',
+                    path: '/v1/wallet/history',
+                    authenticated: true,
+                    params: { walletId: 'w_1', walletType, page: 2 },
+                }),
+            )
+            expect(page.page).toBe(2)
+            expect(page.items[0].amount.toFixed(2)).toBe('4.50')
+            expect(page.items[0].dateTime).toBe('2026-09-10T09:15:00.000Z')
+        })
+
+        // Baanx sends the direction lowercase and the shared enum is
+        // uppercase; anything else must not crash the list.
+        it('maps the wire sign onto TransactionSign and tolerates unknowns', async () => {
+            request.mockResolvedValue({
+                data: [
+                    row({ sign: 'credit' }),
+                    row({ sign: 'debit' }),
+                    row({ sign: 'refund?' }),
+                ],
+            })
+
+            const page = await fetchWalletHistory({
+                kind,
+                walletId: 'w_1',
+                network: 'mainnet',
+            })
+
+            expect(page.items.map(item => item.sign)).toEqual([
+                'CREDIT',
+                'DEBIT',
+                null,
+            ])
+        })
+
+        // Baanx has no total; a full page of 10 is the only signal that more
+        // may follow, and a short page is the end.
+        it('reports more pages only on a full page', async () => {
+            request.mockResolvedValueOnce({
+                data: Array.from({ length: 10 }, () => row()),
+            })
+            request.mockResolvedValueOnce({ data: [row(), row()] })
+
+            const full = await fetchWalletHistory({
+                kind,
+                walletId: 'w_1',
+                network: 'mainnet',
+            })
+            const short = await fetchWalletHistory({
+                kind,
+                walletId: 'w_1',
+                page: 1,
+                network: 'mainnet',
+            })
+
+            expect(full.hasMore).toBe(true)
+            expect(short.hasMore).toBe(false)
         })
     })
 

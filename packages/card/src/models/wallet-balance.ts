@@ -11,6 +11,8 @@
  */
 
 import type { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { TransactionSign } from './transaction'
 
 /**
  * The two Baanx-held balances a user claims to their own wallet: rewards
@@ -51,4 +53,23 @@ export type WalletWithdrawResult = {
     /** Payout network name as Baanx sends it (e.g. "linea"); opaque to us. */
     network: string
     isConfirmed: boolean
+}
+
+/** One row of GET /v1/wallet/history for a reward or credit wallet. */
+export type CardWalletHistoryEntry = {
+    name: string
+    /** Display units, as Baanx sends it. */
+    amount: Decimal
+    currency: string
+    /** Null when Baanx sends a direction we do not recognise. */
+    sign: Nullable<TransactionSign>
+    /** ISO 8601 timestamp. */
+    dateTime: string
+}
+
+export type CardWalletHistoryPage = {
+    items: CardWalletHistoryEntry[]
+    /** Zero-indexed page this batch came from. */
+    page: number
+    hasMore: boolean
 }

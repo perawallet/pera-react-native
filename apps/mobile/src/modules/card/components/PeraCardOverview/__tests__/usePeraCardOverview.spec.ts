@@ -313,7 +313,7 @@ describe('usePeraCardOverview', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
     })
 
-    // Cashback is earned on purchases whatever tops the card up, so this has to
+    // Rewards are earned on purchases whatever tops the card up, so this has to
     // work on manual funding too, where the credits section used to be hidden.
     it.each([
         ['reward', 'card_home_rewards'],

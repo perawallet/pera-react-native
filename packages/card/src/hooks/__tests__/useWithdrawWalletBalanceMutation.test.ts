@@ -75,6 +75,9 @@ describe('useWithdrawWalletBalanceMutation', () => {
             expect(invalidateSpy).toHaveBeenCalledWith({
                 queryKey: cardQueryKeys.walletBalance('mainnet', kind),
             })
+            expect(invalidateSpy).toHaveBeenCalledWith({
+                queryKey: cardQueryKeys.walletHistoryByKind('mainnet', kind),
+            })
             expect(result.current.data?.txHash).toBe('0xabc')
         },
     )
