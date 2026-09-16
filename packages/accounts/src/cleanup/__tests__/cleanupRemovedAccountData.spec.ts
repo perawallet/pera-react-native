@@ -27,6 +27,7 @@ import {
     upsertAssetPrices,
     getAssetsByIds,
     getAssetPricesByIds,
+    seedAlgoAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -222,6 +223,40 @@ describe('cleanupRemovedAccountData', () => {
             await getAssetsByIds({ db, assetIds: ['300'], network: 'testnet' }),
         ).toHaveLength(0)
         expect(result.networksAffected.sort()).toEqual(['mainnet', 'testnet'])
+    })
+
+    it('keeps the seeded ALGO row when the last ALGO-holding account goes', async () => {
+        await seedAlgoAsset(db)
+        await upsertAssetPrices({
+            db,
+            prices: [{ assetId: '0', usdPrice: new Decimal('0.2') }],
+            network: 'mainnet',
+        })
+        // The syncer persists ALGO as an ordinary holding row, so it lands in
+        // the removed account's held-id set like any ASA.
+        await refreshAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            holdings: [{ assetId: '0', amount: 5_000_000n }],
+            network: 'mainnet',
+        })
+
+        const result = await cleanupRemovedAccountData({
+            db,
+            accountAddress: 'ADDR1',
+        })
+
+        expect(
+            await getAssetsByIds({ db, assetIds: ['0'], network: 'mainnet' }),
+        ).toHaveLength(1)
+        expect(
+            await getAssetPricesByIds({
+                db,
+                assetIds: ['0'],
+                network: 'mainnet',
+            }),
+        ).toHaveLength(1)
+        expect(result.prunedAssetIdsByNetwork).toEqual({})
     })
 
     it('is a no-op for an account with no data', async () => {

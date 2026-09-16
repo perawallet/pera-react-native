@@ -12,10 +12,14 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { PeraAsset } from '../models'
+import { ALGO_ASSET, type PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useStableIdList } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    isAlgoAssetId,
+    useStableIdList,
+} from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
 import { fetchAndPersistAssets } from '../sync/asset-syncer'
 
@@ -81,8 +85,20 @@ export const useAssetsQuery = (
             assets.set(asset.assetId, asset)
         })
 
+        // ALGO's metadata is seeded, never fetched, so a DB miss is a local-
+        // state failure the network can't repair — and consumers that gate a
+        // whole screen on the asset (Send's amount form) would spin forever.
+        // The constant is the same record the seed writes.
+        if (
+            query.isFetched &&
+            stableIds.some(isAlgoAssetId) &&
+            !assets.has(ALGO_ASSET_ID)
+        ) {
+            assets.set(ALGO_ASSET_ID, ALGO_ASSET)
+        }
+
         return assets
-    }, [query.data])
+    }, [query.data, query.isFetched, stableIds])
 
     return useMemo(
         () => ({

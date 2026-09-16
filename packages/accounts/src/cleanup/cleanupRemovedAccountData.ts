@@ -11,7 +11,10 @@
  */
 
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { runAccountCleanups } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    runAccountCleanups,
+} from '@perawallet/wallet-core-shared'
 import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
@@ -61,7 +64,15 @@ export async function cleanupRemovedAccountData({
         const remaining = new Set(
             await getAllHeldAssetIdsForNetwork({ db, network }),
         )
-        const orphans = [...hadIds].filter(id => !remaining.has(id))
+        // ALGO is a holding row like any ASA, so it looks orphaned once the
+        // last account holding it is gone — but its metadata is a local
+        // constant seeded per network at bootstrap and nothing re-seeds it
+        // mid-session (the asset syncer skips id 0). Pruning it leaves every
+        // later ALGO read without decimals, which skeletons the asset row and
+        // strands Send on a spinner until the next cold start.
+        const orphans = [...hadIds].filter(
+            id => !remaining.has(id) && !isAlgoAssetId(id),
+        )
         if (orphans.length === 0) continue
 
         await deleteAssets({ db, assetIds: orphans, network })

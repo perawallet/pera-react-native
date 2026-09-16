@@ -50,10 +50,10 @@ export const useOwnedAssets = (
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })
 
-    // ALGO isn't stored in the holdings table (it lives on the account balance
-    // row), but it is seeded into the assets metadata DB on bootstrap — so we
-    // include its ID here to pick up DB-backed peraMetadata (e.g. isFavorited).
-    // The constant only acts as a pre-seed fallback.
+    // ALGO's id is added explicitly rather than relied on from the holdings
+    // rows: an account still syncing has none yet, and the id is what picks up
+    // the DB-backed peraMetadata (e.g. isFavorited). The constant is only a
+    // pre-seed fallback.
     const { data: assetsMap, isPending: isAssetsPending } = useAssetsQuery([
         ALGO_ASSET_ID,
         ...ownedAssetIds,
