@@ -14,16 +14,39 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/packages/config/src/generated-env.ts}"
 ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env}"
 
+# Read one KEY=VALUE per line rather than `export $(... | xargs)`: word
+# splitting truncates any value containing a space at the first space, which
+# silently reduced an `Authorization: Basic <credentials>` token to `Basic`.
+load_env_file() {
+  local file="$1"
+  local line key value
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in ''|'#'*) continue ;; esac
+    case "$line" in *=*) ;; *) continue ;; esac
+    key="${line%%=*}"
+    value="${line#*=}"
+    key="${key#"${key%%[![:space:]]*}"}"
+    key="${key%"${key##*[![:space:]]}"}"
+    case "$key" in export' '*) key="${key#export }" ;; esac
+    # Strip one layer of surrounding quotes, the way a .env reader would.
+    case "$value" in
+      \"*\") value="${value#\"}"; value="${value%\"}" ;;
+      \'*\') value="${value#\'}"; value="${value%\'}" ;;
+    esac
+    export "$key=$value"
+  done < "$file"
+}
+
 # Load .env file if it exists
 if [ -f "$ENV_FILE" ]; then
   echo "Loading environment variables from $ENV_FILE"
-  export $(grep -v '^#' "$ENV_FILE" | xargs)
+  load_env_file "$ENV_FILE"
 fi
 
 # Load an optional overlay file (e.g. a per-lane .env) AFTER .env so it wins.
 if [ -n "${PERA_ENV_OVERLAY:-}" ] && [ -f "$PERA_ENV_OVERLAY" ]; then
   echo "Loading overlay environment variables from $PERA_ENV_OVERLAY"
-  export $(grep -v '^#' "$PERA_ENV_OVERLAY" | xargs)
+  load_env_file "$PERA_ENV_OVERLAY"
 fi
 
 # Fail the BUILD, not the app at launch. The committed defaults in
