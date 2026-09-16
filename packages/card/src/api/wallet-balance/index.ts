@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-export * from './card'
-export * from './currency'
-export * from './delegation'
-export * from './user'
-export * from './onboarding'
-export * from './transaction'
-export * from './session'
-export * from './funding'
-export * from './store'
-export * from './wallet-balance'
-export * from './wallet'
+export {
+    fetchWalletBalance,
+    fetchWalletWithdrawEstimation,
+    withdrawWalletBalance,
+    type WalletParams,
+    type WithdrawWalletBalanceParams,
+} from './endpoints'

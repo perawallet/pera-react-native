@@ -30,9 +30,11 @@ const mockState = vi.hoisted(() => ({
     isWalletsLoading: false,
     delegatedWallet: null as unknown,
     rewardBalance: null as string | null,
+    creditBalance: null as string | null,
 }))
 const mockExternalWalletsParams: { enabled?: boolean }[] = []
 const mockInfoToast = vi.fn()
+const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
 
 vi.mock('@react-navigation/native', async () => {
@@ -71,21 +73,27 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
         }),
-        useCardRewardWalletQuery: () => ({
-            rewardWallet:
-                mockState.rewardBalance === null
-                    ? null
-                    : {
-                          id: 'reward-1',
-                          balance: new Decimal(mockState.rewardBalance),
-                          currency: 'usdc',
-                          isWithdrawable: false,
-                      },
-            isLoading: false,
-            isError: false,
-            error: null,
-            refetch: vi.fn(),
-        }),
+        useCardWalletBalanceQuery: (kind: 'reward' | 'credit') => {
+            const balance =
+                kind === 'reward'
+                    ? mockState.rewardBalance
+                    : mockState.creditBalance
+            return {
+                wallet:
+                    balance === null
+                        ? null
+                        : {
+                              id: `${kind}-1`,
+                              balance: new Decimal(balance),
+                              currency: 'usdc',
+                              isWithdrawable: false,
+                          },
+                isLoading: false,
+                isError: false,
+                error: null,
+                refetch: vi.fn(),
+            }
+        },
         useCardExternalWalletsQuery: (params: { enabled?: boolean }) => {
             mockExternalWalletsParams.push(params)
             return {
@@ -107,6 +115,11 @@ vi.mock('../../../hooks', async () => ({
         isLoading: mockState.isWalletsLoading,
     }),
 }))
+
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
@@ -172,6 +185,7 @@ describe('usePeraCardOverview', () => {
         mockState.isWalletsLoading = false
         mockState.delegatedWallet = null
         mockState.rewardBalance = null
+        mockState.creditBalance = null
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
@@ -191,7 +205,7 @@ describe('usePeraCardOverview', () => {
         expect(result.current.isAutoFunding).toBe(false)
         expect(result.current.currency).toBe('USDC')
         expect(result.current.balance.toString()).toBe('0')
-        expect(result.current.credits.cashbacks.toString()).toBe('0')
+        expect(result.current.credits.rewards.toString()).toBe('0')
         expect(result.current.credits.refunds.toString()).toBe('0')
     })
 
@@ -238,27 +252,27 @@ describe('usePeraCardOverview', () => {
         expect(result.current.spendablePerTx.toString()).toBe('0')
     })
 
-    // The credits row used to be a hardcoded zero while the Cashback screen read
-    // the real wallet, so the two disagreed the moment any reward landed.
-    it('shows the reward wallet balance as cashback credits', () => {
+    it('shows each Baanx wallet balance as its credits row', () => {
         mockState.rewardBalance = '12.34'
+        mockState.creditBalance = '5.5'
 
         const { result } = renderHook(() => usePeraCardOverview())
 
-        expect(result.current.credits.cashbacks.toFixed(2)).toBe('12.34')
-        expect(result.current.credits.refunds.toString()).toBe('0')
+        expect(result.current.credits.rewards.toFixed(2)).toBe('12.34')
+        expect(result.current.credits.refunds.toFixed(2)).toBe('5.50')
     })
 
-    // Cashback sits in a separate Baanx wallet that has to be withdrawn first,
-    // so counting it would promise more per transaction than the card can draw.
-    it('leaves cashback out of the spendable-per-transaction figure', () => {
+    // Baanx draws the refund balance first on a card purchase; rewards sit in a
+    // wallet that has to be claimed first, so they would overstate the figure.
+    it('counts refunds but not rewards toward spendable per transaction', () => {
         mockState.cardBalance = '240'
         mockState.rewardBalance = '50'
+        mockState.creditBalance = '10'
 
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.balance.toFixed()).toBe('240')
-        expect(result.current.spendablePerTx.toFixed()).toBe('240')
+        expect(result.current.spendablePerTx.toFixed()).toBe('250')
     })
 
     it('groups transactions by month, newest first', () => {
@@ -301,14 +315,23 @@ describe('usePeraCardOverview', () => {
 
     // Cashback is earned on purchases whatever tops the card up, so this has to
     // work on manual funding too, where the credits section used to be hidden.
-    it('navigates to the Cashback screen from a credit row', () => {
-        const { result } = renderHook(() => usePeraCardOverview())
+    it.each([
+        ['reward', 'card_home_rewards'],
+        ['credit', 'card_home_refunds'],
+    ] as const)(
+        'opens the %s wallet screen from its credits row',
+        (kind, event) => {
+            const { result } = renderHook(() => usePeraCardOverview())
 
-        result.current.onCreditPress()
+            result.current.onCreditPress(kind)
 
-        expect(mockNavigate).toHaveBeenCalledWith('CardCashback')
-        expect(mockInfoToast).not.toHaveBeenCalled()
-    })
+            expect(mockNavigate).toHaveBeenCalledWith('CardWalletBalance', {
+                kind,
+            })
+            expect(mockTrackEvent).toHaveBeenCalledWith(event)
+            expect(mockInfoToast).not.toHaveBeenCalled()
+        },
+    )
 
     it('unwired action handlers surface the coming-soon toast', () => {
         const { result } = renderHook(() => usePeraCardOverview())

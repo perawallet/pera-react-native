@@ -11,6 +11,7 @@
  */
 
 import type { NavigatorScreenParams } from '@react-navigation/native'
+import type { CardWalletKind } from '@perawallet/wallet-core-card'
 import type { CardOnboardingStackParamList } from './card-onboarding/types'
 
 /**
@@ -41,8 +42,8 @@ export type PeraCardFlowParamList = {
     CardAddFunds: undefined
     CardConfirmSwap: { sourceAssetId: string; amount: string }
     CardWithdraw: undefined
-    CardCashback: undefined
-    CardCashbackWithdraw: undefined
+    CardWalletBalance: { kind: CardWalletKind }
+    CardWalletBalanceWithdraw: { kind: CardWalletKind }
 }
 
 /**

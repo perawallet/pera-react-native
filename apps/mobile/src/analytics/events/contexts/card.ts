@@ -56,7 +56,8 @@ export enum CardEvent {
     HomeGetUsdc = 'card_home_getUSDC', // Tapped Get USDC on the dashboard (feature not live yet)
     HomeShowAll = 'card_home_showAll', // Tapped show-all on the dashboard transactions list
     HomeFundingType = 'card_home_fundingType', // Tapped the funding-type switch
-    HomeCashback = 'card_home_cashback', // Opened the cashback screen from the dashboard credits
+    HomeRewards = 'card_home_rewards', // Opened the rewards screen from the dashboard credits
+    HomeRefunds = 'card_home_refunds', // Opened the refunds screen from the dashboard credits
     DetailsRevealCard = 'cards_cardDetails_revealCard', // Revealed the card details
     DetailsChangeAccount = 'cards_cardDetails_changeAccount', // Tapped connect/change funding account
     DetailsSetPin = 'cards_cardDetails_setPin', // Tapped Set PIN

@@ -73,6 +73,24 @@ A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 > are populated, verification is dormant and only logs. It does not guard the
 > compile path. This must be filled in before AutoDraw ships.
 
+## Credits
+
+Two Baanx-held balances sit beside the card and share one contract
+(`GET /v1/wallet/{reward|credit}`, plus `withdraw-estimation` and `withdraw`):
+
+- **Rewards** (`reward`): earned on purchases. The user-facing word is always
+  "Rewards"; US stablecoin rules forbid calling it cashback.
+- **Refunds** (`credit`): when a merchant refunds a card purchase the money lands
+  here, not back on the card. Baanx cannot push crypto to a user in every
+  jurisdiction, so the payout has to be user-initiated. Baanx draws this balance
+  first when the card is used, so it counts toward the per-transaction figure;
+  rewards do not until claimed.
+
+Both wallets answer 404 until the first credit, which the client treats as an
+empty balance. The claim flow, screens and query keys are parametrized by
+`CardWalletKind`; per-kind copy and artwork live in
+`apps/mobile/src/modules/card/utils/cardWalletPresentation.ts`.
+
 ## Session and secrets
 
 - `POST /v1/auth/login` returns a 6-hour access token used _only_ to complete
