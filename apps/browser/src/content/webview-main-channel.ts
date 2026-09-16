@@ -61,7 +61,7 @@ export const connectWebviewMainChannel = (
         )
     }
     // Re-dispatch if the ISOLATED relay loads after us (same recovery the
-    // ARC-0027 pair uses in inject-main.ts/relay-isolated.ts).
+    // window.pera pair uses in inject-main.ts/relay-isolated.ts).
     window.addEventListener(WEBVIEW_BRIDGE_RELAY_READY_EVENT, dispatchHandshake)
     dispatchHandshake()
 

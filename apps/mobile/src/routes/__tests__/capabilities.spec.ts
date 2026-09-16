@@ -16,24 +16,19 @@ import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
 describe('route capabilities', () => {
     it('native map keeps every current-behavior capability on', () => {
-        // vaultSecuritySettings, dappConnections, and connectionsSettings
-        // are new, web-only capabilities with no native equivalent (native
-        // has its own WalletConnect-based dapp connections, not the
-        // ARC-0027 injected provider; native keeps the two separate
-        // WalletConnect/Connected Sites menu entries instead of the unified
-        // screen) — all are deliberately off for native, not a
-        // current-behavior regression. deepLinkPaste is
-        // web-only (native keeps the qrScanner camera instead — the two
-        // flags are mutually exclusive per platform).
+        // vaultSecuritySettings and connectionsSettings are web-only
+        // capabilities with no native equivalent (native lists WalletConnect
+        // sessions under its own menu entry instead of the unified screen) —
+        // both are deliberately off for native, not a current-behavior
+        // regression. deepLinkPaste is web-only (native keeps the qrScanner
+        // camera instead — the two flags are mutually exclusive per platform).
         const {
             vaultSecuritySettings,
-            dappConnections,
             connectionsSettings,
             deepLinkPaste,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
-        expect(dappConnections).toBe(false)
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
@@ -65,7 +60,6 @@ describe('route capabilities', () => {
             pushNotificationSettings: true,
             storeRating: false,
             vaultSecuritySettings: true,
-            dappConnections: true,
             // Menu icon bar swaps the camera for paste-a-deeplink on
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,
@@ -76,7 +70,7 @@ describe('route capabilities', () => {
             rekeyFlows: true,
             sharedAccounts: true,
             // The unified Connections settings screen supersedes the
-            // separate WalletConnect/Connected Sites menu entries on web.
+            // separate WalletConnect menu entry on web.
             connectionsSettings: true,
         })
     })

@@ -15,6 +15,7 @@
 // between popup opens.
 import {
     broadcastConnectionsEvent,
+    createChromeDappTransport,
     createWorkerExecutor,
     onConnectionsControlMessage,
     onLocalStorageKeyChanged,
@@ -32,7 +33,7 @@ import {
     getSyncService,
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { canSignWith, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     useCustomNetworkStore,
     useNetworkStore,
@@ -41,6 +42,10 @@ import {
     bootConnections,
     createConnectionRegistry,
 } from '@perawallet/wallet-core-connections'
+import {
+    createDappConnectionHandler,
+    importLegacyDappPermissions,
+} from '@perawallet/wallet-core-dapp'
 import { usePollingStore } from '@perawallet/wallet-core-polling'
 import {
     createStorageSessionKeyStore,
@@ -122,6 +127,27 @@ export const runOffscreenApp = async (): Promise<void> => {
             sessionKeys,
         }),
     )
+    registry.register(
+        createDappConnectionHandler({
+            transport: createChromeDappTransport(),
+            getNetwork: () => useNetworkStore.getState().network,
+            getCustomNetworkGenesisHash: () =>
+                useCustomNetworkStore.getState().customNetwork?.genesisHash,
+            getAccounts: () => {
+                const { accounts } = useAccountsStore.getState()
+                return accounts.flatMap(account =>
+                    account.address && canSignWith(account, accounts)
+                        ? [
+                              {
+                                  address: account.address,
+                                  name: account.name ?? account.address,
+                              },
+                          ]
+                        : [],
+                )
+            },
+        }),
+    )
     const connectionsHost = startConnectionsHost({
         registry,
         network: () => useNetworkStore.getState().network,
@@ -141,8 +167,22 @@ export const runOffscreenApp = async (): Promise<void> => {
         registry,
         store,
         keystoreReady: Promise.resolve(),
-        importLegacy: () =>
-            importLegacyConnections({ storage, store, sessionKeys }),
+        importLegacy: async () => {
+            // bootConnections only catches at this boundary, so one legacy
+            // importer that keeps throwing would strand the other's records
+            // unmigrated on this boot and every later one.
+            try {
+                await importLegacyConnections({ storage, store, sessionKeys })
+            } catch (error) {
+                logger.error('[offscreen] legacy walletconnect import failed', {
+                    error,
+                })
+            }
+            await importLegacyDappPermissions({
+                area: chrome.storage.local,
+                store,
+            })
+        },
     })
     onConnectionsControlMessage(connectionsHost.handleControlMessage)
 

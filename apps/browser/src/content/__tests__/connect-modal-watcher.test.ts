@@ -63,8 +63,6 @@ describe('installConnectModalWatcher', () => {
 
     beforeEach(() => {
         document.body.innerHTML = ''
-        delete (globalThis as { onExtensionConnect?: unknown })
-            .onExtensionConnect
     })
 
     afterEach(() => {
@@ -101,14 +99,6 @@ describe('installConnectModalWatcher', () => {
         const requestPair = vi.fn()
         dispose = installConnectModalWatcher({ requestPair })
         expect(requestPair).not.toHaveBeenCalled()
-    })
-
-    it('does not inject when the page can drive ARC-0027 itself', () => {
-        ;(globalThis as { onExtensionConnect?: unknown }).onExtensionConnect =
-            () => {}
-        const wrapper = appendModal()
-        dispose = installConnectModalWatcher({ requestPair: vi.fn() })
-        expect(injectedRow(wrapper)).toBeNull()
     })
 
     it('stops injecting after the disposer runs', async () => {

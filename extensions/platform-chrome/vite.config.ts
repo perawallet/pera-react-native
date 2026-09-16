@@ -26,7 +26,8 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
-                '@perawallet/wallet-core-arc0027',
+                '@perawallet/wallet-core-dapp',
+                '@perawallet/wallet-core-dapp/wire',
                 '@perawallet/wallet-core-connections',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-connections',

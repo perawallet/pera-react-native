@@ -40,7 +40,6 @@ export const routeCapabilities: RouteCapabilities = {
     confirmationModeSetting: false,
     developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
-    dappConnections: true,
     // Off: the keystore's Falcon shim is backed by the WASM `falcon-1024` build,
     // whose Emscripten bundle fails to parse under Metro's web bundler, so
     // quantum accounts have no signer path in the extension.

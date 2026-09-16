@@ -32,6 +32,10 @@ export default defineConfig({
                 __dirname,
                 '../blockchain/src/test-handlers.ts',
             ),
+            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
+                __dirname,
+                '../blockchain/src/arc0001/limits.ts',
+            ),
             '@perawallet/wallet-core-blockchain': path.resolve(
                 __dirname,
                 '../blockchain/src/index.ts',
@@ -51,6 +55,10 @@ export default defineConfig({
             '@perawallet/wallet-core-currencies': path.resolve(
                 __dirname,
                 '../currencies/src/index.ts',
+            ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
             ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,

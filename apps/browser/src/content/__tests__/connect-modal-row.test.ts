@@ -190,22 +190,6 @@ const deepestChild = (element: Element): Element => {
 describe('shouldInjectRow', () => {
     beforeEach(() => {
         document.body.innerHTML = ''
-        delete (globalThis as { onExtensionConnect?: unknown })
-            .onExtensionConnect
-    })
-
-    it('does not inject when the page already has onExtensionConnect', () => {
-        ;(globalThis as { onExtensionConnect?: unknown }).onExtensionConnect =
-            () => {}
-        expect(shouldInjectRow(makeModal({ uri: VALID_URI }))).toBe(false)
-    })
-
-    it('injects when onExtensionConnect is a non-function truthy value', () => {
-        // A page setting a truthy non-function must not be able to suppress
-        // our row: the check is `typeof … === 'function'`, not truthiness.
-        ;(globalThis as { onExtensionConnect?: unknown }).onExtensionConnect =
-            'yes'
-        expect(shouldInjectRow(makeModal({ uri: VALID_URI }))).toBe(true)
     })
 
     it('does not inject when is-extension-enabled is true, regardless of is-extension-available', () => {
@@ -261,8 +245,6 @@ describe('shouldInjectRow', () => {
 describe('injectExtensionRow', () => {
     beforeEach(() => {
         document.body.innerHTML = ''
-        delete (globalThis as { onExtensionConnect?: unknown })
-            .onExtensionConnect
     })
 
     it('injects a row into the desktop-mode element’s shadow root', () => {
@@ -435,18 +417,19 @@ describe('injectExtensionRow', () => {
         expect(row.style.marginBottom).toBe('')
     })
 
-    it('does not remove an already-injected row when onExtensionConnect appears afterward', () => {
-        // Current behaviour: nothing retroactively removes a row that was
-        // injected before the page later defines onExtensionConnect. This is
-        // defensible — the row is already inert until clicked, so leaving it
-        // costs at most a redundant option, never a wrong action — but it is
-        // deliberate, not an oversight, so it is pinned here.
+    it('does not remove an already-injected row when is-extension-enabled flips on afterward', () => {
+        // Current behaviour: nothing retroactively removes a row injected
+        // before the SDK set the attribute. This is defensible — the row is
+        // already inert until clicked, so leaving it costs at most a redundant
+        // option, never a wrong action — but it is deliberate, not an
+        // oversight, so it is pinned here.
         const wrapper = makeModal({ uri: VALID_URI })
         const onClick = vi.fn()
         expect(injectExtensionRow(wrapper, onClick)).toBe(true)
 
-        ;(globalThis as { onExtensionConnect?: unknown }).onExtensionConnect =
-            () => {}
+        wrapper
+            .querySelector('pera-wallet-connect-modal')
+            ?.setAttribute('is-extension-enabled', 'true')
 
         // shouldInjectRow now reports false, so a re-invocation injects
         // nothing new — but it also does not touch the existing row.
@@ -540,13 +523,13 @@ describe('injectExtensionRow', () => {
 
         it('leaves a pre-expanded sibling alone when it declines to inject', () => {
             // The active-class transfer sits behind every guard, so a modal
-            // we reject must come out untouched — otherwise a dApp driving
-            // ARC-0027 itself would have its open panel collapsed by us for
-            // no reason.
-            ;(
-                globalThis as { onExtensionConnect?: unknown }
-            ).onExtensionConnect = () => {}
-            const wrapper = makeModal({ uri: VALID_URI })
+            // we reject must come out untouched — otherwise a dApp whose SDK
+            // renders its own extension row would have its open panel
+            // collapsed by us for no reason.
+            const wrapper = makeModal({
+                uri: VALID_URI,
+                extensionEnabled: true,
+            })
             const container = getContainer(wrapper)
             const mobileItem = appendAccordionItem(container, {
                 id: 'mobile-wallet-option',

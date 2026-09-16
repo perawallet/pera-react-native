@@ -245,7 +245,7 @@ describe('useWcConnectScreen', () => {
 
     it('exposes no peer for an approval of another kind', () => {
         const { result } = render({
-            kind: 'enable',
+            kind: 'connection-error',
             requestId: 'x',
             origin: 'https://x.example',
         })

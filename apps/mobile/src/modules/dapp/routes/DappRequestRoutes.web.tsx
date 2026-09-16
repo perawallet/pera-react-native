@@ -25,7 +25,6 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { useDappRequest } from '../hooks/useDappRequest.web'
-import { EnableRequestScreen } from '../screens/EnableRequestScreen'
 import { PasskeyApprovalScreen } from '../screens/PasskeyApprovalScreen'
 import { SignRequestApprovalScreen } from '../screens/SignRequestApprovalScreen'
 import { WcConnectScreen } from '../screens/WcConnectScreen'
@@ -42,8 +41,6 @@ const DappRequestSurface = (): React.JSX.Element => {
     }
 
     switch (approval.kind) {
-        case 'sign-transactions':
-        case 'sign-message':
         case 'connection-request': {
             return <SignRequestApprovalScreen />
         }
@@ -56,14 +53,15 @@ const DappRequestSurface = (): React.JSX.Element => {
         case 'connection-error': {
             return <WcErrorScreen />
         }
-        // Carries peer metadata and a requested permission set that an
-        // ARC-0027 enable has no equivalent of.
+        // The pairing handshake, unlike 'connection-request' above, which is
+        // one operation on a connection that already exists.
         case 'connection-proposal': {
             return <WcConnectScreen />
         }
-        case 'enable':
+        // The bridge is versioned independently of this bundle; an unknown
+        // kind holds the spinner rather than rendering a blank window.
         default: {
-            return <EnableRequestScreen />
+            return <FullScreenLoadingView />
         }
     }
 }

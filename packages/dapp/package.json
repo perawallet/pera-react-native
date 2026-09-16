@@ -1,0 +1,43 @@
+{
+    "name": "@perawallet/wallet-core-dapp",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./wire": {
+            "types": "./dist/wire.d.ts",
+            "default": "./dist/wire.js"
+        },
+        "./bounds": {
+            "types": "./dist/bounds.d.ts",
+            "default": "./dist/bounds.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build && tsc -p tsconfig.build.json",
+        "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+        "test": "vitest run",
+        "test:unit": "vitest run",
+        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    },
+    "dependencies": {
+        "@perawallet/wallet-core-blockchain": "workspace:*",
+        "@perawallet/wallet-core-config": "workspace:*",
+        "@perawallet/wallet-core-connections": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "@perawallet/wallet-core-signing": "workspace:*",
+        "@perawallet/wallet-extension-connections": "workspace:*"
+    },
+    "devDependencies": {
+        "@perawallet/wallet-core-devtools": "workspace:*",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vitest": "catalog:"
+    }
+}

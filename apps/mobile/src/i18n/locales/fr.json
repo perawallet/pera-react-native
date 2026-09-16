@@ -1,16 +1,5 @@
 {
     "dapp": {
-        "enable": {
-            "title": "Se connecter à ce site",
-            "description": "Sélectionnez les comptes que vous souhaitez partager avec ce site.",
-            "peer_origin_claim": "Le site indique : {{origin}}",
-            "request_origin": "La demande provient de {{origin}}",
-            "requester_verified_label": "Onglet vérifié",
-            "requester_verified_a11y_label": "Vérifié : cette demande provient de votre onglet de navigateur",
-            "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}",
-            "connect_button": "Se connecter",
-            "cancel_button": "Annuler"
-        },
         "sign": {
             "error": {
                 "title": "Impossible de traiter cette demande",
@@ -18,8 +7,6 @@
                 "dismiss": "Fermer"
             },
             "network_mismatch": "Cette transaction concerne un réseau Algorand différent du réseau actif de votre wallet. Changez de réseau dans les paramètres, puis réessayez.",
-            "unsupported_message": "Ce site a envoyé une demande de signature de message que Pera ne peut pas traiter. La demande a été refusée.",
-            "unauthorized_signer": "Ce site n’est pas autorisé à demander une signature pour ce compte.",
             "connection_revoked": "Cette connexion a été interrompue. Reconnectez-vous depuis le site, puis réessayez."
         },
         "passkey": {
@@ -38,7 +25,10 @@
             }
         },
         "approval": {
-            "delivery_failed": "Pera n’a pas pu transmettre votre décision au site. L’extension s’est mise en veille pendant que cette fenêtre était ouverte. Fermez cette fenêtre et relancez la demande depuis le site."
+            "delivery_failed": "Pera n’a pas pu transmettre votre décision au site. L’extension s’est mise en veille pendant que cette fenêtre était ouverte. Fermez cette fenêtre et relancez la demande depuis le site.",
+            "request_origin": "La demande provient de {{origin}}",
+            "requester_verified_label": "Onglet vérifié",
+            "requester_verified_a11y_origin": "Vérifié : cette demande provient de votre onglet de navigateur sur {{origin}}"
         }
     },
     "account_menu": {
@@ -2393,7 +2383,6 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Détails de la connexion",
         "passkeys": "Passkeys",
-        "connected_sites": "Sites connectés",
         "connections": "Connexions",
         "currency": "Devise",
         "theme": "Thème",
@@ -2599,7 +2588,6 @@
             "scan_rekeyed_title": "Rechercher les comptes rekeyés",
             "wallet_connect_title": "Sessions WalletConnect",
             "passkeys_title": "Passkeys",
-            "connected_sites_title": "Sites connectés",
             "connections_title": "Connexions",
             "app_preferences_section": "Préférences de l’app",
             "currency_title": "Devise",
@@ -2788,10 +2776,6 @@
             "interception_toggle_body_disabled": "Activez cette option pour que Pera Wallet puisse enregistrer et proposer des passkeys pour les sites auxquels vous vous connectez."
         },
         "connected_sites": {
-            "empty_title": "Aucun site connecté",
-            "empty_body": "Les sites auxquels vous connectez votre wallet apparaîtront ici.",
-            "accounts_count": "{{count}} comptes",
-            "accounts_count_one": "{{count}} compte",
             "revoke_title": "Déconnecter le site",
             "revoke_body": "{{origin}} n’aura plus accès à vos comptes connectés. Vous pouvez vous reconnecter à tout moment depuis le site.",
             "revoke_confirm": "Déconnecter",

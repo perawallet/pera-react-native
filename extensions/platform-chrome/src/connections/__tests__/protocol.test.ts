@@ -231,6 +231,36 @@ describe('isConnectionApprovalRequestMessage', () => {
                     operation: { type: 'sign-transactions', group: [] },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,
+                    sourceType: 'injected',
+                },
+            }),
+        ).toBe(true)
+    })
+
+    it('rejects a connection-request with no sourceType', () => {
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: {
+                    kind: 'connection-request',
+                    connectionId: 'c1',
+                    correlationId: '9',
+                    operation: { type: 'sign-transactions', group: [] },
+                    authorizedAccounts: ['AAAA'],
+                    peer: PEER,
+                },
+            }),
+        ).toBe(false)
+    })
+
+    it('accepts a connection-request-withdrawn notice', () => {
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: {
+                    kind: 'connection-request-withdrawn',
+                    connectionId: 'c1',
+                    correlationId: '9',
                 },
             }),
         ).toBe(true)

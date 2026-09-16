@@ -38,7 +38,6 @@ import {
     type CloudBackupStackParamList,
 } from '@modules/cloud-backup'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
-import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
@@ -226,7 +225,6 @@ export type SettingsStackParamsList = {
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
-    ConnectedSites: undefined
     ConnectionsSettings: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
@@ -312,15 +310,6 @@ export const SettingsStackNavigator = () => {
                         title: 'screens.passkeys',
                     }}
                     component={SettingsPasskeyScreen}
-                />
-            )}
-            {routeCapabilities.dappConnections && (
-                <SettingsStack.Screen
-                    name='ConnectedSites'
-                    options={{
-                        title: 'screens.connected_sites',
-                    }}
-                    component={ConnectedSitesScreen}
                 />
             )}
             {routeCapabilities.connectionsSettings && (

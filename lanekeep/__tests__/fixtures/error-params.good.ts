@@ -1,9 +1,9 @@
 export const satisfied = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
     params: { origin: 'x' },
 }
 
 export const extraParamsAreLogContext = {
-    messageKey: 'dapp.enable.peer_origin_claim',
+    messageKey: 'dapp.approval.request_origin',
     params: { origin: 'x', requestId: 'abc' },
 }

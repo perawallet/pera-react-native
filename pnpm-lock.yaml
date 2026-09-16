@@ -397,6 +397,9 @@ importers:
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../../packages/connections
+      '@perawallet/wallet-core-dapp':
+        specifier: workspace:*
+        version: link:../../packages/dapp
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -551,9 +554,6 @@ importers:
       '@perawallet/wallet-core-app-integrity':
         specifier: workspace:*
         version: link:../../packages/app-integrity
-      '@perawallet/wallet-core-arc0027':
-        specifier: workspace:*
-        version: link:../../packages/arc0027
       '@perawallet/wallet-core-asa-inbox':
         specifier: workspace:*
         version: link:../../packages/asa-inbox
@@ -587,6 +587,9 @@ importers:
       '@perawallet/wallet-core-currencies':
         specifier: workspace:*
         version: link:../../packages/currencies
+      '@perawallet/wallet-core-dapp':
+        specifier: workspace:*
+        version: link:../../packages/dapp
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -1489,15 +1492,15 @@ importers:
 
   extensions/platform-chrome:
     dependencies:
-      '@perawallet/wallet-core-arc0027':
-        specifier: workspace:*
-        version: link:../../packages/arc0027
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../../packages/connections
+      '@perawallet/wallet-core-dapp':
+        specifier: workspace:*
+        version: link:../../packages/dapp
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../../packages/hardware-wallet
@@ -1992,21 +1995,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@20.19.43)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
-
-  packages/arc0027:
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite:
-        specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/asa-inbox:
     dependencies:
@@ -2738,6 +2726,40 @@ importers:
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@26.1.2)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.50.0)(tsx@4.23.12)(yaml@2.8.3))
+
+  packages/dapp:
+    dependencies:
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-connections':
+        specifier: workspace:*
+        version: link:../connections
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
+      '@perawallet/wallet-extension-connections':
+        specifier: workspace:*
+        version: link:../../extensions/connections
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

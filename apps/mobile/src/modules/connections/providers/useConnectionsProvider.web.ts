@@ -11,13 +11,20 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    useCustomNetworkStore,
+    useNetworkStore,
+} from '@perawallet/wallet-core-blockchain'
 import {
     hydrateConnectionsStore,
     setActiveConnectionRegistry,
     useConnectionsStore,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
+import {
+    createDappConnectionHandler,
+    createNoopDappTransport,
+} from '@perawallet/wallet-core-dapp'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the web composition root names the handler so the remote registry can answer URI claims locally
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connections'
@@ -37,7 +44,8 @@ const noSheet: ProposalQueueHandle = {
 // literal `runOffscreenApp.ts` hardcodes for its own stores.
 const CONNECTIONS_KV_KEY = `kv:${CONNECTIONS_STORAGE_KEY}`
 
-// The handler is never initialized here; it only answers `canHandleUri`/`describeUri`.
+// Handlers are never initialized here; they only answer descriptor queries
+// (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesNetwork` for dapp).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
     const registryRef = useRef<ConnectionRegistryClient | null>(null)
     if (!registryRef.current) {
@@ -45,6 +53,15 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
             handlers: [
                 createWalletConnectV1Handler({
                     getNetwork: () => useNetworkStore.getState().network,
+                }),
+                createDappConnectionHandler({
+                    transport: createNoopDappTransport(),
+                    getNetwork: () => useNetworkStore.getState().network,
+                    getCustomNetworkGenesisHash: () =>
+                        useCustomNetworkStore.getState().customNetwork
+                            ?.genesisHash,
+                    // Descriptor-only in UI realms; the offscreen host owns the live handler.
+                    getAccounts: () => [],
                 }),
             ],
         })

@@ -63,6 +63,10 @@ export default defineConfig({
                 __dirname,
                 '../currencies/src/index.ts',
             ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',

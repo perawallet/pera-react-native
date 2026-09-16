@@ -11,10 +11,10 @@
  */
 
 // Wire types for the WebAuthn-interception relay (content script ⇄ service
-// worker), mirroring router-protocol.ts's ARC-0027 shape. Pure (no chrome.*),
-// so it's safe to import from webauthn-relay.ts (ISOLATED content script)
-// via the narrow content-wire.ts alias, and from webauthn-main.ts's test
-// suite without any chrome fake.
+// worker): a scoped `{ scope, request }` envelope answered via `sendResponse`.
+// Pure (no chrome.*), so it's safe to import from webauthn-relay.ts (ISOLATED
+// content script) via the narrow content-wire.ts alias, and from
+// webauthn-main.ts's test suite without any chrome fake.
 import type {
     SerializedCreateOptions,
     SerializedCredential,
@@ -31,8 +31,8 @@ export type WebauthnCeremonyRequest =
 // PAGE-DERIVED at the point webauthn-main.ts stamps it (location.origin) and
 // is NEVER treated as authoritative downstream. The service worker (see
 // passkey-router.ts) authenticates every ceremony off
-// `chrome.runtime.MessageSender.origin` instead, exactly like router.ts does
-// for ARC-0027 requests, and ignores this field for that purpose.
+// `chrome.runtime.MessageSender.origin` instead, and ignores this field for
+// that purpose.
 export type WebauthnRelayMessage = {
     scope: typeof WEBAUTHN_RELAY_SCOPE
     request: WebauthnCeremonyRequest

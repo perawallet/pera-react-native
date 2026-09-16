@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
+// The kms subpath, not its barrel: this module is reachable from the
+// service-worker payload gate, which must not pull the keystore graph.
+import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 
 export const MAX_TRANSACTION_SIGN_REQUESTS = 1000
 export const MAX_DATA_SIGN_REQUESTS = 1000

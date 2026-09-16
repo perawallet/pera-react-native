@@ -26,6 +26,10 @@ import type {
 } from '@perawallet/wallet-extension-connections'
 
 export type { Arc0001WalletTransaction }
+// Re-exported because `InboundMessage.sourceType` is part of this package's
+// published surface: the extension realms that carry it across a message hop
+// have no reason to depend on the signing package for the type alone.
+export type { SourceType }
 
 /** ARC-0001 request payload: one entry per transaction slot. */
 export type Arc0001TxnGroup = Arc0001WalletTransaction[]
@@ -162,6 +166,12 @@ export interface ConnectionProposal {
      */
     pairingId?: string
     peer: ConnectionPeer
+    /**
+     * Browser-verified origin of the requesting page, when the handler's
+     * transport can vouch for one. Absent for URI pairings, whose origin the
+     * host learns from the pair command instead.
+     */
+    requesterOrigin?: string
     requested: {
         /** Handler-resolved: v1's 4160 wildcard already expanded. */
         networks: Network[]

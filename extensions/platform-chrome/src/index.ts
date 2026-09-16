@@ -124,15 +124,30 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
-// The ARC-0027 wire/permissions/core-router types+logic now live in
-// @perawallet/wallet-core-arc0027 (platform-agnostic). Re-exported here so
-// existing consumers of this barrel (e.g. apps/mobile's
-// useDappConnectionsStore, which reads DappPermissionStore) don't need to
-// depend on the new package directly.
-export * from '@perawallet/wallet-core-arc0027'
-export { ChromeDappRouter } from './dapp/router'
 export * from './dapp/passkey-opener'
 export * from './dapp/approval-bridge'
+export * from './dapp/dapp-wire'
+export * from './dapp/transport'
+export * from './dapp/host-client'
+export * from './dapp/secure-origin'
+// The same codec subset content-wire.ts serves: content scripts import these
+// from this package name (aliased to content-wire.ts at bundle time), and the
+// vitest runs resolve the real barrel, so both must provide them.
+export {
+    DAPP_METHODS,
+    DAPP_NOTIFICATIONS,
+    DAPP_PAGE_TIMEOUT_MS,
+    DAPP_PROVIDER_VERSION,
+    JsonRpcErrorCode,
+    isJsonRpcNotification,
+    isJsonRpcResponse,
+    type DappMethod,
+    type JsonRpcErrorObject,
+    type JsonRpcId,
+    type JsonRpcNotification,
+    type JsonRpcRequest,
+    type JsonRpcResponse,
+} from '@perawallet/wallet-core-dapp/wire'
 export * from './dapp/approval-client'
 export * from './dapp/webauthn-router-protocol'
 export * from './dapp/passkey-router'

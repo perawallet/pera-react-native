@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-// Web-only module (the ARC-0027 approval popup is a browser-extension
+// Web-only module (the extension approval popup is a browser-extension
 // surface with no native counterpart) — explicit `.web` on the routes import
 // mirrors AppShell.web.tsx's own `./AppShell.web` convention for a file with
 // no native twin.
 export { DappRequestRoutes } from './routes/DappRequestRoutes.web'
 export { useDappRequest } from './hooks/useDappRequest.web'
-export { EnableRequestScreen } from './screens/EnableRequestScreen'
 export { SignRequestApprovalScreen } from './screens/SignRequestApprovalScreen'

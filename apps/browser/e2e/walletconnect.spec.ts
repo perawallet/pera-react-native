@@ -384,7 +384,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             await approvalPage.getByTestId('unlock-submit').click()
         }
 
-        // A proposal renders WcConnectScreen, not the ARC-0027 EnableRequestScreen.
+        // A proposal renders WcConnectScreen, not the dapp connect screen.
         await expect(
             approvalPage.getByTestId('wc-connect-peer-name'),
         ).toBeVisible({
@@ -536,7 +536,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         const approvalErrors = trackPageErrors(approvalPage)
         expect(approvalPage.url()).toContain('approval.html')
 
-        // Routes to the same SignRequestApprovalScreen as ARC-0027 signing, which
+        // Routes to the same SignRequestApprovalScreen as dapp signing, which
         // mounts SignRequestView once the payload decodes; wait on that testID.
         await expect(approvalPage.getByTestId('sign-request-view')).toBeVisible(
             { timeout: 20_000 },

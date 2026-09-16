@@ -21,18 +21,14 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
 }))
 
-// index.ts pulls in the ARC-0027 dapp relay + passkey relay wiring, which is
-// out of scope here — only the onAlarm dispatch (heartbeat vs. auto-lock) is
-// under test, so those classes are stubbed to inert no-ops.
+// index.ts pulls in the dapp relay + passkey relay wiring, which is out of
+// scope here — only the onAlarm dispatch (heartbeat vs. auto-lock) is under
+// test, so those classes are stubbed to inert no-ops.
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     ApprovalWindowBridge: class {
         listen = vi.fn()
     },
-    ChromeDappRouter: class {
-        listen = vi.fn()
-    },
     DB_CONTROL_SCOPE: 'pera-db-control',
-    DappPermissionStore: class {},
     PasskeyRouter: class {
         listen = vi.fn()
     },
@@ -66,8 +62,9 @@ vi.mock('../offscreen', () => ({
     ensureOffscreenDocument: ensureOffscreenDocumentMock,
 }))
 
-vi.mock('../network', () => ({
-    parseActiveNetwork: vi.fn(),
+vi.mock('../dapp', () => ({
+    installDappPageRequestRoute: vi.fn(),
+    installDappHostResponseRoute: vi.fn(),
 }))
 
 vi.mock('../connections', () => ({

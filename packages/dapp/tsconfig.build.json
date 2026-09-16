@@ -1,0 +1,21 @@
+{
+    "extends": [
+        "./tsconfig.json",
+        "@perawallet/wallet-core-devtools/tsconfig/emit.json"
+    ],
+    "compilerOptions": {
+        "rootDir": "./src",
+        "outDir": "./dist",
+        // tsconfig.json maps the connections package to its source for typechecking;
+        // an emitting program would pull those files in from outside rootDir.
+        "paths": {}
+    },
+    "include": ["src"],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx"
+    ]
+}

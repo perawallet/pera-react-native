@@ -79,7 +79,7 @@ export type SourceType =
     | 'multisig-cosign'
     | 'arc60'
     | 'gift-card'
-    | 'injected' // browser-extension injected ARC-0027 dapp provider (M4b)
+    | 'injected' // browser-extension window.pera provider
 
 /**
  * Sources that pause at `awaiting_user` for the in-app review flow. Everything

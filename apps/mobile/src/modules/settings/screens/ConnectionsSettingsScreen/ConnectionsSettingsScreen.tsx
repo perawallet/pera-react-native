@@ -98,7 +98,6 @@ export const ConnectionsSettingsScreen = () => {
     const styles = useStyles()
     const {
         connections,
-        isLoading,
         isHydrated,
         handleRevoke,
         keyExtractor,
@@ -140,7 +139,7 @@ export const ConnectionsSettingsScreen = () => {
                     <EmptyView
                         style={styles.emptyView}
                         icon='globe'
-                        isLoading={isLoading || !isHydrated}
+                        isLoading={!isHydrated}
                         title={t('settings.connections.empty_title')}
                         body={t('settings.connections.empty_body')}
                         button={

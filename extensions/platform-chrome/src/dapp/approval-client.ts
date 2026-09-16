@@ -95,18 +95,6 @@ export const resolveApproval = async (
 export const rejectApproval = async (requestId: string): Promise<void> =>
     deliverDecision('reject-approval', { requestId })
 
-export const resolveSignTransactions = async (
-    requestId: string,
-    stxns: (string | null)[],
-): Promise<void> =>
-    deliverDecision('resolve-sign-transactions', { requestId, stxns })
-
-export const resolveSignMessage = async (
-    requestId: string,
-    signature: string,
-): Promise<void> =>
-    deliverDecision('resolve-sign-message', { requestId, signature })
-
 export const resolveConnectionRequest = async (
     requestId: string,
     result: WireWalletOperationResult,

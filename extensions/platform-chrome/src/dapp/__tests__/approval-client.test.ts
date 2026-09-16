@@ -18,8 +18,6 @@ import {
     rejectPasskey,
     resolveApproval,
     resolvePasskey,
-    resolveSignMessage,
-    resolveSignTransactions,
 } from '../approval-client'
 
 const sendMessage = vi.fn()
@@ -36,7 +34,7 @@ describe('getPendingApproval', () => {
         sendMessage.mockResolvedValueOnce({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
         const approval = await getPendingApproval('q1')
         expect(sendMessage).toHaveBeenCalledWith({
@@ -77,32 +75,6 @@ describe('rejectApproval', () => {
             scope: DAPP_APPROVAL_SCOPE,
             kind: 'reject-approval',
             requestId: 'q1',
-        })
-    })
-})
-
-describe('resolveSignTransactions', () => {
-    it('sends a resolve-sign-transactions message with the signed txns', async () => {
-        sendMessage.mockResolvedValueOnce({ ok: true })
-        await resolveSignTransactions('q1', ['SIGNED', null])
-        expect(sendMessage).toHaveBeenCalledWith({
-            scope: DAPP_APPROVAL_SCOPE,
-            kind: 'resolve-sign-transactions',
-            requestId: 'q1',
-            stxns: ['SIGNED', null],
-        })
-    })
-})
-
-describe('resolveSignMessage', () => {
-    it('sends a resolve-sign-message message with the signature', async () => {
-        sendMessage.mockResolvedValueOnce({ ok: true })
-        await resolveSignMessage('q1', 'SIG')
-        expect(sendMessage).toHaveBeenCalledWith({
-            scope: DAPP_APPROVAL_SCOPE,
-            kind: 'resolve-sign-message',
-            requestId: 'q1',
-            signature: 'SIG',
         })
     })
 })

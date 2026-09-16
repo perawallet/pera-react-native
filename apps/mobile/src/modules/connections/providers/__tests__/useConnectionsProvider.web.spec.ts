@@ -63,6 +63,15 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectV1Handler,
 }))
 
+const createDappConnectionHandler = vi.fn(() => ({ kind: 'dapp' }))
+vi.mock('@perawallet/wallet-core-dapp', () => ({
+    createDappConnectionHandler,
+    createNoopDappTransport: () => ({
+        onRequest: () => () => {},
+        notify: async () => {},
+    }),
+}))
+
 let stored: Connection[] = []
 const list = vi.fn(async () => stored)
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -87,6 +96,7 @@ describe('useConnectionsProvider.web', () => {
         storageListeners.clear()
         createRemoteConnectionRegistry.mockClear()
         createWalletConnectV1Handler.mockClear()
+        createDappConnectionHandler.mockClear()
         onLocalStorageKeyChanged.mockClear()
         unsubscribeStorage.mockClear()
         list.mockClear()
@@ -98,14 +108,14 @@ describe('useConnectionsProvider.web', () => {
         cleanup()
     })
 
-    it('holds one remote registry over a WalletConnect v1 handler for the hook lifetime', () => {
+    it('holds one remote registry over the descriptor handlers for the hook lifetime', () => {
         const { result, rerender } = renderHook(() => useConnectionsProvider())
         rerender()
 
         expect(result.current).toBe(fakeRegistry)
         expect(createRemoteConnectionRegistry).toHaveBeenCalledTimes(1)
         expect(createRemoteConnectionRegistry).toHaveBeenCalledWith({
-            handlers: [{ kind: 'walletconnect-v1' }],
+            handlers: [{ kind: 'walletconnect-v1' }, { kind: 'dapp' }],
         })
     })
 

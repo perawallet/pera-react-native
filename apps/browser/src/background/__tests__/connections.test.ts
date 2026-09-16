@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import {
+    APPROVAL_WITHDRAWN,
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
     type ConnectionApprovalRequest,
@@ -94,6 +95,7 @@ const signRequest = (): ConnectionApprovalRequest => ({
     operation: { type: 'sign-transactions', group: [{ txn: 'dHhu' }] },
     authorizedAccounts: ['AAAA'],
     peer: PEER,
+    sourceType: 'injected',
 })
 
 const errorRequest = (): ConnectionApprovalRequest => ({
@@ -109,6 +111,7 @@ describe('installConnectionsApprovalRouter', () => {
         openConnectionProposal: ReturnType<typeof vi.fn>
         openConnectionRequest: ReturnType<typeof vi.fn>
         openConnectionError: ReturnType<typeof vi.fn>
+        withdrawConnectionRequest: ReturnType<typeof vi.fn>
     }
     let ensureOffscreenDocumentLike: Mock<() => Promise<void>>
 
@@ -122,6 +125,7 @@ describe('installConnectionsApprovalRouter', () => {
                 result: { type: 'sign-transactions', signed: ['c3R4bg=='] },
             }),
             openConnectionError: vi.fn().mockResolvedValue(undefined),
+            withdrawConnectionRequest: vi.fn(),
         }
         ensureOffscreenDocumentLike = vi.fn(async () => {})
         installConnectionsApprovalRouter({
@@ -276,8 +280,37 @@ describe('installConnectionsApprovalRouter', () => {
                     },
                     authorizedAccounts: ['AAAA'],
                     peer: PEER,
+                    sourceType: 'injected',
                 })
             })
+        })
+
+        it('withdraws the open approval when the handler reports the request expired', async () => {
+            chromeMock.deliver({
+                kind: 'connection-request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '9',
+            })
+
+            await vi.waitFor(() => {
+                expect(
+                    approvals.withdrawConnectionRequest,
+                ).toHaveBeenCalledWith('connection-request-conn-1-9')
+            })
+        })
+
+        it('posts no decision back for a withdrawn approval', async () => {
+            approvals.openConnectionRequest.mockResolvedValue(
+                APPROVAL_WITHDRAWN,
+            )
+            chromeMock.deliver(signRequest())
+
+            await vi.waitFor(() =>
+                expect(approvals.openConnectionRequest).toHaveBeenCalled(),
+            )
+            expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalledWith(
+                expect.objectContaining({ kind: 'respond' }),
+            )
         })
 
         it('posts the signed result back as a respond message', async () => {

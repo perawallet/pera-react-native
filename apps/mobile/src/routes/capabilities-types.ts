@@ -43,10 +43,6 @@ export type RouteCapabilities = {
     developerSettings: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
-    /** ARC-0027 injected-provider dapp connections (browser-extension only;
-     * not the native app's WalletConnect, tracked separately by
-     * walletConnectSettings). */
-    dappConnections: boolean
     /** Quantum (Falcon-1024) accounts. Off on web: the WASM signer's Emscripten
      * build doesn't bundle for the extension (see useIsQuantumAccountsEnabled). */
     quantum: boolean
@@ -58,8 +54,8 @@ export type RouteCapabilities = {
      * registered, so the SHARED_ACCOUNT_IMPORT deeplink can decline cleanly
      * instead of navigating nowhere. */
     sharedAccounts: boolean
-    /** Unified settings list of WalletConnect sessions and ARC-0027 dapp connections
-     * (web only). Supersedes the separate settings-menu entries; their routes stay
-     * for direct navigation. */
+    /** Unified settings list of every connection record — WalletConnect sessions
+     * and `window.pera` dapp connections alike (web only). Supersedes the separate
+     * settings-menu entries; their routes stay for direct navigation. */
     connectionsSettings: boolean
 }

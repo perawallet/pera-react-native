@@ -40,9 +40,17 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform/src/index.ts',
             ),
+            '@perawallet/wallet-core-signing/constants': path.resolve(
+                __dirname,
+                '../signing/src/constants.ts',
+            ),
             '@perawallet/wallet-core-signing': path.resolve(
                 __dirname,
                 '../signing/src/index.ts',
+            ),
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
             ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
@@ -51,6 +59,10 @@ export default defineConfig({
             '@perawallet/wallet-core-accounts': path.resolve(
                 __dirname,
                 '../accounts/src/index.ts',
+            ),
+            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
+                __dirname,
+                '../blockchain/src/arc0001/limits.ts',
             ),
             '@perawallet/wallet-core-blockchain': path.resolve(
                 __dirname,

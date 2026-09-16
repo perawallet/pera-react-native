@@ -1,16 +1,5 @@
 {
     "dapp": {
-        "enable": {
-            "title": "Bu siteye bağlan",
-            "description": "Bu siteyle paylaşmak istediğin hesapları seç.",
-            "peer_origin_claim": "Site şunu bildiriyor: {{origin}}",
-            "request_origin": "İstek {{origin}} adresinden geldi",
-            "requester_verified_label": "Doğrulanmış sekme",
-            "requester_verified_a11y_label": "Doğrulandı: bu istek tarayıcı sekmenden geldi",
-            "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi",
-            "connect_button": "Bağlan",
-            "cancel_button": "İptal"
-        },
         "sign": {
             "error": {
                 "title": "Bu istek işlenemiyor",
@@ -18,8 +7,6 @@
                 "dismiss": "Kapat"
             },
             "network_mismatch": "Bu işlem, cüzdanının etkin ağından farklı bir Algorand ağı için. Ayarlardan ağı değiştir ve tekrar dene.",
-            "unsupported_message": "Bu site, Pera’nın işleyemediği bir mesaj imzalama isteği gönderdi. İstek reddedildi.",
-            "unauthorized_signer": "Bu site, o hesap için imza talep etmeye yetkili değil.",
             "connection_revoked": "Bu bağlantı kesildi. Siteden yeniden bağlan ve tekrar dene."
         },
         "passkey": {
@@ -38,7 +25,10 @@
             }
         },
         "approval": {
-            "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder."
+            "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder.",
+            "request_origin": "İstek {{origin}} adresinden geldi",
+            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi"
         }
     },
     "account_menu": {
@@ -2393,7 +2383,6 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Bağlantı detayları",
         "passkeys": "Passkey’ler",
-        "connected_sites": "Bağlı siteler",
         "connections": "Bağlantılar",
         "currency": "Para birimi",
         "theme": "Tema",
@@ -2599,7 +2588,6 @@
             "scan_rekeyed_title": "Rekey yapılan hesapları tara",
             "wallet_connect_title": "WalletConnect oturumları",
             "passkeys_title": "Passkey’ler",
-            "connected_sites_title": "Bağlı siteler",
             "connections_title": "Bağlantılar",
             "app_preferences_section": "Uygulama tercihleri",
             "currency_title": "Para birimi",
@@ -2788,10 +2776,6 @@
             "interception_toggle_body_disabled": "Pera Wallet’in giriş yaptığın siteler için passkey kaydedip önermesi için bunu aç."
         },
         "connected_sites": {
-            "empty_title": "Bağlı site yok",
-            "empty_body": "Cüzdanını bağladığın siteler burada görünecek.",
-            "accounts_count": "{{count}} hesap",
-            "accounts_count_one": "{{count}} hesap",
             "revoke_title": "Siteyle bağlantıyı kes",
             "revoke_body": "{{origin}} artık bağlı hesaplarına erişemeyecek. Siteden dilediğin zaman yeniden bağlanabilirsin.",
             "revoke_confirm": "Bağlantıyı kes",

@@ -133,9 +133,19 @@ export default defineConfig(({ mode }) => {
             // `build` script clears dist once, up front, instead.
             emptyOutDir: false,
             lib: {
-                entry: resolve(__dirname, 'src/index.ts'),
+                // `constants.ts` imports nothing, so its own entry lets a
+                // service-worker bundle reach SIGNING_ACCESS_DOMAIN without the
+                // keystore graph. Default target only: the native pass exists
+                // for the Falcon override and asserts on every chunk it emits.
+                entry:
+                    target === 'native'
+                        ? resolve(__dirname, 'src/index.ts')
+                        : {
+                              index: resolve(__dirname, 'src/index.ts'),
+                              constants: resolve(__dirname, 'src/constants.ts'),
+                          },
                 formats: ['es'],
-                fileName: target === 'native' ? 'index.native' : 'index',
+                ...(target === 'native' ? { fileName: 'index.native' } : {}),
             },
             rollupOptions: {
                 external: [
