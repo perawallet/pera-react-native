@@ -24,6 +24,7 @@ import {
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
+    ALGO_ASSET,
     AssetsNodeSchema,
     AssetsPeraSchema,
     AssetPricesSchema,
@@ -33,7 +34,11 @@ import {
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
-import { ALGO_ASSET_ID, partition } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    isAlgoAssetId,
+    partition,
+} from '@perawallet/wallet-core-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // Max rows per multi-row INSERT/DELETE statement. Each statement is one
@@ -783,23 +788,31 @@ export type AssetColumnsLite = Pick<
 /**
  * Call only for rows you actually render — the parse is cached by raw JSON, so
  * scrolling re-renders stay cheap. Null until node metadata has synced.
+ *
+ * ALGO falls back to its local constant rather than null, the same way
+ * `useAccountBalancesQuery` treats the enriched rows: its metadata is seeded,
+ * never fetched, so a missing row is a local-state failure, and returning null
+ * would render the native balance as a skeleton that never resolves.
  */
 export const assetFromHoldingLiteRow = (
     row: AssetColumnsLite,
-): Nullable<PeraAsset> =>
-    row.decimals !== null && row.totalSupply !== null
-        ? peraAssetFromColumns({
-              assetId: row.assetId,
-              decimals: row.decimals,
-              creatorAddress: row.creatorAddress ?? '',
-              totalSupply: new Decimal(row.totalSupply),
-              name: row.name,
-              unitName: row.unitName,
-              url: row.url,
-              metadata: row.metadata,
-              peraMetadataJson: row.peraMetadataJson,
-          })
-        : null
+): Nullable<PeraAsset> => {
+    if (row.decimals === null || row.totalSupply === null) {
+        return isAlgoAssetId(row.assetId) ? ALGO_ASSET : null
+    }
+
+    return peraAssetFromColumns({
+        assetId: row.assetId,
+        decimals: row.decimals,
+        creatorAddress: row.creatorAddress ?? '',
+        totalSupply: new Decimal(row.totalSupply),
+        name: row.name,
+        unitName: row.unitName,
+        url: row.url,
+        metadata: row.metadata,
+        peraMetadataJson: row.peraMetadataJson,
+    })
+}
 
 /** SQL-expressible collectible orders. Opt-in-round order is applied by the caller. */
 export type CollectibleSqlSortMode =
@@ -1192,9 +1205,6 @@ type GetAssetHolderAddressesParams = {
  * Addresses of the user's accounts that hold, or are opted into, `assetId` on
  * `network` — owners (non-zero amount) first, then opted-in-with-zero rows, and
  * by address within each group so repeated lookups agree on the same account.
- *
- * ALGO is absent from the holdings table (it lives on the account balance row),
- * so this returns an empty list for it.
  */
 export async function getAssetHolderAddresses({
     db = getDatabase(),

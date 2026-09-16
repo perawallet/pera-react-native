@@ -42,6 +42,7 @@ import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
     deleteAccountBalance,
+    assetFromHoldingLiteRow,
 } from '../repository'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
@@ -1740,6 +1741,29 @@ describe('account repository', () => {
             expect(apple?.usdPrice?.toString()).toBe('3')
             const zebra = rows.find(r => r.assetId === '300')
             expect(zebra?.isFavorited).toBe(true)
+        })
+    })
+    describe('assetFromHoldingLiteRow', () => {
+        const unsyncedRow = (assetId: string) => ({
+            assetId,
+            decimals: null,
+            creatorAddress: null,
+            totalSupply: null,
+            name: null,
+            unitName: null,
+            url: null,
+            metadata: null,
+            peraMetadataJson: null,
+        })
+
+        it('falls back to the ALGO constant when its seeded row is gone', () => {
+            expect(assetFromHoldingLiteRow(unsyncedRow('0'))).toEqual(
+                expect.objectContaining({ assetId: '0', decimals: 6 }),
+            )
+        })
+
+        it('stays null for an ASA whose metadata has not synced', () => {
+            expect(assetFromHoldingLiteRow(unsyncedRow('100'))).toBeNull()
         })
     })
 })

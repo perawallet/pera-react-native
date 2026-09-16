@@ -101,6 +101,45 @@ describe('useAssetsQuery', () => {
             )
         })
 
+        it('falls back to the ALGO constant when the seeded row is absent', async () => {
+            mocks.getAssetsByIds.mockReturnValue([])
+
+            const { result } = renderHook(() => useAssetsQuery(['0', '123']), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data.get('0')).toEqual(
+                expect.objectContaining({ assetId: '0', decimals: 6 }),
+            )
+            expect(result.current.data.has('123')).toBe(false)
+        })
+
+        it('prefers the stored ALGO row over the constant', async () => {
+            mocks.getAssetsByIds.mockReturnValue([
+                {
+                    assetId: '0',
+                    name: 'Algo',
+                    unitName: 'ALGO',
+                    decimals: 6,
+                    totalSupply: new Decimal('10000000000000000'),
+                    creator: { address: '' },
+                    peraMetadata: { isFavorited: true },
+                },
+            ])
+
+            const { result } = renderHook(() => useAssetsQuery(['0']), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data.get('0')?.peraMetadata).toEqual(
+                expect.objectContaining({ isFavorited: true }),
+            )
+        })
+
         it('does not touch the network by default', async () => {
             mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
