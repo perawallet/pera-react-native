@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-export { saveToDevice } from './saveToDevice'
-export { saveToICloud } from './saveToICloud'
-export { saveToGoogleDrive } from './saveToGoogleDrive'
-export { readBackupCredentials } from './readBackupCredentials'
-export type {
-    CredentialsFileSaver,
-    CredentialsFileSource,
-    SaveResult,
-} from './types'
+import type { ReadResult } from './types'
+
+// Never offered on web: the extension popup closes as soon as an OS file dialog
+// opens. The twin keeps expo-file-system out of the web bundle.
+export const readFromDevice = async (): Promise<ReadResult> => {
+    throw new Error(
+        'Importing a file is not available in the browser extension',
+    )
+}

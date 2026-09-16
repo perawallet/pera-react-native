@@ -42,3 +42,39 @@ export class GoogleDriveNotConfiguredError extends AppError {
         })
     }
 }
+
+export class CredentialsFileNotFoundError extends AppError {
+    constructor(source: 'icloud' | 'googleDrive') {
+        super(`No backup credentials file in ${source}`, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey:
+                source === 'icloud'
+                    ? 'cloud_backup.restore.import_not_found_icloud'
+                    : 'cloud_backup.restore.import_not_found_google_drive',
+        })
+    }
+}
+
+export class InvalidCredentialsFileError extends AppError {
+    constructor(message = 'Not a backup credentials file') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.restore.import_invalid_file',
+        })
+    }
+}
+
+export class UnsupportedCredentialsFileError extends AppError {
+    constructor(message = 'Backup credentials file needs a newer app') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.restore.import_unsupported_version',
+        })
+    }
+}
