@@ -25,6 +25,12 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
+    useSortedAccounts: vi.fn((accounts: unknown[]) => ({
+        sortedAccounts: accounts,
+    })),
+    useAccountValueTotalsQuery: vi.fn(() => ({
+        accountValueTotals: new Map(),
+    })),
     AccountTypes: {
         algo25: 'algo25',
         hdWallet: 'hdWallet',
