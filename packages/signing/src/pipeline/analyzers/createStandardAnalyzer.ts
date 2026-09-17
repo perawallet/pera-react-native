@@ -71,20 +71,15 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     context.accounts.map(a => a.address),
                 )
 
-                // The machine resolved the authorizer once
-                // (`signerOverrides.get(i) ?? tx.sender`) and split the
-                // request into one group per authorizer, so every transaction
-                // here shares `group.signerAddress`. Re-deriving the signer
-                // from `tx.sender` ignored the ARC-0001 `signers` / `authAddr`
-                // case, so a foreign-sender transaction the wallet does sign
-                // reported no fees and no warnings at all.
+                // The machine already split the request into one group per
+                // authorizer, so gate on `group.signerAddress`; `tx.sender`
+                // misses ARC-0001 `signers` / `authAddr` overrides.
                 const isSignedByUs = accountAddresses.has(group.signerAddress)
 
                 const totalFees = isSignedByUs
                     ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
                     : 0n
 
-                // Create transaction summaries
                 const transactionSummaries = transactions.map(tx =>
                     summarizeTransaction(tx),
                 )
@@ -93,7 +88,6 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     ? detectWarnings(transactions)
                     : []
 
-                // Calculate risk level
                 const riskLevel = calculateRiskLevel(warnings)
 
                 return {

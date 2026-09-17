@@ -207,9 +207,6 @@ describe('createStandardAnalyzer', () => {
         )
     })
 
-    // The machine emits one group per authorizer, so every fee in it is one
-    // this wallet pays — including a transaction whose sender is foreign and
-    // whose authorizer came from an ARC-0001 `signers` override.
     test("sums every fee in the authorizer's group", async () => {
         const analyzer = createStandardAnalyzer()
         const group = makeGroup([
@@ -392,10 +389,6 @@ describe('createStandardAnalyzer', () => {
         expect(result.riskLevel).toBe('low')
     })
 
-    // A dApp may set a `sender` this wallet never imported and name one of our
-    // accounts in ARC-0001 `signers`. The machine groups by that authorizer and
-    // signs it, so keying the analyzer off `tx.sender` dropped the danger
-    // warnings for exactly the requests that warrant them.
     test('warns on a rekey the wallet authorizes for a foreign sender', async () => {
         const analyzer = createStandardAnalyzer()
         const tx = makeRealRekeyTx(REAL_EXTERNAL_SENDER)
