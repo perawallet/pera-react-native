@@ -25,19 +25,24 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 
-// Compared as origins: a peer url routinely carries a path or trailing slash
-// where the observed origin is bare. An unparseable claim counts as distinct
+const toOrigin = (url: string | undefined): string | undefined => {
+    try {
+        return new URL(url ?? '').origin
+    } catch {
+        return undefined
+    }
+}
+
+// Both sides are reduced to origins: a peer url carries paths, and the in-app
+// browser observes the full page url. An unparseable claim counts as distinct
 // rather than being vouched for.
 const isOriginDistinct = (
     verifiedOrigin: string | undefined,
     claimedUrl: string | undefined,
 ): verifiedOrigin is string => {
     if (!verifiedOrigin) return false
-    try {
-        return new URL(claimedUrl ?? '').origin !== verifiedOrigin
-    } catch {
-        return true
-    }
+    const claimedOrigin = toOrigin(claimedUrl)
+    return !claimedOrigin || toOrigin(verifiedOrigin) !== claimedOrigin
 }
 
 export const useSourceMetadataView = (
@@ -86,7 +91,9 @@ export const useSourceMetadataView = (
     // the impersonated site on every later transaction review.
     const requestOriginLabel = isOriginDistinct(verifiedOrigin, metadata.url)
         ? t('dapp.enable.request_origin', {
-              origin: stripUrlScheme(verifiedOrigin),
+              origin: stripUrlScheme(
+                  toOrigin(verifiedOrigin) ?? verifiedOrigin,
+              ),
           })
         : undefined
 

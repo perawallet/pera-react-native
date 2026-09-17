@@ -150,6 +150,17 @@ describe('useSourceMetadataView — observed origin vs claimed site', () => {
         expect(result.current.requestOriginLabel).toBeUndefined()
     })
 
+    it('stays quiet when the observed value is a same-site page url', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataView(
+                { url: 'https://tinyman.org' },
+                'https://tinyman.org/swap?from=ALGO',
+            ),
+        )
+
+        expect(result.current.requestOriginLabel).toBeUndefined()
+    })
+
     it('stays quiet when nothing was observed', () => {
         const { result } = renderHook(() =>
             useSourceMetadataView({ url: 'https://tinyman.org' }),
