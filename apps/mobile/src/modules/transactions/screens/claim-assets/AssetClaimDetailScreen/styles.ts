@@ -69,6 +69,13 @@ export const useStyles = makeStyles(theme => ({
     headerLabelText: {
         color: theme.colors.textGray,
     },
+    insufficientCallout: {
+        marginBottom: theme.spacing.md,
+        gap: theme.spacing.sm,
+    },
+    addFundsButton: {
+        alignSelf: 'stretch',
+    },
     algoGainRow: {
         flexDirection: 'row',
         gap: theme.spacing.sm,

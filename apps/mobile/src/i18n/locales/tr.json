@@ -1629,8 +1629,10 @@
             "success_title": "İşlem tamamlandı",
             "success_subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
             "sender_count_more": "+{{count}} daha",
-            "insufficient_algo_claim": "Bu varlığı talep etmek için yeterli yeterli ALGO yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
-            "insufficient_algo_reject": "Bu varlığı reddetmek için yeterli yeterli ALGO yok. İşlem ücretlerini karşılamak için fon ekle."
+            "insufficient_algo_title": "Yeterli ALGO yok",
+            "insufficient_algo_claim": "Bu varlığı talep etmek için yeterli ALGO yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
+            "insufficient_algo_reject": "Bu varlığı reddetmek için yeterli ALGO yok. İşlem ücretlerini karşılamak için fon ekle.",
+            "insufficient_algo_cta": "Bakiye ekle"
         }
     },
     "multisig": {
