@@ -164,12 +164,8 @@ const deriveCloseAmount = (
 }
 
 /**
- * The Pera backend sends no `asnd`, so a clawback is indistinguishable from an
- * incoming transfer by its fields alone. Its per-account balance impacts do
- * carry the answer: a negative impact on the transferred asset means this
- * account was debited, and on an axfer it did not send, the only way that
- * happens is a clawback. Derived here so the direction is right on mainnet
- * before the backend exposes the field; an explicit `asset_sender` always wins.
+ * The Pera backend sends no `asnd`, but a negative balance impact on an axfer
+ * this account did not send can only be a clawback that debited it.
  */
 const deriveAssetSender = (
     item: TransactionHistoryItemApiResponse,

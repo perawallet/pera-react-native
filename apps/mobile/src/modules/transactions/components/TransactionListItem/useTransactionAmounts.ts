@@ -14,6 +14,10 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    isOutgoingFor,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 
 import {
     type AmountDisplay,
@@ -23,11 +27,6 @@ import {
     createBalanceImpactAmount,
     createSwapAmount,
 } from './amounts'
-
-import {
-    isOutgoingFor,
-    type TransactionHistoryItem,
-} from '@perawallet/wallet-core-transactions'
 
 const ZERO = new Decimal(0)
 

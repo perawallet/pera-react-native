@@ -172,8 +172,6 @@ describe('transformIndexerTransactions', () => {
                 amount: '-500',
             },
         ])
-        // Carried through so the row renders as a debit and the detail screen
-        // can name who was clawed back.
         expect(row.asset_sender).toBe('DRAINED')
     })
 

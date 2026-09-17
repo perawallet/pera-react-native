@@ -25,6 +25,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -241,6 +242,36 @@ describe('useTransactionListItem', () => {
                 { wrapper },
             )
             expect(result.current.title).toBe('transactions.list_item.send')
+        })
+
+        it('returns send key for the account a clawback drained', () => {
+            const tx = createAssetTransferTx({
+                sender: OTHER_ADDRESS,
+                assetSender: USER_ADDRESS,
+                receiver: 'THIRD_ADDRESS',
+            })
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe('transactions.list_item.send')
+        })
+
+        it('names the drained holder, not the authority, to a clawback receiver', () => {
+            const tx = createAssetTransferTx({
+                sender: OTHER_ADDRESS,
+                assetSender: 'DRAINED_ADDRESS',
+                receiver: USER_ADDRESS,
+            })
+            const { result } = renderHook(
+                () => useTransactionListItem({ transaction: tx }),
+                { wrapper },
+            )
+            expect(result.current.title).toBe('transactions.list_item.receive')
+            expect(vi.mocked(useResolvedAddress)).toHaveBeenCalledWith(
+                'DRAINED_ADDRESS',
+                expect.anything(),
+            )
         })
 
         it('returns receive key for incoming asset transfer', () => {

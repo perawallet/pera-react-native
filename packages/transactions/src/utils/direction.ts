@@ -12,21 +12,14 @@
 
 import type { TransactionHistoryItem } from '../models/types'
 
-/**
- * The account debited by a transaction.
- *
- * `sender` authorizes a transaction; on an asset clawback that is the clawback
- * authority, while the holding leaves someone else's account entirely. Reading
- * direction off `sender` therefore renders a seizure as an incoming transfer,
- * which is why every row label, icon and amount sign goes through here.
- */
+/** On a clawback the sender is the authority, so read the debit off `asnd`. */
 export const getDebitedAddress = (item: TransactionHistoryItem): string =>
     item.assetSender ?? item.sender
 
 /**
- * Whether the row reads as funds leaving `address`: the debited account, or a
- * clawback authority moving a holding to someone else. The authority loses
- * nothing, but "Send" is its closest label; "Receive" would claim a credit.
+ * Whether the row reads as funds leaving `address`. A clawback authority moving
+ * a holding to a third party loses nothing, but "Send" is its closest label —
+ * "Receive" would claim a credit.
  */
 export const isOutgoingFor = (
     item: TransactionHistoryItem,

@@ -248,8 +248,6 @@ describe('useTransactionAmounts', () => {
     })
 })
 
-// `sender` on a clawback is the clawback authority, not the account whose
-// holding was seized, so direction must come from the asset sender.
 describe('useTransactionAmounts — clawback', () => {
     it('signs a seized holding as outgoing for the drained account', () => {
         const tx = createPaymentTx({
@@ -264,7 +262,7 @@ describe('useTransactionAmounts — clawback', () => {
                 unitName: 'USDC',
                 decimals: 0,
             },
-        } as Partial<TransactionHistoryItem>)
+        })
 
         const { result } = renderHook(() => useTransactionAmounts(tx))
 
@@ -284,7 +282,7 @@ describe('useTransactionAmounts — clawback', () => {
                 unitName: 'USDC',
                 decimals: 0,
             },
-        } as Partial<TransactionHistoryItem>)
+        })
 
         const { result } = renderHook(() => useTransactionAmounts(tx))
 
@@ -304,7 +302,7 @@ describe('useTransactionAmounts — clawback', () => {
                 unitName: 'USDC',
                 decimals: 0,
             },
-        } as Partial<TransactionHistoryItem>)
+        })
 
         const { result } = renderHook(() => useTransactionAmounts(tx))
 

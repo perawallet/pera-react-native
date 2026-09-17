@@ -40,8 +40,9 @@ const migrations: MigrationConfig = {
     // before the POST and resolved by confirmation / rejection / reconciler.
     '0006_add_submission_attempts': m0006,
     // A clawback's `asnd`. Rows cached before it stay NULL, which reads as
-    // "the sender is the debited account" — the pre-fix behaviour — and heal
-    // on the next sync of that transaction.
+    // "the sender is the debited account". The syncer only fetches newer
+    // transactions, so those rows are only corrected if another wallet account
+    // syncs the same transaction for the first time.
     '0007_add_asset_sender': m0007,
 }
 
