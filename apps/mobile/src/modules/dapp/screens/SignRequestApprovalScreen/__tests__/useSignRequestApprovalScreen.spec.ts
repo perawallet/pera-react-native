@@ -23,21 +23,14 @@ const mocks = vi.hoisted(() => {
         addSignRequest: vi.fn(),
         removeSignRequest: vi.fn(),
         useSigningRequest: vi.fn(),
-        isArc60WirePayload: vi.fn(),
-        parseArc60WireRequest: vi.fn(),
         enqueueInboundRequest: vi.fn(),
         isConnectionAlive: vi.fn(() => true),
-        resolveSignTransactions: vi.fn(),
-        resolveSignMessage: vi.fn(),
         resolveConnectionRequest: vi.fn(),
         rejectApproval: vi.fn(),
         decodeWalletOperation: vi.fn(),
         encodeWalletOperationResult: vi.fn(),
-        generateOrderedUniqueId: vi.fn(),
-        encodeToBase64: vi.fn(),
         useSigningAccounts: vi.fn(),
         useAllAccounts: vi.fn(),
-        canSignArc60: vi.fn(),
     }
 })
 
@@ -49,20 +42,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useArc0001Resolver: () => mocks.resolve,
     useEnqueueArc0001SignRequest: () => mocks.enqueue,
     useSigningRequest: mocks.useSigningRequest,
-    isArc60WirePayload: mocks.isArc60WirePayload,
-    parseArc60WireRequest: mocks.parseArc60WireRequest,
     GenesisHashMismatchError: mocks.GenesisHashMismatchError,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
     useAllAccounts: mocks.useAllAccounts,
-    canSignArc60: mocks.canSignArc60,
-}))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    generateOrderedUniqueId: mocks.generateOrderedUniqueId,
-    encodeToBase64: mocks.encodeToBase64,
 }))
 
 vi.mock('@perawallet/wallet-core-connections', () => ({
@@ -71,8 +56,6 @@ vi.mock('@perawallet/wallet-core-connections', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
-    resolveSignTransactions: mocks.resolveSignTransactions,
-    resolveSignMessage: mocks.resolveSignMessage,
     resolveConnectionRequest: mocks.resolveConnectionRequest,
     rejectApproval: mocks.rejectApproval,
     decodeWalletOperation: mocks.decodeWalletOperation,
@@ -84,34 +67,6 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
-
-const SIGN_TRANSACTIONS_APPROVAL = {
-    kind: 'sign-transactions' as const,
-    requestId: 's1',
-    origin: 'https://x',
-    txns: [{ txn: 'AAA' }],
-    approvedAddresses: ['ADDR'],
-}
-
-const RESOLVED = { allDecoded: [], toSign: [], signerOverrides: new Map() }
-
-const SIGN_MESSAGE_APPROVAL = {
-    kind: 'sign-message' as const,
-    requestId: 'm1',
-    origin: 'https://x',
-    message: { authenticatorData: 'AAA', metadata: { scope: 0 } },
-    approvedAddresses: ['ADDR'],
-}
-
-const PARSED_ARC60 = {
-    stdSigData: {
-        data: 'ZGF0YQ==',
-        signer: 'ADDR',
-        domain: 'x',
-        authenticatorData: new Uint8Array([1]),
-    },
-    metadata: { scope: 0, encoding: 'base64' },
-}
 
 const WIRE_OPERATION = {
     type: 'sign-transactions' as const,
@@ -133,6 +88,7 @@ const CONNECTION_REQUEST_APPROVAL = {
     operation: WIRE_OPERATION,
     authorizedAccounts: ['ADDR'],
     peer: PEER,
+    sourceType: 'injected' as const,
 }
 
 describe('useSignRequestApprovalScreen', () => {
@@ -144,16 +100,9 @@ describe('useSignRequestApprovalScreen', () => {
         mocks.enqueue.mockReset()
         mocks.addSignRequest.mockReset()
         mocks.useSigningRequest.mockReset()
-        mocks.isArc60WirePayload.mockReset()
-        mocks.parseArc60WireRequest.mockReset()
-        mocks.resolveSignTransactions.mockReset()
-        mocks.resolveSignMessage.mockReset()
         mocks.rejectApproval.mockReset()
-        mocks.generateOrderedUniqueId.mockReset()
-        mocks.encodeToBase64.mockReset()
         mocks.useSigningAccounts.mockReset()
         mocks.useAllAccounts.mockReset()
-        mocks.canSignArc60.mockReset()
         mocks.enqueueInboundRequest.mockReset()
         mocks.resolveConnectionRequest.mockReset()
         mocks.decodeWalletOperation.mockReset()
@@ -171,225 +120,38 @@ describe('useSignRequestApprovalScreen', () => {
         )
 
         mocks.useDappRequest.mockReturnValue({
-            requestId: 's1',
-            approval: SIGN_TRANSACTIONS_APPROVAL,
+            requestId: 'cr1',
+            approval: CONNECTION_REQUEST_APPROVAL,
             isLoading: false,
         })
-        mocks.resolve.mockReturnValue(RESOLVED)
         mocks.useSigningRequest.mockReturnValue({
             addSignRequest: mocks.addSignRequest,
             removeSignRequest: mocks.removeSignRequest,
             currentRequest: null,
         })
-        mocks.resolveSignTransactions.mockResolvedValue(undefined)
-        mocks.resolveSignMessage.mockResolvedValue(undefined)
         mocks.rejectApproval.mockResolvedValue(undefined)
-        mocks.generateOrderedUniqueId.mockReturnValue('generated-id')
-        mocks.encodeToBase64.mockImplementation(
-            (bytes: Uint8Array) => `base64(${bytes.join(',')})`,
-        )
-        // Hydrated by default with the account both fixtures' approvals
-        // grant/name ('ADDR'), so existing sign-transactions/sign-message
-        // cases exercise the post-hydration path unchanged.
+        // Hydrated by default with the account the approval authorizes, so
+        // cases exercise the post-hydration path unless they say otherwise.
         mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
         mocks.useAllAccounts.mockReturnValue([{ address: 'ADDR' }])
-        mocks.canSignArc60.mockReturnValue(true)
 
         closeSpy = vi.fn()
         vi.stubGlobal('close', closeSpy)
     })
 
-    describe('sign-transactions (Task 4, unchanged)', () => {
-        it('resolves the ARC-0001 request with the approved addresses', () => {
-            renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.resolve).toHaveBeenCalledWith(
-                { transactions: SIGN_TRANSACTIONS_APPROVAL.txns },
-                {
-                    authorizedAddresses: new Set(
-                        SIGN_TRANSACTIONS_APPROVAL.approvedAddresses,
-                    ),
-                },
-            )
-        })
-
-        it('enqueues the resolved request with an injected transport bound to the requestId/origin', () => {
-            renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.enqueue).toHaveBeenCalledTimes(1)
-            const [resolved, transport] = mocks.enqueue.mock.calls[0]
-            expect(resolved).toBe(RESOLVED)
-            expect(transport.sourceType).toBe('injected')
-            expect(transport.transportId).toBe('s1')
-            expect(transport.verifiedOrigin).toBe('https://x')
-        })
-
-        it('respondWithResult forwards signed transactions and closes the window', async () => {
-            renderHook(() => useSignRequestApprovalScreen())
-            const transport = mocks.enqueue.mock.calls[0][1]
-
-            await transport.respondWithResult(['STXN'])
-
-            expect(mocks.resolveSignTransactions).toHaveBeenCalledWith('s1', [
-                'STXN',
-            ])
-            expect(closeSpy).toHaveBeenCalled()
-        })
-
-        it('respondWithReject rejects the approval and closes the window', async () => {
-            renderHook(() => useSignRequestApprovalScreen())
-            const transport = mocks.enqueue.mock.calls[0][1]
-
-            transport.respondWithReject()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('s1')
-            })
-            expect(closeSpy).toHaveBeenCalled()
-        })
-
-        it('enqueues exactly once even across re-renders', () => {
-            const { rerender } = renderHook(() =>
-                useSignRequestApprovalScreen(),
-            )
-            rerender()
-            rerender()
-
-            expect(mocks.resolve).toHaveBeenCalledTimes(1)
-            expect(mocks.enqueue).toHaveBeenCalledTimes(1)
-        })
-
-        it('exposes the pipeline currentRequest once it matches the enqueued request', () => {
-            mocks.useSigningRequest.mockReturnValue({
-                addSignRequest: mocks.addSignRequest,
-                currentRequest: {
-                    id: 'sr1',
-                    type: 'transactions',
-                    transportId: 's1',
-                },
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(result.current.request).toEqual({
-                id: 'sr1',
-                type: 'transactions',
-                transportId: 's1',
-            })
-            expect(result.current.isLoading).toBe(false)
-        })
-
-        it('does not surface a foreign request at the queue head (different transportId) and keeps loading', () => {
-            mocks.useSigningRequest.mockReturnValue({
-                addSignRequest: mocks.addSignRequest,
-                currentRequest: {
-                    id: 'foreign-sr',
-                    type: 'transactions',
-                    transportId: 'some-other-request',
-                },
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(result.current.request).toBeNull()
-            expect(result.current.isLoading).toBe(true)
-        })
-
-        it('surfaces the request once its transportId matches this screen requestId', () => {
-            mocks.useSigningRequest.mockReturnValue({
-                addSignRequest: mocks.addSignRequest,
-                currentRequest: {
-                    id: 'sr1',
-                    type: 'transactions',
-                    transportId: 's1',
-                },
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(result.current.request).toEqual({
-                id: 'sr1',
-                type: 'transactions',
-                transportId: 's1',
-            })
-        })
-
-        it('rejects and surfaces a generic error (popup stays open) when the resolver throws on malformed transactions', async () => {
-            mocks.resolve.mockImplementation(() => {
-                throw new Error('bad group')
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            // Raw pipeline text is not shown to the user; a generic message is.
-            expect(result.current.error).toBe('dapp.sign.error.body')
-            expect(mocks.enqueue).not.toHaveBeenCalled()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('s1')
-            })
-            // Error stays visible until the user dismisses it — no auto-close.
-            expect(closeSpy).not.toHaveBeenCalled()
-        })
-
-        it('respondWithError surfaces the network-mismatch message and keeps the popup open', () => {
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-            const transport = mocks.enqueue.mock.calls[0][1]
-
-            act(() => {
-                transport.respondWithError(
-                    new mocks.GenesisHashMismatchError('mismatch'),
-                )
-            })
-
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('s1')
-            expect(closeSpy).not.toHaveBeenCalled()
-            expect(result.current.error).toBe('dapp.sign.network_mismatch')
-        })
-
-        it('respondWithError surfaces a generic error for non-network pipeline failures', () => {
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-            const transport = mocks.enqueue.mock.calls[0][1]
-
-            act(() => {
-                transport.respondWithError(new Error('some pipeline failure'))
-            })
-
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('s1')
-            expect(closeSpy).not.toHaveBeenCalled()
-            expect(result.current.error).toBe('dapp.sign.error.body')
-        })
-
-        it('dismiss closes the popup', () => {
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-            result.current.dismiss()
-            expect(closeSpy).toHaveBeenCalled()
-        })
+    it('dismiss closes the popup', () => {
+        const { result } = renderHook(() => useSignRequestApprovalScreen())
+        result.current.dismiss()
+        expect(closeSpy).toHaveBeenCalled()
     })
 
-    describe('account hydration gate (Bug 1)', () => {
-        it('does not resolve/enqueue a sign-transactions request while accounts are unhydrated and stays loading', () => {
+    describe('account hydration gate', () => {
+        it('does not enqueue while accounts are unhydrated and stays loading', () => {
             mocks.useSigningAccounts.mockReturnValue([])
 
             const { result } = renderHook(() => useSignRequestApprovalScreen())
 
-            expect(mocks.resolve).not.toHaveBeenCalled()
-            expect(mocks.enqueue).not.toHaveBeenCalled()
-            expect(result.current.isLoading).toBe(true)
-            expect(result.current.error).toBeNull()
-        })
-
-        it('does not addSignRequest a sign-message request while accounts are unhydrated and stays loading', () => {
-            mocks.useDappRequest.mockReturnValue({
-                requestId: 'm1',
-                approval: SIGN_MESSAGE_APPROVAL,
-                isLoading: false,
-            })
-            mocks.isArc60WirePayload.mockReturnValue(true)
-            mocks.parseArc60WireRequest.mockReturnValue(PARSED_ARC60)
-            mocks.useSigningAccounts.mockReturnValue([])
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.addSignRequest).not.toHaveBeenCalled()
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
             expect(result.current.isLoading).toBe(true)
             expect(result.current.error).toBeNull()
         })
@@ -399,190 +161,17 @@ describe('useSignRequestApprovalScreen', () => {
             const { rerender } = renderHook(() =>
                 useSignRequestApprovalScreen(),
             )
-            expect(mocks.enqueue).not.toHaveBeenCalled()
+            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
 
             mocks.useSigningAccounts.mockReturnValue([{ address: 'ADDR' }])
             rerender()
             rerender()
 
-            expect(mocks.enqueue).toHaveBeenCalledTimes(1)
-        })
-    })
-
-    describe('sign-message (ARC-60, Task 5)', () => {
-        beforeEach(() => {
-            mocks.useDappRequest.mockReturnValue({
-                requestId: 'm1',
-                approval: SIGN_MESSAGE_APPROVAL,
-                isLoading: false,
-            })
-            mocks.isArc60WirePayload.mockReturnValue(true)
-            mocks.parseArc60WireRequest.mockReturnValue(PARSED_ARC60)
-        })
-
-        it('enqueues an arc60 request with an injected transport bound to the requestId/origin', () => {
-            renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.parseArc60WireRequest).toHaveBeenCalledWith(
-                SIGN_MESSAGE_APPROVAL.message,
-            )
-            expect(mocks.addSignRequest).toHaveBeenCalledTimes(1)
-            const request = mocks.addSignRequest.mock.calls[0][0]
-            expect(request.type).toBe('arc60')
-            expect(request.transport).toBe('callback')
-            expect(request.sourceType).toBe('injected')
-            expect(request.transportId).toBe('m1')
-            expect(request.verifiedOrigin).toBe('https://x')
-            expect(request.stdSigData).toBe(PARSED_ARC60.stdSigData)
-            expect(request.metadata).toBe(PARSED_ARC60.metadata)
-        })
-
-        it('approve encodes the signature to base64 and resolves the sign-message approval', async () => {
-            renderHook(() => useSignRequestApprovalScreen())
-            const request = mocks.addSignRequest.mock.calls[0][0]
-            const signature = new Uint8Array([1, 2, 3])
-
-            await request.approve([{ signature, signer: 'ADDR' }])
-
-            expect(mocks.encodeToBase64).toHaveBeenCalledWith(signature)
-            expect(mocks.resolveSignMessage).toHaveBeenCalledWith(
-                'm1',
-                'base64(1,2,3)',
-            )
-            expect(closeSpy).toHaveBeenCalled()
-        })
-
-        it('reject rejects the approval and closes the window', async () => {
-            renderHook(() => useSignRequestApprovalScreen())
-            const request = mocks.addSignRequest.mock.calls[0][0]
-
-            await request.reject()
-
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            expect(closeSpy).toHaveBeenCalled()
-        })
-
-        it('error rejects the approval and closes the window', async () => {
-            renderHook(() => useSignRequestApprovalScreen())
-            const request = mocks.addSignRequest.mock.calls[0][0]
-
-            await request.error(new Error('boom'))
-
-            expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            expect(closeSpy).toHaveBeenCalled()
-        })
-
-        it('enqueues exactly once even across re-renders', () => {
-            const { rerender } = renderHook(() =>
-                useSignRequestApprovalScreen(),
-            )
-            rerender()
-            rerender()
-
-            expect(mocks.addSignRequest).toHaveBeenCalledTimes(1)
-        })
-
-        it('rejects when the ARC-60 signer is not in approval.approvedAddresses (Bug 2: cross-account guard)', async () => {
-            mocks.parseArc60WireRequest.mockReturnValue({
-                stdSigData: {
-                    ...PARSED_ARC60.stdSigData,
-                    signer: 'OTHER_ADDR',
-                },
-                metadata: PARSED_ARC60.metadata,
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.addSignRequest).not.toHaveBeenCalled()
-            expect(result.current.error).toBeTruthy()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            })
-            // Error stays visible until the user dismisses it — no auto-close.
-            expect(closeSpy).not.toHaveBeenCalled()
-        })
-
-        it('rejects when the signer is granted but not a signable wallet account', async () => {
-            mocks.canSignArc60.mockReturnValue(false)
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.addSignRequest).not.toHaveBeenCalled()
-            expect(result.current.error).toBeTruthy()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            })
-            // Error stays visible until the user dismisses it — no auto-close.
-            expect(closeSpy).not.toHaveBeenCalled()
-        })
-
-        it('enqueues when the signer is in approvedAddresses and is a signable, hydrated account', () => {
-            renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.addSignRequest).toHaveBeenCalledTimes(1)
-        })
-
-        it('rejects with an error state when the message is not a valid ARC-60 wire payload', async () => {
-            mocks.isArc60WirePayload.mockReturnValue(false)
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(result.current.error).toBeTruthy()
-            expect(mocks.addSignRequest).not.toHaveBeenCalled()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            })
-            // Error stays visible until the user dismisses it — no auto-close.
-            expect(closeSpy).not.toHaveBeenCalled()
-        })
-
-        it('rejects with an error state when parsing the ARC-60 wire payload throws', async () => {
-            mocks.parseArc60WireRequest.mockImplementation(() => {
-                throw new Error('malformed arc60 payload')
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            // Raw parse text is not shown to the user; a generic message is.
-            expect(result.current.error).toBe('dapp.sign.error.body')
-            expect(mocks.addSignRequest).not.toHaveBeenCalled()
-            await vi.waitFor(() => {
-                expect(mocks.rejectApproval).toHaveBeenCalledWith('m1')
-            })
-            // Error stays visible until the user dismisses it — no auto-close.
-            expect(closeSpy).not.toHaveBeenCalled()
-        })
-
-        it('exposes the pipeline currentRequest once it matches the enqueued request', () => {
-            mocks.useSigningRequest.mockReturnValue({
-                addSignRequest: mocks.addSignRequest,
-                currentRequest: {
-                    id: 'sr2',
-                    type: 'arc60',
-                    transportId: 'm1',
-                },
-            })
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(result.current.request).toEqual({
-                id: 'sr2',
-                type: 'arc60',
-                transportId: 'm1',
-            })
-            expect(result.current.isLoading).toBe(false)
+            expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
         })
     })
 
     describe('connection-request', () => {
-        beforeEach(() => {
-            mocks.useDappRequest.mockReturnValue({
-                requestId: 'cr1',
-                approval: CONNECTION_REQUEST_APPROVAL,
-                isLoading: false,
-            })
-        })
-
         const enqueuedMessage = () =>
             mocks.enqueueInboundRequest.mock.calls[0][0]
 
@@ -597,6 +186,11 @@ describe('useSignRequestApprovalScreen', () => {
                 correlationId: '9',
                 authorizedAccounts: ['ADDR'],
                 peer: PEER,
+                // Hardcoding 'walletconnect' here left SignRequestView
+                // rendering nothing on a mid-flight failure, because it
+                // suppresses the failed view for the WalletConnect error
+                // sheet — which the approval window does not have.
+                sourceType: 'injected',
             })
             expect(deps).toMatchObject({
                 resolveArc0001: mocks.resolve,
@@ -610,6 +204,22 @@ describe('useSignRequestApprovalScreen', () => {
             expect(mocks.resolve).not.toHaveBeenCalled()
             expect(mocks.enqueue).not.toHaveBeenCalled()
             expect(mocks.addSignRequest).not.toHaveBeenCalled()
+        })
+
+        it('carries the transport-verified origin onto the inbound message', () => {
+            mocks.useDappRequest.mockReturnValue({
+                ...mocks.useDappRequest(),
+                approval: {
+                    ...CONNECTION_REQUEST_APPROVAL,
+                    verifiedOrigin: 'https://dapp.example',
+                },
+            })
+
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(enqueuedMessage().verifiedOrigin).toBe(
+                'https://dapp.example',
+            )
         })
 
         it('decodes the wire operation before enqueuing', () => {
@@ -667,11 +277,16 @@ describe('useSignRequestApprovalScreen', () => {
         })
 
         it('surfaces an adapter failure in the window instead of closing it silently', () => {
-            renderHook(() => useSignRequestApprovalScreen())
+            const { result } = renderHook(() => useSignRequestApprovalScreen())
 
-            expect(
-                typeof mocks.enqueueInboundRequest.mock.calls[0][1].onError,
-            ).toBe('function')
+            act(() => {
+                mocks.enqueueInboundRequest.mock.calls[0][1].onError(
+                    new mocks.GenesisHashMismatchError('mismatch'),
+                )
+            })
+
+            expect(result.current.error).toBe('dapp.sign.network_mismatch')
+            expect(closeSpy).not.toHaveBeenCalled()
         })
 
         it('reject rejects the approval and closes the window', async () => {
@@ -709,15 +324,6 @@ describe('useSignRequestApprovalScreen', () => {
             rerender()
 
             expect(mocks.enqueueInboundRequest).toHaveBeenCalledTimes(1)
-        })
-
-        it('does not enqueue while accounts are unhydrated and stays loading', () => {
-            mocks.useSigningAccounts.mockReturnValue([])
-
-            const { result } = renderHook(() => useSignRequestApprovalScreen())
-
-            expect(mocks.enqueueInboundRequest).not.toHaveBeenCalled()
-            expect(result.current.isLoading).toBe(true)
         })
 
         // The adapter keys the sign request on the connection, not on this

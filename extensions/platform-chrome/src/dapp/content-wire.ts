@@ -14,23 +14,10 @@
 // package barrel (../index.ts) re-exports the full platform-chrome graph
 // (hydratePlatform, createWorkerExecutor, the DB host, the storage proxy —
 // none of which a content script needs), which bloats content-script bundles
-// to ~1MB. This file re-exports only the pure ARC-0027 wire from modules that
-// have no chrome.* usage and no side effects, so the content-script build
+// to ~1MB. This file re-exports only the pure window.pera wire from modules
+// that have no chrome.* usage and no side effects, so the content-script build
 // alias (apps/browser/scripts/build.mjs) can point here instead of the
 // barrel and stay small.
-export {
-    isArc0027Request,
-    // Needed alongside isArc0027Request so the injected provider can tell
-    // "not addressed to us" (ignore) from "our namespace, method we don't
-    // implement" (answer 4003) — dropping the latter left the dApp's promise
-    // pending forever. Pure predicates, no chrome.* usage.
-    isArc0027NamespacedRequest,
-    referenceMethod,
-    buildErrorResponse,
-    ARC0027_ERROR_CODES,
-    DAPP_RELAY_SCOPE,
-    type Arc0027ResponseEnvelope,
-} from '@perawallet/wallet-core-arc0027'
 export * from '../webview/bridge-wire'
 export {
     WEBAUTHN_RELAY_SCOPE,
@@ -40,7 +27,7 @@ export {
 // Page-originated WalletConnect pair request (connect-modal-hook's
 // relay-isolated.ts forwards this from the MAIN-world watcher to the
 // service worker) — pure, no chrome.* usage, so it belongs in this narrow
-// content-script barrel alongside the ARC-0027/WebAuthn wire above.
+// content-script barrel alongside the window.pera/WebAuthn wire above.
 //
 // Only the scope constant is re-exported here — DO NOT remove it, content
 // scripts (relay-isolated.ts) import it via this exact alias and
@@ -49,3 +36,19 @@ export {
 // `connect-modal-pair.ts` (a service-worker file, not a content script),
 // which imports the full package barrel (`../index.ts`) instead of this one.
 export { WC_PAGE_PAIR_SCOPE } from '../connections/page-pair'
+export * from './dapp-wire'
+export {
+    DAPP_METHODS,
+    DAPP_NOTIFICATIONS,
+    DAPP_PAGE_TIMEOUT_MS,
+    DAPP_PROVIDER_VERSION,
+    JsonRpcErrorCode,
+    isJsonRpcNotification,
+    isJsonRpcResponse,
+    type DappMethod,
+    type JsonRpcErrorObject,
+    type JsonRpcId,
+    type JsonRpcNotification,
+    type JsonRpcRequest,
+    type JsonRpcResponse,
+} from '@perawallet/wallet-core-dapp/wire'

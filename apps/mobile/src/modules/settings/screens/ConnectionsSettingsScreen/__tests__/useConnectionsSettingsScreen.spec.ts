@@ -13,10 +13,8 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useConnectionsSettingsScreen } from '../useConnectionsSettingsScreen'
-import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
-import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
 
 const mockRequestBottomSheet = vi.fn()
 
@@ -32,20 +30,11 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-const mockShowError = vi.fn()
-vi.mock('@hooks/useErrorToast', () => ({
-    useErrorToast: () => ({ showError: mockShowError }),
-}))
-
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: vi.fn(),
 }))
 
-vi.mock('@modules/settings/hooks/useDappConnectionsStore', () => ({
-    useDappConnectionsStore: vi.fn(),
-}))
-
-const connectionRow: ConnectionSettingsRow = {
+const walletConnectRow: ConnectionSettingsRow = {
     id: 'client-1',
     kind: 'walletconnect-v1',
     title: 'Some Dapp',
@@ -61,132 +50,107 @@ const connectionRow: ConnectionSettingsRow = {
     protocolVersion: 1,
 }
 
-const dappPermission: DappPermission = {
-    origin: 'https://site.example.com',
-    addresses: ['ADDR_A'],
-    name: 'Some Site',
+const dappRow: ConnectionSettingsRow = {
+    id: 'https://site.example.com',
+    kind: 'dapp',
+    title: 'Some Site',
+    subtitle: 'https://site.example.com',
     iconUrl: 'https://site.example.com/icon.png',
-    grantedAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
+    accounts: ['ADDR_A'],
+    isConnected: true,
+    createdAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
+    lastActiveAt: new Date('2026-02-01T00:00:00.000Z').getTime(),
+    peer: { name: 'Some Site', url: 'https://site.example.com' },
+    permissions: ['algo_signTxn'],
+    networks: ['mainnet'],
 }
 
 describe('useConnectionsSettingsScreen', () => {
     const mockRevokeConnection = vi.fn()
-    const mockRevoke = vi.fn().mockResolvedValue(undefined)
 
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mockRevoke.mockResolvedValue(undefined)
+    const mockList = (
+        connections: ConnectionSettingsRow[],
+        isHydrated = true,
+    ) => {
         ;(useConnectionSettingsList as Mock).mockReturnValue({
-            connections: [connectionRow],
+            connections,
             handleRevoke: mockRevokeConnection,
             revoke: vi.fn().mockResolvedValue(undefined),
             revokeAll: vi.fn().mockResolvedValue(undefined),
             keyExtractor: (row: ConnectionSettingsRow) => row.id,
-            isHydrated: true,
+            isHydrated,
         })
-        ;(useDappConnectionsStore as Mock).mockReturnValue({
-            sites: [dappPermission],
-            isLoading: false,
-            refetch: vi.fn(),
-            revoke: mockRevoke,
-        })
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockList([walletConnectRow, dappRow])
     })
 
-    it('merges and sorts both sources into UnifiedConnection[], most recent first', () => {
+    it('maps every registry row through toUnifiedConnection, most recent first', () => {
         const { result } = renderHook(() => useConnectionsSettingsScreen())
 
         expect(result.current.connections).toEqual([
             expect.objectContaining({
+                id: 'connection-https://site.example.com',
                 kind: 'dapp',
                 title: 'Some Site',
                 subtitle: 'https://site.example.com',
-                iconUrl: 'https://site.example.com/icon.png',
-                connectedAt: new Date('2026-02-01T00:00:00.000Z'),
+                connectedAt: dappRow.lastActiveAt,
             }),
             expect.objectContaining({
+                id: 'connection-client-1',
                 kind: 'walletconnect-v1',
                 title: 'Some Dapp',
-                subtitle: 'https://dapp.example.com',
-                iconUrl: 'https://dapp.example.com/icon.png',
-                connectedAt: connectionRow.lastActiveAt,
+                connectedAt: walletConnectRow.lastActiveAt,
             }),
         ])
-        expect(result.current.isLoading).toBe(false)
     })
 
     it('reports the connections mirror as not hydrated until it is, so the screen can hold its empty state', () => {
-        ;(useConnectionSettingsList as Mock).mockReturnValue({
-            connections: [],
-            handleRevoke: mockRevokeConnection,
-            revoke: vi.fn().mockResolvedValue(undefined),
-            revokeAll: vi.fn().mockResolvedValue(undefined),
-            keyExtractor: (row: ConnectionSettingsRow) => row.id,
-            isHydrated: false,
-        })
+        mockList([], false)
 
         const { result } = renderHook(() => useConnectionsSettingsScreen())
 
         expect(result.current.isHydrated).toBe(false)
     })
 
-    it('exposes a stable keyExtractor unique per kind', () => {
-        const { result } = renderHook(() => useConnectionsSettingsScreen())
-        const [dappRow, wcRow] = result.current.connections
-
-        expect(result.current.keyExtractor(dappRow)).toBe(dappRow.id)
-        expect(result.current.keyExtractor(wcRow)).toBe(wcRow.id)
-        expect(dappRow.id).not.toBe(wcRow.id)
-    })
-
-    it('returns an empty list when both sources are empty', () => {
-        ;(useConnectionSettingsList as Mock).mockReturnValue({
-            connections: [],
-            handleRevoke: mockRevokeConnection,
-            revoke: vi.fn().mockResolvedValue(undefined),
-            revokeAll: vi.fn().mockResolvedValue(undefined),
-            keyExtractor: (row: ConnectionSettingsRow) => row.id,
-            isHydrated: true,
-        })
-        ;(useDappConnectionsStore as Mock).mockReturnValue({
-            sites: [],
-            isLoading: false,
-            refetch: vi.fn(),
-            revoke: mockRevoke,
-        })
+    it('returns an empty list when the registry has no rows', () => {
+        mockList([])
 
         const { result } = renderHook(() => useConnectionsSettingsScreen())
 
         expect(result.current.connections).toEqual([])
     })
 
-    it('confirms then revokes by connection id for a connection row', async () => {
+    it('confirms then revokes by connection id', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(true)
         const { result } = renderHook(() => useConnectionsSettingsScreen())
-        const wcRow = result.current.connections.find(
-            connection => connection.kind === 'walletconnect-v1',
-        )
 
-        result.current.handleRevoke(wcRow!)
+        result.current.handleRevoke(result.current.connections[1])
 
         await waitFor(() =>
             expect(mockRevokeConnection).toHaveBeenCalledWith('client-1'),
         )
-        expect(mockRevoke).not.toHaveBeenCalled()
     })
 
-    it('confirms then calls revoke with the origin for a dapp row', async () => {
-        mockRequestBottomSheet.mockResolvedValueOnce(true)
+    // A dapp connection revokes a site's page-level access rather than a
+    // paired session, so it gets the site-revoke wording.
+    it('uses the site-revoke copy for a dapp connection', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(false)
         const { result } = renderHook(() => useConnectionsSettingsScreen())
-        const dappRow = result.current.connections.find(
-            connection => connection.kind === 'dapp',
-        )
 
-        result.current.handleRevoke(dappRow!)
+        result.current.handleRevoke(result.current.connections[0])
 
-        await waitFor(() =>
-            expect(mockRevoke).toHaveBeenCalledWith('https://site.example.com'),
-        )
-        expect(mockRevokeConnection).not.toHaveBeenCalled()
+        await waitFor(() => expect(mockRequestBottomSheet).toHaveBeenCalled())
+        expect(
+            mockRequestBottomSheet.mock.calls[0][0].contents.props,
+        ).toMatchObject({
+            title: 'settings.connected_sites.revoke_title',
+            message: 'settings.connected_sites.revoke_body',
+            confirmLabel: 'settings.connected_sites.revoke_confirm',
+            cancelLabel: 'settings.connected_sites.revoke_cancel',
+        })
     })
 
     // The confirmation is the whole guard here: `useConnectionSettingsList`'s
@@ -195,16 +159,12 @@ describe('useConnectionsSettingsScreen', () => {
     it('does not revoke when the user cancels the confirm sheet', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useConnectionsSettingsScreen())
-        const wcRow = result.current.connections.find(
-            connection => connection.kind === 'walletconnect-v1',
-        )
 
-        result.current.handleRevoke(wcRow!)
+        result.current.handleRevoke(result.current.connections[1])
 
         await waitFor(() =>
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1),
         )
-        expect(mockRevoke).not.toHaveBeenCalled()
         expect(mockRevokeConnection).not.toHaveBeenCalled()
     })
 
@@ -218,27 +178,5 @@ describe('useConnectionsSettingsScreen', () => {
         })
 
         expect(result.current.scannerState.isOpen).toBe(true)
-    })
-
-    it('reports a failed dapp revoke instead of swallowing it', async () => {
-        const error = new Error('storage failure')
-        mockRevoke.mockRejectedValue(error)
-
-        const { result } = renderHook(() => useConnectionsSettingsScreen())
-
-        const dappEntry = result.current.connections.find(
-            connection => connection.kind === 'dapp',
-        )
-
-        await act(async () => {
-            dappEntry?.onRevoke()
-        })
-
-        await waitFor(() =>
-            expect(mockShowError).toHaveBeenCalledWith(
-                error,
-                'common.error.title',
-            ),
-        )
     })
 })

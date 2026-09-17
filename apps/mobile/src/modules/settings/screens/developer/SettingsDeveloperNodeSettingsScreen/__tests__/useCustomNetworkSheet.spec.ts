@@ -211,7 +211,7 @@ describe('useCustomNetworkSheet', () => {
         // fetchGenesisFromNode defaults genesisId to '' when a node omits
         // `genesis-id`, so without this an otherwise "valid" saved config can
         // carry an empty one — and the extension advertises genesisId to every
-        // dApp over ARC-0027 discover/enable.
+        // connected dApp.
         const { result } = renderHook(() => useCustomNetworkSheet())
 
         act(() => {

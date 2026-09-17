@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    APPROVAL_WITHDRAWN,
     ApprovalWindowBridge,
     DAPP_APPROVAL_SCOPE,
     POPUP_OPEN_TIMEOUT_MS,
@@ -88,17 +89,32 @@ const trustedSender = {
     url: 'chrome-extension://ext-id/approval.html',
 }
 
+// The smallest valid connection-proposal context. Cases that only exercise the
+// bridge's surface routing, capacity or decision matching vary nothing but the
+// request id and origin.
+const proposalCtx = (
+    requestId: string,
+    origin: string,
+): Parameters<ApprovalWindowBridge['openConnectionProposal']>[0] => ({
+    requestId,
+    origin,
+    proposalId: requestId,
+    connectionKind: 'walletconnect-v1',
+    peer: { name: 'dApp', url: origin },
+    requested: { networks: ['mainnet'], methods: ['algo_signTxn'] },
+    expiresAt: 1,
+})
+
 describe('ApprovalWindowBridge', () => {
     it('opens a 360x600 popup at approval.html?requestId and resolves on approve', async () => {
         const { chromeLike, created, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'q1',
-            origin: 'https://x.com',
-        })
-        // chrome.action is absent from this fake, so openEnable falls back
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('q1', 'https://x.com'),
+        )
+        // chrome.action is absent from this fake, so the open falls back
         // to the window path after the tryOpenActionPopup check settles.
         await flush()
 
@@ -119,7 +135,7 @@ describe('ApprovalWindowBridge', () => {
         expect(ctx).toMatchObject({
             requestId: 'q1',
             origin: 'https://x.com',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
 
         await fireMessage(
@@ -138,10 +154,9 @@ describe('ApprovalWindowBridge', () => {
         const { chromeLike, closeWindow } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
-        const decision = bridge.openEnable({
-            requestId: 'q2',
-            origin: 'https://y.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('q2', 'https://y.com'),
+        )
         // No chrome.action in this fake → falls back to the window. flush()
         // drains tryOpenActionPopup -> openApprovalWindow so the window (id
         // 100) is registered before the close, exactly as in real Chrome
@@ -155,10 +170,9 @@ describe('ApprovalWindowBridge', () => {
         const { chromeLike, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
-        const decision = bridge.openEnable({
-            requestId: 'q3',
-            origin: 'https://z.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('q3', 'https://z.com'),
+        )
         const ack = await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
@@ -185,10 +199,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision1 = bridge.openEnable({
-            requestId: 'q4',
-            origin: 'https://a.com',
-        })
+        const decision1 = bridge.openConnectionProposal(
+            proposalCtx('q4', 'https://a.com'),
+        )
         // Round-trip a get-approval first so the windowId registration
         // (which happens on the microtask after windows.create resolves)
         // has definitely landed before we resolve. flush() first drains the
@@ -223,10 +236,9 @@ describe('ApprovalWindowBridge', () => {
         // leaked, registration would immediately (and wrongly) settle this
         // decision to null via the drain-on-registration path, before
         // anyone acted on it.
-        const decision2 = bridge.openEnable({
-            requestId: 'q5',
-            origin: 'https://b.com',
-        })
+        const decision2 = bridge.openConnectionProposal(
+            proposalCtx('q5', 'https://b.com'),
+        )
         await flush()
         await fireMessage(
             {
@@ -248,163 +260,7 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision2).toEqual({ approvedAddresses: ['B'] })
     })
 
-    it('openSignTransactions: falls back to the window (no action) and resolve returns stxns', async () => {
-        const { chromeLike, created, fireMessage } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignTransactions({
-            requestId: 's1',
-            origin: 'https://x.com',
-            txns: [{ txn: 'AAA' }],
-            approvedAddresses: ['A'],
-        })
-        await flush()
-        expect(created[0].url).toContain('approval.html?requestId=s1')
-        const ctx = await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'get-approval',
-                requestId: 's1',
-            },
-            trustedSender,
-        )
-        expect(ctx).toMatchObject({
-            kind: 'sign-transactions',
-            txns: [{ txn: 'AAA' }],
-            approvedAddresses: ['A'],
-        })
-        await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
-                requestId: 's1',
-                stxns: ['SIGNED', null],
-            },
-            trustedSender,
-        )
-        expect(await decision).toEqual({ stxns: ['SIGNED', null] })
-    })
-
-    it('resolves null when the sign-transactions fallback window is closed without a decision', async () => {
-        const { chromeLike, closeWindow } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignTransactions({
-            requestId: 's2',
-            origin: 'https://y.com',
-            txns: [],
-            approvedAddresses: [],
-        })
-        await flush()
-        closeWindow(100)
-        expect(await decision).toBeNull()
-    })
-
-    it('ignores resolve-sign-transactions messages from an untrusted sender', async () => {
-        const { chromeLike, fireMessage } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignTransactions({
-            requestId: 's3',
-            origin: 'https://z.com',
-            txns: [],
-            approvedAddresses: [],
-        })
-        const ack = await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
-                requestId: 's3',
-                stxns: ['SIGNED'],
-            },
-            { id: 'ext-id', url: 'https://evil.com/x' },
-        )
-        expect(ack).toMatchObject({ ok: false })
-        let settled = false
-        void decision.then(() => (settled = true))
-        await Promise.resolve()
-        expect(settled).toBe(false)
-    })
-
-    it('openSignMessage: falls back to the window (no action) and resolve returns signature', async () => {
-        const { chromeLike, created, fireMessage } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignMessage({
-            requestId: 'm1',
-            origin: 'https://x.com',
-            message: { data: 'AAA' },
-            approvedAddresses: ['A'],
-        })
-        await flush()
-        expect(created[0].url).toContain('approval.html?requestId=m1')
-        const ctx = await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'get-approval',
-                requestId: 'm1',
-            },
-            trustedSender,
-        )
-        expect(ctx).toMatchObject({
-            kind: 'sign-message',
-            message: { data: 'AAA' },
-            approvedAddresses: ['A'],
-        })
-        await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-message',
-                requestId: 'm1',
-                signature: 'SIG',
-            },
-            trustedSender,
-        )
-        expect(await decision).toEqual({ signature: 'SIG' })
-    })
-
-    it('resolves null when the sign-message fallback window is closed without a decision', async () => {
-        const { chromeLike, closeWindow } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignMessage({
-            requestId: 'm2',
-            origin: 'https://y.com',
-            message: {},
-            approvedAddresses: [],
-        })
-        await flush()
-        closeWindow(100)
-        expect(await decision).toBeNull()
-    })
-
-    it('ignores resolve-sign-message messages from an untrusted sender', async () => {
-        const { chromeLike, fireMessage } = makeChrome()
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-        const decision = bridge.openSignMessage({
-            requestId: 'm3',
-            origin: 'https://z.com',
-            message: {},
-            approvedAddresses: [],
-        })
-        const ack = await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-message',
-                requestId: 'm3',
-                signature: 'SIG',
-            },
-            { id: 'ext-id', url: 'https://evil.com/x' },
-        )
-        expect(ack).toMatchObject({ ok: false })
-        let settled = false
-        void decision.then(() => (settled = true))
-        await Promise.resolve()
-        expect(settled).toBe(false)
-    })
-
-    it('openEnable: opens the toolbar popup via chrome.action.openPopup and never creates a window', async () => {
+    it('opens the toolbar popup via chrome.action.openPopup and never creates a window', async () => {
         const { chromeLike, created, openPopup, fireMessage } = makeChrome(
             undefined,
             'resolve',
@@ -412,10 +268,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'p1',
-            origin: 'https://x.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('p1', 'https://x.com'),
+        )
 
         await fireMessage(
             {
@@ -431,7 +286,7 @@ describe('ApprovalWindowBridge', () => {
         expect(created.length).toBe(0)
     })
 
-    it('openEnable: falls back to windows.create when chrome.action.openPopup rejects', async () => {
+    it('falls back to windows.create when chrome.action.openPopup rejects', async () => {
         const { chromeLike, created, openPopup, fireMessage } = makeChrome(
             undefined,
             'reject',
@@ -439,10 +294,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'p2',
-            origin: 'https://x.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('p2', 'https://x.com'),
+        )
         await flush()
 
         expect(openPopup).toHaveBeenCalledTimes(1)
@@ -461,15 +315,14 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toEqual({ approvedAddresses: ['A'] })
     })
 
-    it('openEnable: falls back to windows.create when chrome.action is absent', async () => {
+    it('falls back to windows.create when chrome.action is absent', async () => {
         const { chromeLike, created, fireMessage } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'p3',
-            origin: 'https://x.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('p3', 'https://x.com'),
+        )
         await flush()
 
         expect(created.length).toBe(1)
@@ -486,66 +339,10 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toBeNull()
     })
 
-    it('openSignTransactions: opens the toolbar popup via chrome.action.openPopup and never creates a window', async () => {
-        const { chromeLike, created, openPopup, fireMessage } = makeChrome(
-            undefined,
-            'resolve',
-        )
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-
-        const decision = bridge.openSignTransactions({
-            requestId: 's4',
-            origin: 'https://x.com',
-            txns: [],
-            approvedAddresses: [],
-        })
-        await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
-                requestId: 's4',
-                stxns: ['SIGNED'],
-            },
-            trustedSender,
-        )
-        expect(await decision).toEqual({ stxns: ['SIGNED'] })
-        expect(openPopup).toHaveBeenCalledTimes(1)
-        expect(created.length).toBe(0)
-    })
-
-    it('openSignMessage: opens the toolbar popup via chrome.action.openPopup and never creates a window', async () => {
-        const { chromeLike, created, openPopup, fireMessage } = makeChrome(
-            undefined,
-            'resolve',
-        )
-        const bridge = new ApprovalWindowBridge(chromeLike)
-        bridge.listen()
-
-        const decision = bridge.openSignMessage({
-            requestId: 'm4',
-            origin: 'https://x.com',
-            message: {},
-            approvedAddresses: [],
-        })
-        await fireMessage(
-            {
-                scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-message',
-                requestId: 'm4',
-                signature: 'SIG',
-            },
-            trustedSender,
-        )
-        expect(await decision).toEqual({ signature: 'SIG' })
-        expect(openPopup).toHaveBeenCalledTimes(1)
-        expect(created.length).toBe(0)
-    })
-
-    it('a foreign window close during a fallback sign-window create does not reject it (no stale-id reuse)', async () => {
-        // No chrome.action → sign falls back to a window, which Chrome assigns
-        // id 300. A foreign window (e.g. a just-closed popup) is removed with
-        // that same, soon-to-be-reused id while windows.create is still in
+    it('a foreign window close during a fallback window create does not reject it (no stale-id reuse)', async () => {
+        // No chrome.action → the approval falls back to a window, which Chrome
+        // assigns id 300. A foreign window (e.g. a just-closed popup) is removed
+        // with that same, soon-to-be-reused id while windows.create is still in
         // flight — the exact race the old removedBeforeRegistered stash turned
         // into a spurious cancel (the real-dapp "sign window instantly closes"
         // bug). With the stash gone, the unmatched removal is ignored.
@@ -553,12 +350,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openSignTransactions({
-            requestId: 's9',
-            origin: 'https://x.com',
-            txns: [{}],
-            approvedAddresses: ['A'],
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('s9', 'https://x.com'),
+        )
         // Before create resolves and registers id 300, the foreign id 300 is
         // removed.
         closeWindow(300)
@@ -567,24 +361,23 @@ describe('ApprovalWindowBridge', () => {
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
+                kind: 'resolve-approval',
                 requestId: 's9',
-                stxns: ['SIGNED'],
+                approvedAddresses: ['A'],
             },
             trustedSender,
         )
-        expect(await decision).toEqual({ stxns: ['SIGNED'] })
+        expect(await decision).toEqual({ approvedAddresses: ['A'] })
     })
 
-    it('get-current-approval returns the pending enable approval; untrusted sender gets {ok:false}', async () => {
+    it('get-current-approval returns the pending approval; untrusted sender gets {ok:false}', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'p4',
-            origin: 'https://current.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('p4', 'https://current.com'),
+        )
         // The popup only genuinely opens (and only then advertises
         // surface: 'popup') after tryOpenActionPopup resolves — flush lets
         // that happen before asserting get-current-approval sees it.
@@ -595,7 +388,7 @@ describe('ApprovalWindowBridge', () => {
             trustedSender,
         )
         expect(current).toMatchObject({
-            kind: 'enable',
+            kind: 'connection-proposal',
             requestId: 'p4',
             origin: 'https://current.com',
         })
@@ -607,16 +400,20 @@ describe('ApprovalWindowBridge', () => {
         expect(untrusted).toMatchObject({ ok: false })
     })
 
-    it('get-current-approval also returns a pending sign-transactions approval (sign opens in the toolbar popup too)', async () => {
+    it('get-current-approval also returns a pending connection-request approval (every kind prefers the toolbar popup)', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openSignTransactions({
+        void bridge.openConnectionRequest({
             requestId: 's7',
             origin: 'https://sign.com',
-            txns: [{ txn: 'AAA' }],
-            approvedAddresses: ['A'],
+            connectionId: 'client-1',
+            correlationId: '7',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://sign.com' },
+            sourceType: 'injected',
         })
         // See the flush() comment in the previous test — surface only
         // becomes 'popup' once tryOpenActionPopup genuinely resolves true.
@@ -627,7 +424,7 @@ describe('ApprovalWindowBridge', () => {
             trustedSender,
         )
         expect(current).toMatchObject({
-            kind: 'sign-transactions',
+            kind: 'connection-request',
             requestId: 's7',
             origin: 'https://sign.com',
         })
@@ -641,10 +438,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'gap-1',
-            origin: 'https://gap.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('gap-1', 'https://gap.com'),
+        )
         // Let openViaPopupOrWindow run up to (and start) its await on
         // tryOpenActionPopup, whose promise is still unsettled in 'manual'
         // mode — this is the exact window Finding 1 was about.
@@ -670,10 +466,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'gap-2',
-            origin: 'https://gap.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('gap-2', 'https://gap.com'),
+        )
         await Promise.resolve()
         await Promise.resolve()
 
@@ -684,7 +479,10 @@ describe('ApprovalWindowBridge', () => {
             { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
             trustedSender,
         )
-        expect(current).toMatchObject({ kind: 'enable', requestId: 'gap-2' })
+        expect(current).toMatchObject({
+            kind: 'connection-proposal',
+            requestId: 'gap-2',
+        })
     })
 
     it('get-current-approval does not return the approval when the popup attempt failed and the window fallback was used', async () => {
@@ -695,10 +493,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'gap-3',
-            origin: 'https://gap.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('gap-3', 'https://gap.com'),
+        )
         await Promise.resolve()
         await Promise.resolve()
 
@@ -880,22 +677,18 @@ describe('ApprovalWindowBridge', () => {
         bridge.listen()
 
         // A opens via the popup path.
-        const decisionA = bridge.openEnable({
-            requestId: 'race-a',
-            origin: 'https://a.com',
-        })
+        const decisionA = bridge.openConnectionProposal(
+            proposalCtx('race-a', 'https://a.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(1)
         expect(created.length).toBe(0)
 
         // B arrives from a different origin while A is still pending — it
         // must not contend for the popup.
-        const decisionB = bridge.openSignTransactions({
-            requestId: 'race-b',
-            origin: 'https://b.com',
-            txns: [{}],
-            approvedAddresses: ['B'],
-        })
+        const decisionB = bridge.openConnectionProposal(
+            proposalCtx('race-b', 'https://b.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(1)
         expect(created.length).toBe(1)
@@ -907,7 +700,10 @@ describe('ApprovalWindowBridge', () => {
             { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
             trustedSender,
         )
-        expect(current).toMatchObject({ kind: 'enable', requestId: 'race-a' })
+        expect(current).toMatchObject({
+            kind: 'connection-proposal',
+            requestId: 'race-a',
+        })
 
         await fireMessage(
             {
@@ -921,10 +717,9 @@ describe('ApprovalWindowBridge', () => {
         expect(await decisionA).toEqual({ approvedAddresses: ['A'] })
 
         // A has settled, so the popup path is free again for a new request.
-        const decisionC = bridge.openEnable({
-            requestId: 'race-c',
-            origin: 'https://c.com',
-        })
+        const decisionC = bridge.openConnectionProposal(
+            proposalCtx('race-c', 'https://c.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(2)
         expect(created.length).toBe(1)
@@ -932,13 +727,13 @@ describe('ApprovalWindowBridge', () => {
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
+                kind: 'resolve-approval',
                 requestId: 'race-b',
-                stxns: ['SIGNED'],
+                approvedAddresses: ['B'],
             },
             trustedSender,
         )
-        expect(await decisionB).toEqual({ stxns: ['SIGNED'] })
+        expect(await decisionB).toEqual({ approvedAddresses: ['B'] })
 
         await fireMessage(
             {
@@ -960,7 +755,7 @@ describe('ApprovalWindowBridge', () => {
         // reject-approval) while the attempt is still in flight left it
         // stuck forever, forcing every later approval to the window.
         //
-        // `void`, not `const decision = ...`: openEnable's own returned
+        // `void`, not `const decision = ...`: the open call's own returned
         // promise doesn't settle until ITS tryOpenActionPopup await
         // resolves, which this test deliberately never does (that promise
         // has no observable effect on the reservation once finish() below
@@ -972,10 +767,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'leak-a',
-            origin: 'https://a.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('leak-a', 'https://a.com'),
+        )
         await Promise.resolve()
         await Promise.resolve()
         expect(openPopup).toHaveBeenCalledTimes(1)
@@ -994,12 +788,9 @@ describe('ApprovalWindowBridge', () => {
         // is still unsettled, must be free to try the popup itself — if the
         // reservation leaked, this would be forced straight to the window
         // and openPopup would never be called for it.
-        void bridge.openSignTransactions({
-            requestId: 'leak-b',
-            origin: 'https://b.com',
-            txns: [],
-            approvedAddresses: [],
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('leak-b', 'https://b.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(2)
     })
@@ -1015,22 +806,18 @@ describe('ApprovalWindowBridge', () => {
         // A's attempt settles (openPopup rejects, falls back to the window)
         // and the `finally` around tryOpenActionPopup's await clears the
         // reservation as part of that.
-        void bridge.openEnable({
-            requestId: 'rel-a',
-            origin: 'https://a.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('rel-a', 'https://a.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(1)
         expect(created.length).toBe(1)
 
         // B arrives only once A's attempt has fully settled (not
         // concurrently) — it must still be free to try the popup itself.
-        void bridge.openSignTransactions({
-            requestId: 'rel-b',
-            origin: 'https://b.com',
-            txns: [],
-            approvedAddresses: [],
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('rel-b', 'https://b.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(2)
         expect(created.length).toBe(2)
@@ -1053,10 +840,9 @@ describe('ApprovalWindowBridge', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        void bridge.openEnable({
-            requestId: 'mid-a',
-            origin: 'https://a.com',
-        })
+        void bridge.openConnectionProposal(
+            proposalCtx('mid-a', 'https://a.com'),
+        )
         // Let A's openViaPopupOrWindow run up to (and start) its await on
         // tryOpenActionPopup.
         await Promise.resolve()
@@ -1065,12 +851,9 @@ describe('ApprovalWindowBridge', () => {
 
         // B arrives while A's attempt is still pending — it must route
         // straight to its own window instead of calling openPopup again.
-        const decisionB = bridge.openSignTransactions({
-            requestId: 'mid-b',
-            origin: 'https://b.com',
-            txns: [{}],
-            approvedAddresses: ['B'],
-        })
+        const decisionB = bridge.openConnectionProposal(
+            proposalCtx('mid-b', 'https://b.com'),
+        )
         await flush()
         expect(openPopup).toHaveBeenCalledTimes(1)
         expect(created.length).toBe(1)
@@ -1083,13 +866,13 @@ describe('ApprovalWindowBridge', () => {
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
-                kind: 'resolve-sign-transactions',
+                kind: 'resolve-approval',
                 requestId: 'mid-b',
-                stxns: ['SIGNED'],
+                approvedAddresses: ['B'],
             },
             trustedSender,
         )
-        expect(await decisionB).toEqual({ stxns: ['SIGNED'] })
+        expect(await decisionB).toEqual({ approvedAddresses: ['B'] })
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
@@ -1116,10 +899,9 @@ describe('ApprovalWindowBridge', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            const decision = bridge.openEnable({
-                requestId: 'hung-popup',
-                origin: 'https://a.com',
-            })
+            const decision = bridge.openConnectionProposal(
+                proposalCtx('hung-popup', 'https://a.com'),
+            )
 
             await vi.advanceTimersByTimeAsync(0)
             expect(openPopup).toHaveBeenCalledTimes(1)
@@ -1162,19 +944,15 @@ describe('ApprovalWindowBridge', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            void bridge.openEnable({
-                requestId: 'hung-a',
-                origin: 'https://a.com',
-            })
+            void bridge.openConnectionProposal(
+                proposalCtx('hung-a', 'https://a.com'),
+            )
             await vi.advanceTimersByTimeAsync(POPUP_OPEN_TIMEOUT_MS + 10)
             expect(created.length).toBe(1)
 
-            void bridge.openSignTransactions({
-                requestId: 'hung-b',
-                origin: 'https://b.com',
-                txns: [],
-                approvedAddresses: [],
-            })
+            void bridge.openConnectionProposal(
+                proposalCtx('hung-b', 'https://b.com'),
+            )
             await vi.advanceTimersByTimeAsync(0)
             expect(openPopup).toHaveBeenCalledTimes(2)
         } finally {
@@ -1182,15 +960,14 @@ describe('ApprovalWindowBridge', () => {
         }
     })
 
-    it('finish() does not call windows.remove for a popup-surface enable resolved via resolve-approval', async () => {
+    it('finish() does not call windows.remove for a popup-surface approval resolved via resolve-approval', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'p5',
-            origin: 'https://x.com',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('p5', 'https://x.com'),
+        )
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
@@ -1264,6 +1041,7 @@ describe('ApprovalWindowBridge', () => {
             operation: { type: 'sign-transactions', group: [] },
             authorizedAccounts: ['AAAA'],
             peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
         })
         await flush()
 
@@ -1282,6 +1060,41 @@ describe('ApprovalWindowBridge', () => {
         })
     })
 
+    // The dapp handler answers the page -32004 at its own TTL. Leaving the
+    // approval live let the user approve afterwards: the wallet signed, the
+    // signature went nowhere, and the user was shown success.
+    it('withdraws a connection-request approval so a later approve cannot settle it', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openConnectionRequest({
+            requestId: 'req-expired',
+            origin: 'https://dapp.example',
+            connectionId: 'client-1',
+            correlationId: '44',
+            operation: { type: 'sign-transactions', group: [] },
+            authorizedAccounts: ['AAAA'],
+            peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
+        })
+        await flush()
+
+        bridge.withdrawConnectionRequest('req-expired')
+        expect(await decision).toBe(APPROVAL_WITHDRAWN)
+
+        const late = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-connection-request',
+                requestId: 'req-expired',
+                result: { type: 'sign-transactions', signed: ['c3R4bg=='] },
+            },
+            trustedSender,
+        )
+        expect(late).toEqual({ ok: false, error: 'unknown request' })
+    })
+
     it('rejects a connection-request approval when its window is closed by the user', async () => {
         const { chromeLike, closeWindow } = makeChrome()
         const bridge = new ApprovalWindowBridge(chromeLike)
@@ -1295,6 +1108,7 @@ describe('ApprovalWindowBridge', () => {
             operation: { type: 'sign-transactions', group: [] },
             authorizedAccounts: ['AAAA'],
             peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
         })
         await flush()
         closeWindow(100)
@@ -1302,17 +1116,18 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toBeNull()
     })
 
-    // Every pending approval past the first becomes a real OS window, and
-    // `enable` needs no prior permission — so without a cap a page that varies
-    // the request id could bury the desktop with a loop of a few hundred.
+    // Every pending approval past the first becomes a real OS window, and a
+    // connection proposal needs no prior permission — so without a cap a page
+    // that varies the request id could bury the desktop with a loop of a few
+    // hundred.
     describe('capacity limits', () => {
-        const openEnableFrom = (
+        const openProposalFrom = (
             bridge: ApprovalWindowBridge,
             origin: string,
             requestId: string,
         ): Promise<unknown> =>
             bridge
-                .openEnable({ requestId, origin })
+                .openConnectionProposal(proposalCtx(requestId, origin))
                 // Each rejection is asserted via the returned value; catching
                 // here keeps an expected rejection from failing the run as an
                 // unhandled one.
@@ -1324,12 +1139,12 @@ describe('ApprovalWindowBridge', () => {
             bridge.listen()
 
             for (let i = 0; i < 3; i++) {
-                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                void openProposalFrom(bridge, 'https://spam.example', `q${i}`)
                 await flush()
             }
             expect(created).toHaveLength(3)
 
-            const fourth = await openEnableFrom(
+            const fourth = await openProposalFrom(
                 bridge,
                 'https://spam.example',
                 'q3',
@@ -1348,11 +1163,11 @@ describe('ApprovalWindowBridge', () => {
             bridge.listen()
 
             for (let i = 0; i < 3; i++) {
-                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                void openProposalFrom(bridge, 'https://spam.example', `q${i}`)
                 await flush()
             }
 
-            void openEnableFrom(bridge, 'https://other.example', 'other-1')
+            void openProposalFrom(bridge, 'https://other.example', 'other-1')
             await flush()
 
             expect(created).toHaveLength(4)
@@ -1366,7 +1181,7 @@ describe('ApprovalWindowBridge', () => {
             // 3 origins x 3 each would be 9; the global cap of 8 bites first.
             for (const origin of ['a', 'b', 'c']) {
                 for (let i = 0; i < 3; i++) {
-                    void openEnableFrom(
+                    void openProposalFrom(
                         bridge,
                         `https://${origin}.example`,
                         `${origin}-${i}`,
@@ -1422,7 +1237,7 @@ describe('ApprovalWindowBridge', () => {
             bridge.listen()
 
             for (let i = 0; i < 3; i++) {
-                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                void openProposalFrom(bridge, 'https://spam.example', `q${i}`)
                 await flush()
             }
             expect(created).toHaveLength(3)
@@ -1431,7 +1246,7 @@ describe('ApprovalWindowBridge', () => {
             // Not awaited: a successfully registered approval stays pending
             // until the user decides. The new window is the evidence it was
             // admitted rather than refused.
-            void openEnableFrom(bridge, 'https://spam.example', 'q-next')
+            void openProposalFrom(bridge, 'https://spam.example', 'q-next')
             await flush()
 
             expect(created).toHaveLength(4)
@@ -1444,13 +1259,16 @@ describe('ApprovalWindowBridge', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            const first = bridge.openEnable({
-                requestId: 'dupe',
-                origin: 'https://x.com',
-            })
+            const first = bridge.openConnectionProposal(
+                proposalCtx('dupe', 'https://x.com'),
+            )
             await flush()
 
-            const second = await openEnableFrom(bridge, 'https://x.com', 'dupe')
+            const second = await openProposalFrom(
+                bridge,
+                'https://x.com',
+                'dupe',
+            )
             await flush()
 
             expect(second).toBeInstanceOf(Error)
@@ -1482,6 +1300,7 @@ describe('decision/approval kind matching', () => {
             operation: { type: 'sign-transactions', group: [] },
             authorizedAccounts: ['AAAA'],
             peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
         })
         await flush()
 
@@ -1521,17 +1340,16 @@ describe('decision/approval kind matching', () => {
         const bridge = new ApprovalWindowBridge(chromeLike)
         bridge.listen()
 
-        const decision = bridge.openEnable({
-            requestId: 'req-enable',
-            origin: 'https://dapp.example',
-        })
+        const decision = bridge.openConnectionProposal(
+            proposalCtx('req-proposal', 'https://dapp.example'),
+        )
         await flush()
 
         await fireMessage(
             {
                 scope: DAPP_APPROVAL_SCOPE,
                 kind: 'resolve-approval',
-                requestId: 'req-enable',
+                requestId: 'req-proposal',
                 approvedAddresses: ['ADDR'],
             },
             trustedSender,
@@ -1554,6 +1372,7 @@ describe('decision/approval kind matching', () => {
             operation: { type: 'sign-transactions', group: [] },
             authorizedAccounts: ['AAAA'],
             peer: { name: 'dApp', url: 'https://dapp.example' },
+            sourceType: 'injected',
         })
         await flush()
 
@@ -1582,10 +1401,9 @@ describe('unclaimed toolbar-popup approvals', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            const decision = bridge.openEnable({
-                requestId: 'unclaimed',
-                origin: 'https://x.com',
-            })
+            const decision = bridge.openConnectionProposal(
+                proposalCtx('unclaimed', 'https://x.com'),
+            )
             await vi.advanceTimersByTimeAsync(0)
             await vi.advanceTimersByTimeAsync(6000)
 
@@ -1605,20 +1423,18 @@ describe('unclaimed toolbar-popup approvals', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            void bridge.openEnable({
-                requestId: 'first',
-                origin: 'https://x.com',
-            })
+            void bridge.openConnectionProposal(
+                proposalCtx('first', 'https://x.com'),
+            )
             await vi.advanceTimersByTimeAsync(0)
             expect(openPopup).toHaveBeenCalledTimes(1)
             expect(created).toHaveLength(0) // took the popup slot
 
             await vi.advanceTimersByTimeAsync(6000) // dismissed, never claimed
 
-            void bridge.openEnable({
-                requestId: 'second',
-                origin: 'https://x.com',
-            })
+            void bridge.openConnectionProposal(
+                proposalCtx('second', 'https://x.com'),
+            )
             await vi.advanceTimersByTimeAsync(0)
 
             // Slot released, so this one gets the popup too rather than
@@ -1637,10 +1453,9 @@ describe('unclaimed toolbar-popup approvals', () => {
             const bridge = new ApprovalWindowBridge(chromeLike)
             bridge.listen()
 
-            const decision = bridge.openEnable({
-                requestId: 'claimed',
-                origin: 'https://x.com',
-            })
+            const decision = bridge.openConnectionProposal(
+                proposalCtx('claimed', 'https://x.com'),
+            )
             await vi.advanceTimersByTimeAsync(0)
 
             // The popup fetches it — this is the claim.

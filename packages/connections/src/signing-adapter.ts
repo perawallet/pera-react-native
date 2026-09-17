@@ -242,6 +242,7 @@ const enqueueArc60Request = (
         sourceType: message.sourceType,
         transportId: message.connectionId,
         sourceMetadata: message.peer,
+        verifiedOrigin: message.verifiedOrigin,
         stdSigData,
         metadata,
         approve: async (signed: PeraArbitraryDataSignResult[]) => {
@@ -328,6 +329,7 @@ const enqueueLegacyDataRequest = (
         sourceType: message.sourceType,
         transportId: message.connectionId,
         sourceMetadata: message.peer,
+        verifiedOrigin: message.verifiedOrigin,
         data: items,
         approve: async (signed: PeraArbitraryDataSignResult[]) => {
             await message.respond({
@@ -431,6 +433,7 @@ export const enqueueInboundRequest = (
             // exact request after an app kill.
             payloadId: handoffPayloadId(message.correlationId),
             sourceMetadata: message.peer,
+            verifiedOrigin: message.verifiedOrigin,
             // A failed delivery must propagate: it is how a dead-socket revival
             // surfaces as retryable rather than as a fake success.
             respondWithResult: async signed => {

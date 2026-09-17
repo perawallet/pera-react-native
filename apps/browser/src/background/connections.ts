@@ -11,6 +11,7 @@
  */
 
 import {
+    APPROVAL_WITHDRAWN,
     isConnectionApprovalRequestMessage,
     isTrustedExtensionPageSender,
     sendConnectionsControlMessage,
@@ -166,8 +167,14 @@ export const installConnectionsApprovalRouter = ({
                             operation: request.operation,
                             authorizedAccounts: request.authorizedAccounts,
                             peer: request.peer,
+                            sourceType: request.sourceType,
+                            verifiedOrigin: request.verifiedOrigin,
                         })
                         .then(decision => {
+                            // The handler already answered the peer and forgot
+                            // the request; posting a decision now would only
+                            // raise a spurious delivery-failure notice.
+                            if (decision === APPROVAL_WITHDRAWN) return
                             controlOrNotify(
                                 {
                                     kind: 'respond',
@@ -198,6 +205,13 @@ export const installConnectionsApprovalRouter = ({
                                 },
                             })
                         })
+                    sendResponse({ ok: true } satisfies ConnectionsAck)
+                    return false
+                }
+                case 'connection-request-withdrawn': {
+                    approvals.withdrawConnectionRequest(
+                        `connection-request-${request.connectionId}-${request.correlationId}`,
+                    )
                     sendResponse({ ok: true } satisfies ConnectionsAck)
                     return false
                 }

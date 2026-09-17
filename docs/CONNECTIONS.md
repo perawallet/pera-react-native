@@ -52,15 +52,20 @@ reaches react-native, and the service worker imports the main barrel.
 
 ## Message scopes
 
-Defined in `extensions/platform-chrome/src/connections/protocol.ts`; every listener is gated to
-extension-origin senders because content scripts share `chrome.runtime.onMessage`.
+Defined in `extensions/platform-chrome/src/connections/protocol.ts`, and the `pera-dapp-*` ones in
+`extensions/platform-chrome/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
+senders because content scripts share `chrome.runtime.onMessage`.
 
 | Scope                      | Direction                | Carries                                                                                                                                       |
 | -------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting |
-| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-error; acked                                                                              |
+| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                |
 | `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                     |
 | `pera-wc-page-pair`        | content script to SW     | a page's pair request; the SW stamps the browser-verified `requesterOrigin`                                                                   |
+| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                               |
+| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                               |
+| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                             |
+| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                     |
 
 Two ack meanings on the request scope: a proposal or request acks acceptance (the decision comes
 back later on the control scope, so waiting for it would deadlock the host); an error notice acks
@@ -79,11 +84,13 @@ addresses before approving, because any extension page can send on the control s
   registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
   (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
   adapter.
-- Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` does the same boot and starts
+- Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect
+  v1 and `dapp` handlers, runs both legacy importers, does the same boot and starts
   `connectionsHost.ts`, which holds pending proposals and requests while the service worker collects
   the user's decision.
-- Extension UI: `useConnectionsProvider.web.ts` builds the remote client and mirrors the store into
-  `useConnectionsStore`, re-listing when another extension context writes the storage key.
+- Extension UI: `useConnectionsProvider.web.ts` builds the remote client, constructs the `dapp`
+  handler over the no-op transport so its descriptors are answered locally, and mirrors the store
+  into `useConnectionsStore`, re-listing when another extension context writes the storage key.
 - Service worker: `apps/browser/src/background/connections.ts` routes approval requests to the
   window bridge and decisions back; `connect-modal-pair.ts` is the trust boundary for page-initiated
   pairs.
@@ -94,6 +101,25 @@ and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
 `apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
 neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
+
+## The `dapp` handler
+
+`packages/dapp` is the `window.pera` transport ([dApp bridge](DAPP_BRIDGE.md)) as a handler. It is
+origin-identified — no `pair`, no URI — and the origin is the connection id, so the connections list,
+the per-origin approval cap in `extensions/platform-chrome/src/dapp/approval-bridge.ts` and
+`disconnect` all key on one value. It is network-agnostic (`matchesNetwork` is always true) and
+reports the active network at connect time instead.
+
+The handler is transport-agnostic through `DappTransport`: the extension supplies one over
+`chrome.runtime` messaging from the offscreen document; UI realms construct it with the no-op
+transport so descriptors are answered locally. A proposal from this handler carries
+`requesterOrigin`, which the host prefers over its pairing-keyed lookup — for a URI pairing the
+origin arrives on the pair command, for a page request the handler already holds it.
+
+Answers travel back as messages, not a held `sendResponse`: the worker acks acceptance and the
+offscreen handler answers later through `pera-dapp-host-response`, which the worker delivers with
+`chrome.tabs.sendMessage`. Holding the callback across worker → offscreen → approval window would
+lose it on worker eviction.
 
 ## Boot order
 
@@ -135,3 +161,7 @@ client registry surface and cannot tear the handler down first.
 `Connection.origin` records where a pairing entered the wallet (`external-browser`, `in-app`, `qr`)
 at approval time, from the option passed to `pair`. The success sheet and the post-sign hand-off key
 off it; an in-app pairing shows no sheet because the dApp is directly behind it.
+
+Only a URI pairing can carry one in, so a `dapp` connection records none, as the handler contract
+suite asserts: it is created from a page request, and the browser-verified origin it does carry is
+the connection id, not this field.

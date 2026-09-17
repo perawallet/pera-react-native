@@ -23,7 +23,7 @@
 //
 // The usePeraWebviewInterface registry handles every op unchanged. Only
 // pushWebView is intercepted — dapps open in real tabs, where the injected
-// ARC-0027 provider supplies connect/sign, so there's no nested viewer.
+// window.pera bridge supplies connect/sign, so there's no nested viewer.
 // walletConnect falls through to the registry, which pairs via the offscreen
 // host; that approval opens as its own window, not a sheet in this tree.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'

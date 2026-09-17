@@ -119,9 +119,10 @@ export const startConnectionsHost = (
                 requested: proposal.requested,
                 expiresAt: proposal.expiresAt,
                 requesterOrigin:
-                    proposal.pairingId === undefined
+                    proposal.requesterOrigin ??
+                    (proposal.pairingId === undefined
                         ? undefined
-                        : requesterOrigins.get(proposal.pairingId),
+                        : requesterOrigins.get(proposal.pairingId)),
             })
             .catch((error: unknown) => {
                 proposals.delete(proposal.proposalId)
@@ -147,6 +148,28 @@ export const startConnectionsHost = (
     })
 
     registry.subscribeToMessages(message => {
+        if (message.kind === 'request-expired') {
+            const key = requestKey(message.connectionId, message.correlationId)
+            // The handler has answered the peer with a timeout. Nothing may
+            // approve it now, or the user would sign into a discarded result.
+            if (!requests.delete(key)) return
+            void deps
+                .requestApproval({
+                    kind: 'connection-request-withdrawn',
+                    connectionId: message.connectionId,
+                    correlationId: message.correlationId,
+                })
+                .catch((error: unknown) => {
+                    logger.error(
+                        '[connections-host] request withdrawal failed',
+                        {
+                            key,
+                            error,
+                        },
+                    )
+                })
+            return
+        }
         if (message.kind !== 'request') return
         const key = requestKey(message.connectionId, message.correlationId)
         requests.set(key, message)
@@ -158,6 +181,8 @@ export const startConnectionsHost = (
                 operation: encodeWalletOperation(message.operation),
                 authorizedAccounts: message.authorizedAccounts,
                 peer: message.peer,
+                sourceType: message.sourceType,
+                verifiedOrigin: message.verifiedOrigin,
             })
             .catch((error: unknown) => {
                 requests.delete(key)

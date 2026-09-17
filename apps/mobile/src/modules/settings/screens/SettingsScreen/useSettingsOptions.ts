@@ -111,18 +111,6 @@ export const useSettingsOptions = () => {
                               } satisfies SettingsOptionItem,
                           ]
                         : []),
-                    ...(!routeCapabilities.connectionsSettings &&
-                    routeCapabilities.dappConnections
-                        ? [
-                              {
-                                  route: 'ConnectedSites',
-                                  icon: 'globe',
-                                  title: t(
-                                      'settings.main.connected_sites_title',
-                                  ),
-                              } satisfies SettingsOptionItem,
-                          ]
-                        : []),
                     ...(routeCapabilities.rekeyFlows
                         ? [
                               {

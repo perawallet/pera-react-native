@@ -319,7 +319,7 @@ const waitForConnectorConnect = (
         })
     })
 
-// Selects an account if none is pre-selected: useEnableRequestScreen only
+// Selects an account if none is pre-selected: useWcConnectScreen only
 // pre-selects the active account if the store had hydrated by mount time.
 const ensureAccountSelected = async (approvalPage: Page): Promise<void> => {
     const connectButton = approvalPage.getByTestId('wc-connect-connect')

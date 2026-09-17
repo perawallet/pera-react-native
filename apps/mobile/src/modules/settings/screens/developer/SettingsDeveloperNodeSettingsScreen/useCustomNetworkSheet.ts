@@ -35,7 +35,7 @@ export type CustomNetworkSheetErrors = {
     genesisHash?: boolean
     /**
      * Required even though signing compares only `genesisHash`: the extension
-     * advertises `genesisId` to every dApp over ARC-0027, and
+     * advertises `genesisId` to every connected dApp, and
      * `fetchGenesisFromNode` defaults it to `''` when a node omits it — so
      * without this a "valid" config can carry an empty chain name.
      */

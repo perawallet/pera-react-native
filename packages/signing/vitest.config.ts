@@ -48,9 +48,19 @@ export default defineConfig({
                 __dirname,
                 '../ledger/src/index.ts',
             ),
+            // Must precede the barrel entry: these aliases prefix-match, so
+            // the barrel would otherwise swallow the subpath.
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',
+            ),
+            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
+                __dirname,
+                '../blockchain/src/arc0001/limits.ts',
             ),
             '@perawallet/wallet-core-blockchain': path.resolve(
                 __dirname,

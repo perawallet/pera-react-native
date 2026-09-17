@@ -67,7 +67,7 @@ export const openExpandedTab = async (flow?: ExpandedFlow): Promise<void> => {
 }
 
 /** Opens an arbitrary external URL in a new browser tab (webview pushWebView
- * → real tab on web; the injected ARC-0027 provider supplies connect/sign). */
+ * → real tab on web; the injected window.pera provider supplies connect/sign). */
 export const openExternalTab = (url: string): void => {
     void chrome.tabs.create({ url })
 }

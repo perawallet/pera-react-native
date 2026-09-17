@@ -71,7 +71,6 @@ const { mockCapabilities } = vi.hoisted(() => ({
         storeRating: true,
         developerSettings: true,
         vaultSecuritySettings: false,
-        dappConnections: false,
         rekeyFlows: true,
         connectionsSettings: false,
     },
@@ -108,7 +107,6 @@ describe('useSettingsOptions', () => {
             storeRating: true,
             developerSettings: true,
             vaultSecuritySettings: false,
-            dappConnections: false,
             rekeyFlows: true,
             connectionsSettings: false,
         })
@@ -301,30 +299,6 @@ describe('useSettingsOptions', () => {
             })
         })
 
-        it('omits the Connected Sites item when dappConnections is off (native)', () => {
-            const { result } = renderHook(() => useSettingsOptions())
-            const { settingsOptions } = result.current
-
-            expect(
-                settingsOptions[0].items.some(
-                    item => item.route === 'ConnectedSites',
-                ),
-            ).toBe(false)
-        })
-
-        it('includes the Connected Sites item when dappConnections is on (web)', () => {
-            Object.assign(mockCapabilities, { dappConnections: true })
-
-            const { result } = renderHook(() => useSettingsOptions())
-            const { settingsOptions } = result.current
-
-            expect(settingsOptions[0].items).toContainEqual({
-                route: 'ConnectedSites',
-                icon: 'globe',
-                title: 'settings.main.connected_sites_title',
-            })
-        })
-
         it('omits the scan-rekeyed action when rekeyFlows is off (web)', () => {
             Object.assign(mockCapabilities, { rekeyFlows: false })
 
@@ -349,9 +323,7 @@ describe('useSettingsOptions', () => {
             })
         })
 
-        it('shows the two separate WalletConnect/Connected Sites items — not the unified one — when connectionsSettings is off (native, always today)', () => {
-            Object.assign(mockCapabilities, { dappConnections: true })
-
+        it('shows the separate WalletConnect item — not the unified one — when connectionsSettings is off (native, always today)', () => {
             const { result } = renderHook(() => useSettingsOptions())
             const { settingsOptions } = result.current
 
@@ -360,15 +332,13 @@ describe('useSettingsOptions', () => {
                 'NotificationsSettings',
                 'WalletConnectSettings',
                 'PasskeysSettings',
-                'ConnectedSites',
                 undefined,
             ])
         })
 
-        it('shows a single unified Connections item instead of the two separate items when connectionsSettings is on (web)', () => {
+        it('shows a single unified Connections item instead of the separate WalletConnect item when connectionsSettings is on (web)', () => {
             Object.assign(mockCapabilities, {
                 walletConnectSettings: true,
-                dappConnections: true,
                 connectionsSettings: true,
             })
 

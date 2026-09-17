@@ -36,11 +36,20 @@ const {
     createStorageSessionKeyStore,
     importLegacyConnections,
     reconnectAllConnectors,
+    canSignWith,
+    customNetworkGetState,
+    dappTransport,
+    createChromeDappTransport,
+    dappHandler,
+    createDappConnectionHandler,
+    importLegacyDappPermissions,
 } = vi.hoisted(() => {
     const handleControlMessage = vi.fn()
     const registry = { register: vi.fn() }
     const v1Handler = { kind: 'walletconnect-v1' }
     const sessionKeys = { commit: vi.fn() }
+    const dappTransport = { onRequest: vi.fn(), notify: vi.fn() }
+    const dappHandler = { kind: 'dapp' }
     return {
         startConnectionsHost: vi.fn((_deps: ConnectionsHostDeps) => ({
             handleControlMessage,
@@ -66,12 +75,20 @@ const {
             skipped: 0,
         })),
         reconnectAllConnectors: vi.fn(),
+        canSignWith: vi.fn((_account: { address: string }) => true),
+        customNetworkGetState: vi.fn(),
+        dappTransport,
+        createChromeDappTransport: vi.fn(() => dappTransport),
+        dappHandler,
+        createDappConnectionHandler: vi.fn((_options: unknown) => dappHandler),
+        importLegacyDappPermissions: vi.fn(async () => ({ imported: 0 })),
     }
 })
 
 vi.mock('../connections/connectionsHost', () => ({ startConnectionsHost }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    createChromeDappTransport,
     createWorkerExecutor: vi.fn(() => ({ onDeath: vi.fn() })),
     onLocalStorageKeyChanged,
     startDatabaseHost: vi.fn(() => ({ setReady: vi.fn() })),
@@ -109,6 +126,7 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 // `.persist.rehydrate()`, so the app-wide selector-hook mocks are replaced
 // with the accessor shape these deps rely on.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
+    canSignWith,
     useAccountsStore: {
         getState: accountsGetState,
         persist: { rehydrate: vi.fn() },
@@ -120,8 +138,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         persist: { rehydrate: vi.fn() },
     },
     useCustomNetworkStore: {
+        getState: customNetworkGetState,
         persist: { rehydrate: vi.fn() },
     },
+}))
+vi.mock('@perawallet/wallet-core-dapp', () => ({
+    createDappConnectionHandler,
+    importLegacyDappPermissions,
 }))
 vi.mock('@perawallet/wallet-core-polling', () => ({
     usePollingStore: { persist: { rehydrate: vi.fn() } },
@@ -137,14 +160,22 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     reconnectAllConnectors,
 }))
 
+const chromeStorageLocal = { get: vi.fn(), remove: vi.fn() }
+
 describe('runOffscreenApp connections wiring', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.stubGlobal('Worker', vi.fn())
+        // The dapp legacy importer reads the SW-proxied storage shim.
+        vi.stubGlobal('chrome', { storage: { local: chromeStorageLocal } })
         accountsGetState.mockReturnValue({
             accounts: [{ address: 'ADDR1' }, { address: 'ADDR2' }],
         })
         networkGetState.mockReturnValue({ network: 'mainnet' })
+        customNetworkGetState.mockReturnValue({
+            customNetwork: { genesisHash: 'custom-genesis' },
+        })
+        canSignWith.mockReturnValue(true)
     })
 
     const boot = async () => {
@@ -166,6 +197,34 @@ describe('runOffscreenApp connections wiring', () => {
             sessionKeys,
         })
         expect(registry.register).toHaveBeenCalledWith(v1Handler)
+    })
+
+    it('registers the dapp handler over the chrome transport', async () => {
+        await boot()
+
+        expect(registry.register).toHaveBeenCalledWith(dappHandler)
+        const options = createDappConnectionHandler.mock.calls[0]?.[0] as {
+            transport: unknown
+            getNetwork: () => string
+            getCustomNetworkGenesisHash: () => string | undefined
+        }
+        expect(options.transport).toBe(dappTransport)
+        expect(options.getNetwork()).toBe('mainnet')
+        expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
+    })
+
+    it('offers the dapp handler only the accounts the wallet can sign with', async () => {
+        canSignWith.mockImplementation(
+            (account: { address: string }) => account.address === 'ADDR1',
+        )
+        await boot()
+
+        const options = createDappConnectionHandler.mock.calls[0]?.[0] as {
+            getAccounts: () => { address: string; name: string }[]
+        }
+        expect(options.getAccounts()).toEqual([
+            { address: 'ADDR1', name: 'ADDR1' },
+        ])
     })
 
     it('reads the handler network off the network store', async () => {
@@ -224,6 +283,24 @@ describe('runOffscreenApp connections wiring', () => {
             store: connectionStore,
             sessionKeys,
         })
+        expect(importLegacyDappPermissions).toHaveBeenCalledWith({
+            area: chromeStorageLocal,
+            store: connectionStore,
+        })
+    })
+
+    // bootConnections only catches at the `importLegacy` boundary, so a
+    // WalletConnect record that keeps throwing would otherwise strand the
+    // dapp grants unmigrated on this boot and every later one.
+    it('still imports legacy dapp grants when the walletconnect import throws', async () => {
+        importLegacyConnections.mockRejectedValueOnce(new Error('bad record'))
+        await boot()
+
+        const options = bootConnections.mock.calls[0]?.[0] as {
+            importLegacy: () => Promise<unknown>
+        }
+        await expect(options.importLegacy()).resolves.toBeUndefined()
+        expect(importLegacyDappPermissions).toHaveBeenCalledTimes(1)
     })
 
     it('subscribes the control handler only once the registry is live', async () => {

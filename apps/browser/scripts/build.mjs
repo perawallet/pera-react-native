@@ -235,7 +235,7 @@ for (const [entry, outfile] of [
         target: 'chrome120',
         alias: {
             // Narrow alias: content scripts run on every http/https page, so
-            // they get only the pure ARC-0027 wire (content-wire.ts), not the
+            // they get only the pure dapp wire (content-wire.ts), not the
             // full barrel (chrome DB host, storage proxy, hydratePlatform,
             // etc.) that the service-worker build below still aliases to.
             '@perawallet/wallet-extension-platform-chrome': path.join(
@@ -332,5 +332,42 @@ if (bakedBackend && !uiCode.includes(bakedBackend)) {
 // string literals are compiled into every bundle even when an override wins at
 // runtime. Presence proves nothing; the two checks above — that the *configured*
 // backend reached both bundles — are the ones with signal.
+
+// The content scripts and the service worker exist to stay small and
+// dependency-free: they run on every https page (content) or wake on every
+// message (worker). One dropped `type` keyword on an `import type` in
+// extensions/platform-chrome/src/dapp/transport.ts pulls the whole dapp
+// handler graph — and with it the signing package and react-native — into a
+// bundle that is supposed to hold the wire only. Ceilings are roughly double
+// today's size: they catch a graph leak, not ordinary growth.
+const BUNDLE_LIMITS = [
+    ['content-inject-main.js', 32 * 1024],
+    ['content-relay-isolated.js', 16 * 1024],
+    ['background.js', 3 * 1024 * 1024],
+]
+
+// Bundled code keeps no module paths, so the marker has to be a string the
+// handler graph leaves behind. 'react-native' survives as a literal in the
+// packages the handler pulls in; the handler's own factory name survives
+// because esbuild keeps top-level function names.
+const FORBIDDEN_SYMBOLS = ['react-native', 'createDappConnectionHandler']
+
+for (const [name, maxBytes] of BUNDLE_LIMITS) {
+    const file = path.join(dist, name)
+    const code = readFileSync(file, 'utf8')
+    if (Buffer.byteLength(code) > maxBytes) {
+        throw new Error(
+            `${name} is ${Buffer.byteLength(code)} bytes, over its ${maxBytes}-byte ceiling — ` +
+                'something pulled a new dependency graph into it. Check the ' +
+                '`import type` declarations on the dapp/platform-chrome seam.',
+        )
+    }
+    const leaked = FORBIDDEN_SYMBOLS.filter(symbol => code.includes(symbol))
+    if (leaked.length > 0) {
+        throw new Error(
+            `${name} contains ${leaked.join(', ')} — the dapp handler graph leaked into it.`,
+        )
+    }
+}
 
 console.info(`[extension] built ${dist}`)

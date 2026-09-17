@@ -10,66 +10,19 @@
  limitations under the License
  */
 
+import { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
 import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
 
-const MAX_ERROR_LENGTH = 200
-const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
-
-/**
- * Errors whose `message` may be relayed verbatim to untrusted web content.
- * Deny-by-default — anything not named here gets {@link GENERIC_ERROR_MESSAGE}.
- *
- * `instanceof AppError` was the previous test, and it is NOT a safety property:
- * PipelineError subclasses wrap third-party text verbatim (`TransportError` and
- * `SourceError` pass `err.message` straight through) and interpolate wallet-held
- * addresses (`CannotSignError`, `NoLocalParticipantsError`) — the exact data
- * `Arc0001Error`'s own docblock forbids sending to a remote peer.
- *
- * The two entries earn their place: ARC-0001 requires a meaningful message
- * alongside the numeric code, and those strings only echo the dApp's own request
- * back at it; `UserCancelledError` is a fixed literal with no interpolation.
- *
- * Matched by name rather than `instanceof` deliberately. Importing the classes
- * would pull the blockchain and signing packages into this module, which is
- * loaded in a bare node environment by handlers.test.ts. A rename that breaks a
- * name here fails CLOSED (generic copy, no leak) and is caught by
- * sanitizeErrorForWebview.spec.ts, which pins each name to the real class.
- */
-const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = [
-    'Arc0001Error',
-    'UserCancelledError',
-]
-
-/**
- * This is a JSON-RPC protocol surface exposed to untrusted web content, and is
- * deliberately NOT localized — a protocol response must not vary by user
- * locale.
- */
-export const sanitizeErrorForWebview = (error: Error): string => {
-    const message = WEBVIEW_SAFE_ERROR_NAMES.includes(error.name)
-        ? error.message
-        : GENERIC_ERROR_MESSAGE
-    return message.length > MAX_ERROR_LENGTH
-        ? message.slice(0, MAX_ERROR_LENGTH)
-        : message
-}
-
-export const JsonRpcErrorCode = {
-    ParseError: -32_700,
-    InvalidRequest: -32_600,
-    MethodNotFound: -32_601,
-    InvalidParams: -32_602,
-    InternalError: -32_603,
-    ServerErrorStart: -32_000,
-    Unauthorized: -32_001,
-    ServerErrorEnd: -32_099,
-} as const
-
-export type JsonRpcErrorCode =
-    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
+// One codec for the in-app webview and the extension's window.pera bridge.
+// The `/wire` subpath, not the barrel: the barrel reaches the handler and its
+// config graph, which nothing in the webview bridge needs.
+export {
+    JsonRpcErrorCode,
+    sanitizeErrorForWebview,
+} from '@perawallet/wallet-core-dapp/wire'
 
 export type RequireSecureContext = {
     operation: string

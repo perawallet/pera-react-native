@@ -10,23 +10,15 @@
  limitations under the License
  */
 
-// Legacy (non-ARC-60) arbitrary-data signing over the injected transport is
-// rejected rather than left hanging.
 import { useEffect, useRef, useState } from 'react'
 import {
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
     useSigningRequest,
-    isArc60WirePayload,
-    parseArc60WireRequest,
     GenesisHashMismatchError,
     type SignRequest,
-    type Arc60SignRequest,
-    type PeraArbitraryDataSignResult,
 } from '@perawallet/wallet-core-signing'
-import type { Arc0001WalletTransaction } from '@perawallet/wallet-core-blockchain'
 import {
-    canSignArc60,
     useAllAccounts,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -36,16 +28,10 @@ import {
     type InboundMessage,
 } from '@perawallet/wallet-core-connections'
 import {
-    encodeToBase64,
-    generateOrderedUniqueId,
-} from '@perawallet/wallet-core-shared'
-import {
     decodeWalletOperation,
     encodeWalletOperationResult,
     rejectApproval,
     resolveConnectionRequest,
-    resolveSignMessage,
-    resolveSignTransactions,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -85,164 +71,57 @@ export const useSignRequestApprovalScreen =
         useEffect(() => {
             if (enqueuedRef.current) return
             if (!requestId || !approval) return
-            if (
-                approval.kind !== 'sign-transactions' &&
-                approval.kind !== 'sign-message' &&
-                approval.kind !== 'connection-request'
-            ) {
-                return
-            }
+            if (approval.kind !== 'connection-request') return
             // The accounts store rehydrates asynchronously; on a cold window
             // the resolver would throw against an empty set. Reaching this
             // screen required a granted account, so it hydrates non-empty.
             if (accounts.length === 0) return
             enqueuedRef.current = true
 
-            if (approval.kind === 'connection-request') {
-                // The grant on the message is the snapshot taken when the
-                // request arrived; the user can revoke the connection from the
-                // popup while this window is open, and signing against a
-                // revoked grant would produce a signature nothing can deliver.
-                if (!isConnectionAlive(approval.connectionId)) {
-                    setError(t('dapp.sign.connection_revoked'))
-                    void rejectApproval(requestId)
-                    return
-                }
-                // The offscreen host already validated the operation; this rebuilds
-                // the neutral adapter's input from the wire.
-                const message: InboundMessage = {
-                    kind: 'request',
-                    // The offscreen host answers only WalletConnect kinds; a
-                    // future transport must carry its own label over the wire.
-                    sourceType: 'walletconnect',
-                    connectionId: approval.connectionId,
-                    correlationId: approval.correlationId,
-                    authorizedAccounts: approval.authorizedAccounts,
-                    peer: approval.peer,
-                    operation: decodeWalletOperation(approval.operation),
-                    respond: async result => {
-                        await resolveConnectionRequest(
-                            requestId,
-                            encodeWalletOperationResult(result),
-                        )
-                        window.close()
-                    },
-                    reject: async () => {
-                        await rejectApproval(requestId)
-                        window.close()
-                    },
-                }
-                enqueueInboundRequest(message, {
-                    resolveArc0001: resolve,
-                    enqueueArc0001: enqueue,
-                    addSignRequest,
-                    removeSignRequest,
-                    accounts: allAccounts,
-                    // One request per window, and no extension handler
-                    // reports an expiry yet, so nothing is ever withdrawn.
-                    pendingRequests: new Map(),
-                    // Keep the window open so the reason is readable, as the
-                    // sign-transactions branch below does.
-                    onError: err => setError(describeSignError(err, t)),
-                })
+            // The grant on the message is the snapshot taken when the
+            // request arrived; the user can revoke the connection from the
+            // popup while this window is open, and signing against a
+            // revoked grant would produce a signature nothing can deliver.
+            if (!isConnectionAlive(approval.connectionId)) {
+                setError(t('dapp.sign.connection_revoked'))
+                void rejectApproval(requestId)
                 return
             }
-
-            if (approval.kind === 'sign-transactions') {
-                try {
-                    const txns = approval.txns as Arc0001WalletTransaction[]
-                    const resolved = resolve(
-                        { transactions: txns },
-                        {
-                            authorizedAddresses: new Set(
-                                approval.approvedAddresses,
-                            ),
-                        },
+            // The offscreen host already validated the operation; this rebuilds
+            // the neutral adapter's input from the wire.
+            const message: InboundMessage = {
+                kind: 'request',
+                sourceType: approval.sourceType,
+                connectionId: approval.connectionId,
+                correlationId: approval.correlationId,
+                authorizedAccounts: approval.authorizedAccounts,
+                peer: approval.peer,
+                verifiedOrigin: approval.verifiedOrigin,
+                operation: decodeWalletOperation(approval.operation),
+                respond: async result => {
+                    await resolveConnectionRequest(
+                        requestId,
+                        encodeWalletOperationResult(result),
                     )
-                    // enqueue handles its own failures via respondWithError.
-                    void enqueue(resolved, {
-                        sourceType: 'injected',
-                        transportId: requestId,
-                        verifiedOrigin: approval.origin,
-                        sourceMetadata: { url: approval.origin },
-                        respondWithResult: async result => {
-                            await resolveSignTransactions(requestId, result)
-                            window.close()
-                        },
-                        respondWithReject: () => {
-                            void rejectApproval(requestId).finally(() =>
-                                window.close(),
-                            )
-                        },
-                        // Keep the popup open so the reason is readable.
-                        respondWithError: (err: Error) => {
-                            setError(describeSignError(err, t))
-                            void rejectApproval(requestId)
-                        },
-                    })
-                } catch (e) {
-                    setError(describeSignError(e, t))
-                    void rejectApproval(requestId)
-                }
-                return
+                    window.close()
+                },
+                reject: async () => {
+                    await rejectApproval(requestId)
+                    window.close()
+                },
             }
-
-            if (!isArc60WirePayload(approval.message)) {
-                setError(t('dapp.sign.unsupported_message'))
-                void rejectApproval(requestId)
-                return
-            }
-            try {
-                const { stdSigData, metadata } = parseArc60WireRequest(
-                    approval.message,
-                )
-
-                // Only accounts granted to THIS origin may be named as the
-                // signer; otherwise a dapp connected with account A could
-                // request a SIWA signature naming account B.
-                const signerAccount = accounts.find(
-                    account => account.address === stdSigData.signer,
-                )
-                if (
-                    !approval.approvedAddresses.includes(stdSigData.signer) ||
-                    !signerAccount ||
-                    !canSignArc60(signerAccount)
-                ) {
-                    setError(t('dapp.sign.unauthorized_signer'))
-                    void rejectApproval(requestId)
-                    return
-                }
-
-                addSignRequest({
-                    id: generateOrderedUniqueId(),
-                    type: 'arc60',
-                    transport: 'callback',
-                    sourceType: 'injected',
-                    transportId: requestId,
-                    verifiedOrigin: approval.origin,
-                    sourceMetadata: { url: approval.origin },
-                    stdSigData,
-                    metadata,
-                    approve: async (signed: PeraArbitraryDataSignResult[]) => {
-                        await resolveSignMessage(
-                            requestId,
-                            encodeToBase64(signed[0].signature),
-                        )
-                        window.close()
-                    },
-                    reject: async () => {
-                        await rejectApproval(requestId)
-                        window.close()
-                    },
-                    error: async () => {
-                        await rejectApproval(requestId)
-                        window.close()
-                    },
-                } as Arc60SignRequest)
-            } catch (e) {
-                setError(describeSignError(e, t))
-                void rejectApproval(requestId)
-            }
+            enqueueInboundRequest(message, {
+                resolveArc0001: resolve,
+                enqueueArc0001: enqueue,
+                addSignRequest,
+                removeSignRequest,
+                accounts: allAccounts,
+                // One request per window, and an expiry withdraws the whole
+                // approval at the bridge rather than this one entry.
+                pendingRequests: new Map(),
+                // Keep the window open so the reason is readable.
+                onError: err => setError(describeSignError(err, t)),
+            })
         }, [
             requestId,
             approval,

@@ -17,9 +17,13 @@ export default defineConfig({
     plugins: [],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: resolve(__dirname, 'src/index.ts'),
+                // Own entry so the service worker's payload gate can read the
+                // request caps without the signing pipeline behind them.
+                constants: resolve(__dirname, 'src/constants.ts'),
+            },
             formats: ['es'],
-            fileName: 'index',
         },
         rollupOptions: {
             external: [
@@ -31,6 +35,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-ledger',
                 '@perawallet/wallet-core-kms',
+                '@perawallet/wallet-core-kms/constants',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-extension-platform',

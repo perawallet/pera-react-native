@@ -12,16 +12,12 @@
 
 import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import {
-    toComparableTime,
     toUnifiedConnection,
-    toUnifiedDappPermission,
     type UnifiedConnection,
     type UseConnectionsSettingsScreenResult,
 } from './connectionsSettingsHelpers'
@@ -43,38 +39,21 @@ export const useConnectionsSettingsScreen =
             isHydrated,
             handleRevoke: revokeConnection,
         } = useConnectionSettingsList()
-        const { sites, isLoading, revoke } = useDappConnectionsStore()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
-        const { showError } = useErrorToast()
 
-        const handleRevokeError = useCallback(
-            (error: unknown) => {
-                showError(error, t('common.error.title'))
-            },
-            [showError, t],
+        const connections = useMemo(
+            () =>
+                connectionRows
+                    .map(row => toUnifiedConnection(row, revokeConnection))
+                    .sort((a, b) => b.connectedAt - a.connectedAt),
+            [connectionRows, revokeConnection],
         )
-
-        const connections = useMemo(() => {
-            // ARC-0027 dapp permissions are not `Connection` records and keep their
-            // own store, so the two sources are unioned here.
-            const unified: UnifiedConnection[] = [
-                ...connectionRows.map(row =>
-                    toUnifiedConnection(row, revokeConnection),
-                ),
-                ...sites.map(site =>
-                    toUnifiedDappPermission(site, revoke, handleRevokeError),
-                ),
-            ]
-            return unified.sort(
-                (a, b) =>
-                    toComparableTime(b.connectedAt) -
-                    toComparableTime(a.connectedAt),
-            )
-        }, [connectionRows, revokeConnection, sites, revoke, handleRevokeError])
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {
+                // A dapp connection revokes a site's page-level access, not a
+                // paired WalletConnect session, so the copy differs.
                 const isWalletConnect = connection.kind !== 'dapp'
                 const confirmed = await requestBottomSheet<boolean>({
                     contents: (
@@ -130,7 +109,6 @@ export const useConnectionsSettingsScreen =
 
         return {
             connections,
-            isLoading,
             isHydrated,
             handleRevoke,
             keyExtractor,

@@ -40,6 +40,10 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            '@perawallet/wallet-core-blockchain/arc0001/limits': path.resolve(
+                __dirname,
+                '../blockchain/src/arc0001/limits.ts',
+            ),
             '@perawallet/wallet-core-blockchain': path.resolve(
                 __dirname,
                 '../blockchain/src/index.ts',
@@ -47,6 +51,10 @@ export default defineConfig({
             // Source rather than dist: both are imported for their runtime
             // values, not just types. The signing barrel is additionally
             // replaced wholesale in vitest.setup.ts — see the note there.
+            '@perawallet/wallet-core-signing/constants': path.resolve(
+                __dirname,
+                '../signing/src/constants.ts',
+            ),
             '@perawallet/wallet-core-signing': path.resolve(
                 __dirname,
                 '../signing/src/index.ts',

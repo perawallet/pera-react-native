@@ -47,8 +47,8 @@ const write = async (record: LockoutRecord): Promise<void> => {
 // parallelism was reachable in practice, but Argon2id is a fixed cost too —
 // the counter should be correct on its own terms.
 //
-// Same shape as DappPermissionStore.withLock, including the in-process queue
-// fallback for contexts without the Web Locks API.
+// `navigator.locks` where available, with an in-process promise queue fallback
+// for contexts without the Web Locks API.
 let lockQueue: Promise<unknown> = Promise.resolve()
 
 const withLock = async <T>(fn: () => Promise<T>): Promise<T> => {

@@ -11,12 +11,12 @@
  */
 
 // Shared secure-context gate for every page-facing trust boundary (the
-// ARC-0027 dapp router and the WebAuthn ceremony router).
+// window.pera dapp router and the WebAuthn ceremony router).
 //
 // Why the scheme matters and a bare host check is not enough: credential
 // lookup and RP-ID resolution key on the *bare* registrable domain with no
 // scheme, so a credential minted at `https://example.com` is reachable from
-// `http://example.com`, and an ARC-0027 grant issued to one is a grant the
+// `http://example.com`, and a dapp grant issued to one is a grant the
 // other can present. Without this check an attacker who can forge a plaintext
 // response — on-path on the victim's network (hostile Wi-Fi, ISP, captive
 // portal) — drives a full ceremony against the victim's HTTPS credential, and

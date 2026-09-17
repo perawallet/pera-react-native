@@ -376,6 +376,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-blockchain/arc0001/limits',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/blockchain/src/arc0001/limits.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-blockchain',
                 replacement: path.resolve(
                     __dirname,
@@ -445,6 +452,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/settings/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-kms/constants',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/kms/src/constants.ts',
                 ),
             },
             {
@@ -529,6 +543,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/devtools/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-signing/constants',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/signing/src/constants.ts',
                 ),
             },
             {

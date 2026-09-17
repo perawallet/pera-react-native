@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./arc0001/limits": {
+      "types": "./dist/arc0001/limits.d.ts",
+      "default": "./dist/arc0001/limits.js"
     }
   },
   "scripts": {

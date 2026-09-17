@@ -247,13 +247,13 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('approval-placeholder')
     })
 
-    it('routes popup surface to dapp-request when a pending enable is discovered', async () => {
+    it('routes popup surface to dapp-request when a pending approval is discovered', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = null
         mocks.isUnlocked = null
         mocks.getCurrentApproval.mockResolvedValue({
             requestId: 'r1',
-            kind: 'enable',
+            kind: 'connection-proposal',
         })
 
         const { result } = renderHook(() => useWebAppShell())

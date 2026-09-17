@@ -325,7 +325,66 @@ describe('startConnectionsHost', () => {
                 },
                 authorizedAccounts: ['ADDR1'],
                 peer: { name: 'Dapp' },
+                sourceType: 'walletconnect',
             })
+        })
+
+        it('forwards the transport-verified origin to the approval surface', () => {
+            fake.emitMessage(
+                makeRequest({
+                    sourceType: 'injected',
+                    verifiedOrigin: 'https://dapp.example',
+                }),
+            )
+
+            expect(requestApproval).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    kind: 'connection-request',
+                    verifiedOrigin: 'https://dapp.example',
+                }),
+            )
+        })
+
+        // The dapp handler answers the page -32004 at its own TTL. If the
+        // approval stayed open the user could still approve, the wallet would
+        // sign, and the signature would be dropped on a request nothing can
+        // deliver — success to the user, a timeout to the dApp.
+        it('withdraws the approval when the handler reports the request expired, and then refuses to respond', async () => {
+            fake.emitMessage(makeRequest({ sourceType: 'injected' }))
+            requestApproval.mockClear()
+
+            fake.emitMessage({
+                kind: 'request-expired',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(requestApproval).toHaveBeenCalledWith({
+                kind: 'connection-request-withdrawn',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+            expect(
+                await control({
+                    kind: 'respond',
+                    connectionId: 'conn-1',
+                    correlationId: '7',
+                    outcome: {
+                        ok: true,
+                        result: { type: 'sign-transactions', signed: ['c2ln'] },
+                    },
+                }),
+            ).toEqual({ ok: false, error: 'Unknown request conn-1:7' })
+        })
+
+        it('withdraws nothing for an expiry on a request already answered', () => {
+            fake.emitMessage({
+                kind: 'request-expired',
+                connectionId: 'conn-1',
+                correlationId: '7',
+            })
+
+            expect(requestApproval).not.toHaveBeenCalled()
         })
 
         it('ignores notifications', () => {

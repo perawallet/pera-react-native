@@ -22,6 +22,10 @@ export default defineConfig({
             ),
             // Resolve to source, not dist: the browser dist externalizes
             // node `crypto`, which the mnemonic index codecs rely on.
+            '@perawallet/wallet-core-kms/constants': path.resolve(
+                __dirname,
+                '../kms/src/constants.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',

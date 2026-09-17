@@ -17,6 +17,9 @@ Source of truth in code:
 - Handlers: `apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts`
 - Page-side injected API:
   `apps/mobile/src/modules/webview/components/PWWebView/injected-scripts.ts`
+- JSON-RPC codec and error codes: `packages/dapp/src/codec.ts`, imported through that package's
+  `./wire` subpath and shared with the extension's `window.pera` bridge
+  ([dApp bridge](DAPP_BRIDGE.md))
 
 ## Version negotiation
 

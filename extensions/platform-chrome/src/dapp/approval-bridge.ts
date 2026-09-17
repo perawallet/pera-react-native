@@ -11,8 +11,8 @@
  */
 
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import type { Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
 import type { Network } from '@perawallet/wallet-core-shared'
+import type { SourceType } from '@perawallet/wallet-core-connections'
 import type {
     ConnectionKind,
     ConnectionPeer,
@@ -34,28 +34,6 @@ import type {
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
 
 export type PendingApproval =
-    | {
-          kind: 'enable'
-          requestId: string
-          origin: string
-          faviconUrl?: string
-      }
-    | {
-          kind: 'sign-transactions'
-          requestId: string
-          origin: string
-          faviconUrl?: string
-          txns: unknown[]
-          approvedAddresses: string[]
-      }
-    | {
-          kind: 'sign-message'
-          requestId: string
-          origin: string
-          faviconUrl?: string
-          message: Record<string, unknown>
-          approvedAddresses: string[]
-      }
     | {
           kind: 'connection-proposal'
           requestId: string
@@ -81,6 +59,14 @@ export type PendingApproval =
           operation: WireWalletOperation
           authorizedAccounts: string[]
           peer: ConnectionPeer
+          /**
+           * Which handler raised this. The approval window drives its failure
+           * copy off it, so a guess here shows the wrong surface — or none.
+           */
+          sourceType: SourceType
+          // Browser-verified origin of the requesting tab. Never conflate with
+          // `origin` above, which is derived from the dApp-asserted `peer.url`.
+          verifiedOrigin?: string
       }
     | {
           // Notification-only: the host already refused the peer. The surface's
@@ -135,9 +121,7 @@ export const POPUP_OPEN_TIMEOUT_MS = 4000
 // Which approval kinds each decision message may settle. `get-approval` and the
 // universal rejects are omitted: valid for every kind.
 const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
-    'resolve-approval': ['enable', 'connection-proposal'],
-    'resolve-sign-transactions': ['sign-transactions'],
-    'resolve-sign-message': ['sign-message'],
+    'resolve-approval': ['connection-proposal'],
     'resolve-connection-request': ['connection-request'],
     'resolve-passkey': ['passkey-create', 'passkey-get'],
     'reject-passkey': ['passkey-create', 'passkey-get'],
@@ -155,6 +139,14 @@ const isDecisionKindAllowed = (
     return allowed.includes(approvalKind)
 }
 
+/** Settles an approval that nothing may answer any more; see `withdrawConnectionRequest`. */
+export const APPROVAL_WITHDRAWN: unique symbol = Symbol('approval-withdrawn')
+
+export type ConnectionRequestDecision =
+    | { result: WireWalletOperationResult }
+    | typeof APPROVAL_WITHDRAWN
+    | null
+
 /** Callers surface this to the dApp as a declined request rather than opening a surface. */
 export class ApprovalRejectedError extends Error {
     constructor(message: string) {
@@ -163,9 +155,7 @@ export class ApprovalRejectedError extends Error {
     }
 }
 
-export class ApprovalWindowBridge
-    implements Arc0027ApprovalOpener, PasskeyApprovalOpener
-{
+export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     private readonly pending = new Map<
         string,
         {
@@ -193,49 +183,6 @@ export class ApprovalWindowBridge
     listen(): void {
         this.chromeLike.runtime.onMessage.addListener(this.handleMessage)
         this.chromeLike.windows.onRemoved.addListener(this.handleWindowRemoved)
-    }
-
-    async openEnable(ctx: {
-        requestId: string
-        origin: string
-        faviconUrl?: string
-    }): Promise<{ approvedAddresses: string[] } | null> {
-        const decision = this.awaitApproval<{ approvedAddresses: string[] }>({
-            ...ctx,
-            kind: 'enable',
-        })
-        await this.openViaPopupOrWindow(ctx.requestId)
-        return decision
-    }
-
-    async openSignTransactions(ctx: {
-        requestId: string
-        origin: string
-        faviconUrl?: string
-        txns: unknown[]
-        approvedAddresses: string[]
-    }): Promise<{ stxns: (string | null)[] } | null> {
-        const decision = this.awaitApproval<{ stxns: (string | null)[] }>({
-            ...ctx,
-            kind: 'sign-transactions',
-        })
-        await this.openViaPopupOrWindow(ctx.requestId)
-        return decision
-    }
-
-    async openSignMessage(ctx: {
-        requestId: string
-        origin: string
-        faviconUrl?: string
-        message: Record<string, unknown>
-        approvedAddresses: string[]
-    }): Promise<{ signature: string } | null> {
-        const decision = this.awaitApproval<{ signature: string }>({
-            ...ctx,
-            kind: 'sign-message',
-        })
-        await this.openViaPopupOrWindow(ctx.requestId)
-        return decision
     }
 
     async openConnectionProposal(ctx: {
@@ -266,15 +213,29 @@ export class ApprovalWindowBridge
         operation: WireWalletOperation
         authorizedAccounts: string[]
         peer: ConnectionPeer
-    }): Promise<{ result: WireWalletOperationResult } | null> {
-        const decision = this.awaitApproval<{
-            result: WireWalletOperationResult
-        }>({
+        sourceType: SourceType
+        verifiedOrigin?: string
+    }): Promise<ConnectionRequestDecision> {
+        const decision = this.awaitApproval<
+            { result: WireWalletOperationResult } | typeof APPROVAL_WITHDRAWN
+        >({
             ...ctx,
             kind: 'connection-request',
         })
         await this.openViaPopupOrWindow(ctx.requestId)
         return decision
+    }
+
+    /**
+     * The peer has already been answered — its own request expired — so the
+     * surface settles with no decision and the caller posts nothing back. A
+     * window closes; a toolbar popup stays up but can no longer settle, so a
+     * late Approve surfaces as an undelivered decision instead of silently
+     * signing something the dApp was told had timed out.
+     */
+    withdrawConnectionRequest(requestId: string): void {
+        if (!this.pending.has(requestId)) return
+        this.finish(requestId, APPROVAL_WITHDRAWN)
     }
 
     /**
@@ -324,8 +285,7 @@ export class ApprovalWindowBridge
     // caller declares, so the cast back is safe.
     private awaitApproval<T>(approval: PendingApproval): Promise<T | null> {
         // Overwriting a colliding requestId would strand the previous `settle`
-        // forever; a peer retrying a correlation id reaches this. The ARC-0027
-        // path is also guarded upstream by the router's in-flight map.
+        // forever; a peer retrying a correlation id reaches this.
         const existing = this.pending.get(approval.requestId)
         if (existing) {
             throw new ApprovalRejectedError(
@@ -341,10 +301,10 @@ export class ApprovalWindowBridge
         })
     }
 
-    // Every pending approval past the first becomes a real OS window, `enable`
-    // needs no prior permission, and the core router only de-dupes on
-    // `origin::requestId`, so a page varying the id could otherwise bury the
-    // desktop in windows recoverable only by force-quitting the browser.
+    // Every pending approval past the first becomes a real OS window and a
+    // connection proposal needs no prior permission, so a page varying the
+    // request id could otherwise bury the desktop in windows recoverable only
+    // by force-quitting the browser.
     private assertCapacity(key: string): void {
         if (this.pending.size >= MAX_PENDING_APPROVALS) {
             throw new ApprovalRejectedError(
@@ -472,8 +432,6 @@ export class ApprovalWindowBridge
             kind?: string
             requestId?: string
             approvedAddresses?: string[]
-            stxns?: (string | null)[]
-            signature?: string
             credential?: SerializedCredential
             reason?: string
             result?: unknown
@@ -527,16 +485,6 @@ export class ApprovalWindowBridge
                 this.finish(msg.requestId!, {
                     approvedAddresses: msg.approvedAddresses ?? [],
                 })
-                sendResponse({ ok: true })
-                return true
-            }
-            case 'resolve-sign-transactions': {
-                this.finish(msg.requestId!, { stxns: msg.stxns ?? [] })
-                sendResponse({ ok: true })
-                return true
-            }
-            case 'resolve-sign-message': {
-                this.finish(msg.requestId!, { signature: msg.signature ?? '' })
                 sendResponse({ ok: true })
                 return true
             }

@@ -120,7 +120,7 @@ export const WcConnectHeader = ({
                                 style={requesterStyles.requesterOrigin}
                                 testID='wc-connect-requester-origin'
                             >
-                                {t('dapp.enable.request_origin', {
+                                {t('dapp.approval.request_origin', {
                                     origin: requesterOrigin,
                                 })}
                             </PWText>
@@ -135,12 +135,12 @@ export const WcConnectHeader = ({
                                 style={requesterStyles.verifiedBadgeText}
                                 accessibilityLabel={t(
                                     // The visible text drops the origin; assistive tech keeps it.
-                                    'dapp.enable.requester_verified_a11y_origin',
+                                    'dapp.approval.requester_verified_a11y_origin',
                                     { origin: requesterOrigin },
                                 )}
                                 testID='wc-connect-requester-verified-badge'
                             >
-                                {t('dapp.enable.requester_verified_label')}
+                                {t('dapp.approval.requester_verified_label')}
                             </PWText>
                         </PWView>
                     </PWView>

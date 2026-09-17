@@ -1,16 +1,5 @@
 {
     "dapp": {
-        "enable": {
-            "title": "Connect to this site",
-            "description": "Select the accounts you want to share with this site.",
-            "peer_origin_claim": "Site says: {{origin}}",
-            "request_origin": "Request came from {{origin}}",
-            "requester_verified_label": "Verified tab",
-            "requester_verified_a11y_label": "Verified: this request came from your browser tab",
-            "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}",
-            "connect_button": "Connect",
-            "cancel_button": "Cancel"
-        },
         "sign": {
             "error": {
                 "title": "Can't process this request",
@@ -18,8 +7,6 @@
                 "dismiss": "Close"
             },
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
-            "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
-            "unauthorized_signer": "This site isn't authorized to request a signature for that account.",
             "connection_revoked": "This connection was disconnected. Reconnect from the site and try again."
         },
         "passkey": {
@@ -38,7 +25,10 @@
             }
         },
         "approval": {
-            "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site."
+            "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site.",
+            "request_origin": "Request came from {{origin}}",
+            "requester_verified_label": "Verified tab",
+            "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}"
         }
     },
     "account_menu": {
@@ -2393,7 +2383,6 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
-        "connected_sites": "Connected Sites",
         "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
@@ -2599,7 +2588,6 @@
             "scan_rekeyed_title": "Scan for Rekeyed Accounts",
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
-            "connected_sites_title": "Connected Sites",
             "connections_title": "Connections",
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
@@ -2788,10 +2776,6 @@
             "interception_toggle_body_disabled": "Turn this on to let Pera Wallet save and offer passkeys for sites you sign in to."
         },
         "connected_sites": {
-            "empty_title": "No connected sites",
-            "empty_body": "Sites you connect your wallet to will appear here.",
-            "accounts_count": "{{count}} accounts",
-            "accounts_count_one": "{{count}} account",
             "revoke_title": "Disconnect site",
             "revoke_body": "{{origin}} will no longer have access to your connected accounts. You can reconnect any time from the site.",
             "revoke_confirm": "Disconnect",

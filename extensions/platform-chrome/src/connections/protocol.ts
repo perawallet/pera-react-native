@@ -13,6 +13,7 @@
 import type {
     ConnectionErrorScope,
     ConnectionProposal,
+    SourceType,
     WalletOperation,
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
@@ -317,6 +318,21 @@ export type ConnectionApprovalRequest =
           operation: WireWalletOperation
           authorizedAccounts: string[]
           peer: ConnectionPeer
+          /** The handler's own label; the approval window has no other way to know it. */
+          sourceType: SourceType
+          /** See `InboundMessage.verifiedOrigin`; the approval window must not derive it from `peer`. */
+          verifiedOrigin?: string
+      }
+    /**
+     * The handler answered the peer itself (its request expired), so any
+     * approval surface still open for it must settle with no decision. Without
+     * this the user can approve a request the dApp was already told timed out,
+     * and the signature is produced and then discarded.
+     */
+    | {
+          kind: 'connection-request-withdrawn'
+          connectionId: string
+          correlationId: string
       }
     // Notification-only: the host already refused the peer, and the surface
     // exists so the user learns why their click did nothing.
@@ -378,7 +394,15 @@ export const isConnectionApprovalRequest = (
                 typeof value.correlationId === 'string' &&
                 isWireWalletOperation(value.operation) &&
                 isStringArray(value.authorizedAccounts) &&
-                isPeer(value.peer)
+                isPeer(value.peer) &&
+                typeof value.sourceType === 'string' &&
+                isOptionalString(value.verifiedOrigin)
+            )
+        }
+        case 'connection-request-withdrawn': {
+            return (
+                typeof value.connectionId === 'string' &&
+                typeof value.correlationId === 'string'
             )
         }
         case 'connection-error': {
