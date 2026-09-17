@@ -25,7 +25,6 @@ import {
 } from '@perawallet/wallet-core-onramp'
 import {
     ALGO_ASSET_NAME,
-    isAlgoAssetName,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
