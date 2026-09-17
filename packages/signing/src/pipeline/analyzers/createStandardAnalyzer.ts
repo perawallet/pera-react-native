@@ -197,8 +197,6 @@ const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {
     const warnings: AnalysisWarning[] = []
 
     for (const tx of transactions) {
-        const senderAddress = tx.sender.toString()
-
         // Close fields live under the type-specific payload (algosdk v3 /
         // algokit v10), never at the top level — only `rekeyTo` is a top-level
         // header field. Reading them off `tx` directly silently never matches,
