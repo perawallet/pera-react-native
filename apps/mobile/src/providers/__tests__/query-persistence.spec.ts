@@ -137,8 +137,6 @@ describe('shouldDehydrateQuery', () => {
         ).toBe(false)
     })
 
-    // The default decides what a module added tomorrow does, so it is the
-    // whole point of the allowlist: an unclassified prefix stays off disk.
     it('never persists a prefix the policy does not list', () => {
         expect(
             shouldDehydrateQuery(asQuery(['discover', 'feed'], 'success')),

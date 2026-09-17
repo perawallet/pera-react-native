@@ -18,27 +18,19 @@ import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 // strings, and consumers call Decimal methods on hydrated data during render.
 // Bump whenever the persisted shape changes incompatibly so such caches are
 // discarded instead of rehydrated.
-//
-// Bumped with the allowlist below: without it, up to
-// `reactQueryPersistenceAge` (60 days) of caches written under the old
-// deny-list stay on disk and rehydrate, so the modules this change stops
-// persisting would keep theirs.
+// Bump it when the persistence policy narrows too: caches written under a
+// laxer policy otherwise rehydrate for up to `reactQueryPersistenceAge`.
 export const PERSISTED_CACHE_BUSTER = 'prefix-allowlist'
 
-type PersistencePolicy = 'persist' | 'never'
-
 /**
- * What each query-key prefix may write to the persisted cache.
- *
- * The persister writes to plaintext MMKV on device and `chrome.storage.local`
- * on web, so this is a disk-exposure decision, not a caching one. It is an
- * allowlist rather than a deny-list because the default decides what a module
- * added tomorrow does: unlisted means never persisted, so a new query carrying
- * a token or a payment link cannot reach unencrypted storage by omission.
- * `__tests__/query-persistence-coverage.spec.ts` fails until a new prefix is
- * classified here.
+ * What each query-key prefix may write to the persisted cache, which is
+ * plaintext MMKV on device and `chrome.storage.local` on web — a
+ * disk-exposure decision, not a caching one. Unlisted means never persisted,
+ * so a new query carrying a token cannot reach unencrypted storage by
+ * omission; `__tests__/query-persistence-coverage.spec.ts` fails until a new
+ * prefix is classified here.
  */
-export const QUERY_PREFIX_POLICY = {
+export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     // Address-linked, PII-carrying, secret-adjacent or worthless once stale.
     // The DB-backed ones (accounts, assets, transactions) also have SQLite as
     // their source of truth; blockchain carries raw indexer/algod bytes that
@@ -64,7 +56,7 @@ export const QUERY_PREFIX_POLICY = {
     currencies: 'persist',
     projects: 'persist',
     staking: 'persist',
-} as const satisfies Record<string, PersistencePolicy>
+}
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
     if (query.state.status !== 'success') return false
@@ -83,8 +75,6 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
     const prefix = query.queryKey[0]
 
     return (
-        typeof prefix === 'string' &&
-        QUERY_PREFIX_POLICY[prefix as keyof typeof QUERY_PREFIX_POLICY] ===
-            'persist'
+        typeof prefix === 'string' && QUERY_PREFIX_POLICY[prefix] === 'persist'
     )
 }

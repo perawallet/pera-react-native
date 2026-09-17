@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-// The outstanding condition of the at-rest risk acceptance: the persisted
-// React Query cache is plaintext, so that acceptance holds only while nothing
-// secret persists. QUERY_PREFIX_POLICY decides that per prefix and defaults to
-// "never", so a new module is safe on day one — this sweep is what makes it
-// *deliberate*, by failing until someone classifies the prefix they added.
+// The persisted React Query cache is plaintext, so nothing secret may persist.
+// QUERY_PREFIX_POLICY defaults to "never", which makes a new module safe on day
+// one; this sweep is what makes it deliberate, by failing until someone
+// classifies the prefix they added.
 //
 // Source scan rather than imports: 10 of the 15 MODULE_PREFIX constants are
 // module-private, and a prefix does not always match its package name
