@@ -17,15 +17,9 @@ export const NFD_BULK_CHUNK_SIZE = 50
 export const NFD_BULK_CONCURRENCY = 2
 
 /**
- * How long a cached row (positive or negative) is considered fresh.
- *
- * A name-to-address binding is mutable — names are sold, expire and are
- * re-registered — and these resolutions label send destinations and signing
- * summaries. A day of staleness meant a name could point at its previous
- * owner's address for a whole day after changing hands, on exactly the screens
- * where the user stops reading the address. An hour keeps the batching win
- * (names are still resolved once per screenful, not once per row) while
- * bounding that window.
+ * How long a resolved name (positive or negative) is trusted, in the SQLite
+ * cache and the address query alike. Names are sold and re-registered, and
+ * they label send destinations, so the window stays short.
  */
 export const NFD_CACHE_TTL_MS = 60 * 60 * 1000 // 1h
 

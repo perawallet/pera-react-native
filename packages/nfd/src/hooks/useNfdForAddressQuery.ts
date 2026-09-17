@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { nfdBatchQueue } from '../services/nfdBatchQueue'
+import { NFD_CACHE_TTL_MS } from '../constants'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdName } from '../models'
 
@@ -48,7 +49,7 @@ export const useNfdForAddressQuery = (
             return valuePromise.then(value => (value ? [value] : []))
         },
         enabled,
-        staleTime: config.reactQueryLongLivedStaleTime,
+        staleTime: NFD_CACHE_TTL_MS,
         gcTime: config.reactQueryLongLivedGCTime,
     })
 }

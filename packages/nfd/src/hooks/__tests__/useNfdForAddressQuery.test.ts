@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
+import { NFD_CACHE_TTL_MS } from '../../constants'
 import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
 
 const VALID_ADDRESS = 'A'.repeat(58)
@@ -124,6 +125,19 @@ describe('useNfdForAddressQuery', () => {
         await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(2))
 
         resolveFirst({ name: 'alice.algo', image: '', source: 'nfd' })
+    })
+
+    it('revalidates on the same window as the SQLite cache', async () => {
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        const [query] = queryClient.getQueryCache().getAll()
+        expect((query.options as { staleTime?: number }).staleTime).toBe(
+            NFD_CACHE_TTL_MS,
+        )
     })
 
     it('does not query when enabled is false', () => {

@@ -52,9 +52,6 @@ export const PaymentSummaryHeader = ({
                     textProps={{ style: styles.addressText }}
                     iconProps={{ color: theme.colors.textMain }}
                     address={transaction.paymentTransaction?.receiver || ''}
-                    // A name here is a backend assertion; the address it
-                    // stands for is what gets signed, so both are shown.
-                    showSecondaryAddress
                 />
             </PWView>
             <PWView style={styles.amountContainer}>
