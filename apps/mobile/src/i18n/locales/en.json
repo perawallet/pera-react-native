@@ -1953,6 +1953,7 @@
             "cloud_backup_already_enabled_title": "Cloud Backup is already on",
             "cloud_backup_already_enabled_body": "This device already has a Cloud Backup. Manage it in Settings › Cloud Backup.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Legacy Backup",
             "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
             "quantum_title": "Import Quantum account",
             "quantum_description": "I want to import a Quantum account using its 25-word passphrase"

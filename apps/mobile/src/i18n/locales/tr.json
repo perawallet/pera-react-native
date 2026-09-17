@@ -1953,6 +1953,7 @@
             "cloud_backup_already_enabled_title": "Bulut yedekleme zaten açık",
             "cloud_backup_already_enabled_body": "Bu cihazda zaten bir bulut yedeklemesi var. Ayarlar › Bulut yedekleme bölümünden yönetebilirsin.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Eski yedekleme",
             "asb_description": "Hesaplarımı bir Algorand Secure Backup dosyası ve 12 kelimelik anahtar ile geri yüklemek istiyorum",
             "quantum_title": "Quantum hesabı içe aktar",
             "quantum_description": "25 kelimelik passphrase’ini kullanarak bir Quantum hesabı içe aktarmak istiyorum"

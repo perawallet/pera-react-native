@@ -337,6 +337,32 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('AsbImportInfo')
     })
 
+    it('ASB option keeps its Algorand Secure Backup title when cloud backup is off', () => {
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_title',
+        )
+    })
+
+    it('ASB option is titled as the legacy backup when cloud backup is on', () => {
+        mockCloudBackupFlag.enabled = true
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const asbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_asb_button',
+        )!
+
+        expect(asbOption.titleKey).toBe(
+            'onboarding.import_account_options.asb_legacy_title',
+        )
+    })
+
     it('handleCloseQRScanner closes the QR scanner', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
