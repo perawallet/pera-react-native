@@ -262,7 +262,7 @@ describe('useTransactionAmounts — clawback', () => {
                 assetId: '31566704',
                 name: 'USDC',
                 unitName: 'USDC',
-                fractionDecimals: 0,
+                decimals: 0,
             },
         } as Partial<TransactionHistoryItem>)
 
@@ -282,7 +282,7 @@ describe('useTransactionAmounts — clawback', () => {
                 assetId: '31566704',
                 name: 'USDC',
                 unitName: 'USDC',
-                fractionDecimals: 0,
+                decimals: 0,
             },
         } as Partial<TransactionHistoryItem>)
 
@@ -302,7 +302,7 @@ describe('useTransactionAmounts — clawback', () => {
                 assetId: '31566704',
                 name: 'USDC',
                 unitName: 'USDC',
-                fractionDecimals: 0,
+                decimals: 0,
             },
         } as Partial<TransactionHistoryItem>)
 
