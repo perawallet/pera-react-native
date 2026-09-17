@@ -18,8 +18,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useRampPairsQuery,
-    type RampToken,
     rampTokenAssetId,
+    type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -40,10 +40,6 @@ type UseOnrampPairSelectionContentResult = {
     isLoading: boolean
     handleTokenSelected: (token: RampToken) => void
 }
-
-// ALGO is stored as a holding row under asset id '0'; non-ALGO ramp tokens have
-// no real Algorand asset id, so their balance won't resolve (shown as unowned).
-const tokenAssetId = rampTokenAssetId
 
 export const useOnrampPairSelectionContent = ({
     variant,
@@ -90,7 +86,8 @@ export const useOnrampPairSelectionContent = ({
 
         return sorted.map(token => ({
             token,
-            balance: balanceMap.get(tokenAssetId(token)) ?? null,
+            // A non-ALGO ramp token has no holding row, so it shows as unowned.
+            balance: balanceMap.get(rampTokenAssetId(token)) ?? null,
         }))
     }, [pairs, variant, searchFilter, balanceMap])
 

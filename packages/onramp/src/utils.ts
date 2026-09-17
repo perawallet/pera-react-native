@@ -23,15 +23,12 @@ export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
     items.some(item => item.status === 'pending')
 
 /**
- * Whether a ramp-catalog token is native ALGO.
+ * Whether a ramp-catalog token is native ALGO. A numeric id is an on-chain id
+ * and wins; the ticker is trusted only when the provider gives a code instead.
  *
- * Identity comes from the asset id whenever the provider supplies one (XO
- * does), because an id cannot be chosen to impersonate another asset. Meld's
- * crypto entries carry only a code, so those fall back to the ticker — and
- * that fallback is the whole reason this lives at the catalog boundary rather
- * than in a renderer: the trust assumption is "the provider catalog names its
- * own listings honestly", which holds for a first-party-brokered provider list
- * and never for an on-chain unit name.
+ * At the catalog boundary rather than in a renderer: the ticker fallback
+ * assumes the provider names its own listings honestly, which holds for a
+ * brokered provider list and never for an on-chain unit name.
  */
 export const isAlgoRampToken = (token: RampToken): boolean =>
     /^\d+$/.test(token.id)

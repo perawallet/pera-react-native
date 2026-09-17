@@ -52,6 +52,16 @@ describe('buildAccountBalanceFromRampToken', () => {
         )
     })
 
+    it('verifies ALGO listed under its on-chain id', () => {
+        const result = buildAccountBalanceFromRampToken(
+            makeToken({ id: '0', symbol: 'ALGO', name: 'Algorand' }),
+            null,
+        )
+        expect(result.asset?.peraMetadata?.verificationTier).toBe(
+            PeraAssetVerificationTier.verified,
+        )
+    })
+
     it('falls back to the default tier for unknown tokens', () => {
         const result = buildAccountBalanceFromRampToken(
             makeToken({ id: 'MYSTERY', symbol: 'MYS' }),

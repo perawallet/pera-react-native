@@ -54,12 +54,10 @@ const token = (overrides: Partial<RampToken>): RampToken =>
     }) as RampToken
 
 describe('isAlgoRampToken', () => {
-    // XO lists assets by their Algorand id, which a listing cannot choose.
     it('recognises ALGO by its asset id', () => {
         expect(isAlgoRampToken(token({ id: '0', symbol: 'XALGO' }))).toBe(true)
     })
 
-    // Meld crypto entries carry a ticker only; trusted at the catalog boundary.
     it('falls back to the ticker when the provider gives no asset id', () => {
         expect(isAlgoRampToken(token({ id: 'ALGO', symbol: 'ALGO' }))).toBe(
             true,
