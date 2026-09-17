@@ -1748,6 +1748,8 @@
             "delivery_failed": "Konnte nicht an die anfragende App gesendet werden – die Verbindung wurde getrennt.",
             "failed_default": "Transaktion fehlgeschlagen",
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
+            "cosign_rejected_title": "Signieren nicht möglich",
+            "cosign_rejected_body": "Diese Anfrage enthält eine Transaktion, die das Gemeinschaftskonto nicht autorisiert. Wenn der Absender ein Konto ist, das auf das Gemeinschaftskonto gerekeyt wurde, füge es deinem Wallet hinzu und versuche es erneut.",
             "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",

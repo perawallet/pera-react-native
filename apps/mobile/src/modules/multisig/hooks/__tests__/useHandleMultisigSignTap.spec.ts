@@ -27,6 +27,12 @@ const decodeTransactionMock = vi.fn(() => ({}))
 const localUnsignedSignersMock = vi.fn<() => WalletAccount[]>(() => [])
 const buildCosignArgsMock = vi.fn()
 const cosignRequestStub = { id: 'cosign-stub' }
+const errorToastMock = vi.fn()
+const allAccountsStub = vi.hoisted(() => [{ address: 'LOCAL' }])
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ errorToast: errorToastMock }),
+}))
 
 vi.mock('../../stores/usePendingSignaturesSheetStore', () => ({
     usePendingSignaturesSheetStore: (
@@ -41,7 +47,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAllAccounts: () => [],
+        useAllAccounts: () => allAccountsStub,
     }
 })
 
@@ -137,6 +143,7 @@ describe('useHandleMultisigSignTap', () => {
         openSheetMock.mockClear()
         addSignRequestMock.mockClear()
         buildCosignArgsMock.mockClear()
+        errorToastMock.mockClear()
         localUnsignedSignersMock.mockReset()
         localUnsignedSignersMock.mockReturnValue([])
         pendingSignRequestsMock.mockReturnValue([])
@@ -156,13 +163,26 @@ describe('useHandleMultisigSignTap', () => {
                 signRequest,
                 signerAddress: 'A',
                 decodeTransaction: decodeTransactionMock,
-                localAccounts: [],
+                localAccounts: allAccountsStub,
             })
             expect(addSignRequestMock).toHaveBeenCalledTimes(1)
             expect(addSignRequestMock).toHaveBeenCalledWith(cosignRequestStub)
             expect(openSheetMock).not.toHaveBeenCalled()
         },
     )
+
+    it('tells the user when a cosign request fails validation', () => {
+        localUnsignedSignersMock.mockReturnValue([buildAccount('A')])
+        buildCosignArgsMock.mockImplementationOnce(() => {
+            throw new Error('not authorized by the joint account')
+        })
+
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+        result.current(buildSignRequest({ status: 'pending' }))
+
+        expect(addSignRequestMock).not.toHaveBeenCalled()
+        expect(errorToastMock).toHaveBeenCalledTimes(1)
+    })
 
     it('dispatches one cosign per local unsigned signer in order', () => {
         localUnsignedSignersMock.mockReturnValue([

@@ -32,22 +32,11 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual }
 })
 
-// Stubbed rather than imported: the real barrel pulls stores and network state
-// into this node-env spec. What belongs here is the guard's decision given the
-// lookup's answer; the lookup's own semantics (including the per-network mirror)
-// are covered in packages/accounts' utils spec.
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountsRekeyedTo: vi.fn(() => []),
-}))
-
 import {
     generateMultisigAddress,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    getAccountsRekeyedTo,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
@@ -90,7 +79,6 @@ const buildSignRequest = (
 describe('buildMultisigCosignRequest', () => {
     beforeEach(() => {
         ;(generateMultisigAddress as Mock).mockReturnValue('MULTISIG')
-        vi.mocked(getAccountsRekeyedTo).mockReset().mockReturnValue([])
     })
 
     it('produces a multisig-cosign TransactionSignRequest with the threaded signRequestId', () => {
@@ -223,18 +211,15 @@ describe('buildMultisigCosignRequest', () => {
         // flow where a watch account is rekeyed to a shared multisig (see the
         // sign-multisig-rekeyed integration test). Signer !== sender there, so
         // `sgnr` is set and the signature is not standalone-valid.
-        vi.mocked(getAccountsRekeyedTo).mockImplementation(target =>
-            target === 'MULTISIG'
-                ? ([{ address: 'REKEYED_SENDER' }] as WalletAccount[])
-                : [],
-        )
         const decodeTransaction = vi.fn(() => txFrom('REKEYED_SENDER'))
 
         const result = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
-            localAccounts: [],
+            localAccounts: [
+                { address: 'REKEYED_SENDER', rekeyAddress: 'MULTISIG' },
+            ] as WalletAccount[],
         })
 
         expect(result.txs).toHaveLength(2)
@@ -246,12 +231,8 @@ describe('buildMultisigCosignRequest', () => {
     it("throws when a sender is an account the co-signer's own key authorizes", () => {
         const rekeyedToSigner = {
             address: 'REKEYED_TO_SIGNER',
-        } as unknown as WalletAccount
-        // Rekeyed to the co-signer's key, NOT to the joint account, so the
-        // joint-account lookup does not list it.
-        vi.mocked(getAccountsRekeyedTo).mockImplementation(target =>
-            target === 'A' ? [rekeyedToSigner] : [],
-        )
+            rekeyAddress: 'A',
+        } as WalletAccount
         const decodeTransaction = vi.fn(() => txFrom('REKEYED_TO_SIGNER'))
 
         expect(() =>
@@ -264,23 +245,26 @@ describe('buildMultisigCosignRequest', () => {
         ).toThrow(/not authorized by the joint account/)
     })
 
-    it('resolves rekeys against the joint account, not the co-signer', () => {
-        const localAccounts = [
-            { address: 'REKEYED_TO_SIGNER' },
-        ] as unknown as WalletAccount[]
-        const decodeTransaction = vi.fn(() => txFrom('MULTISIG'))
+    it('ignores a rekey to the joint account recorded on another network', () => {
+        const decodeTransaction = vi.fn(() => txFrom('REKEYED_ELSEWHERE'))
 
-        buildMultisigCosignRequest({
-            signRequest: buildSignRequest(),
-            signerAddress: 'A',
-            localAccounts,
-            decodeTransaction,
-        })
-
-        expect(getAccountsRekeyedTo).toHaveBeenCalledWith(
-            'MULTISIG',
-            localAccounts,
-        )
+        expect(() =>
+            buildMultisigCosignRequest({
+                signRequest: buildSignRequest(),
+                signerAddress: 'A',
+                localAccounts: [
+                    {
+                        address: 'REKEYED_ELSEWHERE',
+                        rekeyAddress: 'A',
+                        rekeyAddressByNetwork: {
+                            mainnet: 'A',
+                            testnet: 'MULTISIG',
+                        },
+                    },
+                ] as unknown as WalletAccount[],
+                decodeTransaction,
+            }),
+        ).toThrow(/not authorized by the joint account/)
     })
 
     it('rejects a local sender the joint account does not authorize', () => {

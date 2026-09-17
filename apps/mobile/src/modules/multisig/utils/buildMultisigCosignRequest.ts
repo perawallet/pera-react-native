@@ -15,12 +15,7 @@ import {
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-
-import {
-    getAccountsRekeyedTo,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
@@ -28,10 +23,7 @@ type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
-    /**
-     * The wallet's own accounts, used by check 2 to recognise senders the
-     * joint account authorizes through a rekey.
-     */
+    /** Used to recognise senders the joint account authorizes via a rekey. */
     localAccounts: WalletAccount[]
 }
 
@@ -78,26 +70,16 @@ export const buildMultisigCosignRequest = ({
         )
     }
 
-    // 2. Every transaction must be authorized by the joint account itself:
-    //    sent by it, or sent by a local account rekeyed to it. The guard is
-    //    positive because the old "not sent by the co-signer" form was unsound:
-    //    an Ed25519 signature covers `"TX" || txn` and `sgnr` is an envelope
-    //    field that is NOT signed, so participant key S's signature stands
-    //    alone as `{sig, sgnr: S, txn}` for ANY sender whose on-chain auth-addr
-    //    is S — not only for `sender === S`. Listing what is allowed rejects
-    //    that whole class, including senders this wallet has never seen, rather
-    //    than the one shape we thought to name.
-    //
-    //    Rejecting an unknown sender outright (instead of resolving its
-    //    auth-addr over the network) costs nothing real: the request signs
-    //    every transaction with the participant key (`signerOverrides` below),
-    //    so a sender the joint account does not authorize yields a signature
-    //    that is either useless or dangerous.
+    // 2. Every transaction must be sent by the joint account or by a local
+    //    account rekeyed to it on this network. An allowlist, not "not sent by
+    //    the co-signer": the signature covers `"TX" || txn` only, so a
+    //    participant's sig stands alone for any sender whose auth-addr is that
+    //    key.
     const jointAuthorizedSenders = new Set([
         address,
-        ...getAccountsRekeyedTo(address, localAccounts).map(
-            account => account.address,
-        ),
+        ...localAccounts
+            .filter(account => account.rekeyAddress === address)
+            .map(account => account.address),
     ])
     const offenderIndex = txs.findIndex(
         tx => !jointAuthorizedSenders.has(tx.sender.toString()),

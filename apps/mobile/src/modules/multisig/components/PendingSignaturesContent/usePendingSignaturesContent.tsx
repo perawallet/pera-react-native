@@ -33,6 +33,7 @@ import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useMultisigSignRequestDecline } from '../../hooks/useMultisigSignRequestDecline'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
@@ -120,6 +121,7 @@ const TITLE_KEY_BY_VARIANT: Record<StatusBannerVariant, string> = {
 export const usePendingSignaturesContent =
     (): UsePendingSignaturesContentResult => {
         const { t } = useLanguage()
+        const { errorToast } = useToast()
         const { network } = useNetwork()
         const deviceId = useDeviceID(network) ?? ''
         const accounts = useAllAccounts()
@@ -299,9 +301,20 @@ export const usePendingSignaturesContent =
                     logger.error('Skipping invalid multisig cosign request', {
                         error,
                     })
+                    errorToast(
+                        t('multisig.pending_signatures.cosign_rejected_title'),
+                        t('multisig.pending_signatures.cosign_rejected_body'),
+                    )
                 }
             },
-            [signRequest, decodeTransaction, addSignRequest, accounts],
+            [
+                signRequest,
+                decodeTransaction,
+                addSignRequest,
+                accounts,
+                errorToast,
+                t,
+            ],
         )
 
         const handleSign = useCallback(() => {
