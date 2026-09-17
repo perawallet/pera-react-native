@@ -104,9 +104,6 @@ export type {
     MockGetExternalWalletsParams,
 } from './api/delegation/msw-handlers'
 
-export { mockApproveEscrowCard } from './api/escrow/msw-handlers'
-export type { MockApproveEscrowCardParams } from './api/escrow/msw-handlers'
-
 export { mockCreateCard } from './api/card-creation/msw-handlers'
 export type { MockCreateCardParams } from './api/card-creation/msw-handlers'
 

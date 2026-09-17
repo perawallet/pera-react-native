@@ -122,7 +122,8 @@ import {
 import {
     mockCreateCard,
     mockGetUser,
-    mockApproveEscrowCard,
+    mockGetDelegationToken,
+    mockPostAlgorandDelegationApproval,
     mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
 import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
@@ -202,13 +203,15 @@ const confirmArc60Signing = async () => {
     fireEvent.click(await screen.findByTestId('arc60-confirm-slide'))
 }
 
-// Card creation resolves the Baanx user first — the create call carries its
-// id so the backend can link the funding address before creating.
-const mockCardUser = () =>
+// Card creation resolves the Baanx user and a single-use delegation token
+// first: the create call carries the user id so the backend can link the
+// funding address, and the ownership proof must embed the token's nonce.
+const mockCardCreationPrereqs = () =>
     server.use(
         mockGetUser({
             response: { id: BAANX_USER_ID, verificationState: 'VERIFIED' },
         }),
+        mockGetDelegationToken(),
     )
 
 const mockOnboardingDetails = (verificationState: string) =>
@@ -234,7 +237,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         store.setConnectedFundingSourceAddress(FUNDING_ADDRESS)
         useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
         mockOnboardingDetails('VERIFIED')
-        mockCardUser()
+        mockCardCreationPrereqs()
         autoFunding.enabled = true
         useAppIntegrityStore.getState().setRegistration({
             integrityToken: 'TEST_INTEGRITY_TOKEN',
@@ -277,8 +280,7 @@ describe('Flow: Card onboarding — select funding type', () => {
                     createBody = body
                 },
             }),
-            mockApproveEscrowCard({
-                cardAddress: 'ESCROWCARD1',
+            mockPostAlgorandDelegationApproval({
                 onRequest: body => {
                     approvalBody = body
                 },
@@ -310,17 +312,18 @@ describe('Flow: Card onboarding — select funding type', () => {
                 currency: 'usdc',
             }),
         )
+        // Baanx registers the delegated wallet, keyed by the funding address,
+        // and matches the single-use token against the nonce inside signData.
         expect(approvalBody).toEqual(
             expect.objectContaining({
-                address: 'ESCROWCARD1',
-                blockchain: 'algorand',
+                address: FUNDING_ADDRESS,
+                network: 'algorand',
+                currency: 'usdc',
                 amount: '0',
-                transaction: { hash: 'TX1' },
+                txHash: 'TX1',
+                token: 'test-delegation-token',
             }),
         )
-        // AB keys the approval by the card, not the funding wallet, and rejects
-        // unknown properties, so the legacy top-level txId must be gone.
-        expect(approvalBody).not.toHaveProperty('txId')
         // The same ARC-60 proof is reused for both calls.
         expect(approvalBody).toEqual(
             expect.objectContaining({
@@ -346,8 +349,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         server.use(
             mockAlgodTealCompile(),
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
-            mockApproveEscrowCard({
-                cardAddress: 'ESCROWCARD1',
+            mockPostAlgorandDelegationApproval({
                 onRequest: body => {
                     approvalBody = body
                 },
@@ -383,7 +385,10 @@ describe('Flow: Card onboarding — select funding type', () => {
 
         await waitFor(() => expect(lsigBody).not.toBeNull())
         expect(approvalBody).toEqual(
-            expect.objectContaining({ transaction: { hash: 'TX1' } }),
+            expect.objectContaining({
+                txHash: 'TX1',
+                token: 'test-delegation-token',
+            }),
         )
         expect(lsigBody).toEqual(
             expect.objectContaining({
@@ -426,7 +431,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         server.use(
             mockAlgodTealCompile(),
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
-            mockApproveEscrowCard({ status: 500 }),
+            mockPostAlgorandDelegationApproval({ status: 500 }),
         )
 
         renderStatus()
@@ -445,7 +450,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         await confirmArc60Signing()
 
         // The card was created (on-chain, via the backend) and persisted
-        // even though the AB approval call failed.
+        // even though the Baanx approval call failed.
         await waitFor(() =>
             expect(useCardStore.getState().escrowCardAddress).toBe(
                 'ESCROWCARD1',
@@ -459,7 +464,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         server.use(
             mockAlgodTealCompile(),
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
-            mockApproveEscrowCard({ cardAddress: 'ESCROWCARD1' }),
+            mockPostAlgorandDelegationApproval(),
             mockPostDelegatorLsig({ status: 500 }),
         )
 
@@ -515,7 +520,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         autoFunding.enabled = false
         server.use(
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
-            mockApproveEscrowCard({ cardAddress: 'ESCROWCARD1' }),
+            mockPostAlgorandDelegationApproval(),
         )
 
         renderStatus()

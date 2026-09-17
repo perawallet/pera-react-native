@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-export { approveEscrowCard, type ApproveEscrowCardParams } from './endpoints'
 export {
     compileAutoDrawProgram,
     renderAutoDrawTeal,
@@ -20,7 +19,6 @@ export {
     type EscrowChainConfig,
     type RenderAutoDrawTealArgs,
 } from './lsig'
-export { escrowCardApprovalResponseSchema } from './schema'
 export {
     verifyAutoDrawTealTemplate,
     isAutoDrawTealSignatureValid,
