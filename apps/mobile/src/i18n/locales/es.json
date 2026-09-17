@@ -556,7 +556,8 @@
             "setup_title": "Configurar una nueva copia de seguridad en la nube",
             "setup_description": "Protege tus cuentas y contactos con una sincronización segura en la nube. Así podrás sincronizarlos con tus otros dispositivos.",
             "restore_title": "Restaurar/recuperar una copia de seguridad",
-            "restore_description": "Restaura tus cuentas y contactos en una app recién instalada o sincronízate con tus otros dispositivos."
+            "restore_description": "Restaura tus cuentas y contactos en una app recién instalada o sincronízate con tus otros dispositivos.",
+            "storage_note": "Las copias de seguridad se guardan totalmente cifradas en los servidores de copias de seguridad de Pera. Algunos datos no sensibles también se guardan en tu cuenta de iCloud/Google Drive como medida de seguridad adicional."
         },
         "setup": {
             "title": "Configurar una nueva copia de seguridad en la nube",

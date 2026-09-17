@@ -556,7 +556,8 @@
             "setup_title": "Configurer une nouvelle sauvegarde cloud",
             "setup_description": "Protégez vos comptes et vos contacts grâce à une synchronisation cloud sécurisée. Vous pourrez ainsi les synchroniser avec vos autres appareils.",
             "restore_title": "Restaurer/récupérer une sauvegarde",
-            "restore_description": "Restaurez vos comptes et vos contacts sur une application fraîchement installée, ou synchronisez-vous avec vos autres appareils."
+            "restore_description": "Restaurez vos comptes et vos contacts sur une application fraîchement installée, ou synchronisez-vous avec vos autres appareils.",
+            "storage_note": "Les sauvegardes sont stockées entièrement chiffrées sur les serveurs de sauvegarde de Pera. Certaines données non sensibles sont également stockées dans votre compte iCloud/Google Drive, pour plus de sécurité."
         },
         "setup": {
             "title": "Configurer une nouvelle sauvegarde cloud",

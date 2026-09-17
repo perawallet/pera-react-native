@@ -556,7 +556,8 @@
             "setup_title": "Yeni bir bulut yedeklemesi oluştur",
             "setup_description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru. Böylece onları diğer cihazlarınla eşitleyebilirsin.",
             "restore_title": "Yedeklemeyi geri yükle/al",
-            "restore_description": "Hesaplarını ve kişilerini yeni kurulmuş bir uygulamada geri yükle ya da diğer cihazlarınla eşitle."
+            "restore_description": "Hesaplarını ve kişilerini yeni kurulmuş bir uygulamada geri yükle ya da diğer cihazlarınla eşitle.",
+            "storage_note": "Yedeklemeler, Pera’nın yedekleme sunucularında tamamen şifrelenmiş olarak saklanır. Hassas olmayan bazı veriler, ek güvenlik amacıyla iCloud/Google Drive hesabında da saklanır."
         },
         "setup": {
             "title": "Yeni bir bulut yedeklemesi oluştur",

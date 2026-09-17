@@ -556,7 +556,8 @@
             "setup_title": "Configurar um novo backup na nuvem",
             "setup_description": "Proteja suas contas e contatos com sincronização segura na nuvem. Assim você poderá sincronizá-los com seus outros dispositivos.",
             "restore_title": "Restaurar/recuperar um backup",
-            "restore_description": "Restaure suas contas e contatos em um app recém-instalado ou sincronize com seus outros dispositivos."
+            "restore_description": "Restaure suas contas e contatos em um app recém-instalado ou sincronize com seus outros dispositivos.",
+            "storage_note": "Os backups são armazenados totalmente criptografados nos servidores de backup da Pera. Alguns dados não sensíveis também são armazenados na sua conta do iCloud/Google Drive como medida adicional de segurança."
         },
         "setup": {
             "title": "Configurar um novo backup na nuvem",

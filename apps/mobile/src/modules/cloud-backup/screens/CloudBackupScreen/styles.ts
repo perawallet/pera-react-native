@@ -20,4 +20,9 @@ export const useStyles = makeStyles(theme => ({
     options: {
         gap: theme.spacing.md,
     },
+    note: {
+        paddingHorizontal: theme.spacing.lg,
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
 }))

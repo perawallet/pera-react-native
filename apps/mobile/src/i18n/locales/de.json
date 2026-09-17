@@ -548,7 +548,8 @@
             "setup_title": "Neues Cloud-Backup einrichten",
             "setup_description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung. So kannst du sie mit deinen anderen Geräten synchronisieren.",
             "restore_title": "Backup wiederherstellen/abrufen",
-            "restore_description": "Stelle deine Konten und Kontakte in einer frisch installierten App wieder her oder synchronisiere sie mit deinen anderen Geräten."
+            "restore_description": "Stelle deine Konten und Kontakte in einer frisch installierten App wieder her oder synchronisiere sie mit deinen anderen Geräten.",
+            "storage_note": "Backups werden vollständig verschlüsselt auf den Backup-Servern von Pera gespeichert. Einige nicht sensible Daten werden aus zusätzlichen Sicherheitsgründen außerdem in deinem iCloud-/Google-Drive-Konto gespeichert."
         },
         "setup": {
             "title": "Neues Cloud-Backup einrichten",
