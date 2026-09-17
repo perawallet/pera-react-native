@@ -372,6 +372,43 @@ describe('useArc59SendTransaction', () => {
         )
     })
 
+    test('forwards algo_fund_amount to the inbox and pools the forwarding fee', async () => {
+        const params = {
+            ...baseParams,
+            summary: { ...baseSummary, algo_fund_amount: 200000 },
+        }
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(params)
+        })
+
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                args: [expect.anything(), RECEIVER_ADDRESS, 200000n],
+                extraFee: (
+                    mockSuggestedParams.minFee *
+                    BigInt(baseSummary.inner_tx_count + 1)
+                ).microAlgo(),
+            }),
+        )
+    })
+
+    test('forwards nothing when algo_fund_amount is 0', async () => {
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(baseParams)
+        })
+
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                args: [expect.anything(), RECEIVER_ADDRESS, 0n],
+            }),
+        )
+    })
+
     test('calls composer.build() (not send) after composing transactions', async () => {
         const { result } = renderHook(() => useArc59SendTransaction())
 

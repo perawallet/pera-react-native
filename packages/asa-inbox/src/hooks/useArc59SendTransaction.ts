@@ -120,6 +120,20 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 )
             }
 
+            // additionalReceiverFunds: the router forwards this to the
+            // receiver's inbox, and it is what lets a receiver too poor to
+            // afford the claim's opt-in claim at all. The payment above
+            // already includes it, so passing 0 does not save the sender
+            // anything — it strands the ALGO in the router account and the
+            // receiver is told they have insufficient ALGO to claim.
+            const additionalReceiverFunds = BigInt(summary.algo_fund_amount)
+
+            // The forwarding payment is an inner txn the router does not
+            // report in inner_tx_count, so its fee has to be pooled on top.
+            const innerTxCount =
+                BigInt(summary.inner_tx_count) +
+                (additionalReceiverFunds > 0n ? 1n : 0n)
+
             // Call arc59_sendAsset with fee pooling for inner transactions
             // The axfer arg is automatically added to the group by AlgoKit
             composer.addAppCallMethodCall(
@@ -133,19 +147,17 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                             ...outerFeeOverride,
                         }),
                         receiver,
-                        0,
+                        additionalReceiverFunds,
                     ],
                     ...(senderFee > minFee
                         ? {
                               staticFee: (
                                   senderFee +
-                                  minFee * BigInt(summary.inner_tx_count)
+                                  minFee * innerTxCount
                               ).microAlgo(),
                           }
                         : {
-                              extraFee: (
-                                  minFee * BigInt(summary.inner_tx_count)
-                              ).microAlgo(),
+                              extraFee: (minFee * innerTxCount).microAlgo(),
                           }),
                     ...sendAssetRefs,
                 }),
