@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { ONE_HOUR } from '@perawallet/wallet-core-config'
+
 /** Maximum addresses per bulk-read request. Conservative — tune if backend allows more. */
 export const NFD_BULK_CHUNK_SIZE = 50
 
@@ -21,7 +23,7 @@ export const NFD_BULK_CONCURRENCY = 2
  * cache and the address query alike. Names are sold and re-registered, and
  * they label send destinations, so the window stays short.
  */
-export const NFD_CACHE_TTL_MS = 60 * 60 * 1000 // 1h
+export const NFD_CACHE_TTL_MS = ONE_HOUR
 
 /**
  * Quiet period before a batch dispatches. Debounced, so a scroll that keeps
