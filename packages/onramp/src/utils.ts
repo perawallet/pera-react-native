@@ -34,9 +34,9 @@ export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
  * and never for an on-chain unit name.
  */
 export const isAlgoRampToken = (token: RampToken): boolean =>
-    isAlgoAssetId(token.id) ||
-    isAlgoAssetName(token.id) ||
-    isAlgoAssetName(token.symbol)
+    /^\d+$/.test(token.id)
+        ? isAlgoAssetId(token.id)
+        : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
 
 /** The asset id a ramp token maps to, with ALGO pinned to its native id. */
 export const rampTokenAssetId = (token: RampToken): string =>

@@ -69,6 +69,10 @@ describe('isAlgoRampToken', () => {
     it('does not treat another asset as ALGO', () => {
         expect(isAlgoRampToken(token({}))).toBe(false)
     })
+
+    it('ignores an ALGO ticker on a token that has another asset id', () => {
+        expect(isAlgoRampToken(token({ symbol: 'ALGO' }))).toBe(false)
+    })
 })
 
 describe('rampTokenAssetId', () => {
