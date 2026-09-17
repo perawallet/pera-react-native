@@ -641,8 +641,6 @@ describe('startConnectionsHost', () => {
             })
         })
 
-        // The proposal-scoped map is gone once pairing settles; the origin the
-        // handler writes onto the approved record is what outlives it.
         it('folds the requester origin into the origin recorded on the connection', async () => {
             await control({
                 kind: 'pair',

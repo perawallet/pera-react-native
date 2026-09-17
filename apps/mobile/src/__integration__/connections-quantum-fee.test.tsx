@@ -131,7 +131,7 @@ const EXPECTED_PQ_FEE = 3000n
 
 // 'in-app' suppresses the post-approval success sheet, which would otherwise
 // sit over the surface the review sheet needs.
-const IN_APP_ORIGIN = { source: 'in-app' } as const satisfies ConnectionOrigin
+const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
 
 const hookQueryClient = createTestQueryClient()
 const HookWrapper = ({ children }: { children: React.ReactNode }) => (

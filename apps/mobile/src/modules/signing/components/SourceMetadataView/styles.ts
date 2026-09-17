@@ -44,6 +44,6 @@ export const useStyles = makeStyles(theme => ({
     },
     requestOrigin: {
         textAlign: 'center',
-        color: theme.colors.textGray,
+        color: theme.colors.textMain,
     },
 }))

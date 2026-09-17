@@ -231,8 +231,6 @@ export const startConnectionsHost = (
     const pair = async (
         message: Extract<ConnectionsControlMessage, { kind: 'pair' }>,
     ): Promise<ConnectionsControlResponse> => {
-        // Folded into the origin the handler writes onto the approved record, so
-        // it outlives this pairing and reaches every later sign approval.
         const origin =
             message.requesterOrigin === undefined
                 ? message.origin

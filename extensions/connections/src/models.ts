@@ -37,11 +37,8 @@ export interface ConnectionOrigin {
     /** iOS wrapper's `browser=` hint; absent on Android (raw wc: intent). */
     browserName?: string
     /**
-     * Browser-verified origin of the extension tab that started the pairing,
-     * stamped from `sender.origin`. Unlike `peer.url` a page cannot forge it,
-     * so it is the identity every later approval on this connection shows —
-     * without it a pairing from `evil.example` claiming to be Tinyman reads
-     * as Tinyman on every transaction review.
+     * Browser-verified origin of the extension tab that started the pairing.
+     * Unlike `peer.url` a page cannot forge it, so every later approval shows it.
      */
     requesterOrigin?: string
 }

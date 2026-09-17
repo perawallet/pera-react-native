@@ -10,71 +10,17 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-
-import {
-    stripUrlScheme,
-    generateUniqueId,
-} from '@perawallet/wallet-core-shared'
-import {
-    resolveDisplayableVerificationTier,
-    useProjectByUrlQuery,
-} from '@perawallet/wallet-core-projects'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
-
-const toOrigin = (url: string | undefined): string | undefined => {
-    try {
-        return new URL(url ?? '').origin
-    } catch {
-        return undefined
-    }
-}
-
-// Both sides are reduced to origins: a peer url carries paths, and the in-app
-// browser observes the full page url. An unparseable claim counts as distinct
-// rather than being vouched for.
-const isOriginDistinct = (
-    verifiedOrigin: string | undefined,
-    claimedUrl: string | undefined,
-): verifiedOrigin is string => {
-    if (!verifiedOrigin) return false
-    const claimedOrigin = toOrigin(claimedUrl)
-    return !claimedOrigin || toOrigin(verifiedOrigin) !== claimedOrigin
-}
+import { useSourceMetadataBadge } from '../SourceMetadataBadge/useSourceMetadataBadge'
 
 export const useSourceMetadataView = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
 ) => {
-    const { t } = useLanguage()
-    const { data: project } = useProjectByUrlQuery({
-        url: metadata.url,
-        isEnabled: !!metadata.url,
-    })
-
-    const preferredIcon =
-        metadata.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? metadata.icons?.at(0)
-
-    const displayIcon = preferredIcon ?? project?.logoPng
-    const displayName = metadata.name ?? project?.name
-
-    // The lookup key (metadata.url) is peer-asserted, so a `verified` tier is
-    // trusted only against the platform-observed origin.
-    const verificationTier = resolveDisplayableVerificationTier(
-        project,
-        verifiedOrigin,
-    )
-
-    const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
-
+    const badge = useSourceMetadataBadge(metadata, verifiedOrigin)
     const { pushWebView } = useWebView()
 
     const handlePressUrl = () => {
@@ -85,24 +31,5 @@ export const useSourceMetadataView = (
         pushWebView({ id: generateUniqueId(), url: validatedUrl })
     }
 
-    // The name and url above are what the dApp claims about itself. When the
-    // platform observed a different origin, say so: the connect screen already
-    // does, and without it a pairing from one site dressed as another reads as
-    // the impersonated site on every later transaction review.
-    const requestOriginLabel = isOriginDistinct(verifiedOrigin, metadata.url)
-        ? t('dapp.enable.request_origin', {
-              origin: stripUrlScheme(
-                  toOrigin(verifiedOrigin) ?? verifiedOrigin,
-              ),
-          })
-        : undefined
-
-    return {
-        displayIcon,
-        displayName,
-        url,
-        verificationTier,
-        requestOriginLabel,
-        handlePressUrl,
-    }
+    return { ...badge, handlePressUrl }
 }
