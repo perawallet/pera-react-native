@@ -101,7 +101,7 @@ describe('getCardApiError', () => {
         })
     })
 
-    it("reads AppliedBlockchain's escrow shape (type + details, or data.message)", async () => {
+    it("reads the delegation service's shape (type + details, or data.message)", async () => {
         expect(
             await getCardApiError({
                 response: { status: 400 },

@@ -19,8 +19,7 @@ export const toKyPath = (path: string): string =>
 // Decode a fetch Response into a CardTransportResponse by the requested body
 // type. The default (json) reads text first and only JSON.parses a non-empty
 // body — ky's response.json() throws "Unexpected end of input" on 204 / empty
-// 200 responses, and a success that is not JSON at all (AppliedBlockchain's
-// delegation route answers 201 with a bare status line) would throw a
+// 200 responses, and a success that is not JSON at all would throw a
 // SyntaxError that hides an otherwise successful call. Such a body is handed
 // back as raw text for the caller to ignore or validate.
 const parseJsonOrText = (text: string): unknown => {
