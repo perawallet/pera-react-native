@@ -164,7 +164,11 @@ export const expectApprovalSurfaceUrl = (approvalPage: Page): void => {
     expect(approvalPage.url()).toMatch(/(popup|approval)\.html/)
 }
 
-/** How long an approval window's primary action stays disarmed after mount. */
+/**
+ * How long an approval window's primary action stays disarmed after mount.
+ * Mirrors `APPROVAL_ARMING_DELAY_MS` in `useApprovalArming.web.ts`, which this
+ * tree cannot import; a drift there shows up here as a flake.
+ */
 const APPROVAL_ARMING_DELAY_MS = 500
 
 /**

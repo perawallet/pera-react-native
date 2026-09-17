@@ -80,12 +80,12 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const [selected, setSelected] = useState<Set<string>>(() => new Set())
 
     // A default account only for a pairing the user started inside the wallet
-    // (paste, QR). A page-initiated proposal — the one carrying a verified
-    // `requesterOrigin` — opens with no user gesture, where a pre-checked
-    // account turns an inherited click into a complete grant.
+    // (paste, QR) — see `useApprovalArming` for why a page-initiated one gets
+    // none. Waits for the account store to rehydrate in this fresh window;
+    // seeding from an empty list would be a one-shot that never retries.
     const hasSeededRef = useRef(false)
     useEffect(() => {
-        if (hasSeededRef.current || !proposal) return
+        if (hasSeededRef.current || !proposal || accounts.length === 0) return
         hasSeededRef.current = true
         if (proposal.requesterOrigin) return
         setSelected(initialSelection(selectedAccountAddress, accounts))

@@ -26,7 +26,6 @@ vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
-// Arming has its own spec; here it is a switch.
 vi.mock('../../../hooks/useApprovalArming.web', () => ({
     useApprovalArming: mocks.useApprovalArming,
 }))
@@ -137,9 +136,21 @@ describe('useWcConnectScreen', () => {
         expect(result.current.canConnect).toBe(true)
     })
 
-    // A page opens this window with no gesture; a pre-checked account would
-    // turn an inherited click into a complete grant. Paste and QR pairings
-    // carry no requesterOrigin and keep their default.
+    it('seeds once the account store rehydrates after the proposal', () => {
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        mocks.useSigningAccounts.mockReturnValue([])
+        const { result, rerender } = render()
+
+        expect(result.current.selected.size).toBe(0)
+
+        mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
+        rerender()
+
+        expect(result.current.selected.has('BBBB')).toBe(true)
+    })
+
     it('pre-checks nothing for a page-initiated proposal', () => {
         mocks.useSelectedAccountAddress.mockReturnValue({
             selectedAccountAddress: 'BBBB',

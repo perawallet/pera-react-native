@@ -29,6 +29,10 @@ const INTENT_EVENTS = ['pointermove', 'pointerdown', 'keydown'] as const
  * saw. Arming requires both a short delay and one input event that provably
  * happened in this window. `keydown` and `pointerdown` count too, so keyboard
  * and touch users are not locked out by a pointer-movement requirement.
+ *
+ * The press that arms is itself swallowed: the button remounts on the
+ * `disabled` flip, so a touch user's first tap arms and the second acts. The
+ * empty selection, not this delay, is what defeats a two-click decoy.
  */
 export const useApprovalArming = (): boolean => {
     const [hasDelayElapsed, setHasDelayElapsed] = useState(false)
