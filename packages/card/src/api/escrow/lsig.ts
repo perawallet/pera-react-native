@@ -18,7 +18,6 @@ import {
     decodeFromBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { CardEscrowNotConfiguredError } from '../transport'
 import {
     AUTODRAW_TEAL_TEMPLATE,
     TMPL_GENESIS_HASH,
@@ -26,6 +25,14 @@ import {
     TMPL_MAIN_APP,
 } from './autodraw-teal'
 import { verifyAutoDrawTealTemplate } from './verify-teal'
+
+/** The on-chain ids the AutoDraw template needs are missing from the build. */
+export class CardEscrowNotConfiguredError extends Error {
+    constructor() {
+        super('Pera Card chain config is incomplete (app ids / asset id)')
+        this.name = 'CardEscrowNotConfiguredError'
+    }
+}
 
 export type EscrowChainConfig = {
     /** Settlement asset id (USDC) as a decimal string. */

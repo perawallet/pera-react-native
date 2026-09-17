@@ -23,15 +23,11 @@ import {
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
-// The escrow config is empty in the test env — mock a FULLY configured build:
-// a non-empty base URL (any host; the MSW globs match any origin) so requests
-// reach MSW instead of throwing CardEscrowNotConfiguredError, plus the chain
-// app ids (a configured base URL with missing ids now throws by design, which
-// would degrade every Auto run to Manual). `cardKillswitchAppId: '0'` is the
-// documented dev-mock placeholder — satisfies the "all ids present" config
-// check while `isKillswitchConfigured` treats it as NOT configured, so
-// `enableAutoDraw` only registers the LSig (the leg this test covers) and
-// skips the real on-chain Killswitch enable, which has no MSW mocks here.
+// The card chain ids are empty in the test env, and AutoDraw now fails closed
+// without them — supply them so the LSig leg runs. `cardKillswitchAppId: '0'`
+// satisfies that check while `isKillswitchConfigured` treats it as NOT
+// configured, so `enableAutoDraw` only registers the LSig (the leg this test
+// covers) and skips the on-chain Killswitch enable, which has no MSW mocks here.
 vi.mock('@perawallet/wallet-core-config', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-config')
@@ -42,8 +38,6 @@ vi.mock('@perawallet/wallet-core-config', async () => {
             network: Parameters<typeof actual.getNetworkConfig>[0],
         ) => ({
             ...actual.getNetworkConfig(network),
-            cardEscrowBaseUrl: 'https://escrow.test',
-            cardEscrowAuthToken: 'TEST_ESCROW_TOKEN',
             cardW3CardAppId: '111',
             cardKillswitchAppId: '0',
         }),

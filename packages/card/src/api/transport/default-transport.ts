@@ -20,7 +20,6 @@ import type {
     CardTransportResponse,
 } from './types'
 import { baanxDirectRequest } from './baanx-client'
-import { escrowRequest } from './escrow-client'
 
 /**
  * Refreshes the session and returns whether a usable token is now available.
@@ -80,9 +79,6 @@ const dispatch = <TData, TVars>(
         case 'proxy': {
             return proxyRequest<TData, TVars>(req)
         }
-        case 'escrow': {
-            return escrowRequest<TData, TVars>(req)
-        }
         default: {
             return baanxDirectRequest<TData, TVars>(req)
         }
@@ -102,8 +98,8 @@ export const defaultTransport: CardTransport = {
             // Pre-auth calls (login, OTP) and the refresh exchange itself run
             // without the Bearer — intercepting those would be useless at
             // best and, for the refresh call, infinitely recursive. The proxy
-            // (secret-key) and escrow (static-token) routes never carry a
-            // refreshable Bearer either, so they never set the flag.
+            // route carries a server-side secret key, not a refreshable
+            // Bearer, so it never sets the flag either.
             if (
                 req.authenticated === true &&
                 isUnauthorized(error) &&

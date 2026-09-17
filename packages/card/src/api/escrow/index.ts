@@ -16,6 +16,7 @@ export {
     resolveEscrowChainConfig,
     verifyAutoDrawProgram,
     AutoDrawProgramUnverifiedError,
+    CardEscrowNotConfiguredError,
     type EscrowChainConfig,
     type RenderAutoDrawTealArgs,
 } from './lsig'

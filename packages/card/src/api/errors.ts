@@ -164,7 +164,7 @@ export const getCardApiError = async (
     if (typeof body !== 'object' || body === null) return { status }
 
     const record = body as Record<string, unknown>
-    // `type`/`details`/`data.message` are AppliedBlockchain's escrow error shape.
+    // `type`/`details`/`data.message` are the delegation service's error shape.
     const code = firstString(record, ['code', 'errorCode', 'error', 'type'])
     const data = record.data
     const message =
@@ -213,10 +213,9 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
     )
 
 /**
- * AB's `/api/approvals` re-run after a prior success (e.g. an app restart
- * between create and approve). The current AB service replays 200, so this
- * only matters against an older build that rejected with "Card already
- * created"; matched on text like {@link isDuplicateError}.
+ * A delegation post-approval re-run after a prior success (e.g. an app restart
+ * between create and approve). Matched on text like {@link isDuplicateError},
+ * since the rejection carries no stable code.
  */
 export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
     /already (created|approved)/i.test(
