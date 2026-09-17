@@ -311,7 +311,7 @@ workflows:
     - _smoke-ios
     meta:
       bitrise.io:
-        stack: osx-xcode-27.0.x
+        stack: osx-xcode-26.2.x
         machine_type_id: g2.mac.large
   ios-production:
     description: Build and deploy iOS Production to TestFlight
@@ -327,7 +327,7 @@ workflows:
     - _publish-result
     meta:
       bitrise.io:
-        stack: osx-xcode-27.0.x
+        stack: osx-xcode-26.2.x
         machine_type_id: g2.mac.large
   _ios-build:
     steps:
@@ -921,24 +921,6 @@ workflows:
               echo "NDK $ANDROID_NDK_VERSION unavailable after 3 attempts" >&2
               exit 1
             fi
-            # AGP installs a missing compile platform mid-configuration and then
-            # fails to resolve it in that same run ("Failed to find target with
-            # hash string 'android-37'"), so a fresh machine never gets past it.
-            PROPS=apps/mobile/android/gradle.properties
-            COMPILE_SDK=$(sed -n 's/^android.compileSdkVersion=//p' "$PROPS")
-            BUILD_TOOLS=$(sed -n 's/^android.buildToolsVersion=//p' "$PROPS")
-            : "${COMPILE_SDK:?android.compileSdkVersion missing from $PROPS}"
-            : "${BUILD_TOOLS:?android.buildToolsVersion missing from $PROPS}"
-            ls -d "$SDK_ROOT/platforms/android-$COMPILE_SDK"* >/dev/null 2>&1 \
-              || yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
-                --install "platforms;android-$COMPILE_SDK.0" || true
-            [ -d "$SDK_ROOT/build-tools/$BUILD_TOOLS" ] \
-              || yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
-                --install "build-tools;$BUILD_TOOLS" || true
-            ls -d "$SDK_ROOT/platforms/android-$COMPILE_SDK"* >/dev/null 2>&1 \
-              || { echo "Android platform $COMPILE_SDK unavailable" >&2; exit 1; }
-            [ -d "$SDK_ROOT/build-tools/$BUILD_TOOLS" ] \
-              || { echo "Android build-tools $BUILD_TOOLS unavailable" >&2; exit 1; }
             envman add --key ANDROID_NDK_HOME --value "$NDK_DIR"
     - script@1:
         title: Android KeyStore
