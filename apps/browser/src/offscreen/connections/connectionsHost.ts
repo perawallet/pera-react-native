@@ -231,9 +231,16 @@ export const startConnectionsHost = (
     const pair = async (
         message: Extract<ConnectionsControlMessage, { kind: 'pair' }>,
     ): Promise<ConnectionsControlResponse> => {
-        const pairingId = await registry.pair(message.uri, {
-            origin: message.origin,
-        })
+        // Folded into the origin the handler writes onto the approved record, so
+        // it outlives this pairing and reaches every later sign approval.
+        const origin =
+            message.requesterOrigin === undefined
+                ? message.origin
+                : {
+                      ...message.origin,
+                      requesterOrigin: message.requesterOrigin,
+                  }
+        const pairingId = await registry.pair(message.uri, { origin })
         if (message.requesterOrigin !== undefined) {
             requesterOrigins.set(pairingId, message.requesterOrigin)
             void waitForPairingOutcome(

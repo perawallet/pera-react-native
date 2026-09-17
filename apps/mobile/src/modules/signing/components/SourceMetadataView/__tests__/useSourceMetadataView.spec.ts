@@ -116,3 +116,45 @@ describe('useSourceMetadataView — hostile peerMeta URL gating', () => {
         })
     })
 })
+
+// A page can pair while claiming another site's peerMeta. The connect screen
+// names the verified tab; without the same line here the claimed identity is
+// all the user sees on every later transaction review.
+describe('useSourceMetadataView — observed origin vs claimed site', () => {
+    beforeEach(() => {
+        stubProjectQuery(verifiedTinyman)
+    })
+
+    it('names the observed origin when it differs from the claimed url', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataView(
+                { name: 'Tinyman', url: 'https://tinyman.org' },
+                'https://evil.example',
+            ),
+        )
+
+        expect(result.current.requestOriginLabel).toBe(
+            'dapp.enable.request_origin',
+        )
+        expect(result.current.verificationTier).toBeUndefined()
+    })
+
+    it('stays quiet when the observed origin matches, ignoring a path', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataView(
+                { url: 'https://tinyman.org/swap' },
+                'https://tinyman.org',
+            ),
+        )
+
+        expect(result.current.requestOriginLabel).toBeUndefined()
+    })
+
+    it('stays quiet when nothing was observed', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataView({ url: 'https://tinyman.org' }),
+        )
+
+        expect(result.current.requestOriginLabel).toBeUndefined()
+    })
+})

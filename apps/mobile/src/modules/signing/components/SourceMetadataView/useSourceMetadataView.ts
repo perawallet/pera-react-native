@@ -21,13 +21,30 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+
+// Compared as origins: a peer url routinely carries a path or trailing slash
+// where the observed origin is bare. An unparseable claim counts as distinct
+// rather than being vouched for.
+const isOriginDistinct = (
+    verifiedOrigin: string | undefined,
+    claimedUrl: string | undefined,
+): verifiedOrigin is string => {
+    if (!verifiedOrigin) return false
+    try {
+        return new URL(claimedUrl ?? '').origin !== verifiedOrigin
+    } catch {
+        return true
+    }
+}
 
 export const useSourceMetadataView = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
 ) => {
+    const { t } = useLanguage()
     const { data: project } = useProjectByUrlQuery({
         url: metadata.url,
         isEnabled: !!metadata.url,
@@ -63,11 +80,22 @@ export const useSourceMetadataView = (
         pushWebView({ id: generateUniqueId(), url: validatedUrl })
     }
 
+    // The name and url above are what the dApp claims about itself. When the
+    // platform observed a different origin, say so: the connect screen already
+    // does, and without it a pairing from one site dressed as another reads as
+    // the impersonated site on every later transaction review.
+    const requestOriginLabel = isOriginDistinct(verifiedOrigin, metadata.url)
+        ? t('dapp.enable.request_origin', {
+              origin: stripUrlScheme(verifiedOrigin),
+          })
+        : undefined
+
     return {
         displayIcon,
         displayName,
         url,
         verificationTier,
+        requestOriginLabel,
         handlePressUrl,
     }
 }

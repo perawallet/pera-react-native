@@ -641,6 +641,21 @@ describe('startConnectionsHost', () => {
             })
         })
 
+        // The proposal-scoped map is gone once pairing settles; the origin the
+        // handler writes onto the approved record is what outlives it.
+        it('folds the requester origin into the origin recorded on the connection', async () => {
+            await control({
+                kind: 'pair',
+                uri: 'wc:topic@1?bridge=b&key=k',
+                requesterOrigin: 'https://requester.example',
+            })
+
+            expect(fake.registry.pair).toHaveBeenCalledWith(
+                'wc:topic@1?bridge=b&key=k',
+                { origin: { requesterOrigin: 'https://requester.example' } },
+            )
+        })
+
         it('stamps the requester origin onto the proposal for that pairing only', async () => {
             await control({
                 kind: 'pair',

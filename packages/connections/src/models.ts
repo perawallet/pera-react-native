@@ -117,7 +117,7 @@ type MessageBase = {
     /**
      * Origin the transport itself attested (the browser's `sender.origin`),
      * never a peer-asserted value. Feeds the pipeline's ARC-60 domain-binding
-     * check; unset for transports with no verifiable origin (WalletConnect).
+     * check; unset when nothing attested one, as on a paste or QR pairing.
      */
     verifiedOrigin?: string
     respond(result: WalletOperationResult): Promise<void>
