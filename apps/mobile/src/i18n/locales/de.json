@@ -3330,6 +3330,7 @@
             "max": "MAX",
             "no_payment_methods": "Keine Zahlungsmethoden für dein Gerät verfügbar.",
             "amount_below_min": "Der Betrag muss größer als {{min}} sein",
+            "amount_below_min_unknown": "Der Betrag liegt unter dem Minimum des Anbieters",
             "amount_above_max": "Der Betrag muss kleiner als {{max}} sein"
         },
         "pair_selection": {

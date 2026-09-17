@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
     amountText: {
         color: theme.colors.textMain,
     },
-    feeText: {
+    valueText: {
         color: theme.colors.textGray,
     },
 }))

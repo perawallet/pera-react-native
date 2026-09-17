@@ -3338,6 +3338,7 @@
             "max": "MAKS",
             "no_payment_methods": "Cihazın için kullanılabilir ödeme yöntemi yok.",
             "amount_below_min": "Miktar {{min}} değerinden büyük olmalı",
+            "amount_below_min_unknown": "Miktar, sağlayıcının minimum değerinin altında",
             "amount_above_max": "Miktar {{max}} değerinden küçük olmalı"
         },
         "pair_selection": {

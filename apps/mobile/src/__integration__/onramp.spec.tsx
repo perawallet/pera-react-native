@@ -226,26 +226,33 @@ const buildMeldPair = (): RampPairApiResponse => ({
 })
 
 // Meld quote at the provider minimum: 600 USD → 950.5 ALGO.
-const buildMeldQuoteResponse = (): RampQuoteApiResponse => ({
-    quote_id: 'quote-meld-600',
+const buildMeldQuoteResponse = (
+    overrides: {
+        quoteId?: string
+        destinationAmount?: number
+        serviceProvider?: string
+        paymentMethodId?: string
+    } = {},
+): RampQuoteApiResponse => ({
+    quote_id: overrides.quoteId ?? 'quote-meld-600',
     provider_response: {
         sourceAmount: 600,
-        destinationAmount: 950.5,
+        destinationAmount: overrides.destinationAmount ?? 950.5,
         sourceCurrencyCode: 'USD',
         destinationCurrencyCode: 'ALGO',
         totalFee: 6,
         networkFee: null,
         transactionFee: 6,
         exchangeRate: 0.63,
-        paymentMethodType: 'CREDIT_DEBIT_CARD',
-        serviceProvider: 'MERCURYO',
+        paymentMethodType: overrides.paymentMethodId ?? 'CREDIT_DEBIT_CARD',
+        serviceProvider: overrides.serviceProvider ?? 'MERCURYO',
         institutionName: null,
         lowKyc: false,
     },
     payment_method: {
-        id: 'CREDIT_DEBIT_CARD',
+        id: overrides.paymentMethodId ?? 'CREDIT_DEBIT_CARD',
         logo: null,
-        name: 'Credit card',
+        name: overrides.paymentMethodId ?? 'Credit card',
     },
 })
 
@@ -743,6 +750,85 @@ describe('Flow: Onramp buy (native XO)', () => {
                 screen.queryByText('onramp.form.amount_below_min'),
             ).toBeNull()
             await waitFor(() => expect(buyButton.disabled).toBe(false))
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given one provider quoting two payment methods, when the user opens the provider sheet, then that provider is listed once with the fiat value of what it pays out',
+        async () => {
+            seedSelectedAccount()
+            markIntroSeen()
+            useOnrampStore.setState({
+                selectedSourceTokenId: 'USD',
+                selectedDestinationTokenId: 'ALGO',
+            })
+
+            // ALGO at $0.50 so the fiat value line cannot be confused with the
+            // ALGO amount (or with the quote's $6 fee, which it used to show).
+            const pair = buildMeldPair()
+            pair.destination_token.price_in_usd = '0.5'
+
+            server.use(
+                mockRampPairs({ response: [pair] }),
+                mockRampRegion({ response: REGION_RESPONSE }),
+                mockCreateRampQuote({
+                    response: [
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-mercuryo-card',
+                            destinationAmount: 950.5,
+                        }),
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-mercuryo-apple',
+                            destinationAmount: 940,
+                            paymentMethodId: 'APPLE_PAY',
+                        }),
+                        buildMeldQuoteResponse({
+                            quoteId: 'quote-banxa-card',
+                            destinationAmount: 960,
+                            serviceProvider: 'BANXA',
+                        }),
+                    ],
+                }),
+            )
+
+            renderWithNavigation(OnrampScreen, 'Fund')
+
+            // Wait for the quote to land — the row renders a skeleton first,
+            // and tapping it before then opens the sheet with no quotes.
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('onramp-receive-amount').textContent,
+                    ).toContain('960')
+                },
+                { timeout: 5000 },
+            )
+            fireEvent.click(screen.getByTestId('onramp-provider-row'))
+
+            // The best card quote is auto-selected, so the sheet lists the two
+            // card providers — Mercuryo once, not once per payment method.
+            await screen.findByTestId(
+                'onramp-provider-option-quote-banxa-card',
+                {},
+                { timeout: 5000 },
+            )
+            expect(
+                screen.getByTestId(
+                    'onramp-provider-option-quote-mercuryo-card',
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId(
+                    'onramp-provider-option-quote-mercuryo-apple',
+                ),
+            ).toBeNull()
+
+            // 960 ALGO at $0.50 → $480, not the $6 fee.
+            expect(
+                screen.getByTestId('onramp-provider-option-quote-banxa-card')
+                    .textContent,
+            ).toContain('480')
         },
         SLOW_TEST_TIMEOUT_MS,
     )

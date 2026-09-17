@@ -551,7 +551,7 @@ describe('useOnrampForm', () => {
         expect(result.current.limits?.max).toBeNull()
     })
 
-    it('falls back to the flattened message when the limits are unparseable', async () => {
+    it('shows localized below-minimum copy, not backend prose, when the limits are unparseable', async () => {
         // The apostrophe corrupts the single-quote normalisation.
         mockCreateQuote.mockRejectedValue(
             buildBelowMinQuoteError("{'message': 'isn't parseable'}"),
@@ -563,7 +563,29 @@ describe('useOnrampForm', () => {
         })
 
         expect(result.current.limits).toBeNull()
-        expect(result.current.errorMessage).toBe('Amount is too low.')
+        expect(result.current.errorMessage).toBe(
+            'onramp.form.amount_below_min_unknown',
+        )
+    })
+
+    it('shows localized copy when the backend sends a non-numeric limit', async () => {
+        // The TRY pair returns the literal word "for" as the limit, in the
+        // prose as well as in min_amount.
+        mockCreateQuote.mockRejectedValue(
+            buildBelowMinQuoteError(
+                "{'message': 'Source amount is below the minimum allowed, which is for.', 'min_amount': 'for'}",
+            ),
+        )
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.limits).toBeNull()
+        expect(result.current.errorMessage).toBe(
+            'onramp.form.amount_below_min_unknown',
+        )
     })
 
     it('clears Meld limits when the pair changes', async () => {

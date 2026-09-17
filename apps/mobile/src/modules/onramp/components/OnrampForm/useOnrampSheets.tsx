@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { Decimal } from 'decimal.js'
 import type { RampQuote } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
@@ -29,6 +30,8 @@ type UseOnrampSheetsParams = {
     selectQuote: (quoteId: string) => void
     selectedPaymentMethodId: Nullable<string>
     selectPaymentMethod: (paymentMethodId: string) => void
+    /** Destination token price in USD, for the provider rows' fiat value line. */
+    destinationPriceInUsd: Nullable<Decimal>
     senderAddress: string
     setSelectedSourceTokenId: (id: string) => void
     setSelectedDestinationTokenId: (id: string) => void
@@ -59,6 +62,7 @@ export const useOnrampSheets = ({
     selectQuote,
     selectedPaymentMethodId,
     selectPaymentMethod,
+    destinationPriceInUsd,
     senderAddress,
     setSelectedSourceTokenId,
     setSelectedDestinationTokenId,
@@ -100,6 +104,8 @@ export const useOnrampSheets = ({
                     quotes={quotes}
                     sourceAmount={sourceAmount}
                     selectedQuoteId={selectedQuoteId}
+                    selectedPaymentMethodId={selectedPaymentMethodId}
+                    destinationPriceInUsd={destinationPriceInUsd}
                 />
             ),
             options: {
@@ -112,7 +118,15 @@ export const useOnrampSheets = ({
             trackEvent(OnrampEvent.ProviderSelect)
             selectQuote(resolvedQuoteId)
         }
-    }, [requestBottomSheet, quotes, sourceAmount, selectedQuoteId, selectQuote])
+    }, [
+        requestBottomSheet,
+        quotes,
+        sourceAmount,
+        selectedQuoteId,
+        selectedPaymentMethodId,
+        destinationPriceInUsd,
+        selectQuote,
+    ])
 
     const handleOpenPaymentMethod = useCallback(async () => {
         const resolvedPaymentMethodId = await requestBottomSheet<string>({

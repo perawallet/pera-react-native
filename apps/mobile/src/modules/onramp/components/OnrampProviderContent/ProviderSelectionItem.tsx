@@ -10,26 +10,32 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import { PWChip, PWRadioButton, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     quoteDestinationAmount,
+    quoteDestinationValueInUsd,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import { displayCurrencyToAssetId } from '@perawallet/wallet-core-shared'
 import {
-    getOnrampDestinationCurrency,
-    getOnrampFeeCurrency,
-    getOnrampTotalFee,
-} from '../onrampQuoteDisplay'
+    displayCurrencyToAssetId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { getOnrampDestinationCurrency } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'
+
+/** `priceInUsd` on the ramp token is USD-denominated, so the value line is too. */
+const USD_CURRENCY = 'USD'
 
 export type ProviderSelectionItemProps = {
     label: string
     quote: RampQuote
     /** Raw source amount string — XO destination amounts are computed from it. */
     sourceAmount: string
+    /** Destination token price in USD; null hides the fiat value line. */
+    destinationPriceInUsd: Nullable<Decimal>
     isBest: boolean
     isSelected: boolean
     onPress: () => void
@@ -40,6 +46,7 @@ export const ProviderSelectionItem = ({
     label,
     quote,
     sourceAmount,
+    destinationPriceInUsd,
     isBest,
     isSelected,
     onPress,
@@ -50,7 +57,11 @@ export const ProviderSelectionItem = ({
     // Provider quote currencies are trusted codes (Meld fiat/crypto codes, XO
     // asset ids), so the ALGO ticker may translate to the glyph-earning id.
     const destinationCurrency = getOnrampDestinationCurrency(quote)
-    const feeCurrency = getOnrampFeeCurrency(quote)
+    const destinationValueInUsd = quoteDestinationValueInUsd(
+        quote,
+        sourceAmount,
+        destinationPriceInUsd,
+    )
 
     return (
         <PWRadioButton
@@ -88,16 +99,18 @@ export const ProviderSelectionItem = ({
                         variant='body'
                         style={styles.amountText}
                     />
-                    <CurrencyAmount
-                        currency={feeCurrency}
-                        assetId={displayCurrencyToAssetId(feeCurrency)}
-                        value={getOnrampTotalFee(quote)}
-                        precision='compact'
-                        showSymbol
-                        alignRight
-                        variant='caption'
-                        style={styles.feeText}
-                    />
+                    {destinationValueInUsd ? (
+                        <CurrencyAmount
+                            currency={USD_CURRENCY}
+                            assetId={displayCurrencyToAssetId(USD_CURRENCY)}
+                            value={destinationValueInUsd}
+                            precision='compact'
+                            showSymbol
+                            alignRight
+                            variant='caption'
+                            style={styles.valueText}
+                        />
+                    ) : null}
                 </PWView>
             </PWView>
         </PWRadioButton>
