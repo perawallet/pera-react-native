@@ -64,6 +64,9 @@ export type PendingApproval =
            * copy off it, so a guess here shows the wrong surface — or none.
            */
           sourceType: SourceType
+          // Browser-verified origin of the requesting tab. Never conflate with
+          // `origin` above, which is derived from the dApp-asserted `peer.url`.
+          verifiedOrigin?: string
       }
     | {
           // Notification-only: the host already refused the peer. The surface's
@@ -211,6 +214,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         authorizedAccounts: string[]
         peer: ConnectionPeer
         sourceType: SourceType
+        verifiedOrigin?: string
     }): Promise<ConnectionRequestDecision> {
         const decision = this.awaitApproval<
             { result: WireWalletOperationResult } | typeof APPROVAL_WITHDRAWN

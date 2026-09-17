@@ -168,6 +168,7 @@ export const installConnectionsApprovalRouter = ({
                             authorizedAccounts: request.authorizedAccounts,
                             peer: request.peer,
                             sourceType: request.sourceType,
+                            verifiedOrigin: request.verifiedOrigin,
                         })
                         .then(decision => {
                             // The handler already answered the peer and forgot

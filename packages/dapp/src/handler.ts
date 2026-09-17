@@ -414,6 +414,7 @@ export const createDappConnectionHandler = (
             sourceType: 'injected',
             authorizedAccounts: connection.accounts,
             peer: connection.peer,
+            verifiedOrigin: ctx.origin,
             rawOperation: { type, params: rawParams },
             // Delivery failure must propagate so the request stays answerable
             // (the page may be reachable again on retry); settle only on success.

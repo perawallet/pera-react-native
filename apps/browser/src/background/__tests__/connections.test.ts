@@ -88,7 +88,11 @@ const proposalRequest = (
     ...overrides,
 })
 
-const signRequest = (): ConnectionApprovalRequest => ({
+const signRequest = (
+    overrides: Partial<
+        Extract<ConnectionApprovalRequest, { kind: 'connection-request' }>
+    > = {},
+): ConnectionApprovalRequest => ({
     kind: 'connection-request',
     connectionId: 'conn-1',
     correlationId: '9',
@@ -96,6 +100,7 @@ const signRequest = (): ConnectionApprovalRequest => ({
     authorizedAccounts: ['AAAA'],
     peer: PEER,
     sourceType: 'injected',
+    ...overrides,
 })
 
 const errorRequest = (): ConnectionApprovalRequest => ({
@@ -282,6 +287,20 @@ describe('installConnectionsApprovalRouter', () => {
                     peer: PEER,
                     sourceType: 'injected',
                 })
+            })
+        })
+
+        it('passes the transport-verified origin through to the approval', async () => {
+            chromeMock.deliver(
+                signRequest({ verifiedOrigin: 'https://dapp.example' }),
+            )
+
+            await vi.waitFor(() => {
+                expect(approvals.openConnectionRequest).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        verifiedOrigin: 'https://dapp.example',
+                    }),
+                )
             })
         })
 

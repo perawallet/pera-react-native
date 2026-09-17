@@ -96,6 +96,7 @@ export const useSignRequestApprovalScreen =
                 correlationId: approval.correlationId,
                 authorizedAccounts: approval.authorizedAccounts,
                 peer: approval.peer,
+                verifiedOrigin: approval.verifiedOrigin,
                 operation: decodeWalletOperation(approval.operation),
                 respond: async result => {
                     await resolveConnectionRequest(

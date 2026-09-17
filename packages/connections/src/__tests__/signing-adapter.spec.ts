@@ -245,6 +245,29 @@ describe('useConnectionSigningAdapter', () => {
         )
     })
 
+    it('threads the transport-verified origin through to the ARC-0001 enqueue', () => {
+        const { registry, send } = makeRegistry()
+        renderHook(() => useConnectionSigningAdapter(registry))
+
+        send({
+            kind: 'request',
+            connectionId: 'c1',
+            correlationId: '7',
+            sourceType: 'injected',
+            authorizedAccounts: ['AAAA'],
+            peer: PEER,
+            verifiedOrigin: 'https://dapp.example',
+            operation: { type: 'sign-transactions', group: [{ txn: 'b64' }] },
+            respond: vi.fn(),
+            reject: vi.fn(),
+        })
+
+        expect(mockEnqueue).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({ verifiedOrigin: 'https://dapp.example' }),
+        )
+    })
+
     it('binds the request to the connection approved accounts', () => {
         // Without this, a session approved for account A could sign for
         // account B. `authorizedAddresses` is the guarantee; it must reach
@@ -852,6 +875,65 @@ describe('useConnectionSigningAdapter', () => {
 
             expect(mockAddSignRequest).toHaveBeenCalledWith(
                 expect.objectContaining({ sourceType: 'webview' }),
+            )
+        })
+
+        it('threads the transport-verified origin onto the ARC-60 request so the domain-mismatch warning can fire', () => {
+            mockAccounts = [{ address: PRIMARY_SIGNER, canArc60: true }]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+
+            send({
+                ...signDataMessage(
+                    {
+                        type: 'arc60',
+                        stdSigData: {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            domain: 'example.com',
+                            authenticatorData: new Uint8Array([1, 2, 3]),
+                        },
+                        metadata: { scope: 1, encoding: 'base64' },
+                    },
+                    [PRIMARY_SIGNER],
+                    'injected',
+                ),
+                verifiedOrigin: 'https://evil.example',
+            })
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'arc60',
+                    verifiedOrigin: 'https://evil.example',
+                }),
+            )
+        })
+
+        it('threads the transport-verified origin onto a legacy arbitrary-data request', () => {
+            mockAccounts = [{ address: PRIMARY_SIGNER, canSignData: true }]
+            const { registry, send } = makeRegistry()
+            renderHook(() => useConnectionSigningAdapter(registry))
+
+            send({
+                ...signDataMessage(
+                    [
+                        {
+                            data: 'ZGF0YQ==',
+                            signer: PRIMARY_SIGNER,
+                            chainId: 4160,
+                        },
+                    ],
+                    [PRIMARY_SIGNER],
+                    'injected',
+                ),
+                verifiedOrigin: 'https://dapp.example',
+            })
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'arbitrary-data',
+                    verifiedOrigin: 'https://dapp.example',
+                }),
             )
         })
 

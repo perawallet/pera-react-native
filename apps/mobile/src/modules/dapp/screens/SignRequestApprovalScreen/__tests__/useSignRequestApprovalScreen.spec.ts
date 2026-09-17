@@ -206,6 +206,22 @@ describe('useSignRequestApprovalScreen', () => {
             expect(mocks.addSignRequest).not.toHaveBeenCalled()
         })
 
+        it('carries the transport-verified origin onto the inbound message', () => {
+            mocks.useDappRequest.mockReturnValue({
+                ...mocks.useDappRequest(),
+                approval: {
+                    ...CONNECTION_REQUEST_APPROVAL,
+                    verifiedOrigin: 'https://dapp.example',
+                },
+            })
+
+            renderHook(() => useSignRequestApprovalScreen())
+
+            expect(enqueuedMessage().verifiedOrigin).toBe(
+                'https://dapp.example',
+            )
+        })
+
         it('decodes the wire operation before enqueuing', () => {
             renderHook(() => useSignRequestApprovalScreen())
 

@@ -253,6 +253,42 @@ describe('isConnectionApprovalRequestMessage', () => {
         ).toBe(false)
     })
 
+    it('accepts a connection-request carrying a verifiedOrigin', () => {
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: {
+                    kind: 'connection-request',
+                    connectionId: 'c1',
+                    correlationId: '9',
+                    operation: { type: 'sign-transactions', group: [] },
+                    authorizedAccounts: ['AAAA'],
+                    peer: PEER,
+                    sourceType: 'injected',
+                    verifiedOrigin: 'https://dapp.example',
+                },
+            }),
+        ).toBe(true)
+    })
+
+    it('rejects a connection-request whose verifiedOrigin is not a string', () => {
+        expect(
+            isConnectionApprovalRequestMessage({
+                scope: CONNECTIONS_REQUEST_SCOPE,
+                request: {
+                    kind: 'connection-request',
+                    connectionId: 'c1',
+                    correlationId: '9',
+                    operation: { type: 'sign-transactions', group: [] },
+                    authorizedAccounts: ['AAAA'],
+                    peer: PEER,
+                    sourceType: 'injected',
+                    verifiedOrigin: { host: 'dapp.example' },
+                },
+            }),
+        ).toBe(false)
+    })
+
     it('accepts a connection-request-withdrawn notice', () => {
         expect(
             isConnectionApprovalRequestMessage({

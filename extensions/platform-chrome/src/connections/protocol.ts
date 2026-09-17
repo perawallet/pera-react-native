@@ -320,6 +320,8 @@ export type ConnectionApprovalRequest =
           peer: ConnectionPeer
           /** The handler's own label; the approval window has no other way to know it. */
           sourceType: SourceType
+          /** See `InboundMessage.verifiedOrigin`; the approval window must not derive it from `peer`. */
+          verifiedOrigin?: string
       }
     /**
      * The handler answered the peer itself (its request expired), so any
@@ -393,7 +395,8 @@ export const isConnectionApprovalRequest = (
                 isWireWalletOperation(value.operation) &&
                 isStringArray(value.authorizedAccounts) &&
                 isPeer(value.peer) &&
-                typeof value.sourceType === 'string'
+                typeof value.sourceType === 'string' &&
+                isOptionalString(value.verifiedOrigin)
             )
         }
         case 'connection-request-withdrawn': {

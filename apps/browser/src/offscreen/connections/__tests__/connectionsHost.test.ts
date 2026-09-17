@@ -329,6 +329,22 @@ describe('startConnectionsHost', () => {
             })
         })
 
+        it('forwards the transport-verified origin to the approval surface', () => {
+            fake.emitMessage(
+                makeRequest({
+                    sourceType: 'injected',
+                    verifiedOrigin: 'https://dapp.example',
+                }),
+            )
+
+            expect(requestApproval).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    kind: 'connection-request',
+                    verifiedOrigin: 'https://dapp.example',
+                }),
+            )
+        })
+
         // The dapp handler answers the page -32004 at its own TTL. If the
         // approval stayed open the user could still approve, the wallet would
         // sign, and the signature would be dropped on a request nothing can

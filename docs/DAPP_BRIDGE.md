@@ -81,7 +81,10 @@ required nor read, where the webview takes a single `data` object and requires
   the page; a missing or blank `name` falls back to the origin's host. `name` is
   truncated at 100 characters and `description` at 300. `url` is
   always the browser-verified origin, which is also the connection id — one
-  connection per origin, however many tabs. `icons` are kept only if `https:`
+  connection per origin, however many tabs. That origin also rides on every
+  sign request as `verifiedOrigin`, which is what the signing pipeline's ARC-60
+  domain-mismatch check compares against; it never reads `peer.url` for that,
+  because on WalletConnect the peer URL is dApp-asserted. `icons` are kept only if `https:`
   and same-origin as the page (an icon URL is fetched when the approval renders,
   which tells its host when that happened), de-duplicated, first 4 kept. A
   `metadata` param naming the requester is ignored on the sign methods: the

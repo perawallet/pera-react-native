@@ -114,6 +114,12 @@ type MessageBase = {
      * same reason as `authorizedAccounts`.
      */
     peer: ConnectionPeer
+    /**
+     * Origin the transport itself attested (the browser's `sender.origin`),
+     * never a peer-asserted value. Feeds the pipeline's ARC-60 domain-binding
+     * check; unset for transports with no verifiable origin (WalletConnect).
+     */
+    verifiedOrigin?: string
     respond(result: WalletOperationResult): Promise<void>
     reject(error: Error): Promise<void>
 }

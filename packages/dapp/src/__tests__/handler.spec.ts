@@ -322,6 +322,19 @@ describe('DappConnectionHandler', () => {
             expect(messages).toHaveLength(0)
         })
 
+        it('stamps the browser-verified origin on the request so the pipeline can origin-bind it', async () => {
+            const { transport, registry, messages } = setup([connected()])
+            await registry.initialize()
+            void transport.send(ORIGIN, 'requestTransactionSigning', {
+                txns: [{ txn: 'AA==' }],
+            })
+            await flush()
+            const message = messages[0]
+            if (message.kind !== 'request')
+                throw new Error('expected a request')
+            expect(message.verifiedOrigin).toBe(ORIGIN)
+        })
+
         it('emits a sign-transactions request keyed by a handler-minted id and maps the result back', async () => {
             const { transport, registry, messages } = setup([connected()])
             await registry.initialize()

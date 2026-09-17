@@ -182,6 +182,7 @@ export const startConnectionsHost = (
                 authorizedAccounts: message.authorizedAccounts,
                 peer: message.peer,
                 sourceType: message.sourceType,
+                verifiedOrigin: message.verifiedOrigin,
             })
             .catch((error: unknown) => {
                 requests.delete(key)
