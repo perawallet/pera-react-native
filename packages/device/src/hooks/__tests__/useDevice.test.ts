@@ -231,6 +231,34 @@ describe('services/device/hooks', () => {
         expect(outcome).toEqual({ createdNew: true })
     })
 
+    test('registers the fallback fiat when the user prefers ALGO', async () => {
+        vi.resetModules()
+
+        const { useCurrenciesStore } =
+            await import('@perawallet/wallet-core-currencies')
+        const useDevice = await importUseDevice()
+
+        await seedPushToken('test-fcm-token')
+        useCurrenciesStore.getState().setPreferredCurrency('ALGO')
+        useCurrenciesStore.getState().setFallbackCurrency('EUR')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ currency: 'EUR' }),
+            }),
+        )
+
+        useCurrenciesStore.getState().resetState()
+    })
+
     test('sends the stored id on every subsequent registration', async () => {
         vi.resetModules()
 

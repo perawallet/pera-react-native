@@ -65,15 +65,13 @@ describe('toDeviceRegistrationRequest', () => {
         expect('currency' in request).toBe(false)
     })
 
-    // The backend 422s the whole registration over a 9th character, taking the
-    // push token and the account list down with it — so clamp, never forward.
-    it('clamps an over-long currency to the column width', () => {
+    it('omits an over-long currency rather than truncating it', () => {
         const request = toDeviceRegistrationRequest({
             ...baseRegistration,
             currency: 'TOOLONGCURRENCY',
         })
 
-        expect(request.currency).toBe('TOOLONGC')
+        expect('currency' in request).toBe(false)
     })
 
     it('omits id when the registration has none', () => {

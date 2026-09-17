@@ -150,6 +150,7 @@ describe('Device registration v3', () => {
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
+        useCurrenciesStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
         server.resetHandlers()
     })
@@ -223,9 +224,6 @@ describe('Device registration v3', () => {
         INTEGRATION_TIMEOUT,
     )
 
-    // Registration is the only channel that carries the currency: the two other
-    // endpoints that see the user's choice send no device identity, so without
-    // this the backend renders every notification amount in USD.
     it(
         're-registers with the new currency when the user changes it',
         async () => {

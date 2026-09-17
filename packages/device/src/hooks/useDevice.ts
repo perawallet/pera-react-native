@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    isAlgoAssetName,
     isNotFoundError,
     isPeraNetworkError,
     type Network,
@@ -123,18 +124,14 @@ export const useDevice = () => {
     // v3 requires push_token, locale and app_version on every call; there is
     // no "omit to keep the stored value" path. A null token becomes '' — see
     // the id rule on `registerDevice` for why that is safe.
-    // Registration is the only channel that carries the currency choice: the
-    // two other endpoints that see it (`/v1/currencies/<CODE>/`, asset-prices)
-    // send no device identity at all. Reading it here rather than at the call
-    // sites also makes a currency change re-register for free — the same dep
-    // chain that re-registers on a new push token.
     //
-    // `preferredCurrency`, not the resolved fiat: a user who picked ALGO
-    // should be recorded as having picked ALGO. The backend has no ALGO rate
-    // and renders those amounts in USD, which is the honest outcome of the
-    // user's own choice rather than a currency they never selected.
-    const preferredCurrency = useCurrenciesStore(
-        state => state.preferredCurrency,
+    // The resolved fiat, not the raw preference: the backend has no ALGO rate,
+    // so recording 'ALGO' renders USD anyway and logs a warning on every
+    // notification. Same rule as `useLocalCurrency`.
+    const notificationCurrency = useCurrenciesStore(state =>
+        isAlgoAssetName(state.preferredCurrency)
+            ? state.fallbackCurrency
+            : state.preferredCurrency,
     )
 
     const buildPayload = useCallback(
@@ -144,9 +141,9 @@ export const useDevice = () => {
             pushToken: pushToken ?? '',
             locale: deviceInfoService.getDeviceLocale(),
             appVersion: deviceInfoService.getAppVersion(),
-            currency: preferredCurrency,
+            currency: notificationCurrency,
         }),
-        [deviceInfoService, pushToken, preferredCurrency],
+        [deviceInfoService, pushToken, notificationCurrency],
     )
 
     /**
