@@ -11,7 +11,7 @@
  */
 
 import { sha256 } from '@noble/hashes/sha2.js'
-import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     bytesToHex,
@@ -37,37 +37,26 @@ export type EscrowChainConfig = {
 }
 
 /**
- * Resolves the AB escrow chain config for the AutoDraw template from network
- * config. Missing ids throw {@link CardEscrowNotConfiguredError} whenever a
- * REAL escrow service is in play (production, or any build with an escrow base
- * URL configured): a program rendered with app id `0` is not merely unusable —
- * in TEAL `ApplicationID == 0` matches app-CREATION transactions, so signing it
- * would grant a delegation gated by attacker-constructible transactions. The
- * `'0'` placeholders exist ONLY for the dev-mock path (empty base URL), where
- * the signed program never leaves the device.
+ * Resolves the on-chain ids the AutoDraw template needs. A missing id fails
+ * closed in every environment: in TEAL `ApplicationID == 0` matches
+ * app-CREATION transactions, so a program rendered with a placeholder id would
+ * be a delegation gated by attacker-constructible transactions rather than an
+ * unusable one.
  */
 export const resolveEscrowChainConfig = (
     network: Network,
 ): EscrowChainConfig => {
-    const {
-        cardW3CardAppId,
-        cardKillswitchAppId,
-        cardUsdcAssetId,
-        cardEscrowBaseUrl,
-    } = getNetworkConfig(network)
+    const { cardW3CardAppId, cardKillswitchAppId, cardUsdcAssetId } =
+        getNetworkConfig(network)
 
-    const hasAllIds = Boolean(
-        cardW3CardAppId && cardKillswitchAppId && cardUsdcAssetId,
-    )
-    const isProduction = config.appEnvironment === 'production'
-    if (!hasAllIds && (isProduction || cardEscrowBaseUrl)) {
+    if (!cardW3CardAppId || !cardKillswitchAppId || !cardUsdcAssetId) {
         throw new CardEscrowNotConfiguredError()
     }
 
     return {
-        assetId: cardUsdcAssetId || '0',
-        killswitchAppId: cardKillswitchAppId || '0',
-        mainAppId: cardW3CardAppId || '0',
+        assetId: cardUsdcAssetId,
+        killswitchAppId: cardKillswitchAppId,
+        mainAppId: cardW3CardAppId,
     }
 }
 

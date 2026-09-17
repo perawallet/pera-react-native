@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-export { installCardDevMocks } from './installCardDevMocks'
-// Fixture data only (integration tests seed MSW with it); no longer served at
-// runtime, the transactions route hits the real Baanx API.
+// Card transaction fixtures; integration tests seed MSW with them.
 export {
     buildMockCardTransactions,
     type MockCardTransaction,
 } from './mockCardTransactions'
-export { applyMockDelegation } from './mockDelegation'
