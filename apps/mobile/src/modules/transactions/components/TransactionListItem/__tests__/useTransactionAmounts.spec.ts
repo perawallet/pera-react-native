@@ -248,9 +248,8 @@ describe('useTransactionAmounts', () => {
     })
 })
 
-// PERA-5138: `sender` on a clawback is the clawback authority, so the account
-// whose holding was seized used to see "+100 USDC" — the history reported the
-// direction of funds backwards for every clawback-enabled ASA.
+// `sender` on a clawback is the clawback authority, not the account whose
+// holding was seized, so direction must come from the asset sender.
 describe('useTransactionAmounts — clawback', () => {
     it('signs a seized holding as outgoing for the drained account', () => {
         const tx = createPaymentTx({

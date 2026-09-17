@@ -173,7 +173,7 @@ describe('transformIndexerTransactions', () => {
             },
         ])
         // Carried through so the row renders as a debit and the detail screen
-        // can name who was clawed back (PERA-5138).
+        // can name who was clawed back.
         expect(row.asset_sender).toBe('DRAINED')
     })
 

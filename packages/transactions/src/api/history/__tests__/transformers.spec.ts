@@ -681,9 +681,8 @@ describe('Pera backend wire contract', () => {
     })
 })
 
-// PERA-5138: on a clawback the Pera backend's `sender` is the clawback
-// authority, so the row read as an incoming transfer for the account that was
-// actually drained.
+// On a clawback the Pera backend's `sender` is the clawback authority, not the
+// account that was drained.
 describe('transformTransactionItem — clawback direction', () => {
     const clawback = (overrides = {}) =>
         makeApiItem({
