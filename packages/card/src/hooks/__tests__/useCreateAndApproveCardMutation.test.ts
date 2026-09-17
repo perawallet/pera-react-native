@@ -23,18 +23,20 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return { ...actual, useNetwork: mockUseNetwork }
 })
 
-const { createCard, approveEscrowCard, fetchUser } = vi.hoisted(() => ({
-    createCard: vi.fn(),
-    approveEscrowCard: vi.fn(),
-    fetchUser: vi.fn(),
-}))
+const { createCard, postAlgorandDelegationApproval, fetchUser } = vi.hoisted(
+    () => ({
+        createCard: vi.fn(),
+        postAlgorandDelegationApproval: vi.fn(),
+        fetchUser: vi.fn(),
+    }),
+)
 vi.mock('../../api/card-creation', async () => ({
     ...(await vi.importActual('../../api/card-creation')),
     createCard,
 }))
-vi.mock('../../api/escrow', async () => ({
-    ...(await vi.importActual('../../api/escrow')),
-    approveEscrowCard,
+vi.mock('../../api/delegation', async () => ({
+    ...(await vi.importActual('../../api/delegation')),
+    postAlgorandDelegationApproval,
 }))
 vi.mock('../../api/user', async () => ({
     ...(await vi.importActual('../../api/user')),
@@ -75,6 +77,7 @@ const BAANX_USER_ID = 'baanx-user-1'
 const PROOF = {
     signData: { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' },
     signature: 'c2ln',
+    delegationToken: 'ABC_tok',
 }
 
 const setValidIntegrityToken = () =>
@@ -98,7 +101,7 @@ describe('useCreateAndApproveCardMutation', () => {
         configFlags.isDev = false
         configFlags.isStaging = false
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
-        approveEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
+        postAlgorandDelegationApproval.mockResolvedValue(undefined)
         fetchUser.mockResolvedValue({
             id: BAANX_USER_ID,
             verificationState: 'VERIFIED',
@@ -126,14 +129,15 @@ describe('useCreateAndApproveCardMutation', () => {
                 integrityToken: 'TEST_INTEGRITY_TOKEN',
             }),
         )
-        expect(approveEscrowCard).toHaveBeenCalledWith(
+        expect(postAlgorandDelegationApproval).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
-                cardAddress: 'ESCROW1',
+                address: ADDRESS,
                 currency: 'usdc',
                 txId: 'TX1',
                 signData: PROOF.signData,
                 signature: PROOF.signature,
+                token: 'ABC_tok',
             }),
         )
         expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
@@ -151,7 +155,7 @@ describe('useCreateAndApproveCardMutation', () => {
         await expect(
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
         ).rejects.toThrow(CardAccountLinkedElsewhereError)
-        expect(approveEscrowCard).not.toHaveBeenCalled()
+        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
     })
 
@@ -225,11 +229,13 @@ describe('useCreateAndApproveCardMutation', () => {
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
         ).rejects.toThrow('create boom')
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
-        expect(approveEscrowCard).not.toHaveBeenCalled()
+        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
     })
 
     it('approval failure after creation: card persists unapproved; a retry with a fresh proof re-approves only', async () => {
-        approveEscrowCard.mockRejectedValueOnce(new Error('approval boom'))
+        postAlgorandDelegationApproval.mockRejectedValueOnce(
+            new Error('approval boom'),
+        )
         const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
             wrapper,
         })
@@ -242,13 +248,22 @@ describe('useCreateAndApproveCardMutation', () => {
 
         const retryOutcome = await result.current.mutateAsync({
             address: ADDRESS,
-            proof: { ...PROOF, signature: 'ZnJlc2g=' },
+            proof: {
+                ...PROOF,
+                signature: 'ZnJlc2g=',
+                delegationToken: 'ABC_tok2',
+            },
         })
 
         expect(createCard).toHaveBeenCalledTimes(1)
-        expect(approveEscrowCard).toHaveBeenCalledTimes(2)
-        expect(approveEscrowCard.mock.calls[1][0]).toEqual(
-            expect.objectContaining({ signature: 'ZnJlc2g=' }),
+        expect(postAlgorandDelegationApproval).toHaveBeenCalledTimes(2)
+        // The delegation token is single-use, so a retry must carry the fresh
+        // proof's token, never the consumed one.
+        expect(postAlgorandDelegationApproval.mock.calls[1][0]).toEqual(
+            expect.objectContaining({
+                signature: 'ZnJlc2g=',
+                token: 'ABC_tok2',
+            }),
         )
         expect(retryOutcome).toEqual({ cardAddress: 'ESCROW1' })
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
@@ -272,7 +287,7 @@ describe('useCreateAndApproveCardMutation', () => {
         })
 
         expect(createCard).not.toHaveBeenCalled()
-        expect(approveEscrowCard).not.toHaveBeenCalled()
+        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
         expect(outcome).toEqual({ cardAddress: 'EXISTING_CARD' })
     })
 
