@@ -397,14 +397,13 @@ export const useAccountOptions = ({
         finishRemove,
     ])
 
-    /** Both branches settle the backup's copy before the account leaves the
-     *  device: a refused choice must not strand a removed account in a state
-     *  the user never picked. */
+    /** Both branches record the backup choice before the account leaves the
+     *  device: a refused choice would strand it in neither review bucket. */
     const finishRemoveWithBackupChoice = useCallback(
         async (choose: () => Promise<boolean>, errorKey: string) => {
-            let isSettled = false
+            let isRecorded = false
             try {
-                isSettled = await choose()
+                isRecorded = await choose()
             } catch (error) {
                 logger.warn('useAccountOptions: backup choice failed', {
                     address: account.address,
@@ -412,7 +411,7 @@ export const useAccountOptions = ({
                         error instanceof Error ? error.message : String(error),
                 })
             }
-            if (!isSettled) {
+            if (!isRecorded) {
                 showToast({ title: t(errorKey), body: '', type: 'error' })
                 return
             }
@@ -424,8 +423,10 @@ export const useAccountOptions = ({
     const handleDeleteFromBackup = useCallback(() => {
         trackEvent(AccountOptionsEvent.DeleteFromCloudBackup)
         return finishRemoveWithBackupChoice(
-            () =>
-                getBackupSyncManager().deleteAccountFromBackup(account.address),
+            async () =>
+                (await getBackupSyncManager().deleteAccountFromBackup(
+                    account.address,
+                )) !== 'refused',
             'cloud_backup.accounts.delete_error',
         )
     }, [finishRemoveWithBackupChoice, account.address])

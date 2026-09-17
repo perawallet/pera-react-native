@@ -21,9 +21,10 @@ import {
     useBackupSyncStateStore,
     type BackupReviewAction,
 } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
@@ -58,6 +59,7 @@ const TOAST_KEY: Record<
 export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const [busyAddress, setBusyAddress] = useState<string | null>(null)
     const accounts = useAccountsStore(state => state.accounts)
     const syncState = useBackupSyncStateStore(state => state.syncState)
@@ -87,6 +89,10 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
                 address,
                 error: error instanceof Error ? error.message : String(error),
             })
+            if (error instanceof NoConnectionError) {
+                showError(error)
+                return
+            }
             showToast({
                 title: t(TOAST_KEY[action].error),
                 body: '',
