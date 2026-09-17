@@ -30,19 +30,21 @@ export type {
     CardTransportResponse,
 } from './api/transport/types'
 
-// AutoDraw delegation helpers — the compile → sign → POST /lsig leg, shared by
+// AutoDraw delegation helpers — the compile → sign → register leg, shared by
 // onboarding card creation and the post-onboarding funding-type switch.
 export {
     compileAutoDrawProgram,
-    postDelegatorLsig,
     resolveEscrowChainConfig,
     // Thrown when algod's compiled program doesn't match the pinned bytes.
     // Exported so the funding-type flows can degrade to Manual with honest
     // copy instead of a generic "please try again".
     AutoDrawProgramUnverifiedError,
     type EscrowChainConfig,
-    type PostDelegatorLsigParams,
 } from './api/escrow'
+export {
+    postDelegatorLsig,
+    type PostDelegatorLsigParams,
+} from './api/delegation'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {

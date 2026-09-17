@@ -12,10 +12,7 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import {
-    delegatorLsigResponseSchema,
-    escrowCardApprovalResponseSchema,
-} from './schema'
+import { escrowCardApprovalResponseSchema } from './schema'
 
 export type MockApproveEscrowCardParams = {
     /** Escrow card address AB echoes back as `address`. */
@@ -42,29 +39,3 @@ export const mockApproveEscrowCard = ({
         return HttpResponse.json(response, { status })
     })
 }
-
-export type MockPostDelegatorLsigParams = {
-    status?: number
-    /** Captures each request body for assertions. */
-    onRequest?: (body: Record<string, unknown>) => void
-}
-
-export const mockPostDelegatorLsig = ({
-    status = 200,
-    onRequest,
-}: MockPostDelegatorLsigParams = {}): HttpHandler =>
-    http.post('*/api/internal/delegator-lsig', async ({ request }) => {
-        const body = (await request.json()) as Record<string, unknown>
-        onRequest?.(body)
-        const response = {
-            delegatorAddress: String(body.delegatorAddress ?? ''),
-        }
-        if (status < 400) {
-            validateMockResponse(
-                delegatorLsigResponseSchema,
-                response,
-                'mockPostDelegatorLsig',
-            )
-        }
-        return HttpResponse.json(response, { status })
-    })

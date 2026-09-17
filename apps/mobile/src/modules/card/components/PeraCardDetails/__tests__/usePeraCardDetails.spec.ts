@@ -45,10 +45,7 @@ const mocks = vi.hoisted(() => ({
     request: vi.fn(),
     accounts: [] as unknown[],
     pickFundingSource: vi.fn(),
-    delegateTo: vi.fn(),
     authorizeDelegation: vi.fn(),
-    cancelDelegation: vi.fn(),
-    canDelegate: vi.fn(),
     canPushProvision: false,
     isCardInWallet: false,
     startAddCardToWallet: vi.fn(),
@@ -184,12 +181,6 @@ vi.mock('../../../hooks', async () => ({
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mocks.pickFundingSource,
     }),
-    useCardFundingDelegation: () => ({
-        delegateTo: mocks.delegateTo,
-        cancelDelegation: mocks.cancelDelegation,
-        isPending: false,
-        canDelegate: mocks.canDelegate,
-    }),
     useAuthorizeCardDelegation: () => ({
         authorizeDelegation: mocks.authorizeDelegation,
     }),
@@ -239,9 +230,6 @@ describe('usePeraCardDetails', () => {
         // The freeze sheet runs the freeze itself; opening it just resolves.
         mocks.request.mockResolvedValue(undefined)
         mocks.pickFundingSource.mockResolvedValue(null)
-        mocks.delegateTo.mockResolvedValue(undefined)
-        mocks.cancelDelegation.mockResolvedValue(undefined)
-        mocks.canDelegate.mockReturnValue(true)
         // The consent + auth gate passes through to the delegate fn by default.
         mocks.authorizeDelegation.mockImplementation(
             passThroughAuthorizeDelegation,
@@ -837,8 +825,6 @@ describe('usePeraCardDetails', () => {
 
             // Connecting is a local selection now: no Baanx call, just the store.
             expect(mocks.setFundingAddress).toHaveBeenCalledWith('NEW_ADDR')
-            expect(mocks.delegateTo).not.toHaveBeenCalled()
-            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
         })
 
         // Guards the restore path, not a path the UI can reach today: the

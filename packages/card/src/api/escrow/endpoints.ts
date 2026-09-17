@@ -14,10 +14,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import { getCardApiError, isAlreadyCreatedError } from '../errors'
 import { getCardTransport } from '../transport'
 import type { CardSiwaSignData } from '../card-creation'
-import {
-    delegatorLsigResponseSchema,
-    escrowCardApprovalResponseSchema,
-} from './schema'
+import { escrowCardApprovalResponseSchema } from './schema'
 
 export type ApproveEscrowCardParams = {
     network: Network
@@ -80,55 +77,5 @@ export const approveEscrowCard = async (
         const apiError = await getCardApiError(error)
         if (isAlreadyCreatedError(apiError)) return null
         throw error
-    }
-}
-
-export type PostDelegatorLsigParams = {
-    network: Network
-    /** Token SYMBOL AB keys the delegation by, e.g. "usdc". */
-    token: string
-    /** Delegator (funding-source) address that signed the LogicSig. */
-    delegatorAddress: string
-    /** Base64 msgpack-encoded signed delegated LogicSigAccount. */
-    lsigBytes: string
-    /** Escrow card address returned by the backend create-card call. */
-    cardAddress: string
-    signal?: AbortSignal
-}
-
-/**
- * Persists the signed AutoDraw LogicSig with AB, keyed by the delegator that
- * signed it. The delegation signature is itself the ownership proof, so no
- * separate SIWA signature accompanies it.
- */
-export const postDelegatorLsig = async (
-    params: PostDelegatorLsigParams,
-): Promise<{ delegatorAddress: string }> => {
-    const { network, token, delegatorAddress, lsigBytes, cardAddress, signal } =
-        params
-
-    const response = await getCardTransport().request({
-        network,
-        route: 'escrow',
-        method: 'POST',
-        path: '/api/internal/delegator-lsig',
-        data: {
-            token,
-            delegatorAddress,
-            lsigBytes,
-            cardAddress,
-            blockchain: 'algorand',
-        },
-        signal,
-    })
-
-    // AB has not published this body and answers 201 with a bare status line, so
-    // a shape we cannot read is not a failure: the delegation is registered by the
-    // time we get here. The echo is used only when it is actually there.
-    const parsed = delegatorLsigResponseSchema.safeParse(response.data)
-    return {
-        delegatorAddress:
-            (parsed.success ? parsed.data.delegatorAddress : undefined) ??
-            delegatorAddress,
     }
 }

@@ -12,9 +12,7 @@
 
 export {
     approveEscrowCard,
-    postDelegatorLsig,
     type ApproveEscrowCardParams,
-    type PostDelegatorLsigParams,
 } from './endpoints'
 export {
     compileAutoDrawProgram,
@@ -25,10 +23,7 @@ export {
     type EscrowChainConfig,
     type RenderAutoDrawTealArgs,
 } from './lsig'
-export {
-    escrowCardApprovalResponseSchema,
-    delegatorLsigResponseSchema,
-} from './schema'
+export { escrowCardApprovalResponseSchema } from './schema'
 export {
     verifyAutoDrawTealTemplate,
     isAutoDrawTealSignatureValid,

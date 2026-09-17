@@ -12,7 +12,8 @@
 
 import { z } from 'zod'
 
-// GET /v1/delegation/token — single-use pair, ~10 minute validity.
+// GET /v1/delegation/token — single-use pair, ~10 minute validity. The nonce
+// must be embedded in the signed SIWA payload the post-approval call carries.
 export const delegationTokenResponseSchema = z.object({
     token: z.string(),
     nonce: z.string(),
@@ -32,22 +33,7 @@ export type ExternalWalletApiResponse = z.infer<typeof externalWalletApiSchema>
 // GET /v1/wallet/external returns a bare array (like /v1/wallet/internal).
 export const externalWalletsResponseSchema = z.array(externalWalletApiSchema)
 
-// ─── SWAP POINT: Baanx Algorand delegation contract (not shipped) ───────────
-// Baanx documents delegation for EVM/Solana only; the Algorand variant below
-// is ASSUMED to mirror it, with the signed delegated LogicSig standing in for
-// the on-chain approval proof. When the real contract lands, update only this
-// block, the matching endpoints, and the dev mock.
-
-// ASSUMED: GET /v1/delegation/chain/config?network=algorand serves the
-// compiled delegation program the user signs.
-export const delegationProgramResponseSchema = z.object({
-    /** Base64 compiled delegation program. */
-    program: z.string(),
-    version: z.string().optional(),
-})
-
-// ASSUMED: POST /v1/delegation/algorand/post-approval
-export const algorandPostApprovalResponseSchema = z.object({
+// Both Algorand delegation writes answer 201 with this body.
+export const delegationAcceptedResponseSchema = z.object({
     success: z.boolean(),
 })
-// ─── END SWAP POINT ──────────────────────────────────────────────────────────

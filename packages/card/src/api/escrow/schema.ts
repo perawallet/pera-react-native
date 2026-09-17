@@ -18,9 +18,3 @@ import { z } from 'zod'
 export const escrowCardApprovalResponseSchema = z.object({
     address: z.string(),
 })
-
-// POST /api/internal/delegator-lsig replies 201; AB has not published the
-// body, so nothing in it is relied on.
-export const delegatorLsigResponseSchema = z.object({
-    delegatorAddress: z.string().optional(),
-})

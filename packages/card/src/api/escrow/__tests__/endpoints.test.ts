@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
-import { approveEscrowCard, postDelegatorLsig } from '../endpoints'
+import { approveEscrowCard } from '../endpoints'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
@@ -97,62 +97,5 @@ describe('approveEscrowCard', () => {
         request.mockResolvedValue({ data: {} })
 
         await expect(approveEscrowCard(approveParams)).rejects.toThrow()
-    })
-})
-
-describe('postDelegatorLsig', () => {
-    beforeEach(() => vi.clearAllMocks())
-
-    const lsigParams = {
-        network: 'testnet' as const,
-        token: 'usdc',
-        delegatorAddress: 'FUNDING_ADDR',
-        lsigBytes: 'bHNpZw==',
-        cardAddress: 'ESCROW_CARD',
-    }
-
-    it('POSTs /api/internal/delegator-lsig on the escrow route', async () => {
-        request.mockResolvedValue({
-            data: { delegatorAddress: 'FUNDING_ADDR' },
-        })
-
-        const result = await postDelegatorLsig(lsigParams)
-
-        expect(request).toHaveBeenCalledWith(
-            expect.objectContaining({
-                route: 'escrow',
-                method: 'POST',
-                path: '/api/internal/delegator-lsig',
-                data: {
-                    token: 'usdc',
-                    delegatorAddress: 'FUNDING_ADDR',
-                    lsigBytes: 'bHNpZw==',
-                    cardAddress: 'ESCROW_CARD',
-                    blockchain: 'algorand',
-                },
-            }),
-        )
-        expect(result).toEqual({ delegatorAddress: 'FUNDING_ADDR' })
-    })
-
-    it('falls back to the sent delegator address when the 201 body omits it', async () => {
-        // AB has not published the 201 body; the caller only needs the call
-        // to have succeeded.
-        request.mockResolvedValue({ data: {} })
-
-        await expect(postDelegatorLsig(lsigParams)).resolves.toEqual({
-            delegatorAddress: 'FUNDING_ADDR',
-        })
-    })
-
-    it('succeeds when the 201 body is not an object at all', async () => {
-        // AB answers with a bare status line, so the echo simply is not there.
-        // Rejecting that shape would fail a delegation they already registered.
-        for (const data of ['Created', undefined, null, 42]) {
-            request.mockResolvedValue({ data })
-            await expect(postDelegatorLsig(lsigParams)).resolves.toEqual({
-                delegatorAddress: 'FUNDING_ADDR',
-            })
-        }
     })
 })

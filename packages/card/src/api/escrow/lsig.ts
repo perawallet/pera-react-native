@@ -110,10 +110,10 @@ export class AutoDrawProgramUnverifiedError extends Error {
 /**
  * Fails closed unless the SHA-256 of the compiled program matches the pin for
  * the network. Runs in EVERY environment — staging/testnet builds sign real user
- * keys too, so there is no production-only escape hatch (unlike
- * `verifyDelegationProgram`). The pin lives in the network config beside the app
- * IDs it is derived from (`cardAutoDrawProgramHash`); an unpinned network has an
- * empty value and so always rejects.
+ * keys too, so there is no production-only escape hatch. The pin lives in the
+ * network config beside the app IDs it is derived from
+ * (`cardAutoDrawProgramHash`); an unpinned network has an empty value and so
+ * always rejects.
  *
  * A digest rather than the program bytes: it verifies just as strictly, is 64
  * chars instead of kilobytes, and avoids shipping a second copy of an artifact
