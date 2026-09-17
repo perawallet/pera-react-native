@@ -27,6 +27,7 @@ export const UserPreferences = {
     onrampIntroductionSeen: 'onramp-introduction-seen',
     onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
     quantumDappWarningAcknowledged: 'quantum-dapp-warning-acknowledged',
+    cloudBackupIntroSeen: 'cloud-backup-intro-seen',
 
     // Web-only master toggle for WebAuthn interception. Deliberately
     // camelCase (breaking this map's kebab-case convention) — it must match
@@ -40,7 +41,6 @@ export const UserPreferences = {
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
     _legacyQuantumNoticePrompt: 'legacy_quantum_notice_prompt',
-    _cloudBackupIntroPrompt: 'cloud_backup_intro_prompt',
 } as const
 
 type UserPreferences = (typeof UserPreferences)[keyof typeof UserPreferences]
@@ -59,5 +59,5 @@ export const OneTimeUserPreferenceFlags = [
     UserPreferences.quantumDappWarningAcknowledged,
     UserPreferences._securityPinSetupPrompt,
     UserPreferences._legacyQuantumNoticePrompt,
-    UserPreferences._cloudBackupIntroPrompt,
+    UserPreferences.cloudBackupIntroSeen,
 ] as const

@@ -35,11 +35,11 @@ describe('UserPreferences', () => {
     })
 
     it('resets the cloud backup intro alongside the other one-time flags', () => {
-        expect(UserPreferences._cloudBackupIntroPrompt).toBe(
-            'cloud_backup_intro_prompt',
+        expect(UserPreferences.cloudBackupIntroSeen).toBe(
+            'cloud-backup-intro-seen',
         )
         expect(OneTimeUserPreferenceFlags).toContain(
-            UserPreferences._cloudBackupIntroPrompt,
+            UserPreferences.cloudBackupIntroSeen,
         )
     })
 })

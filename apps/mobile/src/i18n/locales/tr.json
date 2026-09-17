@@ -738,6 +738,18 @@
             "invalid_qr_body": "Diğer cihazında “Diğer cihazlarla eşitle” seçeneğinin gösterdiği kodu tara.",
             "unsupported_version_title": "Devam etmek için Pera’yı güncelle",
             "unsupported_version_body": "Bu QR kodu, Pera’nın daha yeni bir sürümüyle oluşturulmuş."
+        },
+        "intro": {
+            "badge": "BULUT YEDEKLEME",
+            "title": "Cüzdanını yedekle",
+            "description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru.",
+            "encryption_title": "Güvenli şifreleme",
+            "encryption_description": "Verilerin, yüklenmeden önce passphrase’in ve şifreleme anahtarınla cihazında şifrelenir.",
+            "sync_title": "Çoklu cihaz eşitleme",
+            "sync_description": "Kişilerin ve takma adların, tüm cihazlarında.",
+            "recovery_title": "Hesap geri yükleme",
+            "recovery_description": "Telefonunu mu değiştiriyorsun, uygulamayı mı yeniden yüklüyorsun? Verilerin seninle gelir.",
+            "continue": "Devam et"
         }
     },
     "common": {
@@ -2104,18 +2116,6 @@
             "pin_description": "Pera Wallet’ı kullanmak için bu 6 haneli PIN kodu gerekli olacak. Telefonunun çalınması durumunda cüzdan güvenliğini artırmaya yardımcı olması için bir PIN kodu oluşturmanı önemle öneriyoruz.",
             "pin_setpin": "PIN kodu belirle",
             "pin_notnow": "Şimdi değil"
-        },
-        "cloud_backup_intro": {
-            "badge": "BULUT YEDEKLEME",
-            "title": "Cüzdanını yedekle",
-            "description": "Hesaplarını ve kişilerini güvenli bulut eşitlemesiyle koru.",
-            "encryption_title": "Güvenli şifreleme",
-            "encryption_description": "Verilerin, yüklenmeden önce passphrase’in ve şifreleme anahtarınla cihazında şifrelenir.",
-            "sync_title": "Çoklu cihaz eşitleme",
-            "sync_description": "Kişilerin ve takma adların, tüm cihazlarında.",
-            "recovery_title": "Hesap geri yükleme",
-            "recovery_description": "Telefonunu mu değiştiriyorsun, uygulamayı mı yeniden yüklüyorsun? Verilerin seninle gelir.",
-            "continue": "Devam et"
         }
     },
     "quantum": {

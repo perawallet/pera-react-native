@@ -738,6 +738,18 @@
             "invalid_qr_body": "Scannez le code affiché par « Synchroniser avec d’autres appareils » sur votre autre appareil.",
             "unsupported_version_title": "Mettez Pera à jour pour continuer",
             "unsupported_version_body": "Ce QR code a été créé avec une version plus récente de Pera."
+        },
+        "intro": {
+            "badge": "SAUVEGARDE CLOUD",
+            "title": "Sauvegardez votre wallet",
+            "description": "Protégez vos comptes et vos contacts grâce à une synchronisation cloud sécurisée.",
+            "encryption_title": "Chiffrement sécurisé",
+            "encryption_description": "Vos données sont chiffrées localement avec votre passphrase et votre clé de chiffrement avant d’être envoyées.",
+            "sync_title": "Synchronisation multi-appareils",
+            "sync_description": "Vos contacts et surnoms, sur tous vos appareils.",
+            "recovery_title": "Récupération de compte",
+            "recovery_description": "Vous changez de téléphone ou réinstallez l’application ? Vos données vous suivent.",
+            "continue": "Continuer"
         }
     },
     "common": {
@@ -2104,18 +2116,6 @@
             "pin_description": "Ce code PIN à 6 chiffres sera nécessaire pour utiliser Pera Wallet. Nous vous recommandons vivement de créer un code PIN afin de renforcer la sécurité de votre wallet en cas de vol de votre téléphone.",
             "pin_setpin": "Définir le code PIN",
             "pin_notnow": "Pas maintenant"
-        },
-        "cloud_backup_intro": {
-            "badge": "SAUVEGARDE CLOUD",
-            "title": "Sauvegardez votre wallet",
-            "description": "Protégez vos comptes et vos contacts grâce à une synchronisation cloud sécurisée.",
-            "encryption_title": "Chiffrement sécurisé",
-            "encryption_description": "Vos données sont chiffrées localement avec votre passphrase et votre clé de chiffrement avant d’être envoyées.",
-            "sync_title": "Synchronisation multi-appareils",
-            "sync_description": "Vos contacts et surnoms, sur tous vos appareils.",
-            "recovery_title": "Récupération de compte",
-            "recovery_description": "Vous changez de téléphone ou réinstallez l’application ? Vos données vous suivent.",
-            "continue": "Continuer"
         }
     },
     "quantum": {

@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { trackEvent, CloudBackupEvent } from '@analytics'
 import {
     PWButton,
     PWChip,
@@ -23,9 +21,8 @@ import {
     PWView,
 } from '@components/core'
 import { NumberedList } from '@components/NumberedList'
-import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PromptViewProps } from '@modules/prompts/models'
+import { useCloudBackupIntroScreen } from './useCloudBackupIntroScreen'
 import { useStyles } from './styles'
 
 import cloudBackupIntroHeroDark from '@assets/images/cloud-backup-intro-hero-dark.png'
@@ -33,24 +30,25 @@ import cloudBackupIntroHeroLight from '@assets/images/cloud-backup-intro-hero-li
 
 const STEP_KEYS = [
     {
-        title: 'prompts.cloud_backup_intro.encryption_title',
-        description: 'prompts.cloud_backup_intro.encryption_description',
+        title: 'cloud_backup.intro.encryption_title',
+        description: 'cloud_backup.intro.encryption_description',
     },
     {
-        title: 'prompts.cloud_backup_intro.sync_title',
-        description: 'prompts.cloud_backup_intro.sync_description',
+        title: 'cloud_backup.intro.sync_title',
+        description: 'cloud_backup.intro.sync_description',
     },
     {
-        title: 'prompts.cloud_backup_intro.recovery_title',
-        description: 'prompts.cloud_backup_intro.recovery_description',
+        title: 'cloud_backup.intro.recovery_title',
+        description: 'cloud_backup.intro.recovery_description',
     },
 ] as const
 
-export const CloudBackupIntroPrompt = ({ onDismiss }: PromptViewProps) => {
+export const CloudBackupIntroScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const { handleContinue } = useCloudBackupIntroScreen()
     const heroImage =
         theme.mode === 'dark'
             ? cloudBackupIntroHeroDark
@@ -61,15 +59,10 @@ export const CloudBackupIntroPrompt = ({ onDismiss }: PromptViewProps) => {
         description: t(step.description),
     }))
 
-    const handleContinue = useCallback(() => {
-        trackEvent(CloudBackupEvent.IntroContinue)
-        onDismiss(UserPreferences._cloudBackupIntroPrompt)
-    }, [onDismiss])
-
     return (
         <PWView
             style={styles.root}
-            testID='cloud_backup_intro_prompt'
+            testID='cloud_backup_intro_screen'
         >
             <PWView style={styles.card}>
                 <PWScrollView
@@ -87,20 +80,20 @@ export const CloudBackupIntroPrompt = ({ onDismiss }: PromptViewProps) => {
                             <PWChip
                                 variant='positive'
                                 paddingStyle='dense'
-                                title={t('prompts.cloud_backup_intro.badge')}
+                                title={t('cloud_backup.intro.badge')}
                                 style={styles.badge}
                             />
                             <PWText
                                 variant='h3'
                                 style={styles.title}
                             >
-                                {t('prompts.cloud_backup_intro.title')}
+                                {t('cloud_backup.intro.title')}
                             </PWText>
                             <PWText
                                 variant='bodyLarge'
                                 style={styles.description}
                             >
-                                {t('prompts.cloud_backup_intro.description')}
+                                {t('cloud_backup.intro.description')}
                             </PWText>
                         </PWView>
                         <NumberedList
@@ -113,7 +106,7 @@ export const CloudBackupIntroPrompt = ({ onDismiss }: PromptViewProps) => {
                 <PWView style={styles.footer}>
                     <PWButton
                         variant='primary'
-                        title={t('prompts.cloud_backup_intro.continue')}
+                        title={t('cloud_backup.intro.continue')}
                         onPress={handleContinue}
                         testID='cloud_backup_intro_continue_button'
                     />

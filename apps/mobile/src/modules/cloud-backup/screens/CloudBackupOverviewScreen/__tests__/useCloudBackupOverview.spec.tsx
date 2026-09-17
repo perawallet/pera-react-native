@@ -71,12 +71,16 @@ const {
     syncNowMock,
     showSyncQrMock,
     requirePinVerificationMock,
+    markIntroductionSeenMock,
+    useCloudBackupIntroductionMock,
 } = vi.hoisted(() => ({
     disableBackupMock: vi.fn(),
     removeBackupMock: vi.fn(),
     syncNowMock: vi.fn(),
     showSyncQrMock: vi.fn(),
     requirePinVerificationMock: vi.fn(),
+    markIntroductionSeenMock: vi.fn(),
+    useCloudBackupIntroductionMock: vi.fn(),
 }))
 vi.mock('../../../hooks', () => ({
     useDisableCloudBackup: () => ({
@@ -94,6 +98,7 @@ vi.mock('../../../hooks', () => ({
     useSyncDevicesQr: () => ({
         showSyncQr: showSyncQrMock,
     }),
+    useCloudBackupIntroduction: useCloudBackupIntroductionMock,
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -173,6 +178,10 @@ beforeEach(() => {
     requirePinVerificationMock.mockResolvedValue(true)
     showSyncQrMock.mockResolvedValue(undefined)
     mockRequestBottomSheet.mockResolvedValue(undefined)
+    useCloudBackupIntroductionMock.mockReturnValue({
+        isIntroductionSeen: true,
+        markIntroductionSeen: markIntroductionSeenMock,
+    })
 })
 
 describe('useCloudBackupOverview', () => {
@@ -447,5 +456,35 @@ describe('useCloudBackupOverview', () => {
         )
         expect(showSyncQrMock).toHaveBeenCalledTimes(1)
         expect(syncNowMock).not.toHaveBeenCalled()
+    })
+
+    test('marks the intro seen when viewing the overview with it unseen', () => {
+        useCloudBackupIntroductionMock.mockReturnValue({
+            isIntroductionSeen: false,
+            markIntroductionSeen: markIntroductionSeenMock,
+        })
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        renderHook(() => useCloudBackupOverview())
+
+        expect(markIntroductionSeenMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not mark the intro again when it is already seen', () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        renderHook(() => useCloudBackupOverview())
+
+        expect(markIntroductionSeenMock).not.toHaveBeenCalled()
     })
 })
