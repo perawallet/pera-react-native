@@ -16,7 +16,7 @@
  * characters: Firebase rejects names past 40, and testnet adds a `t_` prefix.
  */
 export enum CloudBackupEvent {
-    IntroContinue = 'backupscr_onboarding_continue', // Dismissed the first-time intro prompt
+    IntroContinue = 'backupscr_onboarding_continue', // Continued past the first-time intro screen
     SetUpNew = 'backupscr_cloud_new', // Chose to set up a new backup
     Restore = 'backupscr_cloud_restore', // Chose to restore an existing backup
     SetupProceed = 'backupscr_setup_proceed', // Proceeded past the generated credentials

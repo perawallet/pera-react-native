@@ -16,12 +16,12 @@ import {
 } from '@react-navigation/native-stack'
 import { useNavigation } from '@react-navigation/native'
 
-import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
+import { CloudBackupIntroScreen } from '../screens/CloudBackupIntroScreen'
 import { CloudBackupScreen } from '../screens/CloudBackupScreen'
 import { CloudBackupSetupScreen } from '../screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '../screens/CloudBackupVerifyScreen'
@@ -34,6 +34,7 @@ import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestor
 import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
 import { useCloudBackupRestoreExit } from '../hooks/useCloudBackupRestoreExit'
+import { useCloudBackupInitialRoute } from '../hooks/useCloudBackupInitialRoute'
 import type { CloudBackupStackParamList } from './types'
 
 export type { CloudBackupStackParamList } from './types'
@@ -66,13 +67,11 @@ const CloudBackupCloseButton = () => {
 }
 
 export const CloudBackupStackNavigator = () => {
-    const isConfigured = useCloudBackupStore(state => state.isConfigured())
+    const initialRouteName = useCloudBackupInitialRoute()
 
     return (
         <CloudBackupStack.Navigator
-            initialRouteName={
-                isConfigured ? 'CloudBackupOverview' : 'CloudBackupHome'
-            }
+            initialRouteName={initialRouteName}
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
@@ -83,6 +82,13 @@ export const CloudBackupStackNavigator = () => {
             screenListeners={screenListeners}
             layout={fullScreenLayout}
         >
+            <CloudBackupStack.Screen
+                name='CloudBackupIntro'
+                options={{
+                    headerShown: false,
+                }}
+                component={CloudBackupIntroScreen}
+            />
             <CloudBackupStack.Screen
                 name='CloudBackupHome'
                 options={{

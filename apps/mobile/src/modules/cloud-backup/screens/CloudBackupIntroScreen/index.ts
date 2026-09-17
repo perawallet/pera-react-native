@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { CloudBackupIntroPrompt } from './CloudBackupIntroPrompt'
+export { CloudBackupIntroScreen } from './CloudBackupIntroScreen'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -40,6 +40,7 @@ import {
     useBackupSync,
     useRemoveCloudBackup,
     useSyncDevicesQr,
+    useCloudBackupIntroduction,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -90,6 +91,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
     const contacts = useContactsStore(state => state.contacts)
+    const { isIntroductionSeen, markIntroductionSeen } =
+        useCloudBackupIntroduction()
+
+    // A backup restored during onboarding never passes through the intro, so
+    // without this, turning backup off would pitch it as a first-time feature.
+    useEffect(() => {
+        if (isIntroductionSeen) return
+        markIntroductionSeen()
+    }, [isIntroductionSeen, markIntroductionSeen])
 
     const contactAddresses = useMemo(
         () => contacts.map(contact => contact.address),

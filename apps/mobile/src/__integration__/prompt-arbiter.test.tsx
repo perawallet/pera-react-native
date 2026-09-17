@@ -34,17 +34,11 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 
 import { server } from '@test-utils/msw-server'
-import {
-    createTestQueryClient,
-    fireEvent,
-    render,
-    screen,
-} from '@test-utils/render'
+import { createTestQueryClient, render, screen } from '@test-utils/render'
 import { mockBanners } from '@perawallet/wallet-core-banners/test-handlers'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePromptStore } from '@modules/prompts/store'
 import { UserPreferences } from '@constants/user-preferences'
@@ -135,15 +129,6 @@ const buildWrapper = () => {
     )
 }
 
-const enableCloudBackup = async () => {
-    // Rehydrate first or the persist middleware's async hydration lands after
-    // the override and clobbers it.
-    await useRemoteConfigStore.persist.rehydrate()
-    useRemoteConfigStore
-        .getState()
-        .setConfigOverride('enable_cloud_backup', true)
-}
-
 describe('Flow: prompt arbiter', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
     afterAll(() => server.close())
@@ -166,7 +151,6 @@ describe('Flow: prompt arbiter', () => {
             usePromptStore.getState().resetState()
             useBottomSheetStore.getState().resetState()
             useRemoteConfigStore.getState().resetState()
-            useCloudBackupStore.getState().resetState()
         })
     })
 
@@ -279,114 +263,5 @@ describe('Flow: prompt arbiter', () => {
             ),
         )
         expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
-    })
-
-    it('runs the cloud backup intro after every other prompt', async () => {
-        server.use(
-            mockBanners({
-                deviceID: DEVICE_ID,
-                response: { count: 0, results: [] },
-            }),
-        )
-        await enableCloudBackup()
-
-        const { result } = renderHook(() => usePromptContainer(), {
-            wrapper: buildWrapper(),
-        })
-
-        await act(async () => {})
-        await act(async () => {
-            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
-        })
-        await waitFor(() =>
-            expect(result.current.nextPrompt?.id).toBe(
-                UserPreferences._securityPinSetupPrompt,
-            ),
-        )
-
-        await act(async () => {
-            result.current.hidePrompt(UserPreferences._securityPinSetupPrompt)
-        })
-
-        await waitFor(() =>
-            expect(result.current.nextPrompt?.id).toBe(
-                UserPreferences._cloudBackupIntroPrompt,
-            ),
-        )
-    })
-
-    it('never raises the cloud backup intro after backup is turned off', async () => {
-        mocks.preferences = {
-            [UserPreferences._securityPinSetupPrompt]: true,
-        }
-        await enableCloudBackup()
-        act(() => {
-            useCloudBackupStore.getState().setConfigured({
-                backupId: 'backup-1',
-                salt: 'salt',
-                deviceId: DEVICE_ID,
-            })
-        })
-
-        const { result } = renderHook(() => usePromptContainer(), {
-            wrapper: buildWrapper(),
-        })
-
-        await waitFor(() =>
-            expect(
-                mocks.preferences[UserPreferences._cloudBackupIntroPrompt],
-            ).toBe(true),
-        )
-
-        act(() => {
-            useCloudBackupStore.getState().resetState()
-        })
-        await act(async () => {
-            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
-        })
-
-        expect(result.current.nextPrompt).toBeUndefined()
-    })
-
-    it('closes the cloud backup intro for good on Continue', async () => {
-        server.use(
-            mockBanners({
-                deviceID: DEVICE_ID,
-                response: { count: 0, results: [] },
-            }),
-        )
-        mocks.preferences = {
-            [UserPreferences._securityPinSetupPrompt]: true,
-        }
-        await enableCloudBackup()
-
-        const { unmount } = render(<PromptContainer />)
-
-        await act(async () => {
-            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
-        })
-        fireEvent.click(
-            await screen.findByTestId('cloud_backup_intro_continue_button'),
-        )
-
-        expect(mocks.preferences[UserPreferences._cloudBackupIntroPrompt]).toBe(
-            true,
-        )
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId('cloud_backup_intro_prompt'),
-            ).toBeNull(),
-        )
-
-        // Fresh session: only the saved preference can keep it closed.
-        unmount()
-        act(() => {
-            usePromptStore.getState().resetState()
-        })
-        render(<PromptContainer />)
-        await act(async () => {
-            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
-        })
-        expect(screen.queryByTestId('cloud_backup_intro_prompt')).toBeNull()
     })
 })

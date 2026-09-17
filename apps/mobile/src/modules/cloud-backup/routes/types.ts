@@ -11,6 +11,7 @@
  */
 
 export type CloudBackupStackParamList = {
+    CloudBackupIntro: undefined
     CloudBackupHome: undefined
     CloudBackupSetup: undefined
     CloudBackupVerify: undefined

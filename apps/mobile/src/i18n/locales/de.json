@@ -739,6 +739,18 @@
             "invalid_qr_body": "Scanne den Code, den „Mit anderen Geräten synchronisieren“ auf deinem anderen Gerät anzeigt.",
             "unsupported_version_title": "Aktualisiere Pera, um fortzufahren",
             "unsupported_version_body": "Dieser QR-Code wurde mit einer neueren Version von Pera erstellt."
+        },
+        "intro": {
+            "badge": "CLOUD-BACKUP",
+            "title": "Sichere deine Wallet",
+            "description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung.",
+            "encryption_title": "Sichere Verschlüsselung",
+            "encryption_description": "Vor dem Hochladen lokal mit deiner Passphrase und deinem Verschlüsselungsschlüssel verschlüsselt.",
+            "sync_title": "Synchronisierung über alle Geräte",
+            "sync_description": "Deine Kontakte und Spitznamen, auf jedem Gerät.",
+            "recovery_title": "Kontowiederherstellung",
+            "recovery_description": "Telefon wechseln oder neu installieren? Deine Daten kommen mit.",
+            "continue": "Weiter"
         }
     },
     "common": {
@@ -2105,18 +2117,6 @@
             "pin_description": "Diese 6-stellige PIN wird zur Nutzung von Pera Wallet benötigt. Wir empfehlen dringend, eine PIN zu erstellen, um die Wallet-Sicherheit zu erhöhen, falls dein Telefon gestohlen wird.",
             "pin_setpin": "PIN festlegen",
             "pin_notnow": "Nicht jetzt"
-        },
-        "cloud_backup_intro": {
-            "badge": "CLOUD-BACKUP",
-            "title": "Sichere deine Wallet",
-            "description": "Schütze deine Konten und Kontakte mit sicherer Cloud-Synchronisierung.",
-            "encryption_title": "Sichere Verschlüsselung",
-            "encryption_description": "Vor dem Hochladen lokal mit deiner Passphrase und deinem Verschlüsselungsschlüssel verschlüsselt.",
-            "sync_title": "Synchronisierung über alle Geräte",
-            "sync_description": "Deine Kontakte und Spitznamen, auf jedem Gerät.",
-            "recovery_title": "Kontowiederherstellung",
-            "recovery_description": "Telefon wechseln oder neu installieren? Deine Daten kommen mit.",
-            "continue": "Weiter"
         }
     },
     "quantum": {

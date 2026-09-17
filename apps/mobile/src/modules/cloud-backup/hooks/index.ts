@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export * from './useCloudBackupInitialRoute'
+export * from './useCloudBackupIntroduction'
 export * from './useEnableCloudBackup'
 export * from './useDisableCloudBackup'
 export * from './useRemoveCloudBackup'
