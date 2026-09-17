@@ -11,7 +11,7 @@
  */
 
 import { expect } from '@playwright/test'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Locator, Page } from '@playwright/test'
 
 /** The toolbar popup's real dimensions. */
 const POPUP_VIEWPORT = { width: 360, height: 600 }
@@ -162,4 +162,28 @@ export const openApprovalSurface = async ({
 /** Asserts the page is one of the two approval surfaces. */
 export const expectApprovalSurfaceUrl = (approvalPage: Page): void => {
     expect(approvalPage.url()).toMatch(/(popup|approval)\.html/)
+}
+
+/** How long an approval window's primary action stays disarmed after mount. */
+const APPROVAL_ARMING_DELAY_MS = 500
+
+/**
+ * Arms Connect, then selects the first account unless one is already selected.
+ * Connect stays disabled until the arming delay passes and input lands inside
+ * the approval window, so only then does its state report the selection. The
+ * checkboxes can't be read instead: react-native-web renders no aria-checked
+ * for them.
+ */
+export const selectAccountAndArmConnect = async (
+    approvalPage: Page,
+    connectButton: Locator,
+): Promise<void> => {
+    const firstAccount = approvalPage.getByRole('checkbox').first()
+    await expect(firstAccount).toBeVisible({ timeout: 20_000 })
+    await connectButton.hover()
+    await approvalPage.waitForTimeout(APPROVAL_ARMING_DELAY_MS)
+    if ((await connectButton.getAttribute('aria-disabled')) === 'true') {
+        await firstAccount.click()
+    }
+    await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
 }

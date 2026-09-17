@@ -26,6 +26,7 @@ import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 import {
     expectApprovalSurfaceUrl,
     openApprovalSurface,
+    selectAccountAndArmConnect,
     trackPageErrors,
 } from './approval-surface'
 import algosdk from 'algosdk'
@@ -391,17 +392,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             timeout: 20_000,
         })
         const connectButton = approvalPage.getByTestId('wc-connect-connect')
-        const alreadySelected =
-            (await connectButton.getAttribute('aria-disabled')) !== 'true'
-        if (!alreadySelected) {
-            await expect(
-                approvalPage.getByRole('checkbox').first(),
-            ).toBeVisible({
-                timeout: 20_000,
-            })
-            await approvalPage.getByRole('checkbox').first().click()
-        }
-        await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
+        await selectAccountAndArmConnect(approvalPage, connectButton)
 
         const connected = waitForConnectorConnect(dappConnector)
         await connectButton.click()
@@ -660,15 +651,7 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
             approvalPage.getByTestId('wc-connect-peer-name'),
         ).toBeVisible({ timeout: 20_000 })
         const connectButton = approvalPage.getByTestId('wc-connect-connect')
-        const alreadySelected =
-            (await connectButton.getAttribute('aria-disabled')) !== 'true'
-        if (!alreadySelected) {
-            await expect(
-                approvalPage.getByRole('checkbox').first(),
-            ).toBeVisible({ timeout: 20_000 })
-            await approvalPage.getByRole('checkbox').first().click()
-        }
-        await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
+        await selectAccountAndArmConnect(approvalPage, connectButton)
 
         const connected = waitForConnectorConnect(dappConnector)
         await connectButton.click()
