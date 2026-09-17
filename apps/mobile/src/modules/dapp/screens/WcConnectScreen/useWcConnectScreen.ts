@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     useSelectedAccountAddress,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import { useApprovalArming } from '../../hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcConnectScreenResult = {
@@ -75,9 +76,20 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     const proposal =
         approval?.kind === 'connection-proposal' ? approval : undefined
 
-    const [selected, setSelected] = useState<Set<string>>(() =>
-        initialSelection(selectedAccountAddress, accounts),
-    )
+    const isArmed = useApprovalArming()
+    const [selected, setSelected] = useState<Set<string>>(() => new Set())
+
+    // A default account only for a pairing the user started inside the wallet
+    // (paste, QR). A page-initiated proposal — the one carrying a verified
+    // `requesterOrigin` — opens with no user gesture, where a pre-checked
+    // account turns an inherited click into a complete grant.
+    const hasSeededRef = useRef(false)
+    useEffect(() => {
+        if (hasSeededRef.current || !proposal) return
+        hasSeededRef.current = true
+        if (proposal.requesterOrigin) return
+        setSelected(initialSelection(selectedAccountAddress, accounts))
+    }, [proposal, selectedAccountAddress, accounts])
     const [isConnecting, setIsConnecting] = useState(false)
 
     const toggle = useCallback((address: string): void => {
@@ -93,13 +105,13 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     }, [])
 
     const handleConnect = useCallback((): void => {
-        if (!selected.size) return
+        if (!selected.size || !isArmed) return
         setIsConnecting(true)
         // No `finally` reset: approve() settles the approval and the bridge closes
         // this window. A failed approve leaves the button spinning rather than
         // inviting a second grant against a half-completed handshake.
         void approve([...selected])
-    }, [approve, selected])
+    }, [approve, selected, isArmed])
 
     const handleCancel = useCallback((): void => {
         void reject()
@@ -116,7 +128,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         accounts,
         selected,
         toggle,
-        canConnect: selected.size > 0,
+        canConnect: selected.size > 0 && isArmed,
         isLoading,
         isConnecting,
         handleConnect,

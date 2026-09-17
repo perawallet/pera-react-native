@@ -19,10 +19,16 @@ const mocks = vi.hoisted(() => ({
     useDappRequest: vi.fn(),
     useSigningAccounts: vi.fn(),
     useSelectedAccountAddress: vi.fn(),
+    useApprovalArming: vi.fn(),
 }))
 
 vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
+}))
+
+// Arming has its own spec; here it is a switch.
+vi.mock('../../../hooks/useApprovalArming.web', () => ({
+    useApprovalArming: mocks.useApprovalArming,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -72,6 +78,7 @@ describe('useWcConnectScreen', () => {
         mocks.useSelectedAccountAddress.mockReturnValue({
             selectedAccountAddress: null,
         })
+        mocks.useApprovalArming.mockReturnValue(true)
     })
 
     it('exposes the proposal peer and its requested methods as the permissions list', () => {
@@ -128,6 +135,33 @@ describe('useWcConnectScreen', () => {
 
         expect(result.current.selected.has('BBBB')).toBe(true)
         expect(result.current.canConnect).toBe(true)
+    })
+
+    // A page opens this window with no gesture; a pre-checked account would
+    // turn an inherited click into a complete grant. Paste and QR pairings
+    // carry no requesterOrigin and keep their default.
+    it('pre-checks nothing for a page-initiated proposal', () => {
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        const { result } = render(
+            proposalApproval({ requesterOrigin: 'https://dapp.example' }),
+        )
+
+        expect(result.current.selected.size).toBe(0)
+        expect(result.current.canConnect).toBe(false)
+    })
+
+    it('cannot connect before the window is armed, even with an account picked', () => {
+        mocks.useApprovalArming.mockReturnValue(false)
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        const { result } = render()
+
+        expect(result.current.canConnect).toBe(false)
+        act(() => result.current.handleConnect())
+        expect(mocks.approve).not.toHaveBeenCalled()
     })
 
     it('pre-checks nothing when the active account cannot sign', () => {
