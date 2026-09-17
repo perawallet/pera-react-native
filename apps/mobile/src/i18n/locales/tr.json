@@ -710,11 +710,18 @@
         },
         "turn_off": {
             "success": "Bulut yedekleme kapatıldı",
-            "error": "Bulut yedekleme kapatılamadı. Lütfen tekrar dene."
+            "error": "Bulut yedekleme kapatılamadı. Lütfen tekrar dene.",
+            "confirm_title": "Bu cihazda yedekleme kapatılsın mı?",
+            "confirm_body": "Bu cihaz artık eşitlenmeyecek ve yedekleme kimlik bilgilerin bu cihazdan kaldırılacak. Yedeklemen bulutta kalır ve diğer cihazların eşitlenmeye devam eder. Bu cihazı daha sonra yeniden bağlamak için Passphrase’ini ve şifreleme anahtarını sakladığından emin ol.",
+            "confirm_button": "Kapat"
         },
         "turn_off_and_remove": {
             "success": "Bulut yedekleme kapatıldı ve silindi",
-            "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene."
+            "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene.",
+            "confirm_title": "Bulut yedekleme kalıcı olarak silinsin mi?",
+            "confirm_body": "Bulut yedekleme tüm cihazlarında kapatılacak ve yalnızca yedeklemede bulunan hesaplar ve kişiler kaybolacak.",
+            "confirm_button": "Yedeklemeyi sil",
+            "confirm_checkbox_label": "Yedeklememin sunucudan kalıcı olarak silineceğini ve bu işlemin geri alınamayacağını anlıyorum."
         },
         "restore": {
             "sheet_title": "Yedeklemeyi geri yükle/al",

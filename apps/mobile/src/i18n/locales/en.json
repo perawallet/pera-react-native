@@ -710,11 +710,18 @@
         },
         "turn_off": {
             "success": "Cloud Backup turned off",
-            "error": "Couldn’t turn off Cloud Backup. Please try again."
+            "error": "Couldn’t turn off Cloud Backup. Please try again.",
+            "confirm_title": "Turn Off Backup on This Device?",
+            "confirm_body": "This device will stop syncing, and your backup credentials will be removed from it. Your backup stays in the cloud and your other devices keep syncing. To reconnect this device later, make sure you have your Passphrase and Encryption Key.",
+            "confirm_button": "Turn Off"
         },
         "turn_off_and_remove": {
             "success": "Cloud Backup turned off and removed",
-            "error": "Couldn’t remove Cloud Backup. Please try again."
+            "error": "Couldn’t remove Cloud Backup. Please try again.",
+            "confirm_title": "Permanently Delete Cloud Backup?",
+            "confirm_body": "Cloud Backup will turn off on all your devices, and accounts and contacts that exist only in the backup will be lost.",
+            "confirm_button": "Delete Backup",
+            "confirm_checkbox_label": "I understand my backup will be permanently deleted from the server and this can’t be undone."
         },
         "restore": {
             "sheet_title": "Restore/Retrieve a Backup",

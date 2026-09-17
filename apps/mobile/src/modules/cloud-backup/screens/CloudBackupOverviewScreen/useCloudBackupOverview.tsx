@@ -31,6 +31,7 @@ import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
+import { ConfirmTurnOffBackupSheet } from '../../components/ConfirmTurnOffBackupSheet'
 import {
     TurnOffBackupSheet,
     type TurnOffBackupChoice,
@@ -161,6 +162,12 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!choice) return
+
+        const isConfirmed = await requestBottomSheet<boolean>({
+            contents: <ConfirmTurnOffBackupSheet choice={choice} />,
+            options: { size: 'auto', enablePanDownToClose: true },
+        })
+        if (isConfirmed !== true) return
         if (!(await requirePinVerification())) return
 
         switch (choice) {
