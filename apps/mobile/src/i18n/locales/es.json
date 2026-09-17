@@ -358,9 +358,9 @@
         "copy_address": "Copiar dirección",
         "shared_account_detail": "Detalle de cuenta compartida ({{count}})",
         "show_address": "Ver dirección",
-        "view_passphrase_hd": "Ver la passphrase de la wallet raíz",
-        "view_passphrase_algo25": "Ver la passphrase de la wallet",
-        "view_passphrase_quantum": "Ver la passphrase de la cuenta Quantum",
+        "view_passphrase_hd": "Ver la passphrase de recuperación de la wallet raíz",
+        "view_passphrase_algo25": "Ver la passphrase de recuperación",
+        "view_passphrase_quantum": "Ver la passphrase de recuperación de la cuenta Quantum",
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
         "rekey_account": "Hacer rekey de la cuenta",
@@ -389,7 +389,7 @@
         "notifications_muted": "Notificaciones silenciadas",
         "notifications_unmuted": "Notificaciones activadas",
         "backup_warning_title": "¿Has hecho una copia de seguridad de tu cuenta?",
-        "backup_warning_message": "Si no tienes una copia de la passphrase de esta cuenta y la cuenta no está respaldada con un dispositivo Ledger ni gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
+        "backup_warning_message": "Si no tienes una copia de la passphrase de recuperación de esta cuenta y la cuenta no está respaldada con un dispositivo Ledger ni gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
         "backup_warning_continue": "Sí, continuar",
         "backup_warning_cancel": "No, conservar la cuenta",
         "remove_rekey_error_title": "No se puede eliminar la cuenta",
@@ -455,7 +455,7 @@
             "row_share": "Me arriesgo a perder todos mis fondos si comparto mi passphrase de recuperación con alguien.",
             "row_lose": "Mis fondos se perderán de forma permanente si pierdo mi passphrase de recuperación y pierdo el acceso a mi wallet.",
             "row_pera": "Los empleados de Pera NUNCA me pedirán mi passphrase de recuperación.",
-            "cta_reveal": "Mostrar passphrase",
+            "cta_reveal": "Mostrar passphrase de recuperación",
             "cta_cancel": "Cancelar"
         },
         "screen": {
@@ -470,18 +470,18 @@
     },
     "backup": {
         "banner": {
-            "text": "Debes hacer una copia de seguridad de la passphrase",
+            "text": "Debes hacer una copia de seguridad de la passphrase de recuperación",
             "cta": "Hacer copia ahora"
         },
         "info": {
-            "title": "Crea una copia de seguridad de la passphrase de tu cuenta",
-            "body": "Crear una copia de seguridad de la passphrase te permitirá recuperar tu cuenta. Sin la passphrase, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
+            "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",
+            "body": "Crear una copia de seguridad de la passphrase de recuperación te permitirá recuperar tu cuenta. Sin la passphrase de recuperación, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
             "cta": "Lo entiendo"
         },
         "write_down": {
             "title": "Prepárate para anotar tu passphrase de recuperación",
             "body": "La única forma de recuperar una cuenta de Algorand es con esta passphrase de recuperación.",
-            "warning": "No compartas esta passphrase con nadie, ya que otorga acceso total a tu cuenta.",
+            "warning": "No compartas esta passphrase de recuperación con nadie, ya que otorga acceso total a tu cuenta.",
             "cta": "Todo listo, empezar"
         },
         "mnemonic": {

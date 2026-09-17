@@ -358,9 +358,9 @@
         "copy_address": "Adresse kopieren",
         "shared_account_detail": "Gemeinschaftskonto-Details ({{count}})",
         "show_address": "Adresse anzeigen",
-        "view_passphrase_hd": "Passphrase des Root-Wallets anzeigen",
-        "view_passphrase_algo25": "Wallet-Passphrase anzeigen",
-        "view_passphrase_quantum": "Passphrase des Quantum-Kontos anzeigen",
+        "view_passphrase_hd": "Wiederherstellungsphrase des Root-Wallets anzeigen",
+        "view_passphrase_algo25": "Wiederherstellungsphrase anzeigen",
+        "view_passphrase_quantum": "Wiederherstellungsphrase des Quantum-Kontos anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
         "rekey_account": "Konto rekeyen",
@@ -389,7 +389,7 @@
         "notifications_muted": "Benachrichtigungen stummgeschaltet",
         "notifications_unmuted": "Benachrichtigungen aktiviert",
         "backup_warning_title": "Hast du dein Konto gesichert?",
-        "backup_warning_message": "Wenn du keine Kopie der Passphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_message": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
         "backup_warning_continue": "Ja, fortfahren",
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
@@ -455,7 +455,7 @@
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
-            "cta_reveal": "Passphrase anzeigen",
+            "cta_reveal": "Wiederherstellungsphrase anzeigen",
             "cta_cancel": "Abbrechen"
         },
         "screen": {
@@ -470,18 +470,18 @@
     },
     "backup": {
         "banner": {
-            "text": "Du musst die Passphrase sichern",
+            "text": "Du musst die Wiederherstellungsphrase sichern",
             "cta": "Jetzt sichern"
         },
         "info": {
-            "title": "Passphrase-Backup für dein Konto erstellen",
-            "body": "Ein Passphrase-Backup ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Passphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
+            "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
+            "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
             "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
-            "warning": "Teile diese Passphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
+            "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
             "cta": "Ich bin bereit zu beginnen"
         },
         "mnemonic": {
