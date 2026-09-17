@@ -170,20 +170,16 @@ export const configSchema = z
         mainnetBaanxTenantId: z.string(),
         testnetBaanxTenantId: z.string(),
 
-        // AppliedBlockchain hosts card creation and the `/lsig` endpoint on
-        // testnet until Baanx wraps them. The auth token is a static secret sent
-        // as a RAW `Authorization` header, no Bearer. `z.string()` not
-        // `z.url()`, so the empty default validates before values arrive.
-        mainnetCardEscrowBaseUrl: z.string(),
-        testnetCardEscrowBaseUrl: z.string(),
-        mainnetCardEscrowAuthToken: z.string(),
-        testnetCardEscrowAuthToken: z.string(),
+        // On-chain ids the AutoDraw LogicSig template is rendered against.
+        // `z.string()` not `z.url()`/numeric, so the empty defaults validate
+        // before values arrive.
         mainnetCardW3CardAppId: z.string(),
         testnetCardW3CardAppId: z.string(),
         mainnetCardKillswitchAppId: z.string(),
         testnetCardKillswitchAppId: z.string(),
-        // Base64 of the compiled AutoDraw program, pinned per network beside the
-        // app ids it is derived from. Build-time only — never remote config.
+        // Lowercase hex SHA-256 of the compiled AutoDraw program, pinned per
+        // network beside the app ids it is derived from. Build-time only —
+        // never remote config.
         mainnetCardAutoDrawProgramHash: z.string(),
         testnetCardAutoDrawProgramHash: z.string(),
         mainnetCardUsdcAssetId: z.string(),
@@ -388,13 +384,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBaanxTenantId: '',
     testnetBaanxTenantId: 'perawallet',
 
-    // AB escrow card service, injected at build time from env. Empty defaults
-    // keep the flow dev-mockable until AB provides testnet values. USDC ids
-    // default to the public network assets; AB may override with a test asset.
-    mainnetCardEscrowBaseUrl: '',
-    testnetCardEscrowBaseUrl: '',
-    mainnetCardEscrowAuthToken: '',
-    testnetCardEscrowAuthToken: '',
+    // Card chain ids, injected at build time from env. Empty defaults fail
+    // closed: AutoDraw refuses to compile until every id is present. USDC ids
+    // default to the public network assets.
     mainnetCardW3CardAppId: '',
     testnetCardW3CardAppId: '',
     mainnetCardKillswitchAppId: '',
@@ -509,10 +501,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBaanxTenantId: 'MAINNET_BAANX_TENANT_ID',
     testnetBaanxTenantId: 'TESTNET_BAANX_TENANT_ID',
 
-    mainnetCardEscrowBaseUrl: 'MAINNET_CARD_ESCROW_BASE_URL',
-    testnetCardEscrowBaseUrl: 'TESTNET_CARD_ESCROW_BASE_URL',
-    mainnetCardEscrowAuthToken: 'MAINNET_CARD_ESCROW_AUTH_TOKEN',
-    testnetCardEscrowAuthToken: 'TESTNET_CARD_ESCROW_AUTH_TOKEN',
     mainnetCardW3CardAppId: 'MAINNET_CARD_W3CARD_APP_ID',
     testnetCardW3CardAppId: 'TESTNET_CARD_W3CARD_APP_ID',
     mainnetCardKillswitchAppId: 'MAINNET_CARD_KILLSWITCH_APP_ID',
