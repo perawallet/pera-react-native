@@ -33,9 +33,6 @@ type PeraServices = {
     baanxBaseUrl: string
     baanxClientKey: string
     baanxTenantId: string
-    // SWAP POINT: AB escrow card service (card creation + delegated-LSig `/lsig`).
-    cardEscrowBaseUrl: string
-    cardEscrowAuthToken: string
     cardW3CardAppId: string
     cardKillswitchAppId: string
     /**
@@ -140,8 +137,6 @@ const EMPTY_PERA_SERVICES = {
     baanxBaseUrl: '',
     baanxClientKey: '',
     baanxTenantId: '',
-    cardEscrowBaseUrl: '',
-    cardEscrowAuthToken: '',
     cardW3CardAppId: '',
     cardKillswitchAppId: '',
     cardAutoDrawProgramHash: '',
@@ -162,8 +157,6 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.mainnetBaanxBaseUrl,
         baanxClientKey: config.mainnetBaanxClientKey,
         baanxTenantId: config.mainnetBaanxTenantId,
-        cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
         cardW3CardAppId: config.mainnetCardW3CardAppId,
         cardKillswitchAppId: config.mainnetCardKillswitchAppId,
         cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
@@ -176,8 +169,6 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         baanxBaseUrl: config.testnetBaanxBaseUrl,
         baanxClientKey: config.testnetBaanxClientKey,
         baanxTenantId: config.testnetBaanxTenantId,
-        cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
         cardW3CardAppId: config.testnetCardW3CardAppId,
         cardKillswitchAppId: config.testnetCardKillswitchAppId,
         cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,

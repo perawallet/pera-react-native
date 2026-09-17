@@ -55,8 +55,6 @@ describe('network-config', () => {
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
             baanxTenantId: config.mainnetBaanxTenantId,
-            cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
-            cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
             cardW3CardAppId: config.mainnetCardW3CardAppId,
             cardKillswitchAppId: config.mainnetCardKillswitchAppId,
             cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
@@ -85,8 +83,6 @@ describe('network-config', () => {
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
             baanxTenantId: config.testnetBaanxTenantId,
-            cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
-            cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
             cardW3CardAppId: config.testnetCardW3CardAppId,
             cardKillswitchAppId: config.testnetCardKillswitchAppId,
             cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
@@ -135,7 +131,6 @@ describe('network-config', () => {
             expect(networkConfig.backendUrl).not.toBe(testnetBackend)
             expect(networkConfig.bidaliBaseUrl).toBe('')
             expect(networkConfig.baanxBaseUrl).toBe('')
-            expect(networkConfig.cardEscrowBaseUrl).toBe('')
             expect(networkConfig.cardUsdcAssetId).toBe('')
         }
     })

@@ -13,6 +13,7 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
+    delegationAcceptedResponseSchema,
     delegationTokenResponseSchema,
     externalWalletsResponseSchema,
     type ExternalWalletApiResponse,
@@ -40,20 +41,6 @@ export const mockGetDelegationToken = ({
     )
 }
 
-export type MockGetDelegationProgramParams = {
-    /** Base64 compiled program blob. */
-    program?: string
-    status?: number
-}
-
-export const mockGetDelegationProgram = ({
-    program = 'BIEB',
-    status = 200,
-}: MockGetDelegationProgramParams = {}): HttpHandler =>
-    http.get('*/v1/delegation/chain/config', () =>
-        HttpResponse.json({ program }, { status }),
-    )
-
 export type MockPostAlgorandDelegationApprovalParams = {
     status?: number
     /** Captures each request body for assertions. */
@@ -61,13 +48,47 @@ export type MockPostAlgorandDelegationApprovalParams = {
 }
 
 export const mockPostAlgorandDelegationApproval = ({
-    status = 200,
+    status = 201,
     onRequest,
 }: MockPostAlgorandDelegationApprovalParams = {}): HttpHandler =>
     http.post('*/v1/delegation/algorand/post-approval', async ({ request }) => {
         onRequest?.((await request.json()) as Record<string, unknown>)
-        return HttpResponse.json({ success: status < 400 }, { status })
+        const response = { success: status < 400 }
+        if (status < 400) {
+            validateMockResponse(
+                delegationAcceptedResponseSchema,
+                response,
+                'mockPostAlgorandDelegationApproval',
+            )
+        }
+        return HttpResponse.json(response, { status })
     })
+
+export type MockPostDelegatorLsigParams = {
+    status?: number
+    /** Captures each request body for assertions. */
+    onRequest?: (body: Record<string, unknown>) => void
+}
+
+export const mockPostDelegatorLsig = ({
+    status = 201,
+    onRequest,
+}: MockPostDelegatorLsigParams = {}): HttpHandler =>
+    http.post(
+        '*/v1/delegation/algorand/delegator-lsig',
+        async ({ request }) => {
+            onRequest?.((await request.json()) as Record<string, unknown>)
+            const response = { success: status < 400 }
+            if (status < 400) {
+                validateMockResponse(
+                    delegationAcceptedResponseSchema,
+                    response,
+                    'mockPostDelegatorLsig',
+                )
+            }
+            return HttpResponse.json(response, { status })
+        },
+    )
 
 export type MockGetExternalWalletsParams = {
     response: ExternalWalletApiResponse[]

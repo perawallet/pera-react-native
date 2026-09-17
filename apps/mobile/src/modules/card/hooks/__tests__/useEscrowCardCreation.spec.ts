@@ -150,6 +150,7 @@ describe('useEscrowCardCreation', () => {
         const proof = {
             signData: { data: 'd', authenticatorData: 'a' },
             signature: 's',
+            delegationToken: 'ABC_tok',
         }
 
         await result.current.createAndApprove(localKeyAccount, proof)

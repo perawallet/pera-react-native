@@ -41,10 +41,6 @@ export {
     type CardFreezeOutcome,
 } from './useCardFreezeAction'
 export {
-    useCardFundingDelegation,
-    type UseCardFundingDelegationResult,
-} from './useCardFundingDelegation'
-export {
     useAuthorizeCardDelegation,
     type UseAuthorizeCardDelegationResult,
 } from './useAuthorizeCardDelegation'

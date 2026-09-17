@@ -60,8 +60,17 @@ Chosen on the setup checklist, and switchable afterwards:
 
 - `MANUAL`: the user tops the card up themselves.
 - `AUTO` (AutoDraw): a delegated LogicSig lets Baanx draw from the connected
-  account, capped at $400 per transaction. Delegation tokens from
-  `GET /v1/delegation/token` are single-use and valid ~10 minutes.
+  account, capped at $400 per transaction.
+
+Delegation runs entirely through Baanx; the app never calls the delegation
+service directly. Creating a card ends with
+`POST /v1/delegation/algorand/post-approval`, which registers the funding
+wallet. That call is bound to a token from `GET /v1/delegation/token`: the
+token is single-use and valid ~10 minutes, and its nonce must be inside the
+signed ownership payload, so the proof is built after the token is fetched and
+a retry needs a fresh pair. AutoDraw additionally registers the signed LogicSig
+once per wallet and currency via
+`POST /v1/delegation/algorand/delegator-lsig`.
 
 Registered wallets come from `GET /v1/wallet/external`. An allowance of 0 means
 the delegation is inactive, which is how a revoked AutoDraw presents.

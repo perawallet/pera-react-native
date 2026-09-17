@@ -97,7 +97,10 @@ describe('queryClient mutation error policy', () => {
         // flat fields; the raw Error alone prints as an empty string there.
         const httpError = Object.assign(new Error('Bad Request'), {
             name: 'HTTPError',
-            response: { status: 400, url: 'https://escrow.test/api/approvals' },
+            response: {
+                status: 400,
+                url: 'https://baanx.test/v1/card/status',
+            },
         })
         const { result } = renderHook(
             () =>
@@ -116,7 +119,7 @@ describe('queryClient mutation error policy', () => {
         // The dev log forwarder blanks stack-bearing context objects, so the
         // identifying fields must be in the message itself.
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed: HTTPError 400 https://escrow.test/api/approvals',
+            'Mutation failed: HTTPError 400 https://baanx.test/v1/card/status',
             expect.objectContaining({ mutationKey: ['http-failure'] }),
         )
     })

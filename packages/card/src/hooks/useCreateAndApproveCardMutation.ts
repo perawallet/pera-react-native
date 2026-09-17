@@ -20,7 +20,7 @@ import {
     CardUserUnavailableError,
     createCard,
 } from '../api/card-creation'
-import { approveEscrowCard } from '../api/escrow'
+import { postAlgorandDelegationApproval } from '../api/delegation'
 import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
@@ -59,8 +59,8 @@ const getValidIntegrityToken = (): Nullable<string> => {
 /**
  * Step 2 of card creation: POSTs the Step-1 proof to the Pera backend (which
  * performs the on-chain `cardCreate` and returns the card address + txId),
- * persists immediately, then reuses the SAME proof to call AB's approval
- * endpoint with the txId.
+ * persists immediately, then reuses the SAME proof to register the delegated
+ * wallet with Baanx, quoting the creation txId.
  *
  * Idempotent by (address, network): if a card already exists for this
  * account, its creation is skipped; if it exists but wasn't approved (e.g. an
@@ -135,13 +135,14 @@ export const useCreateAndApproveCardMutation =
                 }
 
                 if (!approved) {
-                    await approveEscrowCard({
+                    await postAlgorandDelegationApproval({
                         network,
-                        cardAddress,
+                        address,
                         currency,
+                        txId,
                         signData: proof.signData,
                         signature: proof.signature,
-                        txId,
+                        token: proof.delegationToken,
                     })
                     useCardStore.getState().markEscrowCardApproved()
                 }

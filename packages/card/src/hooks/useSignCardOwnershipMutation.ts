@@ -11,16 +11,15 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     ARC60_SCOPE_AUTH,
     buildSiwaAuthRequest,
     type Arc60Metadata,
     type Arc60StdSigData,
 } from '@perawallet/wallet-core-signing'
-import {
-    encodeToBase64,
-    generateUniqueId,
-} from '@perawallet/wallet-core-shared'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { fetchDelegationToken } from '../api/delegation'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 // The ARC-60 SIWA proof binds to a domain/uri identifying Pera. The mobile
@@ -47,6 +46,11 @@ export type SignCardOwnershipVariables = {
 export type CardOwnershipProof = {
     signData: { data: string; authenticatorData: string }
     signature: string
+    /**
+     * The single-use token whose nonce is embedded in `signData`. Consumed by
+     * the delegation post-approval call that completes card creation.
+     */
+    delegationToken: string
 }
 
 export type UseSignCardOwnershipMutationResult = CardMutationResult<
@@ -56,23 +60,29 @@ export type UseSignCardOwnershipMutationResult = CardMutationResult<
 
 /**
  * Step 1 of card creation: builds a fresh ARC-60 SIWA ownership proof and
- * signs it. No network call — the proof is handed to the caller, who holds it
- * in memory (never persisted) until Step 2 (create + approve) is triggered.
- * Called again to produce a fresh proof if Step 2 needs a retry.
+ * signs it. The proof is handed to the caller, who holds it in memory (never
+ * persisted) until Step 2 (create + approve) is triggered. Called again to
+ * produce a fresh proof if Step 2 needs a retry — the token is single-use and
+ * valid ~10 minutes, so a retry must re-sign rather than reuse.
  */
 export const useSignCardOwnershipMutation =
     (): UseSignCardOwnershipMutationResult => {
+        const { network } = useNetwork()
+
         const mutation = useMutation<
             CardOwnershipProof,
             Error,
             SignCardOwnershipVariables
         >({
             mutationFn: async ({ address, signArc60 }) => {
+                // Baanx binds the proof to this token: its nonce has to be
+                // inside the payload the user signs, so it is fetched first.
+                const { token, nonce } = await fetchDelegationToken({ network })
                 const { data, authenticatorData } = buildSiwaAuthRequest({
                     domain: CARD_SIWA_DOMAIN,
                     accountAddress: address,
                     uri: CARD_SIWA_URI,
-                    nonce: generateUniqueId(),
+                    nonce,
                     statement: CARD_SIWA_STATEMENT,
                 })
                 const stdSigData: Arc60StdSigData = {
@@ -91,6 +101,7 @@ export const useSignCardOwnershipMutation =
                         authenticatorData: encodeToBase64(authenticatorData),
                     },
                     signature: encodeToBase64(signature),
+                    delegationToken: token,
                 }
             },
             throwOnError: false,

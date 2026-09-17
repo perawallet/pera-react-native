@@ -44,8 +44,8 @@ export const encodeDelegatedLsig = (
  * externally produced ed25519 signature over `"Program" || program`, and the
  * signer's address. Unlike {@link encodeDelegatedLsig}, this records the
  * signer's public key (`sigkey`) so the delegation can be verified without the
- * escrow address — the wire shape AppliedBlockchain's `/lsig` endpoint expects
- * (matches the demo's `LogicSigAccount.toByte()`).
+ * escrow address — the wire shape the card delegation registration expects
+ * (`LogicSigAccount.toByte()`).
  *
  * Throws {@link LsigSignatureVerificationError} if the signature does not
  * verify against the signer's public key.

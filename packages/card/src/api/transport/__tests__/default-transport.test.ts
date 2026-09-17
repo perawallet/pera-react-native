@@ -12,26 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const {
-    baanxDirectRequest,
-    escrowRequest,
-    queryClient,
-    getValidIntegrityToken,
-    mockConfig,
-} = vi.hoisted(() => ({
-    baanxDirectRequest: vi.fn(),
-    escrowRequest: vi.fn(),
-    queryClient: vi.fn(),
-    getValidIntegrityToken: vi.fn(),
-    mockConfig: { appEnvironment: 'production' as string },
-}))
+const { baanxDirectRequest, queryClient, getValidIntegrityToken, mockConfig } =
+    vi.hoisted(() => ({
+        baanxDirectRequest: vi.fn(),
+        queryClient: vi.fn(),
+        getValidIntegrityToken: vi.fn(),
+        mockConfig: { appEnvironment: 'production' as string },
+    }))
 
 vi.mock('ky', () => ({
     isHTTPError: (error: unknown): boolean =>
         typeof error === 'object' && error !== null && 'response' in error,
 }))
 vi.mock('../baanx-client', () => ({ baanxDirectRequest }))
-vi.mock('../escrow-client', () => ({ escrowRequest }))
 vi.mock('@perawallet/wallet-core-shared', () => ({ queryClient }))
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
     getValidIntegrityToken,
@@ -210,40 +203,6 @@ describe('defaultTransport', () => {
         ).rejects.toBe(unauthorized)
         expect(refresh).toHaveBeenCalledTimes(1)
         expect(baanxDirectRequest).toHaveBeenCalledTimes(1)
-    })
-
-    it('routes escrow requests to the AB escrow client', async () => {
-        escrowRequest.mockResolvedValue(ok)
-
-        const res = await defaultTransport.request({
-            route: 'escrow',
-            network: 'testnet',
-            method: 'POST',
-            path: '/api/approvals',
-            data: { address: 'ADDR' },
-        })
-
-        expect(res).toEqual(ok)
-        expect(escrowRequest).toHaveBeenCalledTimes(1)
-        expect(baanxDirectRequest).not.toHaveBeenCalled()
-        expect(queryClient).not.toHaveBeenCalled()
-    })
-
-    it('does not refresh on an escrow 401', async () => {
-        escrowRequest.mockRejectedValue(unauthorized)
-        const refresh = vi.fn().mockResolvedValue(true)
-        setRefreshHandler(refresh)
-
-        await expect(
-            defaultTransport.request({
-                route: 'escrow',
-                network: 'mainnet',
-                method: 'POST',
-                path: '/api/approvals',
-            }),
-        ).rejects.toBe(unauthorized)
-        expect(refresh).not.toHaveBeenCalled()
-        expect(escrowRequest).toHaveBeenCalledTimes(1)
     })
 
     it('does not refresh on a 401 from a pre-auth direct call', async () => {

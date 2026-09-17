@@ -11,14 +11,13 @@
  */
 
 import { sha256 } from '@noble/hashes/sha2.js'
-import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     bytesToHex,
     decodeFromBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { CardEscrowNotConfiguredError } from '../transport'
 import {
     AUTODRAW_TEAL_TEMPLATE,
     TMPL_GENESIS_HASH,
@@ -26,6 +25,14 @@ import {
     TMPL_MAIN_APP,
 } from './autodraw-teal'
 import { verifyAutoDrawTealTemplate } from './verify-teal'
+
+/** The on-chain ids the AutoDraw template needs are missing from the build. */
+export class CardEscrowNotConfiguredError extends Error {
+    constructor() {
+        super('Pera Card chain config is incomplete (app ids / asset id)')
+        this.name = 'CardEscrowNotConfiguredError'
+    }
+}
 
 export type EscrowChainConfig = {
     /** Settlement asset id (USDC) as a decimal string. */
@@ -37,37 +44,26 @@ export type EscrowChainConfig = {
 }
 
 /**
- * Resolves the AB escrow chain config for the AutoDraw template from network
- * config. Missing ids throw {@link CardEscrowNotConfiguredError} whenever a
- * REAL escrow service is in play (production, or any build with an escrow base
- * URL configured): a program rendered with app id `0` is not merely unusable —
- * in TEAL `ApplicationID == 0` matches app-CREATION transactions, so signing it
- * would grant a delegation gated by attacker-constructible transactions. The
- * `'0'` placeholders exist ONLY for the dev-mock path (empty base URL), where
- * the signed program never leaves the device.
+ * Resolves the on-chain ids the AutoDraw template needs. A missing id fails
+ * closed in every environment: in TEAL `ApplicationID == 0` matches
+ * app-CREATION transactions, so a program rendered with a placeholder id would
+ * be a delegation gated by attacker-constructible transactions rather than an
+ * unusable one.
  */
 export const resolveEscrowChainConfig = (
     network: Network,
 ): EscrowChainConfig => {
-    const {
-        cardW3CardAppId,
-        cardKillswitchAppId,
-        cardUsdcAssetId,
-        cardEscrowBaseUrl,
-    } = getNetworkConfig(network)
+    const { cardW3CardAppId, cardKillswitchAppId, cardUsdcAssetId } =
+        getNetworkConfig(network)
 
-    const hasAllIds = Boolean(
-        cardW3CardAppId && cardKillswitchAppId && cardUsdcAssetId,
-    )
-    const isProduction = config.appEnvironment === 'production'
-    if (!hasAllIds && (isProduction || cardEscrowBaseUrl)) {
+    if (!cardW3CardAppId || !cardKillswitchAppId || !cardUsdcAssetId) {
         throw new CardEscrowNotConfiguredError()
     }
 
     return {
-        assetId: cardUsdcAssetId || '0',
-        killswitchAppId: cardKillswitchAppId || '0',
-        mainAppId: cardW3CardAppId || '0',
+        assetId: cardUsdcAssetId,
+        killswitchAppId: cardKillswitchAppId,
+        mainAppId: cardW3CardAppId,
     }
 }
 
@@ -110,10 +106,10 @@ export class AutoDrawProgramUnverifiedError extends Error {
 /**
  * Fails closed unless the SHA-256 of the compiled program matches the pin for
  * the network. Runs in EVERY environment — staging/testnet builds sign real user
- * keys too, so there is no production-only escape hatch (unlike
- * `verifyDelegationProgram`). The pin lives in the network config beside the app
- * IDs it is derived from (`cardAutoDrawProgramHash`); an unpinned network has an
- * empty value and so always rejects.
+ * keys too, so there is no production-only escape hatch. The pin lives in the
+ * network config beside the app IDs it is derived from
+ * (`cardAutoDrawProgramHash`); an unpinned network has an empty value and so
+ * always rejects.
  *
  * A digest rather than the program bytes: it verifies just as strictly, is 64
  * chars instead of kilobytes, and avoids shipping a second copy of an artifact

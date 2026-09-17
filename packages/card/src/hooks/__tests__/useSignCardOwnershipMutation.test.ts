@@ -14,16 +14,43 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+
+const mockUseNetwork = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-blockchain',
+    )
+    return { ...actual, useNetwork: mockUseNetwork }
+})
+
+const { fetchDelegationToken } = vi.hoisted(() => ({
+    fetchDelegationToken: vi.fn(),
+}))
+vi.mock('../../api/delegation', async () => ({
+    ...(await vi.importActual('../../api/delegation')),
+    fetchDelegationToken,
+}))
+
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { useSignCardOwnershipMutation } from '../useSignCardOwnershipMutation'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
+const signedPayload = (data: string): Record<string, unknown> =>
+    JSON.parse(new TextDecoder().decode(decodeFromBase64(data)))
+
 describe('useSignCardOwnershipMutation', () => {
     beforeEach(() => {
         queryClient = new QueryClient({
             defaultOptions: { mutations: { retry: false } },
+        })
+        vi.clearAllMocks()
+        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        fetchDelegationToken.mockResolvedValue({
+            token: 'ABC_tok',
+            nonce: 'n0nce',
         })
     })
 
@@ -52,21 +79,34 @@ describe('useSignCardOwnershipMutation', () => {
         expect(proof.signature).toEqual(expect.any(String))
     })
 
-    it('produces a fresh nonce (different data) on each call', async () => {
+    it('fetches a delegation token first and embeds its nonce in the signed SIWA payload', async () => {
         const signArc60 = vi.fn(async () => new Uint8Array(64).fill(7))
         const { result } = renderHook(() => useSignCardOwnershipMutation(), {
             wrapper,
         })
 
-        const first = await result.current.mutateAsync({
-            address: 'FUNDINGADDR',
-            signArc60,
-        })
-        const second = await result.current.mutateAsync({
+        const proof = await result.current.mutateAsync({
             address: 'FUNDINGADDR',
             signArc60,
         })
 
-        expect(first.signData.data).not.toBe(second.signData.data)
+        expect(fetchDelegationToken).toHaveBeenCalledWith(
+            expect.objectContaining({ network: 'testnet' }),
+        )
+        expect(signedPayload(proof.signData.data).nonce).toBe('n0nce')
+        expect(proof.delegationToken).toBe('ABC_tok')
+    })
+
+    it('does not sign when the token fetch fails', async () => {
+        fetchDelegationToken.mockRejectedValue(new Error('delegation down'))
+        const signArc60 = vi.fn(async () => new Uint8Array(64).fill(7))
+        const { result } = renderHook(() => useSignCardOwnershipMutation(), {
+            wrapper,
+        })
+
+        await expect(
+            result.current.mutateAsync({ address: 'FUNDINGADDR', signArc60 }),
+        ).rejects.toThrow('delegation down')
+        expect(signArc60).not.toHaveBeenCalled()
     })
 })

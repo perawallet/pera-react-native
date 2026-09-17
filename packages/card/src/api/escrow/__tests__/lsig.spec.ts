@@ -72,7 +72,6 @@ describe('resolveEscrowChainConfig', () => {
             cardW3CardAppId: '111',
             cardKillswitchAppId: '222',
             cardUsdcAssetId: '10458941',
-            cardEscrowBaseUrl: 'https://escrow.test',
         })
 
         expect(resolveEscrowChainConfig('testnet')).toEqual({
@@ -82,35 +81,25 @@ describe('resolveEscrowChainConfig', () => {
         })
     })
 
-    it('falls back to "0" placeholders only on the dev-mock path (no base URL)', () => {
-        getNetworkConfig.mockReturnValue({
-            cardW3CardAppId: '',
-            cardKillswitchAppId: '',
-            cardUsdcAssetId: '',
-            cardEscrowBaseUrl: '',
-        })
+    it('throws when any chain id is unset, regardless of environment', () => {
+        // A program rendered with app id 0 would match app-CREATION txns — a
+        // delegation an attacker could construct transactions for, not a
+        // harmless placeholder. There is no environment where signing that is
+        // acceptable, so a missing id fails loudly everywhere.
+        for (const missing of [
+            'cardW3CardAppId',
+            'cardKillswitchAppId',
+            'cardUsdcAssetId',
+        ]) {
+            getNetworkConfig.mockReturnValue({
+                cardW3CardAppId: '111',
+                cardKillswitchAppId: '222',
+                cardUsdcAssetId: '10458941',
+                [missing]: '',
+            })
 
-        expect(resolveEscrowChainConfig('testnet')).toEqual({
-            assetId: '0',
-            killswitchAppId: '0',
-            mainAppId: '0',
-        })
-    })
-
-    it('throws when the escrow base URL is configured but ids are unset (any env)', () => {
-        // A staging build pointed at the REAL AB service without app-id
-        // secrets must fail loudly: a program rendered with app id 0 would
-        // match app-CREATION txns — a dangerous delegation, not a harmless one.
-        // The mutation's Auto try/catch turns this throw into an honest
-        // degrade-to-Manual instead of a silent full-Auto success.
-        getNetworkConfig.mockReturnValue({
-            cardW3CardAppId: '',
-            cardKillswitchAppId: '222',
-            cardUsdcAssetId: '10458941',
-            cardEscrowBaseUrl: 'https://escrow.test',
-        })
-
-        expect(() => resolveEscrowChainConfig('testnet')).toThrow()
+            expect(() => resolveEscrowChainConfig('testnet')).toThrow()
+        }
     })
 
     it('throws in production when ids are unset', () => {
@@ -119,7 +108,6 @@ describe('resolveEscrowChainConfig', () => {
             cardW3CardAppId: '',
             cardKillswitchAppId: '',
             cardUsdcAssetId: '',
-            cardEscrowBaseUrl: '',
         })
 
         expect(() => resolveEscrowChainConfig('mainnet')).toThrow()
