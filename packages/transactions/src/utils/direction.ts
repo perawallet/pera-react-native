@@ -23,8 +23,14 @@ import type { TransactionHistoryItem } from '../models/types'
 export const getDebitedAddress = (item: TransactionHistoryItem): string =>
     item.assetSender ?? item.sender
 
-/** Whether `address` is the account this transaction takes funds from. */
+/**
+ * Whether the row reads as funds leaving `address`: the debited account, or a
+ * clawback authority moving a holding to someone else. The authority loses
+ * nothing, but "Send" is its closest label; "Receive" would claim a credit.
+ */
 export const isOutgoingFor = (
     item: TransactionHistoryItem,
     address: string,
-): boolean => getDebitedAddress(item) === address
+): boolean =>
+    getDebitedAddress(item) === address ||
+    (item.sender === address && item.receiver !== address)

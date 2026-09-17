@@ -270,4 +270,44 @@ describe('useTransactionAmounts — clawback', () => {
 
         expect(result.current.amounts[0].prefix).toBe('-')
     })
+
+    it('keeps the authority from reading a clawback to someone else as a credit', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                fractionDecimals: 0,
+            },
+        } as Partial<TransactionHistoryItem>)
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it('credits the authority when it claws the holding back to itself', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: USER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                fractionDecimals: 0,
+            },
+        } as Partial<TransactionHistoryItem>)
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('+')
+    })
 })
