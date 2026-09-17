@@ -47,7 +47,7 @@ const PREFIX_PATTERNS = [
     /\b[A-Z_]*MODULE_PREFIX\s*(?::[^=]*)?=\s*'([^']+)'/g,
     // `export const passkeysQueryKeyRoot = ['passkeys'] as const`
     /\b\w*[qQ]uery[kK]ey\w*\s*(?::[^=]*)?=\s*\[\s*'([^']+)'/g,
-    // `export const DAPP_CONNECTIONS_QUERY_KEY = ['dapp-connections']`
+    // `export const WIDGETS_QUERY_KEY = ['widgets']`
     /\b[A-Z_]*QUERY_KEY\w*\s*(?::[^=]*)?=\s*\[\s*'([^']+)'/g,
     // Inline `queryKey: ['rekey-transaction-fee', ...]` on a useQuery call
     /queryKey:\s*\[\s*'([^']+)'/g,

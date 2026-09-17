@@ -41,7 +41,6 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'balance-impact-simulation': 'never',
     blockchain: 'never',
     card: 'never',
-    'dapp-connections': 'never',
     multisig: 'never',
     nfd: 'never',
     notifications: 'never',
