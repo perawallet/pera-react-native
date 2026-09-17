@@ -1932,6 +1932,7 @@
             "cloud_backup_already_enabled_title": "Cloud-Backup ist bereits aktiv",
             "cloud_backup_already_enabled_body": "Dieses Gerät hat bereits ein Cloud-Backup. Verwalte es unter Einstellungen › Cloud-Backup.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Legacy-Backup",
             "asb_description": "Ich möchte meine Konten mithilfe einer Algorand Secure Backup-Datei und eines 12-Wort-Schlüssels wiederherstellen",
             "quantum_title": "Quantum-Konto importieren",
             "quantum_description": "Ich möchte ein Quantum-Konto mit seiner 25-Wort-Passphrase importieren"

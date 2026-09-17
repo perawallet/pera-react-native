@@ -1940,6 +1940,7 @@
             "cloud_backup_already_enabled_title": "La copia de seguridad en la nube ya está activada",
             "cloud_backup_already_enabled_body": "Este dispositivo ya tiene una copia de seguridad en la nube. Gestiónala en Ajustes › Copia de seguridad en la nube.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Copia de seguridad antigua",
             "asb_description": "Quiero restaurar mis cuentas con un archivo de Algorand Secure Backup y una clave de 12 palabras",
             "quantum_title": "Importar cuenta Quantum",
             "quantum_description": "Quiero importar una cuenta Quantum con su passphrase de 25 palabras"

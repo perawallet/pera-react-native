@@ -275,7 +275,9 @@ export const useImportAccountOptionsScreen =
                     : []),
                 {
                     testID: 'import_account_options_asb_button',
-                    titleKey: 'onboarding.import_account_options.asb_title',
+                    titleKey: isCloudBackupEnabled
+                        ? 'onboarding.import_account_options.asb_legacy_title'
+                        : 'onboarding.import_account_options.asb_title',
                     descriptionKey:
                         'onboarding.import_account_options.asb_description',
                     leftIcon: 'shield-check' as IconName,

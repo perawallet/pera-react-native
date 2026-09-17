@@ -1940,6 +1940,7 @@
             "cloud_backup_already_enabled_title": "La sauvegarde cloud est déjà activée",
             "cloud_backup_already_enabled_body": "Cet appareil possède déjà une sauvegarde cloud. Gérez-la dans Paramètres › Sauvegarde cloud.",
             "asb_title": "Algorand Secure Backup",
+            "asb_legacy_title": "Sauvegarde historique",
             "asb_description": "Je souhaite restaurer mes comptes à l’aide d’un fichier Algorand Secure Backup et d’une clé de 12 mots",
             "quantum_title": "Importer un compte Quantum",
             "quantum_description": "Je souhaite importer un compte Quantum à l’aide de sa passphrase de 25 mots"
