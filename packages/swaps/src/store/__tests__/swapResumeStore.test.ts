@@ -19,7 +19,9 @@ describe('useSwapResumeStore', () => {
     })
 
     it('returns nothing for an unknown quote', () => {
-        expect(useSwapResumeStore.getState().getResume('quote-1')).toBeUndefined()
+        expect(
+            useSwapResumeStore.getState().getResume('quote-1'),
+        ).toBeUndefined()
     })
 
     it('records and reads back a resume record', () => {

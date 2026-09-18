@@ -50,7 +50,8 @@ export const useSwapStatusReportFlush = (): void => {
                 const report = useSwapStatusReportStore
                     .getState()
                     .reports.find(
-                        candidate => !attempted.has(reportAttemptKey(candidate)),
+                        candidate =>
+                            !attempted.has(reportAttemptKey(candidate)),
                     )
                 if (!report) break
                 attempted.add(reportAttemptKey(report))

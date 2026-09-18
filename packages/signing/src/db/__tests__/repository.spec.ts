@@ -295,7 +295,10 @@ describe('submission ledger repository', () => {
             sender: 'SENDER',
         })
 
-        const [row] = await getOpenSubmissionAttempts({ db, network: 'mainnet' })
+        const [row] = await getOpenSubmissionAttempts({
+            db,
+            network: 'mainnet',
+        })
 
         expect(row?.id).toBe(id)
         expect(row?.intentKey).toEqual({

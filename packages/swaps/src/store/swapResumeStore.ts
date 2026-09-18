@@ -23,9 +23,7 @@ export type SwapResumeRecord<TGroup = unknown> = {
 
 export type SwapResumeState = {
     records: Record<string, SwapResumeRecord>
-    recordResume: (
-        record: Omit<SwapResumeRecord, 'createdAt'>,
-    ) => void
+    recordResume: (record: Omit<SwapResumeRecord, 'createdAt'>) => void
     getResume: (quoteId: string) => SwapResumeRecord | undefined
     clearResume: (quoteId: string) => void
     resetState: () => void

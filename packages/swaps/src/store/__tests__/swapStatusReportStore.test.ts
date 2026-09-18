@@ -45,7 +45,10 @@ describe('useSwapStatusReportStore', () => {
         const { enqueueReport } = useSwapStatusReportStore.getState()
         enqueueReport({
             swapId: 'swap-1',
-            data: { status: 'in_progress', submitted_transaction_ids: ['TX-1'] },
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['TX-1'],
+            },
         })
         enqueueReport({
             swapId: 'swap-1',
