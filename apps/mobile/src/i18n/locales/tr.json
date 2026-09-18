@@ -390,6 +390,7 @@
         "notifications_unmuted": "Bildirim sesi açıldı",
         "backup_warning_title": "Hesabını yedekledin mi?",
         "backup_warning_message": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa ya da hesap bir Ledger cihazıyla yedeklenmemiş veya bir Auth Account tarafından yönetilmiyorsa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_message_with_cloud_backup": "Bu hesabın kurtarma passphrase’inin bir kopyası sende yoksa, hesap bulut yedeklemede veya bir Ledger cihazında yedekli değilse ve bir Auth Account tarafından yönetilmiyorsa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
         "backup_warning_continue": "Evet, devam et",
         "backup_warning_cancel": "Hayır, hesabı koru",
         "remove_rekey_error_title": "Hesap kaldırılamıyor",
@@ -701,11 +702,18 @@
         },
         "turn_off": {
             "success": "Bulut yedekleme kapatıldı",
-            "error": "Bulut yedekleme kapatılamadı. Lütfen tekrar dene."
+            "error": "Bulut yedekleme kapatılamadı. Lütfen tekrar dene.",
+            "confirm_title": "Bu cihazda yedekleme kapatılsın mı?",
+            "confirm_body": "Bu cihaz artık eşitlenmeyecek ve yedekleme kimlik bilgilerin bu cihazdan kaldırılacak. Yedeklemen bulutta kalır ve diğer cihazların eşitlenmeye devam eder. Bu cihazı daha sonra yeniden bağlamak için Passphrase’ini ve şifreleme anahtarını sakladığından emin ol.",
+            "confirm_button": "Kapat"
         },
         "turn_off_and_remove": {
             "success": "Bulut yedekleme kapatıldı ve silindi",
-            "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene."
+            "error": "Bulut yedekleme silinemedi. Lütfen tekrar dene.",
+            "confirm_title": "Bulut yedekleme kalıcı olarak silinsin mi?",
+            "confirm_body": "Bulut yedekleme tüm cihazlarında kapatılacak ve yalnızca yedeklemede bulunan hesaplar ve kişiler kaybolacak.",
+            "confirm_button": "Yedeklemeyi sil",
+            "confirm_checkbox_label": "Yedeklememin sunucudan kalıcı olarak silineceğini ve bu işlemin geri alınamayacağını anlıyorum."
         },
         "restore": {
             "sheet_title": "Yedeklemeyi geri yükle/al",
@@ -1074,7 +1082,6 @@
             "spendable_info_body": "Tek bir alışverişin çekebileceği en yüksek tutar: kart bakiyen ve iade bakiyen, ayrıca otomatik fonlama açıkken bağlı hesabından {{limit}} tutarına kadar.",
             "withdraw": "Çek",
             "add_funds": "Ekle",
-            "get_usdc": "USDC al",
             "credits_title": "Krediler",
             "credits_description": "Kartın üzerinden sana geri dönen para: alışverişlerden kazanılan ödüller ve satıcı iadeleri. İstediğin zaman cüzdanına talep edebilirsin.",
             "rewards": "Ödüller",
@@ -1272,7 +1279,7 @@
         },
         "withdraw": {
             "navigation_title": "Para çek",
-            "subtitle": "Pera Card’ından bağlı Pera hesabına USDC çek.",
+            "subtitle": "Pera Card üzerindeki USDC bakiyeni kartı oluşturan hesaba geri çek. Çekimler kısa bir süre sonra kullanılabilir olur.",
             "to_account": "Alıcı hesap",
             "amount": "Tutar",
             "balance": "Bakiye: {{amount}}",
@@ -1280,8 +1287,20 @@
             "confirm_title": "Para çekmeyi onayla",
             "confirm_body": "Pera Card’ından aşağıdaki hesaba {{amount}} USDC çekmek üzeresin.",
             "confirm_button": "Onayla",
-            "success_title": "Para çekme başlatıldı",
-            "success_body": "{{amount}} USDC hesabına gönderiliyor."
+            "requested_title": "Çekim talebi alındı",
+            "requested_body": "{{amount}} USDC kısa süre içinde kart ekranından tamamlanmaya hazır olacak.",
+            "pending_title": "Çekim devam ediyor",
+            "pending_ready_in": "{{seconds}} saniye içinde hazır",
+            "pending_ready": "Tamamlanmaya hazır",
+            "pending_exists": "Önce bekleyen çekimini tamamla veya iptal et.",
+            "complete": "Tamamla",
+            "cancel": "İptal",
+            "completed_title": "Çekim tamamlandı",
+            "completed_body": "{{amount}} USDC hesabına geri döndü.",
+            "cancelled_title": "Çekim iptal edildi",
+            "cancelled_body": "USDC bakiyen kartında kalıyor.",
+            "error_title": "Çekim yapılamadı",
+            "error_body": "Çekimin işlenemedi. Lütfen tekrar dene."
         },
         "confirm_swap": {
             "navigation_title": "Swap’ı onayla",
@@ -1756,6 +1775,8 @@
             "delivery_failed": "İstekte bulunan uygulamaya gönderilemedi: bağlantı kesildi.",
             "failed_default": "İşlem başarısız oldu",
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
+            "cosign_rejected_title": "Bu işlem imzalanamıyor",
+            "cosign_rejected_body": "Bu istek, paylaşılan hesabın yetkilendirmediği bir işlem içeriyor. Gönderen, paylaşılan hesaba rekey edilmiş bir hesapsa onu cüzdanına ekle ve tekrar dene.",
             "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
@@ -3897,6 +3918,13 @@
         "ZW": "Zimbabve"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Zayıf",
+            "fair": "Orta",
+            "good": "İyi",
+            "strong": "Güçlü",
+            "error_too_weak": "Şifrenin tahmin edilmesi çok kolay. Nadir kelimeler içeren daha uzun bir ifade dene."
+        },
         "create_password": {
             "title": "Şifre oluştur",
             "description": "Pera Wallet uzantını korumak için bir şifre belirle. Uzantıyı her açtığında bu şifreye ihtiyacın olacak.",

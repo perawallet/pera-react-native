@@ -22,6 +22,7 @@ import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
 import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
+import { isAlgodNotFoundError } from '../api/escrow/algod'
 import killswitchArc56 from '../api/escrow/killswitch-arc56.json'
 
 // AppliedBlockchain's Killswitch contract. The AutoDraw LSig only draws while
@@ -50,15 +51,6 @@ const buildAccountAssetBoxName = (
 export const isKillswitchConfigured = (network: Network): boolean => {
     const { cardKillswitchAppId } = getNetworkConfig(network)
     return cardKillswitchAppId !== '' && cardKillswitchAppId !== '0'
-}
-
-// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
-// TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
-// (`.response.status`); tolerate a bare `.status` too for robustness.
-const isNotFoundError = (error: unknown): boolean => {
-    if (typeof error !== 'object' || error == null) return false
-    const err = error as { status?: number; response?: { status?: number } }
-    return err.response?.status === 404 || err.status === 404
 }
 
 export type UseKillswitchAutoDrawResult = {
@@ -209,7 +201,7 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
                     .do()
                 return true
             } catch (error) {
-                if (isNotFoundError(error)) return false
+                if (isAlgodNotFoundError(error)) return false
                 throw error
             }
         },

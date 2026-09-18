@@ -75,6 +75,28 @@ export const useStyles = makeStyles(theme => ({
     rowValue: {
         color: theme.colors.textMain,
     },
+    // Pending withdrawal
+    pendingRow: {
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    pendingHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+    },
+    pendingStatus: {
+        color: theme.colors.textGray,
+    },
+    pendingButtons: {
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+    },
     // Transactions
     sectionHeader: {
         flexDirection: 'row',

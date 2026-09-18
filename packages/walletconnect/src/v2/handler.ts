@@ -484,6 +484,7 @@ export const createWalletConnectV2Handler = (
             // The approval-time snapshot, not the live session metadata a
             // dApp can update; it is the anti-spoofing `sourceMetadata`.
             peer: record.peer,
+            verifiedOrigin: record.origin?.requesterOrigin,
             rawOperation: {
                 type,
                 params: toRawOperationParams(type, rawParams),

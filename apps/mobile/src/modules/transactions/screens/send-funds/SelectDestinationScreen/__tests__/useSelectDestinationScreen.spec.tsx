@@ -23,7 +23,8 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 
 const mockNavigate = vi.fn()
-const mockCanGoBack = vi.fn()
+const mockStackRoutes = vi.fn<() => { key: string }[]>()
+const ROUTE_KEY = 'select-destination'
 const mockOnFinished = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
@@ -40,8 +41,11 @@ const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
-        canGoBack: mockCanGoBack,
     }),
+    useRoute: () => ({ key: ROUTE_KEY }),
+    useNavigationState: (
+        selector: (state: { routes: { key: string }[] }) => unknown,
+    ) => selector({ routes: mockStackRoutes() }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -90,7 +94,10 @@ describe('useSelectDestinationScreen', () => {
 
         // Default to a pushed screen so the default header back button applies;
         // the close-control tests flip this to model the pure-NFT flow root.
-        mockCanGoBack.mockReturnValue(true)
+        mockStackRoutes.mockReturnValue([
+            { key: 'input-amount' },
+            { key: ROUTE_KEY },
+        ])
         mockUseAllAccounts.mockReturnValue([])
         mockCanSignWith.mockReturnValue(false)
 
@@ -430,7 +437,7 @@ describe('useSelectDestinationScreen', () => {
     // back button and no way out.
     describe('close control as the flow root', () => {
         it('exposes a close that tears down the flow when it is the stack root', () => {
-            mockCanGoBack.mockReturnValue(false)
+            mockStackRoutes.mockReturnValue([{ key: ROUTE_KEY }])
 
             const { result } = renderHook(() => useSelectDestinationScreen())
 
@@ -444,11 +451,28 @@ describe('useSelectDestinationScreen', () => {
         })
 
         it('defers to the header back button when it was pushed onto the stack', () => {
-            mockCanGoBack.mockReturnValue(true)
+            mockStackRoutes.mockReturnValue([
+                { key: 'input-amount' },
+                { key: ROUTE_KEY },
+            ])
 
             const { result } = renderHook(() => useSelectDestinationScreen())
 
             expect(result.current.canClose).toBe(false)
+        })
+
+        // Picking a receiver writes the destination and pushes the next screen
+        // in the same tick, so this screen re-renders with a route above it.
+        // The close must survive that render or popping back strands the sheet.
+        it('keeps the close while a later screen sits on top of the root', () => {
+            mockStackRoutes.mockReturnValue([
+                { key: ROUTE_KEY },
+                { key: 'express-send' },
+            ])
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.canClose).toBe(true)
         })
     })
 })

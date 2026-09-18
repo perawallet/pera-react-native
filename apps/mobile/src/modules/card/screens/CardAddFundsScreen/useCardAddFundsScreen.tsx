@@ -15,7 +15,6 @@ import { Decimal } from 'decimal.js'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useAccountBalancesQuery,
-    useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -37,13 +36,17 @@ import { useNumberPadAmount } from '@components/NumberPad'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
-import { useCardErrorToast, useCardManualDeposit } from '../../hooks'
+import {
+    useCardErrorToast,
+    useCardFundingAccount,
+    useCardManualDeposit,
+} from '../../hooks'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
 
 type UseCardAddFundsScreenResult = {
-    /** Funding account (active account placeholder until the contract links one). */
+    /** The account linked to the card; deposits are drawn from it. */
     fundingAccount: Nullable<WalletAccount>
     /** Currently selected source asset (USDC by default). */
     sourceAsset: Maybe<DisplayableAsset>
@@ -72,10 +75,9 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    // TODO(card): use connectedFundingSourceAddress once the smart contract links
-    // the card's funding source; until then fall back to the active account so
-    // the balance + internal swap work against a real, funded account.
-    const fundingAccount = useSelectedAccount()
+    // Deposits come from the account linked to the card, whatever the wallet
+    // currently has selected.
+    const fundingAccount = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
         () => getKnownAssetId('USDC', network),

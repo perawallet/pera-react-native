@@ -164,6 +164,24 @@ const deriveCloseAmount = (
 }
 
 /**
+ * The Pera backend sends no `asnd`, but a negative balance impact on an axfer
+ * this account did not send can only be a clawback that debited it.
+ */
+const deriveAssetSender = (
+    item: TransactionHistoryItemApiResponse,
+    accountAddress?: string,
+): Nullable<string> => {
+    if (!accountAddress || item.tx_type !== 'axfer') return null
+    if (item.sender === accountAddress) return null
+
+    const assetId = item.asset?.asset_id
+    const impact = item.balance_impacts?.find(i => i.asset_id === assetId)
+    if (!impact || !new Decimal(impact.amount).isNegative()) return null
+
+    return accountAddress
+}
+
+/**
  * Transforms a transaction item from API response format (snake_case) to
  * domain format (camelCase). `accountAddress` is the account the page was
  * fetched for — it powers the close-amount derivation above.
@@ -175,6 +193,7 @@ export const transformTransactionItem = (
     id: item.id,
     txType: item.tx_type,
     sender: item.sender,
+    assetSender: item.asset_sender ?? deriveAssetSender(item, accountAddress),
     receiver: item.receiver ?? null,
     confirmedRound: Number(item.confirmed_round),
     roundTime: Number(item.round_time),

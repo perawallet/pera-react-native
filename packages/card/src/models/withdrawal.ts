@@ -10,9 +10,19 @@
  limitations under the License
  */
 
-export {
-    fetchInternalWallets,
-    withdrawFromCard,
-    type FetchInternalWalletsParams,
-    type WithdrawFromCardParams,
-} from './endpoints'
+/**
+ * A card holder's open withdrawal on the W3Card contract, decoded from the
+ * `withdrawals` box keyed by the card address. One per card at a time.
+ */
+export type PendingWithdrawal = {
+    card: string
+    /** Where `withdraw` releases the funds: always the card owner. */
+    recipient: string
+    /** Asset id as a decimal string. */
+    asset: string
+    /** Base units. */
+    amount: bigint
+    /** Unix seconds from the block that confirmed the request; the wait runs from here. */
+    createdAt: number
+    nonce: bigint
+}

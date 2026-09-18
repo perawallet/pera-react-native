@@ -52,6 +52,8 @@ export type ConfirmActionLayoutProps = {
     cancelVariant?: PWButtonProps['variant']
     tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
+    isConfirmDisabled?: boolean
+    children?: ReactNode
     testID?: string
     confirmTestID?: string
     cancelTestID?: string
@@ -75,6 +77,8 @@ export const ConfirmActionLayout = ({
     cancelVariant = 'secondary',
     tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
+    isConfirmDisabled,
+    children,
     testID,
     confirmTestID,
     cancelTestID,
@@ -126,11 +130,13 @@ export const ConfirmActionLayout = ({
             ) : (
                 !!message && <PWView style={styles.message}>{message}</PWView>
             )}
+            {!!children && <PWView style={styles.content}>{children}</PWView>}
             {!!confirmLabel && (
                 <PWView style={styles.actions}>
                     <PWButton
                         variant={confirmVariant}
                         title={confirmLabel}
+                        isDisabled={isConfirmDisabled}
                         onPress={onConfirm}
                         paddingStyle={buttonPaddingStyle}
                         testID={confirmTestID}

@@ -11,8 +11,7 @@
  */
 
 import {
-    contactItemKey,
-    isLiveInBackup,
+    isContactBackedUp,
     useBackupSyncStateStore,
 } from '@perawallet/wallet-core-backup'
 
@@ -20,9 +19,6 @@ import {
  *  `useBackupContactReview` also builds the mutation and the review buckets, so
  *  reading this through it re-renders on every contact and sync-state change. */
 export const useIsContactBackedUp = (address: string): boolean =>
-    useBackupSyncStateStore(state => {
-        const item = state.syncState?.items[contactItemKey(address)]
-        return (
-            item != null && isLiveInBackup(item) && item.pendingImport !== true
-        )
-    })
+    useBackupSyncStateStore(state =>
+        isContactBackedUp(state.syncState, address),
+    )

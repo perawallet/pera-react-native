@@ -10,8 +10,31 @@
  limitations under the License
  */
 
-import type { RampHistoryItem } from './models'
+import {
+    ALGO_ASSET_ID,
+    isAlgoAssetId,
+    isAlgoAssetName,
+} from '@perawallet/wallet-core-shared'
+
+import type { RampHistoryItem, RampToken } from './models'
 
 /** Whether any order in a ramp history slice still awaits user attention. */
 export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
     items.some(item => item.status === 'pending')
+
+/**
+ * Whether a ramp-catalog token is native ALGO. A numeric id is an on-chain id
+ * and wins; the ticker is trusted only when the provider gives a code instead.
+ *
+ * At the catalog boundary rather than in a renderer: the ticker fallback
+ * assumes the provider names its own listings honestly, which holds for a
+ * brokered provider list and never for an on-chain unit name.
+ */
+export const isAlgoRampToken = (token: RampToken): boolean =>
+    /^\d+$/.test(token.id)
+        ? isAlgoAssetId(token.id)
+        : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
+
+/** The asset id a ramp token maps to, with ALGO pinned to its native id. */
+export const rampTokenAssetId = (token: RampToken): string =>
+    isAlgoRampToken(token) ? ALGO_ASSET_ID : token.id

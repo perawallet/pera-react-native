@@ -90,6 +90,7 @@ const CACHED_TX: TransactionHistoryItem = {
     txType: 'pay',
     sender: ALGO25_TEST_ADDRESS,
     receiver: HD_TEST_ADDRESS,
+    assetSender: null,
     confirmedRound: 100,
     roundTime: 1_700_000_000,
     swapGroupDetail: null,

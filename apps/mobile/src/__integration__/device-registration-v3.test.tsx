@@ -26,7 +26,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 
 // The default driver mock in vitest.setup.ts predates the v3 payload (its
 // `deviceInfo` stub exposes `getVersion`, not `getAppVersion`) — mirrors
@@ -55,6 +55,7 @@ import {
     useDeviceStore,
     type DeviceRegistrationRequest,
 } from '@perawallet/wallet-core-device'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
@@ -149,6 +150,7 @@ describe('Device registration v3', () => {
         useDeviceStore.getState().resetState()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
+        useCurrenciesStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
         server.resetHandlers()
     })
@@ -218,6 +220,42 @@ describe('Device registration v3', () => {
             expect(latest).not.toHaveProperty('model')
             expect(latest).not.toHaveProperty('application')
             expect(latest).not.toHaveProperty('is_watch_account')
+        },
+        INTEGRATION_TIMEOUT,
+    )
+
+    it(
+        're-registers with the new currency when the user changes it',
+        async () => {
+            const bodies: DeviceRegistrationRequest[] = []
+            server.use(
+                http.post('*/api/v3/devices', async ({ request }) => {
+                    bodies.push(
+                        (await request.json()) as DeviceRegistrationRequest,
+                    )
+                    return HttpResponse.json({ id: 'DEV-1' })
+                }),
+            )
+
+            seedAccounts([quantumAccount])
+            renderApp()
+
+            await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+                timeout: INTEGRATION_TIMEOUT,
+            })
+            expect(bodies[0].currency).toBe('USD')
+
+            act(() => {
+                useCurrenciesStore.getState().setPreferredCurrency('EUR')
+            })
+
+            await waitFor(
+                () =>
+                    expect(bodies.some(body => body.currency === 'EUR')).toBe(
+                        true,
+                    ),
+                { timeout: INTEGRATION_TIMEOUT },
+            )
         },
         INTEGRATION_TIMEOUT,
     )

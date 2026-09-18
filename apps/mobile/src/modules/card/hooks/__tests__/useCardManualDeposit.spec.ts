@@ -33,10 +33,12 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
 
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
     useMinimumFeeCalculator: () => ({
         assignFeeToGroup: mockAssignFeeToGroup,
     }),
+}))
+vi.mock('../useSubmitAndConfirm', () => ({
+    useSubmitAndConfirm: () => mockSubmit,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({

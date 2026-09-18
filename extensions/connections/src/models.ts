@@ -32,9 +32,15 @@ export type ConnectionOriginSource = 'external-browser' | 'in-app' | 'qr'
  * them), `'qr'` keeps the plain sheet. On the base record because origin is kind-agnostic.
  */
 export interface ConnectionOrigin {
-    source: ConnectionOriginSource
+    /** Absent for a pairing a browser-extension page started; see `requesterOrigin`. */
+    source?: ConnectionOriginSource
     /** iOS wrapper's `browser=` hint; absent on Android (raw wc: intent). */
     browserName?: string
+    /**
+     * Browser-verified origin of the extension tab that started the pairing.
+     * Unlike `peer.url` a page cannot forge it, so every later approval shows it.
+     */
+    requesterOrigin?: string
 }
 
 /**

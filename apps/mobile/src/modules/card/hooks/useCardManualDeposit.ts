@@ -25,20 +25,19 @@ import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    useMinimumFeeCalculator,
-    useSignAndSubmitGroup,
-} from '@perawallet/wallet-core-signing'
+import { useMinimumFeeCalculator } from '@perawallet/wallet-core-signing'
 import { assertOnline, toError } from '@perawallet/wallet-core-shared'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
+import { useSubmitAndConfirm } from './useSubmitAndConfirm'
 
 /**
- * Thrown when there is nothing to deposit into: no card has been created on
- * this network yet, or the network has no known USDC.
+ * Thrown when there is no escrow card to act on: none has been created on this
+ * network yet, its owner is no longer in the wallet, or the network has no
+ * known USDC.
  */
 export class CardEscrowUnavailableError extends Error {
     constructor() {
-        super('No escrow card address to deposit into')
+        super('No escrow card available')
         this.name = 'CardEscrowUnavailableError'
     }
 }
@@ -70,7 +69,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
     const queryClient = useQueryClient()
-    const { submit } = useSignAndSubmitGroup()
+    const submit = useSubmitAndConfirm()
     const { assignFeeToGroup } = useMinimumFeeCalculator()
     const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
     const usdcAssetId = useMemo(

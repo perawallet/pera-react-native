@@ -153,6 +153,10 @@ vi.mock('@modules/network', () => ({
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
     useAllAccounts: () => mocks.accounts,
+    useFindAccountByAddress: (address: string) =>
+        (mocks.accounts as WalletAccount[]).find(
+            account => account.address === address,
+        ) ?? null,
 }))
 
 vi.mock('react-native', async importOriginal => {

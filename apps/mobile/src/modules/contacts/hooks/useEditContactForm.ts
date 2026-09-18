@@ -125,9 +125,8 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         [form, t, editContact, targetContact, setSelectedContact, navigation],
     )
 
-    /** Settles the backup's copy before the contact leaves the device: a
-     *  refused choice must not strand a removed contact in a state the user
-     *  never picked. */
+    /** Records the backup choice before the contact leaves the device: a
+     *  refused choice would strand it in neither review bucket. */
     const removeContact = useCallback(
         async (backupChoice?: ContactBackupChoice) => {
             if (!targetContact) {
@@ -136,14 +135,14 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             }
 
             if (backupChoice) {
-                let isSettled = false
+                let isRecorded = false
                 try {
                     const manager = getBackupSyncManager()
-                    isSettled =
+                    isRecorded =
                         backupChoice === 'delete'
-                            ? await manager.deleteContactFromBackup(
+                            ? (await manager.deleteContactFromBackup(
                                   targetContact.address,
-                              )
+                              )) !== 'refused'
                             : await manager.keepContactInBackup(
                                   targetContact.address,
                                   targetContact.name,
@@ -157,7 +156,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                                 : String(error),
                     })
                 }
-                if (!isSettled) {
+                if (!isRecorded) {
                     showToast({
                         title: t(
                             backupChoice === 'delete'

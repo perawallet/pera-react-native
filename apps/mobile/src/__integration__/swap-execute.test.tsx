@@ -21,19 +21,12 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
-import {
-    QueryClient,
-    QueryClientProvider,
-    onlineManager,
-} from '@tanstack/react-query'
+import { QueryClientProvider, onlineManager } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
-import {
-    mutationDefaults,
-    NoConnectionError,
-} from '@perawallet/wallet-core-shared'
+import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     mockPrepareTransactions,
     mockUpdateSwapStatus,
@@ -49,25 +42,6 @@ const SWAP_ID = '12345'
 
 const buildWrapper = () => {
     const queryClient = createTestQueryClient()
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
-
-// Mirrors the app's real mutation policy (`mutationDefaults`, incl.
-// `networkMode: 'always'`) rather than the plain test client. This is required
-// to exercise OFF-004 fail-fast: under the default `networkMode: 'online'` an
-// offline mutation would PAUSE and auto-resume on reconnect — the exact
-// behavior this test proves is gone.
-const buildFailFastWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: { retry: false, gcTime: 0 },
-            mutations: { ...mutationDefaults, retry: false },
-        },
-    })
     return ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={queryClient}>
             {children}
@@ -311,7 +285,7 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
 
             const { result } = renderHook(
                 () => usePrepareTransactionsMutation(),
-                { wrapper: buildFailFastWrapper() },
+                { wrapper: buildWrapper() },
             )
 
             // User kicks off prepare while offline: it fails fast (rejects)

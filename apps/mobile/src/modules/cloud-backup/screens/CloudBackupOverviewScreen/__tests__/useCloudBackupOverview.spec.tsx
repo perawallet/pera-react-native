@@ -64,6 +64,9 @@ vi.mock('../../../components/BackupCredentialsSheet', () => ({
 vi.mock('../../../components/TurnOffBackupSheet', () => ({
     TurnOffBackupSheet: () => null,
 }))
+vi.mock('../../../components/ConfirmTurnOffBackupSheet', () => ({
+    ConfirmTurnOffBackupSheet: () => null,
+}))
 
 const {
     disableBackupMock,
@@ -337,38 +340,74 @@ describe('useCloudBackupOverview', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
     })
 
-    test('asks for the PIN before turning off when a destructive choice is made', async () => {
+    const confirmationSheetChoice = () =>
+        mockRequestBottomSheet.mock.calls[1][0].contents.props.choice
+
+    test('confirms the choice, then asks for the PIN, before turning off', async () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
             contacts: [],
         })
-        mockRequestBottomSheet.mockResolvedValueOnce('turnOff')
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOff')
+            .mockResolvedValueOnce(true)
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
 
-        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+        expect(confirmationSheetChoice()).toBe('turnOff')
+        expect(mockRequestBottomSheet.mock.invocationCallOrder[1]).toBeLessThan(
+            requirePinVerificationMock.mock.invocationCallOrder[0],
+        )
         expect(disableBackupMock).toHaveBeenCalledTimes(1)
+        expect(removeBackupMock).not.toHaveBeenCalled()
     })
 
-    test('removes the remote backup when the turn-off-and-remove choice is made', async () => {
+    test('removes the remote backup once turning off and removing is confirmed', async () => {
         mockStores({
             backupId: 'did:pera:abc',
             syncState: null,
             accounts: [],
             contacts: [],
         })
-        mockRequestBottomSheet.mockResolvedValueOnce('turnOffAndRemove')
+        mockRequestBottomSheet
+            .mockResolvedValueOnce('turnOffAndRemove')
+            .mockResolvedValueOnce(true)
 
         const { result } = renderHook(() => useCloudBackupOverview())
         await result.current.onPressTurnOff()
 
+        expect(confirmationSheetChoice()).toBe('turnOffAndRemove')
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
         expect(removeBackupMock).toHaveBeenCalledTimes(1)
         expect(disableBackupMock).not.toHaveBeenCalled()
     })
+
+    test.each(['turnOff', 'turnOffAndRemove'])(
+        'does nothing when the %s confirmation is dismissed',
+        async choice => {
+            mockStores({
+                backupId: 'did:pera:abc',
+                syncState: null,
+                accounts: [],
+                contacts: [],
+            })
+            mockRequestBottomSheet
+                .mockResolvedValueOnce(choice)
+                .mockResolvedValueOnce(undefined)
+
+            const { result } = renderHook(() => useCloudBackupOverview())
+            await result.current.onPressTurnOff()
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+            expect(requirePinVerificationMock).not.toHaveBeenCalled()
+            expect(disableBackupMock).not.toHaveBeenCalled()
+            expect(removeBackupMock).not.toHaveBeenCalled()
+        },
+    )
 
     test('does not ask for the PIN when the turn off sheet is dismissed', async () => {
         mockStores({
@@ -385,6 +424,7 @@ describe('useCloudBackupOverview', () => {
         expect(requirePinVerificationMock).not.toHaveBeenCalled()
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(disableBackupMock).not.toHaveBeenCalled()
+        expect(removeBackupMock).not.toHaveBeenCalled()
     })
 
     test('opens the credentials sheet directly when no PIN is set', async () => {

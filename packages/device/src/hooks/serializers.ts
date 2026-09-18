@@ -17,6 +17,8 @@ import type {
     DeviceRegistrationRequest,
 } from '../models'
 
+const MAX_CURRENCY_LENGTH = 8
+
 /**
  * Collapse repeated addresses, the higher-precedence account type winning and
  * equal ranks keeping the last occurrence — v3 specifies last-wins
@@ -49,6 +51,13 @@ export const toDeviceRegistrationRequest = (
     platform: registration.platform,
     locale: registration.locale,
     app_version: registration.appVersion,
+    // Omitted rather than truncated: the backend stores what it is sent and
+    // marks the choice explicit, so a sliced code would stick as a currency
+    // that never existed. Dropping it leaves the column null and falls back.
+    ...(registration.currency &&
+    registration.currency.length <= MAX_CURRENCY_LENGTH
+        ? { currency: registration.currency }
+        : {}),
     accounts: dedupeByAddress(registration.accounts).map(account => ({
         address: account.address,
         account_type: account.accountType,

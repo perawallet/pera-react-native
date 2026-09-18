@@ -101,6 +101,9 @@ const transformRow = (
         // the enum here.
         tx_type: tx['tx-type'] as TransactionHistoryItemApiResponse['tx_type'],
         sender: tx.sender,
+        // `asnd`: the debited holder on a clawback, where `sender` is the
+        // clawback authority instead.
+        asset_sender: tx['asset-transfer-transaction']?.sender ?? null,
         receiver: receiverOf(tx) ?? null,
         confirmed_round: toNumber(tx['confirmed-round']),
         round_time: toNumber(tx['round-time']),

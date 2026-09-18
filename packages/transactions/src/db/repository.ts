@@ -153,6 +153,7 @@ function toDb(item: TransactionHistoryItem) {
             ? new Decimal(item.applicationId)
             : null,
         innerTransactionCount: item.innerTransactionCount,
+        assetSender: item.assetSender,
         assetJson: item.asset ? JSON.stringify(item.asset) : null,
         swapGroupDetailJson: item.swapGroupDetail
             ? JSON.stringify(item.swapGroupDetail)
@@ -168,6 +169,7 @@ function fromDb(row: {
     id: string
     txType: string
     sender: string
+    assetSender: Nullable<string>
     receiver: Nullable<string>
     confirmedRound: number
     roundTime: number
@@ -187,6 +189,7 @@ function fromDb(row: {
         id: row.id,
         txType: row.txType as TransactionHistoryItem['txType'],
         sender: row.sender,
+        assetSender: row.assetSender,
         receiver: row.receiver,
         confirmedRound: row.confirmedRound,
         roundTime: row.roundTime,
@@ -254,6 +257,10 @@ export async function upsertTransactions({
                     closeAmount: sql`COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount})`,
                     applicationId: row.applicationId,
                     innerTransactionCount: row.innerTransactionCount,
+                    // Shared row, per-account derivation (see closeAmount
+                    // above and deriveAssetSender): a perspective that can't
+                    // see the clawback must not erase one that could.
+                    assetSender: sql`COALESCE(${row.assetSender ?? null}, ${TransactionsSchema.assetSender})`,
                     assetJson: row.assetJson,
                     swapGroupDetailJson: row.swapGroupDetailJson,
                     interpretedMeaningJson: row.interpretedMeaningJson,
@@ -385,6 +392,7 @@ export async function getTransactionHistory({
             closeAmount: TransactionsSchema.closeAmount,
             applicationId: TransactionsSchema.applicationId,
             innerTransactionCount: TransactionsSchema.innerTransactionCount,
+            assetSender: TransactionsSchema.assetSender,
             assetJson: TransactionsSchema.assetJson,
             swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
             interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,

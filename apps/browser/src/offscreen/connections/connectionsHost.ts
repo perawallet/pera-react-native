@@ -231,9 +231,14 @@ export const startConnectionsHost = (
     const pair = async (
         message: Extract<ConnectionsControlMessage, { kind: 'pair' }>,
     ): Promise<ConnectionsControlResponse> => {
-        const pairingId = await registry.pair(message.uri, {
-            origin: message.origin,
-        })
+        const origin =
+            message.requesterOrigin === undefined
+                ? message.origin
+                : {
+                      ...message.origin,
+                      requesterOrigin: message.requesterOrigin,
+                  }
+        const pairingId = await registry.pair(message.uri, { origin })
         if (message.requesterOrigin !== undefined) {
             requesterOrigins.set(pairingId, message.requesterOrigin)
             void waitForPairingOutcome(

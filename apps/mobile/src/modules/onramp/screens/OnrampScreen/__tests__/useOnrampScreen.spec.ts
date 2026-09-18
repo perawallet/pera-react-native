@@ -23,7 +23,8 @@ import { useRoute } from '@react-navigation/native'
 
 import { useOnrampScreen } from '../useOnrampScreen'
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
+    ...(await importOriginal()),
     useRampPairsQuery: vi.fn(),
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
@@ -158,6 +159,18 @@ describe('useOnrampScreen', () => {
 
         expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('ALGO')
         expect(mockSetSelectedSourceTokenId).not.toHaveBeenCalled()
+    })
+
+    it('defaults to ALGO listed under its on-chain id', () => {
+        const algoByAssetId = makePair('pair-c', 'USD', '0')
+        vi.mocked(useRampPairsQuery).mockReturnValue({
+            data: [PAIR_B, algoByAssetId],
+            isLoading: false,
+        } as never)
+
+        renderHook(() => useOnrampScreen())
+
+        expect(mockSetSelectedDestinationTokenId).toHaveBeenCalledWith('0')
     })
 
     it('seeds the destination from the route destinationTokenId param', () => {

@@ -14,9 +14,10 @@ import {
     accountAddressFromItemKey,
     accountItemKey,
     contactAddressFromItemKey,
+    contactItemKey,
 } from './itemKeys'
 import type { SyncItemState, SyncState } from './syncState'
-import { BackupItemStatus } from './types'
+import { BackupItemStatus, type BackupItemKey } from './types'
 
 type ReviewBuckets<TAvailable> = {
     backedUp: Set<string>
@@ -99,13 +100,36 @@ export const deriveBackupContactReview = (
         (address, item) => ({ address, name: item.label ?? '' }),
     )
 
+const isKeyBackedUp = (
+    syncState: SyncState | null,
+    key: BackupItemKey,
+): boolean => {
+    const item = syncState?.items[key]
+    return item != null && isLiveInBackup(item) && item.pendingImport !== true
+}
+
 /** For callers that already hold the account: `deriveBackupAccountReview`
  *  intersects with the wallet's addresses, which such a caller satisfies by
  *  construction. */
 export const isAddressBackedUp = (
     syncState: SyncState | null,
     address: string,
-): boolean => {
-    const item = syncState?.items[accountItemKey(address)]
-    return item != null && isLiveInBackup(item) && item.pendingImport !== true
-}
+): boolean => isKeyBackedUp(syncState, accountItemKey(address))
+
+export const isContactBackedUp = (
+    syncState: SyncState | null,
+    address: string,
+): boolean => isKeyBackedUp(syncState, contactItemKey(address))
+
+export const areKeysDeletedFromBackup = (
+    syncState: SyncState | null,
+    keys: readonly BackupItemKey[],
+): boolean =>
+    keys.every(key => {
+        const item = syncState?.items[key]
+        return (
+            item == null ||
+            (item.status !== BackupItemStatus.ACTIVE &&
+                item.pendingDelete !== true)
+        )
+    })

@@ -15,7 +15,7 @@ import {
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
@@ -23,6 +23,8 @@ type BuildMultisigCosignRequestParams = {
     signRequest: MultisigSignRequest
     signerAddress: string
     decodeTransaction: (bytes: Uint8Array) => PeraTransaction
+    /** Used to recognise senders the joint account authorizes via a rekey. */
+    localAccounts: WalletAccount[]
 }
 
 /**
@@ -35,6 +37,7 @@ export const buildMultisigCosignRequest = ({
     signRequest,
     signerAddress,
     decodeTransaction,
+    localAccounts,
 }: BuildMultisigCosignRequestParams): TransactionSignRequest => {
     const transactionList = signRequest.transactionLists[0]
     if (!transactionList) {
@@ -67,20 +70,23 @@ export const buildMultisigCosignRequest = ({
         )
     }
 
-    // 2. No transaction may be sent by the co-signer themselves. That is the
-    //    exact condition under which the local signer omits `sgnr`
-    //    (`account.address === senderPublicKey` in useLocalKeyTransactionSigner),
-    //    producing a plain Ed25519 signature that verifies standalone and
-    //    drains the co-signer's own account — the multisig threshold provides
-    //    no protection. Any other sender (the joint account, or an account
-    //    rekeyed to it — see the sign-multisig-rekeyed integration test) still
-    //    yields a subsig bound to `sgnr`, which is useless on its own.
+    // 2. Every transaction must be sent by the joint account or by a local
+    //    account rekeyed to it on this network. An allowlist, not "not sent by
+    //    the co-signer": the signature covers `"TX" || txn` only, so a
+    //    participant's sig stands alone for any sender whose auth-addr is that
+    //    key.
+    const jointAuthorizedSenders = new Set([
+        address,
+        ...localAccounts
+            .filter(account => account.rekeyAddress === address)
+            .map(account => account.address),
+    ])
     const offenderIndex = txs.findIndex(
-        tx => tx.sender.toString() === signerAddress,
+        tx => !jointAuthorizedSenders.has(tx.sender.toString()),
     )
     if (offenderIndex !== -1) {
         throw new Error(
-            `Sign request ${signRequest.id}: transaction ${offenderIndex} is sent by the co-signer, not the joint account ${address}`,
+            `Sign request ${signRequest.id}: transaction ${offenderIndex} is not authorized by the joint account ${address}`,
         )
     }
 

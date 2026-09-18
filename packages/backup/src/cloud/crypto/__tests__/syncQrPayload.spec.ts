@@ -42,7 +42,11 @@ vi.mock('crypto', async importOriginal => {
     return { ...actual, argon2: argon2Mock }
 })
 
-import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    concatBytes,
+    decodeFromBase64,
+    encodeToBase64,
+} from '@perawallet/wallet-core-shared'
 import {
     BackupSyncQrError,
     BackupSyncQrUnsupportedVersionError,
@@ -215,14 +219,18 @@ describe('backup sync QR payload', () => {
 
         test('rejects tampered ciphertext', async () => {
             const parsed = JSON.parse(envelope)
-            const flipped =
-                parsed.payload.at(-2) === 'A'
-                    ? `${parsed.payload.slice(0, -2)}B${parsed.payload.at(-1)}`
-                    : `${parsed.payload.slice(0, -2)}A${parsed.payload.at(-1)}`
+            // Corrupt a decoded byte rather than a base64 character: a padded
+            // final group ignores its low bits, so a character flip there can
+            // decode to the original bytes and the AEAD opens cleanly.
+            const raw = decodeFromBase64(parsed.payload)
+            raw[12] ^= 0x01
 
             await expect(
                 decryptBackupSyncQr(
-                    JSON.stringify({ ...parsed, payload: flipped }),
+                    JSON.stringify({
+                        ...parsed,
+                        payload: encodeToBase64(raw),
+                    }),
                     CODE,
                 ),
             ).rejects.toBeInstanceOf(BackupSyncQrError)
