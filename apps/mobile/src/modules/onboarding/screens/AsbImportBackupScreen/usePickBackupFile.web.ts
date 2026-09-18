@@ -15,42 +15,22 @@ import {
     getSurface,
     openExpandedTab,
 } from '@perawallet/wallet-extension-platform-chrome'
+import { pickTextFile } from '@utils/pickTextFile.web'
 import type {
     PickedBackupFile,
     UsePickBackupFileResult,
 } from './usePickBackupFile'
 
-const readAsText = (file: globalThis.File): Promise<string> =>
-    new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(String(reader.result ?? ''))
-        reader.onerror = () =>
-            reject(reader.error ?? new Error('Failed to read backup file'))
-        reader.readAsText(file)
-    })
-
 /**
- * Web: `expo-file-system`'s browser shim has no real implementation of
- * `File.pickFileAsync` — it just `console.warn`s and resolves `undefined`
- * (see `ExpoFileSystem.web.ts` in the `expo-file-system` package), which the
- * native hook's `.uri` access then throws on. Drive the standard browser
- * file-input flow instead: a hidden `<input type="file">`, clicked
- * synchronously from the caller's click handler so the picker opens under
- * the user-gesture the browser requires, then read via
- * `FileReader.readAsText()` — ASB backup files are base64 text (see
- * `parseBackupEnvelope`), not binary, so a text read matches what the
- * native path gets from `File#text()`.
+ * Web: the pick itself is `pickTextFile`; ASB backup files are base64 text
+ * (see `parseBackupEnvelope`), so a text read matches what the native path
+ * gets from `File#text()`.
  *
- * Cancellation is detected via the `cancel` event fired on the input when
- * the user dismisses the picker without choosing a file (supported in all
- * Chromium/Firefox versions this extension ships to).
- *
- * Except in the 360x600 toolbar popup: the file dialog is an OS window, and
- * Chrome tears the popup down the instant it takes focus — the picker opens
- * over a dead surface and the `change`/`cancel` listeners never run. There the
- * hand-off to the expanded tab (`?flow=asb-import`) replaces the pick, same
- * pattern as `useLedgerExpandedTabHandoff` and the QR camera prompt. Pasting
- * the backup text stays available inline either way.
+ * Except in the 360x600 toolbar popup, where an OS file dialog kills the
+ * surface before it can return. There the hand-off to the expanded tab
+ * (`?flow=asb-import`) replaces the pick, same pattern as
+ * `useLedgerExpandedTabHandoff` and the QR camera prompt. Pasting the backup
+ * text stays available inline either way.
  */
 export const usePickBackupFile = (): UsePickBackupFileResult => {
     const isPopupHandoff = getSurface() === 'popup'
@@ -60,41 +40,9 @@ export const usePickBackupFile = (): UsePickBackupFileResult => {
             void openExpandedTab('asb-import')
             return Promise.resolve(null)
         }
-        return new Promise((resolve, reject) => {
-            const input = document.createElement('input')
-            input.type = 'file'
-            input.accept = '.txt,text/plain'
-            input.style.display = 'none'
-
-            const cleanup = () => {
-                input.removeEventListener('change', handleChange)
-                input.removeEventListener('cancel', handleCancel)
-                input.remove()
-            }
-
-            const handleChange = () => {
-                const file = input.files?.[0] ?? null
-                cleanup()
-                if (!file) {
-                    resolve(null)
-                    return
-                }
-                readAsText(file)
-                    .then(contents => resolve({ name: file.name, contents }))
-                    .catch(reject)
-            }
-
-            const handleCancel = () => {
-                cleanup()
-                resolve(null)
-            }
-
-            input.addEventListener('change', handleChange)
-            input.addEventListener('cancel', handleCancel)
-
-            document.body.appendChild(input)
-            input.click()
-        })
+        return pickTextFile('.txt,text/plain').then(picked =>
+            picked ? { name: picked.name, contents: picked.contents } : null,
+        )
     }, [isPopupHandoff])
 
     return { pickFile, isPopupHandoff }
