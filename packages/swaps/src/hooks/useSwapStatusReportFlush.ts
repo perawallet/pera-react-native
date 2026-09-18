@@ -97,8 +97,19 @@ export const useSwapStatusReportFlush = (): void => {
 
     useEffect(() => {
         void flush()
-        return onlineManager.subscribe(isOnline => {
+        const unsubscribeOnline = onlineManager.subscribe(isOnline => {
             if (isOnline) void flush()
         })
+        const unsubscribeQueue = useSwapStatusReportStore.subscribe(
+            (state, previous) => {
+                // Only a growing queue is a new enqueue; the flush's own
+                // removals shrink it, so this cannot recurse through them.
+                if (state.reports.length > previous.reports.length) void flush()
+            },
+        )
+        return () => {
+            unsubscribeOnline()
+            unsubscribeQueue()
+        }
     }, [flush])
 }

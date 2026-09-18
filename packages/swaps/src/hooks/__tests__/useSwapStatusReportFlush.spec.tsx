@@ -105,6 +105,36 @@ describe('useSwapStatusReportFlush', () => {
         expect(useSwapStatusReportStore.getState().reports).toHaveLength(0)
     })
 
+    it('delivers a report enqueued mid-session, with no connectivity edge', async () => {
+        updateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+
+        renderHook(() => useSwapStatusReportFlush())
+        await waitFor(() => expect(updateSwapStatus).not.toHaveBeenCalled())
+
+        // The common case: a swap lands while the app has been online and
+        // mounted the whole time, so neither trigger the hook used to have
+        // will ever fire again.
+        useSwapStatusReportStore.getState().enqueueReport({
+            swapId: 'swap-9',
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['TX-9'],
+            },
+        })
+
+        await waitFor(() =>
+            expect(updateSwapStatus).toHaveBeenCalledWith(
+                'swap-9',
+                {
+                    status: 'in_progress',
+                    submitted_transaction_ids: ['TX-9'],
+                },
+                'mainnet',
+            ),
+        )
+        expect(useSwapStatusReportStore.getState().reports).toHaveLength(0)
+    })
+
     it('delivers a report enqueued while a flush is still in flight, within the same pass', async () => {
         let resolveFirstSend: (value: unknown) => void = () => {}
         updateSwapStatus.mockImplementationOnce(
