@@ -13,10 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    confirmContainer: {
-        flex: 1,
-        justifyContent: 'center',
-    },
     accountInfoContainer: {
         paddingHorizontal: theme.spacing.xl,
         marginBottom: theme.spacing.lg,

@@ -135,7 +135,11 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
                     onShowAddress={() => {}}
                 />
             ),
-            options: { size: 'modal', enablePanDownToClose: true },
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])

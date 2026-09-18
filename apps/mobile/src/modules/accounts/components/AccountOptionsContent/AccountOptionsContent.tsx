@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { BottomSheetView } from '@gorhom/bottom-sheet'
 import {
     PWDivider,
     PWIcon,
@@ -103,13 +104,12 @@ export const AccountOptionsContent = ({
         handleCancelRemove,
     } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
-    // The options list sizes itself through PWSheetLayout, but these confirm
-    // panels are content-sized and land in a `modal` sheet pinned at 96% of the
-    // screen, so without a filling wrapper they hug its top. Rendered inline
-    // rather than as a second sheet — see useAccountOptions for why.
+    // The sheet is content-sized and the list reports its height through its
+    // scroll view; these plain panels need gorhom's measuring container, or the
+    // sheet keeps the list's height around them.
     if (removeConfirmView === 'backup-warning') {
         return (
-            <PWView style={styles.confirmContainer}>
+            <BottomSheetView>
                 <ConfirmActionContent
                     icon='trash'
                     iconVariant='error'
@@ -128,13 +128,13 @@ export const AccountOptionsContent = ({
                     onConfirm={handleConfirmBackupWarning}
                     onCancel={handleCancelRemove}
                 />
-            </PWView>
+            </BottomSheetView>
         )
     }
 
     if (removeConfirmView === 'remove-confirm') {
         return (
-            <PWView style={styles.confirmContainer}>
+            <BottomSheetView>
                 <ConfirmActionContent
                     icon='trash'
                     iconVariant='error'
@@ -153,19 +153,19 @@ export const AccountOptionsContent = ({
                     onConfirm={handleConfirmRemove}
                     onCancel={handleCancelRemove}
                 />
-            </PWView>
+            </BottomSheetView>
         )
     }
 
     if (removeConfirmView === 'cloud-backup-delete') {
         return (
-            <PWView style={styles.confirmContainer}>
+            <BottomSheetView>
                 <DeleteFromBackupSheet
                     declineLabel={t('cloud_backup.accounts.keep_action')}
                     onConfirm={() => void handleDeleteFromBackup()}
                     onDecline={() => void handleKeepInBackup()}
                 />
-            </PWView>
+            </BottomSheetView>
         )
     }
 
