@@ -16,11 +16,11 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 
-import type { CredentialsFileSource } from '../storage'
 import {
     getCredentialsFileReadSources,
     getCredentialsFileSaveSources,
-} from '../storage/credentialsFileSources'
+    type CredentialsFileSource,
+} from '../storage'
 
 const CLOUD_SOURCES: CredentialsFileSource[] = ['icloud', 'googleDrive']
 

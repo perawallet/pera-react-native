@@ -43,21 +43,12 @@ describe('isDerivableArgon2idConfig', () => {
         expect(isDerivableArgon2idConfig(ARGON2ID_CONFIG)).toBe(true)
     })
 
-    test('accepts the exact upper bounds', () => {
-        expect(
-            isDerivableArgon2idConfig({
-                ...ARGON2ID_CONFIG,
-                memoryCost: 512,
-                timeCost: 10,
-                parallelism: 4,
-            }),
-        ).toBe(true)
-    })
-
+    // The bounds are ARGON2ID_CONFIG itself, so anything above any one of
+    // them is refused — this build's own parameters are the upper bound.
     test.each([
-        ['memoryCost', 513],
-        ['timeCost', 11],
-        ['parallelism', 5],
+        ['memoryCost', 257],
+        ['timeCost', 4],
+        ['parallelism', 2],
         ['outputLength', 64],
     ] as const)('refuses %s of %d', (field, value) => {
         expect(

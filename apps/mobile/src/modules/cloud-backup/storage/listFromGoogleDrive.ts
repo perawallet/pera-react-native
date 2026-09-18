@@ -1,0 +1,36 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { isBackupCredentialsFileName } from '@perawallet/wallet-core-backup'
+
+import { CredentialsFileNotFoundError } from './errors'
+import { runOnGoogleDrive, signOutOfGoogleDrive } from './googleDriveSession'
+import type { ListResult } from './types'
+
+export const listFromGoogleDrive = async (
+    onListing?: () => void,
+): Promise<ListResult> => {
+    const result = await runOnGoogleDrive(
+        drive => drive.readdir('/'),
+        onListing,
+    )
+    if (result.status === 'cancelled') return result
+
+    const fileNames = result.value.filter(isBackupCredentialsFileName)
+    if (fileNames.length === 0) {
+        // Sign-in silently reuses the last account; signing out lets the next
+        // attempt pick another.
+        await signOutOfGoogleDrive().catch(() => undefined)
+        throw new CredentialsFileNotFoundError('googleDrive')
+    }
+    return { status: 'listed', fileNames }
+}

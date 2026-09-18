@@ -47,7 +47,8 @@ import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBa
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const TEST_PIN = '123456'
-const FILE_NAME = 'pera-backup-encryption-key.json'
+// Named after the backup's own address, so a second backup saves beside it.
+const FILE_NAME = 'pera-backup-CREDE.json'
 const PHRASE = [
     'marble',
     'protect',

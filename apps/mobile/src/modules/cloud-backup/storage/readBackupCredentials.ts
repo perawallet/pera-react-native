@@ -11,7 +11,7 @@
  */
 
 import {
-    BACKUP_CREDENTIALS_FILE_NAME,
+    LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
     BackupCredentialsFileError,
     BackupCredentialsFileUnsupportedVersionError,
     parseBackupCredentialsFile,
@@ -22,10 +22,17 @@ import {
     InvalidCredentialsFileError,
     UnsupportedCredentialsFileError,
 } from './errors'
+import { listFromGoogleDrive } from './listFromGoogleDrive'
+import { listFromICloud } from './listFromICloud'
 import { readFromDevice } from './readFromDevice'
 import { readFromGoogleDrive } from './readFromGoogleDrive'
 import { readFromICloud } from './readFromICloud'
-import type { CredentialsFileReader, CredentialsFileSource } from './types'
+import type {
+    ChooseCredentialsFile,
+    CredentialsFileLister,
+    CredentialsFileReader,
+    CredentialsFileSource,
+} from './types'
 
 const READERS: Record<CredentialsFileSource, CredentialsFileReader> = {
     device: readFromDevice,
@@ -33,8 +40,27 @@ const READERS: Record<CredentialsFileSource, CredentialsFileReader> = {
     googleDrive: readFromGoogleDrive,
 }
 
+/** The device picker names its own file, so only the cloud sources list. */
+const LISTERS: Record<
+    Exclude<CredentialsFileSource, 'device'>,
+    CredentialsFileLister
+> = {
+    icloud: listFromICloud,
+    googleDrive: listFromGoogleDrive,
+}
+
 export type ReadBackupCredentialsResult =
     | { status: 'read'; key: BackupEncryptionKey }
+    | { status: 'cancelled' }
+
+export type ReadBackupCredentialsOptions = {
+    onReading?: () => void
+    /** Required wherever a folder can hold more than one saved key. */
+    chooseFile?: ChooseCredentialsFile
+}
+
+type ResolvedFileName =
+    | { status: 'resolved'; fileName: string }
     | { status: 'cancelled' }
 
 const toAppError = (error: unknown): unknown => {
@@ -47,11 +73,40 @@ const toAppError = (error: unknown): unknown => {
     return error
 }
 
+const resolveFileName = async (
+    source: CredentialsFileSource,
+    { onReading, chooseFile }: ReadBackupCredentialsOptions,
+): Promise<ResolvedFileName> => {
+    // The picker names the file, so the value below is never read.
+    if (source === 'device') {
+        return {
+            status: 'resolved',
+            fileName: LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
+        }
+    }
+
+    // An empty folder throws from the lister, which owns the per-source
+    // not-found handling (Drive signs out so another account can be picked).
+    const listed = await LISTERS[source](onReading)
+    if (listed.status === 'cancelled') return listed
+
+    const [only, ...rest] = listed.fileNames
+    if (rest.length === 0 && only) return { status: 'resolved', fileName: only }
+
+    const chosen = await chooseFile?.(listed.fileNames)
+    return chosen
+        ? { status: 'resolved', fileName: chosen }
+        : { status: 'cancelled' }
+}
+
 export const readBackupCredentials = async (
     source: CredentialsFileSource,
-    onReading?: () => void,
+    options: ReadBackupCredentialsOptions = {},
 ): Promise<ReadBackupCredentialsResult> => {
-    const read = await READERS[source](BACKUP_CREDENTIALS_FILE_NAME, onReading)
+    const resolved = await resolveFileName(source, options)
+    if (resolved.status === 'cancelled') return resolved
+
+    const read = await READERS[source](resolved.fileName, options.onReading)
     if (read.status === 'cancelled') return read
     try {
         return {

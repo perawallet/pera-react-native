@@ -34,11 +34,15 @@ const {
     saveToDevice: vi.fn(),
     saveToICloud: vi.fn(),
     saveToGoogleDrive: vi.fn(),
-    storeState: { salt: null as string | null },
+    storeState: {
+        salt: null as string | null,
+        backupId: null as string | null,
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    BACKUP_CREDENTIALS_FILE_NAME: 'pera-backup-encryption-key.json',
+    backupCredentialsFileName: (backupId: string) =>
+        `pera-backup-${backupId.replace('did:pera:', '').slice(0, 5)}.json`,
     buildBackupCredentialsFile: (salt: string) => `file(${salt})`,
     useCloudBackupStore: { getState: () => storeState },
 }))
@@ -75,11 +79,13 @@ vi.mock('../../storage', () => ({
 }))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
-const FILE_NAME = 'pera-backup-encryption-key.json'
+const BACKUP_ID = `did:pera:VQBGR${'A'.repeat(53)}`
+const FILE_NAME = 'pera-backup-VQBGR.json'
 
 beforeEach(() => {
     vi.clearAllMocks()
     storeState.salt = SALT
+    storeState.backupId = BACKUP_ID
     mockRequest.mockResolvedValue('device')
     mockRequirePin.mockResolvedValue(true)
     saveToDevice.mockResolvedValue('saved')
@@ -93,8 +99,9 @@ const store = async (options?: { hasVerifiedPin?: boolean }) => {
 }
 
 describe('useStoreBackupCredentials', () => {
-    test('shows an error and opens nothing when no salt is stored', async () => {
+    test('shows an error and opens nothing when no backup is stored', async () => {
         storeState.salt = null
+        storeState.backupId = null
 
         await store()
 

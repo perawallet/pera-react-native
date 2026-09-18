@@ -10,20 +10,9 @@
  limitations under the License
  */
 
-export { saveToDevice } from './saveToDevice'
-export { saveToICloud } from './saveToICloud'
-export { saveToGoogleDrive } from './saveToGoogleDrive'
-export {
-    readBackupCredentials,
-    type ReadBackupCredentialsOptions,
-} from './readBackupCredentials'
-export {
-    getCredentialsFileReadSources,
-    getCredentialsFileSaveSources,
-} from './credentialsFileSources'
-export type {
-    ChooseCredentialsFile,
-    CredentialsFileSaver,
-    CredentialsFileSource,
-    SaveResult,
-} from './types'
+import type { ListResult } from './types'
+
+// Never offered on web; the twin keeps the native module out of the web bundle.
+export const listFromGoogleDrive = async (): Promise<ListResult> => {
+    throw new Error('Google Drive is not available in the browser extension')
+}

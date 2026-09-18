@@ -13,14 +13,19 @@
 import { describe, expect, test } from 'vitest'
 import { ARGON2ID_CONFIG } from '../../crypto/constants'
 import {
-    BACKUP_CREDENTIALS_FILE_NAME,
+    LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
     BackupCredentialsFileError,
     BackupCredentialsFileUnsupportedVersionError,
+    backupCredentialsFileAddressPrefix,
+    backupCredentialsFileName,
     buildBackupCredentialsFile,
+    isBackupCredentialsFileName,
     parseBackupCredentialsFile,
 } from '../backupCredentialsFile'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
+const BACKUP_ID =
+    'did:pera:VQBGRVJZTE9OR0FMR09SQU5EQUREUkVTU0ZPUlRFU1RJTkdBQUFBQUFB'
 
 describe('buildBackupCredentialsFile', () => {
     test('writes only the salt and the backup KDF under a typed, versioned envelope', () => {
@@ -47,11 +52,55 @@ describe('buildBackupCredentialsFile', () => {
         expect(file).toMatch(/^[\x20-\x7E]*$/)
         expect(JSON.parse(file).salt).toBe(lookAlikeSalt)
     })
+})
 
-    test('keeps the file name stable so a re-save overwrites the earlier file', () => {
-        expect(BACKUP_CREDENTIALS_FILE_NAME).toBe(
-            'pera-backup-encryption-key.json',
+describe('backupCredentialsFileName', () => {
+    test('names the file after the backup, so two backups can sit side by side', () => {
+        expect(backupCredentialsFileName(BACKUP_ID)).toBe(
+            'pera-backup-VQBGR.json',
         )
+        expect(
+            backupCredentialsFileName(`did:pera:ZZZZZ${'A'.repeat(53)}`),
+        ).toBe('pera-backup-ZZZZZ.json')
+    })
+
+    test('re-saving the same backup still overwrites rather than piling up', () => {
+        expect(backupCredentialsFileName(BACKUP_ID)).toBe(
+            backupCredentialsFileName(BACKUP_ID),
+        )
+    })
+})
+
+describe('backupCredentialsFileAddressPrefix', () => {
+    test('reads back the prefix its own name carries', () => {
+        expect(
+            backupCredentialsFileAddressPrefix(
+                backupCredentialsFileName(BACKUP_ID),
+            ),
+        ).toBe('VQBGR')
+    })
+
+    test.each([
+        ['the legacy flat name', LEGACY_BACKUP_CREDENTIALS_FILE_NAME],
+        ['an unrelated file', 'notes.json'],
+        ['a lowercase prefix', 'pera-backup-vqbgr.json'],
+        // 0, 1, 8 and 9 are not in the base32 alphabet an address uses.
+        ['a prefix outside base32', 'pera-backup-V0BG1.json'],
+        ['a prefix of the wrong length', 'pera-backup-VQBG.json'],
+    ])('returns null for %s', (_, fileName) => {
+        expect(backupCredentialsFileAddressPrefix(fileName)).toBeNull()
+    })
+})
+
+describe('isBackupCredentialsFileName', () => {
+    test.each([
+        [backupCredentialsFileName(BACKUP_ID), true],
+        // Still listed, so a key saved before per-backup names stays restorable.
+        [LEGACY_BACKUP_CREDENTIALS_FILE_NAME, true],
+        ['pera-backup-VQBG.json', false],
+        ['screenshot.png', false],
+    ])('%s → %s', (fileName, expected) => {
+        expect(isBackupCredentialsFileName(fileName)).toBe(expected)
     })
 })
 
