@@ -11,12 +11,12 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { GoogleDriveNotConfiguredError } from '@perawallet/wallet-core-backup'
 import { Platform } from 'react-native'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { GoogleDriveNotConfiguredError } from '../errors'
 import { DRIVE_APPDATA_SCOPE } from '../googleDriveSession'
 import { saveToGoogleDrive } from '../saveToGoogleDrive'
 

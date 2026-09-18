@@ -10,12 +10,19 @@
  limitations under the License
  */
 
+import { InvalidCredentialsFileError } from '@perawallet/wallet-core-backup'
+import { pickTextFile } from '@utils/pickTextFile.web'
+
+import { MAX_FILE_BYTES, PICKABLE_MIME_TYPES } from './readFromDevice.shared'
 import type { ReadResult } from './types'
 
-// Never offered on web: the extension popup closes as soon as an OS file dialog
-// opens. The twin keeps expo-file-system out of the web bundle.
+// Never reached from the toolbar popup: getCredentialsFileReadSources drops
+// the device row there, because an OS file dialog closes the popup first.
 export const readFromDevice = async (): Promise<ReadResult> => {
-    throw new Error(
-        'Importing a file is not available in the browser extension',
+    const picked = await pickTextFile(
+        ['.json', ...PICKABLE_MIME_TYPES].join(','),
     )
+    if (!picked) return { status: 'cancelled' }
+    if (picked.size > MAX_FILE_BYTES) throw new InvalidCredentialsFileError()
+    return { status: 'read', contents: picked.contents }
 }

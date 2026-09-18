@@ -62,7 +62,6 @@ describe('useCredentialsFileSaveSources', () => {
     test.each([
         ['ios', ['device', 'icloud', 'googleDrive']],
         ['android', ['device', 'googleDrive']],
-        ['web', ['device']],
     ] as const)(
         'offers every %s destination when the flag is on',
         (os, expected) => {
@@ -75,7 +74,7 @@ describe('useCredentialsFileSaveSources', () => {
         },
     )
 
-    test.each(['ios', 'android', 'web'] as const)(
+    test.each(['ios', 'android'] as const)(
         'leaves only local storage on %s when the flag is off',
         os => {
             Platform.OS = os
@@ -118,7 +117,9 @@ describe('useCredentialsFileReadSources', () => {
         expect(result.current).toEqual(['device'])
     })
 
-    test('has nothing to offer on web, where the extension reads no file', () => {
+    // The extension resolves the `.web` twin of credentialsFileSources, which
+    // has its own spec; an unrecognised platform is offered nothing here.
+    test('offers nothing on a platform with no sources', () => {
         Platform.OS = 'web'
         mockGetBooleanValue.mockReturnValue(true)
 

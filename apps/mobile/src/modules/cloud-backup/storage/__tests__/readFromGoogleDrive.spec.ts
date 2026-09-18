@@ -11,11 +11,11 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { CredentialsFileNotFoundError } from '@perawallet/wallet-core-backup'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { CredentialsFileNotFoundError } from '../errors'
 import { readFromGoogleDrive } from '../readFromGoogleDrive'
 
 const { runOnGoogleDrive, readFile, signOutOfGoogleDrive } = vi.hoisted(() => ({

@@ -11,20 +11,10 @@
  */
 
 import { File } from 'expo-file-system'
+import { InvalidCredentialsFileError } from '@perawallet/wallet-core-backup'
 
-import { InvalidCredentialsFileError } from './errors'
+import { MAX_FILE_BYTES, PICKABLE_MIME_TYPES } from './readFromDevice.shared'
 import type { ReadResult } from './types'
-
-// File providers label a JSON file inconsistently; the parser rejects anything
-// that isn't a credentials file.
-const PICKABLE_MIME_TYPES = [
-    'application/json',
-    'text/plain',
-    'application/octet-stream',
-]
-// A real credentials file is a few hundred bytes; octet-stream admits any file,
-// so refuse one the provider reports as large before reading it.
-const MAX_FILE_BYTES = 16 * 1024
 
 export const readFromDevice = async (): Promise<ReadResult> => {
     const picked = await File.pickFileAsync({ mimeTypes: PICKABLE_MIME_TYPES })
