@@ -17,6 +17,7 @@ import { Decimal } from 'decimal.js'
 const mockGoBack = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
 const mockInvalidate = vi.fn()
 const mockExecuteSwap = vi.fn()
 const mockSwap = vi.hoisted(() => ({
@@ -87,7 +88,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
         errorToast: mockErrorToast,
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -211,6 +212,44 @@ describe('useCardConfirmSwapScreen', () => {
         expect(mockErrorToast).toHaveBeenCalledWith(
             'peraCard.add_funds.swap_error_title',
             'boom',
+        )
+    })
+
+    // F2: money already moved on chain for one leg of the swap — the user
+    // must be told that, not handed the generic failure copy.
+    it('tells the user part of the swap landed and stays on the screen', async () => {
+        mockSwap.quote = QUOTE
+        mockExecuteSwap.mockResolvedValue({
+            kind: 'partially-submitted',
+            message: '',
+        })
+        const { result } = renderHook(() => useCardConfirmSwapScreen())
+
+        act(() => result.current.handleConfirm())
+
+        await waitFor(() => expect(mockInfoToast).toHaveBeenCalled())
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.partially_submitted_title',
+            'swap.execution.partially_submitted_body',
+        )
+        expect(mockGoBack).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('surfaces the specific failure reason when a resume attempt stalls again', async () => {
+        mockSwap.quote = QUOTE
+        mockExecuteSwap.mockResolvedValue({
+            kind: 'partially-submitted',
+            message: 'still no connectivity',
+        })
+        const { result } = renderHook(() => useCardConfirmSwapScreen())
+
+        act(() => result.current.handleConfirm())
+
+        await waitFor(() => expect(mockInfoToast).toHaveBeenCalled())
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.partially_submitted_title',
+            'still no connectivity',
         )
     })
 })

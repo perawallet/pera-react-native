@@ -203,6 +203,15 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                     t('swap.execution.verifying_previous_title'),
                     t('swap.execution.verifying_previous_body'),
                 )
+            } else if (outcome.kind === 'partially-submitted') {
+                // Part of the swap already landed on chain. Leave the screen
+                // open: confirming again re-broadcasts only what did not go
+                // out, with no new signature and no double charge.
+                infoToast(
+                    t('swap.execution.partially_submitted_title'),
+                    outcome.message ||
+                        t('swap.execution.partially_submitted_body'),
+                )
             } else if (outcome.kind === 'error') {
                 errorToast(
                     outcome.title ?? t('peraCard.add_funds.swap_error_title'),

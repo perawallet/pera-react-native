@@ -127,4 +127,40 @@ describe('useCardAddFundsSwap', () => {
         // the screen do nothing at all.
         expect(outcome).toEqual({ kind: 'verifying' })
     })
+
+    it('reports a first partial submission with no specific message', async () => {
+        mockQuotes.allQuotes = [QUOTE]
+        mockStatus.value = 'idle'
+        mockExecute.mockResolvedValue({
+            kind: 'partially-submitted',
+            txIds: ['tx1'],
+            message: 'network dropped',
+        })
+
+        const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
+        const outcome = await result.current.executeSwap()
+
+        // Caller falls back to the reassuring generic body on a first
+        // partial; the specific failure reason is reserved for a resume
+        // attempt that itself stalls again.
+        expect(outcome).toEqual({ kind: 'partially-submitted', message: '' })
+    })
+
+    it('surfaces the classification-aware message when a resume attempt fails again', async () => {
+        mockQuotes.allQuotes = [QUOTE]
+        mockStatus.value = 'partially-submitted'
+        mockExecute.mockResolvedValue({
+            kind: 'partially-submitted',
+            txIds: ['tx1'],
+            message: 'still no connectivity',
+        })
+
+        const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
+        const outcome = await result.current.executeSwap()
+
+        expect(outcome).toEqual({
+            kind: 'partially-submitted',
+            message: 'still no connectivity',
+        })
+    })
 })

@@ -35,6 +35,13 @@ type CardAddFundsSwapOutcome =
     // An earlier attempt for this swap is still being verified — nothing was
     // re-signed or broadcast, and the user needs to be told why.
     | { kind: 'verifying' }
+    // At least one group of a multi-group swap landed before submission
+    // stopped; nothing needs re-signing and a second confirm re-broadcasts
+    // only what did not go out. Empty message means this is the first
+    // partial (caller falls back to the reassuring generic body); a
+    // non-empty one is the classification-aware reason a resume attempt
+    // itself failed again.
+    | { kind: 'partially-submitted'; message: string }
 
 type UseCardAddFundsSwapParams = {
     account: Nullable<WalletAccount>
@@ -100,6 +107,9 @@ export const useCardAddFundsSwap = ({
             if (!quote?.quoteIdStr) {
                 return { kind: 'error', message: '' }
             }
+            // Read before execute() runs: a resume attempt starts from the
+            // 'partially-submitted' status the previous attempt left behind.
+            const wasPartiallySubmitted = status === 'partially-submitted'
             const outcome = await execute(quote)
             if (outcome.kind === 'success') return { kind: 'success' }
             if (outcome.kind === 'cancelled') return { kind: 'cancelled' }
@@ -116,14 +126,17 @@ export const useCardAddFundsSwap = ({
                 return { kind: 'verifying' }
             }
             if (outcome.kind === 'partially-submitted') {
-                return { kind: 'error', message: '' }
+                return {
+                    kind: 'partially-submitted',
+                    message: wasPartiallySubmitted ? outcome.message : '',
+                }
             }
             return {
                 kind: 'error',
                 message: outcome.message,
                 title: outcome.title,
             }
-        }, [quote, execute])
+        }, [quote, execute, status])
 
     return { quote, rate, usdcOut, isQuoteFetching, isSwapping, executeSwap }
 }
