@@ -152,6 +152,24 @@ describe('shouldDehydrateQuery', () => {
         ).toBe(false)
     })
 
+    it('persists chain-derived modules and keeps DB-backed and PII ones off disk', () => {
+        for (const key of [
+            ['nfd', 'address', { address: 'ADDR1' }],
+            ['notifications', 'list', { address: 'ADDR1' }],
+            ['asa-inbox', 'summary', { address: 'ADDR1' }],
+            ['balance-impact-simulation', 'req-1', 'mainnet'],
+        ]) {
+            expect(shouldDehydrateQuery(asQuery(key, 'success'))).toBe(true)
+        }
+        for (const key of [
+            ['passkeys', 'list'],
+            ['onramp', 'history', { accountAddress: 'ADDR1' }],
+            ['swaps', 'history-infinite', { address: 'ADDR1' }],
+        ]) {
+            expect(shouldDehydrateQuery(asQuery(key, 'success'))).toBe(false)
+        }
+    })
+
     it('persists a module catalog sub-key without persisting its address-keyed siblings', () => {
         expect(
             shouldDehydrateQuery(

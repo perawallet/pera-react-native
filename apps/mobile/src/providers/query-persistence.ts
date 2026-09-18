@@ -31,29 +31,31 @@ export const PERSISTED_CACHE_BUSTER = 'prefix-allowlist'
  * prefix is classified here.
  */
 export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
-    // Address-linked, PII-carrying, secret-adjacent or worthless once stale.
-    // The DB-backed ones (accounts, assets, transactions) also have SQLite as
-    // their source of truth; blockchain carries raw indexer/algod bytes that
-    // crashed when round-tripped through disk.
+    // Two reasons to keep a module off disk. SQLite already holds it, so a
+    // second copy only drifts (accounts, assets, transactions; blockchain is
+    // raw indexer/algod bytes that crashed when round-tripped). Or it carries
+    // personal data with no public source behind it: card KYC, and the
+    // onramp/swap histories tied to a device and an account.
     accounts: 'never',
-    'asa-inbox': 'never',
     assets: 'never',
-    'balance-impact-simulation': 'never',
     blockchain: 'never',
     card: 'never',
-    multisig: 'never',
-    nfd: 'never',
-    notifications: 'never',
     onramp: 'never',
     passkeys: 'never',
-    'rekey-transaction-fee': 'never',
     swaps: 'never',
     transactions: 'never',
-    // Global, non-identifying content that is useful before the first fetch
-    // lands. None of these keys carry an address.
+    // Everything else is derived from the chain or public catalogs, so a copy
+    // on disk exposes nothing that isn't already public, and it is what lets
+    // the app render before the first fetch lands.
+    'asa-inbox': 'persist',
+    'balance-impact-simulation': 'persist',
     banners: 'persist',
     currencies: 'persist',
+    multisig: 'persist',
+    nfd: 'persist',
+    notifications: 'persist',
     projects: 'persist',
+    'rekey-transaction-fee': 'persist',
     staking: 'persist',
     // `onramp` and `swaps` are mixed: their history keys carry an address, but
     // their catalogs are the same global content as the block above. A
