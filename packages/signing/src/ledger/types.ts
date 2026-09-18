@@ -68,7 +68,9 @@ export type SubmissionFlow =
  */
 export type IntentKey =
     | { kind: 'rekey'; address: string }
-    | { kind: 'swap'; swapId: string }
+    // `group` distinguishes the groups of one multi-group swap, so a resumed
+    // attempt can tell which of them already went out.
+    | { kind: 'swap'; swapId: string; group?: number }
     | { kind: 'cosign'; signRequestId: string; swapId?: string }
 
 export type SubmissionAttempt = {

@@ -284,4 +284,24 @@ describe('submission ledger repository', () => {
         })
         expect(matches).toHaveLength(0)
     })
+
+    it('round-trips a swap intent key carrying a group index', async () => {
+        const id = await recordSubmissionAttempt({
+            db,
+            network: 'mainnet',
+            txIds: ['TX-A'],
+            flow: 'swap',
+            intentKey: { kind: 'swap', swapId: 'swap-1', group: 2 },
+            sender: 'SENDER',
+        })
+
+        const [row] = await getOpenSubmissionAttempts({ db, network: 'mainnet' })
+
+        expect(row?.id).toBe(id)
+        expect(row?.intentKey).toEqual({
+            kind: 'swap',
+            swapId: 'swap-1',
+            group: 2,
+        })
+    })
 })
