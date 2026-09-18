@@ -702,11 +702,18 @@
         },
         "turn_off": {
             "success": "Backup na nuvem desativado",
-            "error": "Não foi possível desativar o backup na nuvem. Tente novamente."
+            "error": "Não foi possível desativar o backup na nuvem. Tente novamente.",
+            "confirm_title": "Desativar o backup neste dispositivo?",
+            "confirm_body": "Este dispositivo deixará de sincronizar e suas credenciais de backup serão removidas dele. Seu backup permanece na nuvem e seus outros dispositivos continuam sincronizando. Para reconectar este dispositivo depois, tenha em mãos sua Passphrase e sua chave de criptografia.",
+            "confirm_button": "Desativar"
         },
         "turn_off_and_remove": {
             "success": "Backup na nuvem desativado e excluído",
-            "error": "Não foi possível excluir o backup na nuvem. Tente novamente."
+            "error": "Não foi possível excluir o backup na nuvem. Tente novamente.",
+            "confirm_title": "Excluir permanentemente o backup na nuvem?",
+            "confirm_body": "O backup na nuvem será desativado em todos os seus dispositivos, e as contas e os contatos que existem apenas no backup serão perdidos.",
+            "confirm_button": "Excluir backup",
+            "confirm_checkbox_label": "Entendo que meu backup será excluído permanentemente do servidor e que essa ação não pode ser desfeita."
         },
         "restore": {
             "sheet_title": "Restaurar/recuperar um backup",

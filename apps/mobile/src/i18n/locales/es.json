@@ -702,11 +702,18 @@
         },
         "turn_off": {
             "success": "Copia de seguridad en la nube desactivada",
-            "error": "No se pudo desactivar la copia de seguridad en la nube. Vuelve a intentarlo."
+            "error": "No se pudo desactivar la copia de seguridad en la nube. Vuelve a intentarlo.",
+            "confirm_title": "¿Desactivar la copia de seguridad en este dispositivo?",
+            "confirm_body": "Este dispositivo dejará de sincronizarse y se eliminarán de él tus credenciales de la copia de seguridad. Tu copia de seguridad se mantiene en la nube y tus otros dispositivos seguirán sincronizándose. Para volver a conectar este dispositivo más adelante, asegúrate de tener tu Passphrase y tu clave de cifrado.",
+            "confirm_button": "Desactivar"
         },
         "turn_off_and_remove": {
             "success": "Copia de seguridad en la nube desactivada y eliminada",
-            "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo."
+            "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo.",
+            "confirm_title": "¿Eliminar de forma permanente la copia de seguridad en la nube?",
+            "confirm_body": "La copia de seguridad en la nube se desactivará en todos tus dispositivos y las cuentas y los contactos que solo estén en la copia de seguridad se perderán.",
+            "confirm_button": "Eliminar la copia de seguridad",
+            "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
         "restore": {
             "sheet_title": "Restaurar/recuperar una copia de seguridad",

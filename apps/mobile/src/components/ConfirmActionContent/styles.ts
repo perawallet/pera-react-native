@@ -44,6 +44,10 @@ export const useStyles = makeStyles(
             padding: theme.spacing.xl,
             color: theme.colors.textGray,
         },
+        content: {
+            alignSelf: 'stretch',
+            paddingHorizontal: theme.spacing.lg,
+        },
         actions: {
             width: '100%',
             paddingHorizontal: theme.spacing.lg,

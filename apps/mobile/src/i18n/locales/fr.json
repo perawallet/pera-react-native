@@ -702,11 +702,18 @@
         },
         "turn_off": {
             "success": "Sauvegarde cloud désactivée",
-            "error": "Impossible de désactiver la sauvegarde cloud. Veuillez réessayer."
+            "error": "Impossible de désactiver la sauvegarde cloud. Veuillez réessayer.",
+            "confirm_title": "Désactiver la sauvegarde sur cet appareil ?",
+            "confirm_body": "Cet appareil ne sera plus synchronisé et vos identifiants de sauvegarde en seront supprimés. Votre sauvegarde reste dans le cloud et vos autres appareils continuent de se synchroniser. Pour reconnecter cet appareil plus tard, assurez-vous d’avoir votre Passphrase et votre clé de chiffrement.",
+            "confirm_button": "Désactiver"
         },
         "turn_off_and_remove": {
             "success": "Sauvegarde cloud désactivée et supprimée",
-            "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer."
+            "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer.",
+            "confirm_title": "Supprimer définitivement la sauvegarde cloud ?",
+            "confirm_body": "La sauvegarde cloud sera désactivée sur tous vos appareils et les comptes et contacts présents uniquement dans la sauvegarde seront perdus.",
+            "confirm_button": "Supprimer la sauvegarde",
+            "confirm_checkbox_label": "Je comprends que ma sauvegarde sera définitivement supprimée du serveur et que cette action est irréversible."
         },
         "restore": {
             "sheet_title": "Restaurer/récupérer une sauvegarde",

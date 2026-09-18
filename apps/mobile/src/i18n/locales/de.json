@@ -694,11 +694,18 @@
         },
         "turn_off": {
             "success": "Cloud-Backup deaktiviert",
-            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut."
+            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut.",
+            "confirm_title": "Backup auf diesem Gerät deaktivieren?",
+            "confirm_body": "Dieses Gerät wird nicht mehr synchronisiert und deine Backup-Zugangsdaten werden davon entfernt. Dein Backup bleibt in der Cloud und deine anderen Geräte synchronisieren weiter. Um dieses Gerät später wieder zu verbinden, stelle sicher, dass du deine Passphrase und deinen Verschlüsselungsschlüssel hast.",
+            "confirm_button": "Deaktivieren"
         },
         "turn_off_and_remove": {
             "success": "Cloud-Backup deaktiviert und gelöscht",
-            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut."
+            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut.",
+            "confirm_title": "Cloud-Backup endgültig löschen?",
+            "confirm_body": "Das Cloud-Backup wird auf all deinen Geräten deaktiviert, und Konten und Kontakte, die nur im Backup vorhanden sind, gehen verloren.",
+            "confirm_button": "Backup löschen",
+            "confirm_checkbox_label": "Ich verstehe, dass mein Backup endgültig vom Server gelöscht wird und das nicht rückgängig gemacht werden kann."
         },
         "restore": {
             "sheet_title": "Backup wiederherstellen/abrufen",
