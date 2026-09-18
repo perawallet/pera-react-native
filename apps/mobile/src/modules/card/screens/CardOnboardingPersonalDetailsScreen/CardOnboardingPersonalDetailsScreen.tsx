@@ -12,7 +12,13 @@
 
 import { Controller } from 'react-hook-form'
 import { formatDobInput } from '@perawallet/wallet-core-card'
-import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
+import {
+    PWButton,
+    PWInput,
+    PWScreen,
+    PWSkeleton,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
@@ -33,6 +39,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isDateOfBirthLocked,
         isNationalityLocked,
         isKycRequired,
+        isRecordLoading,
         handleVerifyIdentity,
         handleSelectNationality,
         selectedBirthCountry,
@@ -45,6 +52,21 @@ export const CardOnboardingPersonalDetailsScreen = () => {
     // the form is replaced rather than shown unsubmittable.
     if (isKycRequired) {
         return <CardKycRequiredView onVerify={handleVerifyIdentity} />
+    }
+
+    if (isRecordLoading) {
+        return (
+            <PWScreen testID='card-onboarding-personal-details-loading'>
+                <PWView style={styles.content}>
+                    <PWView style={styles.fields}>
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                        <PWSkeleton style={styles.fieldSkeleton} />
+                    </PWView>
+                </PWView>
+            </PWScreen>
+        )
     }
 
     return (

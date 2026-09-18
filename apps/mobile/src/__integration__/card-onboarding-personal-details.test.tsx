@@ -68,11 +68,13 @@ const renderFlow = () =>
         },
     )
 
-// Fill only the name + date fields, leaving nationality to the preselect.
-const fillNameAndDob = () => {
-    fireEvent.change(screen.getByTestId('card-onboarding-first-name-input'), {
-        target: { value: 'John' },
-    })
+// Fill only the name + date fields, leaving nationality to the preselect. The
+// form appears once the onboarding record has answered, so wait for it.
+const fillNameAndDob = async () => {
+    fireEvent.change(
+        await screen.findByTestId('card-onboarding-first-name-input'),
+        { target: { value: 'John' } },
+    )
     fireEvent.change(screen.getByTestId('card-onboarding-last-name-input'), {
         target: { value: 'Morgan' },
     })
@@ -84,7 +86,7 @@ const fillNameAndDob = () => {
 
 // Fill the name + date fields and pick the UK as nationality so the form validates.
 const fillFormAndPickNationality = async () => {
-    fillNameAndDob()
+    await fillNameAndDob()
 
     fireEvent.click(screen.getByTestId('card-onboarding-nationality-field'))
     await waitFor(() =>
@@ -186,7 +188,7 @@ describe('Flow: Card onboarding — personal details', () => {
 
         renderFlow()
         // No manual nationality pick — the residence country (GB) is preselected.
-        fillNameAndDob()
+        await fillNameAndDob()
 
         const confirm = screen.getByTestId(
             'card-onboarding-personal-details-confirm',
@@ -262,7 +264,7 @@ describe('Flow: Card onboarding — personal details', () => {
 
     it('Given an impossible date of birth, when the field is blurred, then the inline error shows', async () => {
         renderFlow()
-        const dob = screen.getByTestId('card-onboarding-dob-input')
+        const dob = await screen.findByTestId('card-onboarding-dob-input')
 
         // 31 Feb — masked into DD/MM/YYYY but rejected by the schema.
         fireEvent.change(dob, { target: { value: '31021990' } })
