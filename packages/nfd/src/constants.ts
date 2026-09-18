@@ -10,20 +10,14 @@
  limitations under the License
  */
 
-import { ONE_HOUR } from '@perawallet/wallet-core-config'
-
 /** Maximum addresses per bulk-read request. Conservative — tune if backend allows more. */
 export const NFD_BULK_CHUNK_SIZE = 50
 
 /** Max bulk-read requests in flight when a lookup spans several chunks. */
 export const NFD_BULK_CONCURRENCY = 2
 
-/**
- * How long a resolved name (positive or negative) is trusted, in the SQLite
- * cache and the address query alike. Names are sold and re-registered, and
- * they label send destinations, so the window stays short.
- */
-export const NFD_CACHE_TTL_MS = ONE_HOUR
+/** How long a cached row (positive or negative) is considered fresh. */
+export const NFD_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h
 
 /**
  * Quiet period before a batch dispatches. Debounced, so a scroll that keeps

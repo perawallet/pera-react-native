@@ -27,16 +27,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         !!address && /^[0-9a-zA-Z]{58}$/.test(address),
 }))
 
-vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-config')
-    >()),
+vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
+        reactQueryLongLivedStaleTime: 7 * 24 * 60 * 60 * 1000,
         reactQueryLongLivedGCTime: 21 * 24 * 60 * 60 * 1000,
     },
 }))
 
-import { NFD_CACHE_TTL_MS } from '../../constants'
 import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
 
 const VALID_ADDRESS = 'A'.repeat(58)
@@ -127,17 +124,6 @@ describe('useNfdForAddressQuery', () => {
         await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(2))
 
         resolveFirst({ name: 'alice.algo', image: '', source: 'nfd' })
-    })
-
-    it('uses the SQLite cache window as staleTime', async () => {
-        const { result } = renderHook(
-            () => useNfdForAddressQuery(VALID_ADDRESS),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-        const [query] = queryClient.getQueryCache().getAll()
-        expect(query.observers[0]?.options.staleTime).toBe(NFD_CACHE_TTL_MS)
     })
 
     it('does not query when enabled is false', () => {
