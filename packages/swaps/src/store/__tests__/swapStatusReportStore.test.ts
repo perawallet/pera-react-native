@@ -71,16 +71,48 @@ describe('useSwapStatusReportStore', () => {
         expect(useSwapStatusReportStore.getState().reports).toHaveLength(2)
     })
 
-    it('removes a report by swap and status', () => {
+    it('removes a report by swap, status and queuedAt', () => {
         const { enqueueReport, removeReport } =
             useSwapStatusReportStore.getState()
         enqueueReport({ swapId: 'swap-1', data: { status: 'in_progress' } })
         enqueueReport({ swapId: 'swap-2', data: { status: 'in_progress' } })
+        const [target] = useSwapStatusReportStore.getState().reports
 
-        removeReport('swap-1', 'in_progress')
+        removeReport('swap-1', 'in_progress', target!.queuedAt)
 
         expect(useSwapStatusReportStore.getState().reports).toMatchObject([
             { swapId: 'swap-2' },
         ])
+    })
+
+    it('does not remove a report that was re-enqueued with newer data after the removal was requested', () => {
+        // Simulates a flush in flight: it snapshots a report, the report is
+        // superseded by a newer enqueue before the flush's removeReport call
+        // for the old attempt lands. The old attempt must not delete the new.
+        // Fake timers give deterministic, distinct `queuedAt` values instead
+        // of relying on two Date.now() calls landing in different ms.
+        vi.useFakeTimers()
+        try {
+            const { enqueueReport, removeReport } =
+                useSwapStatusReportStore.getState()
+            vi.setSystemTime(1_000)
+            enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+            const staleQueuedAt =
+                useSwapStatusReportStore.getState().reports[0]!.queuedAt
+
+            vi.setSystemTime(2_000)
+            enqueueReport({
+                swapId: 'swap-1',
+                data: { status: 'failed', reason: 'blockchain_error' },
+            })
+
+            removeReport('swap-1', 'failed', staleQueuedAt)
+
+            const { reports } = useSwapStatusReportStore.getState()
+            expect(reports).toHaveLength(1)
+            expect(reports[0]?.data.reason).toBe('blockchain_error')
+        } finally {
+            vi.useRealTimers()
+        }
     })
 })

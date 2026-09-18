@@ -30,7 +30,7 @@ export type SwapStatusReportState = {
         swapId: string
         data: SwapStatusUpdateRequest
     }) => void
-    removeReport: (swapId: string, status: string) => void
+    removeReport: (swapId: string, status: string, queuedAt: number) => void
     resetState: () => void
 }
 
@@ -65,12 +65,16 @@ export const useSwapStatusReportStore: UseBoundStore<
                         { swapId, data, queuedAt: Date.now() },
                     ],
                 })),
-            removeReport: (swapId, status) =>
+            removeReport: (swapId, status, queuedAt) =>
                 set(state => ({
+                    // Matches on queuedAt too: a flush removes only the exact
+                    // entry it sent, never a newer, unsent one enqueued for
+                    // the same swap+status while that send was in flight.
                     reports: state.reports.filter(
                         report =>
                             report.swapId !== swapId ||
-                            report.data.status !== status,
+                            report.data.status !== status ||
+                            report.queuedAt !== queuedAt,
                     ),
                 })),
             resetState: () => set({ ...initialState }),

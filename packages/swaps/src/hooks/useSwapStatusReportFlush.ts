@@ -13,9 +13,15 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { onlineManager } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
 import { updateSwapStatus } from '../api/swaps/endpoints'
-import { useSwapStatusReportStore } from '../store/swapStatusReportStore'
+import {
+    useSwapStatusReportStore,
+    type PendingSwapStatusReport,
+} from '../store/swapStatusReportStore'
+
+const reportAttemptKey = (report: PendingSwapStatusReport): string =>
+    `${report.swapId}|${report.data.status}|${report.queuedAt}`
 
 /**
  * Drains the persisted swap-status report queue whenever the network is up.
@@ -33,18 +39,55 @@ export const useSwapStatusReportFlush = (): void => {
         if (isFlushingRef.current || !onlineManager.isOnline()) return
         isFlushingRef.current = true
         try {
-            for (const report of useSwapStatusReportStore.getState().reports) {
+            // Re-read the store on every iteration (not a single frozen
+            // snapshot) so a report enqueued mid-flush is delivered in this
+            // same pass rather than waiting for the next online edge. Each
+            // entry is attempted at most once per pass — tracked by identity
+            // (swapId+status+queuedAt) — so a send that fails this pass isn't
+            // retried until the pass loops back around via another trigger.
+            const attempted = new Set<string>()
+            for (;;) {
+                const report = useSwapStatusReportStore
+                    .getState()
+                    .reports.find(
+                        candidate => !attempted.has(reportAttemptKey(candidate)),
+                    )
+                if (!report) break
+                attempted.add(reportAttemptKey(report))
+
                 try {
                     await updateSwapStatus(report.swapId, report.data, network)
                 } catch (error) {
-                    // A transport failure keeps the report queued; the next
-                    // online edge retries it.
-                    logger.warn('swap status report flush failed', { error })
+                    if (isTransientNetworkError(error)) {
+                        // A transport failure keeps the report queued; the
+                        // next online edge retries it.
+                        logger.warn('swap status report flush failed', {
+                            error,
+                        })
+                        continue
+                    }
+                    // Non-transient (e.g. a 4xx): the backend will never
+                    // accept this payload, so retrying it forever would just
+                    // make it a permanent no-op. Drop it.
+                    logger.warn('swap status report dropped (non-retryable)', {
+                        error,
+                    })
+                    useSwapStatusReportStore
+                        .getState()
+                        .removeReport(
+                            report.swapId,
+                            report.data.status,
+                            report.queuedAt,
+                        )
                     continue
                 }
                 useSwapStatusReportStore
                     .getState()
-                    .removeReport(report.swapId, report.data.status)
+                    .removeReport(
+                        report.swapId,
+                        report.data.status,
+                        report.queuedAt,
+                    )
             }
         } finally {
             isFlushingRef.current = false
