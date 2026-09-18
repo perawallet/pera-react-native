@@ -71,34 +71,32 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     context.accounts.map(a => a.address),
                 )
 
-                // Calculate signable addresses
-                const signableAddresses = findSignableAddresses(
-                    transactions,
-                    accountAddresses,
-                )
+                // The machine already split the request into one group per
+                // authorizer, so gate on `group.signerAddress`; `tx.sender`
+                // misses ARC-0001 `signers` / `authAddr` overrides.
+                const isSignedByUs = accountAddresses.has(group.signerAddress)
 
-                // Calculate total fees
-                const totalFees = calculateTotalFees(
-                    transactions,
-                    signableAddresses,
-                )
+                const totalFees = isSignedByUs
+                    ? transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+                    : 0n
 
-                // Create transaction summaries
                 const transactionSummaries = transactions.map(tx =>
                     summarizeTransaction(tx),
                 )
 
-                // Detect warnings
-                const warnings = detectWarnings(transactions, signableAddresses)
+                const warnings = isSignedByUs
+                    ? detectWarnings(transactions)
+                    : []
 
-                // Calculate risk level
                 const riskLevel = calculateRiskLevel(warnings)
 
                 return {
                     totalFees,
                     transactionSummaries,
                     warnings,
-                    signableAddresses: Array.from(signableAddresses),
+                    signableAddresses: isSignedByUs
+                        ? [group.signerAddress]
+                        : [],
                     riskLevel,
                 }
             } catch (error) {
@@ -152,44 +150,6 @@ const createNonTransactionAnalysis = (
 }
 
 /**
- * Find addresses that need to sign (intersection of tx senders and user accounts)
- */
-const findSignableAddresses = (
-    transactions: PeraTransaction[],
-    accountAddresses: Set<string>,
-): Set<string> => {
-    const signableAddresses = new Set<string>()
-
-    for (const tx of transactions) {
-        const senderAddress = tx.sender.toString()
-        if (accountAddresses.has(senderAddress)) {
-            signableAddresses.add(senderAddress)
-        }
-    }
-
-    return signableAddresses
-}
-
-/**
- * Calculate total fees for transactions we're signing
- */
-const calculateTotalFees = (
-    transactions: PeraTransaction[],
-    signableAddresses: Set<string>,
-): bigint => {
-    let totalFees = 0n
-
-    for (const tx of transactions) {
-        const senderAddress = tx.sender.toString()
-        if (signableAddresses.has(senderAddress) && tx.fee) {
-            totalFees += tx.fee
-        }
-    }
-
-    return totalFees
-}
-
-/**
  * Create a human-readable summary of a transaction
  */
 const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
@@ -227,20 +187,10 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
 /**
  * Detect warnings from transactions
  */
-const detectWarnings = (
-    transactions: PeraTransaction[],
-    signableAddresses: Set<string>,
-): AnalysisWarning[] => {
+const detectWarnings = (transactions: PeraTransaction[]): AnalysisWarning[] => {
     const warnings: AnalysisWarning[] = []
 
     for (const tx of transactions) {
-        const senderAddress = tx.sender.toString()
-
-        // Only check transactions we're signing
-        if (!signableAddresses.has(senderAddress)) {
-            continue
-        }
-
         // Close fields live under the type-specific payload (algosdk v3 /
         // algokit v10), never at the top level — only `rekeyTo` is a top-level
         // header field. Reading them off `tx` directly silently never matches,

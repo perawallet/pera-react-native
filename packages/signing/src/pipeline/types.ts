@@ -225,7 +225,10 @@ export interface SignableGroup {
 
     source: SourceMetadata
 
-    /** Resolved from transaction senders or the data signer field. */
+    /**
+     * The authorizer: an ARC-0001 `signers` / `authAddr` override when the
+     * request carries one, else the transaction sender or data signer field.
+     */
     signerAddress: string
 
     /**
