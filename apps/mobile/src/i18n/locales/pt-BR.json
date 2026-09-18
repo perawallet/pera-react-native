@@ -3935,6 +3935,13 @@
         "ZW": "Zimbábue"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Fraca",
+            "fair": "Razoável",
+            "good": "Boa",
+            "strong": "Forte",
+            "error_too_weak": "A senha é muito fácil de adivinhar. Tente uma frase mais longa com palavras incomuns."
+        },
         "create_password": {
             "title": "Criar uma senha",
             "description": "Defina uma senha para proteger sua extensão da Pera Wallet. Você precisará dela cada vez que abrir a extensão.",

@@ -3899,6 +3899,13 @@
         "ZW": "Simbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Schwach",
+            "fair": "Mäßig",
+            "good": "Gut",
+            "strong": "Stark",
+            "error_too_weak": "Das Passwort ist zu leicht zu erraten. Versuche eine längere Phrase mit ungewöhnlichen Wörtern."
+        },
         "create_password": {
             "title": "Passwort erstellen",
             "description": "Lege ein Passwort fest, um deine Pera Wallet-Erweiterung zu schützen. Du benötigst es jedes Mal, wenn du die Erweiterung öffnest.",
