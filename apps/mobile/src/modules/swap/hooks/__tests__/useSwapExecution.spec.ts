@@ -18,9 +18,11 @@ import {
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
 import { requestSwapProposal } from '../swapExecutionHelpers'
-import type {
-    PrepareTransactionsResult,
-    SwapQuote,
+import {
+    useSwapResumeStore,
+    useSwapStatusReportStore,
+    type PrepareTransactionsResult,
+    type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import type {
     PeraSignedTransaction,
@@ -37,6 +39,7 @@ import {
 const mockAddSignRequest = vi.fn()
 const mockSubmitAndAutoRefreshOptions = vi.fn()
 const mockAccountInformation = vi.fn()
+const mockAlgodStatus = vi.fn()
 const mockT = vi.fn((key: string) => key)
 const mockDecodeTransaction = vi.fn()
 const mockDecodeSignedTransaction = vi.fn()
@@ -139,6 +142,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
                     accountInformation: (address: string) => ({
                         do: () => mockAccountInformation(address),
                     }),
+                    status: () => ({ do: () => mockAlgodStatus() }),
                 },
             },
         }),
@@ -170,34 +174,54 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
 // `validateSwapGroupAgainstQuote` is a controllable collaborator here — its real
 // behavior is covered by the swaps package's own unit tests. Default: passes
 // (no-op); a test opts into a rejection via `mockValidate.mockImplementationOnce`.
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    // Mirrors the real freshness contract (canonical spec:
-    // packages/swaps quoteFreshness.spec.ts) — unstamped means stale.
-    isQuoteFresh: (quote: { fetchedAt?: number }) =>
-        quote.fetchedAt !== undefined && Date.now() - quote.fetchedAt <= 60_000,
-    usePrepareTransactionsMutation: () => ({
-        mutateAsync: mockPrepareTransactions,
-    }),
-    useUpdateSwapStatusMutation: () => ({
-        mutateAsync: mockUpdateSwapStatus,
-    }),
-    validateSwapGroupAgainstQuote: mockValidate,
-    computeSwapAlgoShortfall: mockComputeShortfall,
-    useSwapHandoffStore: (
-        selector: (state: {
-            handoffs: Record<string, unknown>
-            registerHandoff: typeof mockRegisterHandoff
-            removeHandoff: () => void
-            resetState: () => void
-        }) => unknown,
-    ) =>
-        selector({
-            handoffs: {},
-            registerHandoff: mockRegisterHandoff,
-            removeHandoff: vi.fn(),
-            resetState: vi.fn(),
+// The barrel is mocked wholesale (see the signing note above), but the submit
+// orchestrator and the two stores this hook drives are the real collaborators
+// under test here — reached by source path, since importing the package index
+// would drag its whole api/hooks graph into this suite.
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { submitSwapGroups } = await vi.importActual<
+        typeof import('../../../../../../../packages/swaps/src/utils/submitSwapGroups')
+    >('../../../../../../../packages/swaps/src/utils/submitSwapGroups')
+    const { useSwapResumeStore: resumeStore } = await vi.importActual<
+        typeof import('../../../../../../../packages/swaps/src/store/swapResumeStore')
+    >('../../../../../../../packages/swaps/src/store/swapResumeStore')
+    const { useSwapStatusReportStore: reportStore } = await vi.importActual<
+        typeof import('../../../../../../../packages/swaps/src/store/swapStatusReportStore')
+    >('../../../../../../../packages/swaps/src/store/swapStatusReportStore')
+
+    return {
+        submitSwapGroups,
+        useSwapResumeStore: resumeStore,
+        useSwapStatusReportStore: reportStore,
+        // Mirrors the real freshness contract (canonical spec:
+        // packages/swaps quoteFreshness.spec.ts) — unstamped means stale.
+        isQuoteFresh: (quote: { fetchedAt?: number }) =>
+            quote.fetchedAt !== undefined &&
+            Date.now() - quote.fetchedAt <= 60_000,
+        usePrepareTransactionsMutation: () => ({
+            mutateAsync: mockPrepareTransactions,
         }),
-}))
+        useUpdateSwapStatusMutation: () => ({
+            mutateAsync: mockUpdateSwapStatus,
+        }),
+        validateSwapGroupAgainstQuote: mockValidate,
+        computeSwapAlgoShortfall: mockComputeShortfall,
+        useSwapHandoffStore: (
+            selector: (state: {
+                handoffs: Record<string, unknown>
+                registerHandoff: typeof mockRegisterHandoff
+                removeHandoff: () => void
+                resetState: () => void
+            }) => unknown,
+        ) =>
+            selector({
+                handoffs: {},
+                registerHandoff: mockRegisterHandoff,
+                removeHandoff: vi.fn(),
+                resetState: vi.fn(),
+            }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => mockUseSelectedAccount(),
@@ -300,9 +324,9 @@ const standardAccountRekeyedToQuantum: WalletAccount = {
     rekeyAddress: quantumAccount.address,
 }
 
-const makeSignedTxn = (id: string): PeraSignedTransaction =>
+const makeSignedTxn = (id: string, lastValid = 2000): PeraSignedTransaction =>
     ({
-        txn: { txID: () => id },
+        txn: { txID: () => id, lastValid: BigInt(lastValid) },
         sig: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 
@@ -335,6 +359,8 @@ const freezeHoldings = (...frozenIds: string[]) =>
     mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
         Promise.resolve(frozenIds.includes(assetId)),
     )
+
+const queuedReports = () => useSwapStatusReportStore.getState().reports
 
 describe('useSwapExecution', () => {
     beforeEach(() => {
@@ -397,6 +423,15 @@ describe('useSwapExecution', () => {
             assets: [],
         })
         mockComputeShortfall.mockReturnValue(null)
+
+        // Well inside the 2000-round window makeSignedTxn stamps, so a
+        // resume record is live unless a test says otherwise.
+        mockAlgodStatus.mockResolvedValue({ lastRound: 100n })
+
+        // Both stores outlive a render, so a leaked resume record or an
+        // undelivered report would silently change the next test's flow.
+        useSwapResumeStore.getState().resetState()
+        useSwapStatusReportStore.getState().resetState()
     })
 
     it('starts with idle status', () => {
@@ -442,13 +477,14 @@ describe('useSwapExecution', () => {
         expect(request.groupContext).toHaveLength(2)
 
         expect(mockSendRawTransaction).toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({
-                status: 'in_progress',
-                swap_version: 'v2',
-            }),
-        })
+        // The backend report is queued for the flush hook, never awaited
+        // here — a landed swap must not wait on a PATCH.
+        expect(queuedReports()).toMatchObject([
+            {
+                swapId: '12345',
+                data: { status: 'in_progress', swap_version: 'v2' },
+            },
+        ])
     })
 
     it('merges pre-signed and user-signed txns in original order within a group', async () => {
@@ -671,7 +707,7 @@ describe('useSwapExecution', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockSendRawTransaction).not.toHaveBeenCalled()
         expect(mockSubmitAndAutoRefreshOptions).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(queuedReports()).toEqual([])
     })
 
     it('proceeds once the previous attempt resolved', async () => {
@@ -692,12 +728,16 @@ describe('useSwapExecution', () => {
         // The submit call carries the ledger metadata for this intent.
         expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith({
             flow: 'swap',
-            intentKey: { kind: 'swap', swapId: 'SWAP1' },
+            // The group index keys each group's ledger row separately, so a
+            // multi-group swap can be resumed group by group.
+            intentKey: { kind: 'swap', swapId: 'SWAP1', group: 0 },
             sender: 'SWAPPER',
         })
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         expect(mockSendRawTransaction).toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalled()
+        expect(queuedReports()).toMatchObject([
+            { swapId: 'SWAP1', data: { status: 'in_progress' } },
+        ])
     })
 
     it('refuses a re-quoted retry whose swapId no longer matches the open row', async () => {
@@ -888,7 +928,7 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('error')
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
         // No swap exists yet, so there is nothing to report to the backend.
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(queuedReports()).toEqual([])
     })
 
     it('feeds fresh chain state to the shortfall check and reserves the opt-in MBR when the receive asset is not held', async () => {
@@ -1073,7 +1113,7 @@ describe('useSwapExecution', () => {
         // Failed fast: never reached signing, and (a prepare-phase failure)
         // never reported anything to the backend.
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(queuedReports()).toEqual([])
     })
 
     it('treats user rejection as a non-fatal cancellation (no failure report)', async () => {
@@ -1094,7 +1134,7 @@ describe('useSwapExecution', () => {
         )
 
         // Backend should NOT be told about a user-initiated cancel.
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(queuedReports()).toEqual([])
     })
 
     it('classifies an on-device Ledger reject arriving via the error callback as a cancellation', async () => {
@@ -1117,7 +1157,7 @@ describe('useSwapExecution', () => {
         })
 
         expect(outcome).toEqual({ kind: 'cancelled' })
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+        expect(queuedReports()).toEqual([])
     })
 
     it('reports failure to backend when the pipeline errors', async () => {
@@ -1144,13 +1184,12 @@ describe('useSwapExecution', () => {
         expect(result.current.error?.message).toBe('swap.execution.error_body')
         expect(result.current.error?.message).not.toContain('Pipeline boom')
 
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({
-                status: 'failed',
-                reason: 'blockchain_error',
-            }),
-        })
+        expect(queuedReports()).toMatchObject([
+            {
+                swapId: '12345',
+                data: { status: 'failed', reason: 'blockchain_error' },
+            },
+        ])
     })
 
     it('rejects a quantum swap on the backend fee contract, not on the signing layer', async () => {
@@ -1189,13 +1228,12 @@ describe('useSwapExecution', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
 
         // Not a user cancellation, so the backend must still be told.
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({
-                status: 'failed',
-                reason: 'blockchain_error',
-            }),
-        })
+        expect(queuedReports()).toMatchObject([
+            {
+                swapId: '12345',
+                data: { status: 'failed', reason: 'blockchain_error' },
+            },
+        ])
     })
 
     it('rejects a swap for a standard account rekeyed to a quantum auth account', async () => {
@@ -1249,11 +1287,9 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('success')
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         // Success path: the backend must never receive a failure report.
-        expect(mockUpdateSwapStatus).not.toHaveBeenCalledWith(
-            expect.objectContaining({
-                data: expect.objectContaining({ status: 'failed' }),
-            }),
-        )
+        expect(
+            queuedReports().some(report => report.data.status === 'failed'),
+        ).toBe(false)
     })
 
     it('signs and submits for a rekeyed-to-quantum sender when the quantum-swap flag is on', async () => {
@@ -1370,10 +1406,9 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('submission')
 
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
-            swapId: '12345',
-            data: expect.objectContaining({ status: 'failed' }),
-        })
+        expect(queuedReports()).toMatchObject([
+            { swapId: '12345', data: { status: 'failed' } },
+        ])
     })
 
     it('reports an unverified submission as status-unknown rather than a node rejection', async () => {
@@ -1412,24 +1447,16 @@ describe('useSwapExecution', () => {
                 'errors.submission.unknown_outcome.title',
             )
         }
-    })
-
-    it('still succeeds if status update fails (non-fatal)', async () => {
-        mockUpdateSwapStatus.mockRejectedValue(
-            new Error('Status update failed'),
-        )
-
-        const { result } = renderHook(() => useSwapExecution())
-
-        let outcome: Optional<SwapExecutionOutcome>
-        await act(async () => {
-            outcome = await result.current.execute(
-                makeQuote('quote-status-fail'),
-            )
-        })
-
-        expect(outcome).toEqual({ kind: 'success' })
-        expect(result.current.status).toBe('success')
+        // The bytes may well be confirming, so the queued report carries them
+        // as progress rather than claiming the swap failed.
+        expect(queuedReports()).toMatchObject([
+            {
+                data: {
+                    status: 'in_progress',
+                    submitted_transaction_ids: ['TXID'],
+                },
+            },
+        ])
     })
 
     it('resets state', async () => {
@@ -1491,11 +1518,7 @@ describe('useSwapExecution', () => {
 
         expect(outcome?.kind).toBe('error')
         expect(mockAddSignRequest).not.toHaveBeenCalled()
-        expect(mockUpdateSwapStatus).toHaveBeenCalledWith(
-            expect.objectContaining({
-                data: expect.objectContaining({ status: 'failed' }),
-            }),
-        )
+        expect(queuedReports()).toMatchObject([{ data: { status: 'failed' } }])
     })
 
     describe('shared-account (multisig) swaps', () => {
@@ -1643,6 +1666,370 @@ describe('useSwapExecution', () => {
             })
             expect(mockAddSignRequest).not.toHaveBeenCalled()
             expect(mockRegisterHandoff).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('multi-group partial submission', () => {
+        const twoGroupPrepare = () =>
+            makePrepareResult({
+                swapIdStr: 'swap-1',
+                transactionGroups: [
+                    { purpose: 'opt-in', transactions: ['ZzE='] }, // 'g1'
+                    { purpose: 'swap', transactions: ['ZzI='] }, // 'g2'
+                ],
+            })
+
+        const submissionError = async (
+            txIds: string[],
+            classification: string,
+        ): Promise<Error> => {
+            const { SubmissionError } =
+                await import('@perawallet/wallet-core-signing')
+            return new (SubmissionError as unknown as new (
+                txIds: string[],
+                classification: string,
+                algodError: unknown,
+            ) => Error)(txIds, classification, new Error('node rejected'))
+        }
+
+        /**
+         * Writes a resume record straight into the store, so the guards that
+         * gate the resume path can be exercised one field at a time.
+         */
+        const seedResume = (
+            quoteId: string,
+            overrides: {
+                network?: string
+                sender?: string
+                lastValidByGroup?: number[]
+            } = {},
+        ) => {
+            useSwapResumeStore.getState().recordResume({
+                quoteId,
+                swapId: 'swap-1',
+                network: 'mainnet',
+                sender: 'SWAPPER',
+                groups: [[makeSignedTxn('a')], [makeSignedTxn('b')]],
+                groupStates: [
+                    { status: 'landed', txIds: ['group-1-id'] },
+                    { status: 'pending', txIds: [] },
+                ],
+                lastValidByGroup: [2000, 2000],
+                ...overrides,
+            })
+        }
+
+        /** Group 1 lands, group 2 is rejected outright by the node. */
+        const arrangeSecondGroupRejected = async (
+            signed: PeraSignedTransaction[],
+        ) => {
+            mockPrepareTransactions.mockResolvedValue(twoGroupPrepare())
+            autoApproveWith(signed)
+            mockSendRawTransaction
+                .mockResolvedValueOnce({ txid: 'group-1-id' })
+                .mockRejectedValueOnce(
+                    await submissionError(['group-2-id'], 'rejected-by-node'),
+                )
+        }
+
+        it('reports a partial outcome when a later group fails after an earlier one landed', async () => {
+            await arrangeSecondGroupRejected([
+                makeSignedTxn('a'),
+                makeSignedTxn('b'),
+            ])
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(makeQuote('quote-part'))
+            })
+
+            expect(outcome).toEqual({
+                kind: 'partially-submitted',
+                txIds: ['group-1-id'],
+                message: 'errors.algod.unknown_node_error.body',
+            })
+            expect(result.current.status).toBe('partially-submitted')
+        })
+
+        it('queues an in_progress report carrying the landed txIds on a partial failure', async () => {
+            await arrangeSecondGroupRejected([
+                makeSignedTxn('a'),
+                makeSignedTxn('b'),
+            ])
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(makeQuote('quote-part-report'))
+            })
+
+            const { reports } = useSwapStatusReportStore.getState()
+            expect(reports).toHaveLength(1)
+            expect(reports[0]).toMatchObject({
+                swapId: 'swap-1',
+                data: {
+                    status: 'in_progress',
+                    submitted_transaction_ids: ['group-1-id'],
+                },
+            })
+            // A swap with transactions on chain has not failed.
+            expect(
+                reports.some(report => report.data.status === 'failed'),
+            ).toBe(false)
+        })
+
+        it('still reports a clean failure when the first group never broadcast', async () => {
+            mockPrepareTransactions.mockResolvedValue(twoGroupPrepare())
+            autoApproveWith([makeSignedTxn('a'), makeSignedTxn('b')])
+            mockSendRawTransaction.mockRejectedValue(
+                await submissionError([], 'rejected-by-node'),
+            )
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(makeQuote('quote-dead'))
+            })
+
+            expect(outcome).toMatchObject({
+                kind: 'error',
+                phase: 'submission',
+            })
+            const { reports } = useSwapStatusReportStore.getState()
+            expect(reports).toHaveLength(1)
+            expect(reports[0]).toMatchObject({
+                swapId: 'swap-1',
+                data: { status: 'failed', reason: 'blockchain_error' },
+            })
+        })
+
+        it('re-broadcasts only the un-landed group on the next confirm', async () => {
+            const signedGroup2 = makeSignedTxn('b')
+            await arrangeSecondGroupRejected([makeSignedTxn('a'), signedGroup2])
+
+            const quote = makeQuote('quote-resume')
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+            expect(result.current.status).toBe('partially-submitted')
+
+            mockPrepareTransactions.mockClear()
+            mockAddSignRequest.mockClear()
+            mockEncodeSignedTransactions.mockClear()
+            mockSendRawTransaction.mockReset()
+            mockSendRawTransaction.mockResolvedValue({ txid: 'group-2-id' })
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(quote)
+            })
+
+            expect(outcome).toEqual({ kind: 'success' })
+            expect(mockPrepareTransactions).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockSendRawTransaction).toHaveBeenCalledTimes(1)
+            // The same signed bytes as the first attempt: no rebuild, so the
+            // node sees the txid it already knows.
+            expect(mockEncodeSignedTransactions).toHaveBeenCalledWith([
+                signedGroup2,
+            ])
+        })
+
+        it('skips the rebuild guard while resuming', async () => {
+            await arrangeSecondGroupRejected([
+                makeSignedTxn('a'),
+                makeSignedTxn('b'),
+            ])
+
+            const quote = makeQuote('quote-resume-guard')
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+
+            // The only open row is this swap's own first attempt — refusing
+            // on it would strand the un-landed group forever.
+            mockGetOpenSubmissionAttempts.mockResolvedValue([
+                { id: 'open-row' },
+            ])
+            mockGetOpenSubmissionAttempts.mockClear()
+            mockSendRawTransaction.mockReset()
+            mockSendRawTransaction.mockResolvedValue({ txid: 'group-2-id' })
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(quote)
+            })
+
+            expect(outcome).toEqual({ kind: 'success' })
+            expect(result.current.status).toBe('success')
+            // Not merely "it succeeded": the guard was never consulted.
+            expect(mockGetOpenSubmissionAttempts).not.toHaveBeenCalled()
+        })
+
+        it('clears the resume record once every group has landed', async () => {
+            await arrangeSecondGroupRejected([
+                makeSignedTxn('a'),
+                makeSignedTxn('b'),
+            ])
+
+            const quote = makeQuote('quote-resume-clear')
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+            expect(
+                useSwapResumeStore.getState().getResume('quote-resume-clear'),
+            ).toBeDefined()
+
+            mockSendRawTransaction.mockReset()
+            mockSendRawTransaction.mockResolvedValue({ txid: 'group-2-id' })
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+
+            expect(
+                useSwapResumeStore.getState().getResume('quote-resume-clear'),
+            ).toBeUndefined()
+        })
+
+        it('surfaces the error when a re-broadcast fails again', async () => {
+            await arrangeSecondGroupRejected([
+                makeSignedTxn('a'),
+                makeSignedTxn('b'),
+            ])
+
+            const quote = makeQuote('quote-resume-refail')
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+
+            mockSendRawTransaction.mockReset()
+            mockSendRawTransaction.mockRejectedValue(
+                await submissionError(['group-2-id'], 'rejected-by-node'),
+            )
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(quote)
+            })
+
+            // Without the error the second attempt is indistinguishable from
+            // the first: same txIds, same status, no sign anything went wrong.
+            expect(result.current.error).toEqual({
+                phase: 'submission',
+                message: 'errors.algod.unknown_node_error.body',
+            })
+            expect(outcome).toEqual({
+                kind: 'partially-submitted',
+                txIds: ['group-1-id'],
+                message: 'errors.algod.unknown_node_error.body',
+            })
+        })
+
+        it('treats a run still holding an unknown group as unverified, not a success', async () => {
+            mockPrepareTransactions.mockResolvedValue(twoGroupPrepare())
+            autoApproveWith([makeSignedTxn('a'), makeSignedTxn('b')])
+            // Group 1's outcome is unknown: do not resubmit it, but never
+            // call the swap done on its behalf either.
+            mockSendRawTransaction.mockRejectedValueOnce(
+                await submissionError(['unverified-1'], 'unknown-outcome'),
+            )
+
+            const quote = makeQuote('quote-unknown-resume')
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(quote)
+            })
+            expect(result.current.status).toBe('partially-submitted')
+
+            mockSendRawTransaction.mockReset()
+            mockSendRawTransaction.mockResolvedValue({ txid: 'group-2-id' })
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(quote)
+            })
+
+            expect(outcome).toMatchObject({
+                kind: 'error',
+                phase: 'submission',
+                title: 'errors.submission.unknown_outcome.title',
+                message: 'errors.submission.unknown_outcome.body',
+            })
+            expect(result.current.status).toBe('error')
+            // Both groups' ids still go out, since either may be on chain.
+            expect(queuedReports()).toMatchObject([
+                {
+                    data: {
+                        status: 'in_progress',
+                        submitted_transaction_ids: [
+                            'unverified-1',
+                            'group-2-id',
+                        ],
+                    },
+                },
+            ])
+        })
+
+        it('re-prepares instead of resuming once the validity window has passed', async () => {
+            seedResume('quote-expired', { lastValidByGroup: [2000, 2000] })
+            mockAlgodStatus.mockResolvedValue({ lastRound: 2001n })
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(
+                    makeQuote('quote-expired'),
+                )
+            })
+
+            // Those bytes can never land, so re-signing is correct rather
+            // than a double-spend risk.
+            expect(mockPrepareTransactions).toHaveBeenCalled()
+            expect(outcome).toEqual({ kind: 'success' })
+            expect(
+                useSwapResumeStore.getState().getResume('quote-expired'),
+            ).toBeUndefined()
+        })
+
+        it('re-prepares instead of resuming after a network switch', async () => {
+            seedResume('quote-other-network', { network: 'testnet' })
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(makeQuote('quote-other-network'))
+            })
+
+            // One network's signed bytes must never reach another's algod.
+            expect(mockPrepareTransactions).toHaveBeenCalled()
+        })
+
+        it('re-prepares instead of resuming after an account switch', async () => {
+            seedResume('quote-other-sender', { sender: 'SOMEONE_ELSE' })
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(makeQuote('quote-other-sender'))
+            })
+
+            // Broadcasting A's bytes would stamp the ledger row with B's
+            // address, corrupting the sender-wide rebuild guard both ways.
+            expect(mockPrepareTransactions).toHaveBeenCalled()
         })
     })
 })

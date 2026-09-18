@@ -3265,7 +3265,9 @@
             "quantum_fee_unsupported": "Quantum accounts can't swap yet. The swap fee is set by our servers and doesn't cover the higher fee a quantum signature needs.",
             "quantum_multisig_unsupported": "Quantum accounts can't swap from a shared account. Quantum keys can't take part in multisignature signing.",
             "verifying_previous_title": "Verifying previous attempt",
-            "verifying_previous_body": "Your previous swap attempt is still being verified. Try again once it resolves."
+            "verifying_previous_body": "Your previous swap attempt is still being verified. Try again once it resolves.",
+            "partially_submitted_title": "Swap partly processed",
+            "partially_submitted_body": "Part of this swap is already on the blockchain. Confirm again to finish the rest — you won't be charged twice."
         },
         "signing": {
             "source_name": "Swap",

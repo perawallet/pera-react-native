@@ -38,12 +38,16 @@ import {
 import {
     computeSwapAlgoShortfall,
     isQuoteFresh,
+    submitSwapGroups,
     usePrepareTransactionsMutation,
-    useUpdateSwapStatusMutation,
     useSwapHandoffStore,
+    useSwapResumeStore,
+    useSwapStatusReportStore,
     validateSwapGroupAgainstQuote,
     type PrepareTransactionsResult,
+    type SwapGroupState,
     type SwapQuote,
+    type SwapResumeRecord,
 } from '@perawallet/wallet-core-swaps'
 import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import {
@@ -69,14 +73,28 @@ import {
     requestSwapSignatures,
     requestSwapProposal,
     reportSwapFailure,
+    reportSwapProgress,
 } from './swapExecutionHelpers'
+
+/**
+ * A group can only land while every transaction in it is inside its own
+ * validity window, so the earliest `lastValid` is the group's deadline.
+ */
+const groupDeadline = (group: PeraSignedTransaction[]): number =>
+    group.reduce(
+        (earliest, signed) =>
+            Math.min(earliest, Number(signed.txn.lastValid ?? 0)),
+        Number.MAX_SAFE_INTEGER,
+    )
 
 export type SwapExecutionStatus =
     | 'idle'
     | 'preparing'
     | 'signing'
     | 'submitting'
-    | 'updating-status'
+    // Some groups of a multi-group swap are on chain and the rest are still
+    // signed and re-broadcastable; the next confirm resumes them.
+    | 'partially-submitted'
     | 'success'
     // Shared-account swap: proposed to the backend, waiting for the co-signer.
     // The cosign resolver finishes submission asynchronously.
@@ -102,6 +120,11 @@ export type SwapExecutionError = {
 // re-rendered yet at that point, so reading those fields would be stale.
 export type SwapExecutionOutcome =
     | { kind: 'success' }
+    // At least one group landed before submission stopped. Nothing needs
+    // re-signing — confirming again re-broadcasts only what did not go out.
+    // `message` is what stopped it, so a second failed attempt is
+    // distinguishable from the first.
+    | { kind: 'partially-submitted'; txIds: string[]; message: string }
     | { kind: 'cancelled' }
     // Shared-account swap proposed; co-signer must approve before it submits.
     | { kind: 'pending-cosign' }
@@ -165,7 +188,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
         usePrepareTransactionsMutation()
-    const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
     const cancelRequestedRef = useRef(false)
 
     const execute = useCallback(
@@ -180,6 +202,182 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
+            }
+
+            const { enqueueReport } = useSwapStatusReportStore.getState()
+            const { recordResume, getResume, clearResume } =
+                useSwapResumeStore.getState()
+            const swapSender = account?.address ?? quote.swapperAddress
+
+            const submitPhase = async (
+                allSignedGroups: PeraSignedTransaction[][],
+                swapIdStr: Optional<string>,
+                resume?: SwapGroupState[],
+            ): Promise<SwapExecutionOutcome> => {
+                setStatus('submitting')
+                const submission = await submitSwapGroups({
+                    groups: allSignedGroups,
+                    swapId: swapIdStr,
+                    resume,
+                    isEmptyGroup: group => group.length === 0,
+                    submitGroup: (signedGroup, { intentKey }) =>
+                        submitAndAutoRefresh(
+                            algorandClient,
+                            encodeSignedTransactions,
+                            signedGroup,
+                            {
+                                flow: 'swap',
+                                intentKey,
+                                sender: swapSender,
+                            },
+                        ),
+                })
+
+                if (submission.kind === 'failed') {
+                    const copy = resolveErrorCopy(
+                        submission.error,
+                        t,
+                        undefined,
+                        getMessage,
+                    )
+                    setError({ phase: 'submission', message: copy.body })
+                    setStatus('error')
+                    clearResume(quoteIdStr)
+                    reportSwapFailure(enqueueReport, swapIdStr)
+                    return {
+                        kind: 'error',
+                        phase: 'submission',
+                        message: copy.body,
+                        title: copy.title,
+                    }
+                }
+
+                setTxIds(submission.txIds)
+                reportSwapProgress(enqueueReport, swapIdStr, submission.txIds)
+
+                if (
+                    submission.kind === 'partial' &&
+                    submission.groupStates.some(
+                        state => state.status === 'pending',
+                    )
+                ) {
+                    // The un-landed groups are still signed: keep their bytes
+                    // so the next confirm re-broadcasts the same txids rather
+                    // than rebuilding.
+                    recordResume({
+                        quoteId: quoteIdStr,
+                        swapId: swapIdStr,
+                        network,
+                        sender: swapSender,
+                        groups: allSignedGroups,
+                        groupStates: submission.groupStates,
+                        lastValidByGroup: allSignedGroups.map(groupDeadline),
+                    })
+                    const copy = resolveErrorCopy(
+                        submission.error,
+                        t,
+                        undefined,
+                        getMessage,
+                    )
+                    setError({ phase: 'submission', message: copy.body })
+                    setStatus('partially-submitted')
+                    return {
+                        kind: 'partially-submitted',
+                        txIds: submission.txIds,
+                        message: copy.body,
+                    }
+                }
+
+                clearResume(quoteIdStr)
+
+                // Nothing is left to re-broadcast. That is a success only if
+                // every group has a verdict: a group whose outcome is unknown
+                // must never be resubmitted, but calling the swap done on its
+                // behalf is a claim nobody checked.
+                const isUnverified = submission.groupStates.some(
+                    state => state.status === 'unknown',
+                )
+                if (submission.kind === 'partial' || isUnverified) {
+                    const copy =
+                        submission.kind === 'partial'
+                            ? resolveErrorCopy(
+                                  submission.error,
+                                  t,
+                                  undefined,
+                                  getMessage,
+                              )
+                            : {
+                                  title: t(
+                                      'errors.submission.unknown_outcome.title',
+                                  ),
+                                  body: t(
+                                      'errors.submission.unknown_outcome.body',
+                                  ),
+                              }
+                    setError({ phase: 'submission', message: copy.body })
+                    setStatus('error')
+                    return {
+                        kind: 'error',
+                        phase: 'submission',
+                        message: copy.body,
+                        title: copy.title,
+                    }
+                }
+
+                setStatus('success')
+                return { kind: 'success' }
+            }
+
+            // Signed bytes belong to the network and sender they were built
+            // for: replaying them elsewhere sends one chain's transactions to
+            // another node, and stamps the ledger row with an address that is
+            // not the one that signed them.
+            const isResumeStillValid = async (
+                record: SwapResumeRecord<PeraSignedTransaction[]>,
+            ): Promise<boolean> => {
+                if (record.network !== network || record.sender !== swapSender)
+                    return false
+
+                const deadline = Math.min(
+                    ...record.groupStates.flatMap((state, index) =>
+                        state.status === 'pending'
+                            ? [record.lastValidByGroup[index] ?? 0]
+                            : [],
+                    ),
+                )
+                if (!Number.isFinite(deadline)) return false
+
+                try {
+                    const { lastRound } = await algorandClient.client.algod
+                        .status()
+                        .do()
+                    return Number(lastRound) <= deadline
+                } catch (e) {
+                    // Fail toward resuming: rebuilding while the old bytes
+                    // could still land would risk executing the swap twice.
+                    logger.warn('[swap] resume window lookup failed', {
+                        error: `${e}`,
+                    })
+                    return true
+                }
+            }
+
+            // Resuming: the groups are already signed and part-broadcast, so
+            // every preflight, the rebuild guard (the open rows it would find
+            // are this swap's own) and the signing phase are skipped.
+            const resumeRecord = getResume<PeraSignedTransaction[]>(quoteIdStr)
+            if (resumeRecord) {
+                if (await isResumeStillValid(resumeRecord)) {
+                    return submitPhase(
+                        resumeRecord.groups,
+                        resumeRecord.swapId,
+                        resumeRecord.groupStates,
+                    )
+                }
+                // Past their window, or built for another network or sender:
+                // these bytes can never land, so re-signing is correct rather
+                // than a double-spend risk.
+                clearResume(quoteIdStr)
             }
 
             const [isInFrozen, isOutFrozen] = account
@@ -330,8 +528,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             // Both flows, because a shared-account swap records its row
             // under 'cosign' and a swap-only filter would miss a re-proposed
             // multisig retry.
-            const swapSender =
-                account?.address ?? quote.swapperAddress ?? undefined
             if (swapSender) {
                 const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
                 let blocked: boolean
@@ -397,10 +593,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 const message = t('swap.execution.error_body')
                 setError({ phase: 'prepare', message })
                 setStatus('error')
-                void reportSwapFailure(
-                    updateSwapStatus,
-                    prepareResult.swapIdStr,
-                )
+                reportSwapFailure(enqueueReport, prepareResult.swapIdStr)
                 return { kind: 'error', phase: 'prepare', message }
             }
 
@@ -479,7 +672,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     if (isRejection) {
                         return { kind: 'cancelled' }
                     }
-                    void reportSwapFailure(updateSwapStatus, swapIdStr)
+                    reportSwapFailure(enqueueReport, swapIdStr)
                     return { kind: 'error', phase: 'signing', message }
                 }
             }
@@ -527,80 +720,15 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 if (isRejection) {
                     return { kind: 'cancelled' }
                 }
-                void reportSwapFailure(
-                    updateSwapStatus,
-                    prepareResult.swapIdStr,
-                )
+                reportSwapFailure(enqueueReport, prepareResult.swapIdStr)
                 return { kind: 'error', phase: 'signing', message }
             }
 
             // Phase 3: Submit transactions
-            const allSignedGroups = scatterSigned(plans, flatSigned)
-            const collectedTxIds: string[] = []
-            try {
-                setStatus('submitting')
-                for (const signedGroup of allSignedGroups) {
-                    if (signedGroup.length === 0) continue
-                    const ids = await submitAndAutoRefresh(
-                        algorandClient,
-                        encodeSignedTransactions,
-                        signedGroup,
-                        {
-                            flow: 'swap',
-                            // No swapId means no stable identity — a blank key
-                            // would collide unrelated swaps, and the rebuild
-                            // guard skips them anyway.
-                            intentKey: prepareResult.swapIdStr
-                                ? {
-                                      kind: 'swap',
-                                      swapId: prepareResult.swapIdStr,
-                                  }
-                                : undefined,
-                            sender: account?.address ?? quote.swapperAddress,
-                        },
-                    )
-                    collectedTxIds.push(...ids)
-                }
-            } catch (e) {
-                const copy = resolveErrorCopy(e, t, undefined, getMessage)
-                setError({ phase: 'submission', message: copy.body })
-                setStatus('error')
-                void reportSwapFailure(
-                    updateSwapStatus,
-                    prepareResult.swapIdStr,
-                )
-                return {
-                    kind: 'error',
-                    phase: 'submission',
-                    message: copy.body,
-                    title: copy.title,
-                }
-            }
-
-            setTxIds(collectedTxIds)
-
-            // Phase 4: Update swap status
-            try {
-                setStatus('updating-status')
-                if (prepareResult.swapIdStr) {
-                    await updateSwapStatus({
-                        swapId: prepareResult.swapIdStr,
-                        data: {
-                            status: 'in_progress',
-                            submitted_transaction_ids: collectedTxIds,
-                            swap_version: 'v2',
-                        },
-                    })
-                }
-            } catch {
-                // Non-fatal: transactions are already on chain
-                logger.warn(
-                    'Failed to update swap status, transactions already submitted',
-                )
-            }
-
-            setStatus('success')
-            return { kind: 'success' }
+            return submitPhase(
+                scatterSigned(plans, flatSigned),
+                prepareResult.swapIdStr,
+            )
         },
         [
             prepareTransactions,
@@ -609,7 +737,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             addSignRequest,
             algorandClient,
             encodeSignedTransactions,
-            updateSwapStatus,
             t,
             getMessage,
             network,

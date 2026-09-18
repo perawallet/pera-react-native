@@ -3265,7 +3265,9 @@
             "quantum_fee_unsupported": "Las cuentas Quantum aún no pueden intercambiar. La comisión del swap la fijan nuestros servidores y no cubre la comisión más alta que necesita una firma Quantum.",
             "quantum_multisig_unsupported": "Las cuentas Quantum no pueden intercambiar desde una cuenta compartida. Las claves Quantum no pueden participar en la firma multisig.",
             "verifying_previous_title": "Verificando intento anterior",
-            "verifying_previous_body": "Tu intento de swap anterior aún se está verificando. Inténtalo de nuevo cuando se resuelva."
+            "verifying_previous_body": "Tu intento de swap anterior aún se está verificando. Inténtalo de nuevo cuando se resuelva.",
+            "partially_submitted_title": "Swap procesado parcialmente",
+            "partially_submitted_body": "Parte de este swap ya está en la blockchain. Confirma de nuevo para completar el resto: no se te cobrará dos veces."
         },
         "signing": {
             "source_name": "Swap",

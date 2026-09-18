@@ -83,6 +83,9 @@ export const useSwapConfirmationActions = ({
         if (!quoteIdStr || inFlightRef.current) return
         trackEvent(SwapEvent.Confirm)
         inFlightRef.current = true
+        // Read before execute() runs: a resume attempt starts from the
+        // 'partially-submitted' status the previous confirm left behind.
+        const wasPartiallySubmitted = swapStatus === 'partially-submitted'
         try {
             const outcome = await execute(quote)
             if (outcome.kind === 'success') {
@@ -133,6 +136,22 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'cancelled' })
                 return
             }
+            if (outcome.kind === 'partially-submitted') {
+                // Part of the swap is on chain. Leave the sheet open:
+                // confirming again re-broadcasts only what did not go out,
+                // with no new signature. The first partial gets the
+                // reassuring generic body; a resume attempt that itself
+                // stalled again surfaces the classification-aware reason
+                // instead, since repeating the same reassurance would hide
+                // that the retry failed for a specific cause.
+                infoToast(
+                    t('swap.execution.partially_submitted_title'),
+                    wasPartiallySubmitted
+                        ? outcome.message
+                        : t('swap.execution.partially_submitted_body'),
+                )
+                return
+            }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({
                 kind: 'error',
@@ -146,6 +165,7 @@ export const useSwapConfirmationActions = ({
         quote,
         quoteIdStr,
         execute,
+        swapStatus,
         successCloseTimer,
         resolve,
         t,

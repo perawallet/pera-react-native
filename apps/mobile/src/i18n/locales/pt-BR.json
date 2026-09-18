@@ -3288,7 +3288,9 @@
             "quantum_fee_unsupported": "Contas Quantum ainda não podem converter. A taxa de conversão é definida pelos nossos servidores e não cobre a taxa mais alta que uma assinatura Quantum exige.",
             "quantum_multisig_unsupported": "Contas Quantum não podem converter a partir de uma conta compartilhada. Chaves Quantum não podem participar da assinatura Multisig.",
             "verifying_previous_title": "Verificando tentativa anterior",
-            "verifying_previous_body": "Sua tentativa de swap anterior ainda está sendo verificada. Tente novamente quando ela for resolvida."
+            "verifying_previous_body": "Sua tentativa de swap anterior ainda está sendo verificada. Tente novamente quando ela for resolvida.",
+            "partially_submitted_title": "Conversão processada parcialmente",
+            "partially_submitted_body": "Parte desta conversão já está na blockchain. Confirme novamente para concluir o restante — você não será cobrado duas vezes."
         },
         "signing": {
             "source_name": "Converter",

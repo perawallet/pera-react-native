@@ -3257,7 +3257,9 @@
             "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
             "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen.",
             "verifying_previous_title": "Vorheriger Versuch wird überprüft",
-            "verifying_previous_body": "Dein vorheriger Tauschversuch wird noch überprüft. Versuche es erneut, sobald er abgeschlossen ist."
+            "verifying_previous_body": "Dein vorheriger Tauschversuch wird noch überprüft. Versuche es erneut, sobald er abgeschlossen ist.",
+            "partially_submitted_title": "Tausch teilweise verarbeitet",
+            "partially_submitted_body": "Ein Teil dieses Tauschs ist bereits auf der Blockchain. Bestätige erneut, um den Rest abzuschließen – du wirst nicht doppelt belastet."
         },
         "signing": {
             "source_name": "Tausch",

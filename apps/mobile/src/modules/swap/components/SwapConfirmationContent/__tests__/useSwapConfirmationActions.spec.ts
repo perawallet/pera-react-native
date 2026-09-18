@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapConfirmationActions } from '../useSwapConfirmationActions'
-import type { SwapExecutionOutcome } from '../../../hooks/useSwapExecution'
+import type {
+    SwapExecutionOutcome,
+    SwapExecutionStatus,
+} from '../../../hooks/useSwapExecution'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
 const makeQuote = (quoteIdStr?: string): SwapQuote =>
@@ -43,6 +46,11 @@ const mockSchedule = vi.fn((callback: () => void, _delayMs: number) => {
 const mockFlush = vi.fn()
 const mockCancel = vi.fn()
 const mockExecutionCancel = vi.fn()
+// Mutable so tests can simulate the sheet re-rendering with the status the
+// real useSwapExecution would already have set from a prior confirm.
+const mockStatus = vi.hoisted(() => ({
+    current: 'idle' as SwapExecutionStatus,
+}))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({
@@ -79,7 +87,7 @@ vi.mock('../../../hooks/useSwapExecution', () => ({
         execute: mockExecute,
         cancel: mockExecutionCancel,
         reset: mockReset,
-        status: 'idle',
+        status: mockStatus.current,
         error: null,
         txIds: [],
     }),
@@ -88,6 +96,7 @@ vi.mock('../../../hooks/useSwapExecution', () => ({
 describe('useSwapConfirmationActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockStatus.current = 'idle'
     })
 
     it('resolves with confirm when execute succeeds', async () => {
@@ -249,6 +258,79 @@ describe('useSwapConfirmationActions', () => {
         // stays put and the user can retry once the earlier attempt resolves.
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'cancelled' })
         expect(mockSchedule).not.toHaveBeenCalled()
+    })
+
+    it('keeps the sheet open and shows the generic reassurance on a first partial submission', async () => {
+        // Nothing has been attempted yet, so the sheet's current status is
+        // whatever it started at — not 'partially-submitted'.
+        mockStatus.current = 'signing'
+        mockExecute.mockResolvedValueOnce({
+            kind: 'partially-submitted',
+            txIds: ['TX-1'],
+            message: 'Something went wrong',
+        })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-10') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.partially_submitted_title',
+            'swap.execution.partially_submitted_body',
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it('lets the user confirm again after a partial submission', async () => {
+        mockExecute
+            .mockResolvedValueOnce({
+                kind: 'partially-submitted',
+                txIds: ['TX-1'],
+                message: 'Something went wrong',
+            })
+            .mockResolvedValueOnce({ kind: 'success' })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-11') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockExecute).toHaveBeenCalledTimes(2)
+    })
+
+    it('surfaces the classification-aware message when a re-broadcast partially submits again', async () => {
+        // The sheet is already showing the first partial: this confirm is a
+        // resume attempt whose own broadcast stalled again.
+        mockStatus.current = 'partially-submitted'
+        mockExecute.mockResolvedValueOnce({
+            kind: 'partially-submitted',
+            txIds: ['TX-1'],
+            message: 'The network dropped the remaining groups.',
+        })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-12') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.partially_submitted_title',
+            'The network dropped the remaining groups.',
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
     })
 
     it('handleClose dismisses when idle', () => {

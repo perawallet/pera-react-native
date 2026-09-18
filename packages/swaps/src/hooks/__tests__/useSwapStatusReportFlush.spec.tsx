@@ -1,0 +1,164 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { renderHook, waitFor } from '@testing-library/react'
+import { onlineManager } from '@tanstack/react-query'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { useSwapStatusReportStore } from '../../store/swapStatusReportStore'
+import { useSwapStatusReportFlush } from '../useSwapStatusReportFlush'
+
+const updateSwapStatus = vi.hoisted(() => vi.fn())
+
+vi.mock('../../api/swaps/endpoints', () => ({ updateSwapStatus }))
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+describe('useSwapStatusReportFlush', () => {
+    beforeEach(() => {
+        updateSwapStatus.mockReset()
+        useSwapStatusReportStore.getState().resetState()
+        onlineManager.setOnline(true)
+    })
+
+    it('sends a queued report on mount and drops it', async () => {
+        updateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+
+        await waitFor(() =>
+            expect(useSwapStatusReportStore.getState().reports).toHaveLength(0),
+        )
+        expect(updateSwapStatus).toHaveBeenCalledWith(
+            'swap-1',
+            { status: 'failed' },
+            'mainnet',
+        )
+    })
+
+    it('keeps a report the network could not deliver', async () => {
+        updateSwapStatus.mockRejectedValue(new PeraNetworkError('offline'))
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+
+        await waitFor(() => expect(updateSwapStatus).toHaveBeenCalled())
+        expect(useSwapStatusReportStore.getState().reports).toHaveLength(1)
+    })
+
+    it('flushes again when connectivity returns', async () => {
+        updateSwapStatus.mockRejectedValueOnce(new PeraNetworkError('offline'))
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+        await waitFor(() => expect(updateSwapStatus).toHaveBeenCalledTimes(1))
+
+        updateSwapStatus.mockResolvedValue({ status: 'failed' })
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+
+        await waitFor(() =>
+            expect(useSwapStatusReportStore.getState().reports).toHaveLength(0),
+        )
+    })
+
+    it('does not flush while offline', async () => {
+        onlineManager.setOnline(false)
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(updateSwapStatus).not.toHaveBeenCalled()
+    })
+
+    it('drops a report the backend permanently rejects with a 4xx', async () => {
+        updateSwapStatus.mockRejectedValue(
+            new PeraNetworkError('client', { status: 400 }),
+        )
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+
+        await waitFor(() => expect(updateSwapStatus).toHaveBeenCalled())
+        expect(useSwapStatusReportStore.getState().reports).toHaveLength(0)
+    })
+
+    it('delivers a report enqueued mid-session, with no connectivity edge', async () => {
+        updateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+
+        renderHook(() => useSwapStatusReportFlush())
+        await waitFor(() => expect(updateSwapStatus).not.toHaveBeenCalled())
+
+        // The common case: a swap lands while the app has been online and
+        // mounted the whole time, so neither trigger the hook used to have
+        // will ever fire again.
+        useSwapStatusReportStore.getState().enqueueReport({
+            swapId: 'swap-9',
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['TX-9'],
+            },
+        })
+
+        await waitFor(() =>
+            expect(updateSwapStatus).toHaveBeenCalledWith(
+                'swap-9',
+                {
+                    status: 'in_progress',
+                    submitted_transaction_ids: ['TX-9'],
+                },
+                'mainnet',
+            ),
+        )
+        expect(useSwapStatusReportStore.getState().reports).toHaveLength(0)
+    })
+
+    it('delivers a report enqueued while a flush is still in flight, within the same pass', async () => {
+        let resolveFirstSend: (value: unknown) => void = () => {}
+        updateSwapStatus.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveFirstSend = resolve
+                }),
+        )
+        updateSwapStatus.mockResolvedValue({ status: 'failed' })
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-1', data: { status: 'failed' } })
+
+        renderHook(() => useSwapStatusReportFlush())
+        await waitFor(() => expect(updateSwapStatus).toHaveBeenCalledTimes(1))
+
+        // Enqueued mid-flush: the first send hasn't resolved yet, and there is
+        // no online edge here — only the in-progress pass can pick this up.
+        useSwapStatusReportStore
+            .getState()
+            .enqueueReport({ swapId: 'swap-2', data: { status: 'failed' } })
+        resolveFirstSend({ status: 'failed' })
+
+        await waitFor(() => expect(updateSwapStatus).toHaveBeenCalledTimes(2))
+        expect(useSwapStatusReportStore.getState().reports).toHaveLength(0)
+    })
+})

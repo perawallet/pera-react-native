@@ -23,7 +23,6 @@ import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
 import {
     generateOrderedUniqueId,
-    logger,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -250,31 +249,47 @@ export const requestSwapProposal = (
     })
 }
 
-type UpdateSwapStatusFn = (params: {
+type EnqueueSwapStatusReportFn = (report: {
     swapId: string
     data: SwapStatusUpdateRequest
-}) => Promise<unknown>
+}) => void
 
 /**
- * Best-effort: a failed report is logged and swallowed, since the caller has
- * already surfaced the real failure. NOT for user cancellations — only genuine
- * blockchain or pipeline errors.
+ * Queues rather than sends: the report outlives this execution, so a dropped
+ * connection must not lose it and must never hold up the terminal UI state.
+ * NOT for user cancellations — only genuine blockchain or pipeline errors.
  */
-export const reportSwapFailure = async (
-    updateSwapStatus: UpdateSwapStatusFn,
+export const reportSwapFailure = (
+    enqueueReport: EnqueueSwapStatusReportFn,
     swapIdStr: Optional<string>,
-): Promise<void> => {
+): void => {
     if (!swapIdStr) return
-    try {
-        await updateSwapStatus({
-            swapId: swapIdStr,
-            data: {
-                status: 'failed',
-                reason: 'blockchain_error',
-                swap_version: 'v2',
-            },
-        })
-    } catch {
-        logger.warn('Failed to report swap failure to backend')
-    }
+    enqueueReport({
+        swapId: swapIdStr,
+        data: {
+            status: 'failed',
+            reason: 'blockchain_error',
+            swap_version: 'v2',
+        },
+    })
+}
+
+/**
+ * Reports the txIds that reached the node, whether or not every group of the
+ * swap did — a partial submission is still progress the backend must see.
+ */
+export const reportSwapProgress = (
+    enqueueReport: EnqueueSwapStatusReportFn,
+    swapIdStr: Optional<string>,
+    txIds: string[],
+): void => {
+    if (!swapIdStr) return
+    enqueueReport({
+        swapId: swapIdStr,
+        data: {
+            status: 'in_progress',
+            submitted_transaction_ids: txIds,
+            swap_version: 'v2',
+        },
+    })
 }

@@ -66,7 +66,11 @@ import {
     type SwapExecutionOutcome,
 } from '@modules/swap/hooks/useSwapExecution'
 
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapStatusReportFlush,
+    useSwapStatusReportStore,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const SWAP_ID = '98765'
@@ -133,6 +137,9 @@ let executeSwap: ((quote: SwapQuote) => Promise<SwapExecutionOutcome>) | null =
 const SwapHost = () => {
     const { execute } = useSwapExecution()
     const { setPreference } = usePreferences()
+    // RootComponent mounts this through SwapOverlays; without it the queued
+    // status report never leaves the device.
+    useSwapStatusReportFlush()
     const prepared = useRef(false)
     useEffect(() => {
         if (!prepared.current) {
@@ -248,6 +255,9 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
+        // The queue is persisted, so a report left by an earlier case would
+        // otherwise still be there when the next one counts them.
+        useSwapStatusReportStore.getState().resetState()
         // execute() runs a balance preflight against algod before prepare;
         // fund the senders so the 1-ALGO quote (plus fees and the receive
         // asset's opt-in MBR) clears it.
@@ -298,9 +308,12 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
             expect(outcome).toEqual({ kind: 'success' })
             expect(algodBodies).toHaveLength(1)
-            expect(statusPayloads).toHaveLength(1)
+            // End to end: execute queues the report and the flush hook PATCHes
+            // it to the swaps endpoint, with no connectivity edge to prompt it.
+            await waitFor(() => expect(statusPayloads).toHaveLength(1))
             expect(statusPayloads[0].status).toBe('in_progress')
             expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
+            expect(useSwapStatusReportStore.getState().reports).toEqual([])
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -316,7 +329,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
                 .getState()
                 .setSelectedAccountAddress(LEDGER_ADDRESS)
             mockPrepareWithPayment(LEDGER_ADDRESS)
-            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+            const { algodBodies } = spyOnSubmissionAndStatus()
 
             renderWithNavigation(SwapHost, 'SwapLedgerHost')
             await waitFor(() => expect(executeSwap).not.toBeNull())
@@ -348,7 +361,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
             expect(outcome).toEqual({ kind: 'cancelled' })
             expect(algodBodies).toHaveLength(0)
-            expect(statusPayloads).toHaveLength(0)
+            expect(useSwapStatusReportStore.getState().reports).toEqual([])
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -369,7 +382,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
                 .getState()
                 .setSelectedAccountAddress(rekeyedSender.address)
             mockPrepareWithPayment(rekeyedSender.address)
-            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
+            const { algodBodies } = spyOnSubmissionAndStatus()
 
             renderWithNavigation(SwapHost, 'SwapLedgerHost')
             await waitFor(() => expect(executeSwap).not.toBeNull())
@@ -383,7 +396,9 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
             const signed = decodeSignedTransaction(algodBodies[0])
             expect(signed.txn.sender.toString()).toBe(rekeyedSender.address)
             expect(signed.sgnr?.toString()).toBe(AUTH_ADDRESS)
-            expect(statusPayloads[0]?.status).toBe('in_progress')
+            expect(
+                useSwapStatusReportStore.getState().reports[0]?.data.status,
+            ).toBe('in_progress')
         },
         SLOW_TEST_TIMEOUT_MS,
     )

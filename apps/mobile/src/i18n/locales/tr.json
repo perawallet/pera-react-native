@@ -3265,7 +3265,9 @@
             "quantum_fee_unsupported": "Quantum hesaplar henüz swap yapamaz. Swap ücreti sunucularımız tarafından belirlenir ve Quantum imzanın gerektirdiği daha yüksek ücreti karşılamaz.",
             "quantum_multisig_unsupported": "Quantum hesaplar paylaşılan bir hesaptan swap yapamaz. Quantum anahtarlar Multisig imzalamaya katılamaz.",
             "verifying_previous_title": "Önceki deneme doğrulanıyor",
-            "verifying_previous_body": "Önceki swap denemeniz hâlâ doğrulanıyor. Sonuçlandığında tekrar deneyin."
+            "verifying_previous_body": "Önceki swap denemeniz hâlâ doğrulanıyor. Sonuçlandığında tekrar deneyin.",
+            "partially_submitted_title": "Swap kısmen işlendi",
+            "partially_submitted_body": "Bu swap'in bir kısmı zaten Blockchain'de. Kalanını tamamlamak için tekrar onayla, iki kez ücretlendirilmeyeceksin."
         },
         "signing": {
             "source_name": "Swap",
