@@ -26,6 +26,19 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         color: theme.colors.textGray,
     },
+    disclosure: {
+        gap: theme.spacing.xs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    disclosureTitle: {
+        textAlign: 'center',
+    },
+    disclosureBody: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
     buttonContainer: {
         gap: theme.spacing.md,
     },

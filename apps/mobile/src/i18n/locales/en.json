@@ -1584,6 +1584,8 @@
         "auto_funding_signing": {
             "title": "Auto-signing Approval Request",
             "body": "This lets your card automatically draw funds when needed, so you won't have to approve every top-up yourself. You're signing a logic sig — a pre-authorized signature — that allows this automatic drawing from your connected account.",
+            "standing_authority_title": "What you're authorizing",
+            "standing_authority_body": "This authorization does not expire, and the signature itself sets no limit on the amount or asset that can be drawn. Per-transaction spending caps are applied by the card provider, not by what you sign here. You can revoke it at any time by switching Funding Type to Manual in your card settings.",
             "error_title": "Couldn't authorize Auto Funding",
             "error_body": "Something went wrong authorizing Auto Funding. Try again, or cancel to continue with Manual funding (you can switch to Auto later from your card settings).",
             "cancel_button": "Cancel"

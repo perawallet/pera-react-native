@@ -1586,6 +1586,8 @@
         "auto_funding_signing": {
             "title": "Solicitação de aprovação de assinatura automática",
             "body": "Isso permite que seu cartão puxe fundos automaticamente quando necessário, para que você não precise aprovar cada recarga. Você está assinando uma logic sig — uma assinatura pré-autorizada — que permite esse uso automático de fundos da sua conta conectada.",
+            "standing_authority_title": "O que você está autorizando",
+            "standing_authority_body": "Esta autorização não expira, e a própria assinatura não limita o valor nem o ativo que pode ser debitado. Os limites por transação são aplicados pelo provedor do cartão, não pelo que você assina aqui. Você pode revogá-la a qualquer momento alterando o Tipo de Financiamento para Manual nas configurações do seu cartão.",
             "error_title": "Não foi possível autorizar o financiamento automático",
             "error_body": "Algo deu errado ao autorizar o financiamento automático. Tente novamente ou cancele para continuar com o financiamento manual (você pode mudar para o automático depois nas configurações do cartão).",
             "cancel_button": "Cancelar"

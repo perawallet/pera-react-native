@@ -1576,6 +1576,8 @@
         "auto_funding_signing": {
             "title": "Anfrage zur automatischen Signaturgenehmigung",
             "body": "Dadurch kann deine Karte bei Bedarf automatisch Guthaben abbuchen, sodass du nicht jede Aufladung selbst genehmigen musst. Du signierst eine Logic Sig — eine vorab autorisierte Signatur —, die diese automatische Abbuchung von deinem verbundenen Konto ermöglicht.",
+            "standing_authority_title": "Was du autorisierst",
+            "standing_authority_body": "Diese Autorisierung läuft nicht ab, und die Signatur selbst begrenzt weder den Betrag noch das Asset, das abgebucht werden kann. Limits pro Transaktion werden vom Kartenanbieter durchgesetzt, nicht durch das, was du hier signierst. Du kannst sie jederzeit widerrufen, indem du den Finanzierungstyp in deinen Karteneinstellungen auf Manuell umstellst.",
             "error_title": "Auto-Funding konnte nicht autorisiert werden",
             "error_body": "Bei der Autorisierung von Auto-Funding ist ein Fehler aufgetreten. Versuche es erneut, oder brich ab, um mit manueller Finanzierung fortzufahren (du kannst später in deinen Karteneinstellungen zu Auto wechseln).",
             "cancel_button": "Abbrechen"

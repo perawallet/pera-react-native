@@ -1584,6 +1584,8 @@
         "auto_funding_signing": {
             "title": "Otomatik imzalama onay isteği",
             "body": "Bu, kartının gerektiğinde fonları otomatik olarak çekmesini sağlar; böylece her yüklemeyi kendin onaylamak zorunda kalmazsın. Bağlı hesabından bu otomatik çekime izin veren bir logic sig — önceden yetkilendirilmiş bir imza — imzalıyorsun.",
+            "standing_authority_title": "Neyi yetkilendiriyorsun",
+            "standing_authority_body": "Bu yetkilendirmenin süresi dolmaz ve imzanın kendisi çekilebilecek tutara ya da varlığa bir sınır koymaz. İşlem başına harcama limitleri burada imzaladığın şey tarafından değil, kart sağlayıcısı tarafından uygulanır. Kart ayarlarından Fonlama Tipi'ni Manuel olarak değiştirerek istediğin zaman iptal edebilirsin.",
             "error_title": "Otomatik fonlama yetkilendirilemedi",
             "error_body": "Otomatik fonlama yetkilendirilirken bir şeyler ters gitti. Tekrar dene veya iptal edip manuel fonlamayla devam et (daha sonra kart ayarlarından otomatik fonlamaya geçebilirsin).",
             "cancel_button": "İptal"

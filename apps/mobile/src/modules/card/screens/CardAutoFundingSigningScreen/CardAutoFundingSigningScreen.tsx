@@ -58,6 +58,27 @@ export const CardAutoFundingSigningScreen = () => {
                 >
                     {t('peraCard.auto_funding_signing.body')}
                 </PWText>
+                <PWView
+                    style={styles.disclosure}
+                    testID='card-auto-funding-signing-standing-authority'
+                >
+                    <PWText
+                        variant='bodySemibold'
+                        style={styles.disclosureTitle}
+                    >
+                        {t(
+                            'peraCard.auto_funding_signing.standing_authority_title',
+                        )}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.disclosureBody}
+                    >
+                        {t(
+                            'peraCard.auto_funding_signing.standing_authority_body',
+                        )}
+                    </PWText>
+                </PWView>
             </PWView>
             {!!error && (
                 <PWText style={styles.errorText}>

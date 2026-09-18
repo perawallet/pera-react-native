@@ -1584,6 +1584,8 @@
         "auto_funding_signing": {
             "title": "Solicitud de aprobación de firma automática",
             "body": "Esto permite que tu tarjeta retire fondos automáticamente cuando sea necesario, así no tendrás que aprobar cada recarga. Estás firmando un logic sig —una firma preautorizada— que permite ese retiro automático desde tu cuenta conectada.",
+            "standing_authority_title": "Qué estás autorizando",
+            "standing_authority_body": "Esta autorización no caduca y la propia firma no limita el importe ni el activo que se puede retirar. Los límites por transacción los aplica el proveedor de la tarjeta, no lo que firmas aquí. Puedes revocarla en cualquier momento cambiando el tipo de financiación a Manual en los ajustes de tu tarjeta.",
             "error_title": "No se pudo autorizar la financiación automática",
             "error_body": "Algo salió mal al autorizar la financiación automática. Reinténtalo o cancela para continuar con la financiación manual (puedes cambiar a automática más adelante desde los ajustes de tu tarjeta).",
             "cancel_button": "Cancelar"

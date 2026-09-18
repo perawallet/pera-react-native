@@ -1584,6 +1584,8 @@
         "auto_funding_signing": {
             "title": "Demande d’approbation de signature automatique",
             "body": "Cela permet à votre carte de prélever automatiquement des fonds lorsque nécessaire, afin que vous n’ayez pas à approuver chaque rechargement. Vous signez un logic sig — une signature pré-autorisée — qui permet ce prélèvement automatique depuis votre compte connecté.",
+            "standing_authority_title": "Ce que vous autorisez",
+            "standing_authority_body": "Cette autorisation n'expire pas, et la signature elle-même ne limite ni le montant ni l'actif pouvant être prélevé. Les plafonds par transaction sont appliqués par le fournisseur de la carte, et non par ce que vous signez ici. Vous pouvez la révoquer à tout moment en basculant le type de financement sur Manuel dans les paramètres de votre carte.",
             "error_title": "Impossible d’autoriser le financement automatique",
             "error_body": "Une erreur est survenue lors de l’autorisation du financement automatique. Réessayez ou annulez pour continuer en financement manuel (vous pourrez passer au financement automatique plus tard dans les paramètres de votre carte).",
             "cancel_button": "Annuler"
