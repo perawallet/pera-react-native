@@ -11,11 +11,11 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { ICloudUnavailableError } from '@perawallet/wallet-core-backup'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { ICloudUnavailableError } from '../errors'
 import { saveToICloud } from '../saveToICloud'
 
 const { isCloudAvailable, writeFile, constructed } = vi.hoisted(() => ({

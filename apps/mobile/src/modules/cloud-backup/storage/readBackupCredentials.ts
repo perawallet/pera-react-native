@@ -12,16 +12,10 @@
 
 import {
     LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
-    BackupCredentialsFileError,
-    BackupCredentialsFileUnsupportedVersionError,
     parseBackupCredentialsFile,
     type BackupEncryptionKey,
 } from '@perawallet/wallet-core-backup'
 
-import {
-    InvalidCredentialsFileError,
-    UnsupportedCredentialsFileError,
-} from './errors'
 import { listFromGoogleDrive } from './listFromGoogleDrive'
 import { listFromICloud } from './listFromICloud'
 import { readFromDevice } from './readFromDevice'
@@ -63,16 +57,6 @@ type ResolvedFileName =
     | { status: 'resolved'; fileName: string }
     | { status: 'cancelled' }
 
-const toAppError = (error: unknown): unknown => {
-    if (error instanceof BackupCredentialsFileUnsupportedVersionError) {
-        return new UnsupportedCredentialsFileError()
-    }
-    if (error instanceof BackupCredentialsFileError) {
-        return new InvalidCredentialsFileError()
-    }
-    return error
-}
-
 const resolveFileName = async (
     source: CredentialsFileSource,
     { onReading, chooseFile }: ReadBackupCredentialsOptions,
@@ -108,12 +92,6 @@ export const readBackupCredentials = async (
 
     const read = await READERS[source](resolved.fileName, options.onReading)
     if (read.status === 'cancelled') return read
-    try {
-        return {
-            status: 'read',
-            key: parseBackupCredentialsFile(read.contents),
-        }
-    } catch (error) {
-        throw toAppError(error)
-    }
+    // The parser throws the same typed errors this layer used to translate into.
+    return { status: 'read', key: parseBackupCredentialsFile(read.contents) }
 }

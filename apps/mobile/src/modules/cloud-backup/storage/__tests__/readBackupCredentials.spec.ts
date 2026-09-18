@@ -11,11 +11,11 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { buildBackupCredentialsFile } from '@perawallet/wallet-core-backup'
 import {
+    buildBackupCredentialsFile,
     InvalidCredentialsFileError,
     UnsupportedCredentialsFileError,
-} from '../errors'
+} from '@perawallet/wallet-core-backup'
 import { readBackupCredentials } from '../readBackupCredentials'
 
 const {

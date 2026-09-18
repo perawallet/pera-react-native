@@ -11,6 +11,7 @@
  */
 
 import { Platform } from 'react-native'
+import { GoogleDriveNotConfiguredError } from '@perawallet/wallet-core-backup'
 import {
     GoogleSignin,
     isCancelledResponse,
@@ -26,8 +27,6 @@ import {
     CloudStorageScope,
 } from 'react-native-cloud-storage'
 import { config } from '@perawallet/wallet-core-config'
-
-import { GoogleDriveNotConfiguredError } from './errors'
 
 export const DRIVE_APPDATA_SCOPE =
     'https://www.googleapis.com/auth/drive.appdata'

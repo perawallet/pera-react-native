@@ -11,6 +11,10 @@
  */
 
 import {
+    CredentialsFileNotFoundError,
+    ICloudUnavailableError,
+} from '@perawallet/wallet-core-backup'
+import {
     CloudStorage,
     CloudStorageError,
     CloudStorageErrorCode,
@@ -18,7 +22,6 @@ import {
     CloudStorageScope,
 } from 'react-native-cloud-storage'
 
-import { CredentialsFileNotFoundError, ICloudUnavailableError } from './errors'
 import type { ReadResult } from './types'
 
 const POLL_INTERVAL_MS = 500

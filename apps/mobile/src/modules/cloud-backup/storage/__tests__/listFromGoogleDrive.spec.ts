@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { CredentialsFileNotFoundError } from '../errors'
+import { CredentialsFileNotFoundError } from '@perawallet/wallet-core-backup'
 import { listFromGoogleDrive } from '../listFromGoogleDrive'
 
 const { runOnGoogleDrive, signOutOfGoogleDrive, readdir } = vi.hoisted(() => ({

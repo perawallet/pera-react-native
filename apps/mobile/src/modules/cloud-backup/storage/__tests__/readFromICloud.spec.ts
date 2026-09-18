@@ -12,10 +12,13 @@
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
+    CredentialsFileNotFoundError,
+    ICloudUnavailableError,
+} from '@perawallet/wallet-core-backup'
+import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
-import { CredentialsFileNotFoundError, ICloudUnavailableError } from '../errors'
 import { readFromICloud } from '../readFromICloud'
 
 const { isCloudAvailable, readFile, triggerSync, constructed } = vi.hoisted(
