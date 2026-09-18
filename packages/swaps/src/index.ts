@@ -21,4 +21,5 @@ export {
     useSwapHandoffStore,
     useSwapResumeStore,
     useSwapStatusReportStore,
+    type SwapResumeRecord,
 } from './store'

@@ -16,7 +16,12 @@ import {
 } from '@perawallet/wallet-core-signing'
 
 export type SwapGroupState = {
-    status: 'pending' | 'landed'
+    /**
+     * `unknown` is do-not-resubmit but NOT verified: the node gave no verdict,
+     * so re-broadcasting would be redundant rather than corrective, and
+     * calling the swap a success would be a claim nobody checked.
+     */
+    status: 'pending' | 'landed' | 'unknown'
     txIds: string[]
 }
 
@@ -46,11 +51,10 @@ export type SubmitSwapGroupsParams<TGroup> = {
 }
 
 /**
- * An unknown-outcome submit may still land, so the group counts as landed and
- * its txIds are kept: reconciliation settles it, and re-broadcasting the same
- * bytes would be redundant rather than corrective.
+ * An unknown-outcome submit may still land, so its txIds are kept and the
+ * group is never retried: reconciliation settles it.
  */
-const landedTxIdsFrom = (error: unknown): string[] | null =>
+const unverifiedTxIdsFrom = (error: unknown): string[] | null =>
     error instanceof SubmissionError &&
     error.classification === 'unknown-outcome'
         ? error.txIds
@@ -69,7 +73,7 @@ export const submitSwapGroups = async <TGroup>({
     )
 
     for (const [index, group] of groups.entries()) {
-        if (groupStates[index]?.status === 'landed') continue
+        if (groupStates[index]?.status !== 'pending') continue
         if (isEmptyGroup?.(group)) {
             groupStates[index] = { status: 'landed', txIds: [] }
             continue
@@ -85,9 +89,12 @@ export const submitSwapGroups = async <TGroup>({
             const txIds = await submitGroup(group, { intentKey })
             groupStates[index] = { status: 'landed', txIds }
         } catch (error) {
-            const maybeLanded = landedTxIdsFrom(error)
-            if (maybeLanded !== null) {
-                groupStates[index] = { status: 'landed', txIds: maybeLanded }
+            const unverifiedTxIds = unverifiedTxIdsFrom(error)
+            if (unverifiedTxIds !== null) {
+                groupStates[index] = {
+                    status: 'unknown',
+                    txIds: unverifiedTxIds,
+                }
             }
             const txIds = collectTxIds(groupStates)
             if (txIds.length === 0) return { kind: 'failed', error }

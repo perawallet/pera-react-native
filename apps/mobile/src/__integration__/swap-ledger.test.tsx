@@ -67,6 +67,7 @@ import {
 } from '@modules/swap/hooks/useSwapExecution'
 
 import {
+    useSwapStatusReportFlush,
     useSwapStatusReportStore,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
@@ -136,6 +137,9 @@ let executeSwap: ((quote: SwapQuote) => Promise<SwapExecutionOutcome>) | null =
 const SwapHost = () => {
     const { execute } = useSwapExecution()
     const { setPreference } = usePreferences()
+    // RootComponent mounts this through SwapOverlays; without it the queued
+    // status report never leaves the device.
+    useSwapStatusReportFlush()
     const prepared = useRef(false)
     useEffect(() => {
         if (!prepared.current) {
@@ -277,7 +281,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
                 .getState()
                 .setSelectedAccountAddress(LEDGER_ADDRESS)
             mockPrepareWithPayment(LEDGER_ADDRESS)
-            const { algodBodies } = spyOnSubmissionAndStatus()
+            const { algodBodies, statusPayloads } = spyOnSubmissionAndStatus()
 
             renderWithNavigation(SwapHost, 'SwapLedgerHost')
             await waitFor(() => expect(executeSwap).not.toBeNull())
@@ -304,13 +308,12 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
 
             expect(outcome).toEqual({ kind: 'success' })
             expect(algodBodies).toHaveLength(1)
-            // Execute queues the report; delivering the PATCH is the flush
-            // hook's job, and it is mounted at the app root, not here.
-            const reports = useSwapStatusReportStore.getState().reports
-            expect(reports).toHaveLength(1)
-            expect(reports[0].swapId).toBe(SWAP_ID)
-            expect(reports[0].data.status).toBe('in_progress')
-            expect(reports[0].data.submitted_transaction_ids).toHaveLength(1)
+            // End to end: execute queues the report and the flush hook PATCHes
+            // it to the swaps endpoint, with no connectivity edge to prompt it.
+            await waitFor(() => expect(statusPayloads).toHaveLength(1))
+            expect(statusPayloads[0].status).toBe('in_progress')
+            expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
+            expect(useSwapStatusReportStore.getState().reports).toEqual([])
         },
         SLOW_TEST_TIMEOUT_MS,
     )

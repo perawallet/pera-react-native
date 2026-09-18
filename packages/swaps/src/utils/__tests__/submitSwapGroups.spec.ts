@@ -100,7 +100,7 @@ describe('submitSwapGroups', () => {
         })
     })
 
-    it('treats an unknown-outcome group as landed and carries its txIds', async () => {
+    it('marks an unknown-outcome group unknown, not landed, and carries its txIds', async () => {
         const error = unknownOutcome(['TX-2'])
         const submitGroup = vi
             .fn()
@@ -113,11 +113,40 @@ describe('submitSwapGroups', () => {
             submitGroup,
         })
 
+        // 'unknown' is do-not-resubmit but NOT verified — collapsing it into
+        // 'landed' is what let an unverified group be reported as a success.
         expect(result).toMatchObject({
             kind: 'partial',
             txIds: ['TX-1', 'TX-2'],
             groupStates: [
                 { status: 'landed', txIds: ['TX-1'] },
+                { status: 'unknown', txIds: ['TX-2'] },
+            ],
+        })
+    })
+
+    it('does not resubmit a group an earlier attempt left unknown', async () => {
+        const submitGroup = vi.fn().mockResolvedValue(['TX-2'])
+
+        const result = await submitSwapGroups({
+            groups: ['g1', 'g2'],
+            swapId: 'swap-1',
+            submitGroup,
+            resume: [
+                { status: 'unknown', txIds: ['TX-1'] },
+                { status: 'pending', txIds: [] },
+            ],
+        })
+
+        expect(submitGroup).toHaveBeenCalledTimes(1)
+        expect(submitGroup).toHaveBeenCalledWith('g2', {
+            intentKey: { kind: 'swap', swapId: 'swap-1', group: 1 },
+        })
+        expect(result).toEqual({
+            kind: 'all-submitted',
+            txIds: ['TX-1', 'TX-2'],
+            groupStates: [
+                { status: 'unknown', txIds: ['TX-1'] },
                 { status: 'landed', txIds: ['TX-2'] },
             ],
         })
@@ -132,7 +161,14 @@ describe('submitSwapGroups', () => {
             submitGroup,
         })
 
-        expect(result).toMatchObject({ kind: 'partial', txIds: ['TX-1'] })
+        expect(result).toMatchObject({
+            kind: 'partial',
+            txIds: ['TX-1'],
+            groupStates: [
+                { status: 'unknown', txIds: ['TX-1'] },
+                { status: 'pending', txIds: [] },
+            ],
+        })
     })
 
     it('skips groups already landed in the resume state', async () => {

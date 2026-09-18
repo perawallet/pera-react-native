@@ -28,19 +28,27 @@ describe('useSwapResumeStore', () => {
         useSwapResumeStore.getState().recordResume({
             quoteId: 'quote-1',
             swapId: 'swap-1',
+            network: 'mainnet',
+            sender: 'SENDER',
             groups: ['g1', 'g2'],
             groupStates: [
                 { status: 'landed', txIds: ['TX-1'] },
                 { status: 'pending', txIds: [] },
             ],
+            lastValidByGroup: [1000, 1001],
         })
 
-        const record = useSwapResumeStore.getState().getResume('quote-1')
+        const record = useSwapResumeStore
+            .getState()
+            .getResume<string>('quote-1')
 
         expect(record).toMatchObject({
             quoteId: 'quote-1',
             swapId: 'swap-1',
+            network: 'mainnet',
+            sender: 'SENDER',
             groups: ['g1', 'g2'],
+            lastValidByGroup: [1000, 1001],
         })
         expect(record?.createdAt).toBeTypeOf('number')
     })
@@ -49,13 +57,17 @@ describe('useSwapResumeStore', () => {
         const { recordResume, getResume } = useSwapResumeStore.getState()
         recordResume({
             quoteId: 'quote-1',
+            network: 'mainnet',
             groups: ['g1'],
             groupStates: [{ status: 'pending', txIds: [] }],
+            lastValidByGroup: [1000],
         })
         recordResume({
             quoteId: 'quote-1',
+            network: 'mainnet',
             groups: ['g1'],
             groupStates: [{ status: 'landed', txIds: ['TX-1'] }],
+            lastValidByGroup: [1000],
         })
 
         expect(getResume('quote-1')?.groupStates).toEqual([
@@ -68,13 +80,17 @@ describe('useSwapResumeStore', () => {
             useSwapResumeStore.getState()
         recordResume({
             quoteId: 'quote-1',
+            network: 'mainnet',
             groups: ['g1'],
             groupStates: [{ status: 'pending', txIds: [] }],
+            lastValidByGroup: [1000],
         })
         recordResume({
             quoteId: 'quote-2',
+            network: 'mainnet',
             groups: ['g2'],
             groupStates: [{ status: 'pending', txIds: [] }],
+            lastValidByGroup: [1000],
         })
 
         clearResume('quote-1')

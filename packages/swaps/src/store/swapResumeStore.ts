@@ -16,15 +16,28 @@ import type { SwapGroupState } from '../utils/submitSwapGroups'
 export type SwapResumeRecord<TGroup = unknown> = {
     quoteId: string
     swapId?: string
+    /** Network the groups were built and signed against. */
+    network: string
+    /** Sender the groups were signed for, and whose ledger rows they stamp. */
+    sender?: string
     groups: TGroup[]
     groupStates: SwapGroupState[]
+    /**
+     * Each group's `lastValid` round, aligned with `groups`. Past it the bytes
+     * can never land, which is what gives the resume state an exit.
+     */
+    lastValidByGroup: number[]
     createdAt: number
 }
 
 export type SwapResumeState = {
     records: Record<string, SwapResumeRecord>
-    recordResume: (record: Omit<SwapResumeRecord, 'createdAt'>) => void
-    getResume: (quoteId: string) => SwapResumeRecord | undefined
+    recordResume: <TGroup>(
+        record: Omit<SwapResumeRecord<TGroup>, 'createdAt'>,
+    ) => void
+    getResume: <TGroup = unknown>(
+        quoteId: string,
+    ) => SwapResumeRecord<TGroup> | undefined
     clearResume: (quoteId: string) => void
     resetState: () => void
 }
@@ -52,7 +65,10 @@ export const useSwapResumeStore: UseBoundStore<StoreApi<SwapResumeState>> =
                     [record.quoteId]: { ...record, createdAt: Date.now() },
                 },
             })),
-        getResume: quoteId => get().records[quoteId],
+        // The store holds groups opaquely, so the one unchecked narrowing
+        // lives here rather than at every call site.
+        getResume: <TGroup>(quoteId: string) =>
+            get().records[quoteId] as SwapResumeRecord<TGroup> | undefined,
         clearResume: quoteId =>
             set(state => {
                 if (!state.records[quoteId]) return state
