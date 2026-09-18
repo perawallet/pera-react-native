@@ -43,6 +43,7 @@ export const CardTransactionsScreen = () => {
         handleLoadMore,
         handleRetry,
         onExport,
+        isExporting,
         onPressTransaction,
     } = useCardTransactions()
 
@@ -51,6 +52,7 @@ export const CardTransactionsScreen = () => {
             headerRight: () => (
                 <PWTouchableOpacity
                     onPress={onExport}
+                    disabled={isExporting}
                     testID='card_transactions_export'
                     accessibilityLabel={t(
                         'peraCard.transactions.export_accessibility_label',
@@ -60,7 +62,7 @@ export const CardTransactionsScreen = () => {
                 </PWTouchableOpacity>
             ),
         })
-    }, [navigation, onExport, t])
+    }, [navigation, onExport, isExporting, t])
 
     const renderItem = useCallback(
         ({ item }: { item: CardTransaction }) => (

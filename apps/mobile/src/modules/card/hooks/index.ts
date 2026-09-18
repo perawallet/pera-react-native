@@ -22,7 +22,6 @@ export {
     useCardAddAccount,
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
-export { useCardComingSoonToast } from './useCardComingSoonToast'
 export {
     useCardManualDeposit,
     CardEscrowUnavailableError,
