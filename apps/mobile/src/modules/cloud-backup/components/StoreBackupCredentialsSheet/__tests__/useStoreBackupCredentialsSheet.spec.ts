@@ -10,26 +10,21 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    test,
-    vi,
-    type Mock,
-} from 'vitest'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Platform } from 'react-native'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCredentialsFileSaveSources } from '../../../hooks/useCredentialsFileSources'
 import { useStoreBackupCredentialsSheet } from '../useStoreBackupCredentialsSheet'
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
+vi.mock('../../../hooks/useCredentialsFileSources', () => ({
+    useCredentialsFileSaveSources: vi.fn(),
+}))
+
 const mockResolve = vi.fn()
-const originalOS = Platform.OS
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -37,23 +32,20 @@ beforeEach(() => {
         resolve: mockResolve,
         dismiss: vi.fn(),
     })
-})
-
-afterEach(() => {
-    Platform.OS = originalOS
+    ;(useCredentialsFileSaveSources as Mock).mockReturnValue([
+        'device',
+        'icloud',
+        'googleDrive',
+    ])
 })
 
 describe('useStoreBackupCredentialsSheet', () => {
-    test.each([
-        ['ios', ['device', 'icloud', 'googleDrive']],
-        ['android', ['device', 'googleDrive']],
-        ['web', ['device']],
-    ] as const)('offers the destinations available on %s', (os, expected) => {
-        Platform.OS = os
+    test('offers the destinations the platform and the flag allow', () => {
+        ;(useCredentialsFileSaveSources as Mock).mockReturnValue(['device'])
 
         const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
-        expect(result.current.destinations).toEqual(expected)
+        expect(result.current.destinations).toEqual(['device'])
     })
 
     test('resolves the sheet with the chosen destination', () => {

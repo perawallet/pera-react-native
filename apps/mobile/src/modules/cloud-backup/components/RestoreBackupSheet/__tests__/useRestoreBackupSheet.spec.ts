@@ -10,19 +10,11 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    test,
-    vi,
-    type Mock,
-} from 'vitest'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Platform } from 'react-native'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useCredentialsFileReadSources } from '../../../hooks/useCredentialsFileSources'
 import { useRestoreBackupSheet } from '../useRestoreBackupSheet'
 
 vi.mock('@analytics', async () => ({
@@ -34,8 +26,11 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
+vi.mock('../../../hooks/useCredentialsFileSources', () => ({
+    useCredentialsFileReadSources: vi.fn(),
+}))
+
 const mockResolve = vi.fn()
-const originalOS = Platform.OS
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -43,29 +38,32 @@ beforeEach(() => {
         resolve: mockResolve,
         dismiss: vi.fn(),
     })
-})
-
-afterEach(() => {
-    Platform.OS = originalOS
+    ;(useCredentialsFileReadSources as Mock).mockReturnValue([
+        'device',
+        'icloud',
+        'googleDrive',
+    ])
 })
 
 describe('useRestoreBackupSheet', () => {
     test.each([
         [
-            'ios',
+            ['device', 'icloud', 'googleDrive'],
             ['scan', 'device', 'icloud', 'googleDrive', 'manual'],
             'cloud_backup.restore.sheet_description_with_import',
         ],
         [
-            'android',
-            ['scan', 'device', 'googleDrive', 'manual'],
+            ['device'],
+            ['scan', 'device', 'manual'],
             'cloud_backup.restore.sheet_description_with_import',
         ],
-        ['web', ['scan', 'manual'], 'cloud_backup.restore.sheet_description'],
+        [[], ['scan', 'manual'], 'cloud_backup.restore.sheet_description'],
     ] as const)(
-        'offers the sources available on %s and describes only those',
-        (os, expectedOptions, expectedDescriptionKey) => {
-            Platform.OS = os
+        'wraps the available file sources %j and describes only those',
+        (fileSources, expectedOptions, expectedDescriptionKey) => {
+            ;(useCredentialsFileReadSources as Mock).mockReturnValue(
+                fileSources,
+            )
 
             const { result } = renderHook(() => useRestoreBackupSheet())
 

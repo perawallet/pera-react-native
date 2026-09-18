@@ -3569,6 +3569,8 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_quantum_swap: 'enable_quantum_swap',
         enable_gift_cards: 'enable_gift_cards',
         enable_cloud_backup: 'enable_cloud_backup',
+        enable_backup_credentials_cloud_storage:
+            'enable_backup_credentials_cloud_storage',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import type { CredentialsFileSource } from '../../storage'
-import { getCredentialsFileReadSources } from '../../storage/credentialsFileSources'
+import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
 
 export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
@@ -31,7 +31,7 @@ const EVENTS: Partial<Record<RestoreBackupSheetResult, CloudBackupEvent>> = {
 
 export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
     const { resolve } = useBottomSheetResult<RestoreBackupSheetResult>()
-    const fileSources = getCredentialsFileReadSources()
+    const fileSources = useCredentialsFileReadSources()
     const options = useMemo<RestoreBackupSheetResult[]>(
         () => ['scan', ...fileSources, 'manual'],
         [fileSources],
