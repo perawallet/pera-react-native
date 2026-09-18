@@ -18,15 +18,12 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * The local account the card draws from, resolved from the stored address.
- *
- * Null when nothing is connected or when the stored address no longer belongs
- * to this wallet, which is why callers must resolve the account rather than
- * trust the address alone.
+ * The local account that created the card. The contract only accepts
+ * withdrawal calls from it, and only ever releases funds back to it, so it is
+ * the sender for the whole withdraw flow whatever the funding source is now.
+ * Null when the card was created from an account no longer in this wallet.
  */
-export const useCardFundingAccount = (): Nullable<WalletAccount> => {
-    const connectedAddress = useCardStore(
-        state => state.connectedFundingSourceAddress,
-    )
-    return useFindAccountByAddress(connectedAddress ?? '')
+export const useCardOwnerAccount = (): Nullable<WalletAccount> => {
+    const ownerAddress = useCardStore(state => state.escrowCardOwner)
+    return useFindAccountByAddress(ownerAddress ?? '')
 }

@@ -18,6 +18,7 @@ export {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
     mockAlgodSendRawTransaction,
+    mockAlgodSimulate,
     mockAlgodAccountAssetInformation,
     mockAlgodStatus,
     mockAlgodPendingTransaction,

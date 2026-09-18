@@ -10,14 +10,9 @@
  limitations under the License
  */
 
-export * from './card'
-export * from './currency'
-export * from './delegation'
-export * from './user'
-export * from './onboarding'
-export * from './transaction'
-export * from './session'
-export * from './funding'
-export * from './store'
-export * from './wallet-balance'
-export * from './withdrawal'
+/**
+ * Ramp token ids are symbolic, not ASA ids; this is the Algorand USDC pair
+ * the Fund tab seeds when asked for it (it falls back to ALGO if a network
+ * does not offer it).
+ */
+export const USDC_RAMP_TOKEN_ID = 'USDC_ALGORAND'

@@ -27,6 +27,7 @@ export const CardWithdrawScreen = () => {
         amount,
         handleKey,
         isWithdrawDisabled,
+        hasPendingWithdrawal,
         onWithdraw,
     } = useCardWithdrawScreen()
 
@@ -66,6 +67,16 @@ export const CardWithdrawScreen = () => {
                         amountTestID='card-withdraw-amount'
                         chip={<PWText variant='bodyLarge'>USDC</PWText>}
                     />
+
+                    {hasPendingWithdrawal && (
+                        <PWText
+                            variant='footnoteMedium'
+                            style={styles.mutedLabel}
+                            testID='card-withdraw-pending-hint'
+                        >
+                            {t('peraCard.withdraw.pending_exists')}
+                        </PWText>
+                    )}
                 </PWView>
 
                 <PWView style={styles.bottomGroup}>

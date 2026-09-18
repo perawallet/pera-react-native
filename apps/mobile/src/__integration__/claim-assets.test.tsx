@@ -54,6 +54,7 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     mockAlgodAccountInformation,
     mockAlgodSendRawTransaction,
+    mockAlgodSimulate,
     mockAlgodStatus,
     mockAlgodTransactionParams,
     mockIndexerSearchForAccounts,
@@ -68,17 +69,6 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
 } from './__fixtures__/onboarding'
-import { modelsv2, encodeMsgpack, decodeMsgpack } from 'algosdk'
-
-// AlgoKit's transaction composer auto-runs a `POST /v2/transactions/simulate`
-// (msgpack) to populate app-call resources whenever the group contains an app
-// call — which every ARC-59 claim/reject group does. There is no shared handler
-// factory for it, so we synthesize a faithful success response by echoing the
-// request's own transactions back (no extra resources to populate → the group
-// is built and submitted as-is), decoding the request and encoding the response
-// through algosdk's `modelsv2` simulate types so the bytes round-trip through
-// the same codec the client uses.
-
 // The claim flow hops through the Messages stack with
 // `push('Messages', { screen, params })`, but the test navigator is a single
 // FLAT stack that doesn't forward into a child navigator. So all four screens
@@ -221,42 +211,6 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
 // call) only when it is null. Reset per test in `beforeEach`.
 let simulateCallCount = 0
 
-// Echoes a successful, resource-free simulate result for every transaction in
-// the request group, so AlgoKit's `composer.build()` resource-population step
-// resolves and the group proceeds to signing + submission.
-const mockAlgodSimulate = () =>
-    http.post('*/v2/transactions/simulate', async ({ request }) => {
-        simulateCallCount += 1
-        const reqBytes = new Uint8Array(await request.arrayBuffer())
-        const decoded = decodeMsgpack(reqBytes, modelsv2.SimulateRequest)
-        const response = new modelsv2.SimulateResponse({
-            version: 2n,
-            lastRound: decoded.round ?? 1n,
-            txnGroups: decoded.txnGroups.map(
-                group =>
-                    new modelsv2.SimulateTransactionGroupResult({
-                        txnResults: group.txns.map(
-                            stxn =>
-                                new modelsv2.SimulateTransactionResult({
-                                    txnResult:
-                                        new modelsv2.PendingTransactionResponse(
-                                            { poolError: '', txn: stxn },
-                                        ),
-                                }),
-                        ),
-                    }),
-            ),
-        })
-        const responseBytes = encodeMsgpack(response)
-        return HttpResponse.arrayBuffer(
-            responseBytes.buffer.slice(
-                responseBytes.byteOffset,
-                responseBytes.byteOffset + responseBytes.byteLength,
-            ) as ArrayBuffer,
-            { headers: { 'content-type': 'application/msgpack' } },
-        )
-    })
-
 const HomeStub = () => <View testID='claim-flow-home' />
 
 // Stand-in for production's nested `Messages` navigator under the flat test
@@ -359,7 +313,11 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
                 response: { amount: 5_000_000, 'min-balance': 100_000 },
             }),
             mockAlgodStatus({ response: { 'last-round': 100 } }),
-            mockAlgodSimulate(),
+            mockAlgodSimulate({
+                onRequest: () => {
+                    simulateCallCount += 1
+                },
+            }),
             mockAlgodSendRawTransaction(),
             mockIndexerSearchForAccounts(),
         )

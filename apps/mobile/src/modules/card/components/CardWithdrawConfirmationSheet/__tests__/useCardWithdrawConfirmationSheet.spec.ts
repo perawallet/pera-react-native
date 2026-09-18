@@ -14,63 +14,34 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
-    withdrawMutateAsync: vi.fn(),
-    withdrawPending: false,
-    usdcWallet: null as unknown,
-    selectedAccount: null as unknown,
+    request: vi.fn(),
+    isRequesting: false,
+    pending: null as unknown,
+    cardBalance: '150',
+    owner: null as unknown,
     resolve: vi.fn(),
     dismiss: vi.fn(),
-    errorToast: vi.fn(),
+    showError: vi.fn(),
 }))
 
-const usdcWallet = {
-    id: 'wallet_usdc',
-    balance: new Decimal('150'),
-    currency: 'usdc',
-    address: 'BAANX_ADDR',
-    addressMemo: null,
-    addressId: 'addr_1',
-    type: 'INTERNAL',
-}
+const owner = { address: 'OWNER', name: 'Main Account' }
 
-const account = { address: 'ALGO_RECIPIENT', name: 'Main Account' }
-
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
-    return {
-        ...actual,
-        useWithdrawFromCardMutation: () => ({
-            mutate: vi.fn(),
-            mutateAsync: mocks.withdrawMutateAsync,
-            isPending: mocks.withdrawPending,
-            isError: false,
-            isSuccess: false,
-            isPaused: false,
-            error: null,
-            data: null,
-            reset: vi.fn(),
-        }),
-        useCardInternalWalletsQuery: () => ({
-            usdcWallet: mocks.usdcWallet,
-            isLoading: false,
-            isError: false,
-            error: null,
-            refetch: vi.fn(),
-        }),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-accounts',
-    )
-    return {
-        ...actual,
-        useSelectedAccount: () => mocks.selectedAccount,
-    }
-})
+vi.mock('../../../hooks', () => ({
+    useCardWithdraw: () => ({
+        request: mocks.request,
+        isRequesting: mocks.isRequesting,
+        pending: mocks.pending,
+    }),
+    useCardEscrowBalance: () => ({
+        balance: new Decimal(mocks.cardBalance),
+        isLoading: false,
+    }),
+    useCardOwnerAccount: () => mocks.owner,
+    useCardErrorToast: () => mocks.showError,
+}))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({
@@ -79,28 +50,19 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        infoToast: vi.fn(),
-        errorToast: mocks.errorToast,
-        showToast: vi.fn(),
-        successToast: vi.fn(),
-    }),
-}))
-
 import { useCardWithdrawConfirmationSheet } from '../useCardWithdrawConfirmationSheet'
 
 describe('useCardWithdrawConfirmationSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.withdrawPending = false
-        mocks.usdcWallet = usdcWallet
-        mocks.selectedAccount = account
+        mocks.isRequesting = false
+        mocks.pending = null
+        mocks.cardBalance = '150'
+        mocks.owner = owner
+        mocks.request.mockResolvedValue(undefined)
     })
 
-    it('withdraws to the destination account and resolves the sheet on confirm', async () => {
-        mocks.withdrawMutateAsync.mockResolvedValue(undefined)
-
+    it('requests the withdrawal and resolves the sheet on confirm', async () => {
         const { result } = renderHook(() =>
             useCardWithdrawConfirmationSheet({ amount: new Decimal('25.5') }),
         )
@@ -108,11 +70,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
             result.current.onConfirm()
         })
 
-        expect(mocks.withdrawMutateAsync).toHaveBeenCalledWith({
-            amount: new Decimal('25.5'),
-            recipientAddress: 'ALGO_RECIPIENT',
-            wallet: usdcWallet,
-        })
+        expect(mocks.request).toHaveBeenCalledWith(new Decimal('25.5'))
         expect(mocks.resolve).toHaveBeenCalledWith('confirm')
     })
 
@@ -122,11 +80,11 @@ describe('useCardWithdrawConfirmationSheet', () => {
         )
 
         expect(result.current.amountDisplay).toBe('25.50')
+        expect(result.current.destinationAccount).toBe(owner)
     })
 
-    it('keeps the sheet open and toasts when the withdrawal fails', async () => {
-        mocks.withdrawMutateAsync.mockRejectedValue(new Error('boom'))
-
+    it('keeps the sheet open and toasts when the request fails', async () => {
+        mocks.request.mockRejectedValue(new Error('boom'))
         const { result } = renderHook(() =>
             useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
@@ -134,88 +92,60 @@ describe('useCardWithdrawConfirmationSheet', () => {
             result.current.onConfirm()
         })
 
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+        expect(mocks.showError).toHaveBeenCalledTimes(1)
         expect(mocks.resolve).not.toHaveBeenCalled()
     })
 
-    it('does not start a second withdrawal while one is pending', async () => {
-        mocks.withdrawPending = true
-
+    // Backing out of the signing review is a user action, not a failure.
+    it('stays silent when the user rejects the signing review', async () => {
+        mocks.request.mockRejectedValue(new UserRejectedSigningError())
         const { result } = renderHook(() =>
             useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.showError).not.toHaveBeenCalled()
+        expect(mocks.resolve).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        ['the owner is gone', () => (mocks.owner = null), '1'],
+        ['a request is already pending', () => (mocks.pending = {}), '1'],
+        [
+            'the amount exceeds the card balance',
+            () => (mocks.cardBalance = '0.5'),
+            '1',
+        ],
+    ])(
+        're-checks before submitting and toasts when %s',
+        async (_, arrange, amount) => {
+            arrange()
+            const { result } = renderHook(() =>
+                useCardWithdrawConfirmationSheet({
+                    amount: new Decimal(amount),
+                }),
+            )
+            await act(async () => {
+                result.current.onConfirm()
+            })
+
+            expect(mocks.request).not.toHaveBeenCalled()
+            expect(mocks.showError).toHaveBeenCalledWith(null)
+        },
+    )
+
+    it('ignores a second tap while the first request is in flight', async () => {
+        mocks.isRequesting = true
+        const { result } = renderHook(() =>
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.request).not.toHaveBeenCalled()
         expect(result.current.isWithdrawing).toBe(true)
-
-        await act(async () => {
-            result.current.onConfirm()
-        })
-
-        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
-    })
-
-    it('toasts instead of withdrawing when the amount exceeds the card balance', async () => {
-        mocks.usdcWallet = { ...usdcWallet, balance: new Decimal('10') }
-
-        const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: new Decimal('25.5') }),
-        )
-        await act(async () => {
-            result.current.onConfirm()
-        })
-
-        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
-        expect(mocks.resolve).not.toHaveBeenCalled()
-    })
-
-    it('toasts instead of withdrawing when the amount is zero', async () => {
-        const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: new Decimal(0) }),
-        )
-        await act(async () => {
-            result.current.onConfirm()
-        })
-
-        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
-        expect(mocks.resolve).not.toHaveBeenCalled()
-    })
-
-    it('toasts instead of withdrawing when the USDC wallet is missing', async () => {
-        mocks.usdcWallet = null
-
-        const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
-        )
-        await act(async () => {
-            result.current.onConfirm()
-        })
-
-        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
-    })
-
-    it('toasts instead of withdrawing when no destination account exists', async () => {
-        mocks.selectedAccount = null
-
-        const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
-        )
-        await act(async () => {
-            result.current.onConfirm()
-        })
-
-        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
-    })
-
-    it('dismisses the sheet on close', () => {
-        const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
-        )
-
-        result.current.onClose()
-
-        expect(mocks.dismiss).toHaveBeenCalledTimes(1)
     })
 })

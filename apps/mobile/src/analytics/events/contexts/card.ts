@@ -53,7 +53,7 @@ export enum CardEvent {
     HomeCardDetailsTab = 'card_home_cardDetails', // Switched to the Card Details tab on the dashboard
     HomeAddFunds = 'card_home_addFunds', // Tapped Add Funds on the dashboard
     HomeWithdraw = 'card_home_withdraw', // Tapped Withdraw on the dashboard
-    HomeGetUsdc = 'card_home_getUSDC', // Tapped Get USDC on the dashboard (feature not live yet)
+    HomeGetUsdc = 'card_home_getUSDC', // Tapped Add Funds under Auto Funding (tops up the linked account via the Fund tab)
     HomeShowAll = 'card_home_showAll', // Tapped show-all on the dashboard transactions list
     HomeFundingType = 'card_home_fundingType', // Tapped the funding-type switch
     HomeRewards = 'card_home_rewards', // Opened the rewards screen from the dashboard credits

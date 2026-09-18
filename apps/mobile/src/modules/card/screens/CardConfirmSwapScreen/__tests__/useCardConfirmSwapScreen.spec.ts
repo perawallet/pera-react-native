@@ -45,8 +45,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'ADDR' }),
     useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
+}))
+
+vi.mock('../../../hooks', () => ({
+    useCardFundingAccount: () => ({ address: 'ADDR' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
