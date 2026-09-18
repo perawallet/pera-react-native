@@ -18,7 +18,12 @@
 // a test needs both.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
-import { msgpackRawEncode } from 'algosdk'
+import {
+    decodeMsgpack,
+    encodeMsgpack,
+    modelsv2,
+    msgpackRawEncode,
+} from 'algosdk'
 
 // These responses aren't zod-validated here — algokit-utils owns that schema
 // layer. The shapes below mirror its wire-format expectations, so an algokit
@@ -147,6 +152,55 @@ export const mockAlgodSendRawTransaction = ({
     http.post('*/v2/transactions', () =>
         HttpResponse.json({ txId }, { status }),
     )
+
+export type MockAlgodSimulateParams = {
+    /** Called once per simulate request, so a test can count or inspect them. */
+    onRequest?: (request: modelsv2.SimulateRequest) => void
+}
+
+/**
+ * algod `POST /v2/transactions/simulate`, which AlgoKit runs to populate
+ * app-call resources for any group holding an app call. Echoes every
+ * transaction back as a resource-free success, so the group is built and
+ * submitted exactly as composed. Request and response go through algosdk's
+ * `modelsv2` codec: the client decodes msgpack, so a JSON body would not do.
+ */
+export const mockAlgodSimulate = ({
+    onRequest,
+}: MockAlgodSimulateParams = {}): HttpHandler =>
+    http.post('*/v2/transactions/simulate', async ({ request }) => {
+        const decoded = decodeMsgpack(
+            new Uint8Array(await request.arrayBuffer()),
+            modelsv2.SimulateRequest,
+        )
+        onRequest?.(decoded)
+        const response = new modelsv2.SimulateResponse({
+            version: 2n,
+            lastRound: decoded.round ?? 1n,
+            txnGroups: decoded.txnGroups.map(
+                group =>
+                    new modelsv2.SimulateTransactionGroupResult({
+                        txnResults: group.txns.map(
+                            stxn =>
+                                new modelsv2.SimulateTransactionResult({
+                                    txnResult:
+                                        new modelsv2.PendingTransactionResponse(
+                                            { poolError: '', txn: stxn },
+                                        ),
+                                }),
+                        ),
+                    }),
+            ),
+        })
+        const bytes = encodeMsgpack(response)
+        return HttpResponse.arrayBuffer(
+            bytes.buffer.slice(
+                bytes.byteOffset,
+                bytes.byteOffset + bytes.byteLength,
+            ) as ArrayBuffer,
+            { headers: { 'Content-Type': 'application/msgpack' } },
+        )
+    })
 
 export type AlgodAccountAssetInformationResponse = {
     'asset-holding': {
