@@ -1074,7 +1074,6 @@
             "spendable_info_body": "Tek bir alışverişin çekebileceği en yüksek tutar: kart bakiyen ve iade bakiyen, ayrıca otomatik fonlama açıkken bağlı hesabından {{limit}} tutarına kadar.",
             "withdraw": "Çek",
             "add_funds": "Ekle",
-            "get_usdc": "USDC al",
             "credits_title": "Krediler",
             "credits_description": "Kartın üzerinden sana geri dönen para: alışverişlerden kazanılan ödüller ve satıcı iadeleri. İstediğin zaman cüzdanına talep edebilirsin.",
             "rewards": "Ödüller",

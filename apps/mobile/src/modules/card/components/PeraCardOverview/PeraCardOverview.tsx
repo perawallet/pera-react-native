@@ -36,7 +36,7 @@ export const PeraCardOverview = () => {
         onCompleteWithdrawal,
         onCancelWithdrawal,
         onAddFunds,
-        onGetUsdc,
+        onFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
@@ -71,7 +71,7 @@ export const PeraCardOverview = () => {
                 isWithdrawDisabled={pendingWithdrawal !== null}
                 onWithdraw={onWithdraw}
                 onAddFunds={onAddFunds}
-                onGetUsdc={onGetUsdc}
+                onFundLinkedAccount={onFundLinkedAccount}
             />
 
             <PeraCardCreditsSection

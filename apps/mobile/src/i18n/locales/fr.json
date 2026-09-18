@@ -1074,7 +1074,6 @@
             "spendable_info_body": "Le montant maximum d'un seul achat : le solde de votre carte plus votre solde de remboursements et, avec le financement automatique, jusqu'à {{limit}} depuis votre compte lié.",
             "withdraw": "Retirer",
             "add_funds": "Ajouter des fonds",
-            "get_usdc": "Obtenir des USDC",
             "credits_title": "Crédits",
             "credits_description": "L'argent qui vous revient via votre carte : récompenses sur vos achats et remboursements des commerçants. Réclamez-le vers votre portefeuille à tout moment.",
             "rewards": "Récompenses",

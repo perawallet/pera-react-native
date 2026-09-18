@@ -1074,7 +1074,6 @@
             "spendable_info_body": "El máximo que puede cubrir una sola compra: el saldo de tu tarjeta más tu saldo de reembolsos y, con la financiación automática, hasta {{limit}} de tu cuenta vinculada.",
             "withdraw": "Retirar",
             "add_funds": "Añadir fondos",
-            "get_usdc": "Obtener USDC",
             "credits_title": "Créditos",
             "credits_description": "Dinero que recuperas con tu tarjeta: recompensas por compras y reembolsos de comercios. Reclámalo a tu billetera en cualquier momento.",
             "rewards": "Recompensas",

@@ -1074,7 +1074,6 @@
             "spendable_info_body": "The most a single purchase can draw: your card balance plus your refund balance, and, with Auto Funding, up to {{limit}} from your linked account.",
             "withdraw": "Withdraw",
             "add_funds": "Add Funds",
-            "get_usdc": "Get USDC",
             "credits_title": "Credits",
             "credits_description": "Money you get back on your card: rewards on purchases and refunds from merchants. Claim it to your wallet any time.",
             "rewards": "Rewards",

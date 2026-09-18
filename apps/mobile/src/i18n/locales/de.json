@@ -1066,7 +1066,6 @@
             "spendable_info_body": "Der Höchstbetrag für einen einzelnen Kauf: dein Kartenguthaben plus dein Rückerstattungsguthaben und, mit Auto-Funding, bis zu {{limit}} von deinem verknüpften Konto.",
             "withdraw": "Auszahlen",
             "add_funds": "Guthaben hinzufügen",
-            "get_usdc": "USDC erhalten",
             "credits_title": "Guthaben",
             "credits_description": "Geld, das du über deine Karte zurückbekommst: Prämien für Einkäufe und Rückerstattungen von Händlern. Löse es jederzeit in deine Wallet ein.",
             "rewards": "Prämien",

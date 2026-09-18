@@ -1074,7 +1074,6 @@
             "spendable_info_body": "O máximo que uma única compra pode usar: o saldo do seu cartão mais o seu saldo de reembolsos e, com o financiamento automático, até {{limit}} da sua conta vinculada.",
             "withdraw": "Sacar",
             "add_funds": "Adicionar fundos",
-            "get_usdc": "Obter USDC",
             "credits_title": "Créditos",
             "credits_description": "Dinheiro que volta para você pelo cartão: recompensas nas compras e reembolsos de estabelecimentos. Resgate para a sua carteira a qualquer momento.",
             "rewards": "Recompensas",

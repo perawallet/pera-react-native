@@ -20,7 +20,8 @@ type PeraCardActionButtonsProps = {
     isWithdrawDisabled?: boolean
     onWithdraw: () => void
     onAddFunds: () => void
-    onGetUsdc: () => void
+    /** Auto funding: tops up the linked account rather than the card. */
+    onFundLinkedAccount: () => void
 }
 
 export const PeraCardActionButtons = ({
@@ -28,7 +29,7 @@ export const PeraCardActionButtons = ({
     isWithdrawDisabled = false,
     onWithdraw,
     onAddFunds,
-    onGetUsdc,
+    onFundLinkedAccount,
 }: PeraCardActionButtonsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -37,9 +38,9 @@ export const PeraCardActionButtons = ({
         return (
             <PWButton
                 variant='primary'
-                title={t('peraCard.account.get_usdc')}
-                onPress={onGetUsdc}
-                testID='pera_card_get_usdc_button'
+                title={t('peraCard.account.add_funds')}
+                onPress={onFundLinkedAccount}
+                testID='pera_card_fund_linked_account_button'
             />
         )
     }

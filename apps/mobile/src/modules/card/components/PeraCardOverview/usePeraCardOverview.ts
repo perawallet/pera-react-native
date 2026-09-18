@@ -21,7 +21,10 @@ import {
     useCardWalletBalanceQuery,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
-import { useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountAssetBalanceQuery,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -30,10 +33,10 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import {
-    useCardComingSoonToast,
     useCardErrorToast,
     useCardEscrowBalance,
     useCardFundingAccount,
@@ -79,7 +82,8 @@ type UsePeraCardOverviewResult = {
     onCompleteWithdrawal: () => void
     onCancelWithdrawal: () => void
     onAddFunds: () => void
-    onGetUsdc: () => void
+    /** Auto funding: top up the linked account itself, via the Fund tab. */
+    onFundLinkedAccount: () => void
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
     onCreditPress: (kind: CardWalletKind) => void
@@ -162,7 +166,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         .plus(cardBalance)
         .plus(credits.refunds)
 
-    const showComingSoon = useCardComingSoonToast()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
     const { successToast } = useToast()
     const {
@@ -246,11 +250,17 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         navigation.navigate('CardWithdraw')
     }, [navigation])
 
-    const onGetUsdc = useCallback(() => {
-        // Still tracked while the flow is a coming-soon stub — demand signal.
+    const onFundLinkedAccount = useCallback(() => {
+        if (fundingAccount === null) return
         trackEvent(CardEvent.HomeGetUsdc)
-        showComingSoon()
-    }, [showComingSoon])
+        // The Fund tab works on the selected account, so make it the linked
+        // one first or the USDC lands wherever the user last was.
+        setSelectedAccountAddress(fundingAccount.address)
+        navigation.navigate('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
+        })
+    }, [fundingAccount, setSelectedAccountAddress, navigation])
 
     const onShowAllTransactions = useCallback(() => {
         trackEvent(CardEvent.HomeShowAll)
@@ -288,7 +298,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onCompleteWithdrawal,
         onCancelWithdrawal,
         onAddFunds,
-        onGetUsdc,
+        onFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,

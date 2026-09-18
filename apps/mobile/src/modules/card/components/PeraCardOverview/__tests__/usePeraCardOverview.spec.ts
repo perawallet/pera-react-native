@@ -19,6 +19,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useAccountAssetBalanceQuery,
     useAllAccounts,
+    useSelectedAccountAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -38,6 +39,7 @@ const mockInfoToast = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 const mockNavigate = vi.fn()
+const mockSetSelectedAccountAddress = vi.fn()
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -217,6 +219,10 @@ describe('usePeraCardOverview', () => {
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
         vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
+        vi.mocked(useSelectedAccountAddress).mockReturnValue({
+            selectedAccountAddress: null,
+            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        })
     })
 
     it('reports the balance as loading while the card balance is in flight', () => {
@@ -361,12 +367,30 @@ describe('usePeraCardOverview', () => {
         },
     )
 
-    it('unwired action handlers surface the coming-soon toast', () => {
+    // Under auto funding the card spends from the linked account, so topping
+    // up means buying USDC into that account, which the Fund tab only does for
+    // whichever account is selected.
+    it('selects the linked account and opens the Fund tab on USDC', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
-        result.current.onGetUsdc()
+        result.current.onFundLinkedAccount()
 
-        expect(mockInfoToast).toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('LINKED_ADDR')
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: 'USDC_ALGORAND' },
+        })
+        expect(mockInfoToast).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the linked account is not in the wallet', () => {
+        mockState.connectedAddress = null
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     describe('balance display with auto funding', () => {
