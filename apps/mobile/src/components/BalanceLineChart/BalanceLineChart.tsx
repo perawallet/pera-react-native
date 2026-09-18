@@ -216,6 +216,7 @@ export const BalanceLineChart = <T,>({
                         title={t('common.offline_mode')}
                         body={t('common.offline_refresh_body')}
                         button={retryButton}
+                        shouldTruncateBody={false}
                     />
                 )
             }
@@ -227,6 +228,7 @@ export const BalanceLineChart = <T,>({
                         title={t('common.error.title')}
                         body={errorBody ?? t('common.error.body')}
                         button={retryButton}
+                        shouldTruncateBody={false}
                     />
                 )
             }
@@ -249,5 +251,11 @@ export const BalanceLineChart = <T,>({
         }
     }
 
-    return <PWView style={style}>{renderContent()}</PWView>
+    return (
+        <PWView
+            style={renderState === 'chart' ? style : [style, styles.message]}
+        >
+            {renderContent()}
+        </PWView>
+    )
 }
