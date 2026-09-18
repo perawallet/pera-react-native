@@ -169,7 +169,10 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 autoCreateContainer: false,
             },
         })
-        if (choice === 'store') await storeCredentials()
+        // The PIN above covers this: the sheet it opened already showed the
+        // credentials, so asking again to save them is a second prompt for
+        // something the user has just been shown.
+        if (choice === 'store') await storeCredentials({ hasVerifiedPin: true })
     }, [requirePinVerification, requestBottomSheet, storeCredentials])
 
     const shouldPromptStoreCredentials =

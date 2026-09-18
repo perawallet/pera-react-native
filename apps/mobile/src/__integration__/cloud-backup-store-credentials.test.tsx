@@ -116,7 +116,7 @@ afterEach(async () => {
 })
 
 describe('storing backup credentials', () => {
-    it('checks the PIN again after a destination is chosen, saves the key file to the device and confirms', async () => {
+    it('takes the PIN once, saves the key file to the device and confirms', async () => {
         const write = vi.spyOn(File.prototype, 'write')
         await seedPin()
         renderWithNavigation(CloudBackupOverviewScreen, 'CloudBackupOverview')
@@ -134,8 +134,9 @@ describe('storing backup credentials', () => {
         fireEvent.click(
             await screen.findByTestId('store_backup_credentials_local'),
         )
-        await enterPin()
 
+        // No second PIN: this entry point already took one before the
+        // credentials sheet that led here.
         await waitFor(() =>
             expect(Share.open).toHaveBeenCalledWith(
                 expect.objectContaining({
