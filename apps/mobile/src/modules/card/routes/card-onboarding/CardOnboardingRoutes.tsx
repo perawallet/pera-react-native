@@ -27,7 +27,6 @@ import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddress
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
 import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
 import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
-import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
 import type { CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -111,14 +110,6 @@ export const CardOnboardingStackNavigator = () => {
                         />
                     ),
                 })}
-            />
-            <Stack.Screen
-                name='CardOnboardingAutoFundingSigning'
-                component={CardAutoFundingSigningScreen}
-                // Same in-flight treatment as CardOnboardingSigning — the
-                // card already exists at this point; only Cancel (which
-                // degrades to Manual) can leave, not a swipe/back-chevron.
-                options={{ headerShown: false, gestureEnabled: false }}
             />
         </Stack.Navigator>
     )

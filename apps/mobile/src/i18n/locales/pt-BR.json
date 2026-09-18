@@ -1587,19 +1587,18 @@
             "auto_funding_degraded_body": "Não foi possível ativar o financiamento automático agora, então seu cartão começa com o financiamento manual. Você pode mudar depois nas configurações do cartão."
         },
         "signing": {
-            "title": "Vamos começar",
-            "body": "Para criar seu Pera Card, você precisa assinar três grupos de transações. Siga estes passos:",
-            "step_sign_label": "Assine uma solicitação de autenticação para comprovar que a conta vinculada é sua",
-            "step_create_label": "Crie e finalize sua nova conta Pera Card",
-            "step_authorize_label": "Assine o programa de financiamento automático para permitir que o Pera Card gaste da sua conta vinculada",
-            "proceed_button": "Prosseguir"
-        },
-        "auto_funding_signing": {
-            "title": "Solicitação de aprovação de assinatura automática",
-            "body": "Isso permite que seu cartão puxe fundos automaticamente quando necessário, para que você não precise aprovar cada recarga. Você está assinando uma logic sig — uma assinatura pré-autorizada — que permite esse uso automático de fundos da sua conta conectada.",
-            "error_title": "Não foi possível autorizar o financiamento automático",
-            "error_body": "Algo deu errado ao autorizar o financiamento automático. Tente novamente ou cancele para continuar com o financiamento manual (você pode mudar para o automático depois nas configurações do cartão).",
-            "cancel_button": "Cancelar"
+            "title": "Criar Pera Card",
+            "body_manual": "Você vai assinar uma vez para comprovar que a conta vinculada é sua. Logo depois, criamos seu cartão.",
+            "body_auto": "Você vai assinar para comprovar que a conta vinculada é sua e para permitir o financiamento automático. Depois, aprova uma transação que o ativa.",
+            "linked_account_label": "Conta vinculada",
+            "funding_type_label": "Tipo de financiamento",
+            "step_ownership_label": "Comprovar que a conta vinculada é sua",
+            "step_create_label": "Criar seu Pera Card",
+            "step_auto_funding_label": "Permitir o financiamento automático a partir da conta vinculada",
+            "retry_button": "Tentar novamente",
+            "continue_manual_button": "Continuar com financiamento manual",
+            "auto_funding_error_title": "Não foi possível autorizar o financiamento automático",
+            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão."
         },
         "connect_account": {
             "title": "Escolha a conta do cartão",
