@@ -12,7 +12,10 @@
 
 import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
-import { useSwapCosignResolver } from '@perawallet/wallet-core-swaps'
+import {
+    useSwapCosignResolver,
+    useSwapStatusReportFlush,
+} from '@perawallet/wallet-core-swaps'
 import { useErrorToast } from '@hooks/useErrorToast'
 
 /**
@@ -38,6 +41,7 @@ export const SwapOverlays = (): null => {
     }, [])
 
     useSwapCosignResolver({ isAppActive, reportError: showError })
+    useSwapStatusReportFlush()
 
     return null
 }

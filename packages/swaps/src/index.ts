@@ -16,4 +16,9 @@ export * from './hooks'
 export * from './models'
 export * from './api'
 export * from './utils'
-export { useSwapsStore, useSwapHandoffStore, useSwapResumeStore } from './store'
+export {
+    useSwapsStore,
+    useSwapHandoffStore,
+    useSwapResumeStore,
+    useSwapStatusReportStore,
+} from './store'
