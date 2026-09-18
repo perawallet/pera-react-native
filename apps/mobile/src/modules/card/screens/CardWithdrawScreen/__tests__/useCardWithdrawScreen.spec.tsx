@@ -21,7 +21,6 @@ const mocks = vi.hoisted(() => ({
     cardBalance: '150',
     owner: null as unknown,
     pending: null as unknown,
-    secondsUntilReady: 25,
     isFocused: true,
 }))
 
@@ -33,9 +32,15 @@ vi.mock('../../../hooks', () => ({
         isLoading: false,
     }),
     useCardOwnerAccount: () => mocks.owner,
-    useCardWithdraw: () => ({
+}))
+
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    useCardPendingWithdrawalQuery: () => ({
         pending: mocks.pending,
-        secondsUntilReady: mocks.secondsUntilReady,
+        waitTimeSeconds: 20,
+        isLoading: false,
+        invalidate: vi.fn(),
     }),
 }))
 
@@ -82,7 +87,6 @@ describe('useCardWithdrawScreen', () => {
         mocks.cardBalance = '150'
         mocks.owner = owner
         mocks.pending = null
-        mocks.secondsUntilReady = 25
         mocks.isFocused = true
     })
 
@@ -122,7 +126,7 @@ describe('useCardWithdrawScreen', () => {
         expect(result.current.isWithdrawDisabled).toBe(true)
     })
 
-    it('toasts the requested amount and countdown, then leaves, once the sheet confirms', async () => {
+    it('toasts the requested amount, then leaves, once the sheet confirms', async () => {
         mockRequestSheet.mockResolvedValue('confirm')
         const { result } = renderHook(() => useCardWithdrawScreen())
         type(result, ['2', '.', '5'])

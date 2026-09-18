@@ -124,10 +124,8 @@ export const useEscrowWithdrawal = (): UseEscrowWithdrawalResult => {
             return buildCall(sender, {
                 method: 'withdrawalRequest',
                 args: [cardAddress, BigInt(assetId), amount],
-                // Naming the card's holding keeps resource population from
-                // discovering it as unnamed and then JSON-stringifying every
-                // field to place it, which throws on algosdk's native bigints
-                // (algokit 9.2.x).
+                // Named for the same algokit 9.2.x reason as in
+                // useKillswitchAutoDraw.buildEnable.
                 accountReferences: [cardAddress],
                 assetReferences: [BigInt(assetId)],
             })

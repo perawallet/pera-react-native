@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
-    useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -26,11 +25,5 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
  */
 export const useCardOwnerAccount = (): Nullable<WalletAccount> => {
     const ownerAddress = useCardStore(state => state.escrowCardOwner)
-    const accounts = useAllAccounts()
-
-    return useMemo(
-        () =>
-            accounts.find(account => account.address === ownerAddress) ?? null,
-        [accounts, ownerAddress],
-    )
+    return useFindAccountByAddress(ownerAddress ?? '')
 }

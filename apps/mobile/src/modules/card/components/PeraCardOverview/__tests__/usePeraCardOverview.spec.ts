@@ -18,7 +18,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useAccountAssetBalanceQuery,
-    useAllAccounts,
+    useFindAccountByAddress,
     useSelectedAccountAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -218,7 +218,9 @@ describe('usePeraCardOverview', () => {
         mockState.creditBalance = null
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
-        vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address => [LOCAL_ACCOUNT].find(a => a.address === address) ?? null,
+        )
         vi.mocked(useSelectedAccountAddress).mockReturnValue({
             selectedAccountAddress: null,
             setSelectedAccountAddress: mockSetSelectedAccountAddress,
@@ -278,7 +280,10 @@ describe('usePeraCardOverview', () => {
         mockState.selectedFundingType = 'AUTO'
         mockState.delegatedWallet = { allowance: new Decimal('200') }
         setLinkedUsdc('500')
-        vi.mocked(useAllAccounts).mockReturnValue([LEDGER_ACCOUNT])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address =>
+                [LEDGER_ACCOUNT].find(a => a.address === address) ?? null,
+        )
 
         const { result } = renderHook(() => usePeraCardOverview())
 
@@ -375,7 +380,9 @@ describe('usePeraCardOverview', () => {
 
         result.current.onFundLinkedAccount()
 
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('LINKED_ADDR')
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+            'LINKED_ADDR',
+        )
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Fund',
             params: { destinationTokenId: 'USDC_ALGORAND' },

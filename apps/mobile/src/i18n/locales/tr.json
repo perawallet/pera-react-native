@@ -1280,7 +1280,7 @@
             "confirm_body": "Pera Card’ından aşağıdaki hesaba {{amount}} USDC çekmek üzeresin.",
             "confirm_button": "Onayla",
             "requested_title": "Çekim talebi alındı",
-            "requested_body": "{{amount}} USDC yaklaşık {{seconds}} saniye içinde tamamlanmaya hazır olacak.",
+            "requested_body": "{{amount}} USDC kısa süre içinde kart ekranından tamamlanmaya hazır olacak.",
             "pending_title": "Çekim devam ediyor",
             "pending_ready_in": "{{seconds}} saniye içinde hazır",
             "pending_ready": "Tamamlanmaya hazır",

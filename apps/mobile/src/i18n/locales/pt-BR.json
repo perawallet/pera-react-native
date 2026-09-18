@@ -1280,7 +1280,7 @@
             "confirm_body": "Você está prestes a sacar {{amount}} USDC do seu Pera Card para a conta abaixo.",
             "confirm_button": "Confirmar",
             "requested_title": "Saque solicitado",
-            "requested_body": "{{amount}} USDC estarão prontos para concluir em cerca de {{seconds}} segundos.",
+            "requested_body": "{{amount}} USDC estarão prontos para concluir na tela do seu cartão em instantes.",
             "pending_title": "Saque em andamento",
             "pending_ready_in": "Pronto em {{seconds}} s",
             "pending_ready": "Pronto para concluir",

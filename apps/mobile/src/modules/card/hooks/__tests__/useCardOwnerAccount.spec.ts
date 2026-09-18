@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -34,7 +34,9 @@ const other = { address: 'OTHER', type: 'algo25' } as WalletAccount
 describe('useCardOwnerAccount', () => {
     beforeEach(() => {
         mocks.escrowCardOwner = 'OWNER'
-        vi.mocked(useAllAccounts).mockReturnValue([other, owner])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address => [other, owner].find(a => a.address === address) ?? null,
+        )
     })
 
     it('resolves the stored owner address to its local account', () => {
@@ -51,7 +53,9 @@ describe('useCardOwnerAccount', () => {
     // The owner is the only account the contract lets withdraw, so a removed
     // owner means no withdrawal, not a fallback to whatever is selected.
     it('is null when the owner is no longer in the wallet', () => {
-        vi.mocked(useAllAccounts).mockReturnValue([other])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address => [other].find(a => a.address === address) ?? null,
+        )
         const { result } = renderHook(() => useCardOwnerAccount())
         expect(result.current).toBeNull()
     })

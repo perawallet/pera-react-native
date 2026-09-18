@@ -1272,7 +1272,7 @@
             "confirm_body": "Du bist dabei, {{amount}} USDC von deiner Pera Card auf das unten stehende Konto auszuzahlen.",
             "confirm_button": "Bestätigen",
             "requested_title": "Auszahlung angefordert",
-            "requested_body": "{{amount}} USDC können in etwa {{seconds}} Sekunden abgeschlossen werden.",
+            "requested_body": "{{amount}} USDC können in Kürze über deine Kartenansicht abgeschlossen werden.",
             "pending_title": "Auszahlung in Bearbeitung",
             "pending_ready_in": "Bereit in {{seconds}} s",
             "pending_ready": "Bereit zum Abschließen",

@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useCardPendingWithdrawalQuery } from '@perawallet/wallet-core-card'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import { useNumberPadAmount } from '@components/NumberPad'
@@ -19,11 +20,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { CardWithdrawConfirmationSheet } from '../../components/CardWithdrawConfirmationSheet'
-import {
-    useCardEscrowBalance,
-    useCardOwnerAccount,
-    useCardWithdraw,
-} from '../../hooks'
+import { useCardEscrowBalance, useCardOwnerAccount } from '../../hooks'
 import {
     USDC_DISPLAY_PRECISION,
     USDC_FALLBACK_DECIMALS,
@@ -51,7 +48,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
 
     const destinationAccount = useCardOwnerAccount()
     const { balance: cardBalance } = useCardEscrowBalance()
-    const { pending, secondsUntilReady } = useCardWithdraw()
+    const { pending } = useCardPendingWithdrawalQuery()
 
     const {
         amount: value,
@@ -90,7 +87,6 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
                 t('peraCard.withdraw.requested_title'),
                 t('peraCard.withdraw.requested_body', {
                     amount: amountDecimal.toFixed(USDC_DISPLAY_PRECISION),
-                    seconds: secondsUntilReady,
                 }),
             )
             // Skip navigation if the screen lost focus while the sheet was up.
@@ -100,14 +96,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
         } finally {
             isConfirmationOpenRef.current = false
         }
-    }, [
-        requestBottomSheet,
-        successToast,
-        t,
-        amountDecimal,
-        secondsUntilReady,
-        navigation,
-    ])
+    }, [requestBottomSheet, successToast, t, amountDecimal, navigation])
 
     const onWithdraw = useCallback(() => {
         void openConfirmation()

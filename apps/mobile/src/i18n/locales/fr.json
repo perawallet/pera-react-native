@@ -1280,7 +1280,7 @@
             "confirm_body": "Vous êtes sur le point de retirer {{amount}} USDC de votre Pera Card vers le compte ci-dessous.",
             "confirm_button": "Confirmer",
             "requested_title": "Retrait demandé",
-            "requested_body": "{{amount}} USDC pourront être finalisés dans environ {{seconds}} secondes.",
+            "requested_body": "{{amount}} USDC pourront être finalisés depuis l’écran de votre carte dans un instant.",
             "pending_title": "Retrait en cours",
             "pending_ready_in": "Prêt dans {{seconds}} s",
             "pending_ready": "Prêt à finaliser",
