@@ -26,14 +26,17 @@ import {
     AUTO_LOCK_MINUTES_OPTIONS,
 } from '@perawallet/wallet-extension-keystore-chrome'
 import { logger } from '@perawallet/wallet-core-shared'
+import {
+    usePasswordStrength,
+    type PasswordScore,
+    type PasswordStrengthError,
+} from '../../hooks/usePasswordStrength.web'
 
 // null covers both "not yet checked" and "unsupported" — either way the
 // passkey section doesn't render.
 type PasskeyState = 'disabled' | 'enabled' | null
 
-const MIN_NEW_PASSWORD_LENGTH = 8
-
-type ChangePasswordValidationError = 'too_short' | 'mismatch' | null
+type ChangePasswordValidationError = PasswordStrengthError | 'mismatch' | null
 type ChangePasswordError = 'invalid_current' | 'corrupted' | 'unexpected' | null
 
 type UseVaultSecuritySettingsScreenResult = {
@@ -56,6 +59,7 @@ type UseVaultSecuritySettingsScreenResult = {
     setNewPassword: (value: string) => void
     setConfirmNewPassword: (value: string) => void
     isChangingPassword: boolean
+    newPasswordScore: PasswordScore
     changePasswordValidationError: ChangePasswordValidationError
     changePasswordError: ChangePasswordError
     changePasswordSuccess: boolean
@@ -166,10 +170,12 @@ export const useVaultSecuritySettingsScreen =
         const [changePasswordSuccess, setChangePasswordSuccess] =
             useState(false)
 
+        const { score: newPasswordScore, error: newPasswordStrengthError } =
+            usePasswordStrength(newPassword)
+
         const changePasswordValidationError: ChangePasswordValidationError =
-            newPassword.length > 0 &&
-            newPassword.length < MIN_NEW_PASSWORD_LENGTH
-                ? 'too_short'
+            newPassword.length > 0 && newPasswordStrengthError
+                ? newPasswordStrengthError
                 : confirmNewPassword.length > 0 &&
                     confirmNewPassword !== newPassword
                   ? 'mismatch'
@@ -177,7 +183,7 @@ export const useVaultSecuritySettingsScreen =
 
         const canSubmitChangePassword =
             currentPassword.length > 0 &&
-            newPassword.length >= MIN_NEW_PASSWORD_LENGTH &&
+            !newPasswordStrengthError &&
             confirmNewPassword === newPassword &&
             !isChangingPassword
 
@@ -229,6 +235,7 @@ export const useVaultSecuritySettingsScreen =
             setNewPassword,
             setConfirmNewPassword,
             isChangingPassword,
+            newPasswordScore,
             changePasswordValidationError,
             changePasswordError,
             changePasswordSuccess,

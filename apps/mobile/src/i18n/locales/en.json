@@ -3907,6 +3907,13 @@
         "ZW": "Zimbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Weak",
+            "fair": "Fair",
+            "good": "Good",
+            "strong": "Strong",
+            "error_too_weak": "Password is too easy to guess. Try a longer phrase with uncommon words."
+        },
         "create_password": {
             "title": "Create a Password",
             "description": "Set a password to protect your Pera Wallet extension. You'll need it each time you open the extension.",

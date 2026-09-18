@@ -3907,6 +3907,13 @@
         "ZW": "Zimbabve"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Zayıf",
+            "fair": "Orta",
+            "good": "İyi",
+            "strong": "Güçlü",
+            "error_too_weak": "Şifrenin tahmin edilmesi çok kolay. Nadir kelimeler içeren daha uzun bir ifade dene."
+        },
         "create_password": {
             "title": "Şifre oluştur",
             "description": "Pera Wallet uzantını korumak için bir şifre belirle. Uzantıyı her açtığında bu şifreye ihtiyacın olacak.",

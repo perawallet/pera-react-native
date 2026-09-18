@@ -369,5 +369,19 @@ describe('useVaultSecuritySettingsScreen', () => {
             await act(() => result.current.handleChangePassword())
             expect(mocks.changePassword).not.toHaveBeenCalled()
         })
+
+        it('a guessable new password blocks submission', async () => {
+            const { result } = renderHook(() =>
+                useVaultSecuritySettingsScreen(),
+            )
+            await act(async () => {})
+            fillValidForm(result, 'old-password', 'password1', 'password1')
+            expect(result.current.changePasswordValidationError).toBe(
+                'too_weak',
+            )
+            expect(result.current.canSubmitChangePassword).toBe(false)
+            await act(() => result.current.handleChangePassword())
+            expect(mocks.changePassword).not.toHaveBeenCalled()
+        })
     })
 })

@@ -23,6 +23,8 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
 
 import { useCreatePasswordScreen } from '../useCreatePasswordScreen.web'
 
+const STRONG_PASSWORD = 'kettle-orbit-9-sandal'
+
 describe('useCreatePasswordScreen', () => {
     const onDone = vi.fn()
 
@@ -38,9 +40,17 @@ describe('useCreatePasswordScreen', () => {
         expect(result.current.canSubmit).toBe(false)
     })
 
+    it('validates guessable password as too_weak', () => {
+        const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
+        act(() => result.current.setPassword('password1'))
+        act(() => result.current.setConfirmation('password1'))
+        expect(result.current.validationError).toBe('too_weak')
+        expect(result.current.canSubmit).toBe(false)
+    })
+
     it('validates password mismatch', () => {
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('longpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
         act(() => result.current.setConfirmation('different'))
         expect(result.current.validationError).toBe('mismatch')
         expect(result.current.canSubmit).toBe(false)
@@ -48,25 +58,25 @@ describe('useCreatePasswordScreen', () => {
 
     it('allows submit when password is valid and matches confirmation', () => {
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('longpassword'))
-        act(() => result.current.setConfirmation('longpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
+        act(() => result.current.setConfirmation(STRONG_PASSWORD))
         expect(result.current.validationError).toBeNull()
         expect(result.current.canSubmit).toBe(true)
     })
 
     it('calls createVault with password then onDone on successful submit', async () => {
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('correctpassword'))
-        act(() => result.current.setConfirmation('correctpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
+        act(() => result.current.setConfirmation(STRONG_PASSWORD))
         await act(() => result.current.handleSubmit())
-        expect(mocks.createVault).toHaveBeenCalledWith('correctpassword')
+        expect(mocks.createVault).toHaveBeenCalledWith(STRONG_PASSWORD)
         expect(onDone).toHaveBeenCalledTimes(1)
     })
 
     it('isSubmitting resets to false after submit completes', async () => {
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('correctpassword'))
-        act(() => result.current.setConfirmation('correctpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
+        act(() => result.current.setConfirmation(STRONG_PASSWORD))
         expect(result.current.isSubmitting).toBe(false)
         await act(() => result.current.handleSubmit())
         expect(result.current.isSubmitting).toBe(false)
@@ -76,8 +86,8 @@ describe('useCreatePasswordScreen', () => {
     it('sets hasError and does not call onDone when createVault throws', async () => {
         mocks.createVault.mockRejectedValue(new Error('storage failure'))
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('correctpassword'))
-        act(() => result.current.setConfirmation('correctpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
+        act(() => result.current.setConfirmation(STRONG_PASSWORD))
         await act(() => result.current.handleSubmit())
         expect(result.current.hasError).toBe(true)
         expect(result.current.isSubmitting).toBe(false)
@@ -92,8 +102,8 @@ describe('useCreatePasswordScreen', () => {
             }),
         )
         const { result } = renderHook(() => useCreatePasswordScreen({ onDone }))
-        act(() => result.current.setPassword('correctpassword'))
-        act(() => result.current.setConfirmation('correctpassword'))
+        act(() => result.current.setPassword(STRONG_PASSWORD))
+        act(() => result.current.setConfirmation(STRONG_PASSWORD))
 
         // Start the first submit without awaiting the inner async work so we
         // can observe isSubmitting mid-flight.
