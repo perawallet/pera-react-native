@@ -120,6 +120,7 @@ export const TransactionConfirmationScreen = () => {
                         <AddressDisplay
                             address={destination}
                             showCopy={false}
+                            showSecondaryAddress
                         />
                     </KeyValueRow>
                 )}
