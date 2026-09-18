@@ -3254,7 +3254,9 @@
             "quantum_fee_unsupported": "Les comptes Quantum ne peuvent pas encore échanger. Les frais de swap sont fixés par nos serveurs et ne couvrent pas les frais plus élevés qu’exige une signature Quantum.",
             "quantum_multisig_unsupported": "Les comptes Quantum ne peuvent pas échanger depuis un compte partagé. Les clés Quantum ne peuvent pas participer à la signature Multisig.",
             "verifying_previous_title": "Vérification de la tentative précédente",
-            "verifying_previous_body": "Votre tentative de swap précédente est encore en cours de vérification. Réessayez une fois qu’elle est résolue."
+            "verifying_previous_body": "Votre tentative de swap précédente est encore en cours de vérification. Réessayez une fois qu’elle est résolue.",
+            "partially_submitted_title": "Swap partiellement traité",
+            "partially_submitted_body": "Une partie de ce swap est déjà sur la blockchain. Confirmez à nouveau pour terminer le reste — vous ne serez pas facturé deux fois."
         },
         "signing": {
             "source_name": "Swap",

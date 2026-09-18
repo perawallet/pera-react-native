@@ -251,6 +251,51 @@ describe('useSwapConfirmationActions', () => {
         expect(mockSchedule).not.toHaveBeenCalled()
     })
 
+    it('keeps the sheet open and informs the user when a swap partially submitted', async () => {
+        mockExecute.mockResolvedValueOnce({
+            kind: 'partially-submitted',
+            txIds: ['TX-1'],
+            message: 'Something went wrong',
+        })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-10') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'swap.execution.partially_submitted_title',
+            'swap.execution.partially_submitted_body',
+        )
+        expect(mockResolve).not.toHaveBeenCalled()
+    })
+
+    it('lets the user confirm again after a partial submission', async () => {
+        mockExecute
+            .mockResolvedValueOnce({
+                kind: 'partially-submitted',
+                txIds: ['TX-1'],
+                message: 'Something went wrong',
+            })
+            .mockResolvedValueOnce({ kind: 'success' })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-11') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockExecute).toHaveBeenCalledTimes(2)
+    })
+
     it('handleClose dismisses when idle', () => {
         const { result } = renderHook(() =>
             useSwapConfirmationActions({ quote: makeQuote('quote-5') }),

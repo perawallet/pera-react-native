@@ -134,11 +134,13 @@ export const useSwapConfirmationActions = ({
                 return
             }
             if (outcome.kind === 'partially-submitted') {
-                trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
-                resolve({
-                    kind: 'error',
-                    message: t('swap.execution.error_body'),
-                })
+                // Part of the swap is on chain. Leave the sheet open:
+                // confirming again re-broadcasts only what did not go out,
+                // with no new signature.
+                infoToast(
+                    t('swap.execution.partially_submitted_title'),
+                    t('swap.execution.partially_submitted_body'),
+                )
                 return
             }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
