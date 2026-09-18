@@ -606,7 +606,8 @@
             "error": "No se pudo guardar tu clave de cifrado",
             "icloud_unavailable_title": "iCloud no está disponible",
             "icloud_unavailable": "Inicia sesión en iCloud, activa iCloud Drive y vuelve a intentarlo.",
-            "google_drive_unavailable": "Google Drive no está configurado en esta versión de la aplicación."
+            "google_drive_unavailable": "Google Drive no está configurado en esta versión de la aplicación.",
+            "no_credentials": "La copia de seguridad en la nube no está configurada en este dispositivo."
         },
         "overview": {
             "title": "Copia de seguridad en la nube",

@@ -11,10 +11,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import {
-    NoBackupCredentialsError,
-    saveBackupCredentials,
-} from '../saveBackupCredentials'
+import { NoBackupCredentialsError } from '@perawallet/wallet-core-backup'
+import { saveBackupCredentials } from '../saveBackupCredentials'
 
 const { saveToDevice, saveToICloud, saveToGoogleDrive, storeState } =
     vi.hoisted(() => ({

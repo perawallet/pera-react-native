@@ -11,7 +11,10 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
+import {
+    NoBackupCredentialsError,
+    useCloudBackupStore,
+} from '@perawallet/wallet-core-backup'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -19,11 +22,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { StoreBackupCredentialsSheet } from '../components/StoreBackupCredentialsSheet'
-import {
-    NoBackupCredentialsError,
-    saveBackupCredentials,
-    type CredentialsFileSource,
-} from '../storage'
+import { saveBackupCredentials, type CredentialsFileSource } from '../storage'
 
 export type StoreCredentialsOptions = {
     /**
@@ -53,7 +52,10 @@ export const useStoreBackupCredentials =
                 isStoringRef.current = true
                 let destination: Optional<CredentialsFileSource>
                 try {
-                    if (!useCloudBackupStore.getState().backupId) {
+                    // Both halves, so a backup missing only its salt fails here
+                    // rather than after the sheet, the PIN and a cloud sign-in.
+                    const { salt, backupId } = useCloudBackupStore.getState()
+                    if (!salt || !backupId) {
                         throw new NoBackupCredentialsError()
                     }
 

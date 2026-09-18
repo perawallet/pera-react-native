@@ -598,7 +598,8 @@
             "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
             "icloud_unavailable_title": "iCloud ist nicht verfügbar",
             "icloud_unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut.",
-            "google_drive_unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet."
+            "google_drive_unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet.",
+            "no_credentials": "Cloud-Backup ist auf diesem Gerät nicht eingerichtet."
         },
         "overview": {
             "title": "Cloud-Backup",

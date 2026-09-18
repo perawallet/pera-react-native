@@ -606,7 +606,8 @@
             "error": "Não foi possível salvar sua chave de criptografia",
             "icloud_unavailable_title": "O iCloud não está disponível",
             "icloud_unavailable": "Entre no iCloud e ative o iCloud Drive, depois tente novamente.",
-            "google_drive_unavailable": "O Google Drive não está configurado nesta versão do app."
+            "google_drive_unavailable": "O Google Drive não está configurado nesta versão do app.",
+            "no_credentials": "O backup na nuvem não está configurado neste dispositivo."
         },
         "overview": {
             "title": "Backup na nuvem",

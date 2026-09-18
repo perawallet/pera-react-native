@@ -11,6 +11,7 @@
  */
 
 import {
+    NoBackupCredentialsError,
     backupCredentialsFileName,
     buildBackupCredentialsFile,
     useCloudBackupStore,
@@ -29,13 +30,6 @@ const SAVERS: Record<CredentialsFileSource, CredentialsFileSaver> = {
     device: saveToDevice,
     icloud: saveToICloud,
     googleDrive: saveToGoogleDrive,
-}
-
-export class NoBackupCredentialsError extends Error {
-    constructor() {
-        super('No backup credentials are stored on this device')
-        this.name = 'NoBackupCredentialsError'
-    }
 }
 
 /**

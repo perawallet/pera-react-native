@@ -16,6 +16,19 @@ import {
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 
+// The backup can be turned off while a sheet or a PIN prompt is still open, so
+// reaching the save with nothing to write is a race the user can lose, not a bug.
+export class NoBackupCredentialsError extends AppError {
+    constructor(message = 'No backup credentials are stored on this device') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.store_credentials.no_credentials',
+        })
+    }
+}
+
 // A user setting rather than a fault, so it files no crash report.
 export class ICloudUnavailableError extends AppError {
     constructor(message = 'iCloud is not available on this device') {

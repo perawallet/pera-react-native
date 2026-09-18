@@ -606,7 +606,8 @@
             "error": "Impossible d’enregistrer votre clé de chiffrement",
             "icloud_unavailable_title": "iCloud n’est pas disponible",
             "icloud_unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez.",
-            "google_drive_unavailable": "Google Drive n’est pas configuré dans cette version de l’application."
+            "google_drive_unavailable": "Google Drive n’est pas configuré dans cette version de l’application.",
+            "no_credentials": "La sauvegarde cloud n’est pas configurée sur cet appareil."
         },
         "overview": {
             "title": "Sauvegarde cloud",

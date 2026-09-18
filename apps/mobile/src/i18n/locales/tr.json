@@ -606,7 +606,8 @@
             "error": "Şifreleme anahtarın saklanamadı",
             "icloud_unavailable_title": "iCloud kullanılamıyor",
             "icloud_unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene.",
-            "google_drive_unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış."
+            "google_drive_unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış.",
+            "no_credentials": "Bu cihazda bulut yedekleme ayarlanmamış."
         },
         "overview": {
             "title": "Bulut yedekleme",

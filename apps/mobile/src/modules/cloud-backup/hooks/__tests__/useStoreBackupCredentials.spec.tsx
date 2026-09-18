@@ -91,9 +91,14 @@ const store = async (options?: { hasVerifiedPin?: boolean }) => {
 }
 
 describe('useStoreBackupCredentials', () => {
-    test('shows an error and opens nothing when no backup is stored', async () => {
-        storeState.salt = null
-        storeState.backupId = null
+    // Half a backup stops just as early as none: the sheet, the PIN and a cloud
+    // sign-in all come before the save that would otherwise find the gap.
+    test.each([
+        ['no backup is stored', { salt: null, backupId: null }],
+        ['the backup has no salt', { salt: null }],
+        ['the backup has no id', { backupId: null }],
+    ])('shows an error and opens nothing when %s', async (_, gone) => {
+        Object.assign(storeState, gone)
 
         await store()
 

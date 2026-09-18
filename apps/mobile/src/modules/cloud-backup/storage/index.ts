@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-export {
-    saveBackupCredentials,
-    NoBackupCredentialsError,
-} from './saveBackupCredentials'
+export { saveBackupCredentials } from './saveBackupCredentials'
 export {
     readBackupCredentials,
     type ReadBackupCredentialsOptions,

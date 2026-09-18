@@ -16,6 +16,7 @@ import {
     GoogleDriveNotConfiguredError,
     ICloudUnavailableError,
     InvalidCredentialsFileError,
+    NoBackupCredentialsError,
     UnsupportedCredentialsFileError,
 } from '@perawallet/wallet-core-backup'
 import { isExpectedError } from '@perawallet/wallet-core-shared'
@@ -85,6 +86,10 @@ describe('backup credentials file errors', () => {
         [
             new UnsupportedCredentialsFileError(),
             'cloud_backup.restore.import_unsupported_version',
+        ],
+        [
+            new NoBackupCredentialsError(),
+            'cloud_backup.store_credentials.no_credentials',
         ],
     ])(
         'a credentials-file problem keeps the caller title, names the problem and files no crash report',
