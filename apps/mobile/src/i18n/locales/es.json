@@ -1756,6 +1756,8 @@
             "delivery_failed": "No se pudo enviar a la aplicación que lo solicitó: se perdió la conexión.",
             "failed_default": "La transacción falló",
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
+            "cosign_rejected_title": "No se puede firmar esta transacción",
+            "cosign_rejected_body": "Esta solicitud incluye una transacción que la cuenta compartida no autoriza. Si el remitente es una cuenta con rekey a la cuenta compartida, añádela a tu wallet e inténtalo de nuevo.",
             "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",

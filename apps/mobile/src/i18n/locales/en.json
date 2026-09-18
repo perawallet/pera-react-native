@@ -1756,6 +1756,8 @@
             "delivery_failed": "Couldn't send this to the app that requested it — the connection was lost.",
             "failed_default": "Transaction failed",
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
+            "cosign_rejected_title": "Can't sign this transaction",
+            "cosign_rejected_body": "This request includes a transaction the shared account doesn't authorize. If the sender is an account rekeyed to the shared account, add it to your wallet and try again.",
             "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",

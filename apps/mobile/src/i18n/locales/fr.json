@@ -1756,6 +1756,8 @@
             "delivery_failed": "Impossible d'envoyer ceci à l'application qui l'a demandé : la connexion a été perdue.",
             "failed_default": "La transaction a échoué",
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
+            "cosign_rejected_title": "Impossible de signer cette transaction",
+            "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",

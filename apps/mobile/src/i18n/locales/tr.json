@@ -1756,6 +1756,8 @@
             "delivery_failed": "İstekte bulunan uygulamaya gönderilemedi: bağlantı kesildi.",
             "failed_default": "İşlem başarısız oldu",
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
+            "cosign_rejected_title": "Bu işlem imzalanamıyor",
+            "cosign_rejected_body": "Bu istek, paylaşılan hesabın yetkilendirmediği bir işlem içeriyor. Gönderen, paylaşılan hesaba rekey edilmiş bir hesapsa onu cüzdanına ekle ve tekrar dene.",
             "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
