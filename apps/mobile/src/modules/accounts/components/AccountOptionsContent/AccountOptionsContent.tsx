@@ -103,59 +103,69 @@ export const AccountOptionsContent = ({
         handleCancelRemove,
     } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
 
+    // The options list sizes itself through PWSheetLayout, but these confirm
+    // panels are content-sized and land in a `modal` sheet pinned at 96% of the
+    // screen, so without a filling wrapper they hug its top. Rendered inline
+    // rather than as a second sheet — see useAccountOptions for why.
     if (removeConfirmView === 'backup-warning') {
         return (
-            <ConfirmActionContent
-                icon='trash'
-                iconVariant='error'
-                title={t('account_options.backup_warning_title')}
-                message={t(
-                    isCloudBackupEnabled
-                        ? 'account_options.backup_warning_message_with_cloud_backup'
-                        : 'account_options.backup_warning_message',
-                )}
-                confirmLabel={t('account_options.backup_warning_continue')}
-                cancelLabel={t('account_options.backup_warning_cancel')}
-                confirmVariant='destructive'
-                buttonPaddingStyle='dense'
-                confirmTestID='remove_account_backup_continue_button'
-                cancelTestID='remove_account_backup_cancel_button'
-                onConfirm={handleConfirmBackupWarning}
-                onCancel={handleCancelRemove}
-            />
+            <PWView style={styles.confirmContainer}>
+                <ConfirmActionContent
+                    icon='trash'
+                    iconVariant='error'
+                    title={t('account_options.backup_warning_title')}
+                    message={t(
+                        isCloudBackupEnabled
+                            ? 'account_options.backup_warning_message_with_cloud_backup'
+                            : 'account_options.backup_warning_message',
+                    )}
+                    confirmLabel={t('account_options.backup_warning_continue')}
+                    cancelLabel={t('account_options.backup_warning_cancel')}
+                    confirmVariant='destructive'
+                    buttonPaddingStyle='dense'
+                    confirmTestID='remove_account_backup_continue_button'
+                    cancelTestID='remove_account_backup_cancel_button'
+                    onConfirm={handleConfirmBackupWarning}
+                    onCancel={handleCancelRemove}
+                />
+            </PWView>
         )
     }
 
     if (removeConfirmView === 'remove-confirm') {
         return (
-            <ConfirmActionContent
-                icon='trash'
-                iconVariant='error'
-                title={t('account_options.remove_title')}
-                message={t(
-                    isWatchAccount(account)
-                        ? 'account_options.remove_watch_message'
-                        : 'account_options.remove_message',
-                )}
-                confirmLabel={t('account_options.remove_confirm')}
-                cancelLabel={t('account_options.remove_cancel')}
-                confirmVariant='destructive'
-                buttonPaddingStyle='dense'
-                confirmTestID='remove_account_confirm_button'
-                cancelTestID='remove_account_cancel_button'
-                onConfirm={handleConfirmRemove}
-                onCancel={handleCancelRemove}
-            />
+            <PWView style={styles.confirmContainer}>
+                <ConfirmActionContent
+                    icon='trash'
+                    iconVariant='error'
+                    title={t('account_options.remove_title')}
+                    message={t(
+                        isWatchAccount(account)
+                            ? 'account_options.remove_watch_message'
+                            : 'account_options.remove_message',
+                    )}
+                    confirmLabel={t('account_options.remove_confirm')}
+                    cancelLabel={t('account_options.remove_cancel')}
+                    confirmVariant='destructive'
+                    buttonPaddingStyle='dense'
+                    confirmTestID='remove_account_confirm_button'
+                    cancelTestID='remove_account_cancel_button'
+                    onConfirm={handleConfirmRemove}
+                    onCancel={handleCancelRemove}
+                />
+            </PWView>
         )
     }
 
     if (removeConfirmView === 'cloud-backup-delete') {
         return (
-            <DeleteFromBackupSheet
-                declineLabel={t('cloud_backup.accounts.keep_action')}
-                onConfirm={() => void handleDeleteFromBackup()}
-                onDecline={() => void handleKeepInBackup()}
-            />
+            <PWView style={styles.confirmContainer}>
+                <DeleteFromBackupSheet
+                    declineLabel={t('cloud_backup.accounts.keep_action')}
+                    onConfirm={() => void handleDeleteFromBackup()}
+                    onDecline={() => void handleKeepInBackup()}
+                />
+            </PWView>
         )
     }
 
