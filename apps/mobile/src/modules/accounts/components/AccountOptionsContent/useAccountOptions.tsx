@@ -80,6 +80,7 @@ export type RemoveConfirmView =
 
 export type UseAccountOptionsResult = {
     options: AccountOption[]
+    isCloudBackupEnabled: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
     authAccount: WalletAccount | undefined
@@ -582,6 +583,7 @@ export const useAccountOptions = ({
 
     return {
         options,
+        isCloudBackupEnabled,
         isRekeyed,
         canUndoRekey,
         authAccount: authAccount ?? undefined,

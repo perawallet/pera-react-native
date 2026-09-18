@@ -94,6 +94,7 @@ export const AccountOptionsContent = ({
         authAccount,
         authAddress,
         handleUndoRekey,
+        isCloudBackupEnabled,
         removeConfirmView,
         handleConfirmBackupWarning,
         handleConfirmRemove,
@@ -108,7 +109,11 @@ export const AccountOptionsContent = ({
                 icon='trash'
                 iconVariant='error'
                 title={t('account_options.backup_warning_title')}
-                message={t('account_options.backup_warning_message')}
+                message={t(
+                    isCloudBackupEnabled
+                        ? 'account_options.backup_warning_message_with_cloud_backup'
+                        : 'account_options.backup_warning_message',
+                )}
                 confirmLabel={t('account_options.backup_warning_continue')}
                 cancelLabel={t('account_options.backup_warning_cancel')}
                 confirmVariant='destructive'

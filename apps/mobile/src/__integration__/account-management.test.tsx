@@ -51,6 +51,7 @@ import {
     type DeviceRegistrationRequest,
 } from '@perawallet/wallet-core-device'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
@@ -181,6 +182,7 @@ describe('Flow: Account management', () => {
         // tests (it flips the Pera Card row between its activate/connected forms).
         useCardSessionStore.getState().setAuthenticated(false)
         useDeviceStore.getState().resetState()
+        useRemoteConfigStore.getState().resetState()
         server.resetHandlers()
     })
 
@@ -435,6 +437,47 @@ describe('Flow: Account management', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    it('Given cloud backup is enabled, when the removal backup-warning gate appears, then the copy names Cloud Backup alongside the passphrase and Ledger', async () => {
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_cloud_backup', true)
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+
+        renderWithNavigation(
+            () => <AccountOptionsHost account={ACCOUNT_A} />,
+            'AccountOptionsHost',
+        )
+
+        tapButtonByLabel('account_options.remove_account')
+
+        await waitFor(() => {
+            expect(
+                screen.getByText(
+                    'account_options.backup_warning_message_with_cloud_backup',
+                ),
+            ).toBeTruthy()
+        })
+    })
+
+    it('Given cloud backup is disabled, when the removal backup-warning gate appears, then the copy stays on the passphrase-and-Ledger wording', async () => {
+        useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+        useAccountsStore.getState().setSelectedAccountAddress(ACCOUNT_A.address)
+
+        renderWithNavigation(
+            () => <AccountOptionsHost account={ACCOUNT_A} />,
+            'AccountOptionsHost',
+        )
+
+        tapButtonByLabel('account_options.remove_account')
+
+        await waitFor(() => {
+            expect(
+                screen.getByText('account_options.backup_warning_message'),
+            ).toBeTruthy()
+        })
+    })
 
     it(
         'Given an account whose notifications are enabled, when the user taps "mute notifications" in the options sheet, then the address is added to the notification-disabled list',
