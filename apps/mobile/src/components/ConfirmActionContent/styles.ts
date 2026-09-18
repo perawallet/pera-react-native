@@ -24,14 +24,18 @@ export const useStyles = makeStyles(
             paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
         },
+        // The panel is content-sized in its sheet, so the icon has only these
+        // margins between it and the sheet's top edge.
         icon: {
-            marginBottom: theme.spacing.lg,
+            marginTop: theme.spacing.xl,
+            marginBottom: theme.spacing.xl,
         },
         iconImage: {
             width: theme.spacing['4xl'],
             height: theme.spacing['4xl'],
             borderRadius: theme.spacing['4xl'],
-            marginBottom: theme.spacing.lg,
+            marginTop: theme.spacing.xl,
+            marginBottom: theme.spacing.xl,
         },
         title: {
             alignSelf: 'stretch',
