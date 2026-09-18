@@ -198,8 +198,15 @@ export const PWWebView = (props: PWWebViewProps) => {
             openExternalLinksInBrowser
                 ? {
                       hostUrl: loadableUrl,
+                      // Discover's handoff opens third-party dApps, and the
+                      // bridge is what carries their WalletConnect pairing —
+                      // without it the connect modal's window.open is dropped
+                      // and the dApp can never reach a signature. Only
+                      // `walletConnect` and the three unauthenticated getters
+                      // open up; addresses and signing stay behind
+                      // `requireSecure`, which this origin still fails.
                       onExternalNavigation: (target: string) =>
-                          pushWebView({ url: target }),
+                          pushWebView({ url: target, enablePeraConnect: true }),
                   }
                 : undefined,
         [openExternalLinksInBrowser, loadableUrl, pushWebView],

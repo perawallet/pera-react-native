@@ -57,7 +57,11 @@ export const useBrowserDeeplink = (): BrowserDeeplinkHandler => {
                 void Linking.openURL(url)
                 return true
             }
-            pushWebView({ id: generateOrderedUniqueId(), url })
+            pushWebView({
+                id: generateOrderedUniqueId(),
+                url,
+                enablePeraConnect: true,
+            })
             return true
         },
         [errorToast, pushWebView, t],
