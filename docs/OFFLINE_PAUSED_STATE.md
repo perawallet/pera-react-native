@@ -2,9 +2,13 @@
 
 Pera's offline story rests on one rule: SQLite is the source of truth.
 Account, asset, transaction, and price data is read from the local database
-(`pera.db`) and only refreshed from the network in the background. Because of
-that, those queries are deliberately excluded from AsyncStorage persistence in
-`apps/mobile/src/providers/QueryProvider.tsx`, because the DB _is_ the cache.
+(`pera.db`) and only refreshed from the network in the background, so the DB
+_is_ the cache for them. What the React Query cache itself persists to disk is
+decided separately, by the prefix allowlist in
+`apps/mobile/src/providers/query-persistence.ts`: an unlisted prefix is never
+persisted. A module whose keys are split between global catalog data and
+address-keyed data classifies the catalog half under a `module/sub-key` entry,
+which overrides the module's own entry.
 
 Two things follow from that, and every data-backed surface has to get both right: how a DB-first
 query is configured so it actually serves SQLite while offline, and how consumers tell "offline"
@@ -66,22 +70,21 @@ so they must not reject the whole `queryFn`:
 > `onlineManager.isOnline` is a method. Call `onlineManager.isOnline()`, not
 > `onlineManager.isOnline`.
 
-### Persisting network-only chart snapshots (the exception to the exclusion rule)
+### Persisting network-only chart snapshots
 
-The intro rule excludes DB-backed queries from persistence because SQLite is
-already the cache. Chart-history queries are the opposite case: they are
-network-only (no SQLite table backs them) and carry no PII, so the last
+Chart-history queries sit under prefixes the allowlist marks `never`, but they
+are network-only (no SQLite table backs them) and carry no PII, so the last
 successful snapshot is exactly what lets a chart show last-known data on a
-cold, offline launch. `apps/mobile/src/providers/query-persistence.ts`
-allowlists two query-key predicates into `shouldDehydrateQuery`, dehydrated
-only when the query last resolved with `status === 'success'`:
+cold, offline launch. `query-persistence.ts` therefore checks two query-key
+predicates ahead of the prefix table in `shouldDehydrateQuery`, dehydrated only
+when the query last resolved with `status === 'success'`:
 
 - `isAccountBalancesHistoryQuery` for `['accounts', 'balance-history', …]`
 - `isAssetPriceHistoryQuery` for `['assets', 'prices', 'history', …]`
 
 The per-account asset-history key (`['accounts', 'assets', 'balance-history',
-…]`, used by `AssetWealthChart`) is deliberately _not_ allowlisted. Persistence
-is scoped to exactly those two keys.
+…]`, used by `AssetWealthChart`) is deliberately _not_ among them, so it falls
+back to its prefix's `never`.
 
 ### `CHART_QUERY_TIMEOUT_MS` is 30 s on purpose
 
