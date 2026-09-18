@@ -11,8 +11,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { ICloudUnavailableError } from '@perawallet/wallet-core-backup'
 import { renderHook } from '@testing-library/react'
-import { ICloudUnavailableError } from '../../storage/errors'
 import { useStoreBackupCredentials } from '../useStoreBackupCredentials'
 
 const {
@@ -21,9 +21,7 @@ const {
     mockShowToast,
     mockShowError,
     mockLoggerError,
-    saveToDevice,
-    saveToICloud,
-    saveToGoogleDrive,
+    saveBackupCredentials,
     storeState,
 } = vi.hoisted(() => ({
     mockRequest: vi.fn(),
@@ -31,19 +29,17 @@ const {
     mockShowToast: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
-    saveToDevice: vi.fn(),
-    saveToICloud: vi.fn(),
-    saveToGoogleDrive: vi.fn(),
+    saveBackupCredentials: vi.fn(),
     storeState: {
         salt: null as string | null,
         backupId: null as string | null,
     },
 }))
 
-vi.mock('@perawallet/wallet-core-backup', () => ({
-    backupCredentialsFileName: (backupId: string) =>
-        `pera-backup-${backupId.replace('did:pera:', '').slice(0, 5)}.json`,
-    buildBackupCredentialsFile: (salt: string) => `file(${salt})`,
+// The real exports must survive: the typed errors this flow surfaces live in
+// this package, and `isExpectedError` checks them by identity.
+vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
     useCloudBackupStore: { getState: () => storeState },
 }))
 // errors.ts extends AppError from this package, so the real exports (not the
@@ -72,15 +68,13 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('../../components/StoreBackupCredentialsSheet', () => ({
     StoreBackupCredentialsSheet: () => null,
 }))
-vi.mock('../../storage', () => ({
-    saveToDevice,
-    saveToICloud,
-    saveToGoogleDrive,
+vi.mock('../../storage', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+    saveBackupCredentials,
 }))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const BACKUP_ID = `did:pera:VQBGR${'A'.repeat(53)}`
-const FILE_NAME = 'pera-backup-VQBGR.json'
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -88,9 +82,7 @@ beforeEach(() => {
     storeState.backupId = BACKUP_ID
     mockRequest.mockResolvedValue('device')
     mockRequirePin.mockResolvedValue(true)
-    saveToDevice.mockResolvedValue('saved')
-    saveToICloud.mockResolvedValue('saved')
-    saveToGoogleDrive.mockResolvedValue('saved')
+    saveBackupCredentials.mockResolvedValue('saved')
 })
 
 const store = async (options?: { hasVerifiedPin?: boolean }) => {
@@ -118,7 +110,7 @@ describe('useStoreBackupCredentials', () => {
         await store()
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveToDevice).not.toHaveBeenCalled()
+        expect(saveBackupCredentials).not.toHaveBeenCalled()
     })
 
     test('asks for the PIN only after a destination is chosen', async () => {
@@ -133,7 +125,7 @@ describe('useStoreBackupCredentials', () => {
         await store({ hasVerifiedPin: true })
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveToDevice).toHaveBeenCalledWith(FILE_NAME, expect.any(String))
+        expect(saveBackupCredentials).toHaveBeenCalledWith('device')
     })
 
     test('saves nothing when PIN verification fails', async () => {
@@ -141,23 +133,8 @@ describe('useStoreBackupCredentials', () => {
 
         await store()
 
-        expect(saveToDevice).not.toHaveBeenCalled()
+        expect(saveBackupCredentials).not.toHaveBeenCalled()
         expect(mockShowToast).not.toHaveBeenCalled()
-    })
-
-    test('stops when the backup is reset while the sheet and PIN are open', async () => {
-        mockRequirePin.mockImplementationOnce(async () => {
-            storeState.salt = null
-            return true
-        })
-
-        await store()
-
-        expect(saveToDevice).not.toHaveBeenCalled()
-        expect(mockShowError).toHaveBeenCalledWith(
-            expect.any(Error),
-            'cloud_backup.store_credentials.error',
-        )
     })
 
     test('ignores a second call while one is in flight', async () => {
@@ -178,18 +155,14 @@ describe('useStoreBackupCredentials', () => {
         expect(mockRequest).toHaveBeenCalledTimes(1)
     })
 
-    test.each([
-        ['device', saveToDevice],
-        ['icloud', saveToICloud],
-        ['googleDrive', saveToGoogleDrive],
-    ] as const)(
-        'saves the file through the %s saver and confirms',
-        async (destination, saver) => {
+    test.each(['device', 'icloud', 'googleDrive'] as const)(
+        'saves to %s and confirms',
+        async destination => {
             mockRequest.mockResolvedValueOnce(destination)
 
             await store()
 
-            expect(saver).toHaveBeenCalledWith(FILE_NAME, `file(${SALT})`)
+            expect(saveBackupCredentials).toHaveBeenCalledWith(destination)
             expect(mockShowToast).toHaveBeenCalledWith(
                 {
                     title: 'cloud_backup.store_credentials.success',
@@ -203,7 +176,7 @@ describe('useStoreBackupCredentials', () => {
 
     test('stays silent when the user backs out inside the destination', async () => {
         mockRequest.mockResolvedValueOnce('googleDrive')
-        saveToGoogleDrive.mockResolvedValueOnce('cancelled')
+        saveBackupCredentials.mockResolvedValueOnce('cancelled')
 
         await store()
 
@@ -214,7 +187,7 @@ describe('useStoreBackupCredentials', () => {
     test('passes a destination error through so it can show its own copy', async () => {
         mockRequest.mockResolvedValueOnce('icloud')
         const error = new ICloudUnavailableError()
-        saveToICloud.mockRejectedValueOnce(error)
+        saveBackupCredentials.mockRejectedValueOnce(error)
 
         await store()
 
@@ -226,7 +199,7 @@ describe('useStoreBackupCredentials', () => {
 
     test('shows the generic error for any other failure', async () => {
         const error = new Error('disk full')
-        saveToDevice.mockRejectedValueOnce(error)
+        saveBackupCredentials.mockRejectedValueOnce(error)
 
         await store()
 

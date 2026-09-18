@@ -11,11 +11,7 @@
  */
 
 import { useCallback, useRef } from 'react'
-import {
-    backupCredentialsFileName,
-    buildBackupCredentialsFile,
-    useCloudBackupStore,
-} from '@perawallet/wallet-core-backup'
+import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
@@ -24,18 +20,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { StoreBackupCredentialsSheet } from '../components/StoreBackupCredentialsSheet'
 import {
-    saveToDevice,
-    saveToGoogleDrive,
-    saveToICloud,
-    type CredentialsFileSaver,
+    NoBackupCredentialsError,
+    saveBackupCredentials,
     type CredentialsFileSource,
 } from '../storage'
-
-const SAVERS: Record<CredentialsFileSource, CredentialsFileSaver> = {
-    device: saveToDevice,
-    icloud: saveToICloud,
-    googleDrive: saveToGoogleDrive,
-}
 
 export type StoreCredentialsOptions = {
     /**
@@ -48,8 +36,6 @@ export type StoreCredentialsOptions = {
 type UseStoreBackupCredentialsResult = {
     storeCredentials: (options?: StoreCredentialsOptions) => Promise<void>
 }
-
-const NO_BACKUP_MESSAGE = 'No backup credentials are stored on this device'
 
 export const useStoreBackupCredentials =
     (): UseStoreBackupCredentialsResult => {
@@ -68,7 +54,7 @@ export const useStoreBackupCredentials =
                 let destination: Optional<CredentialsFileSource>
                 try {
                     if (!useCloudBackupStore.getState().backupId) {
-                        throw new Error(NO_BACKUP_MESSAGE)
+                        throw new NoBackupCredentialsError()
                     }
 
                     destination =
@@ -88,20 +74,9 @@ export const useStoreBackupCredentials =
                         return
                     }
 
-                    // Read again: a backup deleted elsewhere while the sheet and
-                    // PIN were open resets the store.
-                    const { salt: backupSalt, backupId } =
-                        useCloudBackupStore.getState()
-                    if (!backupSalt || !backupId) {
-                        throw new Error(NO_BACKUP_MESSAGE)
-                    }
-
-                    // Named after the backup, so storing a second one sits
-                    // beside the first instead of overwriting it.
-                    const result = await SAVERS[destination](
-                        backupCredentialsFileName(backupId),
-                        buildBackupCredentialsFile(backupSalt),
-                    )
+                    // Re-reads the store, so a backup deleted while the sheet
+                    // and PIN were open stops here.
+                    const result = await saveBackupCredentials(destination)
                     if (result === 'cancelled') return
                     showToast(
                         {

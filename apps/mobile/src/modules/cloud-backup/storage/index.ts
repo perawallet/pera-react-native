@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-export { saveToDevice } from './saveToDevice'
-export { saveToICloud } from './saveToICloud'
-export { saveToGoogleDrive } from './saveToGoogleDrive'
+export {
+    saveBackupCredentials,
+    NoBackupCredentialsError,
+} from './saveBackupCredentials'
 export {
     readBackupCredentials,
     type ReadBackupCredentialsOptions,
