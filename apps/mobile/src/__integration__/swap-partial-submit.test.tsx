@@ -23,6 +23,8 @@ import {
     describe,
     expect,
     it,
+    onTestFinished,
+    vi,
 } from 'vitest'
 import React, { useEffect, useRef } from 'react'
 import { http, HttpResponse } from 'msw'
@@ -49,6 +51,7 @@ import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import {
     useSwapExecution,
@@ -65,6 +68,14 @@ import {
 const SLOW_TEST_TIMEOUT_MS = 30_000
 const SWAP_ID = '55555'
 const SENDER = REVIEW_SIGNER_ADDRESS
+
+// Fixed per-submit-call ids so a test can assert on the exact txid reported,
+// not just the count.
+const SUBMIT_TX_IDS = [
+    'SWAPPARTIALTXID000000000000000000000000000001',
+    'SWAPPARTIALTXID000000000000000000000000000002',
+    'SWAPPARTIALTXID000000000000000000000000000003',
+]
 
 // Captured from the host so tests can kick off the swap at controlled times.
 let executeSwap: ((quote: SwapQuote) => Promise<SwapExecutionOutcome>) | null =
@@ -180,11 +191,7 @@ const spyOnSubmissionAndStatus = () => {
                 )
             }
             return HttpResponse.json(
-                {
-                    txId: `SWAPPARTIALTXID0000000000000000000000000000${String(
-                        algodBodies.length,
-                    ).padStart(2, '0')}`,
-                },
+                { txId: SUBMIT_TX_IDS[algodBodies.length - 1] },
                 { status: 200 },
             )
         }),
@@ -269,7 +276,9 @@ describe('Flow: Swap submission survives a connectivity drop between groups', ()
             // which is what shipped before resumable submission.
             await waitFor(() => expect(statusPayloads).toHaveLength(1))
             expect(statusPayloads[0].status).toBe('in_progress')
-            expect(statusPayloads[0].submitted_transaction_ids).toHaveLength(1)
+            expect(statusPayloads[0].submitted_transaction_ids).toEqual([
+                SUBMIT_TX_IDS[0],
+            ])
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -279,6 +288,11 @@ describe('Flow: Swap submission survives a connectivity drop between groups', ()
         async () => {
             const { prepareHits } = mockPrepareWithTwoGroups()
             const { algodBodies, healAlgod } = spyOnSubmissionAndStatus()
+            // Resuming reuses the bytes signed on the first attempt — the
+            // resume branch must return into submitPhase before signing is
+            // ever reached again.
+            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+            onTestFinished(() => signSpy.mockRestore())
 
             renderWithNavigation(SwapHost, 'SwapPartialSubmitHost')
             await waitFor(() => expect(executeSwap).not.toBeNull())
@@ -288,6 +302,7 @@ describe('Flow: Swap submission survives a connectivity drop between groups', ()
             expect(firstOutcome.kind).toBe('partially-submitted')
             expect(algodBodies).toHaveLength(2)
             expect(prepareHits).toHaveLength(1)
+            const signCallsAfterFirstAttempt = signSpy.mock.calls.length
 
             healAlgod()
             const secondOutcome = await executeSwap!(quote)
@@ -299,6 +314,8 @@ describe('Flow: Swap submission survives a connectivity drop between groups', ()
             // Resuming skips prepare entirely: the groups are already
             // signed from the first attempt.
             expect(prepareHits).toHaveLength(1)
+            // No re-signing on resume: the key store is never touched again.
+            expect(signSpy.mock.calls.length).toBe(signCallsAfterFirstAttempt)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
