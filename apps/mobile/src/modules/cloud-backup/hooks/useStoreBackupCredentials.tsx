@@ -37,8 +37,16 @@ const SAVERS: Record<CredentialsFileSource, CredentialsFileSaver> = {
     googleDrive: saveToGoogleDrive,
 }
 
+export type StoreCredentialsOptions = {
+    /**
+     * Skips this flow's own PIN check. Only for a caller that verified the PIN
+     * itself moments earlier, so the user is not asked twice in a row.
+     */
+    hasVerifiedPin?: boolean
+}
+
 type UseStoreBackupCredentialsResult = {
-    storeCredentials: () => Promise<void>
+    storeCredentials: (options?: StoreCredentialsOptions) => Promise<void>
 }
 
 const NO_SALT_MESSAGE = 'No backup salt is stored on this device'
@@ -53,61 +61,70 @@ export const useStoreBackupCredentials =
         // A double tap would otherwise open two sheets and race two sign-ins.
         const isStoringRef = useRef(false)
 
-        const storeCredentials = useCallback(async () => {
-            if (isStoringRef.current) return
-            isStoringRef.current = true
-            let destination: Optional<CredentialsFileSource>
-            try {
-                if (!useCloudBackupStore.getState().salt) {
-                    throw new Error(NO_SALT_MESSAGE)
+        const storeCredentials = useCallback(
+            async (options?: StoreCredentialsOptions) => {
+                if (isStoringRef.current) return
+                isStoringRef.current = true
+                let destination: Optional<CredentialsFileSource>
+                try {
+                    if (!useCloudBackupStore.getState().salt) {
+                        throw new Error(NO_SALT_MESSAGE)
+                    }
+
+                    destination =
+                        await requestBottomSheet<CredentialsFileSource>({
+                            contents: <StoreBackupCredentialsSheet />,
+                            options: {
+                                size: 'auto',
+                                enablePanDownToClose: true,
+                                autoCreateContainer: false,
+                            },
+                        })
+                    if (!destination) return
+                    if (
+                        !options?.hasVerifiedPin &&
+                        !(await requirePinVerification())
+                    ) {
+                        return
+                    }
+
+                    // Read again: a backup deleted elsewhere while the sheet and
+                    // PIN were open resets the store.
+                    const backupSalt = useCloudBackupStore.getState().salt
+                    if (!backupSalt) throw new Error(NO_SALT_MESSAGE)
+
+                    const result = await SAVERS[destination](
+                        BACKUP_CREDENTIALS_FILE_NAME,
+                        buildBackupCredentialsFile(backupSalt),
+                    )
+                    if (result === 'cancelled') return
+                    showToast(
+                        {
+                            title: t('cloud_backup.store_credentials.success'),
+                            body: '',
+                            type: 'success',
+                        },
+                        // Lets a dismissing native picker or sign-in sheet clear first.
+                        { delayLength: 'short' },
+                    )
+                } catch (error) {
+                    logger.error(
+                        'useStoreBackupCredentials: failed to store the encryption key',
+                        { destination, error },
+                    )
+                    showError(error, t('cloud_backup.store_credentials.error'))
+                } finally {
+                    isStoringRef.current = false
                 }
-
-                destination = await requestBottomSheet<CredentialsFileSource>({
-                    contents: <StoreBackupCredentialsSheet />,
-                    options: {
-                        size: 'auto',
-                        enablePanDownToClose: true,
-                        autoCreateContainer: false,
-                    },
-                })
-                if (!destination) return
-                if (!(await requirePinVerification())) return
-
-                // Read again: a backup deleted elsewhere while the sheet and
-                // PIN were open resets the store.
-                const backupSalt = useCloudBackupStore.getState().salt
-                if (!backupSalt) throw new Error(NO_SALT_MESSAGE)
-
-                const result = await SAVERS[destination](
-                    BACKUP_CREDENTIALS_FILE_NAME,
-                    buildBackupCredentialsFile(backupSalt),
-                )
-                if (result === 'cancelled') return
-                showToast(
-                    {
-                        title: t('cloud_backup.store_credentials.success'),
-                        body: '',
-                        type: 'success',
-                    },
-                    // Lets a dismissing native picker or sign-in sheet clear first.
-                    { delayLength: 'short' },
-                )
-            } catch (error) {
-                logger.error(
-                    'useStoreBackupCredentials: failed to store the encryption key',
-                    { destination, error },
-                )
-                showError(error, t('cloud_backup.store_credentials.error'))
-            } finally {
-                isStoringRef.current = false
-            }
-        }, [
-            requestBottomSheet,
-            requirePinVerification,
-            showError,
-            showToast,
-            t,
-        ])
+            },
+            [
+                requestBottomSheet,
+                requirePinVerification,
+                showError,
+                showToast,
+                t,
+            ],
+        )
 
         return { storeCredentials }
     }

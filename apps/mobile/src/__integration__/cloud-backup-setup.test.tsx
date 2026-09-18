@@ -488,6 +488,15 @@ describe('cloud backup enable with a PIN set', () => {
                 { timeout: SLOW_TEST_TIMEOUT_MS },
             )
             expect(registered).toHaveBeenCalledTimes(1)
+
+            // Overview greets a fresh backup by offering to store the
+            // credentials, and the PIN just entered stands in for its own check.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('store_backup_credentials_sheet'),
+                ).toBeTruthy(),
+            )
+            expect(screen.queryByTestId('PWNumpad')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

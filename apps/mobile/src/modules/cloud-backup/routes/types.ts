@@ -17,12 +17,17 @@ export type CloudBackupRestoreKeyParams = {
     importedKey: BackupEncryptionKey
 }
 
+/** Set only by the enable flow, which has just verified the PIN. */
+export type CloudBackupOverviewParams = {
+    shouldPromptStoreCredentials?: boolean
+}
+
 export type CloudBackupStackParamList = {
     CloudBackupIntro: undefined
     CloudBackupHome: undefined
     CloudBackupSetup: undefined
     CloudBackupVerify: undefined
-    CloudBackupOverview: undefined
+    CloudBackupOverview: CloudBackupOverviewParams | undefined
     CloudBackupAccounts: undefined
     CloudBackupAccountsReview: undefined
     CloudBackupContacts: undefined

@@ -87,9 +87,9 @@ beforeEach(() => {
     saveToGoogleDrive.mockResolvedValue('saved')
 })
 
-const store = async () => {
+const store = async (options?: { hasVerifiedPin?: boolean }) => {
     const { result } = renderHook(() => useStoreBackupCredentials())
-    await result.current.storeCredentials()
+    await result.current.storeCredentials(options)
 }
 
 describe('useStoreBackupCredentials', () => {
@@ -120,6 +120,13 @@ describe('useStoreBackupCredentials', () => {
         expect(mockRequest.mock.invocationCallOrder[0]).toBeLessThan(
             mockRequirePin.mock.invocationCallOrder[0],
         )
+    })
+
+    test('trusts a caller that has just verified the PIN', async () => {
+        await store({ hasVerifiedPin: true })
+
+        expect(mockRequirePin).not.toHaveBeenCalled()
+        expect(saveToDevice).toHaveBeenCalledWith(FILE_NAME, expect.any(String))
     })
 
     test('saves nothing when PIN verification fails', async () => {
