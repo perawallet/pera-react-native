@@ -37,6 +37,7 @@ export const CardOnboardingAddressScreen = () => {
         isValid,
         isSubmitting,
         selectedCountry,
+        isCountryLocked,
         isUsResident,
         selectedUsState,
         cardTermsAccepted,
@@ -72,6 +73,7 @@ export const CardOnboardingAddressScreen = () => {
                         placeholder={t('peraCard.address.country_label')}
                         country={selectedCountry}
                         onPress={handleSelectCountry}
+                        disabled={isCountryLocked}
                         errorMessage={
                             errors.countryIso
                                 ? t('peraCard.address.country_required')

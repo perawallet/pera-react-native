@@ -55,6 +55,8 @@ export type UseCardOnboardingAddressScreenResult = {
     isValid: boolean
     isSubmitting: boolean
     selectedCountry: Optional<SupportedCountry>
+    /** Display-only once the residence from the email step is known. */
+    isCountryLocked: boolean
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
     cardTermsAccepted: boolean
@@ -199,9 +201,10 @@ export const useCardOnboardingAddressScreen =
             if (isUsResident) void trigger('usState')
         }, [isUsResident, trigger])
 
-        // TODO(card): confirm whether residence is editable here — Baanx already
-        // received the country at email/verify, and this pick (even a
-        // canSignUp:false country) only updates local state.
+        // Baanx fixed the residence at the email step and the address call
+        // carries no country, so the picker is only offered when nothing was
+        // stored (a resumed session that skipped that step).
+        const isCountryLocked = !!residenceCountryIso
         const handleSelectCountry = useCallback(() => {
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
@@ -391,6 +394,7 @@ export const useCardOnboardingAddressScreen =
                 submitConsent.isPending ||
                 linkConsent.isPending,
             selectedCountry,
+            isCountryLocked,
             isUsResident,
             selectedUsState,
             cardTermsAccepted,
