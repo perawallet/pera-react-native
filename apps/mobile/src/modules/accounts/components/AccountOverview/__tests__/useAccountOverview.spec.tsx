@@ -71,6 +71,7 @@ vi.mock(
 
 vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
     SendFundsContent: () => null,
+    SEND_FUNDS_SHEET_ID: 'send-funds',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

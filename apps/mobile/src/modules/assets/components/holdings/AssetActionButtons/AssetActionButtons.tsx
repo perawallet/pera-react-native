@@ -23,7 +23,10 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import {
+    SendFundsContent,
+    SEND_FUNDS_SHEET_ID,
+} from '@modules/transactions/components/send-funds/SendFundsContent'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -95,6 +98,7 @@ export const AssetActionButtons = ({
         }
 
         void requestBottomSheet({
+            id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent assetId={asset.assetId} />,
             options: {
                 size: 'modal',
