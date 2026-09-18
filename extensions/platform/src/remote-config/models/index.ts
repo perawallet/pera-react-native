@@ -23,6 +23,8 @@ export const RemoteConfigKeys = {
     enable_motion_lock: 'enable_motion_lock',
     enable_duress_pin: 'enable_duress_pin',
     enable_cloud_backup: 'enable_cloud_backup',
+    enable_backup_credentials_cloud_storage:
+        'enable_backup_credentials_cloud_storage',
     pera_7_migration: 'pera_7_migration',
     force_platform_age_gate: 'force_platform_age_gate',
     onramp_currency_decimals: 'onramp_currency_decimals',
@@ -64,6 +66,11 @@ export const RemoteConfigDefaults: Record<
     enable_motion_lock: false,
     enable_duress_pin: false,
     enable_cloud_backup: false,
+    // iCloud and Google Drive as destinations for the backup encryption key.
+    // Off until the Apple container and the Google OAuth clients exist — see
+    // docs/CLOUD_BACKUP_CREDENTIAL_STORAGE.md; without them both rows fail at
+    // the end of the flow. Store Locally is unaffected.
+    enable_backup_credentials_cloud_storage: false,
     pera_7_migration: false,
     force_platform_age_gate: false,
     // JSON map of source-currency symbol -> max fraction digits, extending the

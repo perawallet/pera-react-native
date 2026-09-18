@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import type { CredentialsFileSource } from '../../storage'
-import { getCredentialsFileSaveSources } from '../../storage/credentialsFileSources'
+import { useCredentialsFileSaveSources } from '../../hooks/useCredentialsFileSources'
 
 type UseStoreBackupCredentialsSheetResult = {
     destinations: CredentialsFileSource[]
@@ -23,7 +23,7 @@ type UseStoreBackupCredentialsSheetResult = {
 export const useStoreBackupCredentialsSheet =
     (): UseStoreBackupCredentialsSheetResult => {
         const { resolve } = useBottomSheetResult<CredentialsFileSource>()
-        const destinations = getCredentialsFileSaveSources()
+        const destinations = useCredentialsFileSaveSources()
 
         const handleSelect = useCallback(
             (destination: CredentialsFileSource) => resolve(destination),
