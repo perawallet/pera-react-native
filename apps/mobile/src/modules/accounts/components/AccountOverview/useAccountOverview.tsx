@@ -96,7 +96,9 @@ export const useAccountOverview = ({
                 />
             ),
             options: {
-                size: 'modal',
+                // Content-sized: the sheet swaps its whole body for a short
+                // confirm panel when removing an account, and must shrink to it.
+                size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
