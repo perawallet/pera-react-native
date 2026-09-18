@@ -1264,7 +1264,7 @@
         },
         "withdraw": {
             "navigation_title": "Auszahlen",
-            "subtitle": "Zahle USDC von deiner Pera Card zurück auf dein verknüpftes Pera-Konto aus.",
+            "subtitle": "Übertrage USDC von deiner Pera Card zurück auf das Konto, mit dem sie erstellt wurde. Auszahlungen sind nach einem kurzen Moment verfügbar.",
             "to_account": "Zielkonto",
             "amount": "Betrag",
             "balance": "Guthaben: {{amount}}",
@@ -1272,8 +1272,20 @@
             "confirm_title": "Auszahlung bestätigen",
             "confirm_body": "Du bist dabei, {{amount}} USDC von deiner Pera Card auf das unten stehende Konto auszuzahlen.",
             "confirm_button": "Bestätigen",
-            "success_title": "Auszahlung eingeleitet",
-            "success_body": "{{amount}} USDC ist auf dem Weg zu deinem Konto."
+            "requested_title": "Auszahlung angefordert",
+            "requested_body": "{{amount}} USDC können in etwa {{seconds}} Sekunden abgeschlossen werden.",
+            "pending_title": "Auszahlung in Bearbeitung",
+            "pending_ready_in": "Bereit in {{seconds}} s",
+            "pending_ready": "Bereit zum Abschließen",
+            "pending_exists": "Schließe zuerst deine ausstehende Auszahlung ab oder brich sie ab.",
+            "complete": "Abschließen",
+            "cancel": "Abbrechen",
+            "completed_title": "Auszahlung abgeschlossen",
+            "completed_body": "{{amount}} USDC sind zurück auf deinem Konto.",
+            "cancelled_title": "Auszahlung abgebrochen",
+            "cancelled_body": "Dein USDC bleibt auf deiner Karte.",
+            "error_title": "Auszahlung nicht möglich",
+            "error_body": "Deine Auszahlung wurde nicht verarbeitet. Bitte versuche es erneut."
         },
         "confirm_swap": {
             "navigation_title": "Tausch bestätigen",

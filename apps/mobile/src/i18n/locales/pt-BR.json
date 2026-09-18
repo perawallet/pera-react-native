@@ -1272,7 +1272,7 @@
         },
         "withdraw": {
             "navigation_title": "Sacar",
-            "subtitle": "Saque USDC do seu Pera Card de volta para a sua conta Pera vinculada.",
+            "subtitle": "Retire USDC do seu Pera Card para a conta que o criou. Os saques levam um instante para ficar disponíveis.",
             "to_account": "Para a conta",
             "amount": "Valor",
             "balance": "Saldo: {{amount}}",
@@ -1280,8 +1280,20 @@
             "confirm_title": "Confirmar saque",
             "confirm_body": "Você está prestes a sacar {{amount}} USDC do seu Pera Card para a conta abaixo.",
             "confirm_button": "Confirmar",
-            "success_title": "Saque iniciado",
-            "success_body": "{{amount}} USDC está a caminho da sua conta."
+            "requested_title": "Saque solicitado",
+            "requested_body": "{{amount}} USDC estarão prontos para concluir em cerca de {{seconds}} segundos.",
+            "pending_title": "Saque em andamento",
+            "pending_ready_in": "Pronto em {{seconds}} s",
+            "pending_ready": "Pronto para concluir",
+            "pending_exists": "Conclua ou cancele seu saque pendente primeiro.",
+            "complete": "Concluir",
+            "cancel": "Cancelar",
+            "completed_title": "Saque concluído",
+            "completed_body": "{{amount}} USDC voltaram para a sua conta.",
+            "cancelled_title": "Saque cancelado",
+            "cancelled_body": "Seu USDC permanece no seu cartão.",
+            "error_title": "Não foi possível sacar",
+            "error_body": "Seu saque não foi processado. Tente novamente."
         },
         "confirm_swap": {
             "navigation_title": "Confirmar conversão",

@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import { toDecimal } from '@perawallet/wallet-core-shared'
-import type { CardInternalWallet } from '../../models'
-import type { InternalWalletApiResponse } from './schema'
-
-export const transformInternalWallet = (
-    response: InternalWalletApiResponse,
-): CardInternalWallet => ({
-    id: response.id,
-    balance: toDecimal(response.balance),
-    currency: response.currency,
-    address: response.address ?? '',
-    addressMemo: response.addressMemo ?? null,
-    addressId: response.addressId ?? '',
-    type: response.type ?? '',
-})
+// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
+// TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
+// (`.response.status`); tolerate a bare `.status` too for robustness.
+export const isAlgodNotFoundError = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error == null) return false
+    const err = error as { status?: number; response?: { status?: number } }
+    return err.response?.status === 404 || err.status === 404
+}

@@ -1272,7 +1272,7 @@
         },
         "withdraw": {
             "navigation_title": "Withdraw",
-            "subtitle": "Withdraw USDC from your Pera Card back to your linked Pera account.",
+            "subtitle": "Withdraw USDC from your Pera Card back to the account that created it. Withdrawals take a short moment to become available.",
             "to_account": "To account",
             "amount": "Amount",
             "balance": "Balance: {{amount}}",
@@ -1280,8 +1280,20 @@
             "confirm_title": "Confirm Withdrawal",
             "confirm_body": "You are about to withdraw {{amount}} USDC from your Pera Card to the account below.",
             "confirm_button": "Confirm",
-            "success_title": "Withdrawal initiated",
-            "success_body": "{{amount}} USDC is on its way to your account."
+            "requested_title": "Withdrawal requested",
+            "requested_body": "{{amount}} USDC will be ready to complete in about {{seconds}} seconds.",
+            "pending_title": "Withdrawal in progress",
+            "pending_ready_in": "Ready in {{seconds}}s",
+            "pending_ready": "Ready to complete",
+            "pending_exists": "Complete or cancel your pending withdrawal first.",
+            "complete": "Complete",
+            "cancel": "Cancel",
+            "completed_title": "Withdrawal complete",
+            "completed_body": "{{amount}} USDC is back in your account.",
+            "cancelled_title": "Withdrawal cancelled",
+            "cancelled_body": "Your USDC stays on your card.",
+            "error_title": "Couldn't withdraw",
+            "error_body": "Your withdrawal was not processed. Please try again."
         },
         "confirm_swap": {
             "navigation_title": "Confirm Swap",

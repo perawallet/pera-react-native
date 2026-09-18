@@ -1272,7 +1272,7 @@
         },
         "withdraw": {
             "navigation_title": "Retirar",
-            "subtitle": "Retira USDC de tu Pera Card a tu cuenta de Pera vinculada.",
+            "subtitle": "Retira USDC de tu Pera Card a la cuenta que la creó. Los retiros tardan un momento en estar disponibles.",
             "to_account": "A la cuenta",
             "amount": "Cantidad",
             "balance": "Saldo: {{amount}}",
@@ -1280,8 +1280,20 @@
             "confirm_title": "Confirmar la retirada",
             "confirm_body": "Estás a punto de retirar {{amount}} USDC de tu Pera Card a la cuenta que aparece abajo.",
             "confirm_button": "Confirmar",
-            "success_title": "Retirada iniciada",
-            "success_body": "{{amount}} USDC están en camino a tu cuenta."
+            "requested_title": "Retiro solicitado",
+            "requested_body": "{{amount}} USDC estarán listos para completar en unos {{seconds}} segundos.",
+            "pending_title": "Retiro en curso",
+            "pending_ready_in": "Listo en {{seconds}} s",
+            "pending_ready": "Listo para completar",
+            "pending_exists": "Completa o cancela primero tu retiro pendiente.",
+            "complete": "Completar",
+            "cancel": "Cancelar",
+            "completed_title": "Retiro completado",
+            "completed_body": "{{amount}} USDC han vuelto a tu cuenta.",
+            "cancelled_title": "Retiro cancelado",
+            "cancelled_body": "Tu USDC se queda en tu tarjeta.",
+            "error_title": "No se pudo retirar",
+            "error_body": "Tu retiro no se procesó. Inténtalo de nuevo."
         },
         "confirm_swap": {
             "navigation_title": "Confirmar swap",

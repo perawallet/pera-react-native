@@ -11,13 +11,7 @@
  */
 
 import { useCallback, useMemo, useRef } from 'react'
-import { Decimal } from 'decimal.js'
-import {
-    useAccountBalancesInvalidator,
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useCardInternalWalletsQuery } from '@perawallet/wallet-core-card'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import { useNumberPadAmount } from '@components/NumberPad'
@@ -25,21 +19,27 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { CardWithdrawConfirmationSheet } from '../../components/CardWithdrawConfirmationSheet'
-import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
-
-// USDC on Algorand has 6 decimals; caps the typed amount's fraction length.
-// Hardcoded because withdraw is USDC-only and never fetches the asset object.
-const USDC_DECIMALS = 6
+import {
+    useCardEscrowBalance,
+    useCardOwnerAccount,
+    useCardWithdraw,
+} from '../../hooks'
+import {
+    USDC_DISPLAY_PRECISION,
+    USDC_FALLBACK_DECIMALS,
+} from '../../utils/usdc'
 
 type UseCardWithdrawScreenResult = {
-    /** Destination account (active account placeholder until the contract links one). */
+    /** Where the contract releases the funds: always the card's owner. */
     destinationAccount: Nullable<WalletAccount>
-    /** Spendable card USDC balance, formatted. */
+    /** USDC on the card, formatted. */
     balanceDisplay: string
     /** Raw typed amount string, or null/undefined when empty. */
     amount: Maybe<string>
     handleKey: (key?: string) => void
     isWithdrawDisabled: boolean
+    /** True while an earlier request is still open, which blocks a new one. */
+    hasPendingWithdrawal: boolean
     onWithdraw: () => void
 }
 
@@ -48,32 +48,26 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { t } = useLanguage()
     const { successToast } = useToast()
-    const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
 
-    // TODO(card): use connectedFundingSourceAddress once the smart contract
-    // links the card's funding source; until then withdraw to the active account.
-    const destinationAccount = useSelectedAccount()
-
-    const { usdcWallet } = useCardInternalWalletsQuery()
-    const cardBalance = useMemo(
-        () => usdcWallet?.balance ?? new Decimal(0),
-        [usdcWallet],
-    )
+    const destinationAccount = useCardOwnerAccount()
+    const { balance: cardBalance } = useCardEscrowBalance()
+    const { pending, secondsUntilReady } = useCardWithdraw()
 
     const {
         amount: value,
         amountDecimal,
         handleKey,
-    } = useNumberPadAmount({ decimals: USDC_DECIMALS })
+    } = useNumberPadAmount({ decimals: USDC_FALLBACK_DECIMALS })
 
     const balanceDisplay = useMemo(
         () => cardBalance.toFixed(USDC_DISPLAY_PRECISION),
         [cardBalance],
     )
 
+    const hasPendingWithdrawal = pending !== null
     const isValidAmount = amountDecimal.gt(0) && amountDecimal.lte(cardBalance)
     const isWithdrawDisabled =
-        !destinationAccount || !usdcWallet || !isValidAmount
+        !destinationAccount || !isValidAmount || hasPendingWithdrawal
 
     const isConfirmationOpenRef = useRef(false)
 
@@ -90,15 +84,15 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
             })
             if (result !== 'confirm') return
 
-            // The mutation already invalidated the card queries; the on-chain
-            // account balance (incoming USDC) is the app's to refresh.
+            // The request only starts the timelock; the overview shows the
+            // countdown and the Complete step.
             successToast(
-                t('peraCard.withdraw.success_title'),
-                t('peraCard.withdraw.success_body', {
+                t('peraCard.withdraw.requested_title'),
+                t('peraCard.withdraw.requested_body', {
                     amount: amountDecimal.toFixed(USDC_DISPLAY_PRECISION),
+                    seconds: secondsUntilReady,
                 }),
             )
-            invalidateBalances()
             // Skip navigation if the screen lost focus while the sheet was up.
             if (navigation.isFocused()) {
                 navigation.goBack()
@@ -111,7 +105,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
         successToast,
         t,
         amountDecimal,
-        invalidateBalances,
+        secondsUntilReady,
         navigation,
     ])
 
@@ -125,6 +119,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
         amount: value,
         handleKey,
         isWithdrawDisabled,
+        hasPendingWithdrawal,
         onWithdraw,
     }
 }

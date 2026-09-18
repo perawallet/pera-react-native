@@ -16,6 +16,8 @@ import { useStyles } from './styles'
 
 type PeraCardActionButtonsProps = {
     isAutoFunding: boolean
+    /** One withdrawal at a time: blocked while a request is still open. */
+    isWithdrawDisabled?: boolean
     onWithdraw: () => void
     onAddFunds: () => void
     onGetUsdc: () => void
@@ -23,6 +25,7 @@ type PeraCardActionButtonsProps = {
 
 export const PeraCardActionButtons = ({
     isAutoFunding,
+    isWithdrawDisabled = false,
     onWithdraw,
     onAddFunds,
     onGetUsdc,
@@ -47,6 +50,7 @@ export const PeraCardActionButtons = ({
                 variant='secondary'
                 title={t('peraCard.account.withdraw')}
                 onPress={onWithdraw}
+                isDisabled={isWithdrawDisabled}
                 testID='pera_card_withdraw_button'
             />
             <PWButton
