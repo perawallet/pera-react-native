@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import { CredentialsFileNotFoundError } from '@perawallet/wallet-core-backup'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
 
-import { CredentialsFileNotFoundError } from './errors'
 import { runOnGoogleDrive, signOutOfGoogleDrive } from './googleDriveSession'
 import type { ReadResult } from './types'
 

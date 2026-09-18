@@ -10,22 +10,19 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 
 import type { CredentialsFileSource } from './types'
 
-// iCloud has no Android client. The extension gets its own twin, which ships
-// neither native SDK.
-const SOURCES_BY_OS: Partial<
-    Record<typeof Platform.OS, CredentialsFileSource[]>
-> = {
-    ios: ['device', 'icloud', 'googleDrive'],
-    android: ['device', 'googleDrive'],
-}
+// No native SDK for either cloud in the extension, so only a local file.
+const DEVICE_ONLY: CredentialsFileSource[] = ['device']
 const NONE: CredentialsFileSource[] = []
 
+// Saving hands the file to a download, which the popup survives.
 export const getCredentialsFileSaveSources = (): CredentialsFileSource[] =>
-    SOURCES_BY_OS[Platform.OS] ?? NONE
+    DEVICE_ONLY
 
+// Reading opens an OS file dialog, and Chrome tears the toolbar popup down the
+// instant that takes focus. The expanded tab has no such problem.
 export const getCredentialsFileReadSources = (): CredentialsFileSource[] =>
-    SOURCES_BY_OS[Platform.OS] ?? NONE
+    getSurface() === 'popup' ? NONE : DEVICE_ONLY

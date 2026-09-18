@@ -11,8 +11,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { InvalidCredentialsFileError } from '@perawallet/wallet-core-backup'
 import { File } from 'expo-file-system'
-import { InvalidCredentialsFileError } from '../errors'
 import { readFromDevice } from '../readFromDevice'
 
 const CONTENTS = '{"t":"backup-credentials"}'
