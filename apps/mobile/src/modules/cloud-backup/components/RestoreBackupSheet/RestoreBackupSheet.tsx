@@ -11,53 +11,16 @@
  */
 
 import { PWSheetLayout, PWText, PWView } from '@components/core'
-import { PanelButton, type PanelButtonProps } from '@components/PanelButton'
+import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
-import iCloudLogo from '@assets/images/icloud-logo.png'
-import {
-    useRestoreBackupSheet,
-    type RestoreBackupSheetResult,
-} from './useRestoreBackupSheet'
+import { useRestoreBackupSheet } from './useRestoreBackupSheet'
 import { useStyles } from './styles'
-
-type OptionRow = Pick<
-    PanelButtonProps,
-    'leftIcon' | 'leftImage' | 'title' | 'testID'
->
 
 export const RestoreBackupSheet = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { options, descriptionKey, handleSelect } = useRestoreBackupSheet()
-
-    const rows: Record<RestoreBackupSheetResult, OptionRow> = {
-        scan: {
-            leftIcon: 'qr',
-            title: t('cloud_backup.restore.sheet_scan'),
-            testID: 'cloud_backup_restore_sheet_scan',
-        },
-        device: {
-            leftIcon: 'device',
-            title: t('cloud_backup.restore.sheet_device'),
-            testID: 'cloud_backup_restore_sheet_device',
-        },
-        icloud: {
-            leftImage: iCloudLogo,
-            title: t('cloud_backup.restore.sheet_icloud'),
-            testID: 'cloud_backup_restore_sheet_icloud',
-        },
-        googleDrive: {
-            leftIcon: 'google-drive',
-            title: t('cloud_backup.restore.sheet_google_drive'),
-            testID: 'cloud_backup_restore_sheet_google_drive',
-        },
-        manual: {
-            leftIcon: 'key',
-            title: t('cloud_backup.restore.sheet_manual'),
-            testID: 'cloud_backup_restore_sheet_manual',
-        },
-    }
+    const { options, description } = useRestoreBackupSheet()
 
     return (
         <PWSheetLayout
@@ -74,16 +37,15 @@ export const RestoreBackupSheet = () => {
                     variant='bodyLarge'
                     style={styles.description}
                 >
-                    {t(descriptionKey)}
+                    {description}
                 </PWText>
                 <PWView style={styles.options}>
-                    {options.map(option => (
+                    {options.map(({ option, ...row }) => (
                         <PanelButton
                             key={option}
-                            {...rows[option]}
+                            {...row}
                             titleWeight='h3'
                             accessibilityRole='button'
-                            onPress={() => handleSelect(option)}
                         />
                     ))}
                 </PWView>

@@ -26,7 +26,7 @@ export const ChooseCredentialsFileSheet = ({
 }: ChooseCredentialsFileSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { choices, handleSelect } = useChooseCredentialsFileSheet(fileNames)
+    const { choices } = useChooseCredentialsFileSheet(fileNames)
 
     return (
         <PWSheetLayout
@@ -46,26 +46,12 @@ export const ChooseCredentialsFileSheet = ({
                     {t('cloud_backup.restore.choose_file_description')}
                 </PWText>
                 <PWView style={styles.options}>
-                    {choices.map(({ fileName, addressPrefix }) => (
+                    {choices.map(({ fileName, ...row }) => (
                         <PanelButton
                             key={fileName}
-                            leftIcon='key'
-                            title={
-                                addressPrefix
-                                    ? t(
-                                          'cloud_backup.restore.choose_file_row',
-                                          {
-                                              prefix: addressPrefix,
-                                          },
-                                      )
-                                    : t(
-                                          'cloud_backup.restore.choose_file_unknown',
-                                      )
-                            }
+                            {...row}
                             titleWeight='h3'
                             accessibilityRole='button'
-                            testID={`cloud_backup_choose_credentials_file_${fileName}`}
-                            onPress={() => handleSelect(fileName)}
                         />
                     ))}
                 </PWView>

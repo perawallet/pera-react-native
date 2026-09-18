@@ -45,14 +45,38 @@ describe('useStoreBackupCredentialsSheet', () => {
 
         const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
-        expect(result.current.destinations).toEqual(['device'])
+        expect(result.current.destinations.map(row => row.destination)).toEqual(
+            ['device'],
+        )
+    })
+
+    test('gives every row a title and a leading mark', () => {
+        const { result } = renderHook(() => useStoreBackupCredentialsSheet())
+
+        for (const row of result.current.destinations) {
+            expect(row.title).toBeTruthy()
+            expect(row.leftIcon ?? row.leftImage).toBeTruthy()
+        }
     })
 
     test('resolves the sheet with the chosen destination', () => {
         const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
-        result.current.handleSelect('googleDrive')
+        result.current.destinations
+            .find(row => row.destination === 'googleDrive')
+            ?.onPress?.()
 
         expect(mockResolve).toHaveBeenCalledWith('googleDrive')
+    })
+
+    test('keeps each row stable across a re-render, so the list does not churn', () => {
+        const { result, rerender } = renderHook(() =>
+            useStoreBackupCredentialsSheet(),
+        )
+        const first = result.current.destinations
+
+        rerender()
+
+        expect(result.current.destinations).toBe(first)
     })
 })

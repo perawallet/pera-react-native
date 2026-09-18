@@ -10,39 +10,44 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { backupCredentialsFileAddressPrefix } from '@perawallet/wallet-core-backup'
+import type { PanelButtonProps } from '@components/PanelButton'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
-export type CredentialsFileChoice = {
-    fileName: string
-    /** The backup's address prefix, or `null` for a file saved before names carried one. */
-    addressPrefix: string | null
-}
+type CredentialsFileRow = Pick<
+    PanelButtonProps,
+    'leftIcon' | 'title' | 'testID' | 'onPress'
+> & { fileName: string }
 
 type UseChooseCredentialsFileSheetResult = {
-    choices: CredentialsFileChoice[]
-    handleSelect: (fileName: string) => void
+    choices: CredentialsFileRow[]
 }
 
 export const useChooseCredentialsFileSheet = (
     fileNames: string[],
 ): UseChooseCredentialsFileSheetResult => {
+    const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<string>()
 
     const choices = useMemo(
         () =>
-            fileNames.map(fileName => ({
-                fileName,
-                addressPrefix: backupCredentialsFileAddressPrefix(fileName),
-            })),
-        [fileNames],
+            fileNames.map(fileName => {
+                // Null for a key saved before file names carried an address.
+                const prefix = backupCredentialsFileAddressPrefix(fileName)
+                return {
+                    fileName,
+                    leftIcon: 'key' as const,
+                    title: prefix
+                        ? t('cloud_backup.restore.choose_file_row', { prefix })
+                        : t('cloud_backup.restore.choose_file_unknown'),
+                    testID: `cloud_backup_choose_credentials_file_${fileName}`,
+                    onPress: () => resolve(fileName),
+                }
+            }),
+        [fileNames, t, resolve],
     )
 
-    const handleSelect = useCallback(
-        (fileName: string) => resolve(fileName),
-        [resolve],
-    )
-
-    return { choices, handleSelect }
+    return { choices }
 }
