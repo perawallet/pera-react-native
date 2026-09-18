@@ -21,14 +21,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 const mocks = vi.hoisted(() => ({
-    escrowCardAddress: null as string | null,
+    escrowCardOwner: null as string | null,
     getPendingWithdrawal: vi.fn(),
     getWaitTimeSeconds: vi.fn(),
 }))
 vi.mock('../../store', () => ({
     useCardStore: (
-        selector: (state: { escrowCardAddress: string | null }) => unknown,
-    ) => selector({ escrowCardAddress: mocks.escrowCardAddress }),
+        selector: (state: { escrowCardOwner: string | null }) => unknown,
+    ) => selector({ escrowCardOwner: mocks.escrowCardOwner }),
 }))
 vi.mock('../useEscrowWithdrawal', () => ({
     useEscrowWithdrawal: () => ({
@@ -64,12 +64,12 @@ describe('useCardPendingWithdrawalQuery', () => {
         })
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
-        mocks.escrowCardAddress = 'CARD'
+        mocks.escrowCardOwner = 'OWNER'
         mocks.getPendingWithdrawal.mockResolvedValue(PENDING)
         mocks.getWaitTimeSeconds.mockResolvedValue(20)
     })
 
-    it('reads the pending request and the wait time for the stored card', async () => {
+    it('reads the pending request and the wait time for the stored owner', async () => {
         const { result } = renderHook(() => useCardPendingWithdrawalQuery(), {
             wrapper,
         })
@@ -77,11 +77,11 @@ describe('useCardPendingWithdrawalQuery', () => {
         await waitFor(() => expect(result.current.pending).not.toBeNull())
         expect(result.current.pending).toEqual(PENDING)
         expect(result.current.waitTimeSeconds).toBe(20)
-        expect(mocks.getPendingWithdrawal).toHaveBeenCalledWith('CARD')
+        expect(mocks.getPendingWithdrawal).toHaveBeenCalledWith('OWNER')
     })
 
-    it('stays idle with no card to look up', async () => {
-        mocks.escrowCardAddress = null
+    it('stays idle with no owner to look up', async () => {
+        mocks.escrowCardOwner = null
 
         const { result } = renderHook(() => useCardPendingWithdrawalQuery(), {
             wrapper,

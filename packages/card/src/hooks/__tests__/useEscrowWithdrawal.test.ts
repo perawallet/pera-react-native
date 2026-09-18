@@ -138,7 +138,7 @@ describe('useEscrowWithdrawal', () => {
         )
     })
 
-    it('decodes the pending request from the withdrawals box keyed by the card', async () => {
+    it('decodes the pending request from the withdrawals box keyed by the owner', async () => {
         boxDo.mockResolvedValue({
             value: WITHDRAWAL_REQUEST.encode([
                 CARD,
@@ -151,7 +151,7 @@ describe('useEscrowWithdrawal', () => {
         })
         const { result } = renderHook(() => useEscrowWithdrawal())
 
-        const pending = await result.current.getPendingWithdrawal(CARD)
+        const pending = await result.current.getPendingWithdrawal(OWNER)
 
         expect(pending).toEqual({
             card: CARD,
@@ -166,8 +166,8 @@ describe('useEscrowWithdrawal', () => {
                 .getApplicationBoxByName.mock.calls[0]
         expect(appId).toBe(769_896_880n)
         expect(new TextDecoder().decode(boxName.subarray(0, 2))).toBe('wr')
-        expect(encodeAddress(boxName.subarray(2))).toBe(CARD)
-        expect(boxName.length).toBe(2 + decodeAddress(CARD).publicKey.length)
+        expect(encodeAddress(boxName.subarray(2))).toBe(OWNER)
+        expect(boxName.length).toBe(2 + decodeAddress(OWNER).publicKey.length)
     })
 
     it('treats a missing box as no pending request but rethrows anything else', async () => {
@@ -175,13 +175,13 @@ describe('useEscrowWithdrawal', () => {
 
         boxDo.mockRejectedValueOnce({ status: 404 })
         await expect(
-            result.current.getPendingWithdrawal(CARD),
+            result.current.getPendingWithdrawal(OWNER),
         ).resolves.toBeNull()
 
         boxDo.mockRejectedValueOnce(new Error('algod down'))
-        await expect(result.current.getPendingWithdrawal(CARD)).rejects.toThrow(
-            'algod down',
-        )
+        await expect(
+            result.current.getPendingWithdrawal(OWNER),
+        ).rejects.toThrow('algod down')
     })
 
     it('reads withdrawal_wait_time as seconds and reports null when unset', async () => {

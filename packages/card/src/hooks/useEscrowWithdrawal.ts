@@ -46,10 +46,12 @@ const WITHDRAWALS_PREFIX = Uint8Array.from(
     char => char.charCodeAt(0),
 )
 
-const buildWithdrawalBoxName = (cardAddress: string): Uint8Array => {
+// The contract keys `withdrawals` by the requesting owner (`Txn.sender`),
+// not by the card, so a card-keyed read always misses the box.
+const buildWithdrawalBoxName = (ownerAddress: string): Uint8Array => {
     const name = new Uint8Array(WITHDRAWALS_PREFIX.length + 32)
     name.set(WITHDRAWALS_PREFIX, 0)
-    name.set(decodeAddress(cardAddress).publicKey, WITHDRAWALS_PREFIX.length)
+    name.set(decodeAddress(ownerAddress).publicKey, WITHDRAWALS_PREFIX.length)
     return name
 }
 
@@ -74,9 +76,9 @@ export type UseEscrowWithdrawalResult = {
         sender: string
         cardAddress: string
     }) => Promise<PeraTransaction[]>
-    /** The card's open request, or null when its box is absent. */
+    /** The owner's open request, or null when its box is absent. */
     getPendingWithdrawal: (
-        cardAddress: string,
+        ownerAddress: string,
     ) => Promise<Nullable<PendingWithdrawal>>
     /** `withdrawal_wait_time` in seconds; null until the contract owner sets it. */
     getWaitTimeSeconds: () => Promise<Nullable<number>>
@@ -163,13 +165,13 @@ export const useEscrowWithdrawal = (): UseEscrowWithdrawalResult => {
     const getPendingWithdrawal = useCallback<
         UseEscrowWithdrawalResult['getPendingWithdrawal']
     >(
-        async cardAddress => {
+        async ownerAddress => {
             const { mainAppId } = resolveEscrowChainConfig(network)
             try {
                 const box = await algokit.client.algod
                     .getApplicationBoxByName(
                         BigInt(mainAppId),
-                        buildWithdrawalBoxName(cardAddress),
+                        buildWithdrawalBoxName(ownerAddress),
                     )
                     .do()
                 const [card, recipient, asset, amount, createdAt, nonce] =

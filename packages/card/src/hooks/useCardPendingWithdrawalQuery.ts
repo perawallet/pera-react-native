@@ -44,22 +44,22 @@ export const useCardPendingWithdrawalQuery =
     (): UseCardPendingWithdrawalQueryResult => {
         const { network } = useNetwork()
         const queryClient = useQueryClient()
-        const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
+        const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
         const { getPendingWithdrawal, getWaitTimeSeconds } =
             useEscrowWithdrawal()
 
         const queryKey = cardQueryKeys.pendingWithdrawal(
             network,
-            escrowCardAddress,
+            escrowCardOwner,
         )
 
         const query = useQuery({
             queryKey,
             queryFn: async (): Promise<PendingWithdrawalState> => {
-                if (escrowCardAddress === null) return EMPTY_STATE
+                if (escrowCardOwner === null) return EMPTY_STATE
                 try {
                     const [pending, waitTimeSeconds] = await Promise.all([
-                        getPendingWithdrawal(escrowCardAddress),
+                        getPendingWithdrawal(escrowCardOwner),
                         getWaitTimeSeconds(),
                     ])
                     return { pending, waitTimeSeconds }
@@ -73,7 +73,7 @@ export const useCardPendingWithdrawalQuery =
                 }
             },
             staleTime: config.reactQueryShortLivedStaleTime,
-            enabled: escrowCardAddress !== null,
+            enabled: escrowCardOwner !== null,
         })
 
         const invalidate = useCallback(
