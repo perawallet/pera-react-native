@@ -102,8 +102,14 @@ describe('query persistence policy covers every query-key prefix', () => {
         ).toEqual([])
     })
 
+    // A `module/sub-key` entry is classified against its module, which is what
+    // the scan discovers.
+    const classifiedModules = new Set(
+        Object.keys(QUERY_PREFIX_POLICY).map(key => key.split('/')[0]),
+    )
+
     it('lists no prefix that no longer exists', () => {
-        const stale = Object.keys(QUERY_PREFIX_POLICY)
+        const stale = [...classifiedModules]
             .filter(prefix => !discovered.has(prefix))
             .sort()
 
@@ -113,8 +119,6 @@ describe('query persistence policy covers every query-key prefix', () => {
     // Without this a broken scan root passes silently with an empty set, which
     // is the one failure mode that would make the whole sweep decorative.
     it('actually scanned the codebase', () => {
-        expect(discovered.size).toBeGreaterThanOrEqual(
-            Object.keys(QUERY_PREFIX_POLICY).length,
-        )
+        expect(discovered.size).toBeGreaterThanOrEqual(classifiedModules.size)
     })
 })

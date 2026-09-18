@@ -151,6 +151,38 @@ describe('shouldDehydrateQuery', () => {
             shouldDehydrateQuery(asQuery(['currencies', 'list'], 'pending')),
         ).toBe(false)
     })
+
+    it('persists a module catalog sub-key without persisting its address-keyed siblings', () => {
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    ['swaps', 'providers', { network: 'mainnet' }],
+                    'success',
+                ),
+            ),
+        ).toBe(true)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    ['swaps', 'history-infinite', { address: 'AAAA' }],
+                    'success',
+                ),
+            ),
+        ).toBe(false)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(['onramp', 'pairs', { network: 'mainnet' }], 'success'),
+            ),
+        ).toBe(true)
+        expect(
+            shouldDehydrateQuery(
+                asQuery(
+                    ['onramp', 'history', { accountAddress: 'AAAA' }],
+                    'success',
+                ),
+            ),
+        ).toBe(false)
+    })
 })
 
 describe('persisted Decimal query data', () => {

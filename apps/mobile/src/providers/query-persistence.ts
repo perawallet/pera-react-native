@@ -55,6 +55,14 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     currencies: 'persist',
     projects: 'persist',
     staking: 'persist',
+    // `onramp` and `swaps` are mixed: their history keys carry an address, but
+    // their catalogs are the same global content as the block above. A
+    // `module/sub-key` entry overrides the module, so the catalog keeps
+    // persisting while the module stays closed by default.
+    'onramp/pairs': 'persist',
+    'onramp/region': 'persist',
+    'swaps/providers': 'persist',
+    'swaps/top-pairs': 'persist',
 }
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
@@ -72,8 +80,13 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
     }
 
     const prefix = query.queryKey[0]
+    if (typeof prefix !== 'string') return false
 
-    return (
-        typeof prefix === 'string' && QUERY_PREFIX_POLICY[prefix] === 'persist'
-    )
+    const subKey = query.queryKey[1]
+    if (typeof subKey === 'string') {
+        const scoped = QUERY_PREFIX_POLICY[`${prefix}/${subKey}`]
+        if (scoped) return scoped === 'persist'
+    }
+
+    return QUERY_PREFIX_POLICY[prefix] === 'persist'
 }

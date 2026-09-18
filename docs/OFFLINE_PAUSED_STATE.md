@@ -6,7 +6,9 @@ Account, asset, transaction, and price data is read from the local database
 _is_ the cache for them. What the React Query cache itself persists to disk is
 decided separately, by the prefix allowlist in
 `apps/mobile/src/providers/query-persistence.ts`: an unlisted prefix is never
-persisted.
+persisted. A module whose keys are split between global catalog data and
+address-keyed data classifies the catalog half under a `module/sub-key` entry,
+which overrides the module's own entry.
 
 Two things follow from that, and every data-backed surface has to get both right: how a DB-first
 query is configured so it actually serves SQLite while offline, and how consumers tell "offline"
