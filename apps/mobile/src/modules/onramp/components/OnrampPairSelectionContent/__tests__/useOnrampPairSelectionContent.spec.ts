@@ -51,7 +51,8 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: mockResolve }),
 }))
 
-vi.mock('@perawallet/wallet-core-onramp', () => ({
+vi.mock(import('@perawallet/wallet-core-onramp'), async importOriginal => ({
+    ...(await importOriginal()),
     useRampPairsQuery: mockUseRampPairsQuery,
 }))
 
