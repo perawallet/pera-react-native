@@ -187,19 +187,39 @@ const LEDGER_ACCOUNT = {
     hardwareDetails: { manufacturer: 'ledger' },
 } as unknown as WalletAccount
 
-// The linked balance is the funding account's own on-chain USDC holding, so
-// it is driven through the account-balance query rather than through Baanx.
-const setLinkedUsdc = (balance: Nullable<string>, isPending = false) =>
-    vi.mocked(useAccountAssetBalanceQuery).mockReturnValue({
-        data:
-            balance === null
-                ? null
-                : ({
-                      assetId: '10458941',
-                      amount: new Decimal(balance),
-                  } as ReturnType<typeof useAccountAssetBalanceQuery>['data']),
-        isPending,
-    } as ReturnType<typeof useAccountAssetBalanceQuery>)
+// The linked balances are the funding account's own on-chain holdings, so
+// they are driven through the account-balance query rather than through Baanx.
+const linkedHoldings = {
+    usdc: null as Nullable<string>,
+    algo: null as Nullable<string>,
+    isPending: false,
+}
+const holdingOf = (assetId: string, balance: Nullable<string>) =>
+    balance === null
+        ? null
+        : ({ assetId, amount: new Decimal(balance) } as ReturnType<
+              typeof useAccountAssetBalanceQuery
+          >['data'])
+const applyLinkedHoldings = () =>
+    vi.mocked(useAccountAssetBalanceQuery).mockImplementation(
+        (_, assetId) =>
+            ({
+                data:
+                    assetId === '0'
+                        ? holdingOf('0', linkedHoldings.algo)
+                        : holdingOf('10458941', linkedHoldings.usdc),
+                isPending: linkedHoldings.isPending,
+            }) as ReturnType<typeof useAccountAssetBalanceQuery>,
+    )
+const setLinkedUsdc = (balance: Nullable<string>, isPending = false) => {
+    linkedHoldings.usdc = balance
+    linkedHoldings.isPending = isPending
+    applyLinkedHoldings()
+}
+const setLinkedAlgo = (balance: Nullable<string>) => {
+    linkedHoldings.algo = balance
+    applyLinkedHoldings()
+}
 
 describe('usePeraCardOverview', () => {
     beforeEach(() => {
@@ -218,6 +238,7 @@ describe('usePeraCardOverview', () => {
         mockState.creditBalance = null
         mockExternalWalletsParams.length = 0
         setLinkedUsdc(null)
+        setLinkedAlgo(null)
         vi.mocked(useFindAccountByAddress).mockImplementation(
             address => [LOCAL_ACCOUNT].find(a => a.address === address) ?? null,
         )
@@ -375,7 +396,9 @@ describe('usePeraCardOverview', () => {
     // Under auto funding the card spends from the linked account, so topping
     // up means buying USDC into that account, which the Fund tab only does for
     // whichever account is selected.
-    it('selects the linked account and opens the Fund tab on USDC', () => {
+    it('selects the linked account and opens the Fund tab when it holds no ALGO', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('0')
         const { result } = renderHook(() => usePeraCardOverview())
 
         result.current.onFundLinkedAccount()
@@ -388,6 +411,25 @@ describe('usePeraCardOverview', () => {
             params: { destinationTokenId: 'USDC_ALGORAND' },
         })
         expect(mockInfoToast).not.toHaveBeenCalled()
+    })
+
+    // Swapping is the shortest route to USDC when there is ALGO to swap, and
+    // the Swap tab reads the selected account too.
+    it('opens the Swap tab from ALGO to USDC when the linked account holds ALGO', () => {
+        mockState.selectedFundingType = 'AUTO'
+        setLinkedAlgo('12.5')
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onFundLinkedAccount()
+
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+            'LINKED_ADDR',
+        )
+        // The spec runs on the default (mainnet) network, where USDC is 31566704.
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: { assetInId: '0', assetOutId: '31566704' },
+        })
     })
 
     it('does nothing when the linked account is not in the wallet', () => {

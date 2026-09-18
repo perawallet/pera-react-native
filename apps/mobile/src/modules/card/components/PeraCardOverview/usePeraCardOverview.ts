@@ -27,7 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
@@ -122,6 +122,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         )
     const canReadLinkedBalance =
         isAutoFunding && fundingAccount != null && usdcAssetId !== null
+    // Only whether the linked account holds ALGO matters: it decides whether
+    // Add Funds can swap into USDC or has to buy it.
+    const { data: linkedAlgo } = useAccountAssetBalanceQuery(
+        isAutoFunding ? (fundingAccount ?? undefined) : undefined,
+        ALGO_ASSET_ID,
+    )
+    const hasLinkedAlgo =
+        canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
 
     // Both live in their own Baanx wallets, null until something is credited.
     const { wallet: rewardWallet } = useCardWalletBalanceQuery(
@@ -179,14 +187,30 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const onFundLinkedAccount = useCallback(() => {
         if (fundingAccount === null) return
         trackEvent(CardEvent.HomeGetUsdc)
-        // The Fund tab works on the selected account, so make it the linked
-        // one first or the USDC lands wherever the user last was.
+        // Both tabs work on the selected account, so make it the linked one
+        // first or the USDC lands wherever the user last was.
         setSelectedAccountAddress(fundingAccount.address)
+        if (hasLinkedAlgo) {
+            navigation.navigate('TabBar', {
+                screen: 'Swap',
+                params: {
+                    assetInId: ALGO_ASSET_ID,
+                    assetOutId: usdcAssetId ?? undefined,
+                },
+            })
+            return
+        }
         navigation.navigate('TabBar', {
             screen: 'Fund',
             params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
         })
-    }, [fundingAccount, setSelectedAccountAddress, navigation])
+    }, [
+        fundingAccount,
+        hasLinkedAlgo,
+        usdcAssetId,
+        setSelectedAccountAddress,
+        navigation,
+    ])
 
     const onShowAllTransactions = useCallback(() => {
         trackEvent(CardEvent.HomeShowAll)
