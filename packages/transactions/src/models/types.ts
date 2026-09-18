@@ -87,6 +87,11 @@ export interface TransactionHistoryItem {
     id: string
     txType: TransactionType
     sender: string
+    /**
+     * The account debited by an asset transfer (`asnd`); null unless the
+     * transfer is a clawback, where `sender` is the authority instead.
+     */
+    assetSender: Nullable<string>
     /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
     confirmedRound: number

@@ -103,6 +103,7 @@ export const transactionHistoryItemResponseSchema = z.object({
     id: z.string(),
     tx_type: txTypeSchema,
     sender: z.string(),
+    asset_sender: z.string().nullable().optional(),
     receiver: z.string().nullable().optional(),
     confirmed_round: coerceNumber,
     round_time: coerceNumber,

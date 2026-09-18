@@ -74,7 +74,7 @@ export const mapHistoryItemToDisplayableTransaction = (
                     receiver: item.receiver ?? '',
                     closeTo: item.closeTo ?? undefined,
                     closeAmount: toCloseAmountBigInt(item.closeAmount),
-                    sender: undefined,
+                    sender: item.assetSender ?? undefined,
                 },
             }
         }

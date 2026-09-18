@@ -14,6 +14,10 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    isOutgoingFor,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 
 import {
     type AmountDisplay,
@@ -23,8 +27,6 @@ import {
     createBalanceImpactAmount,
     createSwapAmount,
 } from './amounts'
-
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
 const ZERO = new Decimal(0)
 
@@ -72,7 +74,7 @@ export const useTransactionAmounts = (
     const userAddress = account?.address ?? ''
     const assetId = transaction.asset?.assetId?.toString() ?? ''
     const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
-    const isOutgoing = transaction.sender === userAddress
+    const isOutgoing = isOutgoingFor(transaction, userAddress)
 
     const allAmounts = useMemo((): AmountDisplay[] => {
         const result: AmountDisplay[] = []

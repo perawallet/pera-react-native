@@ -166,6 +166,7 @@ const toPendingHistoryItem = (
     id: attempt.txIds[0] ?? attempt.id,
     txType: 'pay',
     sender: attempt.sender ?? accountAddress,
+    assetSender: null,
     receiver: null,
     confirmedRound: 0,
     roundTime: Math.floor(attempt.createdAt / 1000),
