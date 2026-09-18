@@ -19,10 +19,7 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import {
-    useAccountBalancesInvalidator,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountBalancesInvalidator } from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
     getKnownAssetId,
@@ -34,6 +31,7 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useCardFundingAccount } from '../../hooks'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import { useCardAddFundsSwap } from '../CardAddFundsScreen/useCardAddFundsSwap'
 
@@ -67,9 +65,8 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
 
-    // Same account the Add Funds screen anchors to (the active account until the
-    // smart contract links a dedicated card funding source).
-    const account = useSelectedAccount()
+    // Same account the Add Funds screen swaps from: the one linked to the card.
+    const account = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
         () => getKnownAssetId('USDC', network),
