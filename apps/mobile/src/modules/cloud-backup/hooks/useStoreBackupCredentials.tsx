@@ -12,7 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import {
-    BACKUP_CREDENTIALS_FILE_NAME,
+    backupCredentialsFileName,
     buildBackupCredentialsFile,
     useCloudBackupStore,
 } from '@perawallet/wallet-core-backup'
@@ -49,7 +49,7 @@ type UseStoreBackupCredentialsResult = {
     storeCredentials: (options?: StoreCredentialsOptions) => Promise<void>
 }
 
-const NO_SALT_MESSAGE = 'No backup salt is stored on this device'
+const NO_BACKUP_MESSAGE = 'No backup credentials are stored on this device'
 
 export const useStoreBackupCredentials =
     (): UseStoreBackupCredentialsResult => {
@@ -67,8 +67,8 @@ export const useStoreBackupCredentials =
                 isStoringRef.current = true
                 let destination: Optional<CredentialsFileSource>
                 try {
-                    if (!useCloudBackupStore.getState().salt) {
-                        throw new Error(NO_SALT_MESSAGE)
+                    if (!useCloudBackupStore.getState().backupId) {
+                        throw new Error(NO_BACKUP_MESSAGE)
                     }
 
                     destination =
@@ -90,11 +90,16 @@ export const useStoreBackupCredentials =
 
                     // Read again: a backup deleted elsewhere while the sheet and
                     // PIN were open resets the store.
-                    const backupSalt = useCloudBackupStore.getState().salt
-                    if (!backupSalt) throw new Error(NO_SALT_MESSAGE)
+                    const { salt: backupSalt, backupId } =
+                        useCloudBackupStore.getState()
+                    if (!backupSalt || !backupId) {
+                        throw new Error(NO_BACKUP_MESSAGE)
+                    }
 
+                    // Named after the backup, so storing a second one sits
+                    // beside the first instead of overwriting it.
                     const result = await SAVERS[destination](
-                        BACKUP_CREDENTIALS_FILE_NAME,
+                        backupCredentialsFileName(backupId),
                         buildBackupCredentialsFile(backupSalt),
                     )
                     if (result === 'cancelled') return

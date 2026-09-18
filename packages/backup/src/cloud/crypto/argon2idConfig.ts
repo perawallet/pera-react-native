@@ -12,12 +12,13 @@
 
 import type { Argon2idConfig } from '../models'
 
-// Memory and parallelism size allocations and time multiplies the work, and
-// every caller reads the block from input anyone can craft, so bound it
-// before deriving.
-const MAX_MEMORY_COST_MIB = 512
-const MAX_TIME_COST = 10
-const MAX_PARALLELISM = 4
+// Every caller reads the block from input anyone can craft, and memory is an
+// allocation a phone can be killed for. Nothing we write differs from
+// ARGON2ID_CONFIG, so the ceiling is that config; widening it is a deliberate
+// act, taken with the values themselves.
+const MAX_MEMORY_COST_MIB = 256
+const MAX_TIME_COST = 3
+const MAX_PARALLELISM = 1
 // Every caller derives a 32-byte key (an aes-256-gcm key or the backup
 // master key); another length only fails later, as a wrong code or bad
 // credentials.

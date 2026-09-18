@@ -10,20 +10,16 @@
  limitations under the License
  */
 
-export { saveToDevice } from './saveToDevice'
-export { saveToICloud } from './saveToICloud'
-export { saveToGoogleDrive } from './saveToGoogleDrive'
-export {
-    readBackupCredentials,
-    type ReadBackupCredentialsOptions,
-} from './readBackupCredentials'
-export {
-    getCredentialsFileReadSources,
-    getCredentialsFileSaveSources,
-} from './credentialsFileSources'
-export type {
-    ChooseCredentialsFile,
-    CredentialsFileSaver,
-    CredentialsFileSource,
-    SaveResult,
-} from './types'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    body: {
+        gap: theme.spacing.xl,
+    },
+    description: {
+        color: theme.colors.textGray,
+    },
+    options: {
+        gap: theme.spacing.md,
+    },
+}))

@@ -18,33 +18,48 @@ import {
 } from '../errors'
 import { readBackupCredentials } from '../readBackupCredentials'
 
-const { readFromDevice, readFromICloud, readFromGoogleDrive } = vi.hoisted(
-    () => ({
-        readFromDevice: vi.fn(),
-        readFromICloud: vi.fn(),
-        readFromGoogleDrive: vi.fn(),
-    }),
-)
+const {
+    readFromDevice,
+    readFromICloud,
+    readFromGoogleDrive,
+    listFromICloud,
+    listFromGoogleDrive,
+} = vi.hoisted(() => ({
+    readFromDevice: vi.fn(),
+    readFromICloud: vi.fn(),
+    readFromGoogleDrive: vi.fn(),
+    listFromICloud: vi.fn(),
+    listFromGoogleDrive: vi.fn(),
+}))
 
 vi.mock('../readFromDevice', () => ({ readFromDevice }))
 vi.mock('../readFromICloud', () => ({ readFromICloud }))
 vi.mock('../readFromGoogleDrive', () => ({ readFromGoogleDrive }))
+vi.mock('../listFromICloud', () => ({ listFromICloud }))
+vi.mock('../listFromGoogleDrive', () => ({ listFromGoogleDrive }))
 
-const FILE_NAME = 'pera-backup-encryption-key.json'
+// The device picker names its own file, so the name it is handed is unused.
+const DEVICE_FILE_NAME = 'pera-backup-encryption-key.json'
+const FILE_NAME = 'pera-backup-VQBGR.json'
+const OTHER_FILE_NAME = 'pera-backup-ZZZZZ.json'
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
+
+const listed = (...fileNames: string[]) => ({ status: 'listed', fileNames })
 
 beforeEach(() => {
     vi.clearAllMocks()
+    listFromICloud.mockResolvedValue(listed(FILE_NAME))
+    listFromGoogleDrive.mockResolvedValue(listed(FILE_NAME))
 })
 
 describe('readBackupCredentials', () => {
     test.each([
-        ['device', readFromDevice],
-        ['icloud', readFromICloud],
-        ['googleDrive', readFromGoogleDrive],
+        ['device', readFromDevice, DEVICE_FILE_NAME],
+        ['icloud', readFromICloud, FILE_NAME],
+        ['googleDrive', readFromGoogleDrive, FILE_NAME],
     ] as const)(
         'reads the file from %s and returns its key',
-        async (source, reader) => {
+        async (source, reader, fileName) => {
             reader.mockResolvedValueOnce({
                 status: 'read',
                 contents: buildBackupCredentialsFile(SALT),
@@ -57,7 +72,7 @@ describe('readBackupCredentials', () => {
                     argon2id: expect.objectContaining({ outputLength: 32 }),
                 },
             })
-            expect(reader).toHaveBeenCalledWith(FILE_NAME, undefined)
+            expect(reader).toHaveBeenCalledWith(fileName, undefined)
         },
     )
 
@@ -68,9 +83,67 @@ describe('readBackupCredentials', () => {
             contents: buildBackupCredentialsFile(SALT),
         })
 
-        await readBackupCredentials('device', onReading)
+        await readBackupCredentials('device', { onReading })
 
-        expect(readFromDevice).toHaveBeenCalledWith(FILE_NAME, onReading)
+        expect(readFromDevice).toHaveBeenCalledWith(DEVICE_FILE_NAME, onReading)
+    })
+
+    test('does not list for device: the picker chooses the file', async () => {
+        readFromDevice.mockResolvedValueOnce({ status: 'cancelled' })
+
+        await readBackupCredentials('device')
+
+        expect(listFromICloud).not.toHaveBeenCalled()
+        expect(listFromGoogleDrive).not.toHaveBeenCalled()
+    })
+
+    test('reads a lone cloud file without asking the user to choose', async () => {
+        const chooseFile = vi.fn()
+        readFromICloud.mockResolvedValueOnce({
+            status: 'read',
+            contents: buildBackupCredentialsFile(SALT),
+        })
+
+        await readBackupCredentials('icloud', { chooseFile })
+
+        expect(chooseFile).not.toHaveBeenCalled()
+        expect(readFromICloud).toHaveBeenCalledWith(FILE_NAME, undefined)
+    })
+
+    test('reads the file the user picks when several are saved', async () => {
+        listFromICloud.mockResolvedValueOnce(listed(FILE_NAME, OTHER_FILE_NAME))
+        const chooseFile = vi.fn().mockResolvedValueOnce(OTHER_FILE_NAME)
+        readFromICloud.mockResolvedValueOnce({
+            status: 'read',
+            contents: buildBackupCredentialsFile(SALT),
+        })
+
+        await readBackupCredentials('icloud', { chooseFile })
+
+        expect(chooseFile).toHaveBeenCalledWith([FILE_NAME, OTHER_FILE_NAME])
+        expect(readFromICloud).toHaveBeenCalledWith(OTHER_FILE_NAME, undefined)
+    })
+
+    test('cancels, and reads nothing, when the user dismisses the chooser', async () => {
+        listFromGoogleDrive.mockResolvedValueOnce(
+            listed(FILE_NAME, OTHER_FILE_NAME),
+        )
+
+        await expect(
+            readBackupCredentials('googleDrive', {
+                chooseFile: vi.fn().mockResolvedValueOnce(null),
+            }),
+        ).resolves.toEqual({ status: 'cancelled' })
+        expect(readFromGoogleDrive).not.toHaveBeenCalled()
+    })
+
+    test('passes a cancelled sign-in straight through', async () => {
+        listFromGoogleDrive.mockResolvedValueOnce({ status: 'cancelled' })
+
+        await expect(readBackupCredentials('googleDrive')).resolves.toEqual({
+            status: 'cancelled',
+        })
+        expect(readFromGoogleDrive).not.toHaveBeenCalled()
     })
 
     test('passes a cancel straight through', async () => {

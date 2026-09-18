@@ -104,10 +104,10 @@ describe('useRestoreBackupOptions', () => {
                 'CloudBackupRestorePassphrase',
                 { importedKey: KEY },
             ])
-            expect(readBackupCredentials).toHaveBeenCalledWith(
-                source,
-                expect.any(Function),
-            )
+            expect(readBackupCredentials).toHaveBeenCalledWith(source, {
+                onReading: expect.any(Function),
+                chooseFile: expect.any(Function),
+            })
         },
     )
 
@@ -171,9 +171,9 @@ describe('useRestoreBackupOptions', () => {
         let onReading: () => void = () => {}
         let finishRead: (value: unknown) => void = () => {}
         readBackupCredentials.mockImplementationOnce(
-            (_source: string, callback?: () => void) =>
+            (_source: string, options?: { onReading?: () => void }) =>
                 new Promise(resolve => {
-                    onReading = callback ?? (() => {})
+                    onReading = options?.onReading ?? (() => {})
                     finishRead = resolve
                 }),
         )
@@ -196,6 +196,46 @@ describe('useRestoreBackupOptions', () => {
         await act(async () => {
             finishRead({ status: 'cancelled' })
             await pending
+        })
+        expect(result.current.isReadingCredentials).toBe(false)
+    })
+
+    test('drops the progress overlay while the chooser is up, then restores it', async () => {
+        mockRequest.mockResolvedValueOnce('icloud')
+        let chooseFile: (
+            fileNames: string[],
+        ) => Promise<string | null> = async () => null
+        readBackupCredentials.mockImplementationOnce(
+            (
+                _source: string,
+                options?: {
+                    onReading?: () => void
+                    chooseFile?: typeof chooseFile
+                },
+            ) => {
+                options?.onReading?.()
+                chooseFile = options?.chooseFile ?? chooseFile
+                return Promise.resolve({ status: 'cancelled' })
+            },
+        )
+        const { result } = renderHook(() => useRestoreBackupOptions())
+
+        await act(async () => {
+            await result.current.chooseRestoreRoute()
+        })
+
+        // The chooser is a sheet; the overlay must not sit over it.
+        mockRequest.mockResolvedValueOnce('pera-backup-ZZZZZ.json')
+        await act(async () => {
+            expect(await chooseFile(['a.json', 'b.json'])).toBe(
+                'pera-backup-ZZZZZ.json',
+            )
+        })
+        expect(result.current.isReadingCredentials).toBe(true)
+
+        mockRequest.mockResolvedValueOnce(undefined)
+        await act(async () => {
+            expect(await chooseFile(['a.json', 'b.json'])).toBeNull()
         })
         expect(result.current.isReadingCredentials).toBe(false)
     })

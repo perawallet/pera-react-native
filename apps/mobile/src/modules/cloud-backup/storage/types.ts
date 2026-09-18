@@ -39,3 +39,19 @@ export type CredentialsFileReader = (
     fileName: string,
     onReading?: () => void,
 ) => Promise<ReadResult>
+
+export type ListResult =
+    | { status: 'listed'; fileNames: string[] }
+    | { status: 'cancelled' }
+
+export type CredentialsFileLister = (
+    onListing?: () => void,
+) => Promise<ListResult>
+
+/**
+ * Asks the user which saved key to read when a folder holds several. Returning
+ * `null` backs out of the restore.
+ */
+export type ChooseCredentialsFile = (
+    fileNames: string[],
+) => Promise<string | null>

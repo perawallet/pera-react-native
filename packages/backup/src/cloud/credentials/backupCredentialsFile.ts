@@ -18,13 +18,45 @@ import {
     isRecord,
     readArgon2idConfig,
 } from '../crypto/argon2idConfig'
+import { backupIdToAddress } from '../crypto/backupIdToAddress'
 import { ARGON2ID_CONFIG } from '../crypto/constants'
 import { serializeArgon2idConfig } from '../crypto/serializeArgon2idConfig'
-import type { Argon2idConfig } from '../models'
+import type { Argon2idConfig, BackupId } from '../models'
 
-export const BACKUP_CREDENTIALS_FILE_NAME = 'pera-backup-encryption-key.json'
+/** Written before a file was named after its backup; still readable. */
+export const LEGACY_BACKUP_CREDENTIALS_FILE_NAME =
+    'pera-backup-encryption-key.json'
+
+const FILE_NAME_PREFIX = 'pera-backup-'
+const FILE_NAME_EXTENSION = '.json'
+// Enough to tell one user's own backups apart in a list. Algorand addresses are
+// base32, so the legacy name's "encryption-key" can never be mistaken for one.
+const ADDRESS_PREFIX_LENGTH = 5
+const FILE_NAME_PATTERN = new RegExp(
+    `^${FILE_NAME_PREFIX}([A-Z2-7]{${ADDRESS_PREFIX_LENGTH}})\\${FILE_NAME_EXTENSION}$`,
+)
+
 const BACKUP_CREDENTIALS_FILE_TYPE = 'backup-credentials'
 const BACKUP_CREDENTIALS_FILE_VERSION = 1
+
+/**
+ * Names the file after the backup it unlocks, so a user can keep one per backup
+ * in the same folder rather than overwriting the last.
+ */
+export const backupCredentialsFileName = (backupId: BackupId): string =>
+    `${FILE_NAME_PREFIX}${backupIdToAddress(backupId).slice(
+        0,
+        ADDRESS_PREFIX_LENGTH,
+    )}${FILE_NAME_EXTENSION}`
+
+/** The address prefix in a credentials file name; `null` for the legacy name. */
+export const backupCredentialsFileAddressPrefix = (
+    fileName: string,
+): string | null => FILE_NAME_PATTERN.exec(fileName)?.[1] ?? null
+
+export const isBackupCredentialsFileName = (fileName: string): boolean =>
+    fileName === LEGACY_BACKUP_CREDENTIALS_FILE_NAME ||
+    FILE_NAME_PATTERN.test(fileName)
 
 // The Drive client sizes uploads by character count, not bytes, so anything
 // outside printable ASCII is written as a JSON \u escape.

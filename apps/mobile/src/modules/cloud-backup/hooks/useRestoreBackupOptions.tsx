@@ -16,6 +16,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
 import {
     RestoreBackupSheet,
     type RestoreBackupSheetResult,
@@ -45,14 +46,34 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     // A double tap would otherwise open two sheets and race two pickers.
     const isBusyRef = useRef(false)
 
+    // Hides the progress overlay while the chooser is up, so it can't sit over
+    // the sheet, and brings it back for the read that follows.
+    const chooseFile = useCallback(
+        async (fileNames: string[]): Promise<Nullable<string>> => {
+            setIsReadingCredentials(false)
+            const chosen = await requestBottomSheet<string>({
+                contents: <ChooseCredentialsFileSheet fileNames={fileNames} />,
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
+            if (chosen) setIsReadingCredentials(true)
+            return chosen ?? null
+        },
+        [requestBottomSheet],
+    )
+
     const importFrom = useCallback(
         async (
             source: CredentialsFileSource,
         ): Promise<Nullable<RestoreRoute>> => {
             try {
-                const result = await readBackupCredentials(source, () =>
-                    setIsReadingCredentials(true),
-                )
+                const result = await readBackupCredentials(source, {
+                    onReading: () => setIsReadingCredentials(true),
+                    chooseFile,
+                })
                 if (result.status === 'cancelled') return null
                 // The user may have left while the file was read; navigating
                 // now would open the restore over wherever they went.
@@ -72,7 +93,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
                 setIsReadingCredentials(false)
             }
         },
-        [navigation, showError, t],
+        [chooseFile, navigation, showError, t],
     )
 
     const chooseRestoreRoute = useCallback(async (): Promise<
