@@ -11,8 +11,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { InvalidCredentialsFileError } from '@perawallet/wallet-core-backup'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { InvalidCredentialsFileError } from '../../storage/errors'
 import { useRestoreBackupOptions } from '../useRestoreBackupOptions'
 
 const {

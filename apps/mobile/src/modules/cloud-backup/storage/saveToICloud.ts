@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { ICloudUnavailableError } from '@perawallet/wallet-core-backup'
 import {
     CloudStorage,
     CloudStorageError,
@@ -18,7 +19,6 @@ import {
     CloudStorageScope,
 } from 'react-native-cloud-storage'
 
-import { ICloudUnavailableError } from './errors'
 import type { SaveResult } from './types'
 
 // AppData is the container root, hidden from the Files app: the file is for the

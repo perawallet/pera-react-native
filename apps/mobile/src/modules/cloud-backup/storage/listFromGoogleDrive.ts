@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { isBackupCredentialsFileName } from '@perawallet/wallet-core-backup'
+import {
+    CredentialsFileNotFoundError,
+    isBackupCredentialsFileName,
+} from '@perawallet/wallet-core-backup'
 
-import { CredentialsFileNotFoundError } from './errors'
 import { runOnGoogleDrive, signOutOfGoogleDrive } from './googleDriveSession'
 import type { ListResult } from './types'
 

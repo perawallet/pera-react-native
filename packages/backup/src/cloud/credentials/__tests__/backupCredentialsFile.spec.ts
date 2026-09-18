@@ -14,14 +14,16 @@ import { describe, expect, test } from 'vitest'
 import { ARGON2ID_CONFIG } from '../../crypto/constants'
 import {
     LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
-    BackupCredentialsFileError,
-    BackupCredentialsFileUnsupportedVersionError,
     backupCredentialsFileAddressPrefix,
     backupCredentialsFileName,
     buildBackupCredentialsFile,
     isBackupCredentialsFileName,
     parseBackupCredentialsFile,
 } from '../backupCredentialsFile'
+import {
+    InvalidCredentialsFileError,
+    UnsupportedCredentialsFileError,
+} from '../../../errors'
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const BACKUP_ID =
@@ -129,16 +131,9 @@ describe('parseBackupCredentialsFile', () => {
         ['a salt too short to derive under', fileWith({ salt: 'c2FsdA==' })],
         ['a malformed KDF block', fileWith({ argon2id: { time_cost: -1 } })],
     ])('rejects %s', (_, contents) => {
-        let error: unknown
-        try {
-            parseBackupCredentialsFile(contents)
-        } catch (caught) {
-            error = caught
-        }
-
-        expect(error).toBeInstanceOf(BackupCredentialsFileError)
-        expect(error).not.toBeInstanceOf(
-            BackupCredentialsFileUnsupportedVersionError,
+        // Not the "needs a newer app" error: these files are malformed, not new.
+        expect(() => parseBackupCredentialsFile(contents)).toThrow(
+            InvalidCredentialsFileError,
         )
     })
 
@@ -151,13 +146,13 @@ describe('parseBackupCredentialsFile', () => {
         })
 
         expect(() => parseBackupCredentialsFile(file)).toThrow(
-            BackupCredentialsFileError,
+            InvalidCredentialsFileError,
         )
     })
 
     test('names a newer file version instead of calling the file invalid', () => {
         expect(() =>
             parseBackupCredentialsFile(fileWith({ v: 2, salt: undefined })),
-        ).toThrow(BackupCredentialsFileUnsupportedVersionError)
+        ).toThrow(UnsupportedCredentialsFileError)
     })
 })
