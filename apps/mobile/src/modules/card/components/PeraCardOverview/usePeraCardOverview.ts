@@ -61,6 +61,8 @@ type UsePeraCardOverviewResult = {
     /** Max a single purchase can draw: card balance + credits, plus (with
      * auto-funding) min(per-tx limit, linked account balance). */
     spendablePerTx: Decimal
+    /** True only when a single purchase can draw less than the balance shown. */
+    isSpendableCapped: boolean
     isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
@@ -155,6 +157,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         .plus(cardBalance)
         .plus(credits.refunds)
 
+    const balance = cardBalance.plus(linkedBalance)
+    // The per-transaction line only earns its place when the cap bites;
+    // otherwise it repeats the balance.
+    const isSpendableCapped = !spendablePerTx.eq(balance)
+
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pendingWithdrawal, onCompleteWithdrawal, onCancelWithdrawal } =
         usePeraCardPendingWithdrawal()
@@ -204,8 +211,9 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     return {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
-        balance: cardBalance.plus(linkedBalance),
+        balance,
         spendablePerTx,
+        isSpendableCapped,
         isBalanceLoading:
             isCardBalanceLoading ||
             (canReadLinkedBalance && isLinkedBalancePending),

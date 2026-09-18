@@ -27,6 +27,7 @@ export const PeraCardOverview = () => {
         currency,
         balance,
         spendablePerTx,
+        isSpendableCapped,
         isBalanceLoading,
         credits,
         transactionSections,
@@ -51,6 +52,7 @@ export const PeraCardOverview = () => {
                 isLoading={isBalanceLoading}
                 currency={currency}
                 spendablePerTx={spendablePerTx}
+                isCapped={isSpendableCapped}
             />
 
             {pendingWithdrawal && (

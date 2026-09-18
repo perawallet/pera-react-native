@@ -449,6 +449,25 @@ describe('usePeraCardOverview', () => {
             expect(result.current.spendablePerTx.toFixed()).toBe('1')
         })
 
+        // The "available per transaction" line is only worth showing when a
+        // single purchase really can draw less than the balance on screen.
+        it('flags the per-transaction cap only when it bites', () => {
+            mockState.selectedFundingType = 'AUTO'
+            mockState.delegatedWallet = allowanceOf('400')
+
+            setLinkedUsdc('0.5')
+            const under = renderHook(() => usePeraCardOverview())
+            expect(under.result.current.balance.toFixed(1)).toBe('0.5')
+            expect(under.result.current.spendablePerTx.toFixed(1)).toBe('0.5')
+            expect(under.result.current.isSpendableCapped).toBe(false)
+
+            setLinkedUsdc('1000')
+            const over = renderHook(() => usePeraCardOverview())
+            expect(over.result.current.balance.toFixed()).toBe('1000')
+            expect(over.result.current.spendablePerTx.toFixed()).toBe('400')
+            expect(over.result.current.isSpendableCapped).toBe(true)
+        })
+
         it('caps the per-tx leg at the linked balance when it is lower', () => {
             mockState.selectedFundingType = 'AUTO'
             mockState.cardBalance = '240'
