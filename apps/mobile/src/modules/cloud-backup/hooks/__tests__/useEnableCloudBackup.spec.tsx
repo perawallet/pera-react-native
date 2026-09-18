@@ -61,7 +61,7 @@ beforeEach(() => {
 })
 
 describe('useEnableCloudBackup', () => {
-    test('confirms and lands on the overview once the backup registers', () => {
+    test('confirms and lands on the overview asking to store the credentials', () => {
         renderHook(() => useEnableCloudBackup())
 
         act(() =>
@@ -80,7 +80,12 @@ describe('useEnableCloudBackup', () => {
         )
         expect(resetMock).toHaveBeenCalledWith({
             index: 0,
-            routes: [{ name: 'CloudBackupOverview' }],
+            routes: [
+                {
+                    name: 'CloudBackupOverview',
+                    params: { shouldPromptStoreCredentials: true },
+                },
+            ],
         })
     })
 

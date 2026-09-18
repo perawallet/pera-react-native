@@ -37,7 +37,12 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
             })
             navigation.reset({
                 index: 0,
-                routes: [{ name: 'CloudBackupOverview' }],
+                routes: [
+                    {
+                        name: 'CloudBackupOverview',
+                        params: { shouldPromptStoreCredentials: true },
+                    },
+                ],
             })
         },
         onError: () => {
