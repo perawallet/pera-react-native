@@ -34,3 +34,10 @@ export type NfdSearchResult = {
         logo: string
     }
 }
+
+/**
+ * How a name's backend-asserted address stands against the NFD contract.
+ * `unavailable` is a failed lookup, not a verdict: the caller decides whether
+ * a send may go ahead without one.
+ */
+export type NfdAddressVerification = 'verified' | 'mismatch' | 'unavailable'

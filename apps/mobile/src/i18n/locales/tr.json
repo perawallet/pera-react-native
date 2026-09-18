@@ -2508,7 +2508,11 @@
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
             "inbox_unavailable_title": "Varlık gelen kutusu kullanılamıyor",
-            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu bu ağda kullanılamıyor. Göndermek için MainNet veya TestNet'e geç."
+            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu bu ağda kullanılamıyor. Göndermek için MainNet veya TestNet'e geç.",
+            "nfd_mismatch_title": "Ad zincirdekiyle eşleşmiyor",
+            "nfd_mismatch_body": "{{name}} için NFD sözleşmesi bu adresi listelemiyor. Güveniyorsan adresi doğrudan yapıştır.",
+            "nfd_unavailable_title": "{{name}} doğrulanamadı",
+            "nfd_unavailable_body": "Bu adı kontrol etmek için NFD kaydına ulaşılamadı. Tekrar dene ya da adresi doğrudan yapıştır."
         },
         "confirmation": {
             "edit": "Düzenle",
