@@ -27,53 +27,68 @@ export const SourceMetadataBadge = ({
     verifiedOrigin,
 }: SourceMetadataBadgeProps) => {
     const styles = useStyles()
-    const { displayIcon, displayName, url, verificationTier } =
-        useSourceMetadataBadge(metadata, verifiedOrigin)
+    const {
+        displayIcon,
+        displayName,
+        url,
+        verificationTier,
+        requestOriginLabel,
+    } = useSourceMetadataBadge(metadata, verifiedOrigin)
 
     return (
-        <PWView style={styles.container}>
-            {displayIcon ? (
-                <PWImage
-                    source={{ uri: displayIcon }}
-                    style={styles.icon}
-                />
-            ) : (
-                <PWView style={styles.iconFallback}>
-                    <PWIcon
-                        name='wallet-connect'
-                        variant='secondary'
+        <PWView style={styles.wrapper}>
+            <PWView style={styles.container}>
+                {displayIcon ? (
+                    <PWImage
+                        source={{ uri: displayIcon }}
+                        style={styles.icon}
+                    />
+                ) : (
+                    <PWView style={styles.iconFallback}>
+                        <PWIcon
+                            name='wallet-connect'
+                            variant='secondary'
+                            size='sm'
+                        />
+                    </PWView>
+                )}
+                {!!displayName && (
+                    <PWText
+                        variant='caption'
+                        style={styles.name}
+                    >
+                        {displayName}
+                    </PWText>
+                )}
+                {!!displayName && !!metadata.url && (
+                    <PWText
+                        variant='caption'
+                        style={styles.separator}
+                    >
+                        &middot;
+                    </PWText>
+                )}
+                {!!verificationTier && (
+                    <ProjectVerificationIcon
+                        tier={verificationTier}
                         size='sm'
                     />
-                </PWView>
-            )}
-            {!!displayName && (
+                )}
+                {!!url && (
+                    <PWText
+                        variant='caption'
+                        style={styles.url}
+                    >
+                        {url}
+                    </PWText>
+                )}
+            </PWView>
+            {!!requestOriginLabel && (
                 <PWText
                     variant='caption'
-                    style={styles.name}
+                    style={styles.requestOrigin}
                 >
-                    {displayName}
-                </PWText>
-            )}
-            {!!displayName && !!metadata.url && (
-                <PWText
-                    variant='caption'
-                    style={styles.separator}
-                >
-                    &middot;
-                </PWText>
-            )}
-            {!!verificationTier && (
-                <ProjectVerificationIcon
-                    tier={verificationTier}
-                    size='sm'
-                />
-            )}
-            {!!url && (
-                <PWText
-                    variant='caption'
-                    style={styles.url}
-                >
-                    {url}
+                    {requestOriginLabel}
                 </PWText>
             )}
         </PWView>

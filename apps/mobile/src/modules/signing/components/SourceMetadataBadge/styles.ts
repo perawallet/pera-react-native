@@ -15,6 +15,10 @@ import { makeStyles } from '@rneui/themed'
 const ICON_SIZE = 20
 
 export const useStyles = makeStyles(theme => ({
+    wrapper: {
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     container: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -47,5 +51,9 @@ export const useStyles = makeStyles(theme => ({
     },
     url: {
         color: theme.colors.textGrayLighter,
+    },
+    requestOrigin: {
+        textAlign: 'center',
+        color: theme.colors.textMain,
     },
 }))

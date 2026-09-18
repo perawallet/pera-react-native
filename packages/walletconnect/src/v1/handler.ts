@@ -241,6 +241,7 @@ export const createWalletConnectV1Handler = (
             authorizedAccounts: connection.accounts,
             // The approval-time snapshot, not the live `peerMeta` a dApp can overwrite afterwards.
             peer: connection.peer,
+            verifiedOrigin: connection.origin?.requesterOrigin,
             rawOperation: { type: input.type, params: input.params },
             respond: result =>
                 deliver(connector =>
