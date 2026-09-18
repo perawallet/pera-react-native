@@ -10,25 +10,61 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useMemo } from 'react'
+import type { PanelButtonProps } from '@components/PanelButton'
+import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import iCloudLogo from '@assets/images/icloud-logo.png'
 import type { CredentialsFileSource } from '../../storage'
 import { useCredentialsFileSaveSources } from '../../hooks/useCredentialsFileSources'
 
+type DestinationRow = Pick<
+    PanelButtonProps,
+    'leftIcon' | 'leftImage' | 'title' | 'testID' | 'onPress'
+> & { destination: CredentialsFileSource }
+
 type UseStoreBackupCredentialsSheetResult = {
-    destinations: CredentialsFileSource[]
-    handleSelect: (destination: CredentialsFileSource) => void
+    destinations: DestinationRow[]
+}
+
+const ROW_ICONS: Record<
+    CredentialsFileSource,
+    Pick<PanelButtonProps, 'leftIcon' | 'leftImage'>
+> = {
+    device: { leftIcon: 'device' },
+    icloud: { leftImage: iCloudLogo },
+    googleDrive: { leftIcon: 'google-drive' },
+}
+
+const TITLE_KEYS: Record<CredentialsFileSource, string> = {
+    device: 'cloud_backup.store_credentials.store_locally',
+    icloud: 'cloud_backup.store_credentials.icloud',
+    googleDrive: 'cloud_backup.store_credentials.google_drive',
+}
+
+const TEST_IDS: Record<CredentialsFileSource, string> = {
+    device: 'store_backup_credentials_local',
+    icloud: 'store_backup_credentials_icloud',
+    googleDrive: 'store_backup_credentials_google_drive',
 }
 
 export const useStoreBackupCredentialsSheet =
     (): UseStoreBackupCredentialsSheetResult => {
+        const { t } = useLanguage()
         const { resolve } = useBottomSheetResult<CredentialsFileSource>()
-        const destinations = useCredentialsFileSaveSources()
+        const sources = useCredentialsFileSaveSources()
 
-        const handleSelect = useCallback(
-            (destination: CredentialsFileSource) => resolve(destination),
-            [resolve],
+        const destinations = useMemo(
+            () =>
+                sources.map(destination => ({
+                    destination,
+                    ...ROW_ICONS[destination],
+                    title: t(TITLE_KEYS[destination]),
+                    testID: TEST_IDS[destination],
+                    onPress: () => resolve(destination),
+                })),
+            [sources, t, resolve],
         )
 
-        return { destinations, handleSelect }
+        return { destinations }
     }

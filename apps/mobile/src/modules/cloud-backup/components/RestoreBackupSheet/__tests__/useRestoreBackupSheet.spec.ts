@@ -45,6 +45,14 @@ beforeEach(() => {
     ])
 })
 
+type Row = { option: string; onPress?: () => void }
+
+const pressRow = (rows: readonly Row[], option: string): void => {
+    const row = rows.find(candidate => candidate.option === option)
+    if (!row) throw new Error(`No ${option} row`)
+    row.onPress?.()
+}
+
 describe('useRestoreBackupSheet', () => {
     test.each([
         [
@@ -67,10 +75,30 @@ describe('useRestoreBackupSheet', () => {
 
             const { result } = renderHook(() => useRestoreBackupSheet())
 
-            expect(result.current.options).toEqual(expectedOptions)
-            expect(result.current.descriptionKey).toBe(expectedDescriptionKey)
+            expect(result.current.options.map(row => row.option)).toEqual(
+                expectedOptions,
+            )
+            expect(result.current.description).toBe(expectedDescriptionKey)
         },
     )
+
+    test('gives every row a title and a leading mark', () => {
+        const { result } = renderHook(() => useRestoreBackupSheet())
+
+        for (const row of result.current.options) {
+            expect(row.title).toBeTruthy()
+            expect(row.leftIcon ?? row.leftImage).toBeTruthy()
+        }
+    })
+
+    test('keeps each row stable across a re-render, so the list does not churn', () => {
+        const { result, rerender } = renderHook(() => useRestoreBackupSheet())
+        const first = result.current.options
+
+        rerender()
+
+        expect(result.current.options).toBe(first)
+    })
 
     test.each([
         ['scan', CloudBackupEvent.RestoreScanQr],
@@ -78,7 +106,7 @@ describe('useRestoreBackupSheet', () => {
     ] as const)('tracks and resolves %s', (option, event) => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleSelect(option)
+        pressRow(result.current.options, option)
 
         expect(trackEvent).toHaveBeenCalledWith(event)
         expect(mockResolve).toHaveBeenCalledWith(option)
@@ -87,7 +115,7 @@ describe('useRestoreBackupSheet', () => {
     test('resolves a file source without an event of its own', () => {
         const { result } = renderHook(() => useRestoreBackupSheet())
 
-        result.current.handleSelect('googleDrive')
+        pressRow(result.current.options, 'googleDrive')
 
         expect(trackEvent).not.toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith('googleDrive')

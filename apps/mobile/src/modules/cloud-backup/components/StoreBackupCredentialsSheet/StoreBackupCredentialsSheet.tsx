@@ -11,43 +11,18 @@
  */
 
 import { PWSheetLayout, PWText, PWView } from '@components/core'
-import { PanelButton, type PanelButtonProps } from '@components/PanelButton'
+import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
-import iCloudLogo from '@assets/images/icloud-logo.png'
 
-import type { CredentialsFileSource } from '../../storage'
 import { StoreCredentialsWarning } from './StoreCredentialsWarning'
 import { useStoreBackupCredentialsSheet } from './useStoreBackupCredentialsSheet'
 import { useStyles } from './styles'
 
-type DestinationRow = Pick<
-    PanelButtonProps,
-    'leftIcon' | 'leftImage' | 'title' | 'testID'
->
-
 export const StoreBackupCredentialsSheet = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { destinations, handleSelect } = useStoreBackupCredentialsSheet()
-
-    const rows: Record<CredentialsFileSource, DestinationRow> = {
-        device: {
-            leftIcon: 'device',
-            title: t('cloud_backup.store_credentials.store_locally'),
-            testID: 'store_backup_credentials_local',
-        },
-        icloud: {
-            leftImage: iCloudLogo,
-            title: t('cloud_backup.store_credentials.icloud'),
-            testID: 'store_backup_credentials_icloud',
-        },
-        googleDrive: {
-            leftIcon: 'google-drive',
-            title: t('cloud_backup.store_credentials.google_drive'),
-            testID: 'store_backup_credentials_google_drive',
-        },
-    }
+    const { destinations } = useStoreBackupCredentialsSheet()
 
     return (
         <PWSheetLayout
@@ -66,13 +41,12 @@ export const StoreBackupCredentialsSheet = () => {
                 </PWText>
                 <StoreCredentialsWarning />
                 <PWView style={styles.options}>
-                    {destinations.map(destination => (
+                    {destinations.map(({ destination, ...row }) => (
                         <PanelButton
                             key={destination}
-                            {...rows[destination]}
+                            {...row}
                             titleWeight='h3'
                             accessibilityRole='button'
-                            onPress={() => handleSelect(destination)}
                         />
                     ))}
                 </PWView>
