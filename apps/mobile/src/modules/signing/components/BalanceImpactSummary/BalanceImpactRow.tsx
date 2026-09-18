@@ -18,14 +18,114 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from './useBalanceImpactSummary'
 import { useStyles } from './styles'
 
+type RowTextProps = {
+    item: BalanceImpactItem
+}
+
+const Subtitle = ({ children }: { children: string }) => {
+    const styles = useStyles()
+    return (
+        <PWText
+            variant='caption'
+            style={styles.subtitle}
+            numberOfLines={1}
+        >
+            {children}
+        </PWText>
+    )
+}
+
+const signOf = (item: BalanceImpactItem) =>
+    item.direction === 'receive' ? '+' : '-'
+
+const CollectibleRowText = ({ item }: RowTextProps) => {
+    const styles = useStyles()
+    return (
+        <>
+            <PWText
+                variant='body'
+                numberOfLines={1}
+            >
+                {item.collectibleTitle}
+            </PWText>
+            {item.isPureCollectible ? (
+                !!item.collectibleSubtitle && (
+                    <Subtitle>{item.collectibleSubtitle}</Subtitle>
+                )
+            ) : (
+                <AssetAmount
+                    asset={item.asset}
+                    value={item.amount}
+                    sign={signOf(item)}
+                    variant='caption'
+                    style={styles.subtitle}
+                    numberOfLines={1}
+                />
+            )}
+        </>
+    )
+}
+
+// A close-remainder/close-to sweeps the whole balance, so the explicit
+// `amount` understates the outflow — present it as the full balance instead
+// of a misleadingly small figure.
+const FullBalanceRowText = ({ item }: RowTextProps) => {
+    const { t } = useLanguage()
+    return (
+        <>
+            <PWText
+                variant='body'
+                numberOfLines={1}
+            >
+                {t('signing.balance_impact.entire_balance', {
+                    unit: item.asset.unitName ?? item.assetId,
+                })}
+            </PWText>
+            <Subtitle>{t('signing.balance_impact.closes_balance')}</Subtitle>
+        </>
+    )
+}
+
+const AmountRowText = ({ item }: RowTextProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    return (
+        <>
+            {/* Sign sits after the asset symbol (e.g. "¦ -0.1"), matching the
+                single-transaction summary header. */}
+            <AssetAmount
+                asset={item.asset}
+                value={item.amount}
+                sign={signOf(item)}
+                numberOfLines={1}
+            />
+            {item.isNewAsset ? (
+                <Subtitle>{t('signing.balance_impact.new_asset')}</Subtitle>
+            ) : (
+                <PreferredAmount
+                    sourceAmount={item.amount}
+                    sourceAssetId={item.assetId}
+                    usdPrice={item.usdPrice}
+                    variant='caption'
+                    style={styles.subtitle}
+                />
+            )}
+        </>
+    )
+}
+
+const RowText = ({ item }: RowTextProps) => {
+    if (item.isCollectible) return <CollectibleRowText item={item} />
+    if (item.isFullBalance) return <FullBalanceRowText item={item} />
+    return <AmountRowText item={item} />
+}
+
 type BalanceImpactRowProps = {
     item: BalanceImpactItem
 }
 
 export const BalanceImpactRow = ({ item }: BalanceImpactRowProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const sign = item.direction === 'receive' ? '+' : '-'
 
     return (
         <PWView style={styles.row}>
@@ -35,74 +135,7 @@ export const BalanceImpactRow = ({ item }: BalanceImpactRowProps) => {
                 shape={item.isCollectible ? 'square' : 'circle'}
             />
             <PWView style={styles.rowText}>
-                {item.isCollectible ? (
-                    <>
-                        <PWText
-                            variant='body'
-                            numberOfLines={1}
-                        >
-                            {item.collectibleTitle}
-                        </PWText>
-                        {!!item.collectibleSubtitle && (
-                            <PWText
-                                variant='caption'
-                                style={styles.subtitle}
-                                numberOfLines={1}
-                            >
-                                {item.collectibleSubtitle}
-                            </PWText>
-                        )}
-                    </>
-                ) : item.isFullBalance ? (
-                    // A close-remainder/close-to sweeps the whole balance, so the
-                    // explicit `amount` understates the outflow — present it as the
-                    // full balance instead of a misleadingly small figure.
-                    <>
-                        <PWText
-                            variant='body'
-                            numberOfLines={1}
-                        >
-                            {t('signing.balance_impact.entire_balance', {
-                                unit: item.asset.unitName ?? item.assetId,
-                            })}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.subtitle}
-                            numberOfLines={1}
-                        >
-                            {t('signing.balance_impact.closes_balance')}
-                        </PWText>
-                    </>
-                ) : (
-                    <>
-                        {/* Sign sits after the asset symbol (e.g. "¦ -0.1"),
-                            matching the single-transaction summary header. */}
-                        <AssetAmount
-                            asset={item.asset}
-                            value={item.amount}
-                            sign={sign}
-                            numberOfLines={1}
-                        />
-                        {item.isNewAsset ? (
-                            <PWText
-                                variant='caption'
-                                style={styles.subtitle}
-                                numberOfLines={1}
-                            >
-                                {t('signing.balance_impact.new_asset')}
-                            </PWText>
-                        ) : (
-                            <PreferredAmount
-                                sourceAmount={item.amount}
-                                sourceAssetId={item.assetId}
-                                usdPrice={item.usdPrice}
-                                variant='caption'
-                                style={styles.subtitle}
-                            />
-                        )}
-                    </>
-                )}
+                <RowText item={item} />
             </PWView>
         </PWView>
     )

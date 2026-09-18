@@ -175,7 +175,11 @@ export const getSheetSections = (): GallerySection[] => [
                                 />
                             </GallerySheetBoundary>
                         ),
-                        options: { size: 'modal', enablePanDownToClose: true },
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: true,
+                            autoCreateContainer: false,
+                        },
                     }),
                 },
             },

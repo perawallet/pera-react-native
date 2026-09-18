@@ -19,6 +19,8 @@ import {
 } from '@perawallet/wallet-core-multisig'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
 import { getInFlightCosignAddresses } from '../utils/getInFlightCosignAddresses'
@@ -52,6 +54,8 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     const accounts = useAllAccounts()
     const { decodeTransaction } = useTransactionEncoder()
     const { addSignRequest, pendingSignRequests } = useSigningRequest()
+    const { t } = useLanguage()
+    const { errorToast } = useToast()
 
     return useCallback(
         (signRequest: MultisigSignRequest) => {
@@ -76,6 +80,7 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                                     signRequest,
                                     signerAddress: address,
                                     decodeTransaction,
+                                    localAccounts: accounts,
                                 }),
                             )
                         } catch (error) {
@@ -85,6 +90,14 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                             logger.error(
                                 'Skipping invalid multisig cosign request',
                                 { error },
+                            )
+                            errorToast(
+                                t(
+                                    'multisig.pending_signatures.cosign_rejected_title',
+                                ),
+                                t(
+                                    'multisig.pending_signatures.cosign_rejected_body',
+                                ),
                             )
                         }
                     }
@@ -99,6 +112,8 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
             decodeTransaction,
             addSignRequest,
             pendingSignRequests,
+            errorToast,
+            t,
         ],
     )
 }

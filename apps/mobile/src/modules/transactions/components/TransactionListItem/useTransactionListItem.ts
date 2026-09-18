@@ -18,6 +18,8 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    getDebitedAddress,
+    isOutgoingFor,
     useOpenSubmissionTxIdsQuery,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
@@ -89,7 +91,7 @@ const getTitle = (
 
     if (tx.swapGroupDetail) return t('transactions.list_item.swap')
 
-    const isOutgoing = tx.sender === userAddress
+    const isOutgoing = isOutgoingFor(tx, userAddress)
     const sendOrReceive = isOutgoing
         ? t('transactions.list_item.send')
         : t('transactions.list_item.receive')
@@ -151,13 +153,15 @@ export const useTransactionListItem = ({
     const isPendingVerifying = openTxIds.has(transaction.id)
 
     const isOutgoing = useMemo(
-        () => transaction.sender === userAddress,
-        [transaction.sender, userAddress],
+        () => isOutgoingFor(transaction, userAddress),
+        [transaction, userAddress],
     )
 
     const counterpartyAddress = useMemo(() => {
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            return isOutgoing ? transaction.receiver : transaction.sender
+            return isOutgoing
+                ? transaction.receiver
+                : getDebitedAddress(transaction)
         }
         return undefined
     }, [transaction, isOutgoing])

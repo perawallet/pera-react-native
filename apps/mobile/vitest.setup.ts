@@ -2448,6 +2448,11 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/utils/bytes')
     >('../../packages/shared/src/utils/bytes')
 
+    // urls.ts only imports plain constants, so the real origin checks are safe.
+    const { originOf, isSameOrigin } = await vi.importActual<
+        typeof import('../../packages/shared/src/utils/urls')
+    >('../../packages/shared/src/utils/urls')
+
     // errors.ts imports only types, so the real one-line summary is safe to use.
     const { describeError } = await vi.importActual<
         typeof import('../../packages/shared/src/utils/errors')
@@ -2732,6 +2737,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             const index = url.indexOf('//')
             return index >= 0 ? url.substring(index + 2) : url
         }),
+        originOf,
+        isSameOrigin,
         // Real implementations — serialized route params round-trip through
         // these, so a stub would silently corrupt every public key fixture.
         hexToBytes: (hex: string): Uint8Array => {

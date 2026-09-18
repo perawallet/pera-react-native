@@ -68,10 +68,18 @@ const SAFE_AREA_METRICS = {
     insets: { top: 44, left: 0, right: 0, bottom: 34 },
 }
 
+// Mirrors `mutationDefaults` rather than importing it: specs that mock
+// `@perawallet/wallet-core-shared` would fail to load this file. TanStack's
+// default pauses an offline mutation, so the screen under test spins forever.
+const MUTATION_POLICY = {
+    throwOnError: false,
+    networkMode: 'always',
+} as const
+
 const QUERY_CLIENT_DEFAULTS = {
     defaultOptions: {
         queries: { retry: false as const, gcTime: 0 },
-        mutations: { retry: false as const },
+        mutations: { ...MUTATION_POLICY, retry: false as const },
     },
 }
 

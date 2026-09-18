@@ -11,9 +11,17 @@
  */
 
 import React from 'react'
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
+import {
+    mutationDefaults,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
 
 const { managerMock } = vi.hoisted(() => ({
     managerMock: {
@@ -23,13 +31,13 @@ const { managerMock } = vi.hoisted(() => ({
             skippedDuplicate: 0,
             failed: [] as { address: string; reason: string }[],
         })),
-        deleteAccountFromBackup: vi.fn(async () => true),
+        deleteAccountFromBackup: vi.fn(async () => 'settled' as const),
         backUpContact: vi.fn(async () => true),
         addContactFromBackup: vi.fn(async () => ({
             imported: 1,
             failed: [] as { address: string; reason: string }[],
         })),
-        deleteContactFromBackup: vi.fn(async () => true),
+        deleteContactFromBackup: vi.fn(async () => 'settled' as const),
     },
 }))
 
@@ -42,9 +50,11 @@ import {
     type BackupReviewItemKind,
 } from '../useBackupReviewActionMutation'
 
+// Under TanStack's default 'online' an offline mutation is *paused*, so the
+// fail-fast guard this spec exercises would never be reached.
 const createWrapper = () => {
     const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
+        defaultOptions: { mutations: { ...mutationDefaults, retry: false } },
     })
     return ({ children }: { children: React.ReactNode }) => (
         <QueryClientProvider client={queryClient}>
@@ -61,6 +71,10 @@ const renderMutation = (kind: BackupReviewItemKind) =>
 beforeEach(() => {
     vi.clearAllMocks()
 })
+
+// `onlineManager` is process-wide: leaving it offline would fail every later
+// file in the same worker.
+afterEach(() => onlineManager.setOnline(true))
 
 describe('useBackupReviewActionMutation', () => {
     test('routes each account action to its manager method', async () => {
@@ -97,14 +111,72 @@ describe('useBackupReviewActionMutation', () => {
         expect(managerMock.backUpAccount).not.toHaveBeenCalled()
     })
 
-    test('fails when the manager declines because a sync holds the lock', async () => {
+    test('fails when the backup did not reach the server', async () => {
         managerMock.backUpAccount.mockResolvedValueOnce(false)
         const { result } = renderMutation('account')
 
         act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        expect(result.current.error?.message).toBe('Backup is busy syncing')
+        expect(result.current.error?.message).toBe('Backup did not complete')
+    })
+
+    test('fails when the delete did not reach the server', async () => {
+        managerMock.deleteAccountFromBackup.mockResolvedValueOnce('queued')
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('Delete did not complete')
+    })
+
+    test('fails when a sync held the lock and the delete was refused', async () => {
+        managerMock.deleteAccountFromBackup.mockResolvedValueOnce('refused')
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('Delete did not complete')
+    })
+
+    test('fails offline with a no-connection error, without staging anything', async () => {
+        onlineManager.setOnline(false)
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(NoConnectionError)
+        // The sync manager rewrites sync state before it pushes; offline that
+        // edit would strand the account mid-upload for the next sync to finish.
+        expect(managerMock.backUpAccount).not.toHaveBeenCalled()
+    })
+
+    test('fails a delete offline without queueing the removal', async () => {
+        onlineManager.setOnline(false)
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(NoConnectionError)
+        // The manager marks the key pendingDelete *before* the request and
+        // swallows the failure as a retry, so reaching it would queue the
+        // removal and report it as done.
+        expect(managerMock.deleteAccountFromBackup).not.toHaveBeenCalled()
+    })
+
+    test('fails an add offline before reading from the backup', async () => {
+        onlineManager.setOnline(false)
+        const { result } = renderMutation('account')
+
+        act(() => result.current.mutate({ action: 'add', address: 'B' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(NoConnectionError)
+        expect(managerMock.addAccountFromBackup).not.toHaveBeenCalled()
     })
 
     test('fails with the importer reason when an add could not be imported', async () => {

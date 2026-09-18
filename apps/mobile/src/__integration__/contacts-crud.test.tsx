@@ -44,7 +44,7 @@ const {
 } = vi.hoisted(() => ({
     isCloudBackupEnabledMock: vi.fn(() => false),
     keepContactInBackupMock: vi.fn(async () => true),
-    deleteContactFromBackupMock: vi.fn(async () => true),
+    deleteContactFromBackupMock: vi.fn(async () => 'settled' as const),
 }))
 
 vi.mock('@hooks/useIsCloudBackupEnabled', () => ({

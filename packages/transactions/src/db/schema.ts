@@ -18,6 +18,7 @@ export const TransactionsSchema = sqliteTable('transactions', {
     network: text('network').notNull(),
     txType: text('tx_type').notNull(),
     sender: text('sender').notNull(),
+    assetSender: text('asset_sender'),
     receiver: text('receiver'),
     confirmedRound: integer('confirmed_round').notNull(),
     roundTime: integer('round_time').notNull(),

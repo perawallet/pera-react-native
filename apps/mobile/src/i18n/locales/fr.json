@@ -390,6 +390,7 @@
         "notifications_unmuted": "Notifications réactivées",
         "backup_warning_title": "Avez-vous sauvegardé votre compte ?",
         "backup_warning_message": "Si vous ne disposez pas d’une copie de la passphrase de récupération de ce compte et que celui-ci n’est ni sauvegardé avec un appareil Ledger ni géré par un compte Auth, l’accès à ce compte et à ses fonds sera définitivement perdu.",
+        "backup_warning_message_with_cloud_backup": "Si vous ne disposez pas d’une copie de la passphrase de récupération de ce compte et que celui-ci n’est ni enregistré dans la sauvegarde cloud, ni sauvegardé avec un appareil Ledger, ni géré par un compte Auth, l’accès à ce compte et à ses fonds sera définitivement perdu.",
         "backup_warning_continue": "Oui, continuer",
         "backup_warning_cancel": "Non, conserver le compte",
         "remove_rekey_error_title": "Suppression impossible",
@@ -701,11 +702,18 @@
         },
         "turn_off": {
             "success": "Sauvegarde cloud désactivée",
-            "error": "Impossible de désactiver la sauvegarde cloud. Veuillez réessayer."
+            "error": "Impossible de désactiver la sauvegarde cloud. Veuillez réessayer.",
+            "confirm_title": "Désactiver la sauvegarde sur cet appareil ?",
+            "confirm_body": "Cet appareil ne sera plus synchronisé et vos identifiants de sauvegarde en seront supprimés. Votre sauvegarde reste dans le cloud et vos autres appareils continuent de se synchroniser. Pour reconnecter cet appareil plus tard, assurez-vous d’avoir votre Passphrase et votre clé de chiffrement.",
+            "confirm_button": "Désactiver"
         },
         "turn_off_and_remove": {
             "success": "Sauvegarde cloud désactivée et supprimée",
-            "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer."
+            "error": "Impossible de supprimer la sauvegarde cloud. Veuillez réessayer.",
+            "confirm_title": "Supprimer définitivement la sauvegarde cloud ?",
+            "confirm_body": "La sauvegarde cloud sera désactivée sur tous vos appareils et les comptes et contacts présents uniquement dans la sauvegarde seront perdus.",
+            "confirm_button": "Supprimer la sauvegarde",
+            "confirm_checkbox_label": "Je comprends que ma sauvegarde sera définitivement supprimée du serveur et que cette action est irréversible."
         },
         "restore": {
             "sheet_title": "Restaurer/récupérer une sauvegarde",
@@ -1756,6 +1764,8 @@
             "delivery_failed": "Impossible d'envoyer ceci à l'application qui l'a demandé : la connexion a été perdue.",
             "failed_default": "La transaction a échoué",
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
+            "cosign_rejected_title": "Impossible de signer cette transaction",
+            "cosign_rejected_body": "Cette demande contient une transaction que le compte partagé n’autorise pas. Si l’expéditeur est un compte ayant fait l’objet d’un rekey vers le compte partagé, ajoutez-le à votre wallet et réessayez.",
             "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",
@@ -3897,6 +3907,13 @@
         "ZW": "Zimbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Faible",
+            "fair": "Moyen",
+            "good": "Bon",
+            "strong": "Fort",
+            "error_too_weak": "Le mot de passe est trop facile à deviner. Essayez une phrase plus longue avec des mots peu courants."
+        },
         "create_password": {
             "title": "Créer un mot de passe",
             "description": "Définissez un mot de passe pour protéger votre extension Pera Wallet. Vous en aurez besoin chaque fois que vous ouvrirez l’extension.",

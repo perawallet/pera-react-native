@@ -11,8 +11,10 @@
  */
 
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
-import { ALGO_ASSET_ID, isAlgoAssetName } from '@perawallet/wallet-core-shared'
+import {
+    rampTokenAssetId,
+    type RampToken,
+} from '@perawallet/wallet-core-onramp'
 
 // ALGO needs assetId '0' so AssetIcon renders the built-in Algo SVG via
 // isAlgoAssetId(). Other tokens use the token id as assetId and rely on the
@@ -20,9 +22,8 @@ import { ALGO_ASSET_ID, isAlgoAssetName } from '@perawallet/wallet-core-shared'
 export const buildDisplayableAssetFromRampToken = (
     token: RampToken,
 ): DisplayableAsset => {
-    const isAlgo = isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
     return {
-        assetId: isAlgo ? ALGO_ASSET_ID : token.id,
+        assetId: rampTokenAssetId(token),
         name: token.name,
         unitName: token.symbol,
     }

@@ -11,9 +11,13 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { hasPendingRampOrder } from '../utils'
+import {
+    hasPendingRampOrder,
+    isAlgoRampToken,
+    rampTokenAssetId,
+} from '../utils'
 
-import type { OnrampStatus, RampHistoryItem } from '../models'
+import type { OnrampStatus, RampHistoryItem, RampToken } from '../models'
 
 const item = (status: OnrampStatus): RampHistoryItem =>
     ({ id: `order-${status}`, status }) as RampHistoryItem
@@ -38,5 +42,45 @@ describe('hasPendingRampOrder', () => {
 
     it('is false for an empty history', () => {
         expect(hasPendingRampOrder([])).toBe(false)
+    })
+})
+
+const token = (overrides: Partial<RampToken>): RampToken =>
+    ({
+        id: '31566704',
+        symbol: 'USDC',
+        name: 'USDC',
+        ...overrides,
+    }) as RampToken
+
+describe('isAlgoRampToken', () => {
+    it('recognises ALGO by its asset id', () => {
+        expect(isAlgoRampToken(token({ id: '0', symbol: 'XALGO' }))).toBe(true)
+    })
+
+    it('falls back to the ticker when the provider gives no asset id', () => {
+        expect(isAlgoRampToken(token({ id: 'ALGO', symbol: 'ALGO' }))).toBe(
+            true,
+        )
+    })
+
+    it('does not treat another asset as ALGO', () => {
+        expect(isAlgoRampToken(token({}))).toBe(false)
+    })
+
+    it('ignores an ALGO ticker on a token that has another asset id', () => {
+        expect(isAlgoRampToken(token({ symbol: 'ALGO' }))).toBe(false)
+    })
+})
+
+describe('rampTokenAssetId', () => {
+    it("pins ALGO to the native asset id whatever the provider's id is", () => {
+        expect(rampTokenAssetId(token({ id: 'ALGO', symbol: 'ALGO' }))).toBe(
+            '0',
+        )
+    })
+
+    it('keeps the provider id for any other token', () => {
+        expect(rampTokenAssetId(token({}))).toBe('31566704')
     })
 })

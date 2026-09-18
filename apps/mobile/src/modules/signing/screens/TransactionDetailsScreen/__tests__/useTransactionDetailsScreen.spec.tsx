@@ -52,6 +52,7 @@ const historyItem: TransactionHistoryItem = {
     txType: 'pay',
     sender: 'SENDER_ADDR',
     receiver: 'RECEIVER_ADDR',
+    assetSender: null,
     confirmedRound: 41_065_416,
     roundTime: 1_752_576_000,
     swapGroupDetail: null,

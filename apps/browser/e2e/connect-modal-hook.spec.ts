@@ -30,6 +30,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import WalletConnect from '@perawallet/walletconnect'
+import { selectAccountAndArmConnect } from './approval-surface'
 import {
     startFakeBridge,
     type FakeWcBridge,
@@ -319,20 +320,10 @@ const waitForConnectorConnect = (
         })
     })
 
-// Selects an account if none is pre-selected: useWcConnectScreen only
-// pre-selects the active account if the store had hydrated by mount time.
 const ensureAccountSelected = async (approvalPage: Page): Promise<void> => {
     const connectButton = approvalPage.getByTestId('wc-connect-connect')
     await expect(connectButton).toBeVisible({ timeout: 20_000 })
-    const alreadySelected =
-        (await connectButton.getAttribute('aria-disabled')) !== 'true'
-    if (!alreadySelected) {
-        await expect(approvalPage.getByRole('checkbox').first()).toBeVisible({
-            timeout: 20_000,
-        })
-        await approvalPage.getByRole('checkbox').first().click()
-    }
-    await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
+    await selectAccountAndArmConnect(approvalPage, connectButton)
 }
 
 test.beforeAll(async () => {

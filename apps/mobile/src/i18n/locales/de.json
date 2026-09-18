@@ -390,6 +390,7 @@
         "notifications_unmuted": "Benachrichtigungen aktiviert",
         "backup_warning_title": "Hast du dein Konto gesichert?",
         "backup_warning_message": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast und das Konto weder mit einem Ledger-Gerät gesichert noch von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
+        "backup_warning_message_with_cloud_backup": "Wenn du keine Kopie der Wiederherstellungsphrase dieses Kontos hast, das Konto weder im Cloud-Backup noch mit einem Ledger-Gerät gesichert ist und auch nicht von einem Auth-Konto verwaltet wird, geht der Zugriff auf dieses Konto und sein Guthaben unwiderruflich verloren.",
         "backup_warning_continue": "Ja, fortfahren",
         "backup_warning_cancel": "Nein, Konto behalten",
         "remove_rekey_error_title": "Konto kann nicht entfernt werden",
@@ -693,11 +694,18 @@
         },
         "turn_off": {
             "success": "Cloud-Backup deaktiviert",
-            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut."
+            "error": "Cloud-Backup konnte nicht deaktiviert werden. Bitte versuche es erneut.",
+            "confirm_title": "Backup auf diesem Gerät deaktivieren?",
+            "confirm_body": "Dieses Gerät wird nicht mehr synchronisiert und deine Backup-Zugangsdaten werden davon entfernt. Dein Backup bleibt in der Cloud und deine anderen Geräte synchronisieren weiter. Um dieses Gerät später wieder zu verbinden, stelle sicher, dass du deine Passphrase und deinen Verschlüsselungsschlüssel hast.",
+            "confirm_button": "Deaktivieren"
         },
         "turn_off_and_remove": {
             "success": "Cloud-Backup deaktiviert und gelöscht",
-            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut."
+            "error": "Cloud-Backup konnte nicht gelöscht werden. Bitte versuche es erneut.",
+            "confirm_title": "Cloud-Backup endgültig löschen?",
+            "confirm_body": "Das Cloud-Backup wird auf all deinen Geräten deaktiviert, und Konten und Kontakte, die nur im Backup vorhanden sind, gehen verloren.",
+            "confirm_button": "Backup löschen",
+            "confirm_checkbox_label": "Ich verstehe, dass mein Backup endgültig vom Server gelöscht wird und das nicht rückgängig gemacht werden kann."
         },
         "restore": {
             "sheet_title": "Backup wiederherstellen/abrufen",
@@ -1748,6 +1756,8 @@
             "delivery_failed": "Konnte nicht an die anfragende App gesendet werden – die Verbindung wurde getrennt.",
             "failed_default": "Transaktion fehlgeschlagen",
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
+            "cosign_rejected_title": "Signieren nicht möglich",
+            "cosign_rejected_body": "Diese Anfrage enthält eine Transaktion, die das Gemeinschaftskonto nicht autorisiert. Wenn der Absender ein Konto ist, das auf das Gemeinschaftskonto gerekeyt wurde, füge es deinem Wallet hinzu und versuche es erneut.",
             "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
@@ -3889,6 +3899,13 @@
         "ZW": "Simbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Schwach",
+            "fair": "Mäßig",
+            "good": "Gut",
+            "strong": "Stark",
+            "error_too_weak": "Das Passwort ist zu leicht zu erraten. Versuche eine längere Phrase mit ungewöhnlichen Wörtern."
+        },
         "create_password": {
             "title": "Passwort erstellen",
             "description": "Lege ein Passwort fest, um deine Pera Wallet-Erweiterung zu schützen. Du benötigst es jedes Mal, wenn du die Erweiterung öffnest.",

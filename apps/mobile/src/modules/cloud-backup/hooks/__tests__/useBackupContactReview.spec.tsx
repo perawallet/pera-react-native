@@ -16,23 +16,33 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useBackupContactReview } from '../useBackupContactReview'
 
-const { contactsMock, reviewMock, showToastMock, reviewActionMock, kindMock } =
-    vi.hoisted(() => ({
-        contactsMock: { current: [] as { address: string; name: string }[] },
-        reviewMock: {
-            current: {
-                backedUp: new Set<string>(),
-                notBackedUp: [] as string[],
-                availableFromBackup: [] as { address: string; name: string }[],
-            },
+const {
+    contactsMock,
+    reviewMock,
+    showToastMock,
+    showErrorMock,
+    reviewActionMock,
+    kindMock,
+    NoConnectionError,
+} = vi.hoisted(() => ({
+    contactsMock: { current: [] as { address: string; name: string }[] },
+    reviewMock: {
+        current: {
+            backedUp: new Set<string>(),
+            notBackedUp: [] as string[],
+            availableFromBackup: [] as { address: string; name: string }[],
         },
-        showToastMock: vi.fn(),
-        reviewActionMock: vi.fn(
-            async (_variables: { action: string; address: string }) =>
-                undefined,
-        ),
-        kindMock: { current: '' },
-    }))
+    },
+    showToastMock: vi.fn(),
+    showErrorMock: vi.fn(),
+    reviewActionMock: vi.fn(
+        async (_variables: { action: string; address: string }) => undefined,
+    ),
+    kindMock: { current: '' },
+    // One class for both the mock factory below and the tests: `instanceof` is
+    // what the hook branches on.
+    NoConnectionError: class NoConnectionError extends Error {},
+}))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContactsStore: (selector: (s: unknown) => unknown) =>
@@ -64,10 +74,15 @@ vi.mock('@perawallet/wallet-core-backup', async () => {
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn() },
+    NoConnectionError,
 }))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: showToastMock }),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: showErrorMock }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -162,6 +177,18 @@ describe('useBackupContactReview', () => {
                 expect.objectContaining({ type: 'error' }),
             ),
         )
+        expect(result.current.busyAddress).toBeNull()
+    })
+
+    test('sends an offline failure to the network copy, not the generic retry toast', async () => {
+        reviewActionMock.mockRejectedValueOnce(new NoConnectionError())
+        const { result } = renderReview()
+
+        act(() => result.current.backUpContact('B'))
+
+        await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
+        expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
+        expect(showToastMock).not.toHaveBeenCalled()
         expect(result.current.busyAddress).toBeNull()
     })
 })

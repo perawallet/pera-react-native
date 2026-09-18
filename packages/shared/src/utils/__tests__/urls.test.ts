@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { stripUrlScheme, buildPrismUrl } from '../urls'
+import { stripUrlScheme, buildPrismUrl, originOf, isSameOrigin } from '../urls'
 
 describe('utils/urls - stripUrlScheme', () => {
     test('strips https:// prefix', () => {
@@ -84,5 +84,45 @@ describe('utils/urls - buildPrismUrl', () => {
 
     test('returns undefined for empty string', () => {
         expect(buildPrismUrl('', 40)).toBeUndefined()
+    })
+})
+
+describe('utils/urls - originOf', () => {
+    test('reduces a url with a path and query to its origin', () => {
+        expect(originOf('https://tinyman.org/swap?from=ALGO')).toBe(
+            'https://tinyman.org',
+        )
+    })
+
+    test('returns undefined for an unparseable url', () => {
+        expect(originOf('tinyman.org')).toBeUndefined()
+    })
+
+    test('returns undefined for an opaque origin', () => {
+        expect(originOf('chrome-extension://abcdef/popup.html')).toBeUndefined()
+    })
+})
+
+describe('utils/urls - isSameOrigin', () => {
+    test('matches urls that differ only by path', () => {
+        expect(
+            isSameOrigin('https://tinyman.org', 'https://tinyman.org/swap'),
+        ).toBe(true)
+    })
+
+    test('treats a different port or scheme as distinct', () => {
+        expect(
+            isSameOrigin('https://tinyman.org', 'https://tinyman.org:8443'),
+        ).toBe(false)
+        expect(isSameOrigin('https://tinyman.org', 'http://tinyman.org')).toBe(
+            false,
+        )
+    })
+
+    test('never matches when either side is missing or opaque', () => {
+        expect(isSameOrigin(undefined, 'https://tinyman.org')).toBe(false)
+        expect(
+            isSameOrigin('chrome-extension://a/x', 'chrome-extension://b/y'),
+        ).toBe(false)
     })
 })

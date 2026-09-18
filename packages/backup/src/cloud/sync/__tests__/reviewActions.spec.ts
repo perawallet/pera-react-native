@@ -225,7 +225,7 @@ describe('deleteFromBackup', () => {
             readItems: readsFor(['accounts/X']),
             decrypt: hdAwareDecrypt({}),
         }
-        const next = await deleteFromBackup({
+        const { state: next } = await deleteFromBackup({
             state: withReviewed('X'),
             address: 'X',
             deps,
@@ -251,7 +251,7 @@ describe('deleteFromBackup', () => {
             }),
         }
 
-        const next = await deleteFromBackup({
+        const { state: next } = await deleteFromBackup({
             state: withReviewed('X'),
             address: 'X',
             deps,
@@ -269,7 +269,11 @@ describe('deleteFromBackup', () => {
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST', CHILD: 'FIRST' }),
         }
 
-        const next = await deleteFromBackup({ state, address: 'FIRST', deps })
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'FIRST',
+            deps,
+        })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(deps.deleteItem).toHaveBeenCalledWith(
@@ -289,7 +293,11 @@ describe('deleteFromBackup', () => {
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST' }),
         }
 
-        const next = await deleteFromBackup({ state, address: 'FIRST', deps })
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'FIRST',
+            deps,
+        })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(2)
         expect(next.items['accounts/FIRST'].status).toBe(
@@ -308,7 +316,11 @@ describe('deleteFromBackup', () => {
             decrypt: hdAwareDecrypt({ CHILD: 'FIRST' }),
         }
 
-        const next = await deleteFromBackup({ state, address: 'CHILD', deps })
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'CHILD',
+            deps,
+        })
 
         expect(deps.deleteItem).toHaveBeenCalledWith(
             'mainnet',
@@ -329,7 +341,11 @@ describe('deleteFromBackup', () => {
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST' }),
         }
 
-        const next = await deleteFromBackup({ state, address: 'FIRST', deps })
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'FIRST',
+            deps,
+        })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(next.items['secrets/FIRST'].status).toBe(BackupItemStatus.ACTIVE)
@@ -344,7 +360,11 @@ describe('deleteFromBackup', () => {
             }),
         }
 
-        const next = await deleteFromBackup({ state, address: 'X', deps })
+        const { state: next } = await deleteFromBackup({
+            state,
+            address: 'X',
+            deps,
+        })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
         expect(next.items['secrets/X'].status).toBe(BackupItemStatus.ACTIVE)
@@ -464,7 +484,7 @@ describe('contact review actions', () => {
     it('deleteContactFromBackup deletes the one key and tombstones it', async () => {
         const deps = baseDeps()
 
-        const next = await deleteContactFromBackup({
+        const { state: next } = await deleteContactFromBackup({
             state: contact(),
             address: 'A',
             deps,

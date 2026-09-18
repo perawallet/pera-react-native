@@ -10,49 +10,17 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-
-import {
-    stripUrlScheme,
-    generateUniqueId,
-} from '@perawallet/wallet-core-shared'
-import {
-    resolveDisplayableVerificationTier,
-    useProjectByUrlQuery,
-} from '@perawallet/wallet-core-projects'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useWebView } from '@modules/webview/hooks'
 import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { useSourceMetadataBadge } from '../SourceMetadataBadge/useSourceMetadataBadge'
 
 export const useSourceMetadataView = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
 ) => {
-    const { data: project } = useProjectByUrlQuery({
-        url: metadata.url,
-        isEnabled: !!metadata.url,
-    })
-
-    const preferredIcon =
-        metadata.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? metadata.icons?.at(0)
-
-    const displayIcon = preferredIcon ?? project?.logoPng
-    const displayName = metadata.name ?? project?.name
-
-    // The lookup key (metadata.url) is peer-asserted, so a `verified` tier is
-    // trusted only against the platform-observed origin.
-    const verificationTier = resolveDisplayableVerificationTier(
-        project,
-        verifiedOrigin,
-    )
-
-    const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
-
+    const badge = useSourceMetadataBadge(metadata, verifiedOrigin)
     const { pushWebView } = useWebView()
 
     const handlePressUrl = () => {
@@ -63,11 +31,5 @@ export const useSourceMetadataView = (
         pushWebView({ id: generateUniqueId(), url: validatedUrl })
     }
 
-    return {
-        displayIcon,
-        displayName,
-        url,
-        verificationTier,
-        handlePressUrl,
-    }
+    return { ...badge, handlePressUrl }
 }

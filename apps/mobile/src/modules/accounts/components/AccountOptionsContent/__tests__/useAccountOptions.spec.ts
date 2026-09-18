@@ -18,6 +18,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -65,7 +66,9 @@ const {
     mockKeepAccountInBackup,
     mockGetBackupSyncManager,
 } = vi.hoisted(() => {
-    const mockDeleteAccountFromBackup = vi.fn(async () => true)
+    const mockDeleteAccountFromBackup = vi.fn(
+        async (): Promise<BackupActionOutcome> => 'settled',
+    )
     const mockKeepAccountInBackup = vi.fn(async () => true)
     return {
         mockDeleteAccountFromBackup,
@@ -235,7 +238,7 @@ describe('useAccountOptions', () => {
         mockIsAccountEnabled.mockReturnValue(true)
         mockIsBackedUp.mockReturnValue(false)
         mockIsCloudBackupEnabled.mockReturnValue(true)
-        mockDeleteAccountFromBackup.mockResolvedValue(true)
+        mockDeleteAccountFromBackup.mockResolvedValue('settled')
         mockKeepAccountInBackup.mockResolvedValue(true)
         mockToggleAccountNotification.mockResolvedValue(true)
         mockIsTogglePending.mockReturnValue(false)
@@ -809,7 +812,53 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('does not remove locally when the backup choice fails', async () => {
+        it('removes locally even when the cloud delete is only queued', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            mockDeleteAccountFromBackup.mockResolvedValueOnce('queued')
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await driveFullRemoval(result)
+            await act(async () => {
+                await result.current.handleDeleteFromBackup()
+            })
+
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
+        })
+
+        it('does not remove locally when the backup refused the choice', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            mockDeleteAccountFromBackup.mockResolvedValueOnce('refused')
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await driveFullRemoval(result)
+            await act(async () => {
+                await result.current.handleDeleteFromBackup()
+            })
+
+            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'error',
+                    title: 'cloud_backup.accounts.delete_error',
+                }),
+            )
+        })
+
+        it('does not remove locally when the backup choice throws', async () => {
             mockIsBackedUp.mockReturnValue(true)
             mockGetBackupSyncManager.mockImplementationOnce(() => {
                 throw new Error('Backup sync manager is not initialised')

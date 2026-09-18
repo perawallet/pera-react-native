@@ -390,6 +390,7 @@
         "notifications_unmuted": "Notifications unmuted",
         "backup_warning_title": "Have you backed up your account?",
         "backup_warning_message": "If you don't have a copy of this account's recovery passphrase or the account is not backed up with a Ledger device or managed by an Auth Account, access to this account and its funds will be lost forever.",
+        "backup_warning_message_with_cloud_backup": "If you don't have a copy of this account's recovery passphrase, the account is not in Cloud Backup or backed up with a Ledger device, and it is not managed by an Auth Account, access to this account and its funds will be lost forever.",
         "backup_warning_continue": "Yes, continue",
         "backup_warning_cancel": "No, keep account",
         "remove_rekey_error_title": "Cannot remove account",
@@ -701,11 +702,18 @@
         },
         "turn_off": {
             "success": "Cloud Backup turned off",
-            "error": "Couldn’t turn off Cloud Backup. Please try again."
+            "error": "Couldn’t turn off Cloud Backup. Please try again.",
+            "confirm_title": "Turn Off Backup on This Device?",
+            "confirm_body": "This device will stop syncing, and your backup credentials will be removed from it. Your backup stays in the cloud and your other devices keep syncing. To reconnect this device later, make sure you have your Passphrase and Encryption Key.",
+            "confirm_button": "Turn Off"
         },
         "turn_off_and_remove": {
             "success": "Cloud Backup turned off and removed",
-            "error": "Couldn’t remove Cloud Backup. Please try again."
+            "error": "Couldn’t remove Cloud Backup. Please try again.",
+            "confirm_title": "Permanently Delete Cloud Backup?",
+            "confirm_body": "Cloud Backup will turn off on all your devices, and accounts and contacts that exist only in the backup will be lost.",
+            "confirm_button": "Delete Backup",
+            "confirm_checkbox_label": "I understand my backup will be permanently deleted from the server and this can’t be undone."
         },
         "restore": {
             "sheet_title": "Restore/Retrieve a Backup",
@@ -1756,6 +1764,8 @@
             "delivery_failed": "Couldn't send this to the app that requested it — the connection was lost.",
             "failed_default": "Transaction failed",
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
+            "cosign_rejected_title": "Can't sign this transaction",
+            "cosign_rejected_body": "This request includes a transaction the shared account doesn't authorize. If the sender is an account rekeyed to the shared account, add it to your wallet and try again.",
             "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",
@@ -3897,6 +3907,13 @@
         "ZW": "Zimbabwe"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Weak",
+            "fair": "Fair",
+            "good": "Good",
+            "strong": "Strong",
+            "error_too_weak": "Password is too easy to guess. Try a longer phrase with uncommon words."
+        },
         "create_password": {
             "title": "Create a Password",
             "description": "Set a password to protect your Pera Wallet extension. You'll need it each time you open the extension.",
