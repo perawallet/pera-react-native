@@ -12,3 +12,4 @@
 
 export * from './store'
 export * from './swapHandoffStore'
+export * from './swapResumeStore'
