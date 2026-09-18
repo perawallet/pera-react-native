@@ -1082,8 +1082,6 @@
             "show_all": "Alle anzeigen",
             "transactions_empty": "Du hast noch keine Transaktionen.",
             "transaction_fallback": "Transaktion",
-            "coming_soon_title": "Demnächst verfügbar",
-            "coming_soon_body": "Diese Funktion ist noch nicht verfügbar.",
             "reveal_card_details": "Kartendetails anzeigen",
             "hide_card_details": "Kartendetails ausblenden",
             "issuance_pending_title": "Verifizierung in Prüfung",
@@ -1212,6 +1210,8 @@
             "status_reverted": "Storniert",
             "status_completed": "Abgeschlossen",
             "export_accessibility_label": "Kontoauszug exportieren",
+            "export_error_title": "Kontoauszug konnte nicht exportiert werden",
+            "export_error_body": "Bitte versuche es erneut.",
             "error_title": "Transaktionen konnten nicht geladen werden",
             "error_body": "Bitte versuche es erneut.",
             "retry": "Erneut versuchen",
@@ -1577,19 +1577,18 @@
             "auto_funding_degraded_body": "Auto-Funding konnte gerade nicht aktiviert werden, daher startet deine Karte mit manueller Finanzierung. Du kannst später in den Karteneinstellungen wechseln."
         },
         "signing": {
-            "title": "Los geht's",
-            "body": "Um deine Pera Card zu erstellen, musst du drei Gruppen von Transaktionen signieren. Befolge bitte diese Schritte:",
-            "step_sign_label": "Signiere eine Authentifizierungsanfrage, um nachzuweisen, dass dir das verknüpfte Konto gehört",
-            "step_create_label": "Erstelle und finalisiere dein neues Pera Card Konto",
-            "step_authorize_label": "Signiere das Auto-Funding-Programm, um der Pera Card zu erlauben, von deinem verknüpften Konto abzubuchen",
-            "proceed_button": "Fortfahren"
-        },
-        "auto_funding_signing": {
-            "title": "Anfrage zur automatischen Signaturgenehmigung",
-            "body": "Dadurch kann deine Karte bei Bedarf automatisch Guthaben abbuchen, sodass du nicht jede Aufladung selbst genehmigen musst. Du signierst eine Logic Sig — eine vorab autorisierte Signatur —, die diese automatische Abbuchung von deinem verbundenen Konto ermöglicht.",
-            "error_title": "Auto-Funding konnte nicht autorisiert werden",
-            "error_body": "Bei der Autorisierung von Auto-Funding ist ein Fehler aufgetreten. Versuche es erneut, oder brich ab, um mit manueller Finanzierung fortzufahren (du kannst später in deinen Karteneinstellungen zu Auto wechseln).",
-            "cancel_button": "Abbrechen"
+            "title": "Pera Card erstellen",
+            "body_manual": "Du signierst einmal, um nachzuweisen, dass dir das verknüpfte Konto gehört. Direkt danach erstellen wir deine Karte.",
+            "body_auto": "Du signierst, um nachzuweisen, dass dir das verknüpfte Konto gehört, und um Auto-Funding zu erlauben. Danach bestätigst du eine Transaktion, die es aktiviert.",
+            "linked_account_label": "Verknüpftes Konto",
+            "funding_type_label": "Finanzierungsart",
+            "step_ownership_label": "Nachweisen, dass dir das verknüpfte Konto gehört",
+            "step_create_label": "Deine Pera Card erstellen",
+            "step_auto_funding_label": "Auto-Funding vom verknüpften Konto erlauben",
+            "retry_button": "Erneut versuchen",
+            "continue_manual_button": "Mit manueller Finanzierung fortfahren",
+            "auto_funding_error_title": "Auto-Funding konnte nicht autorisiert werden",
+            "auto_funding_error_body": "Beim Aktivieren von Auto-Funding ist etwas schiefgelaufen. Versuche es erneut oder fahre mit manueller Finanzierung fort und wechsle später in den Karteneinstellungen."
         },
         "connect_account": {
             "title": "Kartenkonto wählen",

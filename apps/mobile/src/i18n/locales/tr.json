@@ -1090,8 +1090,6 @@
             "show_all": "Tümünü göster",
             "transactions_empty": "Henüz hiç işlemin yok.",
             "transaction_fallback": "İşlem",
-            "coming_soon_title": "Çok yakında",
-            "coming_soon_body": "Bu özellik henüz kullanıma açık değil.",
             "reveal_card_details": "Kart bilgilerini göster",
             "hide_card_details": "Kart bilgilerini gizle",
             "issuance_pending_title": "Doğrulama inceleniyor",
@@ -1220,6 +1218,8 @@
             "status_reverted": "Geri alındı",
             "status_completed": "Tamamlandı",
             "export_accessibility_label": "Ekstreyi dışa aktar",
+            "export_error_title": "Ekstre dışa aktarılamadı",
+            "export_error_body": "Lütfen tekrar dene.",
             "error_title": "İşlemler yüklenemedi",
             "error_body": "Lütfen tekrar dene.",
             "retry": "Tekrar dene",
@@ -1585,19 +1585,18 @@
             "auto_funding_degraded_body": "Otomatik fonlama şu anda etkinleştirilemedi, bu yüzden kartın manuel fonlamayla başlıyor. Daha sonra kart ayarlarından değiştirebilirsin."
         },
         "signing": {
-            "title": "Başlayalım",
-            "body": "Pera Card’ını oluşturmak için üç işlem grubunu imzalaman gerekiyor, lütfen şu adımları izle:",
-            "step_sign_label": "Bağlı hesabın sahibi olduğunu kanıtlamak için bir kimlik doğrulama isteğini imzala",
-            "step_create_label": "Yeni Pera Card hesabını oluştur ve tamamla",
-            "step_authorize_label": "Pera Card’ın bağlı hesabından harcama yapabilmesi için otomatik fonlama programını imzala",
-            "proceed_button": "Devam et"
-        },
-        "auto_funding_signing": {
-            "title": "Otomatik imzalama onay isteği",
-            "body": "Bu, kartının gerektiğinde fonları otomatik olarak çekmesini sağlar; böylece her yüklemeyi kendin onaylamak zorunda kalmazsın. Bağlı hesabından bu otomatik çekime izin veren bir logic sig — önceden yetkilendirilmiş bir imza — imzalıyorsun.",
-            "error_title": "Otomatik fonlama yetkilendirilemedi",
-            "error_body": "Otomatik fonlama yetkilendirilirken bir şeyler ters gitti. Tekrar dene veya iptal edip manuel fonlamayla devam et (daha sonra kart ayarlarından otomatik fonlamaya geçebilirsin).",
-            "cancel_button": "İptal"
+            "title": "Pera Card oluştur",
+            "body_manual": "Bağlı hesabın sahibi olduğunu kanıtlamak için bir kez imzalarsın. Hemen ardından kartını oluştururuz.",
+            "body_auto": "Bağlı hesabın sahibi olduğunu kanıtlamak ve otomatik fonlamaya izin vermek için imzalarsın. Ardından bunu açan tek bir işlemi onaylarsın.",
+            "linked_account_label": "Bağlı hesap",
+            "funding_type_label": "Fonlama türü",
+            "step_ownership_label": "Bağlı hesabın sahibi olduğunu kanıtla",
+            "step_create_label": "Pera Card'ını oluştur",
+            "step_auto_funding_label": "Bağlı hesaptan otomatik fonlamaya izin ver",
+            "retry_button": "Tekrar dene",
+            "continue_manual_button": "Manuel fonlama ile devam et",
+            "auto_funding_error_title": "Otomatik fonlama yetkilendirilemedi",
+            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir."
         },
         "connect_account": {
             "title": "Kart hesabını seç",

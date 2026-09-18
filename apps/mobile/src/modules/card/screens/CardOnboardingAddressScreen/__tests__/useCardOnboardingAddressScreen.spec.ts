@@ -290,9 +290,25 @@ describe('useCardOnboardingAddressScreen', () => {
         await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
     })
 
-    it('reveals the US state requirement when residence switches to US', async () => {
+    it('reveals the US state requirement for a US resident', async () => {
+        mockCountryIso = 'US'
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+    })
+
+    it('locks the country field once the residence is known', async () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
+        expect(result.current.isCountryLocked).toBe(true)
+    })
+
+    it('offers the picker only when no residence was stored', async () => {
+        mockCountryIso = null
         mockRequest.mockResolvedValueOnce(us)
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        expect(result.current.isCountryLocked).toBe(false)
 
         act(() => {
             result.current.handleSelectCountry()
@@ -541,11 +557,9 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    it('opens the US Baanx card T&C once the resident is in the US', async () => {
-        mockRequest.mockResolvedValueOnce(us)
+    it('opens the US Baanx card T&C for a US resident', async () => {
+        mockCountryIso = 'US'
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
-
-        act(() => result.current.handleSelectCountry())
         await waitFor(() => expect(result.current.isUsResident).toBe(true))
 
         act(() => result.current.handleOpenCardTerms())

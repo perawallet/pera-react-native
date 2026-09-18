@@ -1090,8 +1090,6 @@
             "show_all": "Tout afficher",
             "transactions_empty": "Vous n’avez pas encore de transactions.",
             "transaction_fallback": "Transaction",
-            "coming_soon_title": "Bientôt disponible",
-            "coming_soon_body": "Cette fonctionnalité n’est pas encore disponible.",
             "reveal_card_details": "Afficher les détails",
             "hide_card_details": "Masquer les détails",
             "issuance_pending_title": "Vérification en cours d’examen",
@@ -1220,6 +1218,8 @@
             "status_reverted": "Annulée",
             "status_completed": "Terminée",
             "export_accessibility_label": "Exporter le relevé",
+            "export_error_title": "Impossible d’exporter le relevé",
+            "export_error_body": "Veuillez réessayer.",
             "error_title": "Impossible de charger les transactions",
             "error_body": "Veuillez réessayer.",
             "retry": "Réessayer",
@@ -1585,19 +1585,18 @@
             "auto_funding_degraded_body": "Le financement automatique n’a pas pu être activé pour le moment, votre carte démarre donc en financement manuel. Vous pourrez passer au financement automatique plus tard dans les paramètres de la carte."
         },
         "signing": {
-            "title": "Commençons",
-            "body": "Pour créer votre Pera Card, vous devez signer trois groupes de transactions. Veuillez suivre ces étapes :",
-            "step_sign_label": "Signez une demande d’authentification pour prouver que vous êtes le propriétaire du compte lié",
-            "step_create_label": "Créez et finalisez votre nouveau compte Pera Card",
-            "step_authorize_label": "Signez le programme de financement automatique pour autoriser Pera Card à dépenser depuis votre compte lié",
-            "proceed_button": "Continuer"
-        },
-        "auto_funding_signing": {
-            "title": "Demande d’approbation de signature automatique",
-            "body": "Cela permet à votre carte de prélever automatiquement des fonds lorsque nécessaire, afin que vous n’ayez pas à approuver chaque rechargement. Vous signez un logic sig — une signature pré-autorisée — qui permet ce prélèvement automatique depuis votre compte connecté.",
-            "error_title": "Impossible d’autoriser le financement automatique",
-            "error_body": "Une erreur est survenue lors de l’autorisation du financement automatique. Réessayez ou annulez pour continuer en financement manuel (vous pourrez passer au financement automatique plus tard dans les paramètres de votre carte).",
-            "cancel_button": "Annuler"
+            "title": "Créer la Pera Card",
+            "body_manual": "Vous signerez une fois pour prouver que vous êtes le propriétaire du compte lié. Nous créons votre carte juste après.",
+            "body_auto": "Vous signerez pour prouver que vous êtes le propriétaire du compte lié et pour autoriser le financement automatique, puis vous approuverez une transaction qui l’active.",
+            "linked_account_label": "Compte lié",
+            "funding_type_label": "Type de financement",
+            "step_ownership_label": "Prouver que vous êtes le propriétaire du compte lié",
+            "step_create_label": "Créer votre Pera Card",
+            "step_auto_funding_label": "Autoriser le financement automatique depuis le compte lié",
+            "retry_button": "Réessayer",
+            "continue_manual_button": "Continuer avec le financement manuel",
+            "auto_funding_error_title": "Impossible d’autoriser le financement automatique",
+            "auto_funding_error_body": "Une erreur s’est produite lors de l’activation du financement automatique. Réessayez, ou continuez avec le financement manuel et changez plus tard dans les paramètres de la carte."
         },
         "connect_account": {
             "title": "Choisir le compte de la carte",

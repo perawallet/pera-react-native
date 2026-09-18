@@ -33,6 +33,7 @@ let mockOnboardingDetails: MockOnboardingDetails | undefined
 // The gate's own derivation is unit-tested in the card package
 // (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
 let mockIsKycRequired = false
+let mockIsRecordLoading = false
 const mockMarkServerRefused = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -60,7 +61,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         }),
         useOnboardingDetailsQuery: () => ({
             data: mockOnboardingDetails,
-            isLoading: false,
+            isLoading: mockIsRecordLoading,
             isError: false,
             refetch: vi.fn(),
         }),
@@ -136,7 +137,17 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockSettings = { countries: [uk, france], usStates: [] }
         mockOnboardingDetails = undefined
         mockIsKycRequired = false
+        mockIsRecordLoading = false
         mockMutateAsync.mockResolvedValue(undefined)
+    })
+
+    it('holds the form while the onboarding record is still loading', () => {
+        mockIsRecordLoading = true
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isRecordLoading).toBe(true)
     })
 
     it('starts with an invalid form and is not submitting', () => {

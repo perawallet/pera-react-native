@@ -73,6 +73,7 @@ export enum CardEvent {
     SelectFundingManual = 'cards_selectFunding_manual', // Chose manual funding in the select-funding sheet
     SelectFundingApply = 'cards_selectFunding_apply', // Applied the funding-type selection
     TransactionsSelect = 'cards_transactions_select', // Tapped a row in the transactions list
+    TransactionsExport = 'cards_transactions_export', // Tapped export statement on the transactions list
     TransactionsTransactionTab = 'cards_transactions_transaction', // Switched to the Transaction tab on transaction detail
     TransactionsMerchantTab = 'cards_transactions_merchant', // Switched to the Merchant tab on transaction detail
     TransactionsCopyTx = 'cards_transactions_copyTx', // Copied the transaction hash

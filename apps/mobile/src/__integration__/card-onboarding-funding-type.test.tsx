@@ -129,7 +129,6 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
-import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import {
     ALGO25_TEST_ADDRESS,
@@ -183,10 +182,6 @@ const renderStatus = () => {
                 {
                     name: 'CardOnboardingSigning',
                     component: CardCreateSigningScreen,
-                },
-                {
-                    name: 'CardOnboardingAutoFundingSigning',
-                    component: CardAutoFundingSigningScreen,
                 },
             ],
         },
@@ -366,17 +361,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
         await confirmArc60Signing()
 
-        // Sign + create + approve land on the 'authorize' step; a second
-        // Proceed tap navigates to the LSig approval screen.
+        // Sign + create + approve run on into the LSig registration without
+        // a second tap.
         await waitFor(() => expect(approvalBody).not.toBeNull())
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
-            expect(
-                screen.queryByTestId('card-auto-funding-signing-confirm'),
-            ).toBeTruthy()
-        })
-        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
-
         await waitFor(() => expect(lsigBody).not.toBeNull())
         expect(approvalBody).toEqual(
             expect.objectContaining({
@@ -480,29 +467,19 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
 
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
-            expect(
-                screen.queryByTestId('card-auto-funding-signing-confirm'),
-            ).toBeTruthy()
-        })
-        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
-
-        // The LSig POST fails; the screen surfaces the error and lets the
-        // user retry rather than auto-degrading — Manual only persists once
-        // the user explicitly cancels.
+        // The LSig POST fails; the screen keeps the card, offers a retry and
+        // an explicit Manual fallback. Manual only persists once the user
+        // takes the fallback.
         await waitFor(() =>
             expect(
-                (
-                    screen.getByTestId(
-                        'card-auto-funding-signing-cancel',
-                    ) as HTMLButtonElement
-                ).disabled,
-            ).toBe(false),
+                screen.getByTestId('card-create-signing-continue-manual'),
+            ).toBeTruthy(),
         )
         expect(useCardStore.getState().selectedFundingType).toBeNull()
 
-        fireEvent.click(screen.getByTestId('card-auto-funding-signing-cancel'))
+        fireEvent.click(
+            screen.getByTestId('card-create-signing-continue-manual'),
+        )
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,

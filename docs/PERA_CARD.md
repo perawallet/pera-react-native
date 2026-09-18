@@ -1,6 +1,6 @@
 # Pera Card
 
-A Visa card issued by Baanx and funded from a Pera account. Most of the state
+A payment card issued by Baanx and funded from a Pera account. Most of the state
 that matters is owned by Baanx rather than by us, so this file records the
 contract to stop behaviour being re-derived from the screens.
 

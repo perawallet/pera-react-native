@@ -54,6 +54,11 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
      * this step, so the form is replaced by the "finish verifying" view.
      */
     isKycRequired: boolean
+    /**
+     * The onboarding record hasn't answered yet. The form waits for it so a
+     * late prefill can't land on top of what the user already typed.
+     */
+    isRecordLoading: boolean
     /** Sends the user back to the identity-verification step. */
     handleVerifyIdentity: () => void
     handleSelectNationality: () => void
@@ -87,9 +92,8 @@ export const useCardOnboardingPersonalDetailsScreen =
         const { data: settings } = useRegistrationSettingsQuery()
         // On resume the onboarding record already holds the user's details, so
         // we prefill them and lock the fields the server has confirmed.
-        const { data: onboardingDetails } = useOnboardingDetailsQuery({
-            onboardingId,
-        })
+        const { data: onboardingDetails, isLoading: isRecordLoading } =
+            useOnboardingDetailsQuery({ onboardingId })
 
         const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
         const isLastNameLocked = Boolean(onboardingDetails?.lastName)
@@ -340,6 +344,7 @@ export const useCardOnboardingPersonalDetailsScreen =
             isDateOfBirthLocked,
             isNationalityLocked,
             isKycRequired,
+            isRecordLoading,
             handleVerifyIdentity,
             handleSelectNationality,
             selectedBirthCountry,

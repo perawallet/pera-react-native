@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
+import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
+import { QRScannerView } from '@components/QRScannerView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
+import { routeCapabilities } from '@routes/capabilities'
 import { PeraCardTabNavigator } from '../../components/PeraCardTabNavigator'
 import { usePeraCardAccountScreen } from './usePeraCardAccountScreen'
 import { useStyles } from './styles'
@@ -20,8 +24,13 @@ import { useStyles } from './styles'
 export const PeraCardAccountScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { cardDisplay, accountPicker, onMore, onScan, onInbox } =
-        usePeraCardAccountScreen()
+    const {
+        cardDisplay,
+        accountPicker,
+        isScannerVisible,
+        onScan,
+        onScannerClose,
+    } = usePeraCardAccountScreen()
 
     return (
         <PWView
@@ -40,27 +49,33 @@ export const PeraCardAccountScreen = () => {
                 }
                 right={
                     <PWView style={styles.iconBarSection}>
-                        <PWIcon
-                            name='ellipsis'
-                            onPress={onMore}
+                        <AccountHeaderMenu
                             testID='pera_card_account_more_button'
+                            showChartToggle={false}
                         />
-                        <PWIcon
-                            name='camera'
-                            onPress={onScan}
-                            testID='pera_card_account_scan_button'
-                        />
-                        <PWIcon
-                            name='inbox'
-                            onPress={onInbox}
-                            testID='pera_card_account_inbox_button'
-                        />
+                        {routeCapabilities.qrScanner && (
+                            <PWTouchableOpacity
+                                onPress={onScan}
+                                testID='pera_card_account_scan_button'
+                            >
+                                <PWIcon name='camera' />
+                            </PWTouchableOpacity>
+                        )}
+                        <NotificationsIcon testID='pera_card_account_inbox_button' />
                     </PWView>
                 }
             />
             <PWView style={styles.tabNavigator}>
                 <PeraCardTabNavigator />
             </PWView>
+            {routeCapabilities.qrScanner && (
+                <QRScannerView
+                    isVisible={isScannerVisible}
+                    onSuccess={onScannerClose}
+                    onClose={onScannerClose}
+                    animationType='slide'
+                />
+            )}
         </PWView>
     )
 }

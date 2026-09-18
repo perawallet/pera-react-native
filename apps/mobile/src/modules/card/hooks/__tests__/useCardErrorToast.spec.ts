@@ -181,8 +181,8 @@ describe('useCardErrorToast', () => {
     it('lets precise copy win over shouldUseBackendMessage=false', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
-                titleKey: 'peraCard.auto_funding_signing.error_title',
-                bodyKey: 'peraCard.auto_funding_signing.error_body',
+                titleKey: 'peraCard.signing.auto_funding_error_title',
+                bodyKey: 'peraCard.signing.auto_funding_error_body',
                 shouldUseBackendMessage: false,
             }),
         )
