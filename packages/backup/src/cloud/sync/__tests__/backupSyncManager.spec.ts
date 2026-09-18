@@ -18,6 +18,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const {
     mockSyncBackup,
     mockPullBackupDeltas,
+    mockDeleteFromBackup,
     mockHasBackupCredentials,
     mockWithBackupEncryptionKey,
     mockWithBackupAuthSecretKey,
@@ -38,6 +39,10 @@ const {
 } = vi.hoisted(() => ({
     mockSyncBackup: vi.fn(),
     mockPullBackupDeltas: vi.fn(),
+    mockDeleteFromBackup: vi.fn(({ state }: { state: unknown }) => ({
+        state,
+        keys: [],
+    })),
     mockHasBackupCredentials: vi.fn(() => true),
     mockWithBackupEncryptionKey: vi.fn(
         async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
@@ -78,7 +83,7 @@ vi.mock('../reviewActions', () => ({
         state,
         summary: { imported: 1, skippedDuplicate: 0, failed: [] },
     }),
-    deleteFromBackup: ({ state }: { state: unknown }) => state,
+    deleteFromBackup: mockDeleteFromBackup,
     keepAccountInBackup: (state: unknown) => state,
 }))
 
@@ -175,6 +180,8 @@ vi.mock('../../models', async importOriginal => ({
     createEmptySyncState: (backupId: string) => ({
         backupId,
         lastSyncResult: 'NONE',
+        // Trimmed, but `items` stays: readers index it without guarding.
+        items: {},
     }),
 }))
 
@@ -189,6 +196,7 @@ import {
     initializeBackupSyncManager,
     getBackupSyncManager,
 } from '../backupSyncManager'
+import { BackupItemStatus, accountItemKey } from '../../models'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -361,6 +369,116 @@ describe('BackupSyncManager', () => {
         expect(await mgr.keepAccountInBackup('ADDR')).toBe(true)
         expect(mockSetSyncState).toHaveBeenCalled()
         mgr.stop()
+    })
+
+    describe('backUpAccount', () => {
+        const ADDR = 'BACKED-UP-ADDR'
+
+        const syncLeaves = (item: Record<string, unknown>) => {
+            mockSetSyncState.mockImplementation((state: unknown) => {
+                storedSyncState.current = state
+            })
+            mockSyncBackup.mockResolvedValue({
+                backupId: 'backup-123',
+                lastSyncResult: 'SUCCESS',
+                items: { [accountItemKey(ADDR)]: item },
+            })
+        }
+
+        it('reports success once the server has versioned the account', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 1 })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.backUpAccount(ADDR)).toBe(true)
+            mgr.stop()
+        })
+
+        it('reports failure when the account is still unversioned after the sync', async () => {
+            syncLeaves({ status: BackupItemStatus.ACTIVE, knownVer: 0 })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            mgr.stop()
+        })
+
+        it('reports failure when the sync itself threw', async () => {
+            mockSetSyncState.mockImplementation((state: unknown) => {
+                storedSyncState.current = state
+            })
+            mockSyncBackup.mockRejectedValue(new Error('network down'))
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.backUpAccount(ADDR)).toBe(false)
+            mgr.stop()
+        })
+    })
+
+    describe('deleteAccountFromBackup', () => {
+        const ADDR = 'DELETED-ADDR'
+
+        const deleteLeaves = (items: Record<string, unknown>) => {
+            mockSetSyncState.mockImplementation((state: unknown) => {
+                storedSyncState.current = state
+            })
+            mockDeleteFromBackup.mockImplementation(() => ({
+                state: {
+                    backupId: 'backup-123',
+                    lastSyncResult: 'SUCCESS',
+                    items,
+                },
+                keys: Object.keys(items),
+            }))
+        }
+
+        it('settles once the keys are no longer marked for deletion', async () => {
+            deleteLeaves({
+                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
+            })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('settled')
+            mgr.stop()
+        })
+
+        it('queues when the request failed and left a retry behind', async () => {
+            deleteLeaves({
+                [accountItemKey(ADDR)]: {
+                    status: BackupItemStatus.ACTIVE,
+                    pendingDelete: true,
+                },
+            })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('queued')
+            mgr.stop()
+        })
+
+        it('refuses without staging anything while a sync holds the lock', async () => {
+            deleteLeaves({
+                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
+            })
+            mockWithBackupEncryptionKey.mockResolvedValueOnce(null)
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('refused')
+            mgr.stop()
+        })
+
+        // An HD account's seed lives under its first derived sibling, so the
+        // stranded key is `secrets/SEED-FIRST`, not `secrets/<ADDR>`.
+        it('queues when the stranded key is the seed under a sibling address', async () => {
+            deleteLeaves({
+                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
+                'secrets/SEED-FIRST': {
+                    status: BackupItemStatus.ACTIVE,
+                    pendingDelete: true,
+                },
+            })
+            const mgr = new BackupSyncManager(makeDeps())
+
+            expect(await mgr.deleteAccountFromBackup(ADDR)).toBe('queued')
+            mgr.stop()
+        })
     })
 
     it('getBackupSyncManager returns the instance from initializeBackupSyncManager', () => {

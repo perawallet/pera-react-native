@@ -240,7 +240,7 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
             expect(getItem(`accounts/${account.address}`)).toBeDefined()
 
             expect(await manager.deleteAccountFromBackup(account.address)).toBe(
-                true,
+                'settled',
             )
             useAccountsStore.getState().setAccounts([])
             await manager.syncNow()
@@ -298,13 +298,17 @@ describe('Flow: Cloud backup → Sync (push round-trip)', () => {
 
             // The seed rides under the FIRST derived address, so deleting that
             // account must not take the key material its sibling still needs.
-            await manager.deleteAccountFromBackup(first.address)
+            expect(await manager.deleteAccountFromBackup(first.address)).toBe(
+                'settled',
+            )
 
             expect(getItem(`accounts/${first.address}`)).toBeUndefined()
             expect(getItem(`accounts/${second.address}`)).toBeDefined()
             expect(getItem(`secrets/${first.address}`)).toBeDefined()
 
-            await manager.deleteAccountFromBackup(second.address)
+            expect(await manager.deleteAccountFromBackup(second.address)).toBe(
+                'settled',
+            )
 
             expect(getItem(`accounts/${second.address}`)).toBeUndefined()
             expect(getItem(`secrets/${first.address}`)).toBeUndefined()
@@ -412,7 +416,7 @@ describe('Flow: Cloud backup → Sync (contacts)', () => {
             expect(getItem('contacts/CONTACT_A')).toBeDefined()
 
             expect(await manager.deleteContactFromBackup('CONTACT_A')).toBe(
-                true,
+                'settled',
             )
             useContactsStore.getState().resetState()
             await manager.syncNow()

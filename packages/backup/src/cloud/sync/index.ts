@@ -45,6 +45,7 @@ export {
     getBackupSyncManager,
 } from './backupSyncManager'
 export type { BackupSyncManagerDeps } from './backupSyncManager'
+export type { BackupDeleteResult } from './reviewActions'
 export {
     BackupWebSocketMessageType,
     BackupWebSocketMessageReject,
@@ -57,6 +58,7 @@ export type {
 } from './webSocketMessage'
 export { UnsupportedBackupAccountTypeError } from './types'
 export type {
+    BackupActionOutcome,
     SerializedItem,
     SerializedAccount,
     LocalItem,

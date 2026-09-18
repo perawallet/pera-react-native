@@ -36,6 +36,15 @@ export class UnsupportedBackupAccountTypeError extends Error {
     }
 }
 
+/**
+ * How far a review action got:
+ *
+ * - `settled` — the server confirmed it.
+ * - `queued` — recorded locally, the request failed, `pushDirty` will retry.
+ * - `refused` — nothing was recorded, so the choice has to be made again.
+ */
+export type BackupActionOutcome = 'settled' | 'queued' | 'refused'
+
 /** A single backup item ready to hash/encrypt. `payload` is the parsed object. */
 export type SerializedItem = {
     key: BackupItemKey

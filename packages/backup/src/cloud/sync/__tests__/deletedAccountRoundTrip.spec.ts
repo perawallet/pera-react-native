@@ -94,7 +94,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
     it('leaves device A a tombstone rather than forgetting the account', async () => {
         const deleteItem = vi.fn(async () => ({ seq: 6 }))
 
-        const next = await deleteFromBackup({
+        const { state: next } = await deleteFromBackup({
             state: syncedState(),
             address: ADDRESS,
             deps: { ...pullDeps(), deleteItem },

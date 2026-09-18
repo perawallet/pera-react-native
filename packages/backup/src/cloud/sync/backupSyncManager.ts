@@ -31,7 +31,14 @@ import {
     hasBackupCredentials,
     deleteBackupKeys,
 } from '../credentials/keyStorage'
-import { createEmptySyncState, type SyncState } from '../models'
+import {
+    areKeysDeletedFromBackup,
+    createEmptySyncState,
+    isAddressBackedUp,
+    isContactBackedUp,
+    type BackupItemKey,
+    type SyncState,
+} from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
 import {
     deleteContactFromBackup,
@@ -43,6 +50,7 @@ import {
     markAccountForBackup,
     markContactForBackup,
     reviewActionDeps,
+    type BackupDeleteResult,
 } from './reviewActions'
 import { accountFingerprint } from './accountFingerprint'
 import { contactsFingerprint } from './contactsFingerprint'
@@ -55,6 +63,7 @@ import {
     type BackupWebSocketEvent,
 } from './webSocketClient'
 import type {
+    BackupActionOutcome,
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
@@ -165,13 +174,19 @@ export class BackupSyncManager {
         }
     }
 
+    /** `syncNow` swallows transport failures, and a push the server rejects on
+     *  version leaves knownVer at 0 inside a run that otherwise succeeded — so
+     *  the state, not "it returned", says whether the account landed. */
     async backUpAccount(address: string): Promise<boolean> {
         const staged = await this.withExclusiveState(async state =>
             markAccountForBackup(state, address),
         )
         if (!staged) return false
         await this.syncNow()
-        return true
+        return isAddressBackedUp(
+            useBackupSyncStateStore.getState().syncState,
+            address,
+        )
     }
 
     async addAccountFromBackup(address: string): Promise<ImportSummary | null> {
@@ -188,13 +203,35 @@ export class BackupSyncManager {
         return done ? summary : null
     }
 
-    async deleteAccountFromBackup(address: string): Promise<boolean> {
-        return this.withExclusiveState(async (state, deps) =>
-            deleteFromBackup({
-                state,
-                address,
-                deps: reviewActionDeps(deps),
-            }),
+    /** A failed delete is a queued retry rather than a throw, so the state —
+     *  not "it returned" — says the keys are gone, and only the delete knows
+     *  which keys those were. */
+    private async runDelete(
+        run: (
+            state: SyncState,
+            deps: SyncEngineDeps,
+        ) => Promise<BackupDeleteResult>,
+    ): Promise<BackupActionOutcome> {
+        let deleted: BackupItemKey[] = []
+        const staged = await this.withExclusiveState(async (state, deps) => {
+            const result = await run(state, deps)
+            deleted = result.keys
+            return result.state
+        })
+        if (!staged) return 'refused'
+        return areKeysDeletedFromBackup(
+            useBackupSyncStateStore.getState().syncState,
+            deleted,
+        )
+            ? 'settled'
+            : 'queued'
+    }
+
+    async deleteAccountFromBackup(
+        address: string,
+    ): Promise<BackupActionOutcome> {
+        return this.runDelete((state, deps) =>
+            deleteFromBackup({ state, address, deps: reviewActionDeps(deps) }),
         )
     }
 
@@ -212,7 +249,10 @@ export class BackupSyncManager {
         )
         if (!staged) return false
         await this.syncNow()
-        return true
+        return isContactBackedUp(
+            useBackupSyncStateStore.getState().syncState,
+            address,
+        )
     }
 
     async addContactFromBackup(
@@ -231,8 +271,10 @@ export class BackupSyncManager {
         return done ? summary : null
     }
 
-    async deleteContactFromBackup(address: string): Promise<boolean> {
-        return this.withExclusiveState(async (state, deps) =>
+    async deleteContactFromBackup(
+        address: string,
+    ): Promise<BackupActionOutcome> {
+        return this.runDelete((state, deps) =>
             deleteContactFromBackup({
                 state,
                 address,
