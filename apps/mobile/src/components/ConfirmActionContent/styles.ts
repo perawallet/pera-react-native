@@ -24,8 +24,7 @@ export const useStyles = makeStyles(
             paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
         },
-        // The panel is content-sized in its sheet, so the icon has only these
-        // margins between it and the sheet's top edge.
+        // In a content-sized sheet nothing else separates the icon from the top edge.
         icon: {
             marginTop: theme.spacing.xl,
             marginBottom: theme.spacing.xl,

@@ -74,10 +74,9 @@ export const PWBottomSheet = ({
     const { height: windowHeight } = useWindowDimensions()
     const defaults = DEFAULT_PROPS[size]
 
-    // Measured against the sheet's own container, which `topInset` has already
-    // shortened — the same basis as `modal`'s percentage snap point. Taking the
-    // ratio of the whole window instead leaves a tall sheet no room to stop
-    // below the notch, so it reaches the screen edge and loses its top radius.
+    // Against the container `topInset` has already shortened, the basis of
+    // `modal`'s percentage snap point too: a whole-window ratio leaves a tall
+    // sheet no room below the notch, so it runs to the edge and loses its radius.
     const maxDynamicContentSize =
         size === 'auto'
             ? Math.round((windowHeight - insets.top) * SHEET_MAX_RATIO)
