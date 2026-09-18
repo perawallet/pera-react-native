@@ -389,7 +389,7 @@
         "notifications_muted": "Notificações silenciadas",
         "notifications_unmuted": "Notificações reativadas",
         "backup_warning_title": "Você já fez backup da sua conta?",
-        "backup_warning_message": "Se você não tiver uma cópia da passphrase de recuperação desta conta e ela não estiver com backup em um dispositivo Ledger nem for gerenciada por uma Auth Account, o acesso a esta conta e aos seus fundos será perdido para sempre.",
+        "backup_warning_message": "Se você não tiver uma cópia da passphrase de recuperação desta conta, ela não estiver no backup na nuvem nem em um dispositivo Ledger e não for gerenciada por uma Auth Account, o acesso a esta conta e aos seus fundos será perdido para sempre.",
         "backup_warning_continue": "Sim, continuar",
         "backup_warning_cancel": "Não, manter conta",
         "remove_rekey_error_title": "Não é possível remover a conta",

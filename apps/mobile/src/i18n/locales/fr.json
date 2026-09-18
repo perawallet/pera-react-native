@@ -389,7 +389,7 @@
         "notifications_muted": "Notifications désactivées",
         "notifications_unmuted": "Notifications réactivées",
         "backup_warning_title": "Avez-vous sauvegardé votre compte ?",
-        "backup_warning_message": "Si vous ne disposez pas d’une copie de la passphrase de récupération de ce compte et que celui-ci n’est ni sauvegardé avec un appareil Ledger ni géré par un compte Auth, l’accès à ce compte et à ses fonds sera définitivement perdu.",
+        "backup_warning_message": "Si vous ne disposez pas d’une copie de la passphrase de récupération de ce compte et que celui-ci n’est ni enregistré dans la sauvegarde cloud, ni sauvegardé avec un appareil Ledger, ni géré par un compte Auth, l’accès à ce compte et à ses fonds sera définitivement perdu.",
         "backup_warning_continue": "Oui, continuer",
         "backup_warning_cancel": "Non, conserver le compte",
         "remove_rekey_error_title": "Suppression impossible",
