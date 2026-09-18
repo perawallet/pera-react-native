@@ -22,12 +22,7 @@ import {
     pickBestByAmountOut,
 } from '@modules/swap/hooks/swapQuoteHelpers'
 
-const SWAPPING_STATUSES = new Set([
-    'preparing',
-    'signing',
-    'submitting',
-    'updating-status',
-])
+const SWAPPING_STATUSES = new Set(['preparing', 'signing', 'submitting'])
 
 type CardAddFundsSwapOutcome =
     | { kind: 'success' }
@@ -119,6 +114,9 @@ export const useCardAddFundsSwap = ({
             }
             if (outcome.kind === 'verifying-previous') {
                 return { kind: 'verifying' }
+            }
+            if (outcome.kind === 'partially-submitted') {
+                return { kind: 'error', message: '' }
             }
             return {
                 kind: 'error',

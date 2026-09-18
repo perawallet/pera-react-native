@@ -133,6 +133,14 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'cancelled' })
                 return
             }
+            if (outcome.kind === 'partially-submitted') {
+                trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
+                resolve({
+                    kind: 'error',
+                    message: t('swap.execution.error_body'),
+                })
+                return
+            }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({
                 kind: 'error',
