@@ -39,6 +39,11 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
 
+// Protocol base minimum balance, in microAlgos. Every asset, app or box
+// opt-in raises an account's minimum above this, and the node refuses a
+// close-out while any of them is still held.
+const BASE_MIN_BALANCE = 100_000n
+
 export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
@@ -183,6 +188,17 @@ export const useInputScreen = () => {
         }
     }, [selectedAssetId, accountInformation, tokenBalance])
 
+    // A close-out leaves nothing behind: everything moves except the fee that
+    // pays for the closing transaction.
+    const closeAmount = useMemo(
+        () =>
+            Decimal.max(
+                totalBalance.sub(toWholeUnits(minFee ?? 0n, ALGO_ASSET)),
+                new Decimal(0),
+            ),
+        [totalBalance, minFee],
+    )
+
     const minBalanceDisplay = useMemo(() => {
         if (isAlgoAssetId(selectedAssetId)) {
             return toWholeUnits(
@@ -204,12 +220,16 @@ export const useInputScreen = () => {
         setValueAndRef((isRekeyedSender ? maxAmount : totalBalance).toString())
     }, [isRekeyedSender, maxAmount, totalBalance, setValueAndRef])
 
-    const hasNoOptedInAssets = useMemo(() => {
+    // An unraised minimum balance is what makes the close possible: the ASA
+    // list alone misses app opt-ins, created assets and boxes, each of which
+    // the node would reject the close-out for.
+    const canCloseAccount = useMemo(() => {
         return (
             isAlgoAssetId(selectedAssetId) &&
-            (accountInformation?.assets?.length ?? 0) === 0
+            (accountInformation?.assets?.length ?? 0) === 0 &&
+            (accountInformation?.minBalance ?? 0n) <= BASE_MIN_BALANCE
         )
-    }, [selectedAssetId, accountInformation?.assets])
+    }, [selectedAssetId, accountInformation])
 
     const requestCloseAccountConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -283,15 +303,12 @@ export const useInputScreen = () => {
     }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
 
     const confirmCloseAccount = useCallback(() => {
-        const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
-        const closeAmount = Decimal.max(totalBalance.sub(fee), new Decimal(0))
         setIsCloseAccount(true)
         setAmount(closeAmount)
         setValueAndRef(closeAmount.toString())
         proceedToDestination()
     }, [
-        totalBalance,
-        minFee,
+        closeAmount,
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
@@ -351,7 +368,7 @@ export const useInputScreen = () => {
                 if (confirmed) {
                     continuePastMbr()
                 }
-            } else if (hasNoOptedInAssets) {
+            } else if (canCloseAccount && amountValue.gte(closeAmount)) {
                 const confirmed = await requestCloseAccountConfirm()
                 if (confirmed) {
                     confirmCloseAccount()
@@ -376,7 +393,8 @@ export const useInputScreen = () => {
         proceedToDestination,
         showToast,
         t,
-        hasNoOptedInAssets,
+        canCloseAccount,
+        closeAmount,
         isRekeyedSender,
         setIsCloseAccount,
         setAmount,

@@ -215,7 +215,7 @@ describe('useInputScreen', () => {
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.95')
+            result.current.setCryptoValue('100')
         })
         await act(async () => {
             await result.current.handleNext()
@@ -489,7 +489,7 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('opens close-account confirm when ALGO exceeds MBR and no opted-in ASAs', async () => {
+    it('opens close-account confirm when the whole ALGO balance is sent and no opted-in ASAs', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100_000_000n,
@@ -500,13 +500,54 @@ describe('useInputScreen', () => {
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.95')
+            result.current.setCryptoValue('100')
         })
         await act(async () => {
             await result.current.handleNext()
         })
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('offers the min-balance confirm, not a close, for a partial spend that dips into the MBR', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 2_004_000n,
+                minBalance: 1_600_000n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('0.5')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0.403')
+    })
+
+    it('does not offer a close when an app opt-in holds the minimum balance up', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 328_500n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('100')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
     })
 
     it('confirms close account when confirm resolves true', async () => {
@@ -521,7 +562,7 @@ describe('useInputScreen', () => {
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.95')
+            result.current.setCryptoValue('100')
         })
         await act(async () => {
             await result.current.handleNext()
@@ -545,7 +586,7 @@ describe('useInputScreen', () => {
 
         const { result } = renderHook(() => useInputScreen())
         act(() => {
-            result.current.setCryptoValue('99.95')
+            result.current.setCryptoValue('100')
         })
         await act(async () => {
             await result.current.handleNext()
