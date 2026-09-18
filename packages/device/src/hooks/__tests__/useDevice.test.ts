@@ -222,12 +222,41 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
             },
         })
         // This is the no-id create path's own `createdNew: true` return —
         // distinct from the 404-recreate path's, which has its own coverage
         // below. Tasks 8/12 branch on this flag.
         expect(outcome).toEqual({ createdNew: true })
+    })
+
+    test('registers the fallback fiat when the user prefers ALGO', async () => {
+        vi.resetModules()
+
+        const { useCurrenciesStore } =
+            await import('@perawallet/wallet-core-currencies')
+        const useDevice = await importUseDevice()
+
+        await seedPushToken('test-fcm-token')
+        useCurrenciesStore.getState().setPreferredCurrency('ALGO')
+        useCurrenciesStore.getState().setFallbackCurrency('EUR')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ currency: 'EUR' }),
+            }),
+        )
+
+        useCurrenciesStore.getState().resetState()
     })
 
     test('sends the stored id on every subsequent registration', async () => {
@@ -500,6 +529,7 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
                 id: 'DEV-1',
             },
         }
@@ -570,6 +600,7 @@ describe('services/device/hooks', () => {
                 pushToken: 'test-fcm-token',
                 locale: 'en-US',
                 appVersion: '7.0.1',
+                currency: 'USD',
             },
         }
         expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
@@ -1098,6 +1129,7 @@ describe('services/device/hooks', () => {
             platform: 'ios',
             locale: 'en-US',
             appVersion: '7.0.1',
+            currency: 'USD',
             accounts: [],
         })
     })
