@@ -1,0 +1,114 @@
+# The android jobs' `secrets` are the union of what ci/jobs/android.sh decodes,
+# what tools/generate-config.sh bakes into the build, and what
+# tools/validate-env.sh requires. The daemon fails a job before it runs if any
+# declared name is absent from secrets.env, so this list is also the operator's
+# checklist. validate-env.sh checks five of them under a PRODUCTION_/STAGING_
+# prefix for staging, six for production (REOWN_PROJECT_ID is added
+# conditionally — see tools/validate-env.sh): the daemon resolves each by
+# that prefix but injects it into the job's environment under the bare name
+# only, and validate-env.sh's prefixed checks accept the bare name too — see
+# docs/RUNNING.md in pera-ci.
+#
+# Names generate-config.sh can also bake, left out on purpose: algod/indexer/
+# genesis/explorer/support/legal URLs, ALGOD_API_KEY, INDEXER_API_KEY, the
+# Bidali/Baanx base URLs and the card USDC asset ids all carry safe non-empty
+# defaults in packages/config/src/main.ts; APP_STORE_APPLE_ID and the
+# Firebase Web SDK/GA4/Sentry vars are iOS- and browser-extension-only (see
+# device.ts / platform-chrome's services); MAINNET_BAANX_CLIENT_KEY has no
+# corresponding Bitrise secret at all (mainnet card isn't live — see main.ts's
+# mainnetBaanxTenantId TODO).
+_android_secrets: &android_secrets
+  - ANDROID_KEYSTORE_BASE64
+  - ANDROID_KEYSTORE_PASSWORD
+  - ANDROID_KEY_ALIAS
+  - ANDROID_KEY_PASSWORD
+  - ANDROID_GOOGLE_SERVICES_BASE64
+  - ANDROID_JSON_KEY_FILE
+  - FIREBASE_SERVICE_ACCOUNT_BASE64
+  - FIREBASE_APP_ID_ANDROID
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  # Play Integrity attestation (extensions/platform-react-native's
+  # app-integrity.ts); empty default degrades attestation silently.
+  - PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER
+  # Bidali on-ramp API keys; empty defaults leave the feature dark with no
+  # build-time signal. The Bidali base URLs are left out — see note above.
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  # Card: on-chain ids + the pinned AutoDraw program hash the LogicSig
+  # template is rendered against. Empty defaults fail closed (see main.ts) —
+  # the USDC asset ids are left out because they default to the correct
+  # public network assets.
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  # Card: testnet Baanx x-client-key (public identifier, not the server-only
+  # x-secret-key). setup-env-secrets.sh only aliases the testnet key —
+  # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
+  - TESTNET_BAANX_CLIENT_KEY
+
+pipelines:
+  release:
+    on_tag: '^v\d+\.\d+\.\d+(-rc\.\d+)?$'
+    jobs:
+      # pnpm run test is the full unit + mobile-integration suite. 30 minutes
+      # matches this repo's other whole-suite CI jobs (ci-localnet-conformance,
+      # security-codeql in .github/workflows) and, unlike those, a hang here
+      # also holds the serial queue and the signing host — the android jobs'
+      # 90-minute budget would let a hung test job block a build for as long
+      # as the build itself.
+      test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
+      # allow_failure: release notes are not worth skipping a release build for.
+      # Bitrise treats the changelog the same way.
+      changelog: { script: ci/jobs/changelog.sh, allow_failure: true }
+      android-production:
+        script: ci/jobs/android.sh
+        needs: [test, changelog]
+        env:
+          VALIDATE_PROFILE: android
+          ENVIRONMENT: production
+          APP_ENV: production
+          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
+          # starts at 1 here, and an unraised offset makes versionCode go
+          # backwards, which Play rejects as a non-increasing upload.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *android_secrets
+        timeout_minutes: 90
+      notify:
+        script: ci/jobs/notify.sh
+        needs: [test, changelog, android-production]
+        always_run: true
+
+  nightly:
+    on_tag: '^v\d+\.\d+\.\d+-alpha\.\d+$'
+    jobs:
+      # See the release pipeline's test job for the timeout rationale.
+      test: { script: ci/jobs/test.sh, env: { VALIDATE_PROFILE: test }, timeout_minutes: 30 }
+      changelog: { script: ci/jobs/changelog.sh, allow_failure: true }
+      android-staging:
+        script: ci/jobs/android.sh
+        needs: [test, changelog]
+        env:
+          VALIDATE_PROFILE: android
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          # Raise past Bitrise's last BITRISE_BUILD_NUMBER before
+          # CI_UPLOADS_ENABLED is turned on for this pipeline — CI_RUN_ID
+          # starts at 1 here, and an unraised offset makes versionCode go
+          # backwards, which Play rejects as a non-increasing upload.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *android_secrets
+        timeout_minutes: 90
+      notify:
+        script: ci/jobs/notify.sh
+        needs: [test, changelog, android-staging]
+        always_run: true

@@ -98,9 +98,11 @@ addresses before approving, because any extension page can send on the control s
 A handler added on web must be constructed in both `useConnectionsProvider.web.ts` (so URI claims
 and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
-WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
-`apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
-neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
+<!-- doc-hygiene-ignore-next-line stale-path reason: bundle output, written by CI at build time -->
+
+WalletConnect v2 is native-only. CI greps `apps/browser/dist` to keep `@reown/walletkit` out of the
+browser bundle, so the handler ships from the walletconnect package's `./v2` subpath and neither web
+realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
 
 ## The `dapp` handler
 
