@@ -12,9 +12,9 @@
 
 export type PickedTextFile = {
     name: string
-    contents: string
-    /** Bytes, so a caller can refuse an implausibly large file before parsing. */
+    /** Bytes. Known without reading, so a caller can refuse a large file unread. */
     size: number
+    text: () => Promise<string>
 }
 
 const readAsText = (file: globalThis.File): Promise<string> =>
@@ -32,7 +32,10 @@ const readAsText = (file: globalThis.File): Promise<string> =>
  * the native callers' `.uri` access then throws on. Drive the standard browser
  * flow instead: a hidden `<input type="file">`, clicked synchronously from the
  * caller's click handler so the picker opens under the user gesture browsers
- * require, then `FileReader.readAsText()`.
+ * require.
+ *
+ * Reading is deferred to `text()` so a caller can refuse an implausibly large
+ * file on `size` alone, the way the native `File.pickFileAsync` path does.
  *
  * Resolves `null` when the user dismisses the picker — detected via the
  * input's `cancel` event, supported in every Chromium/Firefox this extension
@@ -43,7 +46,7 @@ const readAsText = (file: globalThis.File): Promise<string> =>
  * the picker opens over a dead surface and neither listener ever runs.
  */
 export const pickTextFile = (accept: string): Promise<PickedTextFile | null> =>
-    new Promise((resolve, reject) => {
+    new Promise(resolve => {
         const input = document.createElement('input')
         input.type = 'file'
         input.accept = accept
@@ -58,15 +61,13 @@ export const pickTextFile = (accept: string): Promise<PickedTextFile | null> =>
         const handleChange = () => {
             const file = input.files?.[0] ?? null
             cleanup()
-            if (!file) {
-                resolve(null)
-                return
-            }
-            readAsText(file)
-                .then(contents =>
-                    resolve({ name: file.name, contents, size: file.size }),
-                )
-                .catch(reject)
+            resolve(
+                file && {
+                    name: file.name,
+                    size: file.size,
+                    text: () => readAsText(file),
+                },
+            )
         }
 
         const handleCancel = () => {

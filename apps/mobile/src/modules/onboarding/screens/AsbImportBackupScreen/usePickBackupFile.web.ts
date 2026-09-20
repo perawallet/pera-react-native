@@ -35,14 +35,13 @@ import type {
 export const usePickBackupFile = (): UsePickBackupFileResult => {
     const isPopupHandoff = getSurface() === 'popup'
 
-    const pickFile = useCallback((): Promise<PickedBackupFile | null> => {
+    const pickFile = useCallback(async (): Promise<PickedBackupFile | null> => {
         if (isPopupHandoff) {
             void openExpandedTab('asb-import')
-            return Promise.resolve(null)
+            return null
         }
-        return pickTextFile('.txt,text/plain').then(picked =>
-            picked ? { name: picked.name, contents: picked.contents } : null,
-        )
+        const picked = await pickTextFile('.txt,text/plain')
+        return picked && { name: picked.name, contents: await picked.text() }
     }, [isPopupHandoff])
 
     return { pickFile, isPopupHandoff }

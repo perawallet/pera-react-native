@@ -24,5 +24,5 @@ export const readFromDevice = async (): Promise<ReadResult> => {
     )
     if (!picked) return { status: 'cancelled' }
     if (picked.size > MAX_FILE_BYTES) throw new InvalidCredentialsFileError()
-    return { status: 'read', contents: picked.contents }
+    return { status: 'read', contents: await picked.text() }
 }
