@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { File } from 'expo-file-system'
+import { isFilePickerCancellation } from '@utils/isFilePickerCancellation'
 
 export type PickedBackupFile = {
     name: string
@@ -37,11 +38,6 @@ export type UsePickBackupFileResult = {
     isPopupHandoff: boolean
 }
 
-const isCancelError = (e: unknown): boolean => {
-    const message = String((e as { message?: unknown })?.message ?? '')
-    return /cancel/i.test(message)
-}
-
 /**
  * Native: opens the system document picker via `expo-file-system`. See the
  * `.web.ts` twin — `expo-file-system` has no real browser implementation
@@ -63,7 +59,7 @@ export const usePickBackupFile = (): UsePickBackupFileResult => {
             // The native picker rejects with `FilePickingCancelledException`
             // when the user dismisses the sheet. Don't surface that as an
             // error — resolve null so the caller can silently bail.
-            if (isCancelError(e)) return null
+            if (isFilePickerCancellation(e)) return null
             throw e
         }
     }, [])

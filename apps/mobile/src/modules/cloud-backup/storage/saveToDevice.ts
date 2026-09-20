@@ -12,17 +12,12 @@
 
 import { Platform } from 'react-native'
 import { Directory } from 'expo-file-system'
+import { isFilePickerCancellation } from '@utils/isFilePickerCancellation'
 import { shareFile } from '@utils/shareFile'
 
 import type { SaveResult } from './types'
 
 const JSON_MIME_TYPE = 'application/json'
-// expo infers its picker error code from a class name that R8 may rename in
-// release builds, so the picker's message is the stable signal.
-const PICKER_CANCELLED_MESSAGE = 'The file picker was cancelled by the user'
-
-const messageOf = (error: unknown): string =>
-    String((error as { message?: unknown } | null)?.message ?? '')
 
 const saveOnAndroid = async (
     fileName: string,
@@ -32,9 +27,7 @@ const saveOnAndroid = async (
     try {
         directory = await Directory.pickDirectoryAsync()
     } catch (error) {
-        if (messageOf(error).includes(PICKER_CANCELLED_MESSAGE)) {
-            return 'cancelled'
-        }
+        if (isFilePickerCancellation(error)) return 'cancelled'
         throw error
     }
     directory.createFile(fileName, JSON_MIME_TYPE).write(contents)
