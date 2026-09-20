@@ -15,19 +15,15 @@ import type { PanelButtonProps } from '@components/PanelButton'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import iCloudLogo from '@assets/images/icloud-logo.png'
 import type { CredentialsFileSource } from '../../storage'
 import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
+import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
+import type { OptionListSheetOption } from '../OptionListSheet'
 
 export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
-type OptionRow = Pick<
-    PanelButtonProps,
-    'leftIcon' | 'leftImage' | 'title' | 'testID' | 'onPress'
-> & { option: RestoreBackupSheetResult }
-
 type UseRestoreBackupSheetResult = {
-    options: OptionRow[]
+    options: OptionListSheetOption[]
     description: string
 }
 
@@ -41,9 +37,7 @@ const ROW_ICONS: Record<
     Pick<PanelButtonProps, 'leftIcon' | 'leftImage'>
 > = {
     scan: { leftIcon: 'qr' },
-    device: { leftIcon: 'device' },
-    icloud: { leftImage: iCloudLogo },
-    googleDrive: { leftIcon: 'google-drive' },
+    ...CREDENTIALS_FILE_SOURCE_ICONS,
     manual: { leftIcon: 'key' },
 }
 
@@ -73,7 +67,7 @@ export const useRestoreBackupSheet = (): UseRestoreBackupSheetResult => {
             (
                 ['scan', ...fileSources, 'manual'] as RestoreBackupSheetResult[]
             ).map(option => ({
-                option,
+                key: option,
                 ...ROW_ICONS[option],
                 title: t(TITLE_KEYS[option]),
                 testID: TEST_IDS[option],

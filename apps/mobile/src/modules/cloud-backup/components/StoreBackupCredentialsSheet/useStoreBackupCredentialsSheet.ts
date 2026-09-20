@@ -11,29 +11,15 @@
  */
 
 import { useMemo } from 'react'
-import type { PanelButtonProps } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import iCloudLogo from '@assets/images/icloud-logo.png'
 import type { CredentialsFileSource } from '../../storage'
 import { useCredentialsFileSaveSources } from '../../hooks/useCredentialsFileSources'
-
-type DestinationRow = Pick<
-    PanelButtonProps,
-    'leftIcon' | 'leftImage' | 'title' | 'testID' | 'onPress'
-> & { destination: CredentialsFileSource }
+import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
+import type { OptionListSheetOption } from '../OptionListSheet'
 
 type UseStoreBackupCredentialsSheetResult = {
-    destinations: DestinationRow[]
-}
-
-const ROW_ICONS: Record<
-    CredentialsFileSource,
-    Pick<PanelButtonProps, 'leftIcon' | 'leftImage'>
-> = {
-    device: { leftIcon: 'device' },
-    icloud: { leftImage: iCloudLogo },
-    googleDrive: { leftIcon: 'google-drive' },
+    destinations: OptionListSheetOption[]
 }
 
 const TITLE_KEYS: Record<CredentialsFileSource, string> = {
@@ -57,8 +43,8 @@ export const useStoreBackupCredentialsSheet =
         const destinations = useMemo(
             () =>
                 sources.map(destination => ({
-                    destination,
-                    ...ROW_ICONS[destination],
+                    key: destination,
+                    ...CREDENTIALS_FILE_SOURCE_ICONS[destination],
                     title: t(TITLE_KEYS[destination]),
                     testID: TEST_IDS[destination],
                     onPress: () => resolve(destination),

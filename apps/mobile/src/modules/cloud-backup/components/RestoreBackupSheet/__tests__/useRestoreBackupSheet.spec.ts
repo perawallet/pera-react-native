@@ -45,10 +45,10 @@ beforeEach(() => {
     ])
 })
 
-type Row = { option: string; onPress?: () => void }
+type Row = { key: string; onPress?: () => void }
 
 const pressRow = (rows: readonly Row[], option: string): void => {
-    const row = rows.find(candidate => candidate.option === option)
+    const row = rows.find(candidate => candidate.key === option)
     if (!row) throw new Error(`No ${option} row`)
     row.onPress?.()
 }
@@ -75,7 +75,7 @@ describe('useRestoreBackupSheet', () => {
 
             const { result } = renderHook(() => useRestoreBackupSheet())
 
-            expect(result.current.options.map(row => row.option)).toEqual(
+            expect(result.current.options.map(row => row.key)).toEqual(
                 expectedOptions,
             )
             expect(result.current.description).toBe(expectedDescriptionKey)

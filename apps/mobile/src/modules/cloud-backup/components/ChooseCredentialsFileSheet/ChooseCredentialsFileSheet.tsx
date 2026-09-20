@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import { PWSheetLayout, PWText, PWView } from '@components/core'
-import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader } from '@modules/bottom-sheet'
+import { OptionListSheet } from '../OptionListSheet'
 import { useChooseCredentialsFileSheet } from './useChooseCredentialsFileSheet'
-import { useStyles } from './styles'
 
 type ChooseCredentialsFileSheetProps = {
     fileNames: string[]
@@ -25,37 +22,14 @@ export const ChooseCredentialsFileSheet = ({
     fileNames,
 }: ChooseCredentialsFileSheetProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const { choices } = useChooseCredentialsFileSheet(fileNames)
 
     return (
-        <PWSheetLayout
+        <OptionListSheet
             testID='cloud_backup_choose_credentials_file_sheet'
-            header={
-                <SheetHeader
-                    title={t('cloud_backup.restore.choose_file_title')}
-                    showClose
-                />
-            }
-        >
-            <PWView style={styles.body}>
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.description}
-                >
-                    {t('cloud_backup.restore.choose_file_description')}
-                </PWText>
-                <PWView style={styles.options}>
-                    {choices.map(({ fileName, ...row }) => (
-                        <PanelButton
-                            key={fileName}
-                            {...row}
-                            titleWeight='h3'
-                            accessibilityRole='button'
-                        />
-                    ))}
-                </PWView>
-            </PWView>
-        </PWSheetLayout>
+            title={t('cloud_backup.restore.choose_file_title')}
+            description={t('cloud_backup.restore.choose_file_description')}
+            options={choices}
+        />
     )
 }

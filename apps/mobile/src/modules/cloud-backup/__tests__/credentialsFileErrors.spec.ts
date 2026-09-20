@@ -12,8 +12,12 @@
 
 import { describe, expect, test, vi } from 'vitest'
 import {
+    CredentialsFileNotDownloadedError,
     CredentialsFileNotFoundError,
+    GoogleDriveAuthFailedError,
     GoogleDriveNotConfiguredError,
+    GoogleDriveUnreachableError,
+    GooglePlayServicesUnavailableError,
     ICloudUnavailableError,
     InvalidCredentialsFileError,
     NoBackupCredentialsError,
@@ -43,8 +47,8 @@ describe('backup credentials file errors', () => {
                 getAlgodMessage,
             ),
         ).toEqual({
-            title: 'cloud_backup.store_credentials.icloud_unavailable_title',
-            body: 'cloud_backup.store_credentials.icloud_unavailable',
+            title: 'cloud_backup.icloud.unavailable_title',
+            body: 'cloud_backup.icloud.unavailable',
         })
     })
 
@@ -58,7 +62,7 @@ describe('backup credentials file errors', () => {
             ),
         ).toEqual({
             title: 'fallback',
-            body: 'cloud_backup.store_credentials.google_drive_unavailable',
+            body: 'cloud_backup.google_drive.unavailable',
         })
     })
 
@@ -90,6 +94,22 @@ describe('backup credentials file errors', () => {
         [
             new NoBackupCredentialsError(),
             'cloud_backup.store_credentials.no_credentials',
+        ],
+        [
+            new CredentialsFileNotDownloadedError(),
+            'cloud_backup.restore.import_still_downloading',
+        ],
+        [
+            new GooglePlayServicesUnavailableError(),
+            'cloud_backup.google_drive.play_services',
+        ],
+        [
+            new GoogleDriveAuthFailedError(),
+            'cloud_backup.google_drive.sign_in_failed',
+        ],
+        [
+            new GoogleDriveUnreachableError(),
+            'cloud_backup.google_drive.unreachable',
         ],
     ])(
         'a credentials-file problem keeps the caller title, names the problem and files no crash report',

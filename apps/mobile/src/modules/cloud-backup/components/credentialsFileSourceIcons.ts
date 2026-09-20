@@ -10,20 +10,15 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
-import { OptionListSheet } from '../OptionListSheet'
-import { useRestoreBackupSheet } from './useRestoreBackupSheet'
+import type { PanelButtonProps } from '@components/PanelButton'
+import iCloudLogo from '@assets/images/icloud-logo.png'
+import type { CredentialsFileSource } from '../storage'
 
-export const RestoreBackupSheet = () => {
-    const { t } = useLanguage()
-    const { options, description } = useRestoreBackupSheet()
-
-    return (
-        <OptionListSheet
-            testID='cloud_backup_restore_sheet'
-            title={t('cloud_backup.restore.sheet_title')}
-            description={description}
-            options={options}
-        />
-    )
+export const CREDENTIALS_FILE_SOURCE_ICONS: Record<
+    CredentialsFileSource,
+    Pick<PanelButtonProps, 'leftIcon' | 'leftImage'>
+> = {
+    device: { leftIcon: 'device' },
+    icloud: { leftImage: iCloudLogo },
+    googleDrive: { leftIcon: 'google-drive' },
 }

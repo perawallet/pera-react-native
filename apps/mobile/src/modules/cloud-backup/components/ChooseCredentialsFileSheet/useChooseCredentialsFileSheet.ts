@@ -12,17 +12,12 @@
 
 import { useMemo } from 'react'
 import { backupCredentialsFileAddressPrefix } from '@perawallet/wallet-core-backup'
-import type { PanelButtonProps } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-
-type CredentialsFileRow = Pick<
-    PanelButtonProps,
-    'leftIcon' | 'title' | 'testID' | 'onPress'
-> & { fileName: string }
+import type { OptionListSheetOption } from '../OptionListSheet'
 
 type UseChooseCredentialsFileSheetResult = {
-    choices: CredentialsFileRow[]
+    choices: OptionListSheetOption[]
 }
 
 export const useChooseCredentialsFileSheet = (
@@ -37,7 +32,7 @@ export const useChooseCredentialsFileSheet = (
                 // Null for a key saved before file names carried an address.
                 const prefix = backupCredentialsFileAddressPrefix(fileName)
                 return {
-                    fileName,
+                    key: fileName,
                     leftIcon: 'key' as const,
                     title: prefix
                         ? t('cloud_backup.restore.choose_file_row', { prefix })

@@ -45,9 +45,9 @@ describe('useStoreBackupCredentialsSheet', () => {
 
         const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
-        expect(result.current.destinations.map(row => row.destination)).toEqual(
-            ['device'],
-        )
+        expect(result.current.destinations.map(row => row.key)).toEqual([
+            'device',
+        ])
     })
 
     test('gives every row a title and a leading mark', () => {
@@ -63,7 +63,7 @@ describe('useStoreBackupCredentialsSheet', () => {
         const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
         result.current.destinations
-            .find(row => row.destination === 'googleDrive')
+            .find(row => row.key === 'googleDrive')
             ?.onPress?.()
 
         expect(mockResolve).toHaveBeenCalledWith('googleDrive')

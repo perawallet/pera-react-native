@@ -10,47 +10,24 @@
  limitations under the License
  */
 
-import { PWSheetLayout, PWText, PWView } from '@components/core'
-import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader } from '@modules/bottom-sheet'
-
+import { OptionListSheet } from '../OptionListSheet'
 import { StoreCredentialsWarning } from './StoreCredentialsWarning'
 import { useStoreBackupCredentialsSheet } from './useStoreBackupCredentialsSheet'
-import { useStyles } from './styles'
 
 export const StoreBackupCredentialsSheet = () => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const { destinations } = useStoreBackupCredentialsSheet()
 
     return (
-        <PWSheetLayout
+        <OptionListSheet
             testID='store_backup_credentials_sheet'
-            header={
-                <SheetHeader
-                    testID='store_backup_credentials_sheet_header'
-                    title={t('cloud_backup.store_credentials.title')}
-                    showClose
-                />
-            }
+            title={t('cloud_backup.store_credentials.title')}
+            description={t('cloud_backup.store_credentials.description')}
+            isDescriptionMuted={false}
+            options={destinations}
         >
-            <PWView style={styles.body}>
-                <PWText variant='bodyLarge'>
-                    {t('cloud_backup.store_credentials.description')}
-                </PWText>
-                <StoreCredentialsWarning />
-                <PWView style={styles.options}>
-                    {destinations.map(({ destination, ...row }) => (
-                        <PanelButton
-                            key={destination}
-                            {...row}
-                            titleWeight='h3'
-                            accessibilityRole='button'
-                        />
-                    ))}
-                </PWView>
-            </PWView>
-        </PWSheetLayout>
+            <StoreCredentialsWarning />
+        </OptionListSheet>
     )
 }
