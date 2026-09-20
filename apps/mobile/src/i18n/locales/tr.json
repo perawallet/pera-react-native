@@ -604,10 +604,17 @@
             "google_drive": "Google Drive",
             "success": "Şifreleme anahtarı saklandı",
             "error": "Şifreleme anahtarın saklanamadı",
-            "icloud_unavailable_title": "iCloud kullanılamıyor",
-            "icloud_unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene.",
-            "google_drive_unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış.",
             "no_credentials": "Bu cihazda bulut yedekleme ayarlanmamış."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud kullanılamıyor",
+            "unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış.",
+            "play_services": "Google Play hizmetlerini güncelle, ardından tekrar dene.",
+            "sign_in_failed": "Google Drive hesabına giriş yapılamadı. Tekrar dene.",
+            "unreachable": "Google Drive’a ulaşılamadı. Bağlantını kontrol et ve tekrar dene."
         },
         "overview": {
             "title": "Bulut yedekleme",
@@ -743,6 +750,7 @@
             "import_error": "Şifreleme anahtarın okunamadı",
             "import_not_found_icloud": "iCloud hesabında şifreleme anahtarı bulunamadı.",
             "import_not_found_google_drive": "Google Drive hesabında şifreleme anahtarı bulunamadı.",
+            "import_still_downloading": "Şifreleme anahtarın hâlâ iCloud’dan indiriliyor. Birazdan tekrar dene.",
             "import_invalid_file": "Bu dosya bir Pera şifreleme anahtarı değil.",
             "import_unsupported_version": "Bu şifreleme anahtarı dosyasını kullanmak için Pera’yı güncelle.",
             "choose_file_title": "Bir şifreleme anahtarı seç",

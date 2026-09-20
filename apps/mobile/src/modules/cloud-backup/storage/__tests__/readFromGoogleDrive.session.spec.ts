@@ -11,7 +11,20 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+    GoogleDriveAuthFailedError,
+    GoogleDriveUnreachableError,
+    GooglePlayServicesUnavailableError,
+} from '@perawallet/wallet-core-backup'
+import { isExpectedError } from '@perawallet/wallet-core-shared'
 import { readFromGoogleDrive } from '../readFromGoogleDrive'
+
+// The global unit-test stub re-implements AppError as its own class, so an
+// error made from the real one is never `instanceof` the stub `isExpectedError`
+// checks against. Use the real package so both sides agree.
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
+}))
 
 const google = vi.hoisted(() => ({
     configure: vi.fn(),
@@ -141,5 +154,69 @@ describe('readFromGoogleDrive with the real session', () => {
         await readFromGoogleDrive(FILE_NAME, onReading)
 
         expect(onReading).not.toHaveBeenCalled()
+    })
+})
+
+// Unmapped, each of these reaches the user as the generic banner and files a
+// Crashlytics non-fatal, because isExpectedError only spares an AppError.
+describe('readFromGoogleDrive failures the user can act on', () => {
+    beforeEach(() =>
+        google.getTokens.mockResolvedValue({
+            idToken: '',
+            accessToken: 'token-1',
+        }),
+    )
+
+    test('names a device without current Play Services', async () => {
+        google.hasPlayServices.mockRejectedValueOnce(
+            Object.assign(new Error('Play services not available'), {
+                code: 'PLAY_SERVICES_NOT_AVAILABLE',
+            }),
+        )
+
+        const error = await readFromGoogleDrive(FILE_NAME).catch(e => e)
+
+        expect(error).toBeInstanceOf(GooglePlayServicesUnavailableError)
+        expect(isExpectedError(error)).toBe(true)
+    })
+
+    test('names a timeout, which aborts the fetch rather than raising a CloudStorageError', async () => {
+        readFile.mockRejectedValue(
+            Object.assign(new Error('Aborted'), { name: 'AbortError' }),
+        )
+
+        const error = await readFromGoogleDrive(FILE_NAME).catch(e => e)
+
+        expect(error).toBeInstanceOf(GoogleDriveUnreachableError)
+        expect(isExpectedError(error)).toBe(true)
+    })
+
+    test('names a lost connection', async () => {
+        readFile.mockRejectedValue(new Error('Network request failed'))
+
+        const error = await readFromGoogleDrive(FILE_NAME).catch(e => e)
+
+        expect(error).toBeInstanceOf(GoogleDriveUnreachableError)
+    })
+
+    // Mapped only once runWithFreshToken has already spent the one retry.
+    test('names a rejection that survives the token refresh', async () => {
+        readFile.mockRejectedValue(
+            Object.assign(new Error('Unauthorized'), { status: 401 }),
+        )
+
+        const error = await readFromGoogleDrive(FILE_NAME).catch(e => e)
+
+        expect(error).toBeInstanceOf(GoogleDriveAuthFailedError)
+        expect(readFile).toHaveBeenCalledTimes(2)
+    })
+
+    test('leaves an unrecognised failure its own identity, so a real bug still reports', async () => {
+        readFile.mockRejectedValue(new Error('kaboom'))
+
+        const error = await readFromGoogleDrive(FILE_NAME).catch(e => e)
+
+        expect(error.message).toBe('kaboom')
+        expect(isExpectedError(error)).toBe(false)
     })
 })

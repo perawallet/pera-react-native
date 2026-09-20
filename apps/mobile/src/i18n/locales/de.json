@@ -596,10 +596,17 @@
             "google_drive": "Google Drive",
             "success": "Verschlüsselungsschlüssel gespeichert",
             "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
-            "icloud_unavailable_title": "iCloud ist nicht verfügbar",
-            "icloud_unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut.",
-            "google_drive_unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet.",
             "no_credentials": "Cloud-Backup ist auf diesem Gerät nicht eingerichtet."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud ist nicht verfügbar",
+            "unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet.",
+            "play_services": "Aktualisiere die Google Play-Dienste und versuche es dann erneut.",
+            "sign_in_failed": "Anmeldung bei Google Drive fehlgeschlagen. Versuche es erneut.",
+            "unreachable": "Google Drive ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
         },
         "overview": {
             "title": "Cloud-Backup",
@@ -735,6 +742,7 @@
             "import_error": "Dein Verschlüsselungsschlüssel konnte nicht gelesen werden",
             "import_not_found_icloud": "In deiner iCloud wurde kein Verschlüsselungsschlüssel gefunden.",
             "import_not_found_google_drive": "In deinem Google Drive wurde kein Verschlüsselungsschlüssel gefunden.",
+            "import_still_downloading": "Dein Verschlüsselungsschlüssel wird noch aus iCloud geladen. Versuche es gleich erneut.",
             "import_invalid_file": "Diese Datei ist kein Pera-Verschlüsselungsschlüssel.",
             "import_unsupported_version": "Für diese Schlüsseldatei brauchst du eine neuere Version von Pera.",
             "choose_file_title": "Verschlüsselungsschlüssel auswählen",

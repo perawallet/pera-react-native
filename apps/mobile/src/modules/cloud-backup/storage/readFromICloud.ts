@@ -11,7 +11,7 @@
  */
 
 import {
-    CredentialsFileNotFoundError,
+    CredentialsFileNotDownloadedError,
     ICloudUnavailableError,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -92,5 +92,5 @@ export const readFromICloud = async (
         const downloaded = await readIfPresent(iCloud, path)
         if (downloaded !== null) return { status: 'read', contents: downloaded }
     }
-    throw new CredentialsFileNotFoundError('icloud')
+    throw new CredentialsFileNotDownloadedError()
 }

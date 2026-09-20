@@ -12,7 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
-    CredentialsFileNotFoundError,
+    CredentialsFileNotDownloadedError,
     ICloudUnavailableError,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -178,7 +178,7 @@ describe('readFromICloud', () => {
         await expect(readFromICloud(FILE_NAME)).rejects.toBe(error)
     })
 
-    test('gives up with not found once the download window passes', async () => {
+    test('says the file is still downloading once the window passes', async () => {
         vi.useFakeTimers()
         for (let i = 0; i <= POLL_ATTEMPTS; i += 1) {
             readFile.mockRejectedValueOnce(
@@ -187,8 +187,10 @@ describe('readFromICloud', () => {
         }
 
         const read = readFromICloud(FILE_NAME)
+        // The lister already proved the file is there, so "not found" would be
+        // a false statement about the user's only restore credential.
         const assertion = expect(read).rejects.toBeInstanceOf(
-            CredentialsFileNotFoundError,
+            CredentialsFileNotDownloadedError,
         )
         await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * POLL_ATTEMPTS)
 

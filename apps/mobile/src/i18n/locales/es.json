@@ -604,10 +604,17 @@
             "google_drive": "Google Drive",
             "success": "Clave de cifrado guardada",
             "error": "No se pudo guardar tu clave de cifrado",
-            "icloud_unavailable_title": "iCloud no está disponible",
-            "icloud_unavailable": "Inicia sesión en iCloud, activa iCloud Drive y vuelve a intentarlo.",
-            "google_drive_unavailable": "Google Drive no está configurado en esta versión de la aplicación.",
             "no_credentials": "La copia de seguridad en la nube no está configurada en este dispositivo."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud no está disponible",
+            "unavailable": "Inicia sesión en iCloud, activa iCloud Drive y vuelve a intentarlo."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive no está configurado en esta versión de la aplicación.",
+            "play_services": "Actualiza los servicios de Google Play y vuelve a intentarlo.",
+            "sign_in_failed": "No se pudo iniciar sesión en Google Drive. Vuelve a intentarlo.",
+            "unreachable": "No se pudo conectar con Google Drive. Revisa tu conexión y vuelve a intentarlo."
         },
         "overview": {
             "title": "Copia de seguridad en la nube",
@@ -743,6 +750,7 @@
             "import_error": "No se pudo leer tu clave de cifrado",
             "import_not_found_icloud": "No se encontró ninguna clave de cifrado en tu iCloud.",
             "import_not_found_google_drive": "No se encontró ninguna clave de cifrado en tu Google Drive.",
+            "import_still_downloading": "Tu clave de cifrado aún se está descargando de iCloud. Vuelve a intentarlo en un momento.",
             "import_invalid_file": "Este archivo no es una clave de cifrado de Pera.",
             "import_unsupported_version": "Este archivo de clave de cifrado requiere una versión más reciente de Pera.",
             "choose_file_title": "Elige una clave de cifrado",

@@ -11,7 +11,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { GoogleDriveNotConfiguredError } from '@perawallet/wallet-core-backup'
+import {
+    GoogleDriveAuthFailedError,
+    GoogleDriveNotConfiguredError,
+} from '@perawallet/wallet-core-backup'
 import { Platform } from 'react-native'
 import {
     CloudStorageError,
@@ -281,9 +284,9 @@ describe('saveToGoogleDrive', () => {
                 Object.assign(new Error('Unauthorized'), { status: 401 }),
             )
 
-        await expect(saveToGoogleDrive(FILE_NAME, CONTENTS)).rejects.toThrow(
-            'Unauthorized',
-        )
+        await expect(
+            saveToGoogleDrive(FILE_NAME, CONTENTS),
+        ).rejects.toBeInstanceOf(GoogleDriveAuthFailedError)
 
         expect(writeFile).toHaveBeenCalledTimes(2)
         expect(google.clearCachedAccessToken).not.toHaveBeenCalled()

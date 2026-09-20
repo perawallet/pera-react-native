@@ -604,10 +604,17 @@
             "google_drive": "Google Drive",
             "success": "Chave de criptografia salva",
             "error": "Não foi possível salvar sua chave de criptografia",
-            "icloud_unavailable_title": "O iCloud não está disponível",
-            "icloud_unavailable": "Entre no iCloud e ative o iCloud Drive, depois tente novamente.",
-            "google_drive_unavailable": "O Google Drive não está configurado nesta versão do app.",
             "no_credentials": "O backup na nuvem não está configurado neste dispositivo."
+        },
+        "icloud": {
+            "unavailable_title": "O iCloud não está disponível",
+            "unavailable": "Entre no iCloud e ative o iCloud Drive, depois tente novamente."
+        },
+        "google_drive": {
+            "unavailable": "O Google Drive não está configurado nesta versão do app.",
+            "play_services": "Atualize os serviços do Google Play e tente novamente.",
+            "sign_in_failed": "Não foi possível entrar no Google Drive. Tente novamente.",
+            "unreachable": "Não foi possível acessar o Google Drive. Verifique sua conexão e tente novamente."
         },
         "overview": {
             "title": "Backup na nuvem",
@@ -743,6 +750,7 @@
             "import_error": "Não foi possível ler sua chave de criptografia",
             "import_not_found_icloud": "Nenhuma chave de criptografia foi encontrada no seu iCloud.",
             "import_not_found_google_drive": "Nenhuma chave de criptografia foi encontrada no seu Google Drive.",
+            "import_still_downloading": "Sua chave de criptografia ainda está sendo baixada do iCloud. Tente novamente em instantes.",
             "import_invalid_file": "Este arquivo não é uma chave de criptografia da Pera.",
             "import_unsupported_version": "Este arquivo de chave de criptografia precisa de uma versão mais recente da Pera.",
             "choose_file_title": "Escolha uma chave de criptografia",

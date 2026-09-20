@@ -36,8 +36,8 @@ export class ICloudUnavailableError extends AppError {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            titleKey: 'cloud_backup.store_credentials.icloud_unavailable_title',
-            messageKey: 'cloud_backup.store_credentials.icloud_unavailable',
+            titleKey: 'cloud_backup.icloud.unavailable_title',
+            messageKey: 'cloud_backup.icloud.unavailable',
         })
     }
 }
@@ -50,8 +50,56 @@ export class GoogleDriveNotConfiguredError extends AppError {
         super(message, {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
-            messageKey:
-                'cloud_backup.store_credentials.google_drive_unavailable',
+            messageKey: 'cloud_backup.google_drive.unavailable',
+        })
+    }
+}
+
+// A device without current Play Services can't reach Drive at all, so this is a
+// device state to explain rather than a fault to report.
+export class GooglePlayServicesUnavailableError extends AppError {
+    constructor(message = 'Google Play services is unavailable or outdated') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.google_drive.play_services',
+        })
+    }
+}
+
+// Raised only once the one token refresh has already been spent.
+export class GoogleDriveAuthFailedError extends AppError {
+    constructor(message = 'Google Drive rejected the access token') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.google_drive.sign_in_failed',
+        })
+    }
+}
+
+export class GoogleDriveUnreachableError extends AppError {
+    constructor(message = 'Google Drive could not be reached') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.google_drive.unreachable',
+        })
+    }
+}
+
+// The listing already proved the file is there, so this is never "no key": the
+// placeholder just hasn't finished downloading within the poll window.
+export class CredentialsFileNotDownloadedError extends AppError {
+    constructor(message = 'The credentials file is still downloading') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.restore.import_still_downloading',
         })
     }
 }

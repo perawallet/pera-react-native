@@ -11,7 +11,12 @@
  */
 
 import { Platform } from 'react-native'
-import { GoogleDriveNotConfiguredError } from '@perawallet/wallet-core-backup'
+import {
+    GoogleDriveAuthFailedError,
+    GoogleDriveNotConfiguredError,
+    GoogleDriveUnreachableError,
+    GooglePlayServicesUnavailableError,
+} from '@perawallet/wallet-core-backup'
 import {
     GoogleSignin,
     isCancelledResponse,
@@ -87,6 +92,42 @@ const isUnauthorized = (error: unknown): boolean =>
         error.code === CloudStorageErrorCode.AUTHENTICATION_FAILED) ||
     (error as { status?: unknown } | null)?.status === 401
 
+// The library's `statusCodes` reads native constants, so it is undefined
+// wherever the module isn't linked — and an undefined comparand would match
+// every error that carries no code. Both platforms spell it this literal.
+const PLAY_SERVICES_NOT_AVAILABLE = 'PLAY_SERVICES_NOT_AVAILABLE'
+
+const isPlayServicesUnavailable = (error: unknown): boolean =>
+    (error as { code?: unknown } | null)?.code === PLAY_SERVICES_NOT_AVAILABLE
+
+// DRIVE_TIMEOUT_MS aborts the underlying fetch, so a timeout arrives as an
+// AbortError rather than a CloudStorageError.
+const isUnreachable = (error: unknown): boolean => {
+    const { name, message } = (error ?? {}) as {
+        name?: unknown
+        message?: unknown
+    }
+    return (
+        name === 'AbortError' ||
+        (error instanceof CloudStorageError &&
+            error.code === CloudStorageErrorCode.NETWORK_ERROR) ||
+        /network request failed/i.test(String(message ?? ''))
+    )
+}
+
+/**
+ * Names the failures a user can act on. Anything else keeps its own identity,
+ * so a genuine bug still reaches the generic banner and a crash report.
+ */
+const asDriveError = (error: unknown): unknown => {
+    if (isPlayServicesUnavailable(error)) {
+        return new GooglePlayServicesUnavailableError()
+    }
+    if (isUnreachable(error)) return new GoogleDriveUnreachableError()
+    if (isUnauthorized(error)) return new GoogleDriveAuthFailedError()
+    return error
+}
+
 // appDataFolder has no server-side uniqueness and users can't see it to clean
 // up, so a duplicate from a racing save must not make every later call fail.
 const driveWithToken = (accessToken: string): CloudStorage =>
@@ -118,12 +159,7 @@ const runWithFreshToken = async <T>(
 
 export const signOutOfGoogleDrive = (): Promise<null> => GoogleSignin.signOut()
 
-/**
- * `cancelled` when the user backs out of sign-in or the Drive scope grant.
- * `operation` runs again after a rejected token, so it must be safe to
- * repeat.
- */
-export const runOnGoogleDrive = async <T>(
+const runSession = async <T>(
     operation: DriveOperation<T>,
     onAuthorized?: () => void,
 ): Promise<DriveSessionResult<T>> => {
@@ -150,5 +186,22 @@ export const runOnGoogleDrive = async <T>(
             status: 'done',
             value: await runWithFreshToken(operation, accessToken),
         }
+    }
+}
+
+/**
+ * `cancelled` when the user backs out of sign-in or the Drive scope grant.
+ * `operation` runs again after a rejected token, so it must be safe to
+ * repeat. Failures are mapped here rather than inside, so the token retry
+ * still sees the original 401.
+ */
+export const runOnGoogleDrive = async <T>(
+    operation: DriveOperation<T>,
+    onAuthorized?: () => void,
+): Promise<DriveSessionResult<T>> => {
+    try {
+        return await runSession(operation, onAuthorized)
+    } catch (error) {
+        throw asDriveError(error)
     }
 }

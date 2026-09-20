@@ -604,10 +604,17 @@
             "google_drive": "Google Drive",
             "success": "Encryption Key stored",
             "error": "Couldn’t store your Encryption Key",
-            "icloud_unavailable_title": "iCloud isn’t available",
-            "icloud_unavailable": "Sign in to iCloud and turn on iCloud Drive, then try again.",
-            "google_drive_unavailable": "Google Drive isn’t set up in this version of the app.",
             "no_credentials": "Cloud backup isn’t set up on this device."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud isn’t available",
+            "unavailable": "Sign in to iCloud and turn on iCloud Drive, then try again."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive isn’t set up in this version of the app.",
+            "play_services": "Update Google Play services, then try again.",
+            "sign_in_failed": "Couldn’t sign in to Google Drive. Try again.",
+            "unreachable": "Couldn’t reach Google Drive. Check your connection and try again."
         },
         "overview": {
             "title": "Cloud Backup",
@@ -743,6 +750,7 @@
             "import_error": "Couldn’t read your encryption key",
             "import_not_found_icloud": "No encryption key was found in your iCloud.",
             "import_not_found_google_drive": "No encryption key was found in your Google Drive.",
+            "import_still_downloading": "Your encryption key is still downloading from iCloud. Try again in a moment.",
             "import_invalid_file": "This file isn’t a Pera encryption key.",
             "import_unsupported_version": "This encryption key file needs a newer version of Pera.",
             "choose_file_title": "Choose an encryption key",

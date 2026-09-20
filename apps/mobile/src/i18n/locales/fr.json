@@ -604,10 +604,17 @@
             "google_drive": "Google Drive",
             "success": "Clé de chiffrement enregistrée",
             "error": "Impossible d’enregistrer votre clé de chiffrement",
-            "icloud_unavailable_title": "iCloud n’est pas disponible",
-            "icloud_unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez.",
-            "google_drive_unavailable": "Google Drive n’est pas configuré dans cette version de l’application.",
             "no_credentials": "La sauvegarde cloud n’est pas configurée sur cet appareil."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud n’est pas disponible",
+            "unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive n’est pas configuré dans cette version de l’application.",
+            "play_services": "Mettez à jour les services Google Play, puis réessayez.",
+            "sign_in_failed": "Impossible de se connecter à Google Drive. Réessayez.",
+            "unreachable": "Impossible de joindre Google Drive. Vérifiez votre connexion et réessayez."
         },
         "overview": {
             "title": "Sauvegarde cloud",
@@ -743,6 +750,7 @@
             "import_error": "Impossible de lire votre clé de chiffrement",
             "import_not_found_icloud": "Aucune clé de chiffrement n’a été trouvée dans votre iCloud.",
             "import_not_found_google_drive": "Aucune clé de chiffrement n’a été trouvée dans votre Google Drive.",
+            "import_still_downloading": "Votre clé de chiffrement est encore en cours de téléchargement depuis iCloud. Réessayez dans un instant.",
             "import_invalid_file": "Ce fichier n’est pas une clé de chiffrement Pera.",
             "import_unsupported_version": "Ce fichier de clé de chiffrement nécessite une version plus récente de Pera.",
             "choose_file_title": "Choisissez une clé de chiffrement",
