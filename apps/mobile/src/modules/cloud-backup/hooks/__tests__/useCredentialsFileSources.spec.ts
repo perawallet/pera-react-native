@@ -10,17 +10,8 @@
  limitations under the License
  */
 
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    expect,
-    test,
-    vi,
-    type Mock,
-} from 'vitest'
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Platform } from 'react-native'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
@@ -42,11 +33,20 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => {
     }
 })
 
+// Which sources a build has is the storage layer's answer (and is covered by
+// its own spec); what this hook decides is which of them the flag lets through.
+const { getSources } = vi.hoisted(() => ({ getSources: vi.fn() }))
+
+vi.mock('../../storage', () => ({
+    getCredentialsFileSaveSources: getSources,
+    getCredentialsFileReadSources: getSources,
+}))
+
 const mockGetBooleanValue = vi.fn()
-const originalOS = Platform.OS
 
 beforeEach(() => {
     vi.clearAllMocks()
+    getSources.mockReturnValue(['device', 'icloud', 'googleDrive'])
     ;(useRemoteConfig as Mock).mockReturnValue({
         getBooleanValue: mockGetBooleanValue,
         getStringValue: vi.fn(),
@@ -54,77 +54,43 @@ beforeEach(() => {
     })
 })
 
-afterEach(() => {
-    Platform.OS = originalOS
-})
+describe.each([
+    ['useCredentialsFileSaveSources', useCredentialsFileSaveSources],
+    ['useCredentialsFileReadSources', useCredentialsFileReadSources],
+])('%s', (_name, useSources) => {
+    test('offers every source the build has when the flag is on', () => {
+        mockGetBooleanValue.mockReturnValue(true)
 
-describe('useCredentialsFileSaveSources', () => {
-    test.each([
-        ['ios', ['device', 'icloud', 'googleDrive']],
-        ['android', ['device', 'googleDrive']],
-    ] as const)(
-        'offers every %s destination when the flag is on',
-        (os, expected) => {
-            Platform.OS = os
-            mockGetBooleanValue.mockReturnValue(true)
+        const { result } = renderHook(() => useSources())
 
-            const { result } = renderHook(() => useCredentialsFileSaveSources())
+        expect(result.current).toEqual(['device', 'icloud', 'googleDrive'])
+    })
 
-            expect(result.current).toEqual(expected)
-        },
-    )
+    test('leaves only local storage when the flag is off', () => {
+        mockGetBooleanValue.mockReturnValue(false)
 
-    test.each(['ios', 'android'] as const)(
-        'leaves only local storage on %s when the flag is off',
-        os => {
-            Platform.OS = os
-            mockGetBooleanValue.mockReturnValue(false)
+        const { result } = renderHook(() => useSources())
 
-            const { result } = renderHook(() => useCredentialsFileSaveSources())
+        expect(result.current).toEqual(['device'])
+    })
 
-            expect(result.current).toEqual(['device'])
-        },
-    )
+    test('offers nothing on a build with no sources at all', () => {
+        getSources.mockReturnValue([])
+        mockGetBooleanValue.mockReturnValue(true)
+
+        const { result } = renderHook(() => useSources())
+
+        expect(result.current).toEqual([])
+    })
 
     test('reads the flag with a false fallback', () => {
         mockGetBooleanValue.mockReturnValue(false)
 
-        renderHook(() => useCredentialsFileSaveSources())
+        renderHook(() => useSources())
 
         expect(mockGetBooleanValue).toHaveBeenCalledWith(
             RemoteConfigKeys.enable_backup_credentials_cloud_storage,
             false,
         )
-    })
-})
-
-describe('useCredentialsFileReadSources', () => {
-    test('offers every source the platform supports when the flag is on', () => {
-        Platform.OS = 'ios'
-        mockGetBooleanValue.mockReturnValue(true)
-
-        const { result } = renderHook(() => useCredentialsFileReadSources())
-
-        expect(result.current).toEqual(['device', 'icloud', 'googleDrive'])
-    })
-
-    test('leaves only the device when the flag is off', () => {
-        Platform.OS = 'ios'
-        mockGetBooleanValue.mockReturnValue(false)
-
-        const { result } = renderHook(() => useCredentialsFileReadSources())
-
-        expect(result.current).toEqual(['device'])
-    })
-
-    // The extension resolves the `.web` twin of credentialsFileSources, which
-    // has its own spec; an unrecognised platform is offered nothing here.
-    test('offers nothing on a platform with no sources', () => {
-        Platform.OS = 'web'
-        mockGetBooleanValue.mockReturnValue(true)
-
-        const { result } = renderHook(() => useCredentialsFileReadSources())
-
-        expect(result.current).toEqual([])
     })
 })
