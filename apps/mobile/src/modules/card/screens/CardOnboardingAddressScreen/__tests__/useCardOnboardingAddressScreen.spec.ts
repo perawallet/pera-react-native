@@ -290,9 +290,25 @@ describe('useCardOnboardingAddressScreen', () => {
         await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
     })
 
-    it('reveals the US state requirement when residence switches to US', async () => {
+    it('reveals the US state requirement for a US resident', async () => {
+        mockCountryIso = 'US'
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+    })
+
+    it('locks the country field once the residence is known', async () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        await waitFor(() => expect(result.current.selectedCountry).toEqual(gb))
+        expect(result.current.isCountryLocked).toBe(true)
+    })
+
+    it('offers the picker only when no residence was stored', async () => {
+        mockCountryIso = null
         mockRequest.mockResolvedValueOnce(us)
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        expect(result.current.isCountryLocked).toBe(false)
 
         act(() => {
             result.current.handleSelectCountry()
@@ -439,6 +455,45 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it('US: a separate mailing address posts the flag and continues to the mailing step', async () => {
+        mockCountryIso = 'US'
+        mockMutateAsync.mockResolvedValueOnce({
+            accessToken: null,
+            onboardingId: 'mock-onboarding-id',
+            userId: null,
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+        expect(result.current.isSameMailingAddress).toBe(true)
+
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                addressLine1: '1 Main Street',
+                city: 'Los Angeles',
+                zip: '90001',
+                usState: 'CA',
+            })
+            result.current.handleToggleCardTerms()
+            result.current.handleTogglePlatformTerms()
+            result.current.handleToggleSameMailingAddress()
+        })
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingMailingAddress',
+            ),
+        )
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                isSameMailingAddress: false,
+                usState: 'CA',
+            }),
+        )
+    })
+
     it("surfaces Baanx's own error message when the submit is rejected", async () => {
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 400 },
@@ -541,11 +596,9 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
-    it('opens the US Baanx card T&C once the resident is in the US', async () => {
-        mockRequest.mockResolvedValueOnce(us)
+    it('opens the US Baanx card T&C for a US resident', async () => {
+        mockCountryIso = 'US'
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
-
-        act(() => result.current.handleSelectCountry())
         await waitFor(() => expect(result.current.isUsResident).toBe(true))
 
         act(() => result.current.handleOpenCardTerms())

@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -37,7 +37,9 @@ const localAccount = { address: 'LOCAL', type: 'algo25' } as WalletAccount
 describe('useCardFundingAccount', () => {
     beforeEach(() => {
         mocks.connectedAddress = 'LOCAL'
-        vi.mocked(useAllAccounts).mockReturnValue([localAccount])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address => [localAccount].find(a => a.address === address) ?? null,
+        )
     })
 
     it('resolves the connected address to a local account', () => {

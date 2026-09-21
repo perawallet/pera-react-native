@@ -39,8 +39,12 @@ export const cardQueryKeys = {
             'transactions',
             { network, ...(filters ?? {}) },
         ] as const,
-    internalWallets: (network: Network) =>
-        [MODULE_PREFIX, 'internal-wallets', { network }] as const,
+    pendingWithdrawal: (network: Network, ownerAddress: Nullable<string>) =>
+        [
+            MODULE_PREFIX,
+            'pending-withdrawal',
+            { network, ownerAddress },
+        ] as const,
     walletBalance: (network: Network, kind: CardWalletKind) =>
         [MODULE_PREFIX, 'wallet-balance', { network, kind }] as const,
     walletWithdrawEstimation: (network: Network, kind: CardWalletKind) =>

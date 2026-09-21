@@ -23,6 +23,10 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                // Shared with the app and the other packages: a bundled copy
+                // makes algosdk's instanceof checks fail across the boundary.
+                'algosdk',
+                '@algorandfoundation/algokit-utils',
                 'react',
                 'react/jsx-runtime',
                 'zustand',

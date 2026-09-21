@@ -19,7 +19,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import {
+    SendFundsContent,
+    SEND_FUNDS_SHEET_ID,
+} from '@modules/transactions/components/send-funds/SendFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
@@ -50,6 +53,7 @@ export const useAccountOverview = ({
     const openSendFunds = useCallback(() => {
         trackEvent(HomeEvent.Send)
         void requestBottomSheet({
+            id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent />,
             options: {
                 size: 'modal',
@@ -92,7 +96,9 @@ export const useAccountOverview = ({
                 />
             ),
             options: {
-                size: 'modal',
+                // Content-sized: the sheet swaps its whole body for a short
+                // confirm panel when removing an account, and must shrink to it.
+                size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },

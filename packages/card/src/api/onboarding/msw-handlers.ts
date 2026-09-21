@@ -128,6 +128,24 @@ export const mockSubmitAddress = ({
     )
 }
 
+export const mockSubmitMailingAddress = ({
+    response = {
+        accessToken: 'mock-access-token',
+        onboardingId: 'mock-onboarding-id',
+        user: { id: 'mock-user-id' },
+    },
+    status = 200,
+}: MockSubmitAddressParams = {}): HttpHandler => {
+    validateMockResponse(
+        addressResponseSchema,
+        response,
+        'mockSubmitMailingAddress',
+    )
+    return http.post('*/v1/auth/register/mailing-address', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
 export type MockGetRegistrationSettingsParams = {
     response: RegistrationSettingsApiResponse
     status?: number

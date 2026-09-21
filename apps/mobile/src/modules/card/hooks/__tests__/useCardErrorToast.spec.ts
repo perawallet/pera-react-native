@@ -29,6 +29,14 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
+// The suite-wide stub short-circuits toAlgodError to `unknown_node_error`;
+// this file asserts on the real parser's codes.
+vi.mock('@perawallet/wallet-core-blockchain', async () =>
+    vi.importActual<typeof import('@perawallet/wallet-core-blockchain')>(
+        '@perawallet/wallet-core-blockchain',
+    ),
+)
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         infoToast: vi.fn(),
@@ -181,8 +189,8 @@ describe('useCardErrorToast', () => {
     it('lets precise copy win over shouldUseBackendMessage=false', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
-                titleKey: 'peraCard.auto_funding_signing.error_title',
-                bodyKey: 'peraCard.auto_funding_signing.error_body',
+                titleKey: 'peraCard.signing.auto_funding_error_title',
+                bodyKey: 'peraCard.signing.auto_funding_error_body',
                 shouldUseBackendMessage: false,
             }),
         )
@@ -266,6 +274,34 @@ describe('resolveCardErrorCopy', () => {
             titleKey: 'peraCard.account.auto_funding_unavailable_title',
             bodyKey: 'peraCard.account.auto_funding_unavailable_body',
         })
+    })
+
+    it.each([
+        // algokit wraps the node's text in its own simulate preamble, so the
+        // match has to survive being mid-sentence.
+        [
+            'Error resolving execution info via simulate in transaction 0: transaction ABC: account 5EZXTMDYUXJTPFUL5HMNCVXOYKV33N2MPECM3DFRAPYIMN2IERNH4TVJYA balance 755288 below min 756000 (1 assets)',
+        ],
+        [
+            'TransactionPool.Remember: transaction ABC: overspend (account 5EZXTMDYUXJTPFUL5HMNCVXOYKV33N2MPECM3DFRAPYIMN2IERNH4TVJYA, data {AccountBaseData:{MicroAlgos:{Raw:199000}}}, tried to spend {201000})',
+        ],
+    ])('names a fee shortfall instead of asking for a retry', message => {
+        expect(resolveCardErrorCopy(new Error(message))).toEqual({
+            titleKey: 'peraCard.account.insufficient_algo_title',
+            bodyKey: 'peraCard.account.insufficient_algo_body',
+        })
+    })
+
+    it('leaves a TEAL rejection to the caller generic copy', () => {
+        // Unreadable to a user, and the flow's own copy says more than
+        // "assert failed" ever could.
+        expect(
+            resolveCardErrorCopy(
+                new Error(
+                    'logic eval error: assert failed pc=1849. Details: app=769896880',
+                ),
+            ),
+        ).toBeUndefined()
     })
 
     it('returns undefined for errors it cannot name', () => {

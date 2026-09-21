@@ -53,7 +53,7 @@ export enum CardEvent {
     HomeCardDetailsTab = 'card_home_cardDetails', // Switched to the Card Details tab on the dashboard
     HomeAddFunds = 'card_home_addFunds', // Tapped Add Funds on the dashboard
     HomeWithdraw = 'card_home_withdraw', // Tapped Withdraw on the dashboard
-    HomeGetUsdc = 'card_home_getUSDC', // Tapped Get USDC on the dashboard (feature not live yet)
+    HomeGetUsdc = 'card_home_getUSDC', // Tapped Add Funds under Auto Funding (tops up the linked account via the Fund tab)
     HomeShowAll = 'card_home_showAll', // Tapped show-all on the dashboard transactions list
     HomeFundingType = 'card_home_fundingType', // Tapped the funding-type switch
     HomeRewards = 'card_home_rewards', // Opened the rewards screen from the dashboard credits
@@ -73,6 +73,7 @@ export enum CardEvent {
     SelectFundingManual = 'cards_selectFunding_manual', // Chose manual funding in the select-funding sheet
     SelectFundingApply = 'cards_selectFunding_apply', // Applied the funding-type selection
     TransactionsSelect = 'cards_transactions_select', // Tapped a row in the transactions list
+    TransactionsExport = 'cards_transactions_export', // Tapped export statement on the transactions list
     TransactionsTransactionTab = 'cards_transactions_transaction', // Switched to the Transaction tab on transaction detail
     TransactionsMerchantTab = 'cards_transactions_merchant', // Switched to the Merchant tab on transaction detail
     TransactionsCopyTx = 'cards_transactions_copyTx', // Copied the transaction hash

@@ -22,6 +22,7 @@ import {
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
+import { toAlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     isConnectivityError,
     isPeraNetworkError,
@@ -46,6 +47,13 @@ export type CardErrorToastKeys = {
 }
 
 export type CardErrorCopy = { titleKey: string; bodyKey: string }
+
+// Both mean the same thing to the user: the account can't cover the fee and
+// keep its minimum balance.
+const INSUFFICIENT_ALGO_CODES: ReadonlySet<string> = new Set([
+    'below_min_balance',
+    'overspend',
+])
 
 // Direct Baanx/AB calls surface ky's TimeoutError; proxied ones arrive wrapped.
 const isTimeoutError = (error: unknown): boolean =>
@@ -118,6 +126,16 @@ export const resolveCardErrorCopy = (
         return {
             titleKey: 'peraCard.account.auto_funding_rejected_title',
             bodyKey: 'peraCard.account.auto_funding_rejected_body',
+        }
+    }
+    // Every card chain call is paid by the linked account, whose spendable
+    // ALGO is easily exhausted once it holds several assets. The node names
+    // that case precisely; anything else it says is a TEAL dump the caller's
+    // own copy covers better.
+    if (INSUFFICIENT_ALGO_CODES.has(toAlgodError(error).code)) {
+        return {
+            titleKey: 'peraCard.account.insufficient_algo_title',
+            bodyKey: 'peraCard.account.insufficient_algo_body',
         }
     }
     return undefined

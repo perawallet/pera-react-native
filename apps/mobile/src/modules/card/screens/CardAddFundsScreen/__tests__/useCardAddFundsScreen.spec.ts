@@ -39,7 +39,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({ address: 'ADDR', name: 'Main Account' }),
     useAccountBalancesQuery: () => ({
         accountBalances: new Map([
             [
@@ -97,6 +96,7 @@ vi.mock('../../../components/CardSelectAssetContent', () => ({
 }))
 
 vi.mock('../../../hooks', () => ({
+    useCardFundingAccount: () => ({ address: 'ADDR', name: 'Main Account' }),
     useCardManualDeposit: () => ({
         deposit: mockDeposit,
         isDepositing: false,

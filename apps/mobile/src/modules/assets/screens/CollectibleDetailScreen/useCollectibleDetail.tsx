@@ -44,7 +44,10 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
+import {
+    SendFundsContent,
+    SEND_FUNDS_SHEET_ID,
+} from '@modules/transactions/components/send-funds/SendFundsContent'
 import {
     FullScreenMediaViewer,
     type FullScreenMediaItem,
@@ -168,6 +171,7 @@ export const useCollectibleDetail = (
 
     const handleSendPressed = useCallback(() => {
         void requestBottomSheet({
+            id: SEND_FUNDS_SHEET_ID,
             contents: <SendFundsContent assetId={assetId} />,
             options: {
                 size: 'modal',
