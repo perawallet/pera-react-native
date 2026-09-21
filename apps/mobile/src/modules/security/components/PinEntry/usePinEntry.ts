@@ -20,6 +20,8 @@ type UsePinEntryParams = {
     onPinComplete: (pin: string) => void
     onPinChange?: (pin: string) => void
     onErrorAnimationComplete?: () => void
+    /** Must match the circle count the caller renders. */
+    length?: number
 }
 
 type UsePinEntryResult = {
@@ -31,6 +33,7 @@ type UsePinEntryResult = {
 export const usePinEntry = ({
     onPinComplete,
     onPinChange,
+    length = PIN_LENGTH,
 }: UsePinEntryParams): UsePinEntryResult => {
     const [pin, setPin] = useState('')
 
@@ -50,12 +53,12 @@ export const usePinEntry = ({
             }
 
             setPin(prev => {
-                if (prev.length >= PIN_LENGTH) return prev
+                if (prev.length >= length) return prev
 
                 const newPin = prev + key
                 onPinChange?.(newPin)
 
-                if (newPin.length === PIN_LENGTH) {
+                if (newPin.length === length) {
                     setTimeout(() => {
                         onPinComplete(newPin)
                     }, COMPLETION_DELAY)
@@ -64,7 +67,7 @@ export const usePinEntry = ({
                 return newPin
             })
         },
-        [onPinComplete, onPinChange],
+        [onPinComplete, onPinChange, length],
     )
 
     return {

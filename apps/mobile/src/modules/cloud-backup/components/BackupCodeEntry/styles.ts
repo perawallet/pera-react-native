@@ -10,5 +10,11 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps } from './PinEntry'
-export { usePinEntry } from './usePinEntry'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    // No `alignItems: 'center'`: it centres one-line copy but not wrapped copy.
+    body: {
+        gap: theme.spacing.xxl,
+    },
+}))

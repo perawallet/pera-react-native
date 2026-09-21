@@ -653,8 +653,10 @@
             "error": "Não foi possível criar o código QR de sincronização neste dispositivo."
         },
         "encryption_code": {
-            "setup_title": "Escolha um código de 6 dígitos para proteger este QR",
-            "confirm_title": "Digite novamente seu código"
+            "setup_title": "Crie um código temporário",
+            "confirm_title": "Repita seu código",
+            "setup_description": "Este código de 6 dígitos protege apenas este código QR: ele não é o seu código PIN da Pera. Não compartilhe com ninguém; você vai digitá-lo no outro dispositivo depois de escanear.",
+            "confirm_description": "Digite os mesmos 6 dígitos novamente para confirmar."
         },
         "accounts": {
             "title": "Contas",
@@ -788,7 +790,8 @@
             "invalid_qr_title": "Não é um código QR de backup",
             "invalid_qr_body": "Escaneie o código exibido por “Sincronizar com outros dispositivos” no seu outro dispositivo.",
             "unsupported_version_title": "Atualize a Pera para continuar",
-            "unsupported_version_body": "Este código QR foi criado por uma versão mais recente da Pera."
+            "unsupported_version_body": "Este código QR foi criado por uma versão mais recente da Pera.",
+            "code_description": "Digite o código temporário criado no dispositivo que mostra o código QR, não o seu código PIN da Pera."
         },
         "intro": {
             "badge": "BACKUP NA NUVEM",

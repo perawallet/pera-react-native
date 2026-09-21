@@ -653,8 +653,10 @@
             "error": "Couldn’t create a sync QR code on this device."
         },
         "encryption_code": {
-            "setup_title": "Choose a 6-digit code to protect this QR",
-            "confirm_title": "Re-enter your code"
+            "setup_title": "Create a one-time code",
+            "confirm_title": "Re-enter your code",
+            "setup_description": "This 6-digit code protects this QR code only: it isn’t your Pera PIN. Keep it to yourself; you’ll enter it on the other device after scanning.",
+            "confirm_description": "Enter the same 6 digits again to confirm."
         },
         "accounts": {
             "title": "Accounts",
@@ -788,7 +790,8 @@
             "invalid_qr_title": "Not a backup QR code",
             "invalid_qr_body": "Scan the code shown by “Sync with other devices” on your other device.",
             "unsupported_version_title": "Update Pera to continue",
-            "unsupported_version_body": "This QR code was made by a newer version of Pera."
+            "unsupported_version_body": "This QR code was made by a newer version of Pera.",
+            "code_description": "Enter the one-time code created on the device showing the QR code, not your Pera PIN."
         },
         "intro": {
             "badge": "CLOUD BACKUP",

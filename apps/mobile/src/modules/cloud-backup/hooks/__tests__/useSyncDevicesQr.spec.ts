@@ -34,7 +34,6 @@ vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: requirePinMock,
     }),
-    PinEditContent: () => null,
 }))
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: requestSheetMock }),
@@ -58,24 +57,12 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('../../components/SyncDevicesQrSheet', () => ({
     SyncDevicesQrSheet: () => null,
 }))
+vi.mock('../../components/BackupCodeSetupSheet', () => ({
+    BackupCodeSetupSheet: () => null,
+}))
 
-// Drives the code sheet the way the real PinEditContent does: invoke the
-// onPinConfirmed with a confirmed code, then resolve true.
 const resolveCodeSheetWith = (code: string) =>
-    requestSheetMock.mockImplementation(
-        async ({
-            contents,
-        }: {
-            contents: { props: Record<string, unknown> }
-        }) => {
-            const handler = contents.props.onPinConfirmed as
-                | ((pin: string) => Promise<unknown>)
-                | undefined
-            if (!handler) return undefined
-            await handler(code)
-            return true
-        },
-    )
+    requestSheetMock.mockResolvedValueOnce(code)
 
 describe('useSyncDevicesQr', () => {
     beforeEach(() => {
