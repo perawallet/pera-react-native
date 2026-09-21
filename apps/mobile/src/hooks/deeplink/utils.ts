@@ -17,9 +17,29 @@ import {
 } from './constants'
 import type { KeyregParticipationFields, KeyregType } from './types'
 
+// A percent sign that isn't a valid escape (`?label=100%`) makes
+// `decodeURIComponent` throw, and the fallback below is inside the catch, so it
+// would throw the same way straight out of the function. Callers read an
+// undecodable param, not an exception.
+//
+// Defensive trim: real-world deeplinks have shown stray whitespace (e.g.
+// `?address= BB4A...` from QR generators or copy/paste). Address validators
+// reject any whitespace, so a single space silently kills an otherwise-valid
+// handler. The trim is safe because none of our supported params (address,
+// assetId, amount, mnemonic, etc.) carry semantically meaningful leading or
+// trailing whitespace.
+const decodeParam = (value: string): string => {
+    try {
+        return decodeURIComponent(value).trim()
+    } catch {
+        return value.trim()
+    }
+}
+
 /**
  * Parse query parameters from a URL
  */
+
 export const parseQueryParams = (url: string): Record<string, string> => {
     const params: Record<string, string> = {}
 
@@ -28,14 +48,7 @@ export const parseQueryParams = (url: string): Record<string, string> => {
             url.replace(/^([a-z-]+):\/\/(?!\/)/, '$1://placeholder/'),
         )
         urlObj.searchParams.forEach((value, key) => {
-            // Defensive trim: real-world deeplinks have shown stray
-            // whitespace (e.g. `?address= BB4A...` from QR generators or
-            // copy/paste). Address validators reject any whitespace, so a
-            // single space silently kills an otherwise-valid handler. The
-            // trim is safe because none of our supported params (address,
-            // assetId, amount, mnemonic, etc.) carry semantically meaningful
-            // leading or trailing whitespace.
-            params[key] = decodeURIComponent(value).trim()
+            params[key] = decodeParam(value)
         })
     } catch {
         // Fallback for malformed URLs
@@ -46,7 +59,7 @@ export const parseQueryParams = (url: string): Record<string, string> => {
         queryString.split('&').forEach(pair => {
             const [key, value] = pair.split('=')
             if (key) {
-                params[key] = value ? decodeURIComponent(value).trim() : ''
+                params[key] = value ? decodeParam(value) : ''
             }
         })
     }

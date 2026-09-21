@@ -20,7 +20,7 @@ import {
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
-import { normalizeUrl } from './utils'
+import { normalizeUrl, parseQueryParams } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import {
@@ -42,6 +42,22 @@ import {
     isWalletConnectScheme,
     parseWalletConnectUri,
 } from '@perawallet/wallet-core-walletconnect'
+
+// Every param either Pera URI format treats as an account: each one reaches a
+// selected-account setter, a contact form or a transaction builder.
+const ADDRESS_PARAMS = [
+    'address',
+    'senderAddress',
+    'receiverAddress',
+    'account',
+]
+
+const hasMalformedAddressParam = (url: string): boolean => {
+    const params = parseQueryParams(url)
+    return ADDRESS_PARAMS.some(
+        key => params[key] && !isValidAlgorandAddress(params[key]),
+    )
+}
 
 const parseWalletConnectDeeplink = (
     url: string,
@@ -208,6 +224,12 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (normalizedUrl.startsWith(`${ALGO_SCHEME}:`)) {
         return parseCoinbaseFormat(url)
     }
+
+    // Pera's own two URI formats from here down. A present-but-invalid address
+    // is corruption (a truncated QR) or injection, not an address-less variant
+    // of the link. Rejected here rather than inside each parser so a rejected
+    // `/app/` link cannot fall through to the legacy one as another deeplink.
+    if (hasMalformedAddressParam(url)) return null
 
     if (normalizedUrl.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)) {
         return parseUniversalLink(url)

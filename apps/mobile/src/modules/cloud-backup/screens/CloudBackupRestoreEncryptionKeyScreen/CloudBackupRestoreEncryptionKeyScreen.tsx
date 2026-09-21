@@ -67,6 +67,8 @@ export const CloudBackupRestoreEncryptionKeyScreen = ({
                     )}
                     autoCapitalize='none'
                     autoCorrect={false}
+                    spellCheck={false}
+                    autoComplete='off'
                 />
             </PWScreen>
 

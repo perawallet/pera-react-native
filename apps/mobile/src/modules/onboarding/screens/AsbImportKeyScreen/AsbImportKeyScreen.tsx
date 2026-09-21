@@ -144,6 +144,8 @@ export const AsbImportKeyScreen = () => {
                                                             }
                                                             autoCapitalize='none'
                                                             autoCorrect={false}
+                                                            spellCheck={false}
+                                                            autoComplete='off'
                                                             // Same word-slot keyboard as ImportAccountScreen;
                                                             // the rationale lives there.
                                                             keyboardType={

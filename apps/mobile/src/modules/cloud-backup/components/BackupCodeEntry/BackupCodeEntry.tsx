@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { usePinEntry } from '@modules/security'
 
 import { useStyles } from './styles'
@@ -27,6 +28,8 @@ import { useStyles } from './styles'
 // Not `PIN_LENGTH`: this guards one QR envelope, and the "6-digit" wording in
 // six locale bundles is written to this number.
 const SYNC_CODE_LENGTH = 6
+
+const SCREEN_CAPTURE_TAG = 'backup-code-entry'
 
 export type BackupCodeEntryProps = {
     /** Kept short: `SheetHeader` centres and truncates it. */
@@ -49,6 +52,7 @@ export const BackupCodeEntry = ({
     onErrorAnimationComplete,
     testID,
 }: BackupCodeEntryProps) => {
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const styles = useStyles()
 
     const { pin, handleKeyPress, clearPin } = usePinEntry({

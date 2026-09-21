@@ -63,6 +63,38 @@ describe('Deeplink Parser - Main Parser', () => {
         expect(result?.type).toBe(DeeplinkType.ADD_CONTACT)
     })
 
+    describe('malformed address params', () => {
+        // One character short of a valid address: passes a length-blind check,
+        // fails the checksum.
+        const BAD_ADDRESS = TEST_ADDRESS.slice(0, -1)
+        const ENCODED_URL = Buffer.from('https://example.com').toString(
+            'base64',
+        )
+
+        it.each([
+            `perawallet://app/add-contact/?address=${BAD_ADDRESS}`,
+            'perawallet://app/account-detail/?address=NOT_AN_ADDRESS',
+            `perawallet://app/asset-transfer/?assetId=0&receiverAddress=${BAD_ADDRESS}`,
+            `perawallet://app/keyreg/?senderAddress=${BAD_ADDRESS}`,
+            `perawallet://app/swap/?address=${BAD_ADDRESS}`,
+            `perawallet://app/cards/?address=${BAD_ADDRESS}`,
+            `perawallet://app/discover-browser/?url=${ENCODED_URL}&address=${BAD_ADDRESS}`,
+            `perawallet://app/internal-browser/?url=${ENCODED_URL}&address=${BAD_ADDRESS}`,
+            `perawallet://asset-inbox?account=${BAD_ADDRESS}`,
+            `perawallet://asset/opt-in?asset=31566704&account=${BAD_ADDRESS}`,
+            `perawallet://asset/transactions?account=${BAD_ADDRESS}`,
+            `https://perawallet.app/qr/perawallet/app/add-contact/?address=${BAD_ADDRESS}`,
+        ])('rejects the whole link: %s', url => {
+            expect(parseDeeplink(url)).toBeNull()
+        })
+
+        it('still accepts a path whose address param is simply absent', () => {
+            expect(parseDeeplink('perawallet://app/swap/')?.type).toBe(
+                DeeplinkType.SWAP,
+            )
+        })
+    })
+
     it('routes to old format parser for perawallet://', () => {
         const result = parseDeeplink(`perawallet://${TEST_ADDRESS}`)
         expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
@@ -221,6 +253,13 @@ describe('Deeplink Parser - Edge Cases', () => {
         expect(parseDeeplink('perawallet://app/unknown-path/')?.type).toBe(
             DeeplinkType.HOME,
         )
+    })
+
+    it('returns null rather than throwing on an undecodable query param', () => {
+        // The main handler calls the parser outside its try/catch, so a throw
+        // here surfaces as an unhandled rejection instead of an invalid link.
+        expect(parseDeeplink('https://example.com/?label=100%')).toBeNull()
+        expect(parseDeeplink('perawallet://app/send?address=100%')).toBeNull()
     })
 
     describe('Pera Web import (JSON QR)', () => {

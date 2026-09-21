@@ -18,6 +18,7 @@ import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
@@ -89,6 +90,8 @@ const ScannerErrorFallback = ({
     )
 }
 
+const SCREEN_CAPTURE_TAG = 'qr-scanner'
+
 export type QRScannerViewProps = {
     title?: string
     isVisible: boolean
@@ -111,7 +114,19 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     // several of them navigate, which must not happen under a locked app.
     // Leaving `props.isVisible` untouched brings the scanner back after the PIN.
     const isLockOverlayVisible = useIsLockOverlayVisible()
-    const isScannerVisible = props.isVisible && !isLockOverlayVisible
+    const isScannerRequested = props.isVisible && !isLockOverlayVisible
+
+    // A framed QR can itself be the secret (the Pera Web transfer code carries
+    // the raw secretbox key). Gated rather than held from mount: this stays
+    // mounted while closed on the portfolio, menu and contact form, where
+    // locking would make the whole app non-capturable. The Modal then waits
+    // for the lock, because Android copies the activity's FLAG_SECURE into a
+    // dialog's window only while creating that dialog.
+    const isCaptureLockSettled = usePreventScreenCapture(
+        SCREEN_CAPTURE_TAG,
+        isScannerRequested,
+    )
+    const isScannerVisible = isScannerRequested && isCaptureLockSettled
 
     const [QRCameraScanner, setQRCameraScanner] = useState(() =>
         createQRCameraScanner(),

@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
@@ -82,6 +82,25 @@ describe('usePreventScreenCapture', () => {
         expect(allowScreenCaptureAsync).toHaveBeenCalledWith(
             SECURE_SCREEN_CAPTURE_TAG,
         )
+    })
+
+    test('reports the lock as settled only once the native call resolves', async () => {
+        const { result } = renderHook(() => usePreventScreenCapture('qr'))
+
+        // Callers that open their own OS window gate on this: Android copies
+        // FLAG_SECURE into a dialog's window only while creating it.
+        expect(result.current).toBe(false)
+
+        await waitFor(() => expect(result.current).toBe(true))
+    })
+
+    test('reports settled immediately when the build-time flag disables it', () => {
+        mockConfig.disableScreenCapturePrevention = true
+
+        const { result } = renderHook(() => usePreventScreenCapture('qr'))
+
+        // Nothing to wait for in an e2e build; a gated caller must not hang.
+        expect(result.current).toBe(true)
     })
 
     test('does nothing while enabled is false', () => {
