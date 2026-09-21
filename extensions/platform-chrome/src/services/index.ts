@@ -17,6 +17,7 @@ export {
     ChromeAgeGateService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
+    ChromeCloudFileStorageService,
     ChromeMigrationService,
     ChromeWalletProvisioningService,
 } from './stubs'

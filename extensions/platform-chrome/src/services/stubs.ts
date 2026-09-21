@@ -23,6 +23,10 @@ import type {
     BiometricType,
     BiometricsService,
     BiometricUnwrapResult,
+    CloudFileReadResult,
+    CloudFileSaveResult,
+    CloudFileStorageService,
+    CloudFileStore,
     LegacyMigrationData,
     LegacyMigrationSourcePlatform,
     MigrationPlanSummary,
@@ -133,5 +137,22 @@ export class ChromeWalletProvisioningService implements WalletProvisioningServic
     }
     async addCardToGoogleWallet(): Promise<WalletProvisioningTokenizationStatus> {
         throw new Error('Wallet provisioning is unavailable on web')
+    }
+}
+
+/**
+ * Neither cloud SDK ships in a browser extension, so no store is ever offered
+ * and the transfers reject. The only place the extension can put a file is the
+ * user's own download folder, which the app layer owns.
+ */
+export class ChromeCloudFileStorageService implements CloudFileStorageService {
+    getAvailableStores(): CloudFileStore[] {
+        return []
+    }
+    async save(): Promise<CloudFileSaveResult> {
+        throw new Error('Cloud file storage is unavailable on web')
+    }
+    async read(): Promise<CloudFileReadResult> {
+        throw new Error('Cloud file storage is unavailable on web')
     }
 }

@@ -16,6 +16,18 @@ import {
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 
+// Raised by the cloud file stores, re-exported under the names the backup
+// domain's call sites import them by.
+export {
+    GoogleDriveAuthFailedError,
+    GoogleDriveNotConfiguredError,
+    GoogleDriveUnreachableError,
+    GooglePlayServicesUnavailableError,
+    ICloudUnavailableError,
+    CloudFileNotDownloadedError as CredentialsFileNotDownloadedError,
+    CloudFileNotFoundError as CredentialsFileNotFoundError,
+} from '@perawallet/wallet-extension-platform'
+
 // The backup can be turned off while a sheet or a PIN prompt is still open, so
 // reaching the save with nothing to write is a race the user can lose, not a bug.
 export class NoBackupCredentialsError extends AppError {
@@ -29,91 +41,27 @@ export class NoBackupCredentialsError extends AppError {
     }
 }
 
-// A user setting rather than a fault, so it files no crash report.
-export class ICloudUnavailableError extends AppError {
-    constructor(message = 'iCloud is not available on this device') {
+// The draft holding the phrase and the derived keys dies with the setup
+// screens, so finding it gone is a race the user can lose, not a defect.
+export class BackupDraftMissingError extends AppError {
+    constructor(message = 'Cloud backup draft credentials are missing') {
         super(message, {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
             expected: true,
-            titleKey: 'cloud_backup.icloud.unavailable_title',
-            messageKey: 'cloud_backup.icloud.unavailable',
+            messageKey: 'cloud_backup.enable.error',
         })
     }
 }
 
-// A release built without the OAuth client ids is our fault, so it reports.
-export class GoogleDriveNotConfiguredError extends AppError {
-    constructor(
-        message = 'No Google OAuth client is configured for this build',
-    ) {
+// Deliberately not `expected`: registration is addressed to one device, so
+// reaching it without an id is our bug and must keep reporting.
+export class BackupDeviceIdUnavailableError extends AppError {
+    constructor(message = 'Device ID is unavailable') {
         super(message, {
             category: ErrorCategory.STORAGE,
             severity: ErrorSeverity.LOW,
-            messageKey: 'cloud_backup.google_drive.unavailable',
-        })
-    }
-}
-
-// A device without current Play Services can't reach Drive at all, so this is a
-// device state to explain rather than a fault to report.
-export class GooglePlayServicesUnavailableError extends AppError {
-    constructor(message = 'Google Play services is unavailable or outdated') {
-        super(message, {
-            category: ErrorCategory.STORAGE,
-            severity: ErrorSeverity.LOW,
-            expected: true,
-            messageKey: 'cloud_backup.google_drive.play_services',
-        })
-    }
-}
-
-// Raised only once the one token refresh has already been spent.
-export class GoogleDriveAuthFailedError extends AppError {
-    constructor(message = 'Google Drive rejected the access token') {
-        super(message, {
-            category: ErrorCategory.STORAGE,
-            severity: ErrorSeverity.LOW,
-            expected: true,
-            messageKey: 'cloud_backup.google_drive.sign_in_failed',
-        })
-    }
-}
-
-export class GoogleDriveUnreachableError extends AppError {
-    constructor(message = 'Google Drive could not be reached') {
-        super(message, {
-            category: ErrorCategory.STORAGE,
-            severity: ErrorSeverity.LOW,
-            expected: true,
-            messageKey: 'cloud_backup.google_drive.unreachable',
-        })
-    }
-}
-
-// The listing already proved the file is there, so this is never "no key": the
-// placeholder just hasn't finished downloading within the poll window.
-export class CredentialsFileNotDownloadedError extends AppError {
-    constructor(message = 'The credentials file is still downloading') {
-        super(message, {
-            category: ErrorCategory.STORAGE,
-            severity: ErrorSeverity.LOW,
-            expected: true,
-            messageKey: 'cloud_backup.restore.import_still_downloading',
-        })
-    }
-}
-
-export class CredentialsFileNotFoundError extends AppError {
-    constructor(source: 'icloud' | 'googleDrive') {
-        super(`No backup credentials file in ${source}`, {
-            category: ErrorCategory.STORAGE,
-            severity: ErrorSeverity.LOW,
-            expected: true,
-            messageKey:
-                source === 'icloud'
-                    ? 'cloud_backup.restore.import_not_found_icloud'
-                    : 'cloud_backup.restore.import_not_found_google_drive',
+            messageKey: 'cloud_backup.enable.error',
         })
     }
 }
