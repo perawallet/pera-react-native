@@ -268,8 +268,9 @@ export const usePinCode = (): UsePinCodeResult => {
             const duressOk = await verifyPinAgainstDuressSlot(pin, record)
 
             if (regularOk) {
-                // Not awaited: arming can take seconds on some Android
-                // hardware and must not delay the unlock it follows.
+                // Not awaited, though that only helps so much: arming holds
+                // the Android keystore while it runs, so anything the unlock
+                // reads from it queues behind arming either way.
                 void completePendingBiometricRearm()
                 return { kind: 'ok' }
             }
