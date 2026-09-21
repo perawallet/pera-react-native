@@ -235,16 +235,14 @@ export const useInputScreen = () => {
                     icon='warning'
                     iconVariant='error'
                     title={t('send_funds.close_account.title')}
-                    message={t('send_funds.close_account.body', {
-                        amount: closeAmount.toString(),
-                    })}
+                    message={t('send_funds.close_account.body')}
                     confirmLabel={t('send_funds.close_account.confirm')}
                     cancelLabel={t('common.cancel.label')}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t, closeAmount])
+    }, [requestBottomSheet, t])
 
     const requestInsufficientBalanceConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({

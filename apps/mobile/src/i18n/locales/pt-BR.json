@@ -2592,7 +2592,7 @@
         },
         "close_account": {
             "title": "Encerrar conta",
-            "body": "Esta conta não tem ativos adicionados. O valor será ajustado para {{amount}} ALGO, todo o saldo menos a taxa de rede, e a conta será encerrada na rede Algorand.",
+            "body": "Esta conta não tem ativos adicionados. Enviar todo o saldo encerrará a conta na rede Algorand.",
             "confirm": "Encerrar conta e enviar",
             "warning": "Esta transação encerrará sua conta na rede Algorand.",
             "success_title": "Conta encerrada",
