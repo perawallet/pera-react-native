@@ -77,8 +77,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const { mockRequestBottomSheet, mockChooseRestoreRoute } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockChooseRestoreRoute: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -108,7 +109,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@modules/cloud-backup', () => ({
-    RestoreBackupSheet: () => null,
+    useRestoreBackupOptions: () => ({
+        chooseRestoreRoute: mockChooseRestoreRoute,
+        isReadingCredentials: false,
+    }),
 }))
 
 const pressCloudBackupOption = async (result: {
@@ -550,33 +554,29 @@ describe('useImportAccountOptionsScreen', () => {
             )
         })
 
-        it('pushes the scanner when the restore sheet returns scan', async () => {
+        it.each([
+            [['CloudBackupRestoreScan']],
+            [['CloudBackupRestorePassphrase']],
+            [
+                [
+                    'CloudBackupRestorePassphrase',
+                    { importedKey: { salt: 'c2FsdA==' } },
+                ],
+            ],
+        ])('pushes %j when the restore options pick it', async route => {
             mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue('scan')
+            mockChooseRestoreRoute.mockResolvedValueOnce(route)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
             await pressCloudBackupOption(result)
 
-            expect(mockPush).toHaveBeenCalledWith('CloudBackupRestoreScan')
+            expect(mockPush).toHaveBeenCalledWith(route[0], route[1])
         })
 
-        it('pushes manual entry when the restore sheet returns manual', async () => {
+        it('pushes nothing when no route is picked', async () => {
             mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue('manual')
-
-            const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-            await pressCloudBackupOption(result)
-
-            expect(mockPush).toHaveBeenCalledWith(
-                'CloudBackupRestorePassphrase',
-            )
-        })
-
-        it('pushes nothing when the restore sheet is dismissed', async () => {
-            mockCloudBackupFlag.enabled = true
-            mockRequestBottomSheet.mockResolvedValue(undefined)
+            mockChooseRestoreRoute.mockResolvedValueOnce(null)
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -597,7 +597,7 @@ describe('useImportAccountOptionsScreen', () => {
                 'onboarding.import_account_options.cloud_backup_already_enabled_title',
                 'onboarding.import_account_options.cloud_backup_already_enabled_body',
             )
-            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            expect(mockChooseRestoreRoute).not.toHaveBeenCalled()
             expect(mockPush).not.toHaveBeenCalled()
         })
     })

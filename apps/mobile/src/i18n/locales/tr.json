@@ -576,11 +576,15 @@
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
         },
-        "confirm": {
-            "title": "Şifreleme anahtarını sakladın mı?",
+        "store_encryption_key": {
+            "title": "Şifreleme anahtarını sakla",
+            "description": "Şifreleme anahtarını güvenli bir yerde sakla. Bu yedeği geri yüklemek için Passphrase’inle birlikte bu anahtara ihtiyacın var.",
             "checkbox_label": "Evet, şifreleme anahtarımı sakladım",
             "enable_button": "Bulut yedeklemeyi şimdi etkinleştir",
-            "show_again_button": "Kimlik bilgilerimi tekrar göster"
+            "leave_title": "Bulut yedekleme henüz açık değil",
+            "leave_body": "Sen açana kadar hiçbir şey yedeklenmez ve baştan başlaman gerekir.",
+            "leave_confirm": "Yine de çık",
+            "leave_cancel": "Kal"
         },
         "enable": {
             "success": "Bulut yedekleme etkinleştirildi",
@@ -593,6 +597,30 @@
             "passphrase_missing": "Bu cihazda kayıtlı bir Passphrase yok.",
             "passphrase_unreadable": "Bu cihazda kayıtlı Passphrase okunamadı.",
             "done_button": "Kimlik bilgilerini güvenle sakla"
+        },
+        "store_credentials": {
+            "title": "Yedekleme kimlik bilgilerini sakla",
+            "description": "Şifreleme anahtarını güvenle saklamak için bir yer seç. Özel anahtarlar hiçbir zaman bizim tarafımızda saklanmaz.",
+            "warning_title": "Yalnızca şifreleme anahtarını saklıyoruz",
+            "warning_body": "12 kelimelik Passphrase’ini kendin güvenli bir yerde saklamalısın.",
+            "store_locally": "Yerel olarak sakla",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "storing": "Şifreleme anahtarın saklanıyor…",
+            "success": "Şifreleme anahtarı saklandı",
+            "error": "Şifreleme anahtarın saklanamadı",
+            "no_credentials": "Bu cihazda bulut yedekleme ayarlanmamış."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud kullanılamıyor",
+            "unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene.",
+            "not_configured": "Pera bu cihazda iCloud depolama alanına erişemiyor. iCloud Drive’ın Pera için açık olduğundan emin ol veya başka bir konum seç."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış.",
+            "play_services": "Google Play hizmetlerini güncelle, ardından tekrar dene.",
+            "sign_in_failed": "Google Drive hesabına giriş yapılamadı. Tekrar dene.",
+            "unreachable": "Google Drive’a ulaşılamadı. Bağlantını kontrol et ve tekrar dene."
         },
         "overview": {
             "title": "Bulut yedekleme",
@@ -718,8 +746,23 @@
         "restore": {
             "sheet_title": "Yedeklemeyi geri yükle/al",
             "sheet_description": "QR kodu tarayarak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
+            "sheet_description_with_import": "QR kodu tarayarak, şifreleme anahtarını kaydettiğin yerden içe aktararak veya kimlik bilgilerini elle girerek yedeklemeni geri yükle.",
             "sheet_scan": "QR kodu tara",
             "sheet_manual": "Bilgileri manuel gir",
+            "sheet_device": "Bu cihazdan içe aktar",
+            "sheet_icloud": "Apple iCloud",
+            "sheet_google_drive": "Google Drive",
+            "import_reading": "Şifreleme anahtarın aranıyor…",
+            "import_error": "Şifreleme anahtarın okunamadı",
+            "import_not_found_icloud": "iCloud hesabında şifreleme anahtarı bulunamadı.",
+            "import_not_found_google_drive": "Google Drive hesabında şifreleme anahtarı bulunamadı.",
+            "import_still_downloading": "Şifreleme anahtarın hâlâ iCloud’dan indiriliyor. Birazdan tekrar dene.",
+            "import_invalid_file": "Bu dosya bir Pera şifreleme anahtarı değil.",
+            "import_unsupported_version": "Bu şifreleme anahtarı dosyasını kullanmak için Pera’yı güncelle.",
+            "choose_file_title": "Bir şifreleme anahtarı seç",
+            "choose_file_description": "Burada birden fazla şifreleme anahtarı kayıtlı. Geri yüklemek istediğin yedeğe ait olanı seç.",
+            "choose_file_row": "Adres {{prefix}}…",
+            "choose_file_unknown": "Daha önce kaydedilen anahtar",
             "passphrase_title": "Yedekleme ifadeni gir",
             "passphrase_continue": "Devam et",
             "too_many_words_title": "Geçersiz yedekleme ifadesi",

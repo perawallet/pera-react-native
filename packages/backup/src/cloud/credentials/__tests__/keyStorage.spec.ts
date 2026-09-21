@@ -101,6 +101,50 @@ describe('persistBackupKeys', () => {
         )
     })
 
+    // The draft store zeroes the registration's buffers when the setup screen
+    // unmounts, which can land between two of the three keystore writes.
+    test('commits the keys it was handed even when the caller zeroes them mid-write', async () => {
+        const encryptionKey = new Uint8Array(32).fill(1)
+        const authSecretKey = new Uint8Array(64).fill(2)
+        const committed = captureCommits()
+        commitSecretMock.mockImplementationOnce(async ({ id, bytes }) => {
+            committed.set(id, Array.from(bytes))
+            encryptionKey.fill(0)
+            authSecretKey.fill(0)
+            return undefined
+        })
+
+        await persistBackupKeys({
+            encryptionKey,
+            authSecretKey,
+            mnemonic: MNEMONIC,
+        })
+
+        expect(committed.get(CLOUD_BACKUP_ENC_KEY_ID)).toEqual(
+            Array.from(new Uint8Array(32).fill(1)),
+        )
+        expect(committed.get(CLOUD_BACKUP_AUTH_KEY_ID)).toEqual(
+            Array.from(new Uint8Array(64).fill(2)),
+        )
+    })
+
+    test('zeroes its own copies of the keys once they are committed', async () => {
+        const handed: Uint8Array[] = []
+        commitSecretMock.mockImplementation(async ({ id, bytes }) => {
+            if (id !== CLOUD_BACKUP_MNEMONIC_ID) handed.push(bytes)
+            return undefined
+        })
+
+        await persistBackupKeys({
+            encryptionKey: new Uint8Array(32).fill(1),
+            authSecretKey: new Uint8Array(64).fill(2),
+            mnemonic: MNEMONIC,
+        })
+
+        expect(handed).toHaveLength(2)
+        expect(handed.every(copy => copy.every(byte => byte === 0))).toBe(true)
+    })
+
     test('zeroes the encoded phrase once it is committed', async () => {
         const handed: Uint8Array[] = []
         commitSecretMock.mockImplementation(async ({ id, bytes }) => {
@@ -155,7 +199,9 @@ describe('persistBackupKeys', () => {
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
     })
 
-    test('rolls back both keys when the mnemonic commit fails', async () => {
+    // A half-written commit would leave the phrase readable on a device whose
+    // backup can never be activated, since the keys that open it are gone.
+    test('rolls the phrase back too when the mnemonic commit fails', async () => {
         commitSecretMock
             .mockResolvedValueOnce(undefined)
             .mockResolvedValueOnce(undefined)
@@ -171,6 +217,30 @@ describe('persistBackupKeys', () => {
 
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
+    })
+
+    test('still rolls back the ids a failing removal did not reach', async () => {
+        commitSecretMock
+            .mockResolvedValueOnce(undefined)
+            .mockResolvedValueOnce(undefined)
+            .mockRejectedValueOnce(new Error('keystore full'))
+        // The first rollback is the encryption key's; its failure must not
+        // abandon the two ids behind it.
+        removeSecretMock.mockImplementationOnce(async () => {
+            throw new Error('keystore busy')
+        })
+
+        await expect(
+            persistBackupKeys({
+                encryptionKey: new Uint8Array(32).fill(1),
+                authSecretKey: new Uint8Array(64).fill(2),
+                mnemonic: MNEMONIC,
+            }),
+            // The commit failure, not the rollback's.
+        ).rejects.toThrow('keystore full')
+
+        expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
     })
 })
 

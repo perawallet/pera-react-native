@@ -1,0 +1,129 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
+import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
+import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
+import {
+    RestoreBackupSheet,
+    type RestoreBackupSheetResult,
+} from '../components/RestoreBackupSheet'
+import { readBackupCredentials, type CredentialsFileSource } from '../storage'
+
+/** Arguments for `navigate`/`push`, so each caller keeps its own stack's navigation. */
+export type RestoreRoute =
+    | [screen: 'CloudBackupRestoreScan', params?: undefined]
+    | [screen: 'CloudBackupRestorePassphrase', params?: undefined]
+
+type UseRestoreBackupOptionsResult = {
+    chooseRestoreRoute: () => Promise<Nullable<RestoreRoute>>
+    isReadingCredentials: boolean
+}
+
+export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
+    const { t } = useLanguage()
+    const navigation = useAppNavigation()
+    const { showError } = useErrorToast()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const [isReadingCredentials, setIsReadingCredentials] = useState(false)
+    // A double tap would otherwise open two sheets and race two pickers.
+    const isBusyRef = useRef(false)
+    // An iCloud file that is still downloading is polled for several seconds,
+    // each attempt costing a sync and a read round trip.
+    const readAbortRef = useRef<Nullable<AbortController>>(null)
+
+    useEffect(
+        () => () => {
+            readAbortRef.current?.abort()
+        },
+        [],
+    )
+
+    // Hides the progress overlay while the chooser is up, so it can't sit over
+    // the sheet, and brings it back for the read that follows.
+    const chooseFile = useCallback(
+        async (fileNames: string[]): Promise<Nullable<string>> => {
+            setIsReadingCredentials(false)
+            const chosen = await requestBottomSheet<string>({
+                contents: <ChooseCredentialsFileSheet fileNames={fileNames} />,
+                options: OPTION_LIST_SHEET_OPTIONS,
+            })
+            if (chosen) setIsReadingCredentials(true)
+            return chosen ?? null
+        },
+        [requestBottomSheet],
+    )
+
+    const importFrom = useCallback(
+        async (
+            source: CredentialsFileSource,
+        ): Promise<Nullable<RestoreRoute>> => {
+            const abort = new AbortController()
+            readAbortRef.current = abort
+            try {
+                const result = await readBackupCredentials(source, {
+                    onReading: () => setIsReadingCredentials(true),
+                    chooseFile,
+                    signal: abort.signal,
+                })
+                if (result.status === 'cancelled') return null
+                // The user may have left while the file was read; navigating
+                // now would open the restore over wherever they went.
+                if (!navigation.isFocused()) return null
+                useCloudBackupRestoreDraftStore
+                    .getState()
+                    .setImportedKey(result.key)
+                return ['CloudBackupRestorePassphrase']
+            } catch (error) {
+                logger.error(
+                    'useRestoreBackupOptions: failed to read the encryption key',
+                    { source, error },
+                )
+                showError(error, t('cloud_backup.restore.import_error'))
+                return null
+            } finally {
+                setIsReadingCredentials(false)
+                // Only ours to clear: a second entry point would otherwise drop
+                // a newer read's controller on this one's way out.
+                if (readAbortRef.current === abort) readAbortRef.current = null
+            }
+        },
+        [chooseFile, navigation, showError, t],
+    )
+
+    const chooseRestoreRoute = useCallback(async (): Promise<
+        Nullable<RestoreRoute>
+    > => {
+        if (isBusyRef.current) return null
+        isBusyRef.current = true
+        try {
+            const choice = await requestBottomSheet<RestoreBackupSheetResult>({
+                contents: <RestoreBackupSheet />,
+                options: OPTION_LIST_SHEET_OPTIONS,
+            })
+            if (!choice) return null
+            if (choice === 'scan') return ['CloudBackupRestoreScan']
+            if (choice === 'manual') return ['CloudBackupRestorePassphrase']
+            return await importFrom(choice)
+        } finally {
+            isBusyRef.current = false
+        }
+    }, [requestBottomSheet, importFrom])
+
+    return { chooseRestoreRoute, isReadingCredentials }
+}

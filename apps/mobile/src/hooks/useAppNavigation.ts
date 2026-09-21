@@ -37,6 +37,7 @@ export type UseAppNavigation = {
     goBack: () => void
     canGoBack: () => boolean
     reset: (state: Parameters<AppNavigationProp['reset']>[0]) => void
+    isFocused: () => boolean
 }
 
 export function useAppNavigation(): UseAppNavigation {
@@ -52,6 +53,7 @@ export function useAppNavigation(): UseAppNavigation {
             goBack: navigation.goBack,
             canGoBack: navigation.canGoBack,
             reset: navigation.reset,
+            isFocused: navigation.isFocused,
         }),
         [navigation],
     )

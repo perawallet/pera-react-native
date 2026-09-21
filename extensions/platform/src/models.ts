@@ -14,6 +14,7 @@ import type { AppIntegrityService } from './app-integrity'
 import type { AgeGateService } from './age-gate'
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
+import type { CloudFileStorageService } from './cloud-file-storage'
 import type { DeviceInfoService } from './device'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MigrationService } from './migration'
@@ -41,6 +42,7 @@ export interface PlatformServices {
     hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
+    cloudFileStorage: CloudFileStorageService
 }
 
 /**

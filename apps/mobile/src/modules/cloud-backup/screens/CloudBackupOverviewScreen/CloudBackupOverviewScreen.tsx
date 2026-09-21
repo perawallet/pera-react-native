@@ -11,6 +11,7 @@
  */
 
 import {
+    PWLoadingOverlay,
     PWScreen,
     PWText,
     PWView,
@@ -54,143 +55,151 @@ export const CloudBackupOverviewScreen = () => {
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,
+        isSavingCredentials,
     } = useCloudBackupOverview()
 
     const syncIcon = syncStatus ? SYNC_ICON[syncStatus] : NEVER_SYNCED_ICON
 
     return (
-        <PWScreen testID='cloud_backup_overview_screen'>
-            <PWView style={styles.container}>
-                <OverviewRow
-                    variant='bordered'
-                    icon={syncIcon.name}
-                    iconVariant={syncIcon.variant}
-                    title={t('cloud_backup.overview.latest_sync')}
-                    subtitle={lastSyncedLabel}
-                    trailing={
-                        syncStatus ? (
-                            <SyncStatusBadge status={syncStatus} />
-                        ) : undefined
-                    }
-                    testID='cloud_backup_overview_latest_sync'
-                />
+        <>
+            <PWScreen testID='cloud_backup_overview_screen'>
+                <PWView style={styles.container}>
+                    <OverviewRow
+                        variant='bordered'
+                        icon={syncIcon.name}
+                        iconVariant={syncIcon.variant}
+                        title={t('cloud_backup.overview.latest_sync')}
+                        subtitle={lastSyncedLabel}
+                        trailing={
+                            syncStatus ? (
+                                <SyncStatusBadge status={syncStatus} />
+                            ) : undefined
+                        }
+                        testID='cloud_backup_overview_latest_sync'
+                    />
 
-                <PWView style={styles.section}>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                        style={styles.sectionLabel}
-                    >
-                        {t('cloud_backup.overview.protected_data')}
-                    </PWText>
-                    <PWView style={styles.rows}>
-                        <OverviewRow
-                            variant='filled'
-                            icon='wallet'
-                            title={t('cloud_backup.overview.accounts')}
-                            subtitle={
-                                accountsNotBackedUp > 0
-                                    ? t(
-                                          'cloud_backup.overview.accounts_not_backed_up',
-                                          {
-                                              count: accountsNotBackedUp,
-                                          },
-                                      )
-                                    : t(
-                                          'cloud_backup.overview.accounts_in_sync',
-                                          {
-                                              count: accountsInSync,
-                                          },
-                                      )
-                            }
-                            subtitleIcon={
-                                accountsNotBackedUp > 0
-                                    ? 'cloud-off'
-                                    : undefined
-                            }
-                            subtitleIconVariant='error'
-                            showChevron
-                            onPress={onPressAccounts}
-                            testID='cloud_backup_overview_accounts'
-                        />
-                        <OverviewRow
-                            variant='filled'
-                            icon='contacts'
-                            title={t('cloud_backup.overview.contacts')}
-                            subtitle={
-                                contactsNotBackedUp > 0
-                                    ? t(
-                                          'cloud_backup.overview.contacts_not_backed_up',
-                                          {
-                                              count: contactsNotBackedUp,
-                                          },
-                                      )
-                                    : t(
-                                          'cloud_backup.overview.contacts_in_sync',
-                                          {
-                                              count: contactsInSync,
-                                          },
-                                      )
-                            }
-                            subtitleIcon={
-                                contactsNotBackedUp > 0
-                                    ? 'cloud-off'
-                                    : undefined
-                            }
-                            subtitleIconVariant='error'
-                            showChevron
-                            onPress={onPressContacts}
-                            testID='cloud_backup_overview_contacts'
-                        />
+                    <PWView style={styles.section}>
+                        <PWText
+                            variant='bodyLarge'
+                            weight={500}
+                            style={styles.sectionLabel}
+                        >
+                            {t('cloud_backup.overview.protected_data')}
+                        </PWText>
+                        <PWView style={styles.rows}>
+                            <OverviewRow
+                                variant='filled'
+                                icon='wallet'
+                                title={t('cloud_backup.overview.accounts')}
+                                subtitle={
+                                    accountsNotBackedUp > 0
+                                        ? t(
+                                              'cloud_backup.overview.accounts_not_backed_up',
+                                              {
+                                                  count: accountsNotBackedUp,
+                                              },
+                                          )
+                                        : t(
+                                              'cloud_backup.overview.accounts_in_sync',
+                                              {
+                                                  count: accountsInSync,
+                                              },
+                                          )
+                                }
+                                subtitleIcon={
+                                    accountsNotBackedUp > 0
+                                        ? 'cloud-off'
+                                        : undefined
+                                }
+                                subtitleIconVariant='error'
+                                showChevron
+                                onPress={onPressAccounts}
+                                testID='cloud_backup_overview_accounts'
+                            />
+                            <OverviewRow
+                                variant='filled'
+                                icon='contacts'
+                                title={t('cloud_backup.overview.contacts')}
+                                subtitle={
+                                    contactsNotBackedUp > 0
+                                        ? t(
+                                              'cloud_backup.overview.contacts_not_backed_up',
+                                              {
+                                                  count: contactsNotBackedUp,
+                                              },
+                                          )
+                                        : t(
+                                              'cloud_backup.overview.contacts_in_sync',
+                                              {
+                                                  count: contactsInSync,
+                                              },
+                                          )
+                                }
+                                subtitleIcon={
+                                    contactsNotBackedUp > 0
+                                        ? 'cloud-off'
+                                        : undefined
+                                }
+                                subtitleIconVariant='error'
+                                showChevron
+                                onPress={onPressContacts}
+                                testID='cloud_backup_overview_contacts'
+                            />
+                        </PWView>
+                    </PWView>
+
+                    <PWView style={styles.section}>
+                        <PWText
+                            variant='bodyLarge'
+                            weight={500}
+                            style={styles.sectionLabel}
+                        >
+                            {t('cloud_backup.overview.backup_details')}
+                        </PWText>
+                        <PWView style={styles.rows}>
+                            <OverviewRow
+                                variant='bordered'
+                                icon='key'
+                                title={t(
+                                    'cloud_backup.overview.credential_address',
+                                )}
+                                subtitle={credentialAddressLabel}
+                                showChevron
+                                onPress={() => void onPressCredentialAddress()}
+                                testID='cloud_backup_overview_credential_address'
+                            />
+                            <OverviewRow
+                                variant='bordered'
+                                icon='qr'
+                                title={t('cloud_backup.overview.sync_devices')}
+                                subtitle={t(
+                                    'cloud_backup.overview.sync_devices_description',
+                                )}
+                                showChevron
+                                onPress={() => void onPressSyncDevices()}
+                                testID='cloud_backup_overview_sync_devices'
+                            />
+                            <OverviewRow
+                                variant='bordered'
+                                tone='negative'
+                                icon='cloud-off'
+                                iconVariant='error'
+                                title={t('cloud_backup.overview.turn_off')}
+                                subtitle={t(
+                                    'cloud_backup.overview.turn_off_description',
+                                )}
+                                onPress={() => void onPressTurnOff()}
+                                testID='cloud_backup_overview_turn_off'
+                            />
+                        </PWView>
                     </PWView>
                 </PWView>
+            </PWScreen>
 
-                <PWView style={styles.section}>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={500}
-                        style={styles.sectionLabel}
-                    >
-                        {t('cloud_backup.overview.backup_details')}
-                    </PWText>
-                    <PWView style={styles.rows}>
-                        <OverviewRow
-                            variant='bordered'
-                            icon='key'
-                            title={t(
-                                'cloud_backup.overview.credential_address',
-                            )}
-                            subtitle={credentialAddressLabel}
-                            showChevron
-                            onPress={() => void onPressCredentialAddress()}
-                            testID='cloud_backup_overview_credential_address'
-                        />
-                        <OverviewRow
-                            variant='bordered'
-                            icon='qr'
-                            title={t('cloud_backup.overview.sync_devices')}
-                            subtitle={t(
-                                'cloud_backup.overview.sync_devices_description',
-                            )}
-                            showChevron
-                            onPress={() => void onPressSyncDevices()}
-                            testID='cloud_backup_overview_sync_devices'
-                        />
-                        <OverviewRow
-                            variant='bordered'
-                            tone='negative'
-                            icon='cloud-off'
-                            iconVariant='error'
-                            title={t('cloud_backup.overview.turn_off')}
-                            subtitle={t(
-                                'cloud_backup.overview.turn_off_description',
-                            )}
-                            onPress={() => void onPressTurnOff()}
-                            testID='cloud_backup_overview_turn_off'
-                        />
-                    </PWView>
-                </PWView>
-            </PWView>
-        </PWScreen>
+            <PWLoadingOverlay
+                isVisible={isSavingCredentials}
+                title={t('cloud_backup.store_credentials.storing')}
+            />
+        </>
     )
 }

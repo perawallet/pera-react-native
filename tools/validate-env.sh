@@ -67,6 +67,11 @@ case "$PROFILE" in
     )
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
+      # Unset means app.config.builder drops the matching plugin, so the archive
+      # ships with no iCloud entitlement and a Drive button that always reports
+      # itself unconfigured. Entitlements are build-time, so a later remote-config
+      # flip cannot recover it — the warning is the only signal before release.
+      "GOOGLE_IOS_CLIENT_ID" "GOOGLE_WEB_CLIENT_ID" "IOS_ICLOUD_CONTAINER_ID"
     )
     ;;
   android)
@@ -92,6 +97,10 @@ case "$PROFILE" in
     fi
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
+      # Android signs in with the web client id; there is no iCloud here and the
+      # iOS client id is only the URL scheme. Unset means the Drive row always
+      # reports itself unconfigured.
+      "GOOGLE_WEB_CLIENT_ID"
     )
     ;;
   web)

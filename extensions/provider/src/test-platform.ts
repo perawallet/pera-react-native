@@ -29,6 +29,7 @@ import {
     type PushNotificationService,
     type RemoteConfigService,
     type WalletProvisioningService,
+    type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
@@ -49,6 +50,7 @@ export type TestPlatformOverrides = Partial<{
     hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
+    cloudFileStorage: CloudFileStorageService
 }>
 
 /**
@@ -229,6 +231,13 @@ export const buildTestPlatform = (
         hardwareWalletRegistry:
             overrides.hardwareWalletRegistry ?? defaultHardwareWalletRegistry,
         migration: overrides.migration ?? createStubMigrationService(),
+        // Dormant default: no drive is reachable, so a test sees the same
+        // source list as a build without the OAuth clients.
+        cloudFileStorage: overrides.cloudFileStorage ?? {
+            getAvailableStores: () => [],
+            save: async () => 'cancelled',
+            read: async () => ({ status: 'cancelled' }),
+        },
         // Dormant defaults: push provisioning reports unavailable.
         walletProvisioning: overrides.walletProvisioning ?? {
             checkWalletAvailability: async () => false,

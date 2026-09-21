@@ -24,21 +24,17 @@ const PHRASE_WITH_TYPO = ['alpha', 'bravvo']
 describe('useCloudBackupRestoreDraftStore', () => {
     beforeEach(() => useCloudBackupRestoreDraftStore.getState().resetState())
 
-    it('stores and clears mnemonic + salt', () => {
+    it('stores and clears the phrase', () => {
         useCloudBackupRestoreDraftStore.getState().setMnemonic(WORDLIST_PHRASE)
-        useCloudBackupRestoreDraftStore.getState().setSalt('c2FsdA==')
 
         expect(readCloudBackupRestoreMnemonic()).toEqual(WORDLIST_PHRASE)
-        expect(useCloudBackupRestoreDraftStore.getState().salt).toBe('c2FsdA==')
 
         useCloudBackupRestoreDraftStore.getState().clearDraft()
         expect(readCloudBackupRestoreMnemonic()).toBeNull()
-        expect(useCloudBackupRestoreDraftStore.getState().salt).toBeNull()
     })
 
     it('starts empty', () => {
         expect(readCloudBackupRestoreMnemonic()).toBeNull()
-        expect(useCloudBackupRestoreDraftStore.getState().salt).toBeNull()
     })
 
     it('retains a wordlist phrase as indices, never as words', () => {

@@ -112,6 +112,37 @@ function buildAppConfig(env) {
     }
   })();
 
+  // Each plugin is added only when its setting exists. The cloud-storage plugin
+  // writes iCloud entitlements that an archive signed with a profile lacking the
+  // iCloud capability cannot sign; the Google plugin needs the iOS client id to
+  // register its reversed form as the sign-in URL scheme.
+  const iCloudContainerId = env.IOS_ICLOUD_CONTAINER_ID?.trim();
+  const googleIosClientId = env.GOOGLE_IOS_CLIENT_ID?.trim();
+  const credentialStoragePlugins = [
+    ...(iCloudContainerId
+      ? [
+          [
+            'react-native-cloud-storage',
+            {
+              iCloudContainerIdentifier: iCloudContainerId,
+              iCloudContainerEnvironment:
+                variant === 'dev' ? 'Development' : 'Production',
+            },
+          ],
+        ]
+      : []),
+    ...(googleIosClientId
+      ? [
+          [
+            '@react-native-google-signin/google-signin',
+            {
+              iosUrlScheme: googleIosClientId.split('.').reverse().join('.'),
+            },
+          ],
+        ]
+      : []),
+  ];
+
   return {
     name: appNames[variant],
     slug: slugs[variant],
@@ -572,6 +603,8 @@ function buildAppConfig(env) {
       // manifest-merge time. Pera does no ad attribution, so AD_ID collection is
       // an unnecessary privacy exposure for a wallet (security finding AND-02).
       './plugins/withAndroidRemoveAdIdPermissions',
+
+      ...credentialStoragePlugins,
     ],
 
     // Experiments (for bleeding edge features)

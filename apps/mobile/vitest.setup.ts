@@ -79,6 +79,15 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             log: vi.fn(),
             recordError: vi.fn(),
         },
+        // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
+        // cloud save or read overrides these per case.
+        cloudFileStorage: {
+            getAvailableStores: vi
+                .fn()
+                .mockReturnValue(['icloud', 'googleDrive']),
+            save: vi.fn().mockResolvedValue('saved'),
+            read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
+        },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
@@ -184,6 +193,15 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         crashReporting: {
             log: vi.fn(),
             recordError: vi.fn(),
+        },
+        // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
+        // cloud save or read overrides these per case.
+        cloudFileStorage: {
+            getAvailableStores: vi
+                .fn()
+                .mockReturnValue(['icloud', 'googleDrive']),
+            save: vi.fn().mockResolvedValue('saved'),
+            read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
@@ -1123,7 +1141,10 @@ vi.mock('expo-file-system', () => {
         async text() {
             return ''
         }
-        static pickFileAsync = vi.fn(async () => new FileMock())
+        static pickFileAsync = vi.fn(async () => ({
+            result: new FileMock(),
+            canceled: false,
+        }))
     }
     return { File: FileMock }
 })
@@ -1722,6 +1743,7 @@ vi.mock('@react-navigation/native', () => ({
         goBack: vi.fn(),
         reset: vi.fn(),
         setOptions: vi.fn(),
+        setParams: vi.fn(),
         push: vi.fn(),
         canGoBack: vi.fn(() => false),
         isFocused: vi.fn(() => true),
@@ -2553,6 +2575,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         unknown: 'medium',
     }
 
+    // Extends Error, not AppError, matching packages/shared/src/utils/bounds.ts.
+    class InputTooLargeError extends Error {
+        constructor(
+            public readonly label: string,
+            public readonly limit: number,
+            public readonly actual: number,
+        ) {
+            super(`${label} exceeds maximum size (${actual} > ${limit})`)
+            this.name = 'InputTooLargeError'
+        }
+    }
+
     class PeraNetworkError extends AppError {
         public readonly kind: string
         public readonly status?: number
@@ -2791,6 +2825,30 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Buffer.from(bytes).toString('base64'),
         decodeFromBase64: (value: string) =>
             new Uint8Array(Buffer.from(value, 'base64')),
+        // The mock replaces the module wholesale, so anything a package parser
+        // reaches for has to be listed here or it reads as undefined and the
+        // parser rejects valid input. bounds.ts pulls in strings.ts and its
+        // decimal/locale/logging chain, which is why these are mirrored rather
+        // than imported. They throw a plain Error: nothing outside bounds.ts's
+        // own spec tests for InputTooLargeError, and both parsers catch every
+        // throw.
+        InputTooLargeError,
+        assertMaxLength: (value: string, maxChars: number, label: string) => {
+            if (value.length > maxChars) {
+                throw new InputTooLargeError(label, maxChars, value.length)
+            }
+        },
+        decodeBoundedBase64: (
+            base64: string,
+            maxBytes: number,
+            label = 'base64 input',
+        ) => {
+            const bytes = new Uint8Array(Buffer.from(base64, 'base64'))
+            if (bytes.length > maxBytes) {
+                throw new InputTooLargeError(label, maxBytes, bytes.length)
+            }
+            return bytes
+        },
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),
@@ -3537,8 +3595,15 @@ vi.mock('lottie-react-native', () => ({
     default: () => null,
 }))
 
-// Mock @perawallet/wallet-extension-platform
-vi.mock('@perawallet/wallet-extension-platform', () => ({
+// Mock @perawallet/wallet-extension-platform.
+// Spreads the real module first: this factory only stubs the service hooks, and
+// anything it forgot used to arrive as `undefined` — silently, so an error class
+// from this package stopped being a constructor and a new RemoteConfigKey could
+// not be switched on in a test.
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-extension-platform')
+    >()),
     createCrashReportingErrorReporter: vi.fn(() => vi.fn()),
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
@@ -3554,21 +3619,6 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
     })),
     RemoteConfigDefaults: {
         pera_7_migration: false,
-    },
-    RemoteConfigKeys: {
-        fee_warning_standard_fee: 'fee_warning_standard_fee',
-        fee_warning_usd_threshold: 'fee_warning_usd_threshold',
-        staking_projects_i18n: 'staking_projects_i18n',
-        swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
-        swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
-        pera_7_migration: 'pera_7_migration',
-        enable_motion_lock: 'enable_motion_lock',
-        enable_duress_pin: 'enable_duress_pin',
-        onramp_currency_decimals: 'onramp_currency_decimals',
-        enable_quantum_accounts: 'enable_quantum_accounts',
-        enable_quantum_swap: 'enable_quantum_swap',
-        enable_gift_cards: 'enable_gift_cards',
-        enable_cloud_backup: 'enable_cloud_backup',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

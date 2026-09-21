@@ -19,11 +19,12 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
+    CSV_MIME_TYPE,
     useTransactionHistoryQuery,
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
@@ -184,7 +185,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         onSuccess: result => {
             void (async () => {
                 try {
-                    await shareCsvFile(result.filename, result.csvContent)
+                    await shareFile(result.filename, result.csvContent, {
+                        mimeType: CSV_MIME_TYPE,
+                    })
                 } catch (error) {
                     showError(error, t('errors.general.title'))
                 }

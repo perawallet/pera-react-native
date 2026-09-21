@@ -136,7 +136,7 @@ describe('useCardTransactions', () => {
                 /^pera-card-statement-\d{4}-\d{2}-\d{2}\.pdf$/,
             ),
             bytes,
-            'application/pdf',
+            { mimeType: 'application/pdf' },
         )
         expect(mocks.showExportError).not.toHaveBeenCalled()
     })

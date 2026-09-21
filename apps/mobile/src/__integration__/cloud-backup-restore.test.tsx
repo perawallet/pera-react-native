@@ -22,6 +22,7 @@ import {
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
+import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -31,6 +32,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     BackupAccountType,
+    buildBackupCredentialsFile,
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
@@ -147,6 +149,7 @@ describe('Flow: Cloud backup → Restore', () => {
             .setDeviceID(useNetworkStore.getState().network, 'test-device-id')
         await deleteBackupKeys().catch(() => undefined)
         vi.mocked(Notifier.showNotification).mockClear()
+        vi.mocked(File.pickFileAsync).mockReset()
     })
 
     it(
@@ -373,6 +376,83 @@ describe('Flow: Cloud backup → Restore', () => {
                     ]
                 expect(item?.knownVer).toBeGreaterThan(0)
             })
+            await expectRestoreLandedOnOverview()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an encryption key file saved on the device, when the user imports it and types the passphrase, then the key screen shows the imported key and the backup restores from it',
+        async () => {
+            const { backupId, encryptionKey } = await deriveBackupKeys({
+                mnemonic: BACKUP_MNEMONIC,
+                salt: BACKUP_SALT,
+            })
+            server.use(
+                ...buildRestoreHandlers({
+                    backupId,
+                    encryptionKey,
+                    items: [
+                        {
+                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
+                            plaintext: JSON.stringify({
+                                type: BackupAccountType.algo25,
+                                address: ALGO25_TEST_ADDRESS,
+                                customName: 'Restored',
+                            }),
+                        },
+                        {
+                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
+                            plaintext: JSON.stringify({
+                                type: BackupAccountType.algo25,
+                                mnemonic: ALGO25_TEST_MNEMONIC,
+                            }),
+                        },
+                    ],
+                }),
+            )
+            vi.mocked(File.pickFileAsync).mockResolvedValueOnce({
+                canceled: false,
+                result: {
+                    size: buildBackupCredentialsFile(BACKUP_SALT).length,
+                    text: async () => buildBackupCredentialsFile(BACKUP_SALT),
+                },
+            } as never)
+
+            renderCloudBackupFlow()
+            fireEvent.click(screen.getByTestId('cloud_backup_restore_option'))
+            fireEvent.click(
+                await screen.findByTestId('cloud_backup_restore_sheet_device'),
+            )
+
+            await waitFor(() =>
+                screen.getByTestId('cloud_backup_restore_word_input_0'),
+            )
+            typeBackupWords(BACKUP_MNEMONIC)
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_restore_passphrase_continue'),
+            )
+
+            const keyInput = await screen.findByTestId(
+                'cloud_backup_restore_key_input',
+            )
+            expect((keyInput as HTMLInputElement).value).toBe(BACKUP_SALT)
+            fireEvent.click(
+                screen.getByTestId('cloud_backup_restore_key_button'),
+            )
+
+            await waitFor(
+                () => {
+                    expect(
+                        useAccountsStore
+                            .getState()
+                            .accounts.some(
+                                a => a.address === ALGO25_TEST_ADDRESS,
+                            ),
+                    ).toBe(true)
+                },
+                { timeout: 10_000 },
+            )
             await expectRestoreLandedOnOverview()
         },
         SLOW_TEST_TIMEOUT_MS,

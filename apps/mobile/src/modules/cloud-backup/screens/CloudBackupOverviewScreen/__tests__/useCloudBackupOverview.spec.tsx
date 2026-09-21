@@ -76,6 +76,8 @@ const {
     requirePinVerificationMock,
     markIntroductionSeenMock,
     useCloudBackupIntroductionMock,
+    storeCredentialsMock,
+    navigationMock,
 } = vi.hoisted(() => ({
     disableBackupMock: vi.fn(),
     removeBackupMock: vi.fn(),
@@ -84,6 +86,21 @@ const {
     requirePinVerificationMock: vi.fn(),
     markIntroductionSeenMock: vi.fn(),
     useCloudBackupIntroductionMock: vi.fn(),
+    storeCredentialsMock: vi.fn(),
+    // The global mock hands out fresh vi.fn()s per call, so nothing can be
+    // asserted on it; this one is stable, like the real navigation object.
+    navigationMock: {
+        navigate: vi.fn(),
+        push: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        setParams: vi.fn(),
+        canGoBack: vi.fn(() => false),
+        isFocused: vi.fn(() => true),
+    },
+}))
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => navigationMock,
 }))
 vi.mock('../../../hooks', () => ({
     useDisableCloudBackup: () => ({
@@ -102,6 +119,9 @@ vi.mock('../../../hooks', () => ({
         showSyncQr: showSyncQrMock,
     }),
     useCloudBackupIntroduction: useCloudBackupIntroductionMock,
+    useStoreBackupCredentials: () => ({
+        storeCredentials: storeCredentialsMock,
+    }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -185,6 +205,7 @@ beforeEach(() => {
         isIntroductionSeen: true,
         markIntroductionSeen: markIntroductionSeenMock,
     })
+    storeCredentialsMock.mockResolvedValue(undefined)
 })
 
 describe('useCloudBackupOverview', () => {
@@ -477,6 +498,41 @@ describe('useCloudBackupOverview', () => {
             CloudBackupEvent.OverviewCredentialAddress,
         )
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    test('hands off to the store flow when the credentials sheet resolves with store', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+        mockRequestBottomSheet.mockResolvedValueOnce('store')
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(storeCredentialsMock).toHaveBeenCalledTimes(1)
+        // This entry point took the PIN before opening the sheet, so the store
+        // flow must not ask for it a second time.
+        expect(storeCredentialsMock).toHaveBeenCalledWith({
+            hasVerifiedPin: true,
+        })
+        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not start the store flow when the credentials sheet is dismissed', async () => {
+        mockStores({
+            backupId: 'did:pera:abc',
+            syncState: null,
+            accounts: [],
+            contacts: [],
+        })
+
+        const { result } = renderHook(() => useCloudBackupOverview())
+        await result.current.onPressCredentialAddress()
+
+        expect(storeCredentialsMock).not.toHaveBeenCalled()
     })
 
     test('opens the sync QR flow instead of forcing a sync', async () => {

@@ -322,7 +322,25 @@ describe('backup sync QR payload', () => {
                     CODE,
                 ),
             ).rejects.toThrowError(
-                'Sync QR asks for an unreasonable derivation',
+                'Sync QR carries non-canonical backup parameters',
+            )
+        })
+
+        // In bounds, so the envelope's own ceiling never sees it — but the
+        // master key is only reproducible under the canonical parameters, so a
+        // weakened block derives a key that opens nothing.
+        test('refuses a weakened inner kdf config', async () => {
+            await expect(
+                decryptBackupSyncQr(
+                    resealWith(envelope, {
+                        mnemonic: MNEMONIC,
+                        salt: BACKUP_SALT,
+                        argon2id: { ...SERIALIZED_CONFIG, time_cost: 1 },
+                    }),
+                    CODE,
+                ),
+            ).rejects.toThrowError(
+                'Sync QR carries non-canonical backup parameters',
             )
         })
 

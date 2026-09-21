@@ -11,20 +11,24 @@
  */
 
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Share from 'react-native-share'
-import { File } from 'expo-file-system'
 import { shareFile } from '../shareFile'
 
-const mockFileInstance = {
-    uri: 'file:///cache/statement.pdf',
-    create: vi.fn(),
-    write: vi.fn(),
-}
+const { stagedFile } = vi.hoisted(() => ({
+    stagedFile: {
+        uri: 'file:///cache/report.csv',
+        exists: true,
+        create: vi.fn(),
+        write: vi.fn(),
+        delete: vi.fn(),
+    },
+}))
 
 vi.mock('expo-file-system', () => ({
     File: vi.fn().mockImplementation(function FileMock(this: unknown) {
-        Object.assign(this as object, mockFileInstance)
+        Object.assign(this as object, stagedFile)
     }),
     Paths: { cache: { uri: 'file:///cache' } },
 }))
@@ -33,35 +37,105 @@ vi.mock('react-native-share', () => ({
     default: { open: vi.fn() },
 }))
 
+const FILE_NAME = 'report.csv'
+const CONTENTS = 'a,b,c'
+const MIME_TYPE = 'text/csv'
+
+const shareCancelled = () =>
+    Object.assign(new Error('CANCELLED'), { code: 'CANCELLED' })
+
 describe('shareFile', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        stagedFile.exists = true
+        vi.mocked(Share.open).mockResolvedValue({ success: true, message: '' })
     })
 
-    it('writes binary content to a cache file and shares it with its mime type', async () => {
-        const bytes = new Uint8Array([37, 80, 68, 70])
+    it('stages the contents in a cache file and shares it with its name and type', async () => {
+        await expect(
+            shareFile(FILE_NAME, CONTENTS, { mimeType: MIME_TYPE }),
+        ).resolves.toBe('shared')
 
-        await shareFile('statement.pdf', bytes, 'application/pdf')
-
-        expect(File).toHaveBeenCalledTimes(1)
-        expect(mockFileInstance.create).toHaveBeenCalledWith({
-            overwrite: true,
-        })
-        expect(mockFileInstance.write).toHaveBeenCalledWith(bytes)
+        expect(stagedFile.create).toHaveBeenCalledWith({ overwrite: true })
+        expect(stagedFile.write).toHaveBeenCalledWith(CONTENTS)
         expect(Share.open).toHaveBeenCalledWith({
-            url: 'file:///cache/statement.pdf',
-            filename: 'statement.pdf',
-            type: 'application/pdf',
+            url: stagedFile.uri,
+            filename: FILE_NAME,
+            type: MIME_TYPE,
+            saveToFiles: false,
             failOnCancel: false,
         })
     })
 
-    it('accepts text content too', async () => {
-        await shareFile('notes.txt', 'hello', 'text/plain')
+    it('stages binary contents unchanged', async () => {
+        const bytes = new Uint8Array([37, 80, 68, 70])
 
-        expect(mockFileInstance.write).toHaveBeenCalledWith('hello')
-        expect(Share.open).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'text/plain' }),
-        )
+        await expect(
+            shareFile('statement.pdf', bytes, { mimeType: 'application/pdf' }),
+        ).resolves.toBe('shared')
+
+        expect(stagedFile.write).toHaveBeenCalledWith(bytes)
+    })
+
+    it('resolves cancelled when the share sheet is dismissed', async () => {
+        vi.mocked(Share.open).mockResolvedValueOnce({
+            success: false,
+            message: '',
+            dismissedAction: true,
+        })
+
+        await expect(
+            shareFile(FILE_NAME, CONTENTS, { mimeType: MIME_TYPE }),
+        ).resolves.toBe('cancelled')
+    })
+
+    it('keeps the staged file after a share-sheet share, which the target app may still be reading', async () => {
+        await shareFile(FILE_NAME, CONTENTS, { mimeType: MIME_TYPE })
+
+        expect(stagedFile.delete).not.toHaveBeenCalled()
+    })
+
+    describe('with saveToFiles', () => {
+        const options = { mimeType: MIME_TYPE, saveToFiles: true }
+
+        it('removes the staged copy once Save to Files completes', async () => {
+            await expect(shareFile(FILE_NAME, CONTENTS, options)).resolves.toBe(
+                'shared',
+            )
+
+            expect(Share.open).toHaveBeenCalledWith(
+                expect.objectContaining({ saveToFiles: true }),
+            )
+            expect(stagedFile.delete).toHaveBeenCalled()
+        })
+
+        it('resolves cancelled and removes the staged copy when Save to Files is dismissed', async () => {
+            vi.mocked(Share.open).mockRejectedValueOnce(shareCancelled())
+
+            await expect(shareFile(FILE_NAME, CONTENTS, options)).resolves.toBe(
+                'cancelled',
+            )
+            expect(stagedFile.delete).toHaveBeenCalled()
+        })
+
+        it('rethrows any other failure and still removes the staged copy', async () => {
+            vi.mocked(Share.open).mockRejectedValueOnce(
+                new Error('Presentation failed'),
+            )
+
+            await expect(
+                shareFile(FILE_NAME, CONTENTS, options),
+            ).rejects.toThrow('Presentation failed')
+            expect(stagedFile.delete).toHaveBeenCalled()
+        })
+
+        it('skips the delete when the staged copy is already gone', async () => {
+            stagedFile.exists = false
+
+            await expect(shareFile(FILE_NAME, CONTENTS, options)).resolves.toBe(
+                'shared',
+            )
+            expect(stagedFile.delete).not.toHaveBeenCalled()
+        })
     })
 })

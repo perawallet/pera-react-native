@@ -576,11 +576,15 @@
             "proceed": "Continuar",
             "error_message": "Seleção incorreta. Tente novamente."
         },
-        "confirm": {
-            "title": "Você guardou sua chave de criptografia?",
+        "store_encryption_key": {
+            "title": "Guarde sua chave de criptografia",
+            "description": "Guarde sua chave de criptografia em um lugar seguro. Você precisa dela junto com sua Passphrase para restaurar este backup.",
             "checkbox_label": "Sim, guardei minha chave de criptografia",
             "enable_button": "Ativar o backup na nuvem agora",
-            "show_again_button": "Mostrar minhas credenciais novamente"
+            "leave_title": "O backup na nuvem ainda não está ativo",
+            "leave_body": "Nada será salvo até você ativar, e você terá que começar de novo.",
+            "leave_confirm": "Sair mesmo assim",
+            "leave_cancel": "Ficar"
         },
         "enable": {
             "success": "Backup na nuvem ativado",
@@ -593,6 +597,30 @@
             "passphrase_missing": "Nenhuma Passphrase está armazenada neste dispositivo.",
             "passphrase_unreadable": "Não foi possível ler sua Passphrase armazenada neste dispositivo.",
             "done_button": "Guarde suas credenciais com segurança"
+        },
+        "store_credentials": {
+            "title": "Guardar credenciais do backup",
+            "description": "Escolha um local para guardar sua chave de criptografia com segurança. Nenhuma chave privada é armazenada do nosso lado.",
+            "warning_title": "Guardamos apenas sua chave de criptografia",
+            "warning_body": "Sua Passphrase de 12 palavras precisa ser guardada com segurança por você.",
+            "store_locally": "Salvar localmente",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "storing": "Salvando sua chave de criptografia…",
+            "success": "Chave de criptografia salva",
+            "error": "Não foi possível salvar sua chave de criptografia",
+            "no_credentials": "O backup na nuvem não está configurado neste dispositivo."
+        },
+        "icloud": {
+            "unavailable_title": "O iCloud não está disponível",
+            "unavailable": "Entre no iCloud e ative o iCloud Drive, depois tente novamente.",
+            "not_configured": "O Pera não consegue acessar o armazenamento do iCloud neste dispositivo. Verifique se o iCloud Drive está ativado para o Pera ou escolha outro local."
+        },
+        "google_drive": {
+            "unavailable": "O Google Drive não está configurado nesta versão do app.",
+            "play_services": "Atualize os serviços do Google Play e tente novamente.",
+            "sign_in_failed": "Não foi possível entrar no Google Drive. Tente novamente.",
+            "unreachable": "Não foi possível acessar o Google Drive. Verifique sua conexão e tente novamente."
         },
         "overview": {
             "title": "Backup na nuvem",
@@ -718,8 +746,23 @@
         "restore": {
             "sheet_title": "Restaurar/recuperar um backup",
             "sheet_description": "Restaure seu backup escaneando um código QR ou digitando suas credenciais manualmente.",
+            "sheet_description_with_import": "Restaure seu backup escaneando um código QR, importando sua chave de criptografia de onde você a salvou ou digitando suas credenciais manualmente.",
             "sheet_scan": "Escanear código QR",
             "sheet_manual": "Inserir dados manualmente",
+            "sheet_device": "Importar deste dispositivo",
+            "sheet_icloud": "Apple iCloud",
+            "sheet_google_drive": "Google Drive",
+            "import_reading": "Procurando sua chave de criptografia…",
+            "import_error": "Não foi possível ler sua chave de criptografia",
+            "import_not_found_icloud": "Nenhuma chave de criptografia foi encontrada no seu iCloud.",
+            "import_not_found_google_drive": "Nenhuma chave de criptografia foi encontrada no seu Google Drive.",
+            "import_still_downloading": "Sua chave de criptografia ainda está sendo baixada do iCloud. Tente novamente em instantes.",
+            "import_invalid_file": "Este arquivo não é uma chave de criptografia da Pera.",
+            "import_unsupported_version": "Este arquivo de chave de criptografia precisa de uma versão mais recente da Pera.",
+            "choose_file_title": "Escolha uma chave de criptografia",
+            "choose_file_description": "Há mais de uma chave de criptografia salva aqui. Escolha a que pertence ao backup que você quer restaurar.",
+            "choose_file_row": "Endereço {{prefix}}…",
+            "choose_file_unknown": "Chave salva anteriormente",
             "passphrase_title": "Digite sua frase de backup",
             "passphrase_continue": "Continuar",
             "too_many_words_title": "Frase de backup inválida",

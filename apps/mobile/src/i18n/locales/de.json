@@ -568,11 +568,15 @@
             "proceed": "Fortfahren",
             "error_message": "Falsche Auswahl. Bitte versuche es erneut."
         },
-        "confirm": {
-            "title": "Hast du deinen Verschlüsselungsschlüssel gespeichert?",
+        "store_encryption_key": {
+            "title": "Verschlüsselungsschlüssel speichern",
+            "description": "Bewahre deinen Verschlüsselungsschlüssel sicher auf. Zusammen mit deiner Passphrase brauchst du ihn, um dieses Backup wiederherzustellen.",
             "checkbox_label": "Ja, ich habe meinen Verschlüsselungsschlüssel gespeichert",
             "enable_button": "Cloud-Backup jetzt aktivieren",
-            "show_again_button": "Meine Zugangsdaten erneut anzeigen"
+            "leave_title": "Cloud-Backup ist noch nicht aktiv",
+            "leave_body": "Bis du es aktivierst, wird nichts gesichert, und du musst von vorn beginnen.",
+            "leave_confirm": "Trotzdem verlassen",
+            "leave_cancel": "Bleiben"
         },
         "enable": {
             "success": "Cloud-Backup aktiviert",
@@ -585,6 +589,30 @@
             "passphrase_missing": "Auf diesem Gerät ist keine Passphrase gespeichert.",
             "passphrase_unreadable": "Deine gespeicherte Passphrase konnte auf diesem Gerät nicht gelesen werden.",
             "done_button": "Bewahre deine Zugangsdaten sicher auf"
+        },
+        "store_credentials": {
+            "title": "Backup-Zugangsdaten speichern",
+            "description": "Wähle einen Ort, an dem du deinen Verschlüsselungsschlüssel sicher aufbewahrst. Private Schlüssel werden bei uns niemals gespeichert.",
+            "warning_title": "Wir speichern nur deinen Verschlüsselungsschlüssel",
+            "warning_body": "Deine 12-Wort-Passphrase musst du selbst sicher aufbewahren.",
+            "store_locally": "Lokal speichern",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "storing": "Dein Verschlüsselungsschlüssel wird gespeichert…",
+            "success": "Verschlüsselungsschlüssel gespeichert",
+            "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
+            "no_credentials": "Cloud-Backup ist auf diesem Gerät nicht eingerichtet."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud ist nicht verfügbar",
+            "unavailable": "Melde dich bei iCloud an, aktiviere iCloud Drive und versuche es dann erneut.",
+            "not_configured": "Pera kann auf diesem Gerät nicht auf den iCloud-Speicher zugreifen. Prüfe, ob iCloud Drive für Pera aktiviert ist, oder wähle einen anderen Ort."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive ist in dieser Version der App nicht eingerichtet.",
+            "play_services": "Aktualisiere die Google Play-Dienste und versuche es dann erneut.",
+            "sign_in_failed": "Anmeldung bei Google Drive fehlgeschlagen. Versuche es erneut.",
+            "unreachable": "Google Drive ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneut."
         },
         "overview": {
             "title": "Cloud-Backup",
@@ -710,8 +738,23 @@
         "restore": {
             "sheet_title": "Backup wiederherstellen/abrufen",
             "sheet_description": "Stelle dein Backup wieder her, indem du einen QR-Code scannst oder deine Zugangsdaten manuell eingibst.",
+            "sheet_description_with_import": "Stelle dein Backup wieder her, indem du einen QR-Code scannst, deinen Verschlüsselungsschlüssel von dort importierst, wo du ihn gespeichert hast, oder deine Zugangsdaten manuell eingibst.",
             "sheet_scan": "QR-Code scannen",
             "sheet_manual": "Details manuell eingeben",
+            "sheet_device": "Von diesem Gerät importieren",
+            "sheet_icloud": "Apple iCloud",
+            "sheet_google_drive": "Google Drive",
+            "import_reading": "Dein Verschlüsselungsschlüssel wird gesucht…",
+            "import_error": "Dein Verschlüsselungsschlüssel konnte nicht gelesen werden",
+            "import_not_found_icloud": "In deiner iCloud wurde kein Verschlüsselungsschlüssel gefunden.",
+            "import_not_found_google_drive": "In deinem Google Drive wurde kein Verschlüsselungsschlüssel gefunden.",
+            "import_still_downloading": "Dein Verschlüsselungsschlüssel wird noch aus iCloud geladen. Versuche es gleich erneut.",
+            "import_invalid_file": "Diese Datei ist kein Pera-Verschlüsselungsschlüssel.",
+            "import_unsupported_version": "Für diese Schlüsseldatei brauchst du eine neuere Version von Pera.",
+            "choose_file_title": "Verschlüsselungsschlüssel auswählen",
+            "choose_file_description": "Hier ist mehr als ein Verschlüsselungsschlüssel gespeichert. Wähle den Schlüssel des Backups aus, das du wiederherstellen möchtest.",
+            "choose_file_row": "Adresse {{prefix}}…",
+            "choose_file_unknown": "Zuvor gespeicherter Schlüssel",
             "passphrase_title": "Gib deine Backup-Phrase ein",
             "passphrase_continue": "Weiter",
             "too_many_words_title": "Ungültige Backup-Phrase",

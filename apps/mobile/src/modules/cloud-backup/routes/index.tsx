@@ -25,6 +25,7 @@ import { CloudBackupIntroScreen } from '../screens/CloudBackupIntroScreen'
 import { CloudBackupScreen } from '../screens/CloudBackupScreen'
 import { CloudBackupSetupScreen } from '../screens/CloudBackupSetupScreen'
 import { CloudBackupVerifyScreen } from '../screens/CloudBackupVerifyScreen'
+import { CloudBackupStoreEncryptionKeyScreen } from '../screens/CloudBackupStoreEncryptionKeyScreen'
 import { CloudBackupOverviewScreen } from '../screens/CloudBackupOverviewScreen'
 import { CloudBackupAccountsScreen } from '../screens/CloudBackupAccountsScreen'
 import { CloudBackupAccountsReviewScreen } from '../screens/CloudBackupAccountsReviewScreen'
@@ -110,6 +111,13 @@ export const CloudBackupStackNavigator = () => {
                     title: 'cloud_backup.verify.title',
                 }}
                 component={CloudBackupVerifyScreen}
+            />
+            <CloudBackupStack.Screen
+                name='CloudBackupStoreEncryptionKey'
+                options={{
+                    title: 'cloud_backup.store_encryption_key.title',
+                }}
+                component={CloudBackupStoreEncryptionKeyScreen}
             />
             <CloudBackupStack.Screen
                 name='CloudBackupOverview'

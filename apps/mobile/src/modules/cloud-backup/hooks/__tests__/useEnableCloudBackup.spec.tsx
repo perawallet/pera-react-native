@@ -15,8 +15,8 @@ import { renderHook, act } from '@testing-library/react'
 
 /** Only the two callbacks the wrapper supplies; the mutation itself is covered
  *  by the package's own spec. */
-type MutationCallbacks<TData> = {
-    onSuccess?: (data: TData) => void
+type MutationCallbacks = {
+    onSuccess?: () => void
     onError?: (error: Error) => void
 }
 const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
@@ -25,11 +25,7 @@ const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
         resetMock: vi.fn(),
         mutateMock: vi.fn(),
         capturedOptions: {
-            value: null as MutationCallbacks<{
-                backupId: string
-                salt: string
-                deviceId: string
-            }> | null,
+            value: null as MutationCallbacks | null,
         },
     }),
 )
@@ -39,7 +35,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useEnableCloudBackupMutation: (options: never) => {
+    useActivateCloudBackupMutation: (options: never) => {
         capturedOptions.value = options
         return { mutate: mutateMock, isPending: false }
     },
@@ -61,16 +57,12 @@ beforeEach(() => {
 })
 
 describe('useEnableCloudBackup', () => {
-    test('confirms and lands on the overview once the backup registers', () => {
+    // The store-key screen has just asked; prompting again on Overview would
+    // be a second ask for something already offered.
+    test('confirms and lands on the overview with nothing left to prompt', () => {
         renderHook(() => useEnableCloudBackup())
 
-        act(() =>
-            capturedOptions.value?.onSuccess?.({
-                backupId: 'did:pera:abc',
-                salt: 'c2FsdA==',
-                deviceId: 'device-123',
-            }),
-        )
+        act(() => capturedOptions.value?.onSuccess?.())
 
         expect(showToastMock).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -28,6 +28,8 @@ export default defineConfig({
                 'react-native',
                 'react-native-mmkv',
                 'react-native-keychain',
+                'react-native-cloud-storage',
+                '@react-native-google-signin/google-signin',
                 '@react-native-firebase/analytics',
                 '@react-native-firebase/crashlytics',
                 '@react-native-firebase/messaging',

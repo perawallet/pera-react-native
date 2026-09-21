@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
@@ -45,6 +49,13 @@ export const useCloudBackupRestorePassphraseScreen =
         const navigation =
             useNavigation<
                 NativeStackNavigationProp<CloudBackupStackParamList>
+            >()
+        const { params } =
+            useRoute<
+                RouteProp<
+                    CloudBackupStackParamList,
+                    'CloudBackupRestorePassphrase'
+                >
             >()
         const { t } = useLanguage()
         const { errorToast } = useToast()
@@ -96,8 +107,8 @@ export const useCloudBackupRestorePassphraseScreen =
             if (!canContinue) return
             trackEvent(CloudBackupEvent.RestorePassphraseProceed)
             setMnemonic(words)
-            navigation.navigate('CloudBackupRestoreEncryptionKey')
-        }, [canContinue, setMnemonic, words, navigation])
+            navigation.navigate('CloudBackupRestoreEncryptionKey', params)
+        }, [canContinue, setMnemonic, words, navigation, params])
 
         return {
             words,

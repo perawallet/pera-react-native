@@ -576,11 +576,15 @@
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
         },
-        "confirm": {
-            "title": "Avez-vous enregistré votre clé de chiffrement ?",
+        "store_encryption_key": {
+            "title": "Conservez votre clé de chiffrement",
+            "description": "Conservez votre clé de chiffrement en lieu sûr. Vous en avez besoin avec votre Passphrase pour restaurer cette sauvegarde.",
             "checkbox_label": "Oui, j’ai enregistré ma clé de chiffrement",
             "enable_button": "Activer la sauvegarde cloud maintenant",
-            "show_again_button": "Afficher à nouveau mes identifiants"
+            "leave_title": "La sauvegarde cloud n’est pas encore activée",
+            "leave_body": "Rien n’est sauvegardé tant que vous ne l’activez pas, et vous devrez tout recommencer.",
+            "leave_confirm": "Quitter quand même",
+            "leave_cancel": "Rester"
         },
         "enable": {
             "success": "Sauvegarde cloud activée",
@@ -593,6 +597,30 @@
             "passphrase_missing": "Aucune Passphrase n’est enregistrée sur cet appareil.",
             "passphrase_unreadable": "Votre Passphrase enregistrée sur cet appareil n’a pas pu être lue.",
             "done_button": "Conservez vos identifiants en lieu sûr"
+        },
+        "store_credentials": {
+            "title": "Conserver les identifiants de sauvegarde",
+            "description": "Choisissez un emplacement pour conserver votre clé de chiffrement en toute sécurité. Aucune clé privée n’est jamais stockée de notre côté.",
+            "warning_title": "Nous ne conservons que votre clé de chiffrement",
+            "warning_body": "Vous devez conserver vous-même votre Passphrase de 12 mots en lieu sûr.",
+            "store_locally": "Enregistrer localement",
+            "icloud": "Apple iCloud",
+            "google_drive": "Google Drive",
+            "storing": "Enregistrement de votre clé de chiffrement…",
+            "success": "Clé de chiffrement enregistrée",
+            "error": "Impossible d’enregistrer votre clé de chiffrement",
+            "no_credentials": "La sauvegarde cloud n’est pas configurée sur cet appareil."
+        },
+        "icloud": {
+            "unavailable_title": "iCloud n’est pas disponible",
+            "unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez.",
+            "not_configured": "Pera ne peut pas accéder au stockage iCloud sur cet appareil. Vérifiez qu’iCloud Drive est activé pour Pera ou choisissez un autre emplacement."
+        },
+        "google_drive": {
+            "unavailable": "Google Drive n’est pas configuré dans cette version de l’application.",
+            "play_services": "Mettez à jour les services Google Play, puis réessayez.",
+            "sign_in_failed": "Impossible de se connecter à Google Drive. Réessayez.",
+            "unreachable": "Impossible de joindre Google Drive. Vérifiez votre connexion et réessayez."
         },
         "overview": {
             "title": "Sauvegarde cloud",
@@ -718,8 +746,23 @@
         "restore": {
             "sheet_title": "Restaurer/récupérer une sauvegarde",
             "sheet_description": "Restaurez votre sauvegarde en scannant un QR code ou en saisissant vos identifiants manuellement.",
+            "sheet_description_with_import": "Restaurez votre sauvegarde en scannant un QR code, en important votre clé de chiffrement depuis l’endroit où vous l’avez enregistrée ou en saisissant vos identifiants manuellement.",
             "sheet_scan": "Scanner le QR code",
             "sheet_manual": "Saisir les informations manuellement",
+            "sheet_device": "Importer depuis cet appareil",
+            "sheet_icloud": "Apple iCloud",
+            "sheet_google_drive": "Google Drive",
+            "import_reading": "Recherche de votre clé de chiffrement…",
+            "import_error": "Impossible de lire votre clé de chiffrement",
+            "import_not_found_icloud": "Aucune clé de chiffrement n’a été trouvée dans votre iCloud.",
+            "import_not_found_google_drive": "Aucune clé de chiffrement n’a été trouvée dans votre Google Drive.",
+            "import_still_downloading": "Votre clé de chiffrement est encore en cours de téléchargement depuis iCloud. Réessayez dans un instant.",
+            "import_invalid_file": "Ce fichier n’est pas une clé de chiffrement Pera.",
+            "import_unsupported_version": "Ce fichier de clé de chiffrement nécessite une version plus récente de Pera.",
+            "choose_file_title": "Choisissez une clé de chiffrement",
+            "choose_file_description": "Plusieurs clés de chiffrement sont enregistrées ici. Choisissez celle de la sauvegarde que vous souhaitez restaurer.",
+            "choose_file_row": "Adresse {{prefix}}…",
+            "choose_file_unknown": "Clé enregistrée précédemment",
             "passphrase_title": "Saisissez votre phrase de sauvegarde",
             "passphrase_continue": "Continuer",
             "too_many_words_title": "Phrase de sauvegarde invalide",

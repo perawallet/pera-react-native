@@ -32,6 +32,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-device',
                 '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-provider',
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english.js',

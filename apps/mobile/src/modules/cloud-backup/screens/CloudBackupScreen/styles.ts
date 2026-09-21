@@ -17,9 +17,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         marginBottom: theme.spacing.xxl,
     },
-    options: {
-        gap: theme.spacing.md,
-    },
     note: {
         paddingHorizontal: theme.spacing.lg,
         color: theme.colors.textGray,

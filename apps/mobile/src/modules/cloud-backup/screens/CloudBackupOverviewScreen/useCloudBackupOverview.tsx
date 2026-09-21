@@ -30,7 +30,10 @@ import {
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
-import { BackupCredentialsSheet } from '../../components/BackupCredentialsSheet'
+import {
+    BackupCredentialsSheet,
+    type BackupCredentialsSheetResult,
+} from '../../components/BackupCredentialsSheet'
 import { ConfirmTurnOffBackupSheet } from '../../components/ConfirmTurnOffBackupSheet'
 import {
     TurnOffBackupSheet,
@@ -42,6 +45,7 @@ import {
     useRemoveCloudBackup,
     useSyncDevicesQr,
     useCloudBackupIntroduction,
+    useStoreBackupCredentials,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -60,6 +64,7 @@ type UseCloudBackupOverviewResult = {
     onPressCredentialAddress: () => Promise<void>
     onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
+    isSavingCredentials: boolean
 }
 
 const formatSyncedAt = (millis: number | null): string => {
@@ -88,6 +93,8 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { removeBackup } = useRemoveCloudBackup()
     const { isSyncing } = useBackupSync()
     const { showSyncQr } = useSyncDevicesQr()
+    const { storeCredentials, isSaving: isSavingCredentials } =
+        useStoreBackupCredentials()
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
@@ -150,7 +157,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         trackEvent(CloudBackupEvent.OverviewCredentialAddress)
         if (!(await requirePinVerification())) return
 
-        await requestBottomSheet({
+        const choice = await requestBottomSheet<BackupCredentialsSheetResult>({
             contents: <BackupCredentialsSheet />,
             options: {
                 size: 'auto',
@@ -158,7 +165,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
                 autoCreateContainer: false,
             },
         })
-    }, [requirePinVerification, requestBottomSheet])
+        // The PIN above covers this: the sheet it opened already showed the
+        // credentials, so asking again to save them is a second prompt for
+        // something the user has just been shown.
+        if (choice === 'store') await storeCredentials({ hasVerifiedPin: true })
+    }, [requirePinVerification, requestBottomSheet, storeCredentials])
 
     const onPressSyncDevices = useCallback(async () => {
         trackEvent(CloudBackupEvent.OverviewSyncDevices)
@@ -214,5 +225,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,
+        isSavingCredentials,
     }
 }

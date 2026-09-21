@@ -19,7 +19,7 @@ import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import { shareCsvFile } from '@utils/shareCsvFile'
+import { shareFile } from '@utils/shareFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterContent/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -48,6 +48,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
+    CSV_MIME_TYPE: 'text/csv',
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
 }))
@@ -82,8 +83,8 @@ vi.mock('react-native', () => ({
     },
 }))
 
-vi.mock('@utils/shareCsvFile', () => ({
-    shareCsvFile: vi.fn(),
+vi.mock('@utils/shareFile', () => ({
+    shareFile: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -675,7 +676,9 @@ describe('useAssetTransactionList', () => {
 
             await successCallback(mockResult)
 
-            expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
+            expect(shareFile).toHaveBeenCalledWith('test.csv', 'data', {
+                mimeType: 'text/csv',
+            })
         })
 
         it('shows error toast when share fails', async () => {
@@ -693,7 +696,7 @@ describe('useAssetTransactionList', () => {
                 },
             )
 
-            vi.mocked(shareCsvFile).mockRejectedValueOnce(
+            vi.mocked(shareFile).mockRejectedValueOnce(
                 new Error('Share cancelled'),
             )
 

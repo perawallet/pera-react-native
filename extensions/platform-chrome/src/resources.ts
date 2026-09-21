@@ -17,6 +17,7 @@ import {
     ChromeAnalyticsService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
+    ChromeCloudFileStorageService,
     ChromeCrashReportingService,
     ChromeDatabaseService,
     ChromeDeviceInfoService,
@@ -43,6 +44,7 @@ export const platformServices: PlatformServices = {
     hardwareWalletRegistry: createHardwareWalletRegistry(),
     migration: new ChromeMigrationService(),
     walletProvisioning: new ChromeWalletProvisioningService(),
+    cloudFileStorage: new ChromeCloudFileStorageService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices
