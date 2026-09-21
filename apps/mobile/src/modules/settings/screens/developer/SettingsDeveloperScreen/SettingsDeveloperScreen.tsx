@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -21,6 +22,7 @@ import { PWListItem, PWScreen } from '@components/core'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -35,6 +37,10 @@ export const SettingsDeveloperScreen = () => {
     }
 
     const openDispenser = () => {
+        if (!routeCapabilities.inAppWebView) {
+            void Linking.openURL(dispenserUrl)
+            return
+        }
         pushWebView({
             url: dispenserUrl,
             id: generateUniqueId(),
