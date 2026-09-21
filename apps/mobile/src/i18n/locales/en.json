@@ -1623,7 +1623,8 @@
         "connect_account": {
             "title": "Choose Card account",
             "subtitle": "To get started, connect the wallet you would like to use to set up your account.",
-            "change": "Change"
+            "change": "Change",
+            "create_account": "Create Account"
         }
     },
     "notifications": {

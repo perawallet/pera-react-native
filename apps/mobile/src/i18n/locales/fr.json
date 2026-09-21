@@ -1623,7 +1623,8 @@
         "connect_account": {
             "title": "Choisir le compte de la carte",
             "subtitle": "Pour commencer, connectez le wallet que vous souhaitez utiliser pour configurer votre compte.",
-            "change": "Modifier"
+            "change": "Modifier",
+            "create_account": "Créer un compte"
         }
     },
     "notifications": {

@@ -1623,7 +1623,8 @@
         "connect_account": {
             "title": "Kart hesabını seç",
             "subtitle": "Başlamak için hesabını kurmak üzere kullanmak istediğin cüzdanı bağla.",
-            "change": "Değiştir"
+            "change": "Değiştir",
+            "create_account": "Hesap oluştur"
         }
     },
     "notifications": {

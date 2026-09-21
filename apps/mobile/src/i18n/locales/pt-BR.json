@@ -1625,7 +1625,8 @@
         "connect_account": {
             "title": "Escolha a conta do cartão",
             "subtitle": "Para começar, conecte a wallet que você quer usar para configurar sua conta.",
-            "change": "Alterar"
+            "change": "Alterar",
+            "create_account": "Criar conta"
         }
     },
     "notifications": {

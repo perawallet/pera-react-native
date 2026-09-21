@@ -26,7 +26,6 @@ import {
     AccountMenuContent,
     type AccountMenuContentResult,
 } from '@modules/accounts/components/AccountMenuContent'
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConnectAccountHeader } from '../components/ConnectAccountHeader'
 import { useCardAddAccount } from './useCardAddAccount'
@@ -95,54 +94,39 @@ export const useCardFundingSourcePicker = ({
     const pickFundingSource = useCallback(async (): Promise<
         Nullable<WalletAccount>
     > => {
-        // Reuse the standard account menu as-is, customised only through
-        // its existing props: the card header and the eligibility filter.
-        const openPicker = async (): Promise<Nullable<WalletAccount>> => {
-            const result = await request<AccountMenuContentResult>({
-                id: 'card-connect-funding-source',
-                contents: createElement(AccountMenuContent, {
-                    headerContent: createElement(ConnectAccountHeader),
-                    accountFilter,
-                    // Fresh on first connect (null → nothing highlighted);
-                    // the connected source is highlighted on "Change".
-                    selectedAddress: connectedAddress,
-                }),
-                options: {
-                    size: 'full',
-                    enablePanDownToClose: false,
-                    enableContentPanningGesture: false,
-                    autoCreateContainer: false,
-                },
-            })
-            if (!result) return null
-            switch (result.kind) {
-                case 'selected': {
-                    return result.account
-                }
-                case 'add-account': {
-                    handleCreateAccount()
-                    return null
-                }
-                case 'sort': {
-                    await request<void>({
-                        contents: createElement(AccountSortContent),
-                        options: {
-                            size: 'modal',
-                            enablePanDownToClose: false,
-                            enableContentPanningGesture: false,
-                            autoCreateContainer: false,
-                        },
-                    })
-                    // After sorting, reopen the picker so the user can choose.
-                    return openPicker()
-                }
-                case 'search':
-                default: {
-                    return null
-                }
+        // Reuse the standard account menu, but with its title row replaced:
+        // ConnectAccountHeader supplies the card flow's own heading and
+        // "Create Account" action, and offers no sorting.
+        const result = await request<AccountMenuContentResult>({
+            id: 'card-connect-funding-source',
+            contents: createElement(AccountMenuContent, {
+                headerContent: createElement(ConnectAccountHeader),
+                hideDefaultHeader: true,
+                accountFilter,
+                // Fresh on first connect (null → nothing highlighted);
+                // the connected source is highlighted on "Change".
+                selectedAddress: connectedAddress,
+            }),
+            options: {
+                size: 'full',
+                enablePanDownToClose: false,
+                enableContentPanningGesture: false,
+                autoCreateContainer: false,
+            },
+        })
+        if (!result) return null
+        switch (result.kind) {
+            case 'selected': {
+                return result.account
+            }
+            case 'add-account': {
+                handleCreateAccount()
+                return null
+            }
+            default: {
+                return null
             }
         }
-        return openPicker()
     }, [request, handleCreateAccount, connectedAddress, accountFilter])
 
     return { pickFundingSource }

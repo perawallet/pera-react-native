@@ -1615,7 +1615,8 @@
         "connect_account": {
             "title": "Kartenkonto wählen",
             "subtitle": "Verbinde zunächst das Wallet, das du zur Einrichtung deines Kontos verwenden möchtest.",
-            "change": "Ändern"
+            "change": "Ändern",
+            "create_account": "Konto erstellen"
         }
     },
     "notifications": {
