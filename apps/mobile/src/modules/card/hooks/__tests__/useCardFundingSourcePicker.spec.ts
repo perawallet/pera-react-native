@@ -95,8 +95,7 @@ describe('isEligibleFundingSource', () => {
 })
 
 describe('isSigningCapableFundingSource', () => {
-    it('excludes Ledger (eligible but cannot sign) and needs a signing key', () => {
-        // Local-key accounts (with a keyPairId) can sign; Ledger cannot.
+    it('accepts local-key and Ledger accounts, and needs a signing key', () => {
         expect(
             isSigningCapableFundingSource(
                 account('A', 'algo25', { keyPairId: 'k1' }),
@@ -107,14 +106,15 @@ describe('isSigningCapableFundingSource', () => {
                 account('B', 'hdWallet', { keyPairId: 'k2' }),
             ),
         ).toBe(true)
-        // Ledger is an eligible funding source but can't sign arbitrary data.
+        // Ledger signs the creation proof on-device; it carries no keyPairId.
         expect(isSigningCapableFundingSource(account('C', 'hardware'))).toBe(
-            false,
+            true,
         )
-        // A local-key type with no keyPairId can't sign either.
+        // A local-key type with no keyPairId can't sign at all.
         expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
             false,
         )
+        expect(isSigningCapableFundingSource(account('E', 'watch'))).toBe(false)
     })
 })
 
@@ -126,7 +126,7 @@ describe('canAutoFund', () => {
         expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }))).toBe(
             true,
         )
-        // Ledger can create a card once ARC-60 lands but can never sign an LSig.
+        // Ledger creates cards but can never sign an LSig.
         expect(canAutoFund(account('C', 'hardware'))).toBe(false)
         expect(canAutoFund(account('D', 'algo25'))).toBe(false)
     })

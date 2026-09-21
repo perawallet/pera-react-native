@@ -13,7 +13,7 @@
 import { createElement, useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
-    canSignArbitraryData,
+    canSignArc60,
     canSignProgram,
     isAlgo25Account,
     isHardwareWalletAccount,
@@ -42,25 +42,18 @@ export const isEligibleFundingSource = (account: WalletAccount): boolean =>
     !isRekeyedAccount(account)
 
 /**
- * Funding sources that can also produce a signature — the stricter filter used
- * during onboarding, where creating the card requires an ARC-60 (and, for Auto,
- * a delegated LSig) signature. Excludes Ledger, which is eligible as a funding
- * source but can't sign arbitrary data / programs.
- *
- * Card creation uses `useLocalKeyArc60Signer`, which is local-key only (Algo25/HD).
- * Ledger ARC-60 signing is not yet wired up for card creation; once it is, this
- * filter could relax to include Ledger accounts.
+ * Funding sources that can also sign the ARC-60 ownership proof card creation
+ * needs — the stricter filter onboarding uses. Gates on `canSignArc60` rather
+ * than `canSignArbitraryData`: Ledger signs ARC-60 on-device, holding no local key.
  */
 export const isSigningCapableFundingSource = (
     account: WalletAccount,
-): boolean => isEligibleFundingSource(account) && canSignArbitraryData(account)
+): boolean => isEligibleFundingSource(account) && canSignArc60(account)
 
 /**
  * Whether `account` can turn ON auto funding, i.e. sign the delegated AutoDraw
- * LSig program. Ledger can never do this — a PERMANENT limitation, unlike the
- * temporary ARC-60 creation restriction in
- * {@link isSigningCapableFundingSource}. Keep the two distinct: once ARC-60
- * lets Ledger create a card, Auto must still be greyed out for it.
+ * LSig. Stays narrower than {@link isSigningCapableFundingSource}: Ledger
+ * creates cards but its firmware will never sign a program.
  */
 export const canAutoFund = (account: WalletAccount): boolean =>
     canSignProgram(account)
@@ -75,9 +68,9 @@ export type UseCardFundingSourcePickerResult = {
 
 export type UseCardFundingSourcePickerParams = {
     /**
-     * Which accounts to offer. Defaults to {@link isEligibleFundingSource}
-     * (includes Ledger); onboarding passes {@link isSigningCapableFundingSource}
-     * so only signing-capable accounts are offered.
+     * Which accounts to offer. Defaults to {@link isEligibleFundingSource};
+     * onboarding passes {@link isSigningCapableFundingSource}, which also
+     * requires the account to be able to sign the creation proof.
      */
     accountFilter?: (account: WalletAccount) => boolean
 }

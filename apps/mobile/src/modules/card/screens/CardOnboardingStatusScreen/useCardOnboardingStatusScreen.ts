@@ -289,8 +289,8 @@ export const useCardOnboardingStatusScreen =
             navigation.navigate('CardOnboardingPersonalDetails')
         }, [isKycSubmitted, handleVerifyIdentity, navigation])
 
-        // Onboarding creation always needs a signature, so only offer accounts
-        // that can sign (excludes Ledger, which is otherwise fundable).
+        // Creation always needs an ARC-60 signature, so only offer accounts
+        // that can produce one.
         const { pickFundingSource } = useCardFundingSourcePicker({
             accountFilter: isSigningCapableFundingSource,
         })
@@ -318,9 +318,8 @@ export const useCardOnboardingStatusScreen =
         // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
         const { canCreateCard } = useEscrowCardCreation()
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
-        // Auto availability keys off the auto-funding capability (LSig signing),
-        // NOT card creation: Ledger will create cards once ARC-60 lands but can
-        // never sign the AutoDraw LSig, so Auto must stay disabled for it.
+        // Auto availability keys off LSig signing, NOT card creation: a Ledger
+        // creates a card but can never sign the AutoDraw LSig.
         const isConnectedLedger =
             connectedAccount != null && isLedgerAccount(connectedAccount)
         const isAutoFundingUnavailable =

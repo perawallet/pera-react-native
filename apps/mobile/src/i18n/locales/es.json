@@ -1117,7 +1117,7 @@
             "funding_change_requires_manual_title": "Cambia primero a financiación manual",
             "funding_change_requires_manual_body": "No puedes cambiar la cuenta conectada mientras la financiación automática esté activada. Cambia a manual, cambia la cuenta y vuelve a activar la financiación automática.",
             "funding_type_auto_unavailable_hint": "No disponible para esta cuenta: no puede firmar una autorización de financiación automática.",
-            "funding_type_auto_ledger_hint": "No compatible con cuentas Ledger. Conecta otra cuenta para usar la financiación automática.",
+            "funding_type_auto_ledger_hint": "No disponible para cuentas Ledger. Continúa con la financiación manual o conecta una cuenta estándar para activar la financiación automática.",
             "funding_type_auto_coming_soon_hint": "La financiación automática estará disponible próximamente.",
             "authorize_delegation_title": "Autorizar la financiación automática",
             "authorize_delegation_body": "La financiación automática se cobra de {{account}} hasta que la desactives. El límite de {{limit}} por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes volver a Manual en cualquier momento.",

@@ -1117,7 +1117,7 @@
             "funding_change_requires_manual_title": "Önce manuel fonlamaya geç",
             "funding_change_requires_manual_body": "Otomatik fonlama açıkken bağlı hesap değiştirilemez. Manuel fonlamaya geç, hesabı değiştir, ardından otomatik fonlamayı yeniden aç.",
             "funding_type_auto_unavailable_hint": "Bu hesap için kullanılamıyor — otomatik fonlama yetkisini imzalayamıyor.",
-            "funding_type_auto_ledger_hint": "Ledger hesaplarında desteklenmiyor. Otomatik fonlamayı kullanmak için farklı bir hesap bağla.",
+            "funding_type_auto_ledger_hint": "Ledger hesapları için kullanılamıyor. Manuel fonlamayla devam et veya otomatik fonlamayı etkinleştirmek için bir standart hesap bağla.",
             "funding_type_auto_coming_soon_hint": "Otomatik fonlama çok yakında.",
             "authorize_delegation_title": "Otomatik fonlamayı yetkilendir",
             "authorize_delegation_body": "Otomatik fonlama, sen kapatana kadar şu hesaptan çeker: {{account}}. İşlem başına {{limit}} tutarındaki limiti imzan değil, kart sağlayıcın belirler. İstediğin zaman Manuel fonlamaya dönebilirsin.",
