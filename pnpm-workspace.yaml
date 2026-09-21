@@ -36,7 +36,7 @@ catalog:
   # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
   # internal protocol contract, so a floating minor on one side can pair with
   # a core it was never built against. Bump the two together.
-  "@reown/walletkit": 1.5.6
+  "@reown/walletkit": 1.6.0
   "@scure/base": 2.4.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
@@ -53,10 +53,10 @@ catalog:
   "@vitejs/plugin-react": 6.1.1
   "@vitest/coverage-v8": ^4.1.9
   # Kept in step with "@reown/walletkit" above; see the note there.
-  "@walletconnect/core": 2.23.10
+  "@walletconnect/core": 2.25.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
-  "@walletconnect/react-native-compat": 2.23.10
+  "@walletconnect/react-native-compat": 2.25.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
@@ -88,9 +88,9 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
-  lanekeep: 0.10.0
+  lanekeep: 0.11.0
   msw: ^2.14.6
-  oxfmt: ^0.67.0
+  oxfmt: ^0.68.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
