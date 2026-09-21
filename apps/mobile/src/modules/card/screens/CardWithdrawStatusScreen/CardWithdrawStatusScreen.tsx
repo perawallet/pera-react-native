@@ -19,6 +19,7 @@ import {
 } from '@components/core'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardStepRow } from '../../components/CardStepRow'
 import { useCardWithdrawStatusScreen } from './useCardWithdrawStatusScreen'
 import { useStyles } from './styles'
 
@@ -91,16 +92,41 @@ export const CardWithdrawStatusScreen = () => {
                             />
                         </PWView>
                         <PWText
-                            variant='bodyLarge'
+                            variant='body'
                             style={styles.muted}
-                            testID='card-withdraw-status-text'
                         >
-                            {isReady
-                                ? t('peraCard.withdraw.status_ready')
-                                : t('peraCard.withdraw.status_waiting', {
-                                      seconds: secondsUntilReady,
-                                  })}
+                            {t('peraCard.withdraw.status_body')}
                         </PWText>
+                        <PWView style={styles.stepsCard}>
+                            <CardStepRow
+                                stepNumber={1}
+                                label={t(
+                                    'peraCard.withdraw.status_step_request',
+                                )}
+                                status='done'
+                                testID='card-withdraw-status-step-request'
+                            />
+                            <CardStepRow
+                                stepNumber={2}
+                                label={t(
+                                    'peraCard.withdraw.status_step_complete',
+                                )}
+                                status='active'
+                                isBusy={!isReady}
+                                testID='card-withdraw-status-step-complete'
+                            />
+                            <PWText
+                                variant='footnoteMedium'
+                                style={styles.muted}
+                                testID='card-withdraw-status-text'
+                            >
+                                {isReady
+                                    ? t('peraCard.withdraw.status_ready')
+                                    : t('peraCard.withdraw.status_waiting', {
+                                          seconds: secondsUntilReady,
+                                      })}
+                            </PWText>
+                        </PWView>
                     </>
                 )}
                 {!isLoading && !hasPending && (

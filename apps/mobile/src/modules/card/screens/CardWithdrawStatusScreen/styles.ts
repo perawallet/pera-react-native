@@ -26,6 +26,13 @@ export const useStyles = makeStyles(theme => ({
     muted: {
         color: theme.colors.textGray,
     },
+    stepsCard: {
+        padding: theme.spacing.lg,
+        gap: theme.spacing.lg,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.divider,
+        borderRadius: theme.spacing.md,
+    },
     amountSkeleton: {
         width: theme.spacing['5xl'] * 2,
         height: theme.spacing['3xl'],
