@@ -35,13 +35,19 @@ export type ReadCloudFileOptions = {
      * free of any one caller's naming rules.
      */
     isCandidate: (fileName: string) => boolean
-    /** Required wherever a folder can hold more than one candidate. */
-    chooseFile?: ChooseCloudFile
+    chooseFile: ChooseCloudFile
     /**
      * Fires once nothing but the read itself is left, so a progress overlay
      * can't collide with a picker or a sign-in sheet.
      */
     onReading?: () => void
+    /**
+     * Honoured by iCloud only, where it ends the wait for a placeholder still
+     * downloading and resolves the read as `cancelled`; a request already in
+     * flight still has to come back before that is noticed. Drive runs to
+     * completion regardless.
+     */
+    signal?: AbortSignal
 }
 
 /**

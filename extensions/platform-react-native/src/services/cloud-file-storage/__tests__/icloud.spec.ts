@@ -14,8 +14,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     CloudFileNotDownloadedError,
     CloudFileNotFoundError,
+    ICloudNotConfiguredError,
     ICloudUnavailableError,
+    type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
+import { isExpectedError } from '@perawallet/wallet-core-shared'
 import {
     CloudStorageError,
     CloudStorageErrorCode,
@@ -77,8 +80,11 @@ const POLL_ATTEMPTS = 20
 const POLL_INTERVAL_MS = 500
 
 const isCandidate = (fileName: string) => fileName.startsWith('pera-backup-')
-const options = (extra: Record<string, unknown> = {}) => ({
+const options = (
+    extra: Partial<ReadCloudFileOptions> = {},
+): ReadCloudFileOptions => ({
     isCandidate,
+    chooseFile: async () => null,
     ...extra,
 })
 
@@ -132,14 +138,23 @@ describe('saveToICloud', () => {
         await expect(saveToICloud(ONE, '{}')).rejects.toThrow('ERR_WRITE_ERROR')
     })
 
-    test('reports iCloud as unavailable when the app has no iCloud container', async () => {
+    // The availability check passed, so "sign in and turn on iCloud Drive" is
+    // advice this user has already followed.
+    test('separates a missing container from iCloud being switched off', async () => {
         writeFile.mockRejectedValueOnce(
             cloudError(CloudStorageErrorCode.DIRECTORY_NOT_FOUND),
         )
 
         await expect(saveToICloud(ONE, '{}')).rejects.toBeInstanceOf(
-            ICloudUnavailableError,
+            ICloudNotConfiguredError,
         )
+    })
+
+    test('files no crash report for either iCloud state', () => {
+        // A missing container is the per-app iCloud switch as often as an
+        // unentitled build, so neither is ours to report.
+        expect(isExpectedError(new ICloudNotConfiguredError())).toBe(true)
+        expect(isExpectedError(new ICloudUnavailableError())).toBe(true)
     })
 })
 
@@ -212,23 +227,23 @@ describe('readFromICloud resolving which file to read', () => {
         expect(readdir).not.toHaveBeenCalled()
     })
 
-    test('maps a missing ubiquity container on the listing to iCloud being unavailable', async () => {
+    test('maps a missing ubiquity container on the listing to an unconfigured build', async () => {
         readdir.mockRejectedValueOnce(
             cloudError(CloudStorageErrorCode.DIRECTORY_NOT_FOUND),
         )
 
         await expect(readFromICloud(options())).rejects.toBeInstanceOf(
-            ICloudUnavailableError,
+            ICloudNotConfiguredError,
         )
     })
 
-    test('maps a missing ubiquity container on the read to iCloud being unavailable', async () => {
+    test('maps a missing ubiquity container on the read to an unconfigured build', async () => {
         readFile.mockRejectedValueOnce(
             cloudError(CloudStorageErrorCode.DIRECTORY_NOT_FOUND),
         )
 
         await expect(readFromICloud(options())).rejects.toBeInstanceOf(
-            ICloudUnavailableError,
+            ICloudNotConfiguredError,
         )
     })
 
@@ -294,6 +309,42 @@ describe('readFromICloud waiting for a placeholder to download', () => {
             status: 'read',
             contents: CONTENTS,
         })
+    })
+
+    // On iOS 18.4+ a placeholder reports READ_ERROR for as long as it takes to
+    // download, so the tolerance has to span the window, not the first reads.
+    test('keeps waiting while a placeholder reports READ_ERROR past the first poll', async () => {
+        vi.useFakeTimers()
+        readFile
+            .mockRejectedValueOnce(cloudError(CloudStorageErrorCode.READ_ERROR))
+            .mockRejectedValueOnce(cloudError(CloudStorageErrorCode.READ_ERROR))
+            .mockRejectedValueOnce(cloudError(CloudStorageErrorCode.READ_ERROR))
+            .mockRejectedValueOnce(cloudError(CloudStorageErrorCode.READ_ERROR))
+            .mockResolvedValueOnce(CONTENTS)
+
+        const read = readFromICloud(options())
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 4)
+
+        await expect(read).resolves.toEqual({
+            status: 'read',
+            contents: CONTENTS,
+        })
+        expect(readFile).toHaveBeenCalledTimes(5)
+    })
+
+    test('stops waiting when the caller aborts, without reading again', async () => {
+        vi.useFakeTimers()
+        readFile.mockRejectedValueOnce(
+            cloudError(CloudStorageErrorCode.FILE_NOT_FOUND),
+        )
+        const controller = new AbortController()
+
+        const read = readFromICloud(options({ signal: controller.signal }))
+        await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS / 2)
+        controller.abort()
+
+        await expect(read).resolves.toEqual({ status: 'cancelled' })
+        expect(readFile).toHaveBeenCalledTimes(1)
     })
 
     test('rethrows a triggerSync failure that is not a not-yet-downloadable placeholder', async () => {

@@ -2575,6 +2575,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         unknown: 'medium',
     }
 
+    // Extends Error, not AppError, matching packages/shared/src/utils/bounds.ts.
+    class InputTooLargeError extends Error {
+        constructor(
+            public readonly label: string,
+            public readonly limit: number,
+            public readonly actual: number,
+        ) {
+            super(`${label} exceeds maximum size (${actual} > ${limit})`)
+            this.name = 'InputTooLargeError'
+        }
+    }
+
     class PeraNetworkError extends AppError {
         public readonly kind: string
         public readonly status?: number
@@ -2813,6 +2825,30 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Buffer.from(bytes).toString('base64'),
         decodeFromBase64: (value: string) =>
             new Uint8Array(Buffer.from(value, 'base64')),
+        // The mock replaces the module wholesale, so anything a package parser
+        // reaches for has to be listed here or it reads as undefined and the
+        // parser rejects valid input. bounds.ts pulls in strings.ts and its
+        // decimal/locale/logging chain, which is why these are mirrored rather
+        // than imported. They throw a plain Error: nothing outside bounds.ts's
+        // own spec tests for InputTooLargeError, and both parsers catch every
+        // throw.
+        InputTooLargeError,
+        assertMaxLength: (value: string, maxChars: number, label: string) => {
+            if (value.length > maxChars) {
+                throw new InputTooLargeError(label, maxChars, value.length)
+            }
+        },
+        decodeBoundedBase64: (
+            base64: string,
+            maxBytes: number,
+            label = 'base64 input',
+        ) => {
+            const bytes = new Uint8Array(Buffer.from(base64, 'base64'))
+            if (bytes.length > maxBytes) {
+                throw new InputTooLargeError(label, maxBytes, bytes.length)
+            }
+            return bytes
+        },
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),

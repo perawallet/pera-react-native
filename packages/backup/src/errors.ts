@@ -23,6 +23,7 @@ export {
     GoogleDriveNotConfiguredError,
     GoogleDriveUnreachableError,
     GooglePlayServicesUnavailableError,
+    ICloudNotConfiguredError,
     ICloudUnavailableError,
     CloudFileNotDownloadedError as CredentialsFileNotDownloadedError,
     CloudFileNotFoundError as CredentialsFileNotFoundError,

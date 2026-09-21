@@ -12,6 +12,7 @@
 
 import {
     CloudFileNotDownloadedError,
+    ICloudNotConfiguredError,
     ICloudUnavailableError,
     type CloudFileReadResult,
     type CloudFileSaveResult,
@@ -27,12 +28,23 @@ import {
 
 import { resolveCandidate } from './candidates'
 
+// 20 × 500 ms of sleeping is the floor of the wait, not its ceiling: each
+// attempt also makes a triggerSync and a read round trip, neither of which is
+// bounded here.
 const POLL_INTERVAL_MS = 500
-// About 10 s for a fresh install to pull the file down.
 const POLL_ATTEMPTS = 20
 
 const hasCode = (error: unknown, code: CloudStorageErrorCode): boolean =>
     error instanceof CloudStorageError && error.code === code
+
+// Past the availability check this means no container for this app: the build
+// lacks the entitlement, or iCloud Drive is switched off for Pera. Telling the
+// user to sign in would be a dead end in both.
+const throwIfContainerMissing = (error: unknown): void => {
+    if (hasCode(error, CloudStorageErrorCode.DIRECTORY_NOT_FOUND)) {
+        throw new ICloudNotConfiguredError()
+    }
+}
 
 // AppData is the container root, hidden from the Files app: the file is for the
 // app to read back on restore, not for the user to move around.
@@ -41,9 +53,15 @@ const openICloud = (): CloudStorage =>
         scope: CloudStorageScope.AppData,
     })
 
-const wait = (ms: number): Promise<void> =>
+const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
     new Promise(resolve => {
-        setTimeout(resolve, ms)
+        const stop = (): void => {
+            clearTimeout(timer)
+            signal?.removeEventListener('abort', stop)
+            resolve()
+        }
+        const timer = setTimeout(stop, ms)
+        signal?.addEventListener('abort', stop, { once: true })
     })
 
 export const saveToICloud = async (
@@ -55,11 +73,7 @@ export const saveToICloud = async (
     try {
         await iCloud.writeFile(`/${fileName}`, contents)
     } catch (error) {
-        // No ubiquity container means iCloud Drive is off for this app, or the
-        // build lacks the iCloud entitlement.
-        if (hasCode(error, CloudStorageErrorCode.DIRECTORY_NOT_FOUND)) {
-            throw new ICloudUnavailableError()
-        }
+        throwIfContainerMissing(error)
         throw error
     }
     return 'saved'
@@ -71,10 +85,7 @@ const listEntries = async (iCloud: CloudStorage): Promise<string[]> => {
         // download, which readFromICloud polls for.
         return await iCloud.readdir('/')
     } catch (error) {
-        // Same mapping as saveToICloud: no ubiquity container at all.
-        if (hasCode(error, CloudStorageErrorCode.DIRECTORY_NOT_FOUND)) {
-            throw new ICloudUnavailableError()
-        }
+        throwIfContainerMissing(error)
         throw error
     }
 }
@@ -86,13 +97,12 @@ const readIfPresent = async (
     try {
         return await iCloud.readFile(path)
     } catch (error) {
-        // Same mapping as saveToICloud.
-        if (hasCode(error, CloudStorageErrorCode.DIRECTORY_NOT_FOUND)) {
-            throw new ICloudUnavailableError()
-        }
+        throwIfContainerMissing(error)
         if (hasCode(error, CloudStorageErrorCode.FILE_NOT_FOUND)) return null
-        // iOS 18.4+ can list an undownloaded file as present and fail the
-        // read instead.
+        // iOS 18.4+ can list an undownloaded file as present and fail the read
+        // instead, so this is what a download in progress looks like there. The
+        // library exposes no download state to tell that from an unreadable
+        // file, and a slow download is by far the likelier of the two.
         if (hasCode(error, CloudStorageErrorCode.READ_ERROR)) return null
         throw error
     }
@@ -118,15 +128,18 @@ const startDownload = async (
 const readWhenDownloaded = async (
     iCloud: CloudStorage,
     path: string,
-): Promise<string> => {
+    signal?: AbortSignal,
+): Promise<CloudFileReadResult> => {
     const contents = await readIfPresent(iCloud, path)
-    if (contents !== null) return contents
+    if (contents !== null) return { status: 'read', contents }
 
     for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt += 1) {
+        if (signal?.aborted) return { status: 'cancelled' }
         await startDownload(iCloud, path)
-        await wait(POLL_INTERVAL_MS)
+        await wait(POLL_INTERVAL_MS, signal)
+        if (signal?.aborted) return { status: 'cancelled' }
         const downloaded = await readIfPresent(iCloud, path)
-        if (downloaded !== null) return downloaded
+        if (downloaded !== null) return { status: 'read', contents: downloaded }
     }
     throw new CloudFileNotDownloadedError()
 }
@@ -149,8 +162,5 @@ export const readFromICloud = async (
     // Nothing but the read is left, so a progress overlay can no longer
     // collide with the picker.
     options.onReading?.()
-    return {
-        status: 'read',
-        contents: await readWhenDownloaded(iCloud, `/${fileName}`),
-    }
+    return readWhenDownloaded(iCloud, `/${fileName}`, options.signal)
 }

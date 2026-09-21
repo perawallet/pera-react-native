@@ -19,7 +19,11 @@ import type {
     ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
 
-import { readFromGoogleDrive, saveToGoogleDrive } from './google-drive'
+import {
+    isGoogleDriveConfigured,
+    readFromGoogleDrive,
+    saveToGoogleDrive,
+} from './google-drive'
 import { readFromICloud, saveToICloud } from './icloud'
 
 // iCloud has no Android client. Anything that is neither mobile OS ships
@@ -31,9 +35,15 @@ const STORES_BY_OS: Partial<Record<typeof Platform.OS, CloudFileStore[]>> = {
 }
 const NONE: CloudFileStore[] = []
 
+// Drive's OAuth client ids come from build-time config: without them the row
+// can only throw, and that throw is a crash report rather than a banner.
+// iCloud's own check is async, so it degrades to a typed error at read time.
+const isConfiguredInBuild = (store: CloudFileStore): boolean =>
+    store !== 'googleDrive' || isGoogleDriveConfigured()
+
 export class RNCloudFileStorageService implements CloudFileStorageService {
     getAvailableStores(): CloudFileStore[] {
-        return STORES_BY_OS[Platform.OS] ?? NONE
+        return (STORES_BY_OS[Platform.OS] ?? NONE).filter(isConfiguredInBuild)
     }
 
     save(

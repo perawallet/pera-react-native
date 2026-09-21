@@ -16,17 +16,18 @@ import { isFilePickerCancellation } from '../isFilePickerCancellation'
 describe('isFilePickerCancellation', () => {
     test.each([
         [
-            'the directory picker message expo sends today',
+            'the directory picker message expo sends on Android',
             {
                 message:
                     "Call to function 'FileSystem.pickDirectoryAsync' has been rejected. Caused by: The file picker was cancelled by the user",
             },
         ],
         [
-            'the file picker exception name',
-            { code: 'ERR_FILE_PICKING_CANCELLED' },
+            'the file picker message expo sends on iOS',
+            { message: 'File picking was cancelled by the user' },
         ],
-        ['a reworded message', { message: 'Picker canceled' }],
+        ['the Android exception name', { code: 'ERR_PICKER_CANCELLED' }],
+        ['the iOS exception name', { code: 'ERR_FILE_PICKING_CANCELLED' }],
     ])('treats %s as a dismissal', (_, error) => {
         expect(isFilePickerCancellation(error)).toBe(true)
     })
@@ -36,6 +37,14 @@ describe('isFilePickerCancellation', () => {
         ['a permission failure', { code: 'ERR_PERMISSION_DENIED' }],
         ['no error at all', null],
         ['an error with no message', {}],
+        // A bare `cancel` match would swallow these.
+        [
+            'a write failure that merely mentions cancelling',
+            new Error(
+                'Write failed; the operation was cancelled by the system',
+            ),
+        ],
+        ['a cancelled download', { code: 'ERR_DOWNLOAD_CANCELLED' }],
     ])('lets %s through', (_, error) => {
         expect(isFilePickerCancellation(error)).toBe(false)
     })

@@ -613,7 +613,8 @@
         },
         "icloud": {
             "unavailable_title": "iCloud kullanılamıyor",
-            "unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene."
+            "unavailable": "iCloud hesabına giriş yap ve iCloud Drive seçeneğini aç, ardından tekrar dene.",
+            "not_configured": "Pera bu cihazda iCloud depolama alanına erişemiyor. iCloud Drive’ın Pera için açık olduğundan emin ol veya başka bir konum seç."
         },
         "google_drive": {
             "unavailable": "Google Drive bu uygulama sürümünde ayarlanmamış.",

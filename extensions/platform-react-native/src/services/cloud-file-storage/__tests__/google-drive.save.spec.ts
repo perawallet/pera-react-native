@@ -21,7 +21,7 @@ import {
     CloudStorageErrorCode,
 } from 'react-native-cloud-storage'
 import { DRIVE_APPDATA_SCOPE } from '../google-drive-session'
-import { saveToGoogleDrive } from '../google-drive'
+import { isGoogleDriveConfigured, saveToGoogleDrive } from '../google-drive'
 
 const google = vi.hoisted(() => ({
     configure: vi.fn(),
@@ -114,6 +114,24 @@ afterEach(() => {
     Platform.OS = originalOS
     mockConfig.googleIosClientId = originalIosClientId
     mockConfig.googleWebClientId = originalWebClientId
+})
+
+describe('isGoogleDriveConfigured', () => {
+    test('needs only the client id of the platform it runs on', () => {
+        mockConfig.googleWebClientId = ''
+
+        expect(isGoogleDriveConfigured()).toBe(true)
+
+        Platform.OS = 'android'
+
+        expect(isGoogleDriveConfigured()).toBe(false)
+    })
+
+    test('is false on iOS without an iOS client id', () => {
+        mockConfig.googleIosClientId = ''
+
+        expect(isGoogleDriveConfigured()).toBe(false)
+    })
 })
 
 describe('saveToGoogleDrive', () => {

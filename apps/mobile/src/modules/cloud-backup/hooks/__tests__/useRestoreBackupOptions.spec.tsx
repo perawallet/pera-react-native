@@ -112,9 +112,33 @@ describe('useRestoreBackupOptions', () => {
             expect(readBackupCredentials).toHaveBeenCalledWith(source, {
                 onReading: expect.any(Function),
                 chooseFile: expect.any(Function),
+                signal: expect.any(AbortSignal),
             })
         },
     )
+
+    test('abandons a still-running read when the screen goes away', async () => {
+        mockRequest.mockResolvedValueOnce('icloud')
+        let signal: AbortSignal | undefined
+        // An iCloud file that is still downloading keeps polling until it
+        // lands, so the read outlives the screen unless it is abandoned.
+        readBackupCredentials.mockImplementationOnce(
+            (_source: string, options: { signal?: AbortSignal }) => {
+                signal = options.signal
+                return new Promise(() => {})
+            },
+        )
+
+        const { result, unmount } = renderHook(() => useRestoreBackupOptions())
+        await act(async () => {
+            void result.current.chooseRestoreRoute()
+        })
+        expect(signal?.aborted).toBe(false)
+
+        unmount()
+
+        expect(signal?.aborted).toBe(true)
+    })
 
     test('stays put without a toast when the user backs out of the picker', async () => {
         mockRequest.mockResolvedValueOnce('device')

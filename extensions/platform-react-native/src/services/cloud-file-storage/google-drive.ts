@@ -25,6 +25,8 @@ import {
 import { resolveCandidate } from './candidates'
 import { DRIVE_CANCELLED, runOnGoogleDrive } from './google-drive-session'
 
+export { isGoogleDriveConfigured } from './google-drive-session'
+
 // react-native-cloud-storage sends `body.length` as Content-Length (see its
 // storages/google-drive/client.ts), which counts UTF-16 units rather than UTF-8
 // bytes, so one accented character is enough for Drive to truncate the upload.

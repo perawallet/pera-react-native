@@ -31,6 +31,21 @@ export class ICloudUnavailableError extends AppError {
     }
 }
 
+// The sign-in check reads the ubiquity identity token, a missing container the
+// container URL, and those diverge at the per-app iCloud Drive switch — so this
+// is a device setting as often as an unentitled build, and files no crash
+// report. The copy asks the user to check the switch for that reason.
+export class ICloudNotConfiguredError extends AppError {
+    constructor(message = 'No iCloud container for this app') {
+        super(message, {
+            category: ErrorCategory.STORAGE,
+            severity: ErrorSeverity.LOW,
+            expected: true,
+            messageKey: 'cloud_backup.icloud.not_configured',
+        })
+    }
+}
+
 // A release built without the OAuth client ids is our fault, so it reports.
 export class GoogleDriveNotConfiguredError extends AppError {
     constructor(

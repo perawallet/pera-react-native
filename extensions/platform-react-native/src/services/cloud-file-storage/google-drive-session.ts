@@ -51,12 +51,16 @@ export type DriveSessionResult<T> =
     | { status: 'done'; value: T }
     | { status: 'cancelled' }
 
-const configureGoogleSignIn = (): void => {
-    const clientId =
+/** Sign-in needs the client id of the platform it runs on, and only that one. */
+export const isGoogleDriveConfigured = (): boolean =>
+    Boolean(
         Platform.OS === 'ios'
             ? config.googleIosClientId
-            : config.googleWebClientId
-    if (!clientId) throw new GoogleDriveNotConfiguredError()
+            : config.googleWebClientId,
+    )
+
+const configureGoogleSignIn = (): void => {
+    if (!isGoogleDriveConfigured()) throw new GoogleDriveNotConfiguredError()
     GoogleSignin.configure({
         scopes: [DRIVE_APPDATA_SCOPE],
         iosClientId: config.googleIosClientId || undefined,

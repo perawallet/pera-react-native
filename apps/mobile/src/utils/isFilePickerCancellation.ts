@@ -10,24 +10,28 @@
  limitations under the License
  */
 
-const CANCELLATION = /cancel/i
+// expo names these after the exception classes it throws: PickerCancelledException
+// on Android, FilePickingCancelledException on iOS. Its Download/Upload
+// cancellations are deliberately absent — they are not a dismissed picker.
+const CANCELLED_CODES = new Set([
+    'ERR_PICKER_CANCELLED',
+    'ERR_FILE_PICKING_CANCELLED',
+])
 
-/**
- * Whether an `expo-file-system` picker rejection is the user dismissing it.
- *
- * Both signals are weak on purpose. expo derives the code from an exception
- * class name that R8 renames in release builds, so the code is absent exactly
- * where it would be most useful; the message survives minification but is
- * English and unversioned, so a reworded string would read as a real failure.
- * Matching either keeps the debug and release builds on the same path.
- */
+// R8 renames the exception class in release builds, taking the code with it, so
+// the message is the only signal left there. A bare `cancel` also matches write
+// and permission failures, which would then be swallowed as a dismissal, so
+// match the full phrase both platforms end with.
+const CANCELLED_MESSAGE = /\bwas cancell?ed by the user\b/i
+
+/** Whether an `expo-file-system` picker rejection is the user dismissing it. */
 export const isFilePickerCancellation = (error: unknown): boolean => {
     const { code, message } = (error ?? {}) as {
         code?: unknown
         message?: unknown
     }
     return (
-        CANCELLATION.test(String(code ?? '')) ||
-        CANCELLATION.test(String(message ?? ''))
+        CANCELLED_CODES.has(String(code ?? '')) ||
+        CANCELLED_MESSAGE.test(String(message ?? ''))
     )
 }

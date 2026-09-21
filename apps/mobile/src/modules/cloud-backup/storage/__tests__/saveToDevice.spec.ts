@@ -79,6 +79,8 @@ describe('saveToDevice on Android', () => {
         )
     })
 
+    // The write happens after the picker returns, so no cancellation check
+    // stands between this failure and the caller.
     test('rethrows a write failure even when its message mentions cancelling', async () => {
         writePicked.mockImplementationOnce(() => {
             throw new Error('Operation canceled by the provider')
@@ -86,6 +88,18 @@ describe('saveToDevice on Android', () => {
 
         await expect(saveToDevice(FILE_NAME, CONTENTS)).rejects.toThrow(
             'Operation canceled by the provider',
+        )
+    })
+
+    // The picker rejection is the one the cancellation check reads, and a
+    // dismissal it misreads would lose the file silently.
+    test('rethrows a picker failure that merely mentions cancelling', async () => {
+        pickDirectoryAsync.mockRejectedValueOnce(
+            new Error('Permission denied; the request was cancelled'),
+        )
+
+        await expect(saveToDevice(FILE_NAME, CONTENTS)).rejects.toThrow(
+            'Permission denied',
         )
     })
 })

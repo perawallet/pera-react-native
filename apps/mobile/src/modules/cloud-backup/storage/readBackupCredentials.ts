@@ -30,13 +30,16 @@ export type ReadBackupCredentialsResult =
 
 export type ReadBackupCredentialsOptions = {
     onReading?: () => void
-    /** Required wherever a folder can hold more than one saved key. */
-    chooseFile?: ChooseCredentialsFile
+    /** A folder can hold a key per backup, so every cloud read may need to ask.
+     *  Required: with no chooser the read can only report a cancel, which the
+     *  caller cannot tell from the user dismissing it. */
+    chooseFile: ChooseCredentialsFile
+    signal?: AbortSignal
 }
 
 const readFrom = (
     source: CredentialsFileSource,
-    { onReading, chooseFile }: ReadBackupCredentialsOptions,
+    { onReading, chooseFile, signal }: ReadBackupCredentialsOptions,
 ): Promise<ReadResult> =>
     // The device picker names the file itself, so it needs neither the
     // candidate filter nor the chooser.
@@ -46,11 +49,12 @@ const readFrom = (
               isCandidate: isBackupCredentialsFileName,
               chooseFile,
               onReading,
+              signal,
           })
 
 export const readBackupCredentials = async (
     source: CredentialsFileSource,
-    options: ReadBackupCredentialsOptions = {},
+    options: ReadBackupCredentialsOptions,
 ): Promise<ReadBackupCredentialsResult> => {
     const read = await readFrom(source, options)
     if (read.status === 'cancelled') return read

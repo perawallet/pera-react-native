@@ -36,6 +36,10 @@ const readFile = () => ({
     contents: buildBackupCredentialsFile(SALT),
 })
 
+// The device picker names the file itself, but the chooser is part of the
+// contract, so every caller supplies one.
+const OPTIONS = { chooseFile: vi.fn() }
+
 beforeEach(() => {
     vi.clearAllMocks()
 })
@@ -44,13 +48,15 @@ describe('readBackupCredentials', () => {
     test('reads a local file through the device picker', async () => {
         readFromDevice.mockResolvedValueOnce(readFile())
 
-        await expect(readBackupCredentials('device')).resolves.toEqual({
-            status: 'read',
-            key: {
-                salt: SALT,
-                argon2id: expect.objectContaining({ outputLength: 32 }),
+        await expect(readBackupCredentials('device', OPTIONS)).resolves.toEqual(
+            {
+                status: 'read',
+                key: {
+                    salt: SALT,
+                    argon2id: expect.objectContaining({ outputLength: 32 }),
+                },
             },
-        })
+        )
         expect(read).not.toHaveBeenCalled()
     })
 
@@ -60,9 +66,14 @@ describe('readBackupCredentials', () => {
             read.mockResolvedValueOnce(readFile())
             const chooseFile = vi.fn()
             const onReading = vi.fn()
+            const { signal } = new AbortController()
 
             await expect(
-                readBackupCredentials(store, { chooseFile, onReading }),
+                readBackupCredentials(store, {
+                    chooseFile,
+                    onReading,
+                    signal,
+                }),
             ).resolves.toEqual({
                 status: 'read',
                 key: expect.objectContaining({ salt: SALT }),
@@ -71,6 +82,7 @@ describe('readBackupCredentials', () => {
                 isCandidate: isBackupCredentialsFileName,
                 chooseFile,
                 onReading,
+                signal,
             })
             expect(readFromDevice).not.toHaveBeenCalled()
         },
@@ -79,9 +91,11 @@ describe('readBackupCredentials', () => {
     test('passes a cancel straight through', async () => {
         readFromDevice.mockResolvedValueOnce({ status: 'cancelled' })
 
-        await expect(readBackupCredentials('device')).resolves.toEqual({
-            status: 'cancelled',
-        })
+        await expect(readBackupCredentials('device', OPTIONS)).resolves.toEqual(
+            {
+                status: 'cancelled',
+            },
+        )
     })
 
     test('reports a file that is not a credentials file', async () => {
@@ -90,9 +104,9 @@ describe('readBackupCredentials', () => {
             contents: '{"t":"something-else"}',
         })
 
-        await expect(readBackupCredentials('device')).rejects.toBeInstanceOf(
-            InvalidCredentialsFileError,
-        )
+        await expect(
+            readBackupCredentials('device', OPTIONS),
+        ).rejects.toBeInstanceOf(InvalidCredentialsFileError)
     })
 
     test('reports a file from a newer app as needing an update', async () => {
@@ -104,15 +118,17 @@ describe('readBackupCredentials', () => {
             }),
         })
 
-        await expect(readBackupCredentials('device')).rejects.toBeInstanceOf(
-            UnsupportedCredentialsFileError,
-        )
+        await expect(
+            readBackupCredentials('device', OPTIONS),
+        ).rejects.toBeInstanceOf(UnsupportedCredentialsFileError)
     })
 
     test('lets a platform failure through unchanged', async () => {
         const error = new Error('network')
         read.mockRejectedValueOnce(error)
 
-        await expect(readBackupCredentials('googleDrive')).rejects.toBe(error)
+        await expect(
+            readBackupCredentials('googleDrive', OPTIONS),
+        ).rejects.toBe(error)
     })
 })

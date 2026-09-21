@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -43,6 +43,16 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
     const [isReadingCredentials, setIsReadingCredentials] = useState(false)
     // A double tap would otherwise open two sheets and race two pickers.
     const isBusyRef = useRef(false)
+    // An iCloud file that is still downloading is polled for several seconds,
+    // each attempt costing a sync and a read round trip.
+    const readAbortRef = useRef<Nullable<AbortController>>(null)
+
+    useEffect(
+        () => () => {
+            readAbortRef.current?.abort()
+        },
+        [],
+    )
 
     // Hides the progress overlay while the chooser is up, so it can't sit over
     // the sheet, and brings it back for the read that follows.
@@ -63,10 +73,13 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
         async (
             source: CredentialsFileSource,
         ): Promise<Nullable<RestoreRoute>> => {
+            const abort = new AbortController()
+            readAbortRef.current = abort
             try {
                 const result = await readBackupCredentials(source, {
                     onReading: () => setIsReadingCredentials(true),
                     chooseFile,
+                    signal: abort.signal,
                 })
                 if (result.status === 'cancelled') return null
                 // The user may have left while the file was read; navigating
@@ -85,6 +98,9 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
                 return null
             } finally {
                 setIsReadingCredentials(false)
+                // Only ours to clear: a second entry point would otherwise drop
+                // a newer read's controller on this one's way out.
+                if (readAbortRef.current === abort) readAbortRef.current = null
             }
         },
         [chooseFile, navigation, showError, t],

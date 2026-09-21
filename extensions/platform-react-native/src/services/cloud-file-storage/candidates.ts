@@ -17,9 +17,8 @@ import {
 } from '@perawallet/wallet-extension-platform'
 
 /**
- * The single one of ours in the folder, or the one the user picks from several.
- * `null` when they back out, or when a caller that can't ask is handed a choice
- * — guessing would restore the wrong backup.
+ * The single one of ours in the folder, or the one the user picks from several;
+ * `null` when they back out.
  */
 export const resolveCandidate = async (
     entries: string[],
@@ -30,5 +29,5 @@ export const resolveCandidate = async (
     const [only, ...rest] = candidates
     if (!only) throw new CloudFileNotFoundError(store)
     if (rest.length === 0) return only
-    return (await chooseFile?.(candidates)) ?? null
+    return chooseFile(candidates)
 }

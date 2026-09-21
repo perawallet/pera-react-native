@@ -16,6 +16,7 @@ import {
     GoogleDriveAuthFailedError,
     GoogleDriveUnreachableError,
     GooglePlayServicesUnavailableError,
+    type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
 import { isExpectedError } from '@perawallet/wallet-core-shared'
 import { Platform } from 'react-native'
@@ -95,8 +96,11 @@ const OTHER = 'pera-backup-ZZZZZ.json'
 const CONTENTS = '{"t":"backup-credentials"}'
 
 const isCandidate = (fileName: string) => fileName.startsWith('pera-backup-')
-const options = (extra: Record<string, unknown> = {}) => ({
+const options = (
+    extra: Partial<ReadCloudFileOptions> = {},
+): ReadCloudFileOptions => ({
     isCandidate,
+    chooseFile: async () => null,
     ...extra,
 })
 
@@ -186,15 +190,6 @@ describe('readFromGoogleDrive resolving which file to read', () => {
         await expect(
             readFromGoogleDrive(options({ chooseFile })),
         ).resolves.toEqual({ status: 'cancelled' })
-        expect(readFile).not.toHaveBeenCalled()
-    })
-
-    test('reads nothing rather than guess when several exist and no picker was given', async () => {
-        readdir.mockResolvedValueOnce([ONE, OTHER])
-
-        await expect(readFromGoogleDrive(options())).resolves.toEqual({
-            status: 'cancelled',
-        })
         expect(readFile).not.toHaveBeenCalled()
     })
 

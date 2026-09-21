@@ -613,7 +613,8 @@
         },
         "icloud": {
             "unavailable_title": "iCloud n’est pas disponible",
-            "unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez."
+            "unavailable": "Connectez-vous à iCloud et activez iCloud Drive, puis réessayez.",
+            "not_configured": "Pera ne peut pas accéder au stockage iCloud sur cet appareil. Vérifiez qu’iCloud Drive est activé pour Pera ou choisissez un autre emplacement."
         },
         "google_drive": {
             "unavailable": "Google Drive n’est pas configuré dans cette version de l’application.",

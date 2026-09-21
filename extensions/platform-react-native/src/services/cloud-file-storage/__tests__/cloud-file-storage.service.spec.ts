@@ -15,6 +15,7 @@ import { Platform } from 'react-native'
 import { RNCloudFileStorageService } from '../cloud-file-storage.service'
 
 const drive = vi.hoisted(() => ({
+    isGoogleDriveConfigured: vi.fn(),
     saveToGoogleDrive: vi.fn(),
     readFromGoogleDrive: vi.fn(),
 }))
@@ -28,7 +29,7 @@ vi.mock('../icloud', () => icloud)
 
 const FILE_NAME = 'pera-backup-VQBGR.json'
 const CONTENTS = '{"t":"backup-credentials"}'
-const options = { isCandidate: () => true }
+const options = { isCandidate: () => true, chooseFile: async () => null }
 
 // The mock types OS as the two mobile platforms; a desktop build is the case
 // this list has to keep empty.
@@ -41,6 +42,7 @@ const service = new RNCloudFileStorageService()
 
 beforeEach(() => {
     vi.clearAllMocks()
+    drive.isGoogleDriveConfigured.mockReturnValue(true)
     drive.saveToGoogleDrive.mockResolvedValue('saved')
     drive.readFromGoogleDrive.mockResolvedValue({
         status: 'read',
@@ -74,6 +76,22 @@ describe('RNCloudFileStorageService.getAvailableStores', () => {
     // never leak a store that would throw the moment it is tapped.
     test('offers nothing on a platform with neither SDK', () => {
         setOS('windows')
+
+        expect(service.getAvailableStores()).toEqual([])
+    })
+
+    // Tapping the row on such a build throws, and that throw reports as a bug
+    // from a healthy device.
+    test('drops Drive on a build with no OAuth client, keeping iCloud', () => {
+        setOS('ios')
+        drive.isGoogleDriveConfigured.mockReturnValue(false)
+
+        expect(service.getAvailableStores()).toEqual(['icloud'])
+    })
+
+    test('offers nothing on Android when the build has no OAuth client', () => {
+        setOS('android')
+        drive.isGoogleDriveConfigured.mockReturnValue(false)
 
         expect(service.getAvailableStores()).toEqual([])
     })
