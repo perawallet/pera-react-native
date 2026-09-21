@@ -61,13 +61,8 @@ export const usePinEditView = ({
     confirmTitle,
 }: UsePinEditViewParams): UsePinEditViewResult => {
     const { t } = useLanguage()
-    const {
-        savePin,
-        verifyPin,
-        handleFailedAttempt,
-        resetFailedAttempts,
-        isLockedOut,
-    } = usePinCode()
+    const { savePin, verifyPin, resetFailedAttempts, isLockedOut } =
+        usePinCode()
     const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
     const { showError } = useErrorToast()
 
@@ -203,7 +198,6 @@ export const usePinEditView = ({
                 case 'verify': {
                     const result = await verifyPin(pin)
                     if (result.kind === 'ok') {
-                        void resetFailedAttempts()
                         setHasError(false)
                         if (currentMode === 'change_old') {
                             setCurrentMode('setup')
@@ -219,23 +213,13 @@ export const usePinEditView = ({
                         // duress entry should not contribute to lockout.
                         setHasError(true)
                     } else {
-                        void handleFailedAttempt()
                         setHasError(true)
                     }
                     break
                 }
             }
         },
-        [
-            currentMode,
-            storedPin,
-            savePin,
-            verifyPin,
-            handleFailedAttempt,
-            resetFailedAttempts,
-            onSuccess,
-            onPinConfirmed,
-        ],
+        [currentMode, storedPin, savePin, verifyPin, onSuccess, onPinConfirmed],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {

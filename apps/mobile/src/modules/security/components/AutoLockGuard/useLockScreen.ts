@@ -40,7 +40,6 @@ export const useLockScreen = ({
     const { t } = useLanguage()
     const {
         verifyPin,
-        handleFailedAttempt,
         resetFailedAttempts,
         isLockedOut,
         lockoutEndTime,
@@ -189,7 +188,6 @@ export const useLockScreen = ({
         async (pin: string) => {
             const result = await verifyPin(pin)
             if (result.kind === 'ok') {
-                void resetFailedAttempts()
                 onUnlock()
                 return
             }
@@ -210,16 +208,9 @@ export const useLockScreen = ({
                 }
                 return
             }
-            void handleFailedAttempt()
             setHasError(true)
         },
-        [
-            verifyPin,
-            resetFailedAttempts,
-            handleFailedAttempt,
-            onUnlock,
-            performDuressWipe,
-        ],
+        [verifyPin, onUnlock, performDuressWipe],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {

@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-import { usePinCode } from '../usePinCode'
+import { __resetMonotonicLockoutForTests, usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
     PIN_RECORD_KEY_ID,
@@ -139,6 +139,7 @@ describe('usePinCode', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        __resetMonotonicLockoutForTests()
         kmsMocks.pinBytes = null
         kmsMocks.legacyDuressBytes = null
         kmsMocks.biometricBytes = null
@@ -460,7 +461,7 @@ describe('usePinCode', () => {
         })
     }, 30_000)
 
-    test('handleFailedAttempt increments and persists to the record', async () => {
+    test('a failed verify increments and persists the attempt to the record', async () => {
         setupMock({ failedAttempts: 2, lockoutEndTime: null })
 
         const baseRecord = await createPinRecord('123456')
@@ -473,24 +474,54 @@ describe('usePinCode', () => {
         const { result } = renderHook(() => usePinCode())
 
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        expect(lastCall).toBeDefined()
-        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
-        // the snapshot the mock stashed at call time instead.
+        // `commitSecret`'s bytes are zeroed by writeRecord's finally; read the
+        // snapshot the mock stashed at call time instead.
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(3)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)
 
-    test('handleFailedAttempt triggers lockout after max attempts', async () => {
-        vi.useFakeTimers()
-        const now = Date.now()
-        vi.setSystemTime(now)
+    test('a correct PIN still writes the charge first, then the refund', async () => {
+        // Two writes rather than none is the observable shape of charging
+        // before the comparison: the attempt is already persisted by the time
+        // the PIN is known to be right, so a kill mid-attempt cannot refund it.
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
 
+        const { result } = renderHook(() => usePinCode())
+        kmsMocks.commitSecret.mockClear()
+
+        await act(async () => {
+            await result.current.verifyPin('123456')
+        })
+
+        expect(kmsMocks.commitSecret).toHaveBeenCalledTimes(2)
+    }, 30_000)
+
+    test('a correct PIN refunds the charged attempt', async () => {
+        setupMock({ failedAttempts: 3, lockoutEndTime: null })
+
+        const baseRecord = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: 3,
+            lockoutEndTime: null,
+        })
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.verifyPin('123456')
+        })
+
+        expect(parsePinRecord(kmsMocks.pinBytes!)?.failedAttempts).toBe(0)
+    }, 30_000)
+
+    test('a failed verify triggers lockout after max attempts', async () => {
         setupMock({
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
             lockoutEndTime: null,
@@ -505,27 +536,21 @@ describe('usePinCode', () => {
 
         const { result } = renderHook(() => usePinCode())
 
+        const before = Date.now()
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
-            now + INITIAL_LOCKOUT_SECONDS * 1000,
-        )
-        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
-        // the snapshot the mock stashed at call time instead.
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
-        expect(persisted?.lockoutEndTime).toBe(
-            now + INITIAL_LOCKOUT_SECONDS * 1000,
+        expect(persisted?.lockoutEndTime).toBeGreaterThanOrEqual(
+            before + INITIAL_LOCKOUT_SECONDS * 1000,
+        )
+        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
+            persisted?.lockoutEndTime,
         )
     }, 30_000)
 
-    test('handleFailedAttempt doubles lockout duration on second lockout', async () => {
-        vi.useFakeTimers()
-        const now = Date.now()
-        vi.setSystemTime(now)
-
+    test('a failed verify doubles the lockout duration on the second lockout', async () => {
         setupMock({
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT * 2 - 1,
             lockoutEndTime: null,
@@ -540,13 +565,102 @@ describe('usePinCode', () => {
 
         const { result } = renderHook(() => usePinCode())
 
+        const before = Date.now()
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
-            now + INITIAL_LOCKOUT_SECONDS * 2 * 1000,
-        )
+        expect(
+            parsePinRecord(kmsMocks.pinBytes!)?.lockoutEndTime,
+        ).toBeGreaterThanOrEqual(before + INITIAL_LOCKOUT_SECONDS * 2 * 1000)
+    }, 30_000)
+
+    test('a lockout survives the device clock being moved forward', async () => {
+        setupMock({
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
+
+        const baseRecord = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.verifyPin('654321')
+        })
+
+        // The wall clock jumps past the persisted deadline; the in-session
+        // monotonic floor must still refuse the correct PIN.
+        const realNow = Date.now
+        vi.spyOn(Date, 'now').mockReturnValue(realNow() + 365 * 86_400_000)
+        try {
+            let outcome: Awaited<
+                ReturnType<typeof result.current.verifyPin>
+            > | null = null
+            await act(async () => {
+                outcome = await result.current.verifyPin('123456')
+            })
+            expect(outcome).toEqual({ kind: 'fail' })
+        } finally {
+            vi.mocked(Date.now).mockRestore()
+        }
+    }, 30_000)
+
+    test('a lockout cleared by a jumped clock is re-armed, not left stuck', async () => {
+        setupMock({
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
+
+        const baseRecord = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
+
+        const { result, rerender } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.verifyPin('654321')
+        })
+
+        const armedEndTime = mockSetLockoutEndTime.mock.calls.at(-1)?.[0]
+        expect(armedEndTime).toBeGreaterThan(Date.now())
+
+        // The lock screen counts the armed deadline down...
+        setupMock({
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+            lockoutEndTime: armedEndTime,
+        })
+        rerender()
+
+        // ...then the clock jumps, the countdown reaches zero early and clears
+        // the deadline. The monotonic remainder is still live, so a fresh
+        // deadline must appear for the countdown to resume against.
+        const realNow = Date.now
+        vi.spyOn(Date, 'now').mockReturnValue(realNow() + 365 * 86_400_000)
+        try {
+            mockSetLockoutEndTime.mockClear()
+            setupMock({
+                failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+                lockoutEndTime: null,
+            })
+            rerender()
+
+            expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
+                expect.any(Number),
+            )
+            expect(
+                mockSetLockoutEndTime.mock.calls.at(-1)?.[0],
+            ).toBeGreaterThan(Date.now())
+        } finally {
+            vi.mocked(Date.now).mockRestore()
+        }
     }, 30_000)
 
     test('getLockoutDuration returns 0 when no lockout', () => {

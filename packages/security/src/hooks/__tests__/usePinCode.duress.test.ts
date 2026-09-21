@@ -47,16 +47,18 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-import { usePinCode } from '../usePinCode'
+import { __resetMonotonicLockoutForTests, usePinCode } from '../usePinCode'
 import { useBiometrics } from '../useBiometrics'
 import { useSecurityStore } from '../../store'
 import {
     PIN_RECORD_KEY_ID,
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
+    MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
 } from '../../constants'
 import {
     createPinRecord,
     parsePinRecord,
+    serializePinRecord,
     verifyPinAgainstDuressSlot,
     verifyPinAgainstRecord,
     type PinRecord,
@@ -138,6 +140,7 @@ describe('usePinCode — duress slot', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        __resetMonotonicLockoutForTests()
         kmsMocks.pinBytes = null
         kmsMocks.legacyDuressBytes = null
         kmsMocks.biometricBytes = null
@@ -351,6 +354,32 @@ describe('usePinCode — duress slot', () => {
             outcome = await result.current.verifyPin('111111')
         })
         expect(outcome).toEqual({ kind: 'duress' })
+    }, 60_000)
+
+    test('a duress entry that would have tripped a lockout refunds it in full', async () => {
+        const { result } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.savePin('123456')
+            await result.current.saveDuressPin('111111')
+        })
+        kmsMocks.pinBytes = serializePinRecord({
+            ...currentPinRecord()!,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+        })
+
+        let duressOutcome
+        await act(async () => {
+            duressOutcome = await result.current.verifyPin('111111')
+        })
+        expect(duressOutcome).toEqual({ kind: 'duress' })
+
+        // The settings path does not wipe on duress, so the user stays in the
+        // app — and the regular PIN must still work.
+        let regularOutcome
+        await act(async () => {
+            regularOutcome = await result.current.verifyPin('123456')
+        })
+        expect(regularOutcome).toEqual({ kind: 'ok' })
     }, 60_000)
 
     test('mounting migrates a legacy v2 record + separate duress record into one v3 record', async () => {

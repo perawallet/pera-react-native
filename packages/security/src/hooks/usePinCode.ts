@@ -33,6 +33,48 @@ import { useBiometrics } from './useBiometrics'
 import { useKMSService, zeroBytes } from '@perawallet/wallet-core-kms'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/**
+ * Every lockout deadline is wall-clock, so moving the device clock forward
+ * expires one instantly. `performance.now()` cannot be moved, but it restarts
+ * with the process, so it can only bound the current session — which is where
+ * the attack is cheapest: the clock can be changed without ever closing the
+ * app. Across a relaunch this falls back to the wall-clock deadline alone,
+ * i.e. today's behaviour. A real fix needs a boot-time clock from native.
+ */
+const monotonicNow = (): number | null => {
+    const perf = (globalThis as { performance?: { now?: () => number } })
+        .performance
+    return typeof perf?.now === 'function' ? perf.now() : null
+}
+
+let monotonicLockoutUntil: number | null = null
+
+const armMonotonicLockout = (wallClockEnd: number | null): void => {
+    const now = monotonicNow()
+    if (now === null || wallClockEnd === null) return
+    monotonicLockoutUntil = now + Math.max(0, wallClockEnd - Date.now())
+}
+
+const monotonicLockoutRemainingMs = (): number => {
+    if (monotonicLockoutUntil === null) return 0
+    const now = monotonicNow()
+    if (now === null) return 0
+    const remaining = monotonicLockoutUntil - now
+    if (remaining <= 0) {
+        monotonicLockoutUntil = null
+        return 0
+    }
+    return remaining
+}
+
+const isMonotonicallyLockedOut = (): boolean =>
+    monotonicLockoutRemainingMs() > 0
+
+/** The lockout state is process-wide; tests need it reset between cases. */
+export const __resetMonotonicLockoutForTests = (): void => {
+    monotonicLockoutUntil = null
+}
+
 type VerifyPinResult = { kind: 'ok' } | { kind: 'duress' } | { kind: 'fail' }
 
 type UsePinCodeResult = {
@@ -48,14 +90,16 @@ type UsePinCodeResult = {
      *
      * - `ok`: matches the regular PIN. Caller should unlock normally.
      * - `duress`: matches the duress PIN. Caller is responsible for triggering
-     *   the duress wipe + decoy provisioning. Treated as success for lockout
-     *   bookkeeping (`handleFailedAttempt` is NOT called) so the duress path
-     *   is always reachable, even when failed attempts have triggered a
+     *   the duress wipe + decoy provisioning. Costs no attempt, so the duress
+     *   path is always reachable, even when failed attempts have triggered a
      *   lockout — the duress comparison also bypasses the lockout gate.
-     * - `fail`: matches neither. Caller should increment failed attempts.
+     * - `fail`: matches neither.
+     *
+     * Attempt bookkeeping is owned here, not by the caller: the attempt is
+     * charged to the record before the comparison runs and refunded on
+     * success, so killing the app mid-attempt cannot buy a free guess.
      */
     verifyPin: (pin: string) => Promise<VerifyPinResult>
-    handleFailedAttempt: () => Promise<void>
     resetFailedAttempts: () => Promise<void>
     setLockoutEndTime: (date: Nullable<number>) => Promise<void>
     getLockoutDuration: () => number
@@ -95,13 +139,28 @@ export const usePinCode = (): UsePinCodeResult => {
     const { disableBiometrics, completePendingBiometricRearm } = useBiometrics()
 
     const isLockedOut = useMemo(
-        () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
+        () =>
+            isMonotonicallyLockedOut() ||
+            (lockoutEndTime !== null && Date.now() < lockoutEndTime),
         [lockoutEndTime],
     )
 
     const remainingLockoutSeconds = lockoutEndTime
         ? Math.max(0, Math.ceil((lockoutEndTime - Date.now()) / 1000))
         : 0
+
+    // A forward clock jump expires the wall-clock deadline early, and the lock
+    // screen's countdown clears it on reaching zero. The monotonic remainder is
+    // the real one, so project it back onto a fresh wall-clock deadline: the
+    // countdown restarts and `isLockedOut` keeps tracking it. Without this the
+    // flag stays true with nothing left to re-render it, stranding the user on
+    // a zero-second lockout until the app restarts.
+    useEffect(() => {
+        if (lockoutEndTime !== null) return
+        const remaining = monotonicLockoutRemainingMs()
+        if (remaining <= 0) return
+        setLockoutEndTimeInStore(Date.now() + remaining)
+    }, [lockoutEndTime, setLockoutEndTimeInStore])
 
     const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
         return withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
@@ -168,6 +227,7 @@ export const usePinCode = (): UsePinCodeResult => {
     const resetFailedAttempts = useCallback(async () => {
         resetFailedAttemptsInStore()
         setLockoutEndTimeInStore(null)
+        monotonicLockoutUntil = null
         const record = await loadRecord()
         if (!record) return
         if (record.failedAttempts === 0 && record.lockoutEndTime === null)
@@ -243,6 +303,41 @@ export const usePinCode = (): UsePinCodeResult => {
         ],
     )
 
+    // Charges one attempt against the record and returns the charged copy.
+    // Written before the hash runs, so an attempt that is interrupted — the
+    // app killed between the comparison and the write — still costs the
+    // attacker a guess.
+    const chargeFailedAttempt = useCallback(
+        async (record: PinRecord): Promise<void> => {
+            const newAttempts = record.failedAttempts + 1
+            const triggerLockout =
+                newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
+            const newLockoutEndTime = triggerLockout
+                ? Date.now() +
+                  INITIAL_LOCKOUT_SECONDS *
+                      2 **
+                          (Math.floor(
+                              newAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+                          ) -
+                              1) *
+                      1000
+                : record.lockoutEndTime
+
+            await writeRecord({
+                ...record,
+                failedAttempts: newAttempts,
+                lockoutEndTime: newLockoutEndTime,
+            })
+
+            setFailedAttemptsInStore(newAttempts)
+            if (triggerLockout) {
+                setLockoutEndTimeInStore(newLockoutEndTime)
+                armMonotonicLockout(newLockoutEndTime)
+            }
+        },
+        [writeRecord, setFailedAttemptsInStore, setLockoutEndTimeInStore],
+    )
+
     const verifyPin = useCallback(
         async (pin: string): Promise<VerifyPinResult> => {
             const record = await loadRecord()
@@ -253,8 +348,12 @@ export const usePinCode = (): UsePinCodeResult => {
             // Fail closed: when the record says locked, the regular PIN cannot
             // succeed. The duress slot below stays reachable on purpose.
             const lockedByRecord =
-                record.lockoutEndTime !== null &&
-                Date.now() < record.lockoutEndTime
+                isMonotonicallyLockedOut() ||
+                (record.lockoutEndTime !== null &&
+                    Date.now() < record.lockoutEndTime)
+
+            const priorMonotonicLockout = monotonicLockoutUntil
+            await chargeFailedAttempt(record)
 
             // Both slots are hashed on EVERY attempt — the duress slot holds
             // random fill when no duress PIN is set — so an attempt's cost
@@ -268,6 +367,7 @@ export const usePinCode = (): UsePinCodeResult => {
             const duressOk = await verifyPinAgainstDuressSlot(pin, record)
 
             if (regularOk) {
+                await resetFailedAttempts()
                 // Not awaited, though that only helps so much: arming holds
                 // the Android keystore while it runs, so anything the unlock
                 // reads from it queues behind arming either way.
@@ -277,51 +377,30 @@ export const usePinCode = (): UsePinCodeResult => {
             // The duress comparison deliberately bypasses the lockout gate
             // (the caller's `isLockedOut` check) — duress must be reachable
             // even mid-lockout, otherwise an attacker could lock the user out
-            // and then demand the regular PIN. The caller treats `duress` as
-            // a success for the lockout counter as well (do NOT call
-            // handleFailedAttempt on `duress`).
+            // and then demand the regular PIN. The charge is reverted to the
+            // pre-attempt counter rather than zeroed: zeroing would let a
+            // duress entry clear an accumulated lockout on the settings path,
+            // where duress does not wipe.
             // duress: do not emit telemetry on this branch.
-            if (duressOk) return { kind: 'duress' }
+            if (duressOk) {
+                await writeRecord(record)
+                setFailedAttemptsInStore(record.failedAttempts)
+                setLockoutEndTimeInStore(record.lockoutEndTime)
+                monotonicLockoutUntil = priorMonotonicLockout
+                return { kind: 'duress' }
+            }
             return { kind: 'fail' }
         },
-        [loadRecord, completePendingBiometricRearm],
+        [
+            loadRecord,
+            chargeFailedAttempt,
+            resetFailedAttempts,
+            writeRecord,
+            setFailedAttemptsInStore,
+            setLockoutEndTimeInStore,
+            completePendingBiometricRearm,
+        ],
     )
-
-    const handleFailedAttempt = useCallback(async () => {
-        const record = await loadRecord()
-        const currentAttempts = record?.failedAttempts ?? failedAttempts
-        const newAttempts = currentAttempts + 1
-        const triggerLockout =
-            newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
-        const newLockoutEndTime = triggerLockout
-            ? Date.now() +
-              INITIAL_LOCKOUT_SECONDS *
-                  2 **
-                      (Math.floor(
-                          newAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-                      ) -
-                          1) *
-                  1000
-            : (record?.lockoutEndTime ?? lockoutEndTime)
-
-        setFailedAttemptsInStore(newAttempts)
-        if (triggerLockout) setLockoutEndTimeInStore(newLockoutEndTime)
-
-        if (record) {
-            await writeRecord({
-                ...record,
-                failedAttempts: newAttempts,
-                lockoutEndTime: newLockoutEndTime,
-            })
-        }
-    }, [
-        loadRecord,
-        writeRecord,
-        failedAttempts,
-        lockoutEndTime,
-        setFailedAttemptsInStore,
-        setLockoutEndTimeInStore,
-    ])
 
     const checkAutoLock = useCallback(async () => {
         if (!(await checkPinEnabled())) return false
@@ -371,7 +450,6 @@ export const usePinCode = (): UsePinCodeResult => {
         remainingLockoutSeconds,
         savePin,
         verifyPin,
-        handleFailedAttempt,
         resetFailedAttempts,
         getLockoutDuration,
         setLockoutEndTime,
