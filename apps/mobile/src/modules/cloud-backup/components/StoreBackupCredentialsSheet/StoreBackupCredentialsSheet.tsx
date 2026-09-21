@@ -12,7 +12,7 @@
 
 import { useLanguage } from '@hooks/useLanguage'
 import { OptionListSheet } from '../OptionListSheet'
-import { StoreCredentialsWarning } from './StoreCredentialsWarning'
+import { StoreCredentialsWarning } from '../StoreCredentialsWarning'
 import { useStoreBackupCredentialsSheet } from './useStoreBackupCredentialsSheet'
 
 export const StoreBackupCredentialsSheet = () => {

@@ -13,15 +13,16 @@
 import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useCredentialsFileSaveSources } from '../../../hooks/useCredentialsFileSources'
 import { useStoreBackupCredentialsSheet } from '../useStoreBackupCredentialsSheet'
+
+const { mockDestinations } = vi.hoisted(() => ({ mockDestinations: vi.fn() }))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(),
 }))
 
-vi.mock('../../../hooks/useCredentialsFileSources', () => ({
-    useCredentialsFileSaveSources: vi.fn(),
+vi.mock('../../../hooks/useCredentialsFileDestinations', () => ({
+    useCredentialsFileDestinations: mockDestinations,
 }))
 
 const mockResolve = vi.fn()
@@ -32,51 +33,19 @@ beforeEach(() => {
         resolve: mockResolve,
         dismiss: vi.fn(),
     })
-    ;(useCredentialsFileSaveSources as Mock).mockReturnValue([
-        'device',
-        'icloud',
-        'googleDrive',
-    ])
+    mockDestinations.mockReturnValue([{ key: 'device' }])
 })
 
 describe('useStoreBackupCredentialsSheet', () => {
-    test('offers the destinations the platform and the flag allow', () => {
-        ;(useCredentialsFileSaveSources as Mock).mockReturnValue(['device'])
-
-        const { result } = renderHook(() => useStoreBackupCredentialsSheet())
-
-        expect(result.current.destinations.map(row => row.key)).toEqual([
-            'device',
-        ])
-    })
-
-    test('gives every row a title and a leading mark', () => {
-        const { result } = renderHook(() => useStoreBackupCredentialsSheet())
-
-        for (const row of result.current.destinations) {
-            expect(row.title).toBeTruthy()
-            expect(row.leftIcon ?? row.leftImage).toBeTruthy()
-        }
-    })
-
     test('resolves the sheet with the chosen destination', () => {
-        const { result } = renderHook(() => useStoreBackupCredentialsSheet())
+        renderHook(() => useStoreBackupCredentialsSheet())
 
-        result.current.destinations
-            .find(row => row.key === 'googleDrive')
-            ?.onPress?.()
-
-        expect(mockResolve).toHaveBeenCalledWith('googleDrive')
+        expect(mockDestinations).toHaveBeenCalledWith(mockResolve)
     })
 
-    test('keeps each row stable across a re-render, so the list does not churn', () => {
-        const { result, rerender } = renderHook(() =>
-            useStoreBackupCredentialsSheet(),
-        )
-        const first = result.current.destinations
+    test('offers the destinations the shared hook builds', () => {
+        const { result } = renderHook(() => useStoreBackupCredentialsSheet())
 
-        rerender()
-
-        expect(result.current.destinations).toBe(first)
+        expect(result.current.destinations).toEqual([{ key: 'device' }])
     })
 })

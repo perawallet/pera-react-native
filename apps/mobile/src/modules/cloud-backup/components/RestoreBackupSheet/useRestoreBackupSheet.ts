@@ -12,18 +12,18 @@
 
 import { useMemo } from 'react'
 import type { PanelButtonProps } from '@components/PanelButton'
+import type { OptionListOption } from '@components/OptionList'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import type { CredentialsFileSource } from '../../storage'
 import { useCredentialsFileReadSources } from '../../hooks/useCredentialsFileSources'
 import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
-import type { OptionListSheetOption } from '../OptionListSheet'
 
 export type RestoreBackupSheetResult = 'scan' | CredentialsFileSource | 'manual'
 
 type UseRestoreBackupSheetResult = {
-    options: OptionListSheetOption[]
+    options: OptionListOption[]
     description: string
 }
 

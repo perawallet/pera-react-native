@@ -13,10 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    body: {
-        gap: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
+    options: {
+        gap: theme.spacing.md,
     },
 }))

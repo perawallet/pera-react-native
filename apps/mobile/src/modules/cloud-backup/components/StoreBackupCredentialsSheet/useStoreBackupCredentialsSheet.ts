@@ -10,47 +10,18 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import type { OptionListOption } from '@components/OptionList'
+import { useCredentialsFileDestinations } from '../../hooks/useCredentialsFileDestinations'
 import type { CredentialsFileSource } from '../../storage'
-import { useCredentialsFileSaveSources } from '../../hooks/useCredentialsFileSources'
-import { CREDENTIALS_FILE_SOURCE_ICONS } from '../credentialsFileSourceIcons'
-import type { OptionListSheetOption } from '../OptionListSheet'
 
 type UseStoreBackupCredentialsSheetResult = {
-    destinations: OptionListSheetOption[]
-}
-
-const TITLE_KEYS: Record<CredentialsFileSource, string> = {
-    device: 'cloud_backup.store_credentials.store_locally',
-    icloud: 'cloud_backup.store_credentials.icloud',
-    googleDrive: 'cloud_backup.store_credentials.google_drive',
-}
-
-const TEST_IDS: Record<CredentialsFileSource, string> = {
-    device: 'store_backup_credentials_local',
-    icloud: 'store_backup_credentials_icloud',
-    googleDrive: 'store_backup_credentials_google_drive',
+    destinations: OptionListOption[]
 }
 
 export const useStoreBackupCredentialsSheet =
     (): UseStoreBackupCredentialsSheetResult => {
-        const { t } = useLanguage()
         const { resolve } = useBottomSheetResult<CredentialsFileSource>()
-        const sources = useCredentialsFileSaveSources()
 
-        const destinations = useMemo(
-            () =>
-                sources.map(destination => ({
-                    key: destination,
-                    ...CREDENTIALS_FILE_SOURCE_ICONS[destination],
-                    title: t(TITLE_KEYS[destination]),
-                    testID: TEST_IDS[destination],
-                    onPress: () => resolve(destination),
-                })),
-            [sources, t, resolve],
-        )
-
-        return { destinations }
+        return { destinations: useCredentialsFileDestinations(resolve) }
     }

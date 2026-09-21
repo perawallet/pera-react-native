@@ -12,14 +12,18 @@
 
 import type { ReactNode } from 'react'
 import { PWSheetLayout, PWText, PWView } from '@components/core'
-import { PanelButton, type PanelButtonProps } from '@components/PanelButton'
+import { OptionList, type OptionListOption } from '@components/OptionList'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 
-export type OptionListSheetOption = Omit<
-    PanelButtonProps,
-    'titleWeight' | 'accessibilityRole'
-> & { key: string }
+/** `PWSheetLayout` only pins its footer and scrolls its body when the sheet
+ *  skips the default container, so every sheet built on this one opens the
+ *  same way. */
+export const OPTION_LIST_SHEET_OPTIONS = {
+    size: 'auto',
+    enablePanDownToClose: true,
+    autoCreateContainer: false,
+} as const
 
 type OptionListSheetProps = {
     testID: string
@@ -27,7 +31,7 @@ type OptionListSheetProps = {
     description: string
     /** Off keeps the description at `bodyLarge`'s own `textMain`. */
     isDescriptionMuted?: boolean
-    options: OptionListSheetOption[]
+    options: OptionListOption[]
     /** Rendered between the description and the options. */
     children?: ReactNode
 }
@@ -61,16 +65,7 @@ export const OptionListSheet = ({
                     {description}
                 </PWText>
                 {children}
-                <PWView style={styles.options}>
-                    {options.map(({ key, ...option }) => (
-                        <PanelButton
-                            key={key}
-                            {...option}
-                            titleWeight='h3'
-                            accessibilityRole='button'
-                        />
-                    ))}
-                </PWView>
+                <OptionList options={options} />
             </PWView>
         </PWSheetLayout>
     )

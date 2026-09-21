@@ -11,7 +11,8 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { ICloudUnavailableError } from '@perawallet/wallet-core-backup'
+import type { ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
 import { useStoreBackupCredentials } from '../useStoreBackupCredentials'
 
@@ -21,7 +22,7 @@ const {
     mockShowToast,
     mockShowError,
     mockLoggerError,
-    saveBackupCredentials,
+    saveCredentialsFile,
     storeState,
 } = vi.hoisted(() => ({
     mockRequest: vi.fn(),
@@ -29,7 +30,7 @@ const {
     mockShowToast: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
-    saveBackupCredentials: vi.fn(),
+    saveCredentialsFile: vi.fn(),
     storeState: {
         salt: null as string | null,
         backupId: null as string | null,
@@ -70,7 +71,7 @@ vi.mock('../../components/StoreBackupCredentialsSheet', () => ({
 }))
 vi.mock('../../storage', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    saveBackupCredentials,
+    saveCredentialsFile,
 }))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
@@ -82,11 +83,24 @@ beforeEach(() => {
     storeState.backupId = BACKUP_ID
     mockRequest.mockResolvedValue('device')
     mockRequirePin.mockResolvedValue(true)
-    saveBackupCredentials.mockResolvedValue('saved')
+    saveCredentialsFile.mockResolvedValue('saved')
 })
 
+const renderStoreHook = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: { mutations: { retry: false } },
+    })
+    return renderHook(() => useStoreBackupCredentials(), {
+        wrapper: ({ children }: { children: ReactNode }) => (
+            <QueryClientProvider client={queryClient}>
+                {children}
+            </QueryClientProvider>
+        ),
+    })
+}
+
 const store = async (options?: { hasVerifiedPin?: boolean }) => {
-    const { result } = renderHook(() => useStoreBackupCredentials())
+    const { result } = renderStoreHook()
     await result.current.storeCredentials(options)
 }
 
@@ -115,7 +129,7 @@ describe('useStoreBackupCredentials', () => {
         await store()
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveBackupCredentials).not.toHaveBeenCalled()
+        expect(saveCredentialsFile).not.toHaveBeenCalled()
     })
 
     test('asks for the PIN only after a destination is chosen', async () => {
@@ -130,7 +144,10 @@ describe('useStoreBackupCredentials', () => {
         await store({ hasVerifiedPin: true })
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveBackupCredentials).toHaveBeenCalledWith('device')
+        expect(saveCredentialsFile).toHaveBeenCalledWith('device', {
+            salt: SALT,
+            backupId: BACKUP_ID,
+        })
     })
 
     test('saves nothing when PIN verification fails', async () => {
@@ -138,8 +155,27 @@ describe('useStoreBackupCredentials', () => {
 
         await store()
 
-        expect(saveBackupCredentials).not.toHaveBeenCalled()
+        expect(saveCredentialsFile).not.toHaveBeenCalled()
         expect(mockShowToast).not.toHaveBeenCalled()
+    })
+
+    test('saves nothing when the backup is deleted while the sheet is open', async () => {
+        mockRequest.mockImplementationOnce(async () => {
+            storeState.salt = null
+
+            return 'device'
+        })
+
+        await store()
+
+        // The refusal itself lives in `useSaveCredentialsFile`, which this spec
+        // runs for real: nothing reaches the file writer.
+        expect(saveCredentialsFile).not.toHaveBeenCalled()
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'cloud_backup.store_credentials.error',
+        )
+        expect(JSON.stringify(mockLoggerError.mock.calls)).not.toContain(SALT)
     })
 
     test('ignores a second call while one is in flight', async () => {
@@ -150,7 +186,7 @@ describe('useStoreBackupCredentials', () => {
                     resolveSheet = resolve
                 }),
         )
-        const { result } = renderHook(() => useStoreBackupCredentials())
+        const { result } = renderStoreHook()
 
         const first = result.current.storeCredentials()
         await result.current.storeCredentials()
@@ -167,7 +203,10 @@ describe('useStoreBackupCredentials', () => {
 
             await store()
 
-            expect(saveBackupCredentials).toHaveBeenCalledWith(destination)
+            expect(saveCredentialsFile).toHaveBeenCalledWith(destination, {
+                salt: SALT,
+                backupId: BACKUP_ID,
+            })
             expect(mockShowToast).toHaveBeenCalledWith(
                 {
                     title: 'cloud_backup.store_credentials.success',
@@ -181,42 +220,11 @@ describe('useStoreBackupCredentials', () => {
 
     test('stays silent when the user backs out inside the destination', async () => {
         mockRequest.mockResolvedValueOnce('googleDrive')
-        saveBackupCredentials.mockResolvedValueOnce('cancelled')
+        saveCredentialsFile.mockResolvedValueOnce('cancelled')
 
         await store()
 
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockShowError).not.toHaveBeenCalled()
-    })
-
-    test('passes a destination error through so it can show its own copy', async () => {
-        mockRequest.mockResolvedValueOnce('icloud')
-        const error = new ICloudUnavailableError()
-        saveBackupCredentials.mockRejectedValueOnce(error)
-
-        await store()
-
-        expect(mockShowError).toHaveBeenCalledWith(
-            error,
-            'cloud_backup.store_credentials.error',
-        )
-    })
-
-    test('shows the generic error for any other failure', async () => {
-        const error = new Error('disk full')
-        saveBackupCredentials.mockRejectedValueOnce(error)
-
-        await store()
-
-        expect(mockShowError).toHaveBeenCalledWith(
-            error,
-            'cloud_backup.store_credentials.error',
-        )
-        expect(mockShowToast).not.toHaveBeenCalled()
-        expect(mockLoggerError).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({ destination: 'device', error }),
-        )
-        expect(JSON.stringify(mockLoggerError.mock.calls)).not.toContain(SALT)
     })
 })

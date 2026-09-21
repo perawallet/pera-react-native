@@ -14,10 +14,10 @@ import { useMemo } from 'react'
 import { backupCredentialsFileAddressPrefix } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import type { OptionListSheetOption } from '../OptionListSheet'
+import type { OptionListOption } from '@components/OptionList'
 
 type UseChooseCredentialsFileSheetResult = {
-    choices: OptionListSheetOption[]
+    choices: OptionListOption[]
 }
 
 export const useChooseCredentialsFileSheet = (

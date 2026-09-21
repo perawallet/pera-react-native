@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    body: {
-        gap: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
-    },
-}))
+export { StoreCredentialsWarning } from './StoreCredentialsWarning'

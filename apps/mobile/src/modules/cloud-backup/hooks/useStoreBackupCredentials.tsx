@@ -20,9 +20,10 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import { StoreBackupCredentialsSheet } from '../components/StoreBackupCredentialsSheet'
-import { saveBackupCredentials, type CredentialsFileSource } from '../storage'
+import { useSaveCredentialsFile } from './useSaveCredentialsFile'
+import type { CredentialsFileSource } from '../storage'
 
 export type StoreCredentialsOptions = {
     /**
@@ -34,16 +35,19 @@ export type StoreCredentialsOptions = {
 
 type UseStoreBackupCredentialsResult = {
     storeCredentials: (options?: StoreCredentialsOptions) => Promise<void>
+    /** True only while the file is being written, not while a sheet, the PIN
+     *  or a cloud sign-in is open — those have their own UI. */
+    isSaving: boolean
 }
 
 export const useStoreBackupCredentials =
     (): UseStoreBackupCredentialsResult => {
         const { t } = useLanguage()
-        const { showToast } = useToast()
         const { showError } = useErrorToast()
         const { requirePinVerification } = useRequirePinVerification()
         const { request: requestBottomSheet } = useBottomSheet()
-        // A double tap would otherwise open two sheets and race two sign-ins.
+        const { saveCredentials, isSaving } = useSaveCredentialsFile()
+        // Guards the sheet and the PIN, which the save hook's own guard can't see.
         const isStoringRef = useRef(false)
 
         const storeCredentials = useCallback(
@@ -62,11 +66,7 @@ export const useStoreBackupCredentials =
                     destination =
                         await requestBottomSheet<CredentialsFileSource>({
                             contents: <StoreBackupCredentialsSheet />,
-                            options: {
-                                size: 'auto',
-                                enablePanDownToClose: true,
-                                autoCreateContainer: false,
-                            },
+                            options: OPTION_LIST_SHEET_OPTIONS,
                         })
                     if (!destination) return
                     if (
@@ -77,18 +77,12 @@ export const useStoreBackupCredentials =
                     }
 
                     // Re-reads the store, so a backup deleted while the sheet
-                    // and PIN were open stops here.
-                    const result = await saveBackupCredentials(destination)
-                    if (result === 'cancelled') return
-                    showToast(
-                        {
-                            title: t('cloud_backup.store_credentials.success'),
-                            body: '',
-                            type: 'success',
-                        },
-                        // Lets a dismissing native picker or sign-in sheet clear first.
-                        { delayLength: 'short' },
-                    )
+                    // and PIN were open is refused by `saveCredentials`.
+                    const current = useCloudBackupStore.getState()
+                    await saveCredentials(destination, {
+                        salt: current.salt,
+                        backupId: current.backupId,
+                    })
                 } catch (error) {
                     logger.error(
                         'useStoreBackupCredentials: failed to store the encryption key',
@@ -102,11 +96,11 @@ export const useStoreBackupCredentials =
             [
                 requestBottomSheet,
                 requirePinVerification,
+                saveCredentials,
                 showError,
-                showToast,
                 t,
             ],
         )
 
-        return { storeCredentials }
+        return { storeCredentials, isSaving }
     }

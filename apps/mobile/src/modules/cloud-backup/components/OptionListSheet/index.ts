@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { OptionListSheet } from './OptionListSheet'
-export type { OptionListSheetOption } from './OptionListSheet'
+export { OptionListSheet, OPTION_LIST_SHEET_OPTIONS } from './OptionListSheet'
