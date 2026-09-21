@@ -34,6 +34,7 @@ import {
     type PushNotificationService,
     type RemoteConfigService,
     type WalletProvisioningService,
+    type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { testDatabaseService } from './sqlite-database'
@@ -157,6 +158,14 @@ const buildServices = (): PlatformServices => {
         },
     }
 
+    // Dormant default: no drive is reachable, so a flow test sees the same
+    // source list as a build without the OAuth clients until it says otherwise.
+    const cloudFileStorage: CloudFileStorageService = {
+        getAvailableStores: () => [],
+        save: async () => 'cancelled',
+        read: async () => ({ status: 'cancelled' }),
+    }
+
     const migration: MigrationService = {
         hasLegacyData: async () => false,
         getLegacyData: async () => {
@@ -189,6 +198,7 @@ const buildServices = (): PlatformServices => {
         hardwareWalletRegistry: createHardwareWalletRegistry(),
         migration,
         walletProvisioning,
+        cloudFileStorage,
     }
 }
 

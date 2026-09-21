@@ -11,42 +11,28 @@
  */
 
 import {
-    NoBackupCredentialsError,
     backupCredentialsFileName,
     buildBackupCredentialsFile,
-    useCloudBackupStore,
 } from '@perawallet/wallet-core-backup'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import { saveToDevice } from './saveToDevice'
-import { saveToGoogleDrive } from './saveToGoogleDrive'
-import { saveToICloud } from './saveToICloud'
 import type {
-    CredentialsFileSaver,
+    BackupCredentials,
     CredentialsFileSource,
     SaveResult,
 } from './types'
 
-const SAVERS: Record<CredentialsFileSource, CredentialsFileSaver> = {
-    device: saveToDevice,
-    icloud: saveToICloud,
-    googleDrive: saveToGoogleDrive,
-}
-
-/**
- * Writes the current backup's key file to `destination`. Reads the store at
- * call time, so a backup deleted while a sheet or PIN was open stops here
- * rather than saving a stale key.
- */
-export const saveBackupCredentials = async (
+// Named after the backup, so storing a second one sits beside the first
+// instead of overwriting it.
+export const saveCredentialsFile = (
     destination: CredentialsFileSource,
+    { salt, backupId }: BackupCredentials,
 ): Promise<SaveResult> => {
-    const { salt, backupId } = useCloudBackupStore.getState()
-    if (!salt || !backupId) throw new NoBackupCredentialsError()
+    const fileName = backupCredentialsFileName(backupId)
+    const contents = buildBackupCredentialsFile(salt)
 
-    // Named after the backup, so storing a second one sits beside the first
-    // instead of overwriting it.
-    return SAVERS[destination](
-        backupCredentialsFileName(backupId),
-        buildBackupCredentialsFile(salt),
-    )
+    return destination === 'device'
+        ? saveToDevice(fileName, contents)
+        : getProvider().cloudFileStorage.save(destination, fileName, contents)
 }

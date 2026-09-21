@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { saveBackupCredentials } from './saveBackupCredentials'
+export { saveCredentialsFile } from './saveBackupCredentials'
 export {
     readBackupCredentials,
     type ReadBackupCredentialsOptions,
@@ -20,8 +20,9 @@ export {
     getCredentialsFileSaveSources,
 } from './credentialsFileSources'
 export type {
+    BackupCredentials,
     ChooseCredentialsFile,
-    CredentialsFileSaver,
     CredentialsFileSource,
+    MaybeBackupCredentials,
     SaveResult,
 } from './types'

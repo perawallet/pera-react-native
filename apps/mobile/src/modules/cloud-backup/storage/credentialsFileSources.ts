@@ -11,21 +11,26 @@
  */
 
 import { Platform } from 'react-native'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 import type { CredentialsFileSource } from './types'
 
-// iCloud has no Android client. The extension gets its own twin, which ships
-// neither native SDK.
-const SOURCES_BY_OS: Partial<
-    Record<typeof Platform.OS, CredentialsFileSource[]>
-> = {
-    ios: ['device', 'icloud', 'googleDrive'],
-    android: ['device', 'googleDrive'],
-}
-const NONE: CredentialsFileSource[] = []
+// Neither the file picker nor either cloud SDK ships outside the two mobile
+// builds, so anywhere else offers nothing rather than a row that throws the
+// moment it is tapped. The extension gets its own twin.
+const MOBILE_OS = new Set<string>(['ios', 'android'])
 
-export const getCredentialsFileSaveSources = (): CredentialsFileSource[] =>
-    SOURCES_BY_OS[Platform.OS] ?? NONE
+// Which cloud drives exist is the platform's answer, since it owns both SDKs.
+// Resolved once and kept: neither the OS nor the linked SDKs change at runtime,
+// and callers memoize on this array's identity. Not at module scope, because
+// the provider isn't wired yet when this module is first imported.
+let resolved: CredentialsFileSource[] | null = null
 
-export const getCredentialsFileReadSources = (): CredentialsFileSource[] =>
-    SOURCES_BY_OS[Platform.OS] ?? NONE
+const sources = (): CredentialsFileSource[] =>
+    (resolved ??= MOBILE_OS.has(Platform.OS)
+        ? ['device', ...getProvider().cloudFileStorage.getAvailableStores()]
+        : [])
+
+export const getCredentialsFileSaveSources = sources
+
+export const getCredentialsFileReadSources = sources

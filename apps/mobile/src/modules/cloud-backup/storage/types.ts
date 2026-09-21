@@ -10,48 +10,29 @@
  limitations under the License
  */
 
-/**
- * `cancelled` means nothing was saved: the user backed out, or a
- * picker failed silently.
- */
-export type SaveResult = 'saved' | 'cancelled'
+import type { BackupId } from '@perawallet/wallet-core-backup'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    ChooseCloudFile,
+    CloudFileReadResult,
+    CloudFileSaveResult,
+    CloudFileStore,
+} from '@perawallet/wallet-extension-platform'
 
-export type CredentialsFileSaver = (
-    fileName: string,
-    contents: string,
-) => Promise<SaveResult>
+/** A local file alongside the cloud drives the platform can reach. */
+export type CredentialsFileSource = 'device' | CloudFileStore
 
-export type CredentialsFileSource = 'device' | 'icloud' | 'googleDrive'
+export type SaveResult = CloudFileSaveResult
+export type ReadResult = CloudFileReadResult
+export type ChooseCredentialsFile = ChooseCloudFile
 
-/**
- * `cancelled` means nothing was read: the user backed out, or a
- * picker failed silently.
- */
-export type ReadResult =
-    | { status: 'read'; contents: string }
-    | { status: 'cancelled' }
+export type BackupCredentials = {
+    salt: string
+    backupId: BackupId
+}
 
-/**
- * `onReading` fires once nothing but the read itself is left, so a
- * progress overlay can't collide with a picker or sign-in sheet.
- */
-export type CredentialsFileReader = (
-    fileName: string,
-    onReading?: () => void,
-) => Promise<ReadResult>
-
-export type ListResult =
-    | { status: 'listed'; fileNames: string[] }
-    | { status: 'cancelled' }
-
-export type CredentialsFileLister = (
-    onListing?: () => void,
-) => Promise<ListResult>
-
-/**
- * Asks the user which saved key to read when a folder holds several. Returning
- * `null` backs out of the restore.
- */
-export type ChooseCredentialsFile = (
-    fileNames: string[],
-) => Promise<string | null>
+/** Straight off a store, where either half can be gone: the backup was deleted
+ *  or the draft cleared while a sheet, a PIN or a sign-in was open. */
+export type MaybeBackupCredentials = {
+    [K in keyof BackupCredentials]: Nullable<BackupCredentials[K]>
+}

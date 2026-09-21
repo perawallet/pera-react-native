@@ -11,37 +11,18 @@
  */
 
 import {
-    LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
+    isBackupCredentialsFileName,
     parseBackupCredentialsFile,
     type BackupEncryptionKey,
 } from '@perawallet/wallet-core-backup'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
-import { listFromGoogleDrive } from './listFromGoogleDrive'
-import { listFromICloud } from './listFromICloud'
 import { readFromDevice } from './readFromDevice'
-import { readFromGoogleDrive } from './readFromGoogleDrive'
-import { readFromICloud } from './readFromICloud'
 import type {
     ChooseCredentialsFile,
-    CredentialsFileLister,
-    CredentialsFileReader,
     CredentialsFileSource,
+    ReadResult,
 } from './types'
-
-const READERS: Record<CredentialsFileSource, CredentialsFileReader> = {
-    device: readFromDevice,
-    icloud: readFromICloud,
-    googleDrive: readFromGoogleDrive,
-}
-
-/** The device picker names its own file, so only the cloud sources list. */
-const LISTERS: Record<
-    Exclude<CredentialsFileSource, 'device'>,
-    CredentialsFileLister
-> = {
-    icloud: listFromICloud,
-    googleDrive: listFromGoogleDrive,
-}
 
 export type ReadBackupCredentialsResult =
     | { status: 'read'; key: BackupEncryptionKey }
@@ -53,44 +34,25 @@ export type ReadBackupCredentialsOptions = {
     chooseFile?: ChooseCredentialsFile
 }
 
-type ResolvedFileName =
-    | { status: 'resolved'; fileName: string }
-    | { status: 'cancelled' }
-
-const resolveFileName = async (
+const readFrom = (
     source: CredentialsFileSource,
     { onReading, chooseFile }: ReadBackupCredentialsOptions,
-): Promise<ResolvedFileName> => {
-    // The picker names the file, so the value below is never read.
-    if (source === 'device') {
-        return {
-            status: 'resolved',
-            fileName: LEGACY_BACKUP_CREDENTIALS_FILE_NAME,
-        }
-    }
-
-    // An empty folder throws from the lister, which owns the per-source
-    // not-found handling (Drive signs out so another account can be picked).
-    const listed = await LISTERS[source](onReading)
-    if (listed.status === 'cancelled') return listed
-
-    const [only, ...rest] = listed.fileNames
-    if (rest.length === 0 && only) return { status: 'resolved', fileName: only }
-
-    const chosen = await chooseFile?.(listed.fileNames)
-    return chosen
-        ? { status: 'resolved', fileName: chosen }
-        : { status: 'cancelled' }
-}
+): Promise<ReadResult> =>
+    // The device picker names the file itself, so it needs neither the
+    // candidate filter nor the chooser.
+    source === 'device'
+        ? readFromDevice()
+        : getProvider().cloudFileStorage.read(source, {
+              isCandidate: isBackupCredentialsFileName,
+              chooseFile,
+              onReading,
+          })
 
 export const readBackupCredentials = async (
     source: CredentialsFileSource,
     options: ReadBackupCredentialsOptions = {},
 ): Promise<ReadBackupCredentialsResult> => {
-    const resolved = await resolveFileName(source, options)
-    if (resolved.status === 'cancelled') return resolved
-
-    const read = await READERS[source](resolved.fileName, options.onReading)
+    const read = await readFrom(source, options)
     if (read.status === 'cancelled') return read
     // The parser throws the same typed errors this layer used to translate into.
     return { status: 'read', key: parseBackupCredentialsFile(read.contents) }

@@ -62,18 +62,10 @@ export const isBackupCredentialsFileName = (fileName: string): boolean =>
     fileName === LEGACY_BACKUP_CREDENTIALS_FILE_NAME ||
     FILE_NAME_PATTERN.test(fileName)
 
-// The Drive client sizes uploads by character count, not bytes, so anything
-// outside printable ASCII is written as a JSON \u escape.
-const toAsciiJson = (value: unknown): string =>
-    JSON.stringify(value).replace(
-        /[\u007f-\uffff]/g,
-        char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`,
-    )
-
 // Plain JSON on purpose: the salt opens nothing without the 12-word phrase,
 // which never goes in this file.
 export const buildBackupCredentialsFile = (backupSalt: string): string =>
-    toAsciiJson({
+    JSON.stringify({
         v: BACKUP_CREDENTIALS_FILE_VERSION,
         t: BACKUP_CREDENTIALS_FILE_TYPE,
         salt: backupSalt,

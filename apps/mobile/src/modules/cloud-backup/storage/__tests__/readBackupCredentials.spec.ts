@@ -13,138 +13,68 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     buildBackupCredentialsFile,
+    isBackupCredentialsFileName,
     InvalidCredentialsFileError,
     UnsupportedCredentialsFileError,
 } from '@perawallet/wallet-core-backup'
 import { readBackupCredentials } from '../readBackupCredentials'
 
-const {
-    readFromDevice,
-    readFromICloud,
-    readFromGoogleDrive,
-    listFromICloud,
-    listFromGoogleDrive,
-} = vi.hoisted(() => ({
+const { readFromDevice, read } = vi.hoisted(() => ({
     readFromDevice: vi.fn(),
-    readFromICloud: vi.fn(),
-    readFromGoogleDrive: vi.fn(),
-    listFromICloud: vi.fn(),
-    listFromGoogleDrive: vi.fn(),
+    read: vi.fn(),
 }))
 
 vi.mock('../readFromDevice', () => ({ readFromDevice }))
-vi.mock('../readFromICloud', () => ({ readFromICloud }))
-vi.mock('../readFromGoogleDrive', () => ({ readFromGoogleDrive }))
-vi.mock('../listFromICloud', () => ({ listFromICloud }))
-vi.mock('../listFromGoogleDrive', () => ({ listFromGoogleDrive }))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ cloudFileStorage: { read } }),
+}))
 
-// The device picker names its own file, so the name it is handed is unused.
-const DEVICE_FILE_NAME = 'pera-backup-encryption-key.json'
-const FILE_NAME = 'pera-backup-VQBGR.json'
-const OTHER_FILE_NAME = 'pera-backup-ZZZZZ.json'
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 
-const listed = (...fileNames: string[]) => ({ status: 'listed', fileNames })
+const readFile = () => ({
+    status: 'read',
+    contents: buildBackupCredentialsFile(SALT),
+})
 
 beforeEach(() => {
     vi.clearAllMocks()
-    listFromICloud.mockResolvedValue(listed(FILE_NAME))
-    listFromGoogleDrive.mockResolvedValue(listed(FILE_NAME))
 })
 
 describe('readBackupCredentials', () => {
-    test.each([
-        ['device', readFromDevice, DEVICE_FILE_NAME],
-        ['icloud', readFromICloud, FILE_NAME],
-        ['googleDrive', readFromGoogleDrive, FILE_NAME],
-    ] as const)(
-        'reads the file from %s and returns its key',
-        async (source, reader, fileName) => {
-            reader.mockResolvedValueOnce({
-                status: 'read',
-                contents: buildBackupCredentialsFile(SALT),
-            })
+    test('reads a local file through the device picker', async () => {
+        readFromDevice.mockResolvedValueOnce(readFile())
 
-            await expect(readBackupCredentials(source)).resolves.toEqual({
+        await expect(readBackupCredentials('device')).resolves.toEqual({
+            status: 'read',
+            key: {
+                salt: SALT,
+                argon2id: expect.objectContaining({ outputLength: 32 }),
+            },
+        })
+        expect(read).not.toHaveBeenCalled()
+    })
+
+    test.each(['icloud', 'googleDrive'] as const)(
+        'reads from %s through the platform, which resolves the file itself',
+        async store => {
+            read.mockResolvedValueOnce(readFile())
+            const chooseFile = vi.fn()
+            const onReading = vi.fn()
+
+            await expect(
+                readBackupCredentials(store, { chooseFile, onReading }),
+            ).resolves.toEqual({
                 status: 'read',
-                key: {
-                    salt: SALT,
-                    argon2id: expect.objectContaining({ outputLength: 32 }),
-                },
+                key: expect.objectContaining({ salt: SALT }),
             })
-            expect(reader).toHaveBeenCalledWith(fileName, undefined)
+            expect(read).toHaveBeenCalledWith(store, {
+                isCandidate: isBackupCredentialsFileName,
+                chooseFile,
+                onReading,
+            })
+            expect(readFromDevice).not.toHaveBeenCalled()
         },
     )
-
-    test('passes onReading through to the reader', async () => {
-        const onReading = vi.fn()
-        readFromDevice.mockResolvedValueOnce({
-            status: 'read',
-            contents: buildBackupCredentialsFile(SALT),
-        })
-
-        await readBackupCredentials('device', { onReading })
-
-        expect(readFromDevice).toHaveBeenCalledWith(DEVICE_FILE_NAME, onReading)
-    })
-
-    test('does not list for device: the picker chooses the file', async () => {
-        readFromDevice.mockResolvedValueOnce({ status: 'cancelled' })
-
-        await readBackupCredentials('device')
-
-        expect(listFromICloud).not.toHaveBeenCalled()
-        expect(listFromGoogleDrive).not.toHaveBeenCalled()
-    })
-
-    test('reads a lone cloud file without asking the user to choose', async () => {
-        const chooseFile = vi.fn()
-        readFromICloud.mockResolvedValueOnce({
-            status: 'read',
-            contents: buildBackupCredentialsFile(SALT),
-        })
-
-        await readBackupCredentials('icloud', { chooseFile })
-
-        expect(chooseFile).not.toHaveBeenCalled()
-        expect(readFromICloud).toHaveBeenCalledWith(FILE_NAME, undefined)
-    })
-
-    test('reads the file the user picks when several are saved', async () => {
-        listFromICloud.mockResolvedValueOnce(listed(FILE_NAME, OTHER_FILE_NAME))
-        const chooseFile = vi.fn().mockResolvedValueOnce(OTHER_FILE_NAME)
-        readFromICloud.mockResolvedValueOnce({
-            status: 'read',
-            contents: buildBackupCredentialsFile(SALT),
-        })
-
-        await readBackupCredentials('icloud', { chooseFile })
-
-        expect(chooseFile).toHaveBeenCalledWith([FILE_NAME, OTHER_FILE_NAME])
-        expect(readFromICloud).toHaveBeenCalledWith(OTHER_FILE_NAME, undefined)
-    })
-
-    test('cancels, and reads nothing, when the user dismisses the chooser', async () => {
-        listFromGoogleDrive.mockResolvedValueOnce(
-            listed(FILE_NAME, OTHER_FILE_NAME),
-        )
-
-        await expect(
-            readBackupCredentials('googleDrive', {
-                chooseFile: vi.fn().mockResolvedValueOnce(null),
-            }),
-        ).resolves.toEqual({ status: 'cancelled' })
-        expect(readFromGoogleDrive).not.toHaveBeenCalled()
-    })
-
-    test('passes a cancelled sign-in straight through', async () => {
-        listFromGoogleDrive.mockResolvedValueOnce({ status: 'cancelled' })
-
-        await expect(readBackupCredentials('googleDrive')).resolves.toEqual({
-            status: 'cancelled',
-        })
-        expect(readFromGoogleDrive).not.toHaveBeenCalled()
-    })
 
     test('passes a cancel straight through', async () => {
         readFromDevice.mockResolvedValueOnce({ status: 'cancelled' })
@@ -166,13 +96,12 @@ describe('readBackupCredentials', () => {
     })
 
     test('reports a file from a newer app as needing an update', async () => {
-        const newer = JSON.stringify({
-            ...JSON.parse(buildBackupCredentialsFile(SALT)),
-            v: 2,
-        })
         readFromDevice.mockResolvedValueOnce({
             status: 'read',
-            contents: newer,
+            contents: JSON.stringify({
+                ...JSON.parse(buildBackupCredentialsFile(SALT)),
+                v: 2,
+            }),
         })
 
         await expect(readBackupCredentials('device')).rejects.toBeInstanceOf(
@@ -180,9 +109,9 @@ describe('readBackupCredentials', () => {
         )
     })
 
-    test('lets a reader failure through unchanged', async () => {
+    test('lets a platform failure through unchanged', async () => {
         const error = new Error('network')
-        readFromGoogleDrive.mockRejectedValueOnce(error)
+        read.mockRejectedValueOnce(error)
 
         await expect(readBackupCredentials('googleDrive')).rejects.toBe(error)
     })

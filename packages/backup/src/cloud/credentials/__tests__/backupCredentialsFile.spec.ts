@@ -31,28 +31,19 @@ const BACKUP_ID =
 
 describe('buildBackupCredentialsFile', () => {
     test('writes only the salt and the backup KDF under a typed, versioned envelope', () => {
-        expect(JSON.parse(buildBackupCredentialsFile(SALT))).toEqual({
-            v: 1,
-            t: 'backup-credentials',
-            salt: SALT,
-            argon2id: {
-                time_cost: ARGON2ID_CONFIG.timeCost,
-                memory_cost: ARGON2ID_CONFIG.memoryCost,
-                parallelism: ARGON2ID_CONFIG.parallelism,
-                output_length: ARGON2ID_CONFIG.outputLength,
-            },
-        })
-    })
-
-    test('escapes anything outside printable ASCII so the file reads back to the same salt', () => {
-        // A Cyrillic "А" typed for "A" decodes to the same key bytes, so it can
-        // reach the store; the emoji pins per-code-unit escaping of surrogates.
-        const lookAlikeSalt = `А${SALT.slice(1)}${String.fromCodePoint(0x1f600)}`
-
-        const file = buildBackupCredentialsFile(lookAlikeSalt)
-
-        expect(file).toMatch(/^[\x20-\x7E]*$/)
-        expect(JSON.parse(file).salt).toBe(lookAlikeSalt)
+        expect(buildBackupCredentialsFile(SALT)).toBe(
+            JSON.stringify({
+                v: 1,
+                t: 'backup-credentials',
+                salt: SALT,
+                argon2id: {
+                    time_cost: ARGON2ID_CONFIG.timeCost,
+                    memory_cost: ARGON2ID_CONFIG.memoryCost,
+                    parallelism: ARGON2ID_CONFIG.parallelism,
+                    output_length: ARGON2ID_CONFIG.outputLength,
+                },
+            }),
+        )
     })
 })
 

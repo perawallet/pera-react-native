@@ -79,6 +79,15 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             log: vi.fn(),
             recordError: vi.fn(),
         },
+        // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
+        // cloud save or read overrides these per case.
+        cloudFileStorage: {
+            getAvailableStores: vi
+                .fn()
+                .mockReturnValue(['icloud', 'googleDrive']),
+            save: vi.fn().mockResolvedValue('saved'),
+            read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
+        },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
@@ -184,6 +193,15 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         crashReporting: {
             log: vi.fn(),
             recordError: vi.fn(),
+        },
+        // Both drives, matching the iOS `deviceInfo` mock. A spec exercising a
+        // cloud save or read overrides these per case.
+        cloudFileStorage: {
+            getAvailableStores: vi
+                .fn()
+                .mockReturnValue(['icloud', 'googleDrive']),
+            save: vi.fn().mockResolvedValue('saved'),
+            read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
@@ -3538,8 +3556,15 @@ vi.mock('lottie-react-native', () => ({
     default: () => null,
 }))
 
-// Mock @perawallet/wallet-extension-platform
-vi.mock('@perawallet/wallet-extension-platform', () => ({
+// Mock @perawallet/wallet-extension-platform.
+// Spreads the real module first: this factory only stubs the service hooks, and
+// anything it forgot used to arrive as `undefined` — silently, so an error class
+// from this package stopped being a constructor and a new RemoteConfigKey could
+// not be switched on in a test.
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-extension-platform')
+    >()),
     createCrashReportingErrorReporter: vi.fn(() => vi.fn()),
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
@@ -3555,23 +3580,6 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
     })),
     RemoteConfigDefaults: {
         pera_7_migration: false,
-    },
-    RemoteConfigKeys: {
-        fee_warning_standard_fee: 'fee_warning_standard_fee',
-        fee_warning_usd_threshold: 'fee_warning_usd_threshold',
-        staking_projects_i18n: 'staking_projects_i18n',
-        swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
-        swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
-        pera_7_migration: 'pera_7_migration',
-        enable_motion_lock: 'enable_motion_lock',
-        enable_duress_pin: 'enable_duress_pin',
-        onramp_currency_decimals: 'onramp_currency_decimals',
-        enable_quantum_accounts: 'enable_quantum_accounts',
-        enable_quantum_swap: 'enable_quantum_swap',
-        enable_gift_cards: 'enable_gift_cards',
-        enable_cloud_backup: 'enable_cloud_backup',
-        enable_backup_credentials_cloud_storage:
-            'enable_backup_credentials_cloud_storage',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({
@@ -3678,86 +3686,6 @@ vi.mock('react-native-share', () => ({
         shareSingle: vi.fn().mockResolvedValue({ success: true }),
     },
     Social: {},
-}))
-
-// Both libraries reach TurboModuleRegistry at import time, which throws
-// outside a native runtime. Defaults are implementations rather than
-// mockResolvedValue so a spec's vi.resetAllMocks() can't wipe them.
-vi.mock('react-native-cloud-storage', () => {
-    class CloudStorageError extends Error {
-        code: string
-        details?: unknown
-        constructor(message: string, code: string, details?: unknown) {
-            super(message)
-            this.code = code
-            this.details = details
-        }
-    }
-    class CloudStorage {
-        isCloudAvailable(): Promise<boolean> {
-            return Promise.resolve(true)
-        }
-        writeFile(): Promise<void> {
-            return Promise.resolve()
-        }
-        setProviderOptions(): void {}
-    }
-    return {
-        CloudStorage,
-        CloudStorageError,
-        CloudStorageErrorCode: {
-            INVALID_SCOPE: 'ERR_INVALID_SCOPE',
-            FILE_NOT_FOUND: 'ERR_FILE_NOT_FOUND',
-            PATH_IS_FILE: 'ERR_PATH_IS_FILE',
-            PATH_IS_DIRECTORY: 'ERR_PATH_IS_DIRECTORY',
-            DIRECTORY_NOT_FOUND: 'ERR_DIRECTORY_NOT_FOUND',
-            DIRECTORY_NOT_EMPTY: 'ERR_DIRECTORY_NOT_EMPTY',
-            FILE_ALREADY_EXISTS: 'ERR_FILE_EXISTS',
-            MULTIPLE_FILES_SAME_NAME: 'ERR_MULTIPLE_FILES_SAME_NAME',
-            AUTHENTICATION_FAILED: 'ERR_AUTHENTICATION_FAILED',
-            WRITE_ERROR: 'ERR_WRITE_ERROR',
-            READ_ERROR: 'ERR_READ_ERROR',
-            DELETE_ERROR: 'ERR_DELETE_ERROR',
-            STAT_ERROR: 'ERR_STAT_ERROR',
-            UNKNOWN: 'ERR_UNKNOWN',
-            FILE_NOT_DOWNLOADABLE: 'ERR_FILE_NOT_DOWNLOADABLE',
-            ACCESS_TOKEN_MISSING: 'ERR_ACCESS_TOKEN_MISSING',
-            INVALID_URL: 'ERR_INVALID_URL',
-            NETWORK_ERROR: 'ERR_NETWORK_ERROR',
-            UNSUPPORTED_PLATFORM: 'ERR_UNSUPPORTED_PLATFORM',
-            KV_QUOTA_EXCEEDED: 'ERR_KV_QUOTA_EXCEEDED',
-            KV_INVALID_KEY: 'ERR_KV_INVALID_KEY',
-            KV_NOT_SUPPORTED: 'ERR_KV_NOT_SUPPORTED',
-        },
-        CloudStorageProvider: { ICloud: 'icloud', GoogleDrive: 'googledrive' },
-        CloudStorageScope: { Documents: 'documents', AppData: 'app_data' },
-    }
-})
-
-vi.mock('@react-native-google-signin/google-signin', () => ({
-    GoogleSignin: {
-        configure: vi.fn(),
-        hasPreviousSignIn: vi.fn(() => false),
-        signInSilently: vi.fn(async () => ({
-            type: 'noSavedCredentialFound',
-            data: null,
-        })),
-        signIn: vi.fn(async () => ({ type: 'cancelled', data: null })),
-        addScopes: vi.fn(async () => null),
-        getTokens: vi.fn(async () => ({
-            idToken: '',
-            accessToken: 'access-token',
-        })),
-        clearCachedAccessToken: vi.fn(async () => null),
-        signOut: vi.fn(async () => null),
-        hasPlayServices: vi.fn(async () => true),
-    },
-    isSuccessResponse: (response: { type: string }) =>
-        response.type === 'success',
-    isCancelledResponse: (response: { type: string }) =>
-        response.type === 'cancelled',
-    isNoSavedCredentialFoundResponse: (response: { type: string }) =>
-        response.type === 'noSavedCredentialFound',
 }))
 
 // Mock react-native-qrcode-svg (contains JSX in .js files)

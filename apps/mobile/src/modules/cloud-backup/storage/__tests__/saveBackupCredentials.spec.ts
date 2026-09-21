@@ -11,88 +11,83 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { NoBackupCredentialsError } from '@perawallet/wallet-core-backup'
-import { saveBackupCredentials } from '../saveBackupCredentials'
+import { saveCredentialsFile } from '../saveBackupCredentials'
 
-const { saveToDevice, saveToICloud, saveToGoogleDrive, storeState } =
-    vi.hoisted(() => ({
-        saveToDevice: vi.fn(),
-        saveToICloud: vi.fn(),
-        saveToGoogleDrive: vi.fn(),
-        storeState: {
-            salt: null as string | null,
-            backupId: null as string | null,
-        },
-    }))
-
-vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
-    ...(await importOriginal<Record<string, unknown>>()),
-    useCloudBackupStore: { getState: () => storeState },
+const { saveToDevice, save, storeState } = vi.hoisted(() => ({
+    saveToDevice: vi.fn(),
+    save: vi.fn(),
+    storeState: {
+        salt: null as string | null,
+        backupId: null as string | null,
+    },
 }))
+
 vi.mock('../saveToDevice', () => ({ saveToDevice }))
-vi.mock('../saveToICloud', () => ({ saveToICloud }))
-vi.mock('../saveToGoogleDrive', () => ({ saveToGoogleDrive }))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ cloudFileStorage: { save } }),
+}))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const BACKUP_ID = `did:pera:VQBGR${'A'.repeat(53)}`
+const FILE_NAME = 'pera-backup-VQBGR.json'
 
 beforeEach(() => {
     vi.clearAllMocks()
     storeState.salt = SALT
     storeState.backupId = BACKUP_ID
     saveToDevice.mockResolvedValue('saved')
-    saveToICloud.mockResolvedValue('saved')
-    saveToGoogleDrive.mockResolvedValue('saved')
+    save.mockResolvedValue('saved')
 })
 
-describe('saveBackupCredentials', () => {
-    test.each([
-        ['device', saveToDevice],
-        ['icloud', saveToICloud],
-        ['googleDrive', saveToGoogleDrive],
-    ] as const)('writes through the %s saver', async (destination, saver) => {
-        await expect(saveBackupCredentials(destination)).resolves.toBe('saved')
+describe('saveCredentialsFile', () => {
+    // The store-key screen saves before the backup is configured, so the
+    // credentials have to arrive as arguments rather than from the store.
+    test('writes the file from the credentials it is given, without reading the store', async () => {
+        Object.assign(storeState, { salt: null, backupId: null })
 
-        expect(saver).toHaveBeenCalledWith(
-            'pera-backup-VQBGR.json',
-            expect.any(String),
-        )
-    })
-
-    test('names the file after the backup, not after a fixed constant', async () => {
-        storeState.backupId = `did:pera:ZZZZZ${'A'.repeat(53)}`
-
-        await saveBackupCredentials('device')
+        await saveCredentialsFile('device', {
+            salt: SALT,
+            backupId: BACKUP_ID,
+        })
 
         expect(saveToDevice).toHaveBeenCalledWith(
-            'pera-backup-ZZZZZ.json',
-            expect.any(String),
+            FILE_NAME,
+            expect.stringContaining(SALT),
         )
     })
 
-    test('writes the salt, and never the phrase', async () => {
-        await saveBackupCredentials('device')
+    test('writes a local file through the device saver', async () => {
+        await expect(
+            saveCredentialsFile('device', { salt: SALT, backupId: BACKUP_ID }),
+        ).resolves.toBe('saved')
 
-        expect(
-            JSON.parse(String(saveToDevice.mock.calls[0]?.[1])),
-        ).toMatchObject({ t: 'backup-credentials', salt: SALT })
+        expect(save).not.toHaveBeenCalled()
     })
+
+    test.each(['icloud', 'googleDrive'] as const)(
+        'writes to %s through the platform',
+        async store => {
+            await expect(
+                saveCredentialsFile(store, {
+                    salt: SALT,
+                    backupId: BACKUP_ID,
+                }),
+            ).resolves.toBe('saved')
+
+            expect(save).toHaveBeenCalledWith(
+                store,
+                FILE_NAME,
+                expect.stringContaining(SALT),
+            )
+            expect(saveToDevice).not.toHaveBeenCalled()
+        },
+    )
 
     test('passes a cancel back rather than reporting a save', async () => {
-        saveToICloud.mockResolvedValueOnce('cancelled')
+        save.mockResolvedValueOnce('cancelled')
 
-        await expect(saveBackupCredentials('icloud')).resolves.toBe('cancelled')
-    })
-
-    test.each([
-        ['the salt', { salt: null }],
-        ['the backup id', { backupId: null }],
-    ])('refuses to write when %s is gone', async (_, gone) => {
-        Object.assign(storeState, gone)
-
-        await expect(saveBackupCredentials('device')).rejects.toBeInstanceOf(
-            NoBackupCredentialsError,
-        )
-        expect(saveToDevice).not.toHaveBeenCalled()
+        await expect(
+            saveCredentialsFile('icloud', { salt: SALT, backupId: BACKUP_ID }),
+        ).resolves.toBe('cancelled')
     })
 })
