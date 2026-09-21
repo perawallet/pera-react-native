@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { CardAutoFundingSigningScreen } from './CardAutoFundingSigningScreen'
+export { CardOnboardingMailingAddressScreen } from './CardOnboardingMailingAddressScreen'

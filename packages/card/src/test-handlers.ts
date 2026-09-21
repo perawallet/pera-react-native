@@ -108,6 +108,7 @@ export {
     mockVerifyPhone,
     mockSubmitPersonalDetails,
     mockSubmitAddress,
+    mockSubmitMailingAddress,
     mockSubmitOnboardingConsent,
     mockLinkOnboardingConsent,
     mockGetRegistrationSettings,

@@ -59,6 +59,7 @@ import {
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
+import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 
 import {
@@ -241,6 +242,7 @@ const renderOverviewWithWithdraw = () => {
     return renderWithNavigation(PeraCardOverview, 'Overview', {
         additionalScreens: [
             { name: 'CardWithdraw', component: CardWithdrawScreen },
+            { name: 'CardWithdrawStatus', component: CardWithdrawStatusScreen },
         ],
     })
 }
@@ -358,21 +360,24 @@ describe('Flow: Card withdraw', () => {
             expect(toBigInt(call.args[1])).toBe(BigInt(USDC_ASSET_ID))
             expect(toBigInt(call.args[2])).toBe(25_000_000n)
 
-            // Requested toast, back on the overview, and the open request is
-            // read from the owner-keyed box with its claim ready.
-            await waitFor(() =>
-                expect(Notifier.showNotification).toHaveBeenCalled(),
-            )
+            // The form hands over to the status screen, which reads the open
+            // request from the owner-keyed box with its claim ready.
             expect(
                 await screen.findByTestId(
-                    'pera_card_pending_withdrawal',
+                    'card-withdraw-status',
                     {},
                     { timeout: 10_000 },
                 ),
             ).toBeTruthy()
-            expect(
-                screen.getByTestId('pera_card_pending_withdrawal_complete'),
-            ).toBeTruthy()
+            await waitFor(
+                () =>
+                    expect(
+                        screen
+                            .getByTestId('card_withdraw_status_complete_button')
+                            .getAttribute('disabled'),
+                    ).toBeNull(),
+                { timeout: 10_000 },
+            )
             expect(box.requestedNames).toContain(
                 `b64:${toBase64(ownerBoxName)}`,
             )
@@ -403,9 +408,20 @@ describe('Flow: Card withdraw', () => {
 
             renderOverviewWithWithdraw()
 
+            // With a matured request open, the overview's Withdraw button
+            // leads to the status screen rather than the form.
+            await waitFor(
+                () =>
+                    expect(
+                        screen.getByTestId('pera_card_withdraw_button')
+                            .textContent,
+                    ).toContain('complete_button'),
+                { timeout: 10_000 },
+            )
+            fireEvent.click(screen.getByTestId('pera_card_withdraw_button'))
             fireEvent.click(
                 await screen.findByTestId(
-                    'pera_card_pending_withdrawal_complete',
+                    'card_withdraw_status_complete_button',
                     {},
                     { timeout: 10_000 },
                 ),
@@ -419,10 +435,11 @@ describe('Flow: Card withdraw', () => {
             expect(encodeAddress(call.args[0])).toBe(CARD_ADDRESS)
             expect(toBigInt(call.args[1])).toBe(40_000_000n)
 
+            // The status screen pops back to the overview once the block lands.
             await waitFor(
                 () =>
                     expect(
-                        screen.queryByTestId('pera_card_pending_withdrawal'),
+                        screen.queryByTestId('card-withdraw-status'),
                     ).toBeNull(),
                 { timeout: 10_000 },
             )

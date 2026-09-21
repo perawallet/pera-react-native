@@ -13,25 +13,32 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    bodyContainer: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        gap: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
+    content: {
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.xl,
     },
-    title: {
-        textAlign: 'center',
-    },
-    body: {
-        textAlign: 'center',
-        color: theme.colors.textGray,
-    },
-    buttonContainer: {
+    toAccountRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         gap: theme.spacing.md,
     },
-    errorText: {
-        color: theme.colors.negative,
-        textAlign: 'center',
-        paddingVertical: theme.spacing.sm,
+    muted: {
+        color: theme.colors.textGray,
+    },
+    stepsCard: {
+        padding: theme.spacing.lg,
+        gap: theme.spacing.lg,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.divider,
+        borderRadius: theme.spacing.md,
+    },
+    amountSkeleton: {
+        width: theme.spacing['5xl'] * 2,
+        height: theme.spacing['3xl'],
+        borderRadius: theme.spacing.sm,
+    },
+    footer: {
+        gap: theme.spacing.sm,
     },
 }))

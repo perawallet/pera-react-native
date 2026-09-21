@@ -24,10 +24,10 @@ import { CardOnboardingPhoneScreen } from '../../screens/CardOnboardingPhoneScre
 import { CardOnboardingPhoneVerifyScreen } from '../../screens/CardOnboardingPhoneVerifyScreen'
 import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
+import { CardOnboardingMailingAddressScreen } from '../../screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
 import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
 import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
-import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
 import type { CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -94,6 +94,13 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.address.navigation_title' }}
             />
             <Stack.Screen
+                name='CardOnboardingMailingAddress'
+                component={CardOnboardingMailingAddressScreen}
+                options={{
+                    title: 'peraCard.mailing_address.navigation_title',
+                }}
+            />
+            <Stack.Screen
                 name='CardOnboardingSigning'
                 component={CardCreateSigningScreen}
                 // Card creation is in flight — swipe/back-chevron disabled;
@@ -111,14 +118,6 @@ export const CardOnboardingStackNavigator = () => {
                         />
                     ),
                 })}
-            />
-            <Stack.Screen
-                name='CardOnboardingAutoFundingSigning'
-                component={CardAutoFundingSigningScreen}
-                // Same in-flight treatment as CardOnboardingSigning — the
-                // card already exists at this point; only Cancel (which
-                // degrades to Manual) can leave, not a swipe/back-chevron.
-                options={{ headerShown: false, gestureEnabled: false }}
             />
         </Stack.Navigator>
     )

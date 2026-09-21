@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 
@@ -23,19 +23,28 @@ const mockQuery = vi.hoisted(() => ({
     fetchNextPage: vi.fn(),
     refetch: vi.fn(),
 }))
-const mockComingSoon = vi.fn()
+const mocks = vi.hoisted(() => ({
+    exportStatement: vi.fn(),
+    shareFile: vi.fn(),
+    showExportError: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
         useCardTransactionsQuery: () => mockQuery,
+        useExportCardStatementMutation: () => ({
+            mutateAsync: mocks.exportStatement,
+            isPending: false,
+        }),
     }
 })
 
 vi.mock('../../../hooks', () => ({
-    useCardComingSoonToast: () => mockComingSoon,
+    useCardErrorToast: () => mocks.showExportError,
 }))
+vi.mock('@utils/shareFile', () => ({ shareFile: mocks.shareFile }))
 
 import { useCardTransactions } from '../useCardTransactions'
 
@@ -113,11 +122,32 @@ describe('useCardTransactions', () => {
         expect(mockQuery.refetch).toHaveBeenCalledTimes(1)
     })
 
-    it('surfaces the coming-soon toast on export', () => {
+    it('exports the PDF statement and hands it to the share sheet', async () => {
+        const bytes = new Uint8Array([37, 80, 68, 70])
+        mocks.exportStatement.mockResolvedValue({ format: 'PDF', bytes })
         const { result } = renderHook(() => useCardTransactions())
 
         result.current.onExport()
+        await waitFor(() => expect(mocks.shareFile).toHaveBeenCalled())
 
-        expect(mockComingSoon).toHaveBeenCalled()
+        expect(mocks.exportStatement).toHaveBeenCalledWith({ format: 'PDF' })
+        expect(mocks.shareFile).toHaveBeenCalledWith(
+            expect.stringMatching(
+                /^pera-card-statement-\d{4}-\d{2}-\d{2}\.pdf$/,
+            ),
+            bytes,
+            'application/pdf',
+        )
+        expect(mocks.showExportError).not.toHaveBeenCalled()
+    })
+
+    it('surfaces an export failure as a toast and shares nothing', async () => {
+        mocks.exportStatement.mockRejectedValue(new Error('boom'))
+        const { result } = renderHook(() => useCardTransactions())
+
+        result.current.onExport()
+        await waitFor(() => expect(mocks.showExportError).toHaveBeenCalled())
+
+        expect(mocks.shareFile).not.toHaveBeenCalled()
     })
 })

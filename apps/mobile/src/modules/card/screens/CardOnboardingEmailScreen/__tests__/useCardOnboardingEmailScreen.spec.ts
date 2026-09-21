@@ -82,6 +82,11 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('../../../../../../../../packages/blockchain/src/arc0001/schema')
     >('../../../../../../../../packages/blockchain/src/arc0001/schema')),
+    // The card error toast classifies chain failures through the real parser
+    // before falling back to Baanx's message.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/blockchain/src/errors')
+    >('../../../../../../../../packages/blockchain/src/errors')),
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

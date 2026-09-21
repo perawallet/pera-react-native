@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-// Card transaction fixtures; integration tests seed MSW with them.
-export {
-    buildMockCardTransactions,
-    type MockCardTransaction,
-} from './mockCardTransactions'
+export { CardWithdrawStatusScreen } from './CardWithdrawStatusScreen'

@@ -11,39 +11,51 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
+import { useNavigation } from '@react-navigation/native'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useCardErrorToast, useCardWithdraw } from '../../hooks'
+import {
+    useCardErrorToast,
+    useCardOwnerAccount,
+    useCardWithdraw,
+} from '../../hooks'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 
-export type PendingWithdrawalView = {
-    /** Display units. */
-    amount: Decimal
+type UseCardWithdrawStatusScreenResult = {
+    /** Where the contract releases the funds: always the card's owner. */
+    destinationAccount: Nullable<WalletAccount>
+    /** Pending amount formatted, e.g. "25.00". */
+    amountDisplay: string
+    hasPending: boolean
+    isLoading: boolean
     secondsUntilReady: number
     isReady: boolean
     isCompleting: boolean
     isCancelling: boolean
+    onComplete: () => void
+    onCancel: () => void
 }
 
-type UsePeraCardPendingWithdrawalResult = {
-    /** Open timelocked withdrawal, if any; the overview hosts its Complete and Cancel steps. */
-    pendingWithdrawal: Nullable<PendingWithdrawalView>
-    onCompleteWithdrawal: () => void
-    onCancelWithdrawal: () => void
-}
-
-export const usePeraCardPendingWithdrawal =
-    (): UsePeraCardPendingWithdrawalResult => {
+/**
+ * The wait between the timelocked request and its claim. Both the Complete
+ * and Cancel steps live here so the card overview stays free of transient
+ * state; either outcome toasts and returns to wherever the user came from.
+ */
+export const useCardWithdrawStatusScreen =
+    (): UseCardWithdrawStatusScreenResult => {
+        const navigation = useNavigation()
         const { t } = useLanguage()
         const { successToast } = useToast()
+        const destinationAccount = useCardOwnerAccount()
         const {
             pending,
             pendingAmount,
             secondsUntilReady,
             isReady,
+            isPendingLoading,
             complete,
             cancel,
             isCompleting,
@@ -55,25 +67,9 @@ export const usePeraCardPendingWithdrawal =
             shouldUseBackendMessage: false,
         })
 
-        const pendingWithdrawal = useMemo<Nullable<PendingWithdrawalView>>(
-            () =>
-                pending === null
-                    ? null
-                    : {
-                          amount: pendingAmount,
-                          secondsUntilReady,
-                          isReady,
-                          isCompleting,
-                          isCancelling,
-                      },
-            [
-                pending,
-                pendingAmount,
-                secondsUntilReady,
-                isReady,
-                isCompleting,
-                isCancelling,
-            ],
+        const amountDisplay = useMemo(
+            () => pendingAmount.toFixed(USDC_DISPLAY_PRECISION),
+            [pendingAmount],
         )
 
         // Backing out of the signing review is a normal action, not a failure.
@@ -82,26 +78,27 @@ export const usePeraCardPendingWithdrawal =
                 try {
                     await step()
                     onDone()
+                    if (navigation.isFocused()) navigation.goBack()
                 } catch (error) {
                     if (error instanceof UserRejectedSigningError) return
                     logger.error('Card withdrawal step failed', { error })
                     await showError(error)
                 }
             },
-            [showError],
+            [navigation, showError],
         )
 
-        const onCompleteWithdrawal = useCallback(() => {
-            const amount = pendingAmount.toFixed(USDC_DISPLAY_PRECISION)
+        const onComplete = useCallback(() => {
+            const amount = amountDisplay
             void runStep(complete, () =>
                 successToast(
                     t('peraCard.withdraw.completed_title'),
                     t('peraCard.withdraw.completed_body', { amount }),
                 ),
             )
-        }, [runStep, complete, pendingAmount, successToast, t])
+        }, [amountDisplay, runStep, complete, successToast, t])
 
-        const onCancelWithdrawal = useCallback(() => {
+        const onCancel = useCallback(() => {
             void runStep(cancel, () =>
                 successToast(
                     t('peraCard.withdraw.cancelled_title'),
@@ -110,5 +107,16 @@ export const usePeraCardPendingWithdrawal =
             )
         }, [runStep, cancel, successToast, t])
 
-        return { pendingWithdrawal, onCompleteWithdrawal, onCancelWithdrawal }
+        return {
+            destinationAccount,
+            amountDisplay,
+            hasPending: pending !== null,
+            isLoading: isPendingLoading,
+            secondsUntilReady,
+            isReady,
+            isCompleting,
+            isCancelling,
+            onComplete,
+            onCancel,
+        }
     }

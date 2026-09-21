@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@test-utils/render'
+import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useAccountAssetBalanceQuery,
     useFindAccountByAddress,
@@ -114,6 +113,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
 
 const mockWithdraw = vi.hoisted(() => ({
     pending: null as unknown,
+    isReady: false,
     complete: vi.fn(),
     cancel: vi.fn(),
     isCompleting: false,
@@ -131,7 +131,7 @@ vi.mock('../../../hooks', async () => ({
         pending: mockWithdraw.pending,
         pendingAmount: new Decimal('0.25'),
         secondsUntilReady: 12,
-        isReady: false,
+        isReady: mockWithdraw.isReady,
         isPendingLoading: false,
         request: vi.fn(),
         complete: mockWithdraw.complete,
@@ -225,6 +225,7 @@ describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockWithdraw.pending = null
+        mockWithdraw.isReady = false
         mockWithdraw.complete.mockResolvedValue(undefined)
         mockWithdraw.cancel.mockResolvedValue(undefined)
         mockState.selectedFundingType = null
@@ -546,70 +547,32 @@ describe('usePeraCardOverview', () => {
             expect(auto.result.current.isBalanceLoading).toBe(true)
         })
     })
-    describe('pending withdrawal', () => {
-        it('surfaces nothing while no request is open', () => {
+    describe('withdraw button state', () => {
+        it('opens the withdraw form while no request is open', () => {
             const { result } = renderHook(() => usePeraCardOverview())
 
-            expect(result.current.pendingWithdrawal).toBeNull()
+            expect(result.current.withdrawState).toBe('idle')
+            result.current.onWithdraw()
+            expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
         })
 
-        it('surfaces the open request with its amount and countdown', () => {
+        it('leads to the open request while it is still maturing', () => {
             mockWithdraw.pending = { amount: 250_000n }
 
             const { result } = renderHook(() => usePeraCardOverview())
 
-            expect(result.current.pendingWithdrawal).toEqual(
-                expect.objectContaining({
-                    secondsUntilReady: 12,
-                    isReady: false,
-                }),
-            )
-            expect(result.current.pendingWithdrawal?.amount.toFixed(2)).toBe(
-                '0.25',
-            )
+            expect(result.current.withdrawState).toBe('waiting')
+            result.current.onWithdraw()
+            expect(mockNavigate).toHaveBeenCalledWith('CardWithdrawStatus')
         })
 
-        it('completes the request and toasts the released amount', async () => {
+        it('offers to complete once the request has matured', () => {
             mockWithdraw.pending = { amount: 250_000n }
+            mockWithdraw.isReady = true
+
             const { result } = renderHook(() => usePeraCardOverview())
 
-            result.current.onCompleteWithdrawal()
-
-            await waitFor(() =>
-                expect(mockWithdraw.complete).toHaveBeenCalled(),
-            )
-            await waitFor(() => expect(mockSuccessToast).toHaveBeenCalled())
-            expect(mockWithdrawErrorToast).not.toHaveBeenCalled()
-        })
-
-        it('cancels the request and toasts', async () => {
-            mockWithdraw.pending = { amount: 250_000n }
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            result.current.onCancelWithdrawal()
-
-            await waitFor(() => expect(mockWithdraw.cancel).toHaveBeenCalled())
-            await waitFor(() => expect(mockSuccessToast).toHaveBeenCalled())
-        })
-
-        it('surfaces a failed step and stays silent on a rejected signing review', async () => {
-            mockWithdraw.complete.mockRejectedValueOnce(
-                new Error('algod said no'),
-            )
-            const { result } = renderHook(() => usePeraCardOverview())
-
-            result.current.onCompleteWithdrawal()
-            await waitFor(() =>
-                expect(mockWithdrawErrorToast).toHaveBeenCalledTimes(1),
-            )
-
-            mockWithdraw.cancel.mockRejectedValueOnce(
-                new UserRejectedSigningError(),
-            )
-            result.current.onCancelWithdrawal()
-            await waitFor(() => expect(mockWithdraw.cancel).toHaveBeenCalled())
-            expect(mockWithdrawErrorToast).toHaveBeenCalledTimes(1)
-            expect(mockSuccessToast).not.toHaveBeenCalled()
+            expect(result.current.withdrawState).toBe('ready')
         })
     })
 })
