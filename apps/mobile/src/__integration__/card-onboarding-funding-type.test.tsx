@@ -106,6 +106,7 @@ vi.mock('@modules/security', async () => ({
 import {
     AccountTypes,
     useAccountsStore,
+    type HardwareWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -133,10 +134,25 @@ import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
+    HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
 const FUNDING_ADDRESS = ALGO25_TEST_ADDRESS
+const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const BAANX_USER_ID = 'mock-baanx-user-id'
+
+const LEDGER_ACCOUNT: HardwareWalletAccount = {
+    id: 'hw-ledger-1',
+    type: AccountTypes.hardware,
+    address: LEDGER_ADDRESS,
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'test-device-id',
+        deviceName: 'Ledger Nano X',
+        accountIndex: 0,
+        transportType: 'ble',
+    },
+}
 
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
@@ -523,6 +539,38 @@ describe('Flow: Card onboarding — select funding type', () => {
                 FundingType.Manual,
             ),
         )
+    })
+
+    it('Given a Ledger is connected, then Auto is unavailable with the Ledger hint but creation still proceeds on Manual', async () => {
+        useAccountsStore.getState().setAccounts([LEDGER_ACCOUNT])
+        useCardStore.getState().setConnectedFundingSourceAddress(LEDGER_ADDRESS)
+
+        renderStatus()
+
+        const autoOption = await screen.findByTestId(
+            'card-onboarding-status-funding-type-auto',
+        )
+        // Integration i18n renders keys, not copy.
+        expect(autoOption.textContent).toContain(
+            'funding_type_auto_ledger_hint',
+        )
+
+        // Auto is disabled, so tapping it must not move the selection off the
+        // Manual fallback — otherwise Create would dead-end on an LSig the
+        // device can never sign.
+        fireEvent.click(autoOption)
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-status-create-card'),
+        )
+
+        // Reaching the signing screen at all is the point: a Ledger used to
+        // fail the creation guard and stop here on an error toast.
+        expect(await screen.findByTestId('card-create-signing')).toBeTruthy()
+        // Manual carried through — the Auto-only standing-authority disclosure
+        // is absent, and there is a single signing step.
+        expect(
+            screen.queryByTestId('card-create-signing-standing-authority'),
+        ).toBeNull()
     })
 
     it('Given funds are not connected, then the funding-type row stays inactive with no Create button', async () => {
