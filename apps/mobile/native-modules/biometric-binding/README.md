@@ -69,7 +69,7 @@ Two keys, created and destroyed as one unit so the probe can never disagree with
 the key it stands for.
 
 - The token is wrapped to an RSA-2048 pair at alias `pera.biometric.unlock`,
-  StrongBox-backed where the device allows it. Unwrapping goes through a
+  hardware-backed in the TEE. Unwrapping goes through a
   `BiometricPrompt.CryptoObject` carrying the initialised `Cipher`, and the
   decrypt uses the cipher the result hands back — using any other would defeat
   the binding.
@@ -91,11 +91,12 @@ the key it stands for.
   adding to it. The spec has to be explicit because the detached public key
   encrypts through Conscrypt, whose own default MGF1 digest follows the primary
   digest.
-- StrongBox generation retries without the flag on `ProviderException`, not just
-  its `StrongBoxUnavailableException` subclass: only
-  `KM_ERROR_HARDWARE_TYPE_UNAVAILABLE` maps to that subclass, while an
-  unsupported digest, padding or key size arrives as the bare superclass and
-  needs the same TEE fallback.
+- The pair is deliberately **not** StrongBox-backed. A secure element searches
+  for RSA primes on its own small processor and holds the keystore while it
+  does, stalling every other keystore user in the app for seconds. An EC key
+  would be fast enough there, but `BiometricPrompt.CryptoObject` in
+  androidx.biometric 1.2.0-alpha accepts only `Signature`, `Cipher` and `Mac`,
+  so a `KeyAgreement` cannot be bound to the prompt.
 - An AES key at alias `pera.biometric.enrollment` is the enrollment probe. It
   holds nothing; its existence _is_ the binding. It is the only probe that can
   _classify_ an invalidation without a ceremony: `Cipher.init` on the secret key
@@ -205,20 +206,19 @@ about `armBinding` or `unwrapToken`; every step below needs physical hardware.
 16. Upgrade a handset from API 33 to 34 or later with biometric unlock enabled
     and confirm the existing key still unwraps: the OAEP spec must not depend
     on the OS version.
-17. StrongBox-backed device (Pixel 3 or newer) and a non-StrongBox device:
-    enable biometrics on each and confirm the RSA pair generates and the
-    confirmation ceremony succeeds on both. Time the Settings toggle on the
-    StrongBox device: RSA-2048 generation there can take several seconds, and
-    nothing on screen covers it.
-18. On a StrongBox device, re-enroll a fingerprint and confirm **both** the
-    StrongBox-backed RSA pair and the non-StrongBox AES canary invalidate. If
-    only the canary invalidates, `checkBinding` reads `valid` while every
-    unwrap rejects `decrypt-failed`; the opt-in must then drop with the "set up
-    again" copy after `MAX_BIOMETRIC_UNWRAP_FAILURES` attempts rather than
-    failing forever. Read the `disabledReason` copy to see which branch fired: a
-    "biometric settings changed" message is the intended `changed` branch; "set
-    up again" means the presence check or the failure counter pre-empted it; a
-    silent toggle-off means the probe reported `unavailable`.
+17. Enable biometrics from Settings and, on the same run, unlock with the PIN:
+    neither should stall. Generation is in the TEE so it cannot hold the
+    keystore, and a regression back to StrongBox shows up here as a freeze
+    rather than as a failure.
+18. Re-enroll a fingerprint and confirm **both** the RSA pair and the AES canary
+    invalidate. If only the canary invalidates, `checkBinding` reads `valid`
+    while every unwrap rejects `decrypt-failed`; the opt-in must then drop with
+    the "set up again" copy after `MAX_BIOMETRIC_UNWRAP_FAILURES` attempts
+    rather than failing forever. Read the `disabledReason` copy to see which
+    branch fired: a "biometric settings changed" message is the intended
+    `changed` branch; "set up again" means the presence check or the failure
+    counter pre-empted it; a silent toggle-off means the probe reported
+    `unavailable`.
 19. Background the app while the biometric prompt is open, then foreground it
     again: the unwrap must not hang.
 20. Force an arm failure (e.g. fill the keystore) and confirm the failure logs
