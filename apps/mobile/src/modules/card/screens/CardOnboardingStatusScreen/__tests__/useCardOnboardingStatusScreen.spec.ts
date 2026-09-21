@@ -622,9 +622,8 @@ describe('useCardOnboardingStatusScreen', () => {
     })
 
     it('disables Auto for a Ledger account even when it can create a card', () => {
-        // Auto availability is decoupled from card creation: once ARC-60 lets
-        // Ledger create a card (canCreateCard true), Auto must stay disabled
-        // because Ledger can never sign the AutoDraw LSig (canAutoFund false).
+        // Auto availability is decoupled from card creation: a Ledger creates
+        // a card but can never sign the AutoDraw LSig (canAutoFund false).
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [

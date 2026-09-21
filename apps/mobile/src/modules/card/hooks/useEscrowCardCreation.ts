@@ -18,7 +18,7 @@ import {
     type CreateAndApproveCardResult,
 } from '@perawallet/wallet-core-card'
 import {
-    canSignArbitraryData,
+    canSignArc60,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -40,10 +40,8 @@ export type UseEscrowCardCreationResult = {
         proof: CardOwnershipProof,
     ) => Promise<CreateAndApproveCardResult>
     /**
-     * True only for local-key accounts (Algo25/HD). Ledger ARC-60 signing is
-     * not wired up for card creation yet (see useEscrowCardCreation's plan
-     * notes), and watch/rekeyed accounts can produce neither the ARC-60 proof
-     * nor the delegated LSig, so none of them can create a card.
+     * Whether `account` can produce the ARC-60 ownership proof — local-key or
+     * Ledger. Auto funding needs the stricter `canAutoFund` on top.
      */
     canCreateCard: (account: WalletAccount) => boolean
 }
@@ -64,8 +62,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
         useCreateAndApproveCardMutation()
 
     const canCreateCard = useCallback(
-        (account: WalletAccount) =>
-            canSignArbitraryData(account) && account.keyPairId != null,
+        (account: WalletAccount) => canSignArc60(account),
         [],
     )
 
