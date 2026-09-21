@@ -18,7 +18,7 @@ import type {
     BiometricType,
     BiometricUnwrapFailureReason,
 } from '@perawallet/wallet-extension-platform'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { getKeystore, getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
 import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
 import {
@@ -160,6 +160,14 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
+        // `hasSecret` reads keystore metadata that hydrates asynchronously, and
+        // that hydration sits behind the keystore migrations — which only run
+        // on the first launch after an update. Reading it early reports "no
+        // blob", which silently disables the opt-in and skips the prompt. A
+        // rejected hydration fails bootstrap on its own; here it just means
+        // there is nothing to read.
+        await getKeystore().ready.catch(() => undefined)
+
         // A blob from before OS-bound keys existed: nothing can unwrap it, so
         // it is swept without a probe, and the binding is re-armed once the
         // user has proven the PIN rather than asking them to opt in again.
