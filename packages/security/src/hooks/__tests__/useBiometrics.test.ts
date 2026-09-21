@@ -54,10 +54,15 @@ const mockBiometricsService = {
         .mockResolvedValue({ success: false, reason: 'unavailable' }),
 }
 
+const keystoreMock = vi.hoisted(() => ({
+    ready: Promise.resolve() as Promise<unknown>,
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         biometrics: mockBiometricsService,
     }),
+    getKeystore: () => keystoreMock,
 }))
 
 import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
@@ -126,6 +131,7 @@ describe('useBiometrics', () => {
         kmsMocks.pinBytes = null
         kmsMocks.biometricBytes = null
         wireBlobMocks()
+        keystoreMock.ready = Promise.resolve()
         // isEnabled lives in the module-level store now, so it outlives a
         // render and would leak into the next test.
         useSecurityStore.getState().resetState()
@@ -155,6 +161,29 @@ describe('useBiometrics', () => {
     // every non-SUCCESS `canAuthenticate` code into the same boolean. Deleting
     // the blob here made a lockout, which clears itself, permanently cost the
     // user their opt-in.
+    test('checkBiometricsEnabled waits for keystore hydration before reading the blob', async () => {
+        // On the first launch after an update the metadata hydration sits
+        // behind the keystore migrations, so it lands after the check starts.
+        let hydrate = () => {}
+        keystoreMock.ready = new Promise<void>(resolve => {
+            hydrate = () => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                resolve()
+            }
+        })
+
+        const { result } = renderHook(() => useBiometrics())
+
+        let isEnabled: boolean | undefined
+        await act(async () => {
+            const pending = result.current.checkBiometricsEnabled()
+            hydrate()
+            isEnabled = await pending
+        })
+
+        expect(isEnabled).toBe(true)
+    })
+
     test('checkBiometricsEnabled keeps the blob when biometrics are merely unavailable', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(false)

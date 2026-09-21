@@ -45,4 +45,5 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             },
         },
     }),
+    getKeystore: () => ({ ready: Promise.resolve() }),
 }))
