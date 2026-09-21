@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "No compatible con cuentas Ledger. Conecta otra cuenta para usar la financiación automática.",
             "funding_type_auto_coming_soon_hint": "La financiación automática estará disponible próximamente.",
             "authorize_delegation_title": "Autorizar la financiación automática",
-            "authorize_delegation_body": "Estás firmando una autorización permanente desde {{account}} que no caduca y no limita el importe ni el activo que se puede retirar. El límite de {{limit}} por transacción lo aplica el proveedor de la tarjeta, no tu firma. Cambia a Manual en cualquier momento para revocarla.",
+            "authorize_delegation_body": "La financiación automática se cobra de {{account}} hasta que la desactives. El límite de {{limit}} por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes volver a Manual en cualquier momento.",
             "authorize_delegation_confirm": "Autorizar",
             "options": "Opciones",
             "accounts_details": "Datos de la cuenta",
@@ -1618,7 +1618,7 @@
             "auto_funding_error_title": "No se pudo autorizar la financiación automática",
             "auto_funding_error_body": "Algo salió mal al activar la financiación automática. Vuelve a intentarlo o continúa con financiación manual y cambia más tarde desde los ajustes de la tarjeta.",
             "standing_authority_title": "Qué estás autorizando",
-            "standing_authority_body": "Esta autorización no caduca y la propia firma no limita el importe ni el activo que se puede retirar. Los límites por transacción los aplica el proveedor de la tarjeta, no lo que firmas aquí. Puedes revocarla en cualquier momento cambiando el tipo de financiación a Manual en los ajustes de tu tarjeta."
+            "standing_authority_body": "Esta autorización sigue activa hasta que la desactives. El límite por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes detenerla en cualquier momento cambiando el tipo de financiación a Manual."
         },
         "connect_account": {
             "title": "Elige la cuenta de la tarjeta",
