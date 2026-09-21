@@ -11,16 +11,20 @@
  */
 
 import React from 'react'
-import { PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
+import type { AccountMenuContentResult } from '@modules/accounts/components/AccountMenuContent'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-// Replaces the account menu's default portfolio summary with the card flow's
-// "Choose Card account" heading. Passed to AccountMenu via its headerContent
-// prop (the same mechanism the swap/onramp account pickers use).
+// The whole account-menu header for the card flow: the picker passes
+// hideDefaultHeader, so the accounts row is rebuilt here rather than trimmed
+// with props on the shared menu. Sorting is deliberately absent: the list
+// follows whatever order the account overview is set to.
 export const ConnectAccountHeader = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { resolve } = useBottomSheetResult<AccountMenuContentResult>()
 
     return (
         <PWView style={styles.pickerHeader}>
@@ -37,6 +41,29 @@ export const ConnectAccountHeader = () => {
             >
                 {t('peraCard.connect_account.subtitle')}
             </PWText>
+            <PWView
+                style={styles.titleBar}
+                accessible={false}
+            >
+                <PWView style={styles.titleBarTitleContainer}>
+                    <PWText
+                        variant='h3'
+                        style={styles.accountsTitle}
+                        truncate
+                    >
+                        {t('account_menu.title')}
+                    </PWText>
+                </PWView>
+                <PWButton
+                    testID='card_connect_create_account_button'
+                    accessibilityLabel='card_connect_create_account_button'
+                    variant='helper'
+                    icon='plus'
+                    title={t('peraCard.connect_account.create_account')}
+                    paddingStyle='dense'
+                    onPress={() => resolve({ kind: 'add-account' })}
+                />
+            </PWView>
         </PWView>
     )
 }

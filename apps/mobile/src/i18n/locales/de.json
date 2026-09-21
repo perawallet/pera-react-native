@@ -1086,6 +1086,8 @@
             "hide_card_details": "Kartendetails ausblenden",
             "issuance_pending_title": "Verifizierung in Prüfung",
             "issuance_pending_body": "Deine Karte wird automatisch ausgestellt, sobald deine Identitätsprüfung genehmigt wurde.",
+            "issuance_edd_title": "Zusätzliche Prüfungen erforderlich",
+            "issuance_edd_body": "Deine Identität wurde bestätigt, aber vor der Ausgabe deiner Karte sind zusätzliche Compliance-Prüfungen nötig. Melde dich beim Support, falls du nichts von uns hörst.",
             "issuance_issuing_title": "Deine Karte wird ausgestellt",
             "issuance_issuing_body": "Dies dauert normalerweise ein paar Minuten.",
             "issuance_rejected_title": "Verifizierung nicht erfolgreich",
@@ -1598,24 +1600,26 @@
         },
         "signing": {
             "title": "Pera Card erstellen",
-            "body_manual": "Du signierst einmal, um nachzuweisen, dass dir das verknüpfte Konto gehört. Direkt danach erstellen wir deine Karte.",
             "body_auto": "Du signierst, um nachzuweisen, dass dir das verknüpfte Konto gehört, und um Auto-Funding zu erlauben. Danach bestätigst du eine Transaktion, die es aktiviert.",
-            "linked_account_label": "Verknüpftes Konto",
-            "funding_type_label": "Finanzierungsart",
-            "step_ownership_label": "Nachweisen, dass dir das verknüpfte Konto gehört",
-            "step_create_label": "Deine Pera Card erstellen",
+            "body_manual": "Du signierst einmal, um nachzuweisen, dass dir das verknüpfte Konto gehört. Direkt danach erstellen wir deine Karte.",
+            "step_sign_create_label": "Nachweisen, dass dir das verknüpfte Konto gehört, und deine Pera Card erstellen",
             "step_auto_funding_label": "Auto-Funding vom verknüpften Konto erlauben",
-            "retry_button": "Erneut versuchen",
-            "continue_manual_button": "Mit manueller Finanzierung fortfahren",
-            "auto_funding_error_title": "Auto-Funding konnte nicht autorisiert werden",
-            "auto_funding_error_body": "Beim Aktivieren von Auto-Funding ist etwas schiefgelaufen. Versuche es erneut oder fahre mit manueller Finanzierung fort und wechsle später in den Karteneinstellungen.",
+            "proceed_button": "Fortfahren",
             "standing_authority_title": "Was du autorisierst",
             "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst."
+        },
+        "auto_funding_signing": {
+            "title": "Anfrage zur automatischen Signaturgenehmigung",
+            "body": "Dadurch kann deine Karte bei Bedarf automatisch Guthaben abbuchen, sodass du nicht jede Aufladung selbst genehmigen musst. Du signierst eine Logic Sig, eine vorab autorisierte Signatur, die diese automatische Abbuchung von deinem verbundenen Konto ermöglicht.",
+            "error_title": "Auto-Funding konnte nicht autorisiert werden",
+            "error_body": "Bei der Autorisierung von Auto-Funding ist ein Fehler aufgetreten. Versuche es erneut, oder brich ab, um mit manueller Finanzierung fortzufahren (du kannst später in deinen Karteneinstellungen zu Auto wechseln).",
+            "cancel_button": "Abbrechen"
         },
         "connect_account": {
             "title": "Kartenkonto wählen",
             "subtitle": "Verbinde zunächst das Wallet, das du zur Einrichtung deines Kontos verwenden möchtest.",
-            "change": "Ändern"
+            "change": "Ändern",
+            "create_account": "Konto erstellen"
         }
     },
     "notifications": {

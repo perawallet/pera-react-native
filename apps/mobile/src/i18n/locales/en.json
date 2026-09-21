@@ -1094,6 +1094,8 @@
             "hide_card_details": "Hide Card Details",
             "issuance_pending_title": "Verification in review",
             "issuance_pending_body": "Your card will be issued automatically once your identity verification is approved.",
+            "issuance_edd_title": "Additional checks required",
+            "issuance_edd_body": "Your identity was verified, but extra compliance checks are needed before your card can be issued. Contact support if you haven't heard from us.",
             "issuance_issuing_title": "Your card is being issued",
             "issuance_issuing_body": "This usually takes a couple of minutes.",
             "issuance_rejected_title": "Verification unsuccessful",
@@ -1606,24 +1608,26 @@
         },
         "signing": {
             "title": "Create Pera Card",
-            "body_manual": "You'll sign once to prove you own the linked account. We create your card right after.",
             "body_auto": "You'll sign to prove you own the linked account and to allow Auto Funding, then approve one transaction that switches it on.",
-            "linked_account_label": "Linked account",
-            "funding_type_label": "Funding type",
-            "step_ownership_label": "Prove you own the linked account",
-            "step_create_label": "Create your Pera Card",
+            "body_manual": "You'll sign once to prove you own the linked account. We create your card right after.",
+            "step_sign_create_label": "Prove you own the linked account and create your card",
             "step_auto_funding_label": "Allow Auto Funding from the linked account",
-            "retry_button": "Try again",
-            "continue_manual_button": "Continue with Manual Funding",
-            "auto_funding_error_title": "Couldn't authorize Auto Funding",
-            "auto_funding_error_body": "Something went wrong switching on Auto Funding. Try again, or continue with Manual Funding and switch later from your card settings.",
+            "proceed_button": "Proceed",
             "standing_authority_title": "What you're authorizing",
             "standing_authority_body": "This authorization stays active until you turn it off. Your card provider sets the per-transaction limit, not your signature. You can stop it anytime by switching Funding Type to Manual."
+        },
+        "auto_funding_signing": {
+            "title": "Auto-signing Approval Request",
+            "body": "This lets your card automatically draw funds when needed, so you won't have to approve every top-up yourself. You're signing a logic sig, a pre-authorized signature that allows this automatic drawing from your connected account.",
+            "error_title": "Couldn't authorize Auto Funding",
+            "error_body": "Something went wrong authorizing Auto Funding. Try again, or cancel to continue with Manual funding (you can switch to Auto later from your card settings).",
+            "cancel_button": "Cancel"
         },
         "connect_account": {
             "title": "Choose Card account",
             "subtitle": "To get started, connect the wallet you would like to use to set up your account.",
-            "change": "Change"
+            "change": "Change",
+            "create_account": "Create Account"
         }
     },
     "notifications": {

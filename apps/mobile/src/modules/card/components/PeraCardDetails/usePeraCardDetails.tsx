@@ -19,8 +19,10 @@ import {
     useCardStore,
     useIsCardUnfreezing,
     useSetCardPinMutation,
+    type CardEligibilityReason,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -100,6 +102,8 @@ type UsePeraCardDetailsResult = {
      * visual, the issuance notice, and hiding the card-only affordances
      * until it reaches READY). */
     issuanceState: CardIssuanceState
+    /** Baanx's reason for withholding the card; refines the pending notice. */
+    eligibilityReason: Nullable<CardEligibilityReason>
     /** Fires a fresh order after a failed attempt (ORDER_FAILED notice). */
     onRetryOrder: () => void
     /** Opens support for the terminal VERIFICATION_REJECTED notice. */
@@ -160,6 +164,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         retryOrder: onRetryOrder,
         card,
         isStatusPaused,
+        eligibilityReason,
     } = useCardIssuance()
     const isFrozen = card?.status === CardStatus.Frozen
     // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
@@ -485,6 +490,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onChangeFunding,
         hasCard: card != null,
         issuanceState,
+        eligibilityReason,
         onRetryOrder,
         onContactSupport,
         fundingTypeLabel,

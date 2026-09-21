@@ -1094,6 +1094,8 @@
             "hide_card_details": "Masquer les détails",
             "issuance_pending_title": "Vérification en cours d’examen",
             "issuance_pending_body": "Votre carte sera émise automatiquement dès que la vérification de votre identité sera approuvée.",
+            "issuance_edd_title": "Vérifications supplémentaires requises",
+            "issuance_edd_body": "Votre identité a été vérifiée, mais des contrôles de conformité supplémentaires sont nécessaires avant l'émission de votre carte. Contactez le support si vous êtes sans nouvelles.",
             "issuance_issuing_title": "Votre carte est en cours d’émission",
             "issuance_issuing_body": "Cela prend généralement quelques minutes.",
             "issuance_rejected_title": "Vérification échouée",
@@ -1606,24 +1608,26 @@
         },
         "signing": {
             "title": "Créer la Pera Card",
-            "body_manual": "Vous signerez une fois pour prouver que vous êtes le propriétaire du compte lié. Nous créons votre carte juste après.",
             "body_auto": "Vous signerez pour prouver que vous êtes le propriétaire du compte lié et pour autoriser le financement automatique, puis vous approuverez une transaction qui l’active.",
-            "linked_account_label": "Compte lié",
-            "funding_type_label": "Type de financement",
-            "step_ownership_label": "Prouver que vous êtes le propriétaire du compte lié",
-            "step_create_label": "Créer votre Pera Card",
+            "body_manual": "Vous signerez une fois pour prouver que vous êtes le propriétaire du compte lié. Nous créons votre carte juste après.",
+            "step_sign_create_label": "Prouver que vous êtes le propriétaire du compte lié et créer votre Pera Card",
             "step_auto_funding_label": "Autoriser le financement automatique depuis le compte lié",
-            "retry_button": "Réessayer",
-            "continue_manual_button": "Continuer avec le financement manuel",
-            "auto_funding_error_title": "Impossible d’autoriser le financement automatique",
-            "auto_funding_error_body": "Une erreur s’est produite lors de l’activation du financement automatique. Réessayez, ou continuez avec le financement manuel et changez plus tard dans les paramètres de la carte.",
+            "proceed_button": "Continuer",
             "standing_authority_title": "Ce que vous autorisez",
             "standing_authority_body": "Cette autorisation reste active jusqu’à ce que vous la désactiviez. Le plafond par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez l’arrêter à tout moment en passant le type de financement sur Manuel."
+        },
+        "auto_funding_signing": {
+            "title": "Demande d’approbation de signature automatique",
+            "body": "Cela permet à votre carte de prélever automatiquement des fonds lorsque nécessaire, afin que vous n’ayez pas à approuver chaque rechargement. Vous signez un logic sig, une signature pré-autorisée qui permet ce prélèvement automatique depuis votre compte connecté.",
+            "error_title": "Impossible d’autoriser le financement automatique",
+            "error_body": "Une erreur est survenue lors de l’autorisation du financement automatique. Réessayez ou annulez pour continuer en financement manuel (vous pourrez passer au financement automatique plus tard dans les paramètres de votre carte).",
+            "cancel_button": "Annuler"
         },
         "connect_account": {
             "title": "Choisir le compte de la carte",
             "subtitle": "Pour commencer, connectez le wallet que vous souhaitez utiliser pour configurer votre compte.",
-            "change": "Modifier"
+            "change": "Modifier",
+            "create_account": "Créer un compte"
         }
     },
     "notifications": {

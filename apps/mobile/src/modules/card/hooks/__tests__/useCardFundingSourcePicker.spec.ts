@@ -50,10 +50,6 @@ vi.mock('@modules/accounts/components/AccountMenuContent', () => ({
     AccountMenuContent: () => null,
 }))
 
-vi.mock('@modules/accounts/components/AccountSortContent', () => ({
-    AccountSortContent: () => null,
-}))
-
 vi.mock('../../components/ConnectAccountHeader', () => ({
     ConnectAccountHeader: () => null,
 }))
@@ -65,7 +61,6 @@ vi.mock('../useCardAddAccount', () => ({
     }),
 }))
 
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import {
     canAutoFund,
     isEligibleFundingSource,
@@ -146,10 +141,14 @@ describe('useCardFundingSourcePicker', () => {
 
         const props = mockRequest.mock.calls[0][0].contents.props as {
             headerContent: unknown
+            hideDefaultHeader: boolean
             accountFilter: (account: WalletAccount) => boolean
             selectedAddress: string | null
         }
         expect(props.headerContent).toBeTruthy()
+        // The card header supplies its own title row, so the shared one (with
+        // its Sort button) must stay hidden.
+        expect(props.hideDefaultHeader).toBe(true)
         expect(props.accountFilter).toBe(isEligibleFundingSource)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
         expect(props.selectedAddress).toBeNull()
@@ -207,20 +206,11 @@ describe('useCardFundingSourcePicker', () => {
         expect(mockHandleCreateAccount).toHaveBeenCalled()
     })
 
-    it('opens the sort sheet then reopens the picker when Sort is tapped', async () => {
-        const chosen = account('ADDR2', 'algo25')
-        mockRequest
-            .mockResolvedValueOnce({ kind: 'sort' }) // initial picker
-            .mockResolvedValueOnce(undefined) // sort sheet
-            .mockResolvedValueOnce({ kind: 'selected', account: chosen })
+    it('does not open a sort sheet: the card picker offers no sorting', async () => {
+        mockRequest.mockResolvedValue({ kind: 'sort' })
         const { result } = renderHook(() => useCardFundingSourcePicker())
 
-        await expect(result.current.pickFundingSource()).resolves.toBe(chosen)
-
-        expect(mockRequest).toHaveBeenCalledTimes(3)
-        // The second request opens the account sort sheet.
-        expect(mockRequest.mock.calls[1][0].contents.type).toBe(
-            AccountSortContent,
-        )
+        await expect(result.current.pickFundingSource()).resolves.toBeNull()
+        expect(mockRequest).toHaveBeenCalledTimes(1)
     })
 })

@@ -13,32 +13,25 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    pickerHeader: {
-        paddingTop: theme.spacing.md,
-        gap: theme.spacing.sm,
+    bodyContainer: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.lg,
     },
-    pickerHeaderTitle: {
-        color: theme.colors.textMain,
+    title: {
+        textAlign: 'center',
     },
-    pickerHeaderSubtitle: {
+    body: {
+        textAlign: 'center',
         color: theme.colors.textGray,
     },
-    titleBar: {
+    buttonContainer: {
         gap: theme.spacing.md,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        minWidth: 0,
-        marginTop: theme.spacing.xl,
-        // No separator sits above the first account row.
-        marginBottom: theme.spacing.sm,
     },
-    titleBarTitleContainer: {
-        flex: 1,
-        minWidth: 0,
-    },
-    accountsTitle: {
-        color: theme.colors.textMain,
+    errorText: {
+        color: theme.colors.negative,
+        textAlign: 'center',
+        paddingVertical: theme.spacing.sm,
     },
 }))

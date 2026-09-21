@@ -1094,6 +1094,8 @@
             "hide_card_details": "Ocultar datos de la tarjeta",
             "issuance_pending_title": "Verificación en revisión",
             "issuance_pending_body": "Tu tarjeta se emitirá automáticamente en cuanto se apruebe tu verificación de identidad.",
+            "issuance_edd_title": "Se requieren comprobaciones adicionales",
+            "issuance_edd_body": "Verificamos tu identidad, pero hacen falta comprobaciones de cumplimiento adicionales antes de emitir tu tarjeta. Contacta con soporte si no tienes noticias nuestras.",
             "issuance_issuing_title": "Se está emitiendo tu tarjeta",
             "issuance_issuing_body": "Esto suele tardar un par de minutos.",
             "issuance_rejected_title": "Verificación no superada",
@@ -1606,24 +1608,26 @@
         },
         "signing": {
             "title": "Crear Pera Card",
-            "body_manual": "Firmarás una vez para demostrar que la cuenta vinculada es tuya. Justo después crearemos tu tarjeta.",
             "body_auto": "Firmarás para demostrar que la cuenta vinculada es tuya y para permitir la financiación automática. Después aprobarás una transacción que la activa.",
-            "linked_account_label": "Cuenta vinculada",
-            "funding_type_label": "Tipo de financiación",
-            "step_ownership_label": "Demostrar que la cuenta vinculada es tuya",
-            "step_create_label": "Crear tu Pera Card",
+            "body_manual": "Firmarás una vez para demostrar que la cuenta vinculada es tuya. Justo después crearemos tu tarjeta.",
+            "step_sign_create_label": "Demostrar que la cuenta vinculada es tuya y crear tu Pera Card",
             "step_auto_funding_label": "Permitir la financiación automática desde la cuenta vinculada",
-            "retry_button": "Volver a intentarlo",
-            "continue_manual_button": "Continuar con financiación manual",
-            "auto_funding_error_title": "No se pudo autorizar la financiación automática",
-            "auto_funding_error_body": "Algo salió mal al activar la financiación automática. Vuelve a intentarlo o continúa con financiación manual y cambia más tarde desde los ajustes de la tarjeta.",
+            "proceed_button": "Continuar",
             "standing_authority_title": "Qué estás autorizando",
             "standing_authority_body": "Esta autorización sigue activa hasta que la desactives. El límite por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes detenerla en cualquier momento cambiando el tipo de financiación a Manual."
+        },
+        "auto_funding_signing": {
+            "title": "Solicitud de aprobación de firma automática",
+            "body": "Esto permite que tu tarjeta retire fondos automáticamente cuando sea necesario, así no tendrás que aprobar cada recarga. Estás firmando un logic sig, una firma preautorizada que permite ese retiro automático desde tu cuenta conectada.",
+            "error_title": "No se pudo autorizar la financiación automática",
+            "error_body": "Algo salió mal al autorizar la financiación automática. Reinténtalo o cancela para continuar con la financiación manual (puedes cambiar a automática más adelante desde los ajustes de tu tarjeta).",
+            "cancel_button": "Cancelar"
         },
         "connect_account": {
             "title": "Elige la cuenta de la tarjeta",
             "subtitle": "Para empezar, conecta la wallet que quieras usar para configurar tu cuenta.",
-            "change": "Cambiar"
+            "change": "Cambiar",
+            "create_account": "Crear cuenta"
         }
     },
     "notifications": {

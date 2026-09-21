@@ -14,22 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
+        flex: 1,
+        justifyContent: 'center',
+        paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.xxl,
     },
+    title: {
+        textAlign: 'center',
+    },
     body: {
-        color: theme.colors.textGray,
-    },
-    summary: {
-        gap: theme.spacing.lg,
-    },
-    summaryRow: {
-        gap: theme.spacing.xs,
-    },
-    summaryLabel: {
-        color: theme.colors.textGrayLighter,
-    },
-    summaryHint: {
+        textAlign: 'center',
         color: theme.colors.textGray,
     },
     steps: {
@@ -44,7 +38,7 @@ export const useStyles = makeStyles(theme => ({
     disclosureBody: {
         color: theme.colors.textGray,
     },
-    footer: {
-        gap: theme.spacing.sm,
+    proceedButton: {
+        marginTop: theme.spacing.md,
     },
 }))
