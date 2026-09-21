@@ -67,9 +67,9 @@ export const RemoteConfigDefaults: Record<
     enable_duress_pin: false,
     enable_cloud_backup: false,
     // iCloud and Google Drive as destinations for the backup encryption key.
-    // Off until the Apple container and the Google OAuth clients exist — see
-    // docs/CLOUD_BACKUP_CREDENTIAL_STORAGE.md; without them both rows fail at
-    // the end of the flow. Store Locally is unaffected.
+    // Off until IOS_ICLOUD_CONTAINER_ID and the GOOGLE_*_CLIENT_ID secrets are
+    // set for a build; without them both rows fail at the end of the flow.
+    // Store Locally is unaffected.
     enable_backup_credentials_cloud_storage: false,
     pera_7_migration: false,
     force_platform_age_gate: false,
