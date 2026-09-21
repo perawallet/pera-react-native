@@ -16,6 +16,7 @@ import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
+    isAlgoRampToken,
     parseRampAmount,
     type RampHistoryItem,
     type RampPair,
@@ -24,7 +25,6 @@ import {
 } from '@perawallet/wallet-core-onramp'
 import {
     ALGO_ASSET_NAME,
-    isAlgoAssetName,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -51,10 +51,7 @@ export const resolveDestinationAssetId = (
     network: Network,
 ): Nullable<bigint | typeof ALGO_ASSET_NAME> => {
     const { destinationToken } = pair
-    const isAlgo =
-        isAlgoAssetName(destinationToken.id) ||
-        isAlgoAssetName(destinationToken.symbol)
-    if (isAlgo) return ALGO_ASSET_NAME
+    if (isAlgoRampToken(destinationToken)) return ALGO_ASSET_NAME
 
     // No known USDC id on this network — there is no ASA to opt into.
     const usdcAssetId = getKnownAssetId('USDC', network)

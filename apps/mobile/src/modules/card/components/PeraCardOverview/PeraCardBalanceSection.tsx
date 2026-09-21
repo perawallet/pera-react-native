@@ -29,8 +29,10 @@ type PeraCardBalanceSectionProps = {
     /** True while the balances are still being fetched. */
     isLoading: boolean
     currency: string
-    /** Max a single purchase can draw — shown under the balance. */
+    /** Max a single purchase can draw. */
     spendablePerTx: Decimal
+    /** Shows the per-transaction line; false when it would just repeat the balance. */
+    isCapped: boolean
 }
 
 export const PeraCardBalanceSection = ({
@@ -38,6 +40,7 @@ export const PeraCardBalanceSection = ({
     isLoading,
     currency,
     spendablePerTx,
+    isCapped,
 }: PeraCardBalanceSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -74,7 +77,7 @@ export const PeraCardBalanceSection = ({
                 />
             )}
 
-            {!isLoading && (
+            {!isLoading && isCapped && (
                 <PWView style={styles.spendableRow}>
                     <InfoButton
                         title={t('peraCard.account.spendable_info_title')}

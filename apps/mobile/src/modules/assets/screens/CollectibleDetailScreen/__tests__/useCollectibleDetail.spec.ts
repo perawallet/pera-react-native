@@ -740,6 +740,18 @@ describe('useCollectibleDetail', () => {
         })
     })
 
+    describe('handleSendPressed', () => {
+        it('requests the send sheet under its stable id so a repeat tap is ignored', () => {
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            result.current.handleSendPressed()
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'send-funds' }),
+            )
+        })
+    })
+
     describe('handleFullScreenPress', () => {
         it('opens the full-screen media viewer for a visual media index', () => {
             mockUseSingleAssetDetailsQuery.mockReturnValue({

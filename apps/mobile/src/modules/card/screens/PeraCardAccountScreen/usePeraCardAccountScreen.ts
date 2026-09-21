@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
 import type { AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
@@ -19,17 +19,18 @@ import {
     useCardPicker,
     type AccountDrawerPickerProps,
 } from '@modules/accounts/components/AccountDrawer'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useCardComingSoonToast } from '../../hooks'
+import { useModalState } from '@hooks/useModalState'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
     cardDisplay: AccountDisplayCard
     /** List shape and post-selection navigation for the account switcher. */
     accountPicker: AccountDrawerPickerProps
-    onMore: () => void
+    isScannerVisible: boolean
     onScan: () => void
-    onInbox: () => void
+    onScannerClose: () => void
 }
 
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
@@ -74,14 +75,21 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const accountPicker = useCardPicker()
     useAccountDrawerPickerKind('card')
 
-    // TODO(card): wire the more/scan/inbox actions once their destinations exist.
-    const showComingSoon = useCardComingSoonToast()
+    const {
+        isOpen: isScannerVisible,
+        open: openScanner,
+        close: onScannerClose,
+    } = useModalState()
+    const onScan = useCallback(() => {
+        trackEvent(HomeEvent.QrScan)
+        openScanner()
+    }, [openScanner])
 
     return {
         cardDisplay,
         accountPicker,
-        onMore: showComingSoon,
-        onScan: showComingSoon,
-        onInbox: showComingSoon,
+        isScannerVisible,
+        onScan,
+        onScannerClose,
     }
 }

@@ -26,6 +26,7 @@ const baseItem: TransactionHistoryItem = {
     id: 'TX123',
     txType: 'pay',
     sender: 'SENDER_ADDR',
+    assetSender: null,
     receiver: 'RECEIVER_ADDR',
     confirmedRound: 41065416,
     roundTime: 1752576000,
@@ -132,6 +133,22 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
             closeTo: undefined,
             sender: undefined,
         })
+    })
+
+    it('carries the clawback authority through as the asset sender', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            txType: 'axfer',
+            assetSender: 'DRAINED_ADDR',
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 6,
+            },
+        })
+
+        expect(result?.assetTransferTransaction?.sender).toBe('DRAINED_ADDR')
     })
 
     it('returns null for an axfer row without a stored asset summary', () => {

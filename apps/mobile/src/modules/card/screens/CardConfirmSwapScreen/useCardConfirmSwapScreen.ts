@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useNavigation,
@@ -18,11 +18,11 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
-    useAccountBalancesInvalidator,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+    baseUnitsToDisplayUnits,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
+import { useAccountBalancesInvalidator } from '@perawallet/wallet-core-accounts'
 import {
     formatAssetAmount,
     getKnownAssetId,
@@ -30,16 +30,72 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import {
+    useCardErrorToast,
+    useCardFundingAccount,
+    useCardManualDeposit,
+    useCardUsdcCredit,
+} from '../../hooks'
+import type { CardStepStatus } from '../../components/CardStepRow'
+import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import type { PeraCardFlowParamList } from '../../routes/types'
 import { useCardAddFundsSwap } from '../CardAddFundsScreen/useCardAddFundsSwap'
 
 const EMPTY_VALUE = '—'
 
+/**
+ * `swapping` covers the swap itself, `depositing` the wait for the USDC to
+ * land plus the transfer onto the card. `deposit-failed` means the swap went
+ * through and the USDC sits in the linked account, so only the deposit is
+ * offered again.
+ */
+export type CardConfirmSwapStep =
+    | 'idle'
+    | 'swapping'
+    | 'depositing'
+    | 'deposit-failed'
+
+export type CardConfirmSwapStepId = 'swap' | 'deposit'
+export type CardConfirmSwapStepRowModel = {
+    id: CardConfirmSwapStepId
+    stepNumber: number
+    status: CardStepStatus
+    /** The step's work is in flight; the row shows a spinner. */
+    isBusy: boolean
+}
+
+const STEP_ROWS: Record<CardConfirmSwapStep, CardConfirmSwapStepRowModel[]> = {
+    idle: [
+        { id: 'swap', stepNumber: 1, status: 'pending', isBusy: false },
+        { id: 'deposit', stepNumber: 2, status: 'pending', isBusy: false },
+    ],
+    swapping: [
+        { id: 'swap', stepNumber: 1, status: 'active', isBusy: true },
+        { id: 'deposit', stepNumber: 2, status: 'pending', isBusy: false },
+    ],
+    depositing: [
+        { id: 'swap', stepNumber: 1, status: 'done', isBusy: false },
+        { id: 'deposit', stepNumber: 2, status: 'active', isBusy: true },
+    ],
+    'deposit-failed': [
+        { id: 'swap', stepNumber: 1, status: 'done', isBusy: false },
+        { id: 'deposit', stepNumber: 2, status: 'failed', isBusy: false },
+    ],
+}
+
 type UseCardConfirmSwapScreenResult = {
+    step: CardConfirmSwapStep
+    steps: CardConfirmSwapStepRowModel[]
+    handleRetryDeposit: () => void
     sourceAsset: Maybe<DisplayableAsset>
     usdcAsset: Maybe<DisplayableAsset>
     payDisplay: string
@@ -66,10 +122,21 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { t } = useLanguage()
     const { successToast, errorToast, infoToast } = useToast()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
+    const { deposit } = useCardManualDeposit()
+    const { readUsdcBalance, waitForUsdcCredit } = useCardUsdcCredit()
+    const showDepositError = useCardErrorToast({
+        titleKey: 'peraCard.add_funds.swap_deposit_failed_title',
+        bodyKey: 'peraCard.add_funds.swap_deposit_failed_body',
+        shouldUseBackendMessage: false,
+    })
+    const [step, setStep] = useState<CardConfirmSwapStep>('idle')
+    // The USDC balance before the swap and the amount it credited; kept in
+    // refs so a retry after a failed deposit reuses them.
+    const balanceBeforeRef = useRef<Nullable<bigint>>(null)
+    const creditedRef = useRef<Nullable<bigint>>(null)
 
-    // Same account the Add Funds screen anchors to (the active account until the
-    // smart contract links a dedicated card funding source).
-    const account = useSelectedAccount()
+    // Same account the Add Funds screen swaps from: the one linked to the card.
+    const account = useCardFundingAccount()
 
     const usdcAssetId = useMemo(
         () => getKnownAssetId('USDC', network),
@@ -100,7 +167,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
 
     // Re-quote at confirm time so we sign the freshest rate (no need to pass the
     // non-serializable quote through navigation).
-    const { quote, isQuoteFetching, isSwapping, executeSwap } =
+    const { quote, isQuoteFetching, isSwapping, executeSwap, refreshQuote } =
         useCardAddFundsSwap({
             account,
             sourceAssetId: params.sourceAssetId,
@@ -122,12 +189,12 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         })
     }, [quote?.amountIn, sourceDecimals, sourceUnit])
 
+    // Same rounding as the Add Funds screen; the exact figure sits in the
+    // swap details below.
     const receiveDisplay = useMemo(() => {
         if (!quote?.amountOut) return EMPTY_VALUE
-        return formatAssetAmount(quote.amountOut, {
-            decimals: usdcDecimals,
-            unitName: usdcUnit,
-        })
+        const usdcOut = baseUnitsToDisplayUnits(quote.amountOut, usdcDecimals)
+        return `${usdcOut.toFixed(USDC_DISPLAY_PRECISION)} ${usdcUnit}`
     }, [quote?.amountOut, usdcDecimals, usdcUnit])
 
     const priceDisplay = useMemo(() => {
@@ -176,19 +243,80 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         [quote?.peraFeeAmount, quote?.peraFeeAsset, sourceDecimals, sourceUnit],
     )
 
+    // Moves the swapped USDC onto the card. The swap pays the linked account,
+    // so wait for the credit to show on chain and deposit exactly that.
+    const depositCredit = useCallback(async () => {
+        if (!account) return
+        setStep('depositing')
+        try {
+            const credited =
+                creditedRef.current ??
+                (await waitForUsdcCredit({
+                    address: account.address,
+                    before: balanceBeforeRef.current ?? 0n,
+                    minimum: quote?.amountOutWithSlippage
+                        ? BigInt(quote.amountOutWithSlippage.toFixed(0))
+                        : 0n,
+                }))
+            creditedRef.current = credited
+            const amount = baseUnitsToDisplayUnits(credited, usdcDecimals)
+            await deposit({ account, amount })
+            successToast(
+                t('peraCard.add_funds.deposit_success_title'),
+                t('peraCard.add_funds.swap_deposit_success_body', {
+                    amount: amount.toFixed(USDC_DISPLAY_PRECISION),
+                }),
+            )
+            invalidateBalances()
+            setStep('idle')
+            // Add Funds and this screen sit on top of the card screen; the
+            // funds are on the card now, so land the user back there.
+            navigation.pop(2)
+        } catch (error) {
+            // The swap already went through: leave the user on a screen that
+            // says so and offers the deposit alone. A declined signing review
+            // is a normal action and gets no toast.
+            setStep('deposit-failed')
+            if (error instanceof UserRejectedSigningError) return
+            logger.error('Card deposit after swap failed', { error })
+            await showDepositError(error)
+        }
+    }, [
+        account,
+        quote,
+        usdcDecimals,
+        waitForUsdcCredit,
+        deposit,
+        successToast,
+        t,
+        invalidateBalances,
+        navigation,
+        showDepositError,
+    ])
+
+    const handleRetryDeposit = useCallback(() => {
+        void depositCredit()
+    }, [depositCredit])
+
     const handleConfirm = useCallback(() => {
         // Design allows `card_getUSDC_confirm` for this screen too, but the
         // Get-USDC flow isn't built — this screen is only reachable from Add Funds.
         trackEvent(CardEvent.AddFundsConfirm)
-        void executeSwap().then(outcome => {
-            if (outcome.kind === 'success') {
-                successToast(
-                    t('peraCard.add_funds.swap_success_title'),
-                    t('peraCard.add_funds.swap_success_body'),
+        const run = async () => {
+            if (account) {
+                balanceBeforeRef.current = await readUsdcBalance(
+                    account.address,
                 )
-                invalidateBalances()
-                navigation.goBack()
-            } else if (outcome.kind === 'pending-cosign') {
+            }
+            creditedRef.current = null
+            setStep('swapping')
+            const outcome = await executeSwap()
+            if (outcome.kind === 'success') {
+                await depositCredit()
+                return
+            }
+            setStep('idle')
+            if (outcome.kind === 'pending-cosign') {
                 // Shared-account swap proposed; co-signer must approve before it
                 // submits. Inform the user and leave the screen.
                 successToast(
@@ -196,6 +324,15 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                     t('swap.execution.pending_cosign_body'),
                 )
                 navigation.goBack()
+            } else if (outcome.kind === 'stale-quote') {
+                // Quotes are fetched once and expire after a minute, so a
+                // slow read of this screen lands here. Fetch a fresh rate
+                // and have the user confirm it.
+                refreshQuote()
+                infoToast(
+                    t('swap.quote.refreshed_title'),
+                    t('swap.quote.refreshed_body'),
+                )
             } else if (outcome.kind === 'verifying') {
                 // Nothing was signed or broadcast — say so rather than leaving
                 // the Confirm tap looking like a no-op.
@@ -209,16 +346,22 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                     outcome.message || t('peraCard.account.error_body'),
                 )
             }
-        })
+        }
+        void run()
     }, [
+        account,
+        readUsdcBalance,
         executeSwap,
+        refreshQuote,
+        depositCredit,
         successToast,
         errorToast,
         infoToast,
         t,
-        invalidateBalances,
         navigation,
     ])
+
+    const isBusy = isSwapping || step === 'swapping' || step === 'depositing'
 
     return {
         sourceAsset,
@@ -232,8 +375,11 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         exchangeFeeDisplay,
         peraFeeDisplay,
         isQuoteLoading: isQuoteFetching && !quote,
-        isConfirmDisabled: !quote || isQuoteFetching || isSwapping,
-        isConfirming: isSwapping,
+        isConfirmDisabled: !quote || isQuoteFetching || isBusy,
+        isConfirming: isBusy,
+        step,
+        steps: STEP_ROWS[step],
         handleConfirm,
+        handleRetryDeposit,
     }
 }

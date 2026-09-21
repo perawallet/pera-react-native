@@ -16,6 +16,7 @@ import {
     type Contact,
     DuplicateAddressError,
 } from '@perawallet/wallet-core-contacts'
+import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import { useEditContactForm } from '../useEditContactForm'
 
 const editContactMock = vi.fn()
@@ -29,7 +30,9 @@ const useContactsMock = vi.fn()
 const showToastMock = vi.fn()
 const isContactBackedUpMock = vi.fn(() => false)
 const isCloudBackupEnabledMock = vi.fn(() => false)
-const deleteContactFromBackupMock = vi.fn(async () => true)
+const deleteContactFromBackupMock = vi.fn(
+    async (): Promise<BackupActionOutcome> => 'settled',
+)
 const keepContactInBackupMock = vi.fn(async () => true)
 // Overridable per test: default is the in-app path (no route params);
 // deeplink/QR tests supply { params: { address, label } }.
@@ -140,7 +143,7 @@ describe('useEditContactForm', () => {
         deleteContactMock.mockReturnValue(true)
         isContactBackedUpMock.mockReturnValue(false)
         isCloudBackupEnabledMock.mockReturnValue(false)
-        deleteContactFromBackupMock.mockResolvedValue(true)
+        deleteContactFromBackupMock.mockResolvedValue('settled')
         keepContactInBackupMock.mockResolvedValue(true)
     })
 
@@ -346,8 +349,8 @@ describe('useEditContactForm', () => {
             expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
         })
 
-        it('leaves the contact on the device when the backup choice fails', async () => {
-            deleteContactFromBackupMock.mockResolvedValue(false)
+        it('leaves the contact on the device when the backup refused the choice', async () => {
+            deleteContactFromBackupMock.mockResolvedValue('refused')
             const { result } = renderHook(() => useEditContactForm())
 
             await act(() => result.current.removeContact('delete'))
@@ -355,6 +358,18 @@ describe('useEditContactForm', () => {
             expect(deleteContactMock).not.toHaveBeenCalled()
             expect(replaceMock).not.toHaveBeenCalled()
             expect(showToastMock).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+        })
+
+        it('removes the contact even when the cloud delete is only queued', async () => {
+            deleteContactFromBackupMock.mockResolvedValue('queued')
+            const { result } = renderHook(() => useEditContactForm())
+
+            await act(() => result.current.removeContact('delete'))
+
+            expect(deleteContactMock).toHaveBeenCalledWith(selectedContact)
+            expect(showToastMock).not.toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'error' }),
             )
         })

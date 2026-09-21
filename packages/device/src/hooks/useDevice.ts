@@ -12,11 +12,13 @@
 
 import { useCallback } from 'react'
 import {
+    isAlgoAssetName,
     isNotFoundError,
     isPeraNetworkError,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { logEvent } from '@perawallet/wallet-core-analytics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
@@ -122,6 +124,16 @@ export const useDevice = () => {
     // v3 requires push_token, locale and app_version on every call; there is
     // no "omit to keep the stored value" path. A null token becomes '' — see
     // the id rule on `registerDevice` for why that is safe.
+    //
+    // The resolved fiat, not the raw preference: the backend has no ALGO rate,
+    // so recording 'ALGO' renders USD anyway and logs a warning on every
+    // notification. Same rule as `useLocalCurrency`.
+    const notificationCurrency = useCurrenciesStore(state =>
+        isAlgoAssetName(state.preferredCurrency)
+            ? state.fallbackCurrency
+            : state.preferredCurrency,
+    )
+
     const buildPayload = useCallback(
         (accounts: DeviceAccountRegistration[]): DeviceRegistration => ({
             accounts,
@@ -129,8 +141,9 @@ export const useDevice = () => {
             pushToken: pushToken ?? '',
             locale: deviceInfoService.getDeviceLocale(),
             appVersion: deviceInfoService.getAppVersion(),
+            currency: notificationCurrency,
         }),
-        [deviceInfoService, pushToken],
+        [deviceInfoService, pushToken, notificationCurrency],
     )
 
     /**

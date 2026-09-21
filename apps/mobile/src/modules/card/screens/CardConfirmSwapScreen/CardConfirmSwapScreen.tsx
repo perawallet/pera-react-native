@@ -15,8 +15,14 @@ import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardStepRow } from '../../components/CardStepRow'
 import { useCardConfirmSwapScreen } from './useCardConfirmSwapScreen'
 import { useStyles } from './styles'
+
+const STEP_LABEL_KEYS = {
+    swap: 'peraCard.add_funds.confirm_step_swap',
+    deposit: 'peraCard.add_funds.confirm_step_deposit',
+} as const
 
 export const CardConfirmSwapScreen = () => {
     const styles = useStyles()
@@ -35,8 +41,20 @@ export const CardConfirmSwapScreen = () => {
         isQuoteLoading,
         isConfirmDisabled,
         isConfirming,
+        step,
+        steps,
         handleConfirm,
+        handleRetryDeposit,
     } = useCardConfirmSwapScreen()
+    const isDepositFailed = step === 'deposit-failed'
+    const detailRows = [
+        ['peraCard.confirm_swap.price', priceDisplay],
+        ['peraCard.confirm_swap.slippage', slippageDisplay],
+        ['peraCard.confirm_swap.price_impact', priceImpactDisplay],
+        ['peraCard.confirm_swap.minimum_received', minimumReceivedDisplay],
+        ['peraCard.confirm_swap.exchange_fee', exchangeFeeDisplay],
+        ['peraCard.confirm_swap.pera_fee', peraFeeDisplay],
+    ] as const
 
     if (isQuoteLoading) {
         return <LoadingView variant='circle' />
@@ -45,14 +63,26 @@ export const CardConfirmSwapScreen = () => {
     return (
         <PWScreen
             footer={
-                <PWButton
-                    variant='primary'
-                    title={t('peraCard.confirm_swap.confirm')}
-                    onPress={handleConfirm}
-                    isDisabled={isConfirmDisabled}
-                    isLoading={isConfirming}
-                    testID='card_confirm_swap_button'
-                />
+                isDepositFailed ? (
+                    <PWButton
+                        variant='primary'
+                        title={t(
+                            'peraCard.add_funds.swap_deposit_retry_button',
+                        )}
+                        onPress={handleRetryDeposit}
+                        isLoading={isConfirming}
+                        testID='card_confirm_swap_retry_deposit_button'
+                    />
+                ) : (
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.add_funds.confirm_button')}
+                        onPress={handleConfirm}
+                        isDisabled={isConfirmDisabled}
+                        isLoading={isConfirming}
+                        testID='card_confirm_swap_button'
+                    />
+                )
             }
         >
             <PWView style={styles.summaryPill}>
@@ -78,59 +108,68 @@ export const CardConfirmSwapScreen = () => {
                     )}
                     <PWText variant='footnoteMedium'>{receiveDisplay}</PWText>
                 </PWView>
+                <PWIcon
+                    name='chevron-right'
+                    variant='secondary'
+                />
+                <PWView style={styles.assetGroup}>
+                    <PWIcon
+                        name='card'
+                        size='sm'
+                    />
+                    <PWText variant='footnoteMedium'>
+                        {t('peraCard.add_funds.confirm_card_label')}
+                    </PWText>
+                </PWView>
             </PWView>
 
-            <PWView style={styles.details}>
-                <KeyValueRow title={t('peraCard.confirm_swap.price')}>
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {priceDisplay}
-                    </PWText>
-                </KeyValueRow>
-                <KeyValueRow title={t('peraCard.confirm_swap.slippage')}>
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {slippageDisplay}
-                    </PWText>
-                </KeyValueRow>
-                <KeyValueRow title={t('peraCard.confirm_swap.price_impact')}>
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {priceImpactDisplay}
-                    </PWText>
-                </KeyValueRow>
-                <KeyValueRow
-                    title={t('peraCard.confirm_swap.minimum_received')}
+            <PWView style={styles.stepsCard}>
+                {steps.map(row => (
+                    <CardStepRow
+                        key={row.id}
+                        stepNumber={row.stepNumber}
+                        label={t(STEP_LABEL_KEYS[row.id], {
+                            asset: sourceAsset?.unitName ?? '',
+                        })}
+                        status={row.status}
+                        isBusy={row.isBusy}
+                        testID={`card-confirm-swap-step-${row.id}`}
+                    />
+                ))}
+                <PWText
+                    variant='footnoteMedium'
+                    style={styles.note}
+                    testID='card_confirm_swap_note'
                 >
-                    <PWText
-                        variant='body'
-                        style={styles.value}
+                    {t(
+                        isDepositFailed
+                            ? 'peraCard.add_funds.swap_deposit_failed_body'
+                            : 'peraCard.add_funds.confirm_note',
+                    )}
+                </PWText>
+            </PWView>
+
+            <PWText
+                variant='footnoteMedium'
+                style={styles.detailsTitle}
+            >
+                {t('peraCard.add_funds.confirm_details_title')}
+            </PWText>
+            <PWView>
+                {detailRows.map(([key, value]) => (
+                    <KeyValueRow
+                        key={key}
+                        title={t(key)}
+                        style={styles.detailRow}
                     >
-                        {minimumReceivedDisplay}
-                    </PWText>
-                </KeyValueRow>
-                <KeyValueRow title={t('peraCard.confirm_swap.exchange_fee')}>
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {exchangeFeeDisplay}
-                    </PWText>
-                </KeyValueRow>
-                <KeyValueRow title={t('peraCard.confirm_swap.pera_fee')}>
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {peraFeeDisplay}
-                    </PWText>
-                </KeyValueRow>
+                        <PWText
+                            variant='body'
+                            style={styles.value}
+                        >
+                            {value}
+                        </PWText>
+                    </KeyValueRow>
+                ))}
             </PWView>
         </PWScreen>
     )

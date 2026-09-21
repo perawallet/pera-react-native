@@ -398,6 +398,13 @@ const deleteKeysFromBackup = async ({
     return { ...state, items }
 }
 
+/** `keys` is not derivable from the address: a shared seed lives under a
+ *  sibling's, and one a surviving sibling still derives from is left alone. */
+export type BackupDeleteResult = {
+    state: SyncState
+    keys: BackupItemKey[]
+}
+
 export const deleteFromBackup = async ({
     state,
     address,
@@ -406,7 +413,7 @@ export const deleteFromBackup = async ({
     state: SyncState
     address: string
     deps: ReviewActionDeps
-}): Promise<SyncState> => {
+}): Promise<BackupDeleteResult> => {
     const keys: BackupItemKey[] = []
     const addressKey = accountItemKey(address)
     if (state.items[addressKey]?.status === BackupItemStatus.ACTIVE) {
@@ -415,7 +422,7 @@ export const deleteFromBackup = async ({
     const secretKey = await secretKeyToDelete(state, address, deps)
     if (secretKey !== null) keys.push(secretKey)
 
-    return deleteKeysFromBackup({ state, keys, deps })
+    return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
 
 export const deleteContactFromBackup = async ({
@@ -426,12 +433,12 @@ export const deleteContactFromBackup = async ({
     state: SyncState
     address: string
     deps: ReviewActionDeps
-}): Promise<SyncState> => {
+}): Promise<BackupDeleteResult> => {
     const key = contactItemKey(address)
     const keys =
         state.items[key]?.status === BackupItemStatus.ACTIVE ? [key] : []
 
-    return deleteKeysFromBackup({ state, keys, deps })
+    return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
 
 /** Mirror of `markAccountForBackup`: dropping the tombstone rather than

@@ -390,6 +390,7 @@
         "notifications_unmuted": "Notificaciones activadas",
         "backup_warning_title": "¿Has hecho una copia de seguridad de tu cuenta?",
         "backup_warning_message": "Si no tienes una copia de la passphrase de recuperación de esta cuenta y la cuenta no está respaldada con un dispositivo Ledger ni gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
+        "backup_warning_message_with_cloud_backup": "Si no tienes una copia de la passphrase de recuperación de esta cuenta, la cuenta no está en la copia de seguridad en la nube ni respaldada con un dispositivo Ledger, y tampoco está gestionada por una cuenta Auth, perderás para siempre el acceso a esta cuenta y a sus fondos.",
         "backup_warning_continue": "Sí, continuar",
         "backup_warning_cancel": "No, conservar la cuenta",
         "remove_rekey_error_title": "No se puede eliminar la cuenta",
@@ -701,11 +702,18 @@
         },
         "turn_off": {
             "success": "Copia de seguridad en la nube desactivada",
-            "error": "No se pudo desactivar la copia de seguridad en la nube. Vuelve a intentarlo."
+            "error": "No se pudo desactivar la copia de seguridad en la nube. Vuelve a intentarlo.",
+            "confirm_title": "¿Desactivar la copia de seguridad en este dispositivo?",
+            "confirm_body": "Este dispositivo dejará de sincronizarse y se eliminarán de él tus credenciales de la copia de seguridad. Tu copia de seguridad se mantiene en la nube y tus otros dispositivos seguirán sincronizándose. Para volver a conectar este dispositivo más adelante, asegúrate de tener tu Passphrase y tu clave de cifrado.",
+            "confirm_button": "Desactivar"
         },
         "turn_off_and_remove": {
             "success": "Copia de seguridad en la nube desactivada y eliminada",
-            "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo."
+            "error": "No se pudo eliminar la copia de seguridad en la nube. Vuelve a intentarlo.",
+            "confirm_title": "¿Eliminar de forma permanente la copia de seguridad en la nube?",
+            "confirm_body": "La copia de seguridad en la nube se desactivará en todos tus dispositivos y las cuentas y los contactos que solo estén en la copia de seguridad se perderán.",
+            "confirm_button": "Eliminar la copia de seguridad",
+            "confirm_checkbox_label": "Entiendo que mi copia de seguridad se eliminará del servidor de forma permanente y que esta acción no se puede deshacer."
         },
         "restore": {
             "sheet_title": "Restaurar/recuperar una copia de seguridad",
@@ -1074,7 +1082,6 @@
             "spendable_info_body": "El máximo que puede cubrir una sola compra: el saldo de tu tarjeta más tu saldo de reembolsos y, con la financiación automática, hasta {{limit}} de tu cuenta vinculada.",
             "withdraw": "Retirar",
             "add_funds": "Añadir fondos",
-            "get_usdc": "Obtener USDC",
             "credits_title": "Créditos",
             "credits_description": "Dinero que recuperas con tu tarjeta: recompensas por compras y reembolsos de comercios. Reclámalo a tu billetera en cualquier momento.",
             "rewards": "Recompensas",
@@ -1083,8 +1090,6 @@
             "show_all": "Ver todo",
             "transactions_empty": "Todavía no tienes transacciones.",
             "transaction_fallback": "Transacción",
-            "coming_soon_title": "Próximamente",
-            "coming_soon_body": "Esta función aún no está disponible.",
             "reveal_card_details": "Mostrar datos de la tarjeta",
             "hide_card_details": "Ocultar datos de la tarjeta",
             "issuance_pending_title": "Verificación en revisión",
@@ -1147,6 +1152,8 @@
             "report_suspicious_before_confirm": "Continuar con el reporte",
             "error_title": "Algo salió mal",
             "error_body": "Vuelve a intentarlo.",
+            "insufficient_algo_title": "No hay suficientes ALGO",
+            "insufficient_algo_body": "Tu cuenta vinculada no tiene suficientes ALGO para cubrir la comisión de red. Añade ALGO y vuelve a intentarlo.",
             "setup_incomplete": "Configuración incompleta",
             "auto_funding_unavailable_title": "La financiación automática aún no está disponible",
             "auto_funding_unavailable_body": "Esta tarjeta no se puede autorizar para financiación automática ahora. Puedes seguir usando la financiación manual.",
@@ -1213,6 +1220,8 @@
             "status_reverted": "Revertida",
             "status_completed": "Completada",
             "export_accessibility_label": "Exportar extracto",
+            "export_error_title": "No se pudo exportar el extracto",
+            "export_error_body": "Vuelve a intentarlo.",
             "error_title": "No se pudieron cargar las transacciones",
             "error_body": "Vuelve a intentarlo.",
             "retry": "Reintentar",
@@ -1258,13 +1267,22 @@
             "amount": "Cantidad",
             "balance": "Saldo: {{amount}}",
             "deposit": "Depositar",
+            "continue": "Continuar",
             "select_asset": "Seleccionar activo",
             "select_asset_search": "Buscar por nombre o ID",
             "select_asset_empty_title": "No hay activos coincidentes",
             "select_asset_empty_body": "Ningún activo coincide con tu búsqueda",
-            "swap_success_title": "Swap completado",
-            "swap_success_body": "Tus activos se intercambiaron por USDC.",
             "swap_error_title": "El swap ha fallado",
+            "confirm_button": "Intercambiar y añadir fondos",
+            "confirm_note": "Aprobarás dos transacciones seguidas: el intercambio y luego la transferencia a tu tarjeta.",
+            "confirm_card_label": "Tu tarjeta",
+            "confirm_step_swap": "Intercambiar {{asset}} por USDC",
+            "confirm_step_deposit": "Añadir USDC a tu tarjeta",
+            "confirm_details_title": "Detalles del intercambio",
+            "swap_deposit_success_body": "Se intercambiaron {{amount}} USDC y se enviaron a tu tarjeta.",
+            "swap_deposit_failed_title": "Intercambiado, pero aún no añadido",
+            "swap_deposit_failed_body": "El intercambio se completó y los USDC están en tu cuenta vinculada. Añádelos a tu tarjeta cuando quieras.",
+            "swap_deposit_retry_button": "Añadir a la tarjeta",
             "deposit_success_title": "Fondos añadidos",
             "deposit_success_body": "Tu USDC está en camino a tu tarjeta.",
             "deposit_error_title": "No se pudieron añadir los fondos",
@@ -1272,7 +1290,7 @@
         },
         "withdraw": {
             "navigation_title": "Retirar",
-            "subtitle": "Retira USDC de tu Pera Card a tu cuenta de Pera vinculada.",
+            "subtitle": "Retira USDC de tu Pera Card a la cuenta que la creó. Los retiros tardan un momento en estar disponibles.",
             "to_account": "A la cuenta",
             "amount": "Cantidad",
             "balance": "Saldo: {{amount}}",
@@ -1280,18 +1298,32 @@
             "confirm_title": "Confirmar la retirada",
             "confirm_body": "Estás a punto de retirar {{amount}} USDC de tu Pera Card a la cuenta que aparece abajo.",
             "confirm_button": "Confirmar",
-            "success_title": "Retirada iniciada",
-            "success_body": "{{amount}} USDC están en camino a tu cuenta."
+            "pending_exists": "Completa o cancela primero tu retiro pendiente.",
+            "status_navigation_title": "Retiro",
+            "status_body": "Los retiros se hacen en dos pasos. Tu solicitud queda registrada y los USDC permanecen en tu tarjeta hasta que confirmes la transferencia. Puedes cancelar en cualquier momento antes para conservar los fondos en tu tarjeta.",
+            "status_step_request": "Solicitar el retiro",
+            "status_step_complete": "Mover los USDC a tu cuenta",
+            "status_waiting": "Listo para completar en {{seconds}} s",
+            "status_ready": "Listo para completar. Confirma la transacción para mover los fondos a tu cuenta.",
+            "status_none": "No hay ningún retiro en curso.",
+            "complete_button": "Completar retiro",
+            "cancel_button": "Cancelar retiro",
+            "in_progress_button": "Retiro en curso",
+            "completed_title": "Retiro completado",
+            "completed_body": "{{amount}} USDC han vuelto a tu cuenta.",
+            "cancelled_title": "Retiro cancelado",
+            "cancelled_body": "Tu USDC se queda en tu tarjeta.",
+            "error_title": "No se pudo retirar",
+            "error_body": "Tu retiro no se procesó. Inténtalo de nuevo."
         },
         "confirm_swap": {
-            "navigation_title": "Confirmar swap",
+            "navigation_title": "Confirmar",
             "price": "Precio",
             "slippage": "Tolerancia de slippage",
             "price_impact": "Impacto en el precio",
             "minimum_received": "Mínimo recibido",
             "exchange_fee": "Comisión de intercambio",
-            "pera_fee": "Comisión de Pera",
-            "confirm": "Confirmar"
+            "pera_fee": "Comisión de Pera"
         },
         "account_details": {
             "title": "Datos de la cuenta",
@@ -1465,6 +1497,8 @@
             "last_name_invalid": "Introduce tus apellidos",
             "dob_label": "Fecha de nacimiento DD/MM/AAAA",
             "dob_invalid": "Introduce una fecha válida (DD/MM/AAAA)",
+            "ssn_label": "Número de Seguro Social (SSN)",
+            "ssn_invalid": "Introduce un número de Seguro Social válido de 9 dígitos",
             "nationality_label": "Nacionalidad",
             "nationality_placeholder": "Selecciona la nacionalidad",
             "nationality_required": "Selecciona tu nacionalidad",
@@ -1498,6 +1532,7 @@
             "us_state_error_title": "No se pudieron cargar los estados",
             "us_state_error_body": "Comprueba tu conexión y vuelve a intentarlo.",
             "us_state_retry": "Reintentar",
+            "same_mailing_address": "Mi dirección postal es la misma que mi dirección de residencia",
             "card_terms": "He leído y entiendo los <0>términos y condiciones</0> de emisión de la tarjeta y los acepto.",
             "platform_terms": "He leído y entiendo los <0>términos y condiciones</0> de Pera y los acepto.",
             "confirm_button": "Continuar",
@@ -1505,6 +1540,10 @@
             "error_body": "No pudimos guardar tu dirección. Vuelve a intentarlo.",
             "already_registered_title": "Registro ya completado",
             "already_registered_body": "Tus datos ya están registrados. Inicia sesión para continuar configurando tu tarjeta."
+        },
+        "mailing_address": {
+            "navigation_title": "Dirección postal",
+            "body": "Tu tarjeta física se enviará a esta dirección."
         },
         "verification": {
             "title": "Empieza a gastar\non-chain",
@@ -1566,19 +1605,18 @@
             "auto_funding_degraded_body": "No se pudo activar la financiación automática en este momento, así que tu tarjeta empieza con financiación manual. Puedes cambiarlo más adelante en los ajustes de la tarjeta."
         },
         "signing": {
-            "title": "Empecemos",
-            "body": "Para crear tu Pera Card, tienes que firmar tres grupos de transacciones. Sigue estos pasos:",
-            "step_sign_label": "Firma una solicitud de autenticación para demostrar que la cuenta vinculada es tuya",
-            "step_create_label": "Crea y finaliza tu nueva cuenta de Pera Card",
-            "step_authorize_label": "Firma el programa de financiación automática para permitir que Pera Card gaste desde tu cuenta vinculada",
-            "proceed_button": "Continuar"
-        },
-        "auto_funding_signing": {
-            "title": "Solicitud de aprobación de firma automática",
-            "body": "Esto permite que tu tarjeta retire fondos automáticamente cuando sea necesario, así no tendrás que aprobar cada recarga. Estás firmando un logic sig —una firma preautorizada— que permite ese retiro automático desde tu cuenta conectada.",
-            "error_title": "No se pudo autorizar la financiación automática",
-            "error_body": "Algo salió mal al autorizar la financiación automática. Reinténtalo o cancela para continuar con la financiación manual (puedes cambiar a automática más adelante desde los ajustes de tu tarjeta).",
-            "cancel_button": "Cancelar"
+            "title": "Crear Pera Card",
+            "body_manual": "Firmarás una vez para demostrar que la cuenta vinculada es tuya. Justo después crearemos tu tarjeta.",
+            "body_auto": "Firmarás para demostrar que la cuenta vinculada es tuya y para permitir la financiación automática. Después aprobarás una transacción que la activa.",
+            "linked_account_label": "Cuenta vinculada",
+            "funding_type_label": "Tipo de financiación",
+            "step_ownership_label": "Demostrar que la cuenta vinculada es tuya",
+            "step_create_label": "Crear tu Pera Card",
+            "step_auto_funding_label": "Permitir la financiación automática desde la cuenta vinculada",
+            "retry_button": "Volver a intentarlo",
+            "continue_manual_button": "Continuar con financiación manual",
+            "auto_funding_error_title": "No se pudo autorizar la financiación automática",
+            "auto_funding_error_body": "Algo salió mal al activar la financiación automática. Vuelve a intentarlo o continúa con financiación manual y cambia más tarde desde los ajustes de la tarjeta."
         },
         "connect_account": {
             "title": "Elige la cuenta de la tarjeta",
@@ -1756,6 +1794,8 @@
             "delivery_failed": "No se pudo enviar a la aplicación que lo solicitó: se perdió la conexión.",
             "failed_default": "La transacción falló",
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
+            "cosign_rejected_title": "No se puede firmar esta transacción",
+            "cosign_rejected_body": "Esta solicitud incluye una transacción que la cuenta compartida no autoriza. Si el remitente es una cuenta con rekey a la cuenta compartida, añádela a tu wallet e inténtalo de nuevo.",
             "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",
@@ -3897,6 +3937,13 @@
         "ZW": "Zimbabue"
     },
     "vault": {
+        "password_strength": {
+            "weak": "Débil",
+            "fair": "Aceptable",
+            "good": "Buena",
+            "strong": "Fuerte",
+            "error_too_weak": "La contraseña es demasiado fácil de adivinar. Prueba una frase más larga con palabras poco comunes."
+        },
         "create_password": {
             "title": "Crea una contraseña",
             "description": "Establece una contraseña para proteger tu extensión de Pera Wallet. La necesitarás cada vez que abras la extensión.",

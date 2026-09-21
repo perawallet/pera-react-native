@@ -23,6 +23,7 @@ import {
     startRegisterVerification,
     fetchOnboardingDetails,
     submitAddress,
+    submitMailingAddress,
     submitOnboardingConsent,
     linkOnboardingConsent,
     fetchRegistrationSettings,
@@ -357,6 +358,43 @@ describe('onboarding endpoints', () => {
                 }),
             }),
         )
+    })
+
+    it('posts the mailing address to its own route and parses the same response', async () => {
+        request.mockResolvedValue({
+            data: {
+                accessToken: 'tok',
+                onboardingId: 'ob_1',
+                user: { id: 'user_1' },
+            },
+        })
+
+        const result = await submitMailingAddress({
+            address: {
+                onboardingId: 'ob_1',
+                addressLine1: '500 Market Street',
+                city: 'San Francisco',
+                zip: '94105',
+                usState: 'CA',
+            },
+            network: 'mainnet',
+        })
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/mailing-address',
+                data: expect.objectContaining({
+                    onboardingId: 'ob_1',
+                    usState: 'CA',
+                }),
+            }),
+        )
+        expect(result).toEqual({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+            userId: 'user_1',
+        })
     })
 
     it('returns a null userId when the address response omits the user block', async () => {

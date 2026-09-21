@@ -41,6 +41,13 @@ const SETTINGS_RESPONSE = {
             callingCode: '44',
             canSignUp: true,
         },
+        {
+            id: 'us',
+            iso3166alpha2: 'US',
+            name: 'United States of America',
+            callingCode: '1',
+            canSignUp: true,
+        },
     ],
     usStates: [],
 }
@@ -68,11 +75,13 @@ const renderFlow = () =>
         },
     )
 
-// Fill only the name + date fields, leaving nationality to the preselect.
-const fillNameAndDob = () => {
-    fireEvent.change(screen.getByTestId('card-onboarding-first-name-input'), {
-        target: { value: 'John' },
-    })
+// Fill only the name + date fields, leaving nationality to the preselect. The
+// form appears once the onboarding record has answered, so wait for it.
+const fillNameAndDob = async () => {
+    fireEvent.change(
+        await screen.findByTestId('card-onboarding-first-name-input'),
+        { target: { value: 'John' } },
+    )
     fireEvent.change(screen.getByTestId('card-onboarding-last-name-input'), {
         target: { value: 'Morgan' },
     })
@@ -84,7 +93,7 @@ const fillNameAndDob = () => {
 
 // Fill the name + date fields and pick the UK as nationality so the form validates.
 const fillFormAndPickNationality = async () => {
-    fillNameAndDob()
+    await fillNameAndDob()
 
     fireEvent.click(screen.getByTestId('card-onboarding-nationality-field'))
     await waitFor(() =>
@@ -186,7 +195,7 @@ describe('Flow: Card onboarding — personal details', () => {
 
         renderFlow()
         // No manual nationality pick — the residence country (GB) is preselected.
-        fillNameAndDob()
+        await fillNameAndDob()
 
         const confirm = screen.getByTestId(
             'card-onboarding-personal-details-confirm',
@@ -260,9 +269,52 @@ describe('Flow: Card onboarding — personal details', () => {
         })
     })
 
+    it('Given a US resident, then the SSN is required and posted as nine digits', async () => {
+        useCardStore.getState().setCountryIso('US')
+        let body: Record<string, unknown> | undefined
+        server.use(
+            http.post(
+                '*/v1/auth/register/personal-details',
+                async ({ request }) => {
+                    body = (await request.json()) as Record<string, unknown>
+                    return HttpResponse.json({}, { status: 200 })
+                },
+            ),
+        )
+
+        renderFlow()
+        await fillNameAndDob()
+
+        // Nationality and birth country preselect from the residence (US), so
+        // the SSN is the only thing holding Continue back.
+        const confirm = screen.getByTestId(
+            'card-onboarding-personal-details-confirm',
+        )
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-ssn-input'),
+            ).toBeTruthy(),
+        )
+        expect(confirm.getAttribute('disabled')).not.toBeNull()
+
+        // Typed without dashes; the mask inserts them.
+        fireEvent.change(screen.getByTestId('card-onboarding-ssn-input'), {
+            target: { value: '123456789' },
+        })
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        await waitFor(() =>
+            expect(body).toMatchObject({
+                countryOfNationality: 'US',
+                ssn: '123456789',
+            }),
+        )
+    })
+
     it('Given an impossible date of birth, when the field is blurred, then the inline error shows', async () => {
         renderFlow()
-        const dob = screen.getByTestId('card-onboarding-dob-input')
+        const dob = await screen.findByTestId('card-onboarding-dob-input')
 
         // 31 Feb — masked into DD/MM/YYYY but rejected by the schema.
         fireEvent.change(dob, { target: { value: '31021990' } })

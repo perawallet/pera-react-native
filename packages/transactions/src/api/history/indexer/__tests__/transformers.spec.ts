@@ -172,6 +172,7 @@ describe('transformIndexerTransactions', () => {
                 amount: '-500',
             },
         ])
+        expect(row.asset_sender).toBe('DRAINED')
     })
 
     test('emits close_to and close_amount for a close-out payment', () => {

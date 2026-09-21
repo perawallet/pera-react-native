@@ -235,6 +235,7 @@ export const mockTransaction: TransactionHistoryItem = {
     id: MOCK_TX_ID,
     txType: 'pay',
     sender: MOCK_ADDRESS,
+    assetSender: null,
     receiver: MOCK_ADDRESS_2,
     confirmedRound: 40_000_000,
     roundTime: Math.floor(Date.now() / 1000) - 300,

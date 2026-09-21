@@ -28,9 +28,11 @@ import {
 } from '../syncState'
 import { BackupItemStatus, BackupItemType } from '../types'
 import {
+    areKeysDeletedFromBackup,
     deriveBackupAccountReview,
     deriveBackupContactReview,
     isAddressBackedUp,
+    isContactBackedUp,
 } from '../reviewBuckets'
 
 const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
@@ -127,6 +129,97 @@ describe('isAddressBackedUp', () => {
 
         expect(isAddressBackedUp(state, 'A')).toBe(false)
         expect(deriveBackupAccountReview(state, ['A']).backedUp.size).toBe(0)
+    })
+})
+
+describe('isContactBackedUp', () => {
+    const contact = (overrides: Partial<SyncItemState> = {}): SyncItemState =>
+        tracked({ type: BackupItemType.CONTACT, ...overrides })
+
+    it('agrees with the backedUp bucket for a contact the backup holds', () => {
+        const state = createEmptySyncState('b')
+        state.items['contacts/A'] = contact()
+
+        expect(isContactBackedUp(state, 'A')).toBe(true)
+        expect(isContactBackedUp(state, 'B')).toBe(false)
+        expect(isContactBackedUp(null, 'A')).toBe(false)
+    })
+
+    it('reads the contact key rather than the account one', () => {
+        const state = createEmptySyncState('b')
+        state.items['accounts/A'] = tracked()
+
+        expect(isContactBackedUp(state, 'A')).toBe(false)
+        expect(isAddressBackedUp(state, 'A')).toBe(true)
+    })
+
+    it('agrees with the backedUp bucket for a contact awaiting review', () => {
+        const state = createEmptySyncState('b')
+        state.items['contacts/A'] = contact({ pendingImport: true })
+
+        expect(isContactBackedUp(state, 'A')).toBe(false)
+        expect(deriveBackupContactReview(state, ['A']).backedUp.size).toBe(0)
+    })
+})
+
+describe('areKeysDeletedFromBackup', () => {
+    it('reports the keys gone once each is tombstoned', () => {
+        const state = createEmptySyncState('b')
+        state.items['accounts/A'] = tracked({
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items['secrets/A'] = tracked({ status: BackupItemStatus.IGNORED })
+
+        expect(
+            areKeysDeletedFromBackup(state, ['accounts/A', 'secrets/A']),
+        ).toBe(true)
+    })
+
+    it('reports them still there while one waits on a retry', () => {
+        const state = createEmptySyncState('b')
+        state.items['accounts/A'] = tracked({
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items['secrets/A'] = tracked({ pendingDelete: true })
+
+        expect(
+            areKeysDeletedFromBackup(state, ['accounts/A', 'secrets/A']),
+        ).toBe(false)
+    })
+
+    // An HD seed is stored under the first derived sibling, so a check that
+    // re-derived `secrets/<address>` would read a key the delete never touched.
+    it('reports a seed stored under a sibling address still there', () => {
+        const state = createEmptySyncState('b')
+        state.items['accounts/CHILD'] = tracked({
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items['secrets/FIRST'] = tracked({ pendingDelete: true })
+
+        expect(
+            areKeysDeletedFromBackup(state, [
+                'accounts/CHILD',
+                'secrets/FIRST',
+            ]),
+        ).toBe(false)
+    })
+
+    it('ignores a key the delete deliberately left alone', () => {
+        const state = createEmptySyncState('b')
+        state.items['accounts/CHILD'] = tracked({
+            status: BackupItemStatus.IGNORED,
+        })
+        state.items['secrets/FIRST'] = tracked()
+
+        expect(areKeysDeletedFromBackup(state, ['accounts/CHILD'])).toBe(true)
+    })
+
+    it('reports a contact still there while its key waits on a retry', () => {
+        const state = createEmptySyncState('b')
+        state.items['contacts/A'] = tracked({ pendingDelete: true })
+
+        expect(areKeysDeletedFromBackup(state, ['contacts/A'])).toBe(false)
+        expect(areKeysDeletedFromBackup(state, ['contacts/B'])).toBe(true)
     })
 })
 

@@ -42,4 +42,8 @@ export const useStyles = makeStyles(theme => ({
     title: {
         textAlign: 'center',
     },
+    requestOrigin: {
+        textAlign: 'center',
+        color: theme.colors.textMain,
+    },
 }))

@@ -11,3 +11,4 @@
  */
 
 export { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'
+export { getDebitedAddress, isOutgoingFor } from './direction'

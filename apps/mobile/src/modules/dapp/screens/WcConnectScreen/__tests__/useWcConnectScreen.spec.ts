@@ -19,10 +19,15 @@ const mocks = vi.hoisted(() => ({
     useDappRequest: vi.fn(),
     useSigningAccounts: vi.fn(),
     useSelectedAccountAddress: vi.fn(),
+    useApprovalArming: vi.fn(),
 }))
 
 vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
+}))
+
+vi.mock('../../../hooks/useApprovalArming.web', () => ({
+    useApprovalArming: mocks.useApprovalArming,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -72,6 +77,7 @@ describe('useWcConnectScreen', () => {
         mocks.useSelectedAccountAddress.mockReturnValue({
             selectedAccountAddress: null,
         })
+        mocks.useApprovalArming.mockReturnValue(true)
     })
 
     it('exposes the proposal peer and its requested methods as the permissions list', () => {
@@ -128,6 +134,45 @@ describe('useWcConnectScreen', () => {
 
         expect(result.current.selected.has('BBBB')).toBe(true)
         expect(result.current.canConnect).toBe(true)
+    })
+
+    it('seeds once the account store rehydrates after the proposal', () => {
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        mocks.useSigningAccounts.mockReturnValue([])
+        const { result, rerender } = render()
+
+        expect(result.current.selected.size).toBe(0)
+
+        mocks.useSigningAccounts.mockReturnValue([ACCOUNT_A, ACCOUNT_B])
+        rerender()
+
+        expect(result.current.selected.has('BBBB')).toBe(true)
+    })
+
+    it('pre-checks nothing for a page-initiated proposal', () => {
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        const { result } = render(
+            proposalApproval({ requesterOrigin: 'https://dapp.example' }),
+        )
+
+        expect(result.current.selected.size).toBe(0)
+        expect(result.current.canConnect).toBe(false)
+    })
+
+    it('cannot connect before the window is armed, even with an account picked', () => {
+        mocks.useApprovalArming.mockReturnValue(false)
+        mocks.useSelectedAccountAddress.mockReturnValue({
+            selectedAccountAddress: 'BBBB',
+        })
+        const { result } = render()
+
+        expect(result.current.canConnect).toBe(false)
+        act(() => result.current.handleConnect())
+        expect(mocks.approve).not.toHaveBeenCalled()
     })
 
     it('pre-checks nothing when the active account cannot sign', () => {

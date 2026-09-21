@@ -11,7 +11,7 @@
  */
 
 import { toError, withTimeout } from '@perawallet/wallet-core-shared'
-import type { ConnectionOriginSource } from '@perawallet/wallet-extension-connections'
+import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     CONNECTION_OUTCOME_TIMEOUT_MS,
     waitForPairingOutcome,
@@ -40,10 +40,7 @@ export type ConnectionPairingOptions = {
      * offer "Return to the dApp" ('external-browser'), suppress themselves
      * ('in-app'), or show plainly ('qr').
      */
-    origin?: {
-        source: ConnectionOriginSource
-        browserName?: string
-    }
+    origin?: ConnectionOrigin
     /** Overrides `CONNECTION_OUTCOME_TIMEOUT_MS`. */
     outcomeTimeoutMs?: number
     /**

@@ -247,3 +247,65 @@ describe('useTransactionAmounts', () => {
         expect(result.current.amounts[0].value.toString()).toBe('6638534')
     })
 })
+
+describe('useTransactionAmounts — clawback', () => {
+    it('signs a seized holding as outgoing for the drained account', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: 'CLAWBACK_AUTHORITY',
+            assetSender: USER_ADDRESS,
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it('keeps the authority from reading a clawback to someone else as a credit', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: OTHER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('-')
+    })
+
+    it('credits the authority when it claws the holding back to itself', () => {
+        const tx = createPaymentTx({
+            txType: 'axfer',
+            sender: USER_ADDRESS,
+            assetSender: 'DRAINED_HOLDER',
+            receiver: USER_ADDRESS,
+            amount: new Decimal('100'),
+            asset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 0,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionAmounts(tx))
+
+        expect(result.current.amounts[0].prefix).toBe('+')
+    })
+})

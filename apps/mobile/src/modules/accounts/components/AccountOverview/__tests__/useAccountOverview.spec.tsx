@@ -71,6 +71,7 @@ vi.mock(
 
 vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
     SendFundsContent: () => null,
+    SEND_FUNDS_SHEET_ID: 'send-funds',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -195,7 +196,7 @@ describe('useAccountOverview', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
         expect(arg?.options).toEqual({
-            size: 'modal',
+            size: 'auto',
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })

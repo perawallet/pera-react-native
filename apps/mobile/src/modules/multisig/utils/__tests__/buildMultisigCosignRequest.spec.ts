@@ -36,6 +36,7 @@ import {
     generateMultisigAddress,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 
@@ -87,6 +88,7 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [],
         })
 
         expect(result.type).toBe('transactions')
@@ -102,6 +104,7 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [],
         })
 
         expect(decodeTransaction).toHaveBeenCalledTimes(2)
@@ -116,6 +119,7 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'B',
             decodeTransaction,
+            localAccounts: [],
         })
 
         expect(result.signerOverrides).toBeDefined()
@@ -132,11 +136,13 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [],
         })
         const b = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'B',
             decodeTransaction,
+            localAccounts: [],
         })
 
         expect(a.id).toBe('sr-42:A')
@@ -153,11 +159,13 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [],
         })
         const second = buildMultisigCosignRequest({
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [],
         })
 
         expect(first.id).toBe(second.id)
@@ -172,6 +180,7 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest,
                 signerAddress: 'A',
                 decodeTransaction,
+                localAccounts: [],
             }),
         ).toThrow(/no transaction lists/)
     })
@@ -192,8 +201,9 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
                 decodeTransaction,
+                localAccounts: [],
             }),
-        ).toThrow(/sent by the co-signer/)
+        ).toThrow(/not authorized by the joint account/)
     })
 
     it('allows a sender rekeyed to the joint account — the subsig still binds to sgnr', () => {
@@ -207,10 +217,84 @@ describe('buildMultisigCosignRequest', () => {
             signRequest: buildSignRequest(),
             signerAddress: 'A',
             decodeTransaction,
+            localAccounts: [
+                { address: 'REKEYED_SENDER', rekeyAddress: 'MULTISIG' },
+            ] as WalletAccount[],
         })
 
         expect(result.txs).toHaveLength(2)
         expect(result.signerOverrides!.get(0)).toBe('A')
+    })
+
+    // `sgnr` is not covered by the signature, so a subsig from participant key S
+    // stands alone for any sender whose auth-addr is S — not only sender === S.
+    it("throws when a sender is an account the co-signer's own key authorizes", () => {
+        const rekeyedToSigner = {
+            address: 'REKEYED_TO_SIGNER',
+            rekeyAddress: 'A',
+        } as WalletAccount
+        const decodeTransaction = vi.fn(() => txFrom('REKEYED_TO_SIGNER'))
+
+        expect(() =>
+            buildMultisigCosignRequest({
+                signRequest: buildSignRequest(),
+                signerAddress: 'A',
+                localAccounts: [rekeyedToSigner],
+                decodeTransaction,
+            }),
+        ).toThrow(/not authorized by the joint account/)
+    })
+
+    it('ignores a rekey to the joint account recorded on another network', () => {
+        const decodeTransaction = vi.fn(() => txFrom('REKEYED_ELSEWHERE'))
+
+        expect(() =>
+            buildMultisigCosignRequest({
+                signRequest: buildSignRequest(),
+                signerAddress: 'A',
+                localAccounts: [
+                    {
+                        address: 'REKEYED_ELSEWHERE',
+                        rekeyAddress: 'A',
+                        rekeyAddressByNetwork: {
+                            mainnet: 'A',
+                            testnet: 'MULTISIG',
+                        },
+                    },
+                ] as unknown as WalletAccount[],
+                decodeTransaction,
+            }),
+        ).toThrow(/not authorized by the joint account/)
+    })
+
+    it('rejects a local sender the joint account does not authorize', () => {
+        const decodeTransaction = vi.fn(() => txFrom('OTHER_LOCAL'))
+
+        expect(() =>
+            buildMultisigCosignRequest({
+                signRequest: buildSignRequest(),
+                signerAddress: 'A',
+                localAccounts: [
+                    { address: 'OTHER_LOCAL' },
+                ] as unknown as WalletAccount[],
+                decodeTransaction,
+            }),
+        ).toThrow(/not authorized by the joint account/)
+    })
+
+    // The negative guard could only name senders the wallet knows; a sender
+    // rekeyed to the co-signer's key on chain but absent locally walked past it.
+    it('rejects a sender the wallet has never seen', () => {
+        const decodeTransaction = vi.fn(() => txFrom('UNKNOWN_SENDER'))
+
+        expect(() =>
+            buildMultisigCosignRequest({
+                signRequest: buildSignRequest(),
+                signerAddress: 'A',
+                localAccounts: [],
+                decodeTransaction,
+            }),
+        ).toThrow(/not authorized by the joint account/)
     })
 
     it('throws when the joint account does not derive from its participant set (fabricated request)', () => {
@@ -225,6 +309,7 @@ describe('buildMultisigCosignRequest', () => {
                 signRequest: buildSignRequest(),
                 signerAddress: 'A',
                 decodeTransaction,
+                localAccounts: [],
             }),
         ).toThrow(/does not derive from its participant set/)
     })

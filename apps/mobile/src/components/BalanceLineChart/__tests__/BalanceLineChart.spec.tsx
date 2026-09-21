@@ -199,6 +199,25 @@ describe('BalanceLineChart', () => {
         expect(screen.getByTestId('line-chart')).toBeTruthy()
     })
 
+    // The offline message is a full sentence the user needs in order to know
+    // what's happening — it must never be cut off with an ellipsis, unlike
+    // the empty-history copy above, which tolerates truncation.
+    it('does not truncate the offline body', () => {
+        renderChart({ series: undefined, isPending: true, isPaused: true })
+
+        const body = screen.getByText(
+            "You're offline — this will refresh automatically once you're back online.",
+        )
+        expect(body.getAttribute('numberoflines')).toBeNull()
+    })
+
+    it('does not truncate the error body', () => {
+        renderChart({ isError: true, errorBody: 'could not load chart' })
+
+        const body = screen.getByText('could not load chart')
+        expect(body.getAttribute('numberoflines')).toBeNull()
+    })
+
     it('shows a reachable retry in the offline state', () => {
         const onRetry = vi.fn()
         renderChart({ series: undefined, isPaused: true, onRetry })

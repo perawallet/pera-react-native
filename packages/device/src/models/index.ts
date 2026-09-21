@@ -83,6 +83,13 @@ export type DeviceRegistration = {
     platform: DevicePlatform
     locale: string
     appVersion: string
+    /**
+     * The user's display-currency id, exactly as `/v1/currencies/` returns it
+     * ('USD', 'TRY', 'ALGO'). The backend renders push copy and notification
+     * text in it, and falls back to USD for a device that never sent one.
+     * Independent of `locale`.
+     */
+    currency?: string
     accounts: DeviceAccountRegistration[]
 }
 
@@ -98,6 +105,8 @@ export type DeviceRegistrationRequest = {
     platform: DevicePlatform
     locale: string
     app_version: string
+    /** Max 8 characters; over-length 422s the whole registration. */
+    currency?: string
     accounts: DeviceAccountRequest[]
 }
 

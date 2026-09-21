@@ -28,8 +28,13 @@ export const SourceMetadataView = ({
 }: SourceMetadataViewProps) => {
     const styles = useStyles()
 
-    const { displayIcon, displayName, verificationTier, handlePressUrl } =
-        useSourceMetadataView(metadata, verifiedOrigin)
+    const {
+        displayIcon,
+        displayName,
+        verificationTier,
+        requestOriginLabel,
+        handlePressUrl,
+    } = useSourceMetadataView(metadata, verifiedOrigin)
 
     return (
         <PWView style={styles.container}>
@@ -68,6 +73,15 @@ export const SourceMetadataView = ({
                         onPress={handlePressUrl}
                         title={metadata.url}
                     />
+                )}
+                {!!requestOriginLabel && (
+                    <PWText
+                        variant='caption'
+                        style={styles.requestOrigin}
+                        testID='source_metadata_request_origin'
+                    >
+                        {requestOriginLabel}
+                    </PWText>
                 )}
             </PWView>
         </PWView>

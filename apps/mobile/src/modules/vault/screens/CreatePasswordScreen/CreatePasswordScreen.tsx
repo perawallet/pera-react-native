@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter'
 import { useCreatePasswordScreen } from './useCreatePasswordScreen.web'
 import { useStyles } from './styles'
 
@@ -39,6 +40,7 @@ export const CreatePasswordScreen = ({
         confirmation,
         isSubmitting,
         hasError,
+        passwordScore,
         validationError,
         canSubmit,
         setPassword,
@@ -49,7 +51,9 @@ export const CreatePasswordScreen = ({
     const passwordError =
         validationError === 'too_short'
             ? t('vault.create_password.error_too_short')
-            : undefined
+            : validationError === 'too_weak'
+              ? t('vault.password_strength.error_too_weak')
+              : undefined
 
     const confirmError =
         validationError === 'mismatch'
@@ -88,10 +92,13 @@ export const CreatePasswordScreen = ({
                         secureTextEntry
                         showVisibilityToggle
                         errorMessage={passwordError}
-                        renderErrorMessage={validationError === 'too_short'}
+                        renderErrorMessage={passwordError !== undefined}
                         autoCapitalize='none'
                         autoComplete='new-password'
                     />
+                    {password.length > 0 && (
+                        <PasswordStrengthMeter score={passwordScore} />
+                    )}
                     <PWInput
                         testID='create-password-confirm-input'
                         placeholder={t(

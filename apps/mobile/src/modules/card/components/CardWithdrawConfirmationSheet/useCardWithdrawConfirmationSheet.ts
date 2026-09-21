@@ -12,17 +12,16 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import {
-    useSelectedAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    useCardInternalWalletsQuery,
-    useWithdrawFromCardMutation,
-} from '@perawallet/wallet-core-card'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useCardErrorToast } from '../../hooks'
+import {
+    useCardErrorToast,
+    useCardEscrowBalance,
+    useCardOwnerAccount,
+    useCardWithdraw,
+} from '../../hooks'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 
 type UseCardWithdrawConfirmationSheetParams = {
@@ -34,28 +33,30 @@ type UseCardWithdrawConfirmationSheetResult = {
     /** Amount formatted for display, e.g. "25.50". */
     amountDisplay: string
     destinationAccount: Nullable<WalletAccount>
-    /** True while the withdraw request is in flight — drives the confirm button. */
+    /** True while the request is being signed and submitted. */
     isWithdrawing: boolean
     onConfirm: () => void
     onClose: () => void
 }
 
 /**
- * Owns the withdraw request for the confirmation sheet so the pending state
- * lives on the sheet's button. On success it closes the sheet (`resolve`); on
- * failure it surfaces the error and keeps the sheet open so the user can retry.
+ * Owns the `withdrawalRequest` call for the confirmation sheet so the pending
+ * state lives on the sheet's button. Success resolves the sheet; a failure
+ * surfaces a toast and keeps it open for a retry; backing out of the signing
+ * review is a normal action and does neither.
  */
 export const useCardWithdrawConfirmationSheet = ({
     amount,
 }: UseCardWithdrawConfirmationSheetParams): UseCardWithdrawConfirmationSheetResult => {
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
-    const withdraw = useWithdrawFromCardMutation()
-    const { usdcWallet } = useCardInternalWalletsQuery()
-    const showError = useCardErrorToast()
-
-    // TODO(card): use connectedFundingSourceAddress once the smart contract
-    // links the card's funding source; until then withdraw to the active account.
-    const destinationAccount = useSelectedAccount()
+    const { request, isRequesting, pending } = useCardWithdraw()
+    const { balance: cardBalance } = useCardEscrowBalance()
+    const destinationAccount = useCardOwnerAccount()
+    const showError = useCardErrorToast({
+        titleKey: 'peraCard.withdraw.error_title',
+        bodyKey: 'peraCard.withdraw.error_body',
+        shouldUseBackendMessage: false,
+    })
 
     const amountDisplay = useMemo(
         () => amount.toFixed(USDC_DISPLAY_PRECISION),
@@ -63,32 +64,37 @@ export const useCardWithdrawConfirmationSheet = ({
     )
 
     const confirm = useCallback(async () => {
-        // Guard re-entry so a double-tap can't fire a second withdrawal.
-        if (withdraw.isPending) return
-        // The screen validated wallet/account/amount, but everything is
-        // re-read here — mounting the sheet adds a query subscriber that can
-        // refetch a lower balance, so re-check instead of relying on the
-        // server's 400.
+        // Guard re-entry so a double-tap can't fire a second request.
+        if (isRequesting) return
+        // The screen validated everything, but the sheet mounts its own
+        // subscribers which can refetch a lower balance or a request that
+        // landed meanwhile, so re-check rather than let the contract assert.
         if (
-            !usdcWallet ||
             !destinationAccount ||
+            pending !== null ||
             amount.lte(0) ||
-            amount.gt(usdcWallet.balance)
+            amount.gt(cardBalance)
         ) {
             await showError(null)
             return
         }
         try {
-            await withdraw.mutateAsync({
-                amount,
-                recipientAddress: destinationAccount.address,
-                wallet: usdcWallet,
-            })
+            await request(amount)
             resolve('confirm')
         } catch (error) {
+            if (error instanceof UserRejectedSigningError) return
             await showError(error)
         }
-    }, [withdraw, usdcWallet, destinationAccount, amount, resolve, showError])
+    }, [
+        isRequesting,
+        destinationAccount,
+        pending,
+        amount,
+        cardBalance,
+        request,
+        resolve,
+        showError,
+    ])
 
     const onConfirm = useCallback(() => {
         void confirm()
@@ -97,7 +103,7 @@ export const useCardWithdrawConfirmationSheet = ({
     return {
         amountDisplay,
         destinationAccount,
-        isWithdrawing: withdraw.isPending,
+        isWithdrawing: isRequesting,
         onConfirm,
         onClose: dismiss,
     }

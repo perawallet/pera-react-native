@@ -33,6 +33,7 @@ let mockOnboardingDetails: MockOnboardingDetails | undefined
 // The gate's own derivation is unit-tested in the card package
 // (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
 let mockIsKycRequired = false
+let mockIsRecordLoading = false
 const mockMarkServerRefused = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -60,7 +61,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         }),
         useOnboardingDetailsQuery: () => ({
             data: mockOnboardingDetails,
-            isLoading: false,
+            isLoading: mockIsRecordLoading,
             isError: false,
             refetch: vi.fn(),
         }),
@@ -128,6 +129,14 @@ const france: SupportedCountry = {
     canSignUp: true,
 }
 
+const usa: SupportedCountry = {
+    id: 'us',
+    iso3166alpha2: 'US',
+    name: 'United States of America',
+    callingCode: '1',
+    canSignUp: true,
+}
+
 describe('useCardOnboardingPersonalDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -136,7 +145,17 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockSettings = { countries: [uk, france], usStates: [] }
         mockOnboardingDetails = undefined
         mockIsKycRequired = false
+        mockIsRecordLoading = false
         mockMutateAsync.mockResolvedValue(undefined)
+    })
+
+    it('holds the form while the onboarding record is still loading', () => {
+        mockIsRecordLoading = true
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isRecordLoading).toBe(true)
     })
 
     it('starts with an invalid form and is not submitting', () => {
@@ -282,6 +301,35 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             countryOfNationality: 'GB',
         }
     }
+
+    describe('US residents', () => {
+        it('asks for the SSN and keeps the form invalid until it is entered', async () => {
+            mockCountryIso = 'US'
+            mockSettings = { countries: [uk, france, usa], usStates: [] }
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            // Nationality is locked to the server value and the birth country
+            // preselects from the residence, so the SSN is the only gap.
+            await waitFor(() =>
+                expect(result.current.selectedBirthCountry).toEqual(usa),
+            )
+            expect(result.current.isUsResident).toBe(true)
+            expect(result.current.isValid).toBe(false)
+        })
+
+        it('does not ask anyone else for an SSN', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+            expect(result.current.isUsResident).toBe(false)
+        })
+    })
 
     describe('KYC gating', () => {
         it('surfaces the gate and offers a route back to verification', () => {

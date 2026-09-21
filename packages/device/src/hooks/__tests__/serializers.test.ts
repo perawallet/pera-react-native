@@ -50,6 +50,30 @@ describe('toDeviceRegistrationRequest', () => {
         })
     })
 
+    it('sends the display currency the user picked', () => {
+        const request = toDeviceRegistrationRequest({
+            ...baseRegistration,
+            currency: 'TRY',
+        })
+
+        expect(request.currency).toBe('TRY')
+    })
+
+    it('omits currency when the registration carries none', () => {
+        const request = toDeviceRegistrationRequest(baseRegistration)
+
+        expect('currency' in request).toBe(false)
+    })
+
+    it('omits an over-long currency rather than truncating it', () => {
+        const request = toDeviceRegistrationRequest({
+            ...baseRegistration,
+            currency: 'TOOLONGCURRENCY',
+        })
+
+        expect('currency' in request).toBe(false)
+    })
+
     it('omits id when the registration has none', () => {
         const request = toDeviceRegistrationRequest(baseRegistration)
 

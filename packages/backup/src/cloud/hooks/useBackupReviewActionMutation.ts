@@ -11,6 +11,7 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { getBackupSyncManager } from '../sync/backupSyncManager'
 
 /** The three row actions an accounts or contacts review screen offers. */
@@ -23,14 +24,19 @@ export type BackupReviewActionVariables = {
     address: string
 }
 
-/** The manager refuses a review action while a sync run holds the lock, and
- *  says so by returning false/null rather than throwing. */
 const BUSY_MESSAGE = 'Backup is busy syncing'
+const NOT_BACKED_UP_MESSAGE = 'Backup did not complete'
+const NOT_DELETED_MESSAGE = 'Delete did not complete'
 
 const runReviewAction = async (
     kind: BackupReviewItemKind,
     { action, address }: BackupReviewActionVariables,
 ): Promise<void> => {
+    // Mutations run networkMode 'always', so offline every action still runs,
+    // and both write paths then report a success they cannot have: a failed
+    // sync is only a logged warning, a failed delete only a queued retry.
+    assertOnline()
+
     const manager = getBackupSyncManager()
     const isAccount = kind === 'account'
 
@@ -40,7 +46,7 @@ const runReviewAction = async (
                 ? await manager.backUpAccount(address)
                 : await manager.backUpContact(address)
             if (!settled) {
-                throw new Error(BUSY_MESSAGE)
+                throw new Error(NOT_BACKED_UP_MESSAGE)
             }
             break
         }
@@ -57,11 +63,13 @@ const runReviewAction = async (
             break
         }
         case 'delete': {
-            const settled = isAccount
+            // Unlike the removal flows, the row reports a verdict on the
+            // backup, so a queued retry is a failure here.
+            const outcome = isAccount
                 ? await manager.deleteAccountFromBackup(address)
                 : await manager.deleteContactFromBackup(address)
-            if (!settled) {
-                throw new Error(BUSY_MESSAGE)
+            if (outcome !== 'settled') {
+                throw new Error(NOT_DELETED_MESSAGE)
             }
             break
         }

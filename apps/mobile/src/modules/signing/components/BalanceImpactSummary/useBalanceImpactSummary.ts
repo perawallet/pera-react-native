@@ -20,6 +20,7 @@ import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
     ALGO_ASSET,
     PeraAssetType,
+    isPureNft,
     useAssetPricesQuery,
     useAssetsQuery,
     type DisplayableAsset,
@@ -34,6 +35,11 @@ export type BalanceImpactItem = {
     /** Drives the asset/collectible avatar and the AssetAmount unit + decimals. */
     asset: DisplayableAsset
     isCollectible: boolean
+    /**
+     * One-of-one, indivisible collectible. Its quantity is implicitly 1, so the
+     * row omits the amount; editions and fractional NFTs still show theirs.
+     */
+    isPureCollectible: boolean
     direction: BalanceImpactDirection
     /** Absolute amount in display units. The direction carries the sign. */
     amount: Decimal
@@ -146,6 +152,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 assetId,
                 asset: displayAsset,
                 isCollectible,
+                isPureCollectible: isCollectible && !!asset && isPureNft(asset),
                 direction: amount > 0n ? 'receive' : 'spend',
                 amount: displayAbs,
                 isFullBalance: closedAssetIds.has(assetId),
@@ -175,6 +182,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                     decimals: created.decimals,
                 },
                 isCollectible: false,
+                isPureCollectible: false,
                 direction: 'receive',
                 amount,
                 isFullBalance: false,

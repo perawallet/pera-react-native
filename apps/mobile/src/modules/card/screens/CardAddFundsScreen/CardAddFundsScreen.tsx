@@ -25,6 +25,7 @@ export const CardAddFundsScreen = () => {
     const {
         fundingAccount,
         sourceAsset,
+        isUsdc,
         balanceDisplay,
         amount,
         secondaryDisplay,
@@ -123,7 +124,11 @@ export const CardAddFundsScreen = () => {
                 <PWView style={styles.bottomGroup}>
                     <PWButton
                         variant='primary'
-                        title={t('peraCard.add_funds.deposit')}
+                        title={t(
+                            isUsdc
+                                ? 'peraCard.add_funds.deposit'
+                                : 'peraCard.add_funds.continue',
+                        )}
                         onPress={handleDeposit}
                         isDisabled={isDepositDisabled}
                         isLoading={isDepositing}

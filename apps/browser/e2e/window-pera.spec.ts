@@ -31,6 +31,7 @@ import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
 import {
     expectApprovalSurfaceUrl,
     openApprovalSurface,
+    selectAccountAndArmConnect,
     trackPageErrors,
 } from './approval-surface'
 
@@ -226,11 +227,7 @@ test('a clicked connect opens the proposal naming the verified origin; approving
     ).toBeVisible()
 
     const connectButton = approvalPage.getByTestId('wc-connect-connect')
-    // The default selection is seeded only if the account store had hydrated
-    // in time, so don't assume either branch.
-    if ((await connectButton.getAttribute('aria-disabled')) === 'true') {
-        await approvalPage.getByRole('checkbox').first().click()
-    }
+    await selectAccountAndArmConnect(approvalPage, connectButton)
     await connectButton.click()
 
     await expect

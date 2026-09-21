@@ -21,17 +21,22 @@ import {
     useCardWalletBalanceQuery,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
-import { useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountAssetBalanceQuery,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
 import { CARD_WALLET_PRESENTATION } from '../../utils/cardWalletPresentation'
 import {
-    useCardComingSoonToast,
     useCardEscrowBalance,
     useCardFundingAccount,
     useIsCardAutoFundingActive,
+    useCardWithdraw,
 } from '../../hooks'
 import {
     groupCardTransactionsByMonth,
@@ -45,6 +50,8 @@ export type PeraCardCredits = {
 
 const ZERO_BALANCE = new Decimal(0)
 
+export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
+
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
     currency: string
@@ -53,13 +60,19 @@ type UsePeraCardOverviewResult = {
     /** Max a single purchase can draw: card balance + credits, plus (with
      * auto-funding) min(per-tx limit, linked account balance). */
     spendablePerTx: Decimal
+    /** True only when a single purchase can draw less than the balance shown. */
+    isSpendableCapped: boolean
     isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
+    /** Open timelocked withdrawal, if any; the overview hosts its Complete and Cancel steps. */
+    /** Idle opens the form; the other two lead to the open request. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
     onAddFunds: () => void
-    onGetUsdc: () => void
+    /** Auto funding: top up the linked account itself, via the Fund tab. */
+    onFundLinkedAccount: () => void
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
     onCreditPress: (kind: CardWalletKind) => void
@@ -107,6 +120,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         )
     const canReadLinkedBalance =
         isAutoFunding && fundingAccount != null && usdcAssetId !== null
+    // Only whether the linked account holds ALGO matters: it decides whether
+    // Add Funds can swap into USDC or has to buy it.
+    const { data: linkedAlgo } = useAccountAssetBalanceQuery(
+        isAutoFunding ? (fundingAccount ?? undefined) : undefined,
+        ALGO_ASSET_ID,
+    )
+    const hasLinkedAlgo =
+        canReadLinkedBalance && (linkedAlgo?.amount.gt(0) ?? false)
 
     // Both live in their own Baanx wallets, null until something is credited.
     const { wallet: rewardWallet } = useCardWalletBalanceQuery(
@@ -142,7 +163,20 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         .plus(cardBalance)
         .plus(credits.refunds)
 
-    const showComingSoon = useCardComingSoonToast()
+    const balance = cardBalance.plus(linkedBalance)
+    // The per-transaction line only earns its place when the cap bites;
+    // otherwise it repeats the balance.
+    const isSpendableCapped = !spendablePerTx.eq(balance)
+
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
+        useCardWithdraw()
+    const withdrawState: CardWithdrawState =
+        pendingWithdrawal === null
+            ? 'idle'
+            : isWithdrawReady
+              ? 'ready'
+              : 'waiting'
 
     const onAddFunds = useCallback(() => {
         trackEvent(CardEvent.HomeAddFunds)
@@ -151,14 +185,39 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const onWithdraw = useCallback(() => {
         trackEvent(CardEvent.HomeWithdraw)
-        navigation.navigate('CardWithdraw')
-    }, [navigation])
+        // One request at a time: while one is open the button leads to it.
+        navigation.navigate(
+            pendingWithdrawal === null ? 'CardWithdraw' : 'CardWithdrawStatus',
+        )
+    }, [navigation, pendingWithdrawal])
 
-    const onGetUsdc = useCallback(() => {
-        // Still tracked while the flow is a coming-soon stub — demand signal.
+    const onFundLinkedAccount = useCallback(() => {
+        if (fundingAccount === null) return
         trackEvent(CardEvent.HomeGetUsdc)
-        showComingSoon()
-    }, [showComingSoon])
+        // Both tabs work on the selected account, so make it the linked one
+        // first or the USDC lands wherever the user last was.
+        setSelectedAccountAddress(fundingAccount.address)
+        if (hasLinkedAlgo) {
+            navigation.navigate('TabBar', {
+                screen: 'Swap',
+                params: {
+                    assetInId: ALGO_ASSET_ID,
+                    assetOutId: usdcAssetId ?? undefined,
+                },
+            })
+            return
+        }
+        navigation.navigate('TabBar', {
+            screen: 'Fund',
+            params: { destinationTokenId: USDC_RAMP_TOKEN_ID },
+        })
+    }, [
+        fundingAccount,
+        hasLinkedAlgo,
+        usdcAssetId,
+        setSelectedAccountAddress,
+        navigation,
+    ])
 
     const onShowAllTransactions = useCallback(() => {
         trackEvent(CardEvent.HomeShowAll)
@@ -183,17 +242,19 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     return {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
-        balance: cardBalance.plus(linkedBalance),
+        balance,
         spendablePerTx,
+        isSpendableCapped,
         isBalanceLoading:
             isCardBalanceLoading ||
             (canReadLinkedBalance && isLinkedBalancePending),
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
+        withdrawState,
         onWithdraw,
         onAddFunds,
-        onGetUsdc,
+        onFundLinkedAccount,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
