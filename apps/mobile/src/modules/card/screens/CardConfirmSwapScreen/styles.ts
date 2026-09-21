@@ -17,6 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        flexWrap: 'wrap',
         gap: theme.spacing.sm,
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.sm,
@@ -27,9 +28,26 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
-    details: {
+    stepsCard: {
         marginTop: theme.spacing.xl,
-        gap: theme.spacing.md,
+        padding: theme.spacing.lg,
+        gap: theme.spacing.lg,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.divider,
+        borderRadius: theme.spacing.md,
+    },
+    note: {
+        color: theme.colors.textGray,
+    },
+    detailsTitle: {
+        marginTop: theme.spacing.xxl,
+        marginBottom: theme.spacing.xs,
+        color: theme.colors.textGray,
+    },
+    detailRow: {
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.divider,
     },
     value: {
         textAlign: 'right',

@@ -63,7 +63,10 @@ instead, so that step is the one that completes registration.
 
 Chosen on the setup checklist, and switchable afterwards:
 
-- `MANUAL`: the user tops the card up themselves.
+- `MANUAL`: the user tops the card up themselves. Add Funds with a non-USDC
+  asset swaps it in the linked account first; the DEX pays the swapper and its
+  groups are pre-signed, so the deposit cannot join them. The screen waits for
+  the USDC to land and deposits exactly the credited amount.
 - `AUTO` (AutoDraw): a delegated LogicSig lets Baanx draw from the connected
   account, capped at $400 per transaction.
 
