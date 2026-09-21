@@ -45,10 +45,15 @@ export const useStyles = makeStyles(theme => {
         valueTitle: {
             color: theme.colors.textGray,
         },
+        dateTimeColumn: {
+            alignItems: 'flex-end',
+            flexShrink: 0,
+            maxWidth: '45%',
+            minWidth: 0,
+        },
         dateDisplay: {
             color: theme.colors.textGray,
             textAlign: 'right',
-            flexGrow: 1,
         },
         primaryCurrency: {
             color: theme.colors.textMain,
