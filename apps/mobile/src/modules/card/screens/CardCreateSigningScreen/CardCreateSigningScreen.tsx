@@ -19,7 +19,7 @@ import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { CardCreateStepRow } from './CardCreateStepRow'
+import { CardStepRow } from '../../components/CardStepRow'
 import { useCardCreateSigningScreen } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
 
@@ -143,7 +143,7 @@ export const CardCreateSigningScreen = () => {
                 </PWView>
                 <PWView style={styles.steps}>
                     {steps.map(step => (
-                        <CardCreateStepRow
+                        <CardStepRow
                             key={step.id}
                             stepNumber={step.stepNumber}
                             label={t(STEP_LABEL_KEYS[step.id])}

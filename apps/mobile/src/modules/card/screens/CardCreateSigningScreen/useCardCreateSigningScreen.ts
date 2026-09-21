@@ -37,13 +37,13 @@ import {
 import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import type { CardStepStatus } from '../../components/CardStepRow'
 
 export type CardCreateStepId = 'ownership' | 'create' | 'autoFunding'
-export type CardCreateStepStatus = 'pending' | 'active' | 'done'
 export type CardCreateStepRowModel = {
     id: CardCreateStepId
     stepNumber: number
-    status: CardCreateStepStatus
+    status: CardStepStatus
     /** The step's work is in flight; the row shows a spinner. */
     isBusy: boolean
 }
