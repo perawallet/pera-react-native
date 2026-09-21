@@ -11,8 +11,6 @@
  */
 
 import React from 'react'
-import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -37,19 +35,6 @@ export const FundingTypeInfoContent = () => {
                     style={styles.infoText}
                 >
                     {t('peraCard.setup_status.funding_type_auto_info')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    weight={400}
-                    style={styles.infoText}
-                >
-                    {t('peraCard.setup_status.funding_type_limit_info', {
-                        limit: formatCurrency(
-                            AUTO_FUNDING_PER_TX_LIMIT_USD,
-                            0,
-                            'USD',
-                        ),
-                    })}
                 </PWText>
             </PWView>
             <PWView style={styles.infoSection}>
