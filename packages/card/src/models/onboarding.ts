@@ -229,7 +229,7 @@ const isValidPastDob = (value: string): boolean => {
 }
 
 /** Validation for the personal-details onboarding step. */
-export const personalDetailsSchema = z.object({
+const personalDetailsBaseSchema = z.object({
     firstName: z.string().trim().min(1),
     lastName: z.string().trim().min(1),
     /** Display format `DD/MM/YYYY`; converted to ISO before submission. */
@@ -238,9 +238,48 @@ export const personalDetailsSchema = z.object({
     countryOfNationality: z.string().length(2),
     /** ISO 3166-1 alpha-2 of the birth country (required by Baanx for EU/UK). */
     countryOfBirth: z.string().length(2),
+    /** Display format `XXX-XX-XXXX`; empty unless the residence is the US. */
+    ssn: z.string(),
 })
 
-export type PersonalDetailsFormValues = z.infer<typeof personalDetailsSchema>
+const SSN_DISPLAY_PATTERN = /^\d{3}-\d{2}-\d{4}$/
+
+/**
+ * Baanx requires the SSN only for US residents, so the requirement is decided
+ * by the residence rather than by the record itself.
+ */
+export const createPersonalDetailsSchema = ({
+    isUsResident,
+}: {
+    isUsResident: boolean
+}) =>
+    personalDetailsBaseSchema.superRefine((values, ctx) => {
+        if (isUsResident && !SSN_DISPLAY_PATTERN.test(values.ssn)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['ssn'],
+                message: 'ssn-invalid',
+            })
+        }
+    })
+
+export const personalDetailsSchema = createPersonalDetailsSchema({
+    isUsResident: false,
+})
+
+export type PersonalDetailsFormValues = z.infer<
+    typeof personalDetailsBaseSchema
+>
+
+/** Masks raw input into `XXX-XX-XXXX`: digits only, capped at 9. */
+export const formatSsnInput = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '').slice(0, 9)
+    const parts = [digits.slice(0, 3), digits.slice(3, 5), digits.slice(5, 9)]
+    return parts.filter(part => part.length > 0).join('-')
+}
+
+/** The API takes the nine digits without separators. */
+export const ssnToApi = (display: string): string => display.replace(/\D/g, '')
 
 /**
  * Masks raw keyboard input into the `DD/MM/YYYY` shape as the user types: keeps
@@ -268,8 +307,8 @@ export const isoDateToDob = (iso: string): string => {
     return `${dd}/${mm}/${yyyy}`
 }
 
-/** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
-const US_ISO = 'US'
+/** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state and an SSN. */
+export const US_ISO = 'US'
 
 /**
  * Validation for the residential-address onboarding step. `countryIso` is the

@@ -1476,6 +1476,8 @@
             "last_name_invalid": "Gib deinen Nachnamen ein",
             "dob_label": "Geburtsdatum TT/MM/JJJJ",
             "dob_invalid": "Gib ein gültiges Datum ein (TT/MM/JJJJ)",
+            "ssn_label": "Sozialversicherungsnummer (SSN)",
+            "ssn_invalid": "Gib eine gültige 9-stellige Sozialversicherungsnummer ein",
             "nationality_label": "Staatsangehörigkeit",
             "nationality_placeholder": "Staatsangehörigkeit auswählen",
             "nationality_required": "Wähle deine Staatsangehörigkeit aus",

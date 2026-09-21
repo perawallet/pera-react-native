@@ -1484,6 +1484,8 @@
             "last_name_invalid": "Introduce tus apellidos",
             "dob_label": "Fecha de nacimiento DD/MM/AAAA",
             "dob_invalid": "Introduce una fecha válida (DD/MM/AAAA)",
+            "ssn_label": "Número de Seguro Social (SSN)",
+            "ssn_invalid": "Introduce un número de Seguro Social válido de 9 dígitos",
             "nationality_label": "Nacionalidad",
             "nationality_placeholder": "Selecciona la nacionalidad",
             "nationality_required": "Selecciona tu nacionalidad",

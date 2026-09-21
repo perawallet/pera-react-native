@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { createElement, useCallback, useEffect, useRef, useState } from 'react'
+import {
+    createElement,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -19,7 +26,9 @@ import {
     isDuplicateError,
     isoDateToDob,
     OnboardingNotVerifiedError,
-    personalDetailsSchema,
+    createPersonalDetailsSchema,
+    ssnToApi,
+    US_ISO,
     useCardStore,
     useOnboardingDetailsQuery,
     useOnboardingKycGate,
@@ -59,6 +68,8 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
      * late prefill can't land on top of what the user already typed.
      */
     isRecordLoading: boolean
+    /** Baanx requires an SSN from US residents, so the field shows only for them. */
+    isUsResident: boolean
     /** Sends the user back to the identity-verification step. */
     handleVerifyIdentity: () => void
     handleSelectNationality: () => void
@@ -88,6 +99,11 @@ export const useCardOnboardingPersonalDetailsScreen =
         const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
         const countryIso = useCardStore(state => state.countryIso)
+        const isUsResident = countryIso === US_ISO
+        const personalDetailsSchema = useMemo(
+            () => createPersonalDetailsSchema({ isUsResident }),
+            [isUsResident],
+        )
         const submitPersonalDetails = useSubmitPersonalDetailsMutation()
         const { data: settings } = useRegistrationSettingsQuery()
         // On resume the onboarding record already holds the user's details, so
@@ -151,6 +167,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                 dateOfBirth: '',
                 countryOfNationality: '',
                 countryOfBirth: '',
+                ssn: '',
             },
         })
 
@@ -282,6 +299,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                 dateOfBirth,
                 countryOfNationality,
                 countryOfBirth,
+                ssn,
             }) => {
                 // Set by email/verify; if missing, re-verify rather than submit
                 // an empty onboarding id.
@@ -294,8 +312,6 @@ export const useCardOnboardingPersonalDetailsScreen =
                     return
                 }
                 try {
-                    // TODO(card): confirm whether Baanx requires `ssn` for US
-                    // residents — no SSN field is collected yet.
                     await submitPersonalDetails.mutateAsync({
                         onboardingId,
                         firstName,
@@ -303,6 +319,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                         dateOfBirth: dobToIsoDate(dateOfBirth),
                         countryOfNationality,
                         countryOfBirth,
+                        ssn: isUsResident ? ssnToApi(ssn) : undefined,
                     })
                     navigation.navigate('CardOnboardingAddress')
                 } catch (error) {
@@ -345,6 +362,7 @@ export const useCardOnboardingPersonalDetailsScreen =
             isNationalityLocked,
             isKycRequired,
             isRecordLoading,
+            isUsResident,
             handleVerifyIdentity,
             handleSelectNationality,
             selectedBirthCountry,

@@ -1484,6 +1484,8 @@
             "last_name_invalid": "Soyadını gir",
             "dob_label": "Doğum tarihi GG/AA/YYYY",
             "dob_invalid": "Geçerli bir tarih gir (GG/AA/YYYY)",
+            "ssn_label": "Sosyal Güvenlik Numarası (SSN)",
+            "ssn_invalid": "Geçerli 9 haneli bir Sosyal Güvenlik Numarası gir",
             "nationality_label": "Uyruk",
             "nationality_placeholder": "Uyruk seç",
             "nationality_required": "Uyruğunu seç",

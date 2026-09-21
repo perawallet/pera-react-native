@@ -11,7 +11,7 @@
  */
 
 import { Controller } from 'react-hook-form'
-import { formatDobInput } from '@perawallet/wallet-core-card'
+import { formatDobInput, formatSsnInput } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWInput,
@@ -40,6 +40,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isNationalityLocked,
         isKycRequired,
         isRecordLoading,
+        isUsResident,
         handleVerifyIdentity,
         handleSelectNationality,
         selectedBirthCountry,
@@ -174,6 +175,43 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                             />
                         )}
                     />
+
+                    {isUsResident && (
+                        <Controller
+                            control={control}
+                            name='ssn'
+                            render={({
+                                field: { onChange, onBlur, value },
+                                fieldState: { error },
+                            }) => (
+                                <PWInput
+                                    label={t(
+                                        'peraCard.personal_details.ssn_label',
+                                    )}
+                                    labelStyle={styles.label}
+                                    value={value}
+                                    onChangeText={text =>
+                                        onChange(formatSsnInput(text))
+                                    }
+                                    onBlur={onBlur}
+                                    keyboardType='number-pad'
+                                    returnKeyType='done'
+                                    autoCorrect={false}
+                                    showErrorOnBlur
+                                    renderErrorMessage
+                                    errorStyle={styles.errorMessage}
+                                    errorMessage={
+                                        error && value
+                                            ? t(
+                                                  'peraCard.personal_details.ssn_invalid',
+                                              )
+                                            : undefined
+                                    }
+                                    testID='card-onboarding-ssn-input'
+                                />
+                            )}
+                        />
+                    )}
 
                     <CountrySelectorField
                         label={t('peraCard.personal_details.nationality_label')}

@@ -1484,6 +1484,8 @@
             "last_name_invalid": "Enter your last name",
             "dob_label": "Date of Birth DD/MM/YYYY",
             "dob_invalid": "Enter a valid date (DD/MM/YYYY)",
+            "ssn_label": "Social Security Number",
+            "ssn_invalid": "Enter a valid 9-digit Social Security Number",
             "nationality_label": "Nationality",
             "nationality_placeholder": "Select nationality",
             "nationality_required": "Select your nationality",

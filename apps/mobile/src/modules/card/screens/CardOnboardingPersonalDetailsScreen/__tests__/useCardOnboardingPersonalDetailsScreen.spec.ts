@@ -129,6 +129,14 @@ const france: SupportedCountry = {
     canSignUp: true,
 }
 
+const usa: SupportedCountry = {
+    id: 'us',
+    iso3166alpha2: 'US',
+    name: 'United States of America',
+    callingCode: '1',
+    canSignUp: true,
+}
+
 describe('useCardOnboardingPersonalDetailsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -293,6 +301,35 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             countryOfNationality: 'GB',
         }
     }
+
+    describe('US residents', () => {
+        it('asks for the SSN and keeps the form invalid until it is entered', async () => {
+            mockCountryIso = 'US'
+            mockSettings = { countries: [uk, france, usa], usStates: [] }
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            // Nationality is locked to the server value and the birth country
+            // preselects from the residence, so the SSN is the only gap.
+            await waitFor(() =>
+                expect(result.current.selectedBirthCountry).toEqual(usa),
+            )
+            expect(result.current.isUsResident).toBe(true)
+            expect(result.current.isValid).toBe(false)
+        })
+
+        it('does not ask anyone else for an SSN', async () => {
+            prefillValidForm()
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+            expect(result.current.isUsResident).toBe(false)
+        })
+    })
 
     describe('KYC gating', () => {
         it('surfaces the gate and offers a route back to verification', () => {

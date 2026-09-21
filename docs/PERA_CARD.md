@@ -52,7 +52,9 @@ when a user is mid-signup. The two vocabularies are not 1:1; the server phase
 decides where a returning user resumes.
 
 Eligible countries and US states come from `GET /v1/auth/settings`, so
-eligibility changes without a release.
+eligibility changes without a release. US residents also enter their SSN on
+the personal-details step; Baanx requires it for them and takes the nine
+digits without separators.
 
 ## Funding
 
