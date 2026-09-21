@@ -13,7 +13,7 @@
 // @vitest-environment node
 
 import { describe, it, expect } from 'vitest'
-import { buildMockCardTransactions } from '../mockCardTransactions'
+import { buildMockCardTransactions } from '../cardTransactions'
 
 const NOW = Date.parse('2026-07-20T12:00:00Z')
 
