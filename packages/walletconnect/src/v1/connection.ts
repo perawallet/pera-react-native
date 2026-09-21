@@ -45,6 +45,45 @@ export type WalletConnectV1Connection = Connection & {
 export const isV1PairingUri = (uri: string): boolean =>
     walletConnectUriVersion(uri) === 1 && /[?&]bridge=[^&]+/.test(uri)
 
+/**
+ * The `bridge=` value the SDK will actually dial, or null when unreadable.
+ * Read exactly the way the SDK reads it — `URLSearchParams` over the query,
+ * then a second `decodeURIComponent` — because anything this validates but
+ * the SDK resolves differently is a bypass. A duplicate `bridge=` is refused
+ * outright: the SDK's parser keeps the last one, so a URI carrying both an
+ * https and an http bridge would be checked on one host and dialed on the
+ * other.
+ */
+export const bridgeUrlFromV1Uri = (uri: string): string | null => {
+    const queryStart = uri.indexOf('?')
+    if (queryStart === -1) return null
+    const values = new URLSearchParams(uri.slice(queryStart + 1)).getAll(
+        'bridge',
+    )
+    if (values.length !== 1 || !values[0]) return null
+    try {
+        return decodeURIComponent(values[0])
+    } catch {
+        return null
+    }
+}
+
+/**
+ * The connector opens the bridge socket in its constructor, before the user
+ * sees an approval sheet, so a deeplink alone reaches an attacker-chosen host.
+ * Cleartext there puts the pairing secret and every relayed payload on the
+ * wire in the clear. Checked at pairing and again on revive, since a stored
+ * record predates this guard.
+ */
+export const isSecureBridgeUrl = (bridge: string): boolean => {
+    try {
+        const { protocol } = new URL(bridge)
+        return protocol === 'https:' || protocol === 'wss:'
+    } catch {
+        return false
+    }
+}
+
 // Applied on every read: the registry hands over erased records, and persisted
 // ones can be stale or half-migrated.
 export const isWalletConnectV1Connection = (

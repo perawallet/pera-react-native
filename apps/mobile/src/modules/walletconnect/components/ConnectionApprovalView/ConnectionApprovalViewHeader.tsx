@@ -27,6 +27,7 @@ import {
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
@@ -83,10 +84,13 @@ export const ConnectionApprovalViewHeader = ({
     const preferredIcon = getPreferredDappIcon(peer.icons)
 
     const handlePressUrl = () => {
-        if (!peer.url) return
+        // Pre-consent surface: `peer.url` is dApp-asserted and the user has not
+        // approved this dApp yet, so gate it to https:// before the WebView.
+        const validatedUrl = toValidatedBrowserUrl(peer.url)
+        if (!validatedUrl) return
         pushWebView({
             id: generateOrderedUniqueId(),
-            url: peer.url,
+            url: validatedUrl,
         })
     }
 

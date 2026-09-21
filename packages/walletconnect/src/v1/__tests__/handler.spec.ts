@@ -564,6 +564,46 @@ describe('walletconnect v1 handler behaviour', () => {
         ])
     })
 
+    it('refuses to pair over a cleartext bridge, before any socket is opened', async () => {
+        const { handler } = await setup()
+        const insecure = V1_URI.replace(
+            'bridge=https%3A%2F%2Fb.example',
+            'bridge=http%3A%2F%2Fb.example',
+        )
+
+        await expect(handler.pair(insecure)).rejects.toThrow(
+            'bridge must be https or wss',
+        )
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+    })
+
+    it('refuses a URI carrying two bridges — the SDK would dial the last', async () => {
+        const { handler } = await setup()
+        const smuggled = V1_URI.replace(
+            'bridge=https%3A%2F%2Fb.example',
+            'bridge=https%3A%2F%2Fb.example&bridge=http%3A%2F%2Fevil.example',
+        )
+
+        await expect(handler.pair(smuggled)).rejects.toThrow(
+            'bridge must be https or wss',
+        )
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+    })
+
+    it('reports a stored session with a cleartext bridge inactive instead of reviving it', async () => {
+        const { handler, records } = await setup([
+            {
+                ...SEEDED,
+                metadata: { ...SEEDED.metadata, bridge: 'http://b.example' },
+            },
+        ])
+
+        await handler.restore()
+
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+        expect((await records())[0].status).toBe('inactive')
+    })
+
     it('expands the 4160 wildcard into every network on the proposal', async () => {
         const { handler, onProposal } = await setup()
         await handler.pair(V1_URI)
