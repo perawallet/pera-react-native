@@ -55,8 +55,13 @@ export type UseCardOnboardingAddressScreenResult = {
     isValid: boolean
     isSubmitting: boolean
     selectedCountry: Optional<SupportedCountry>
+    /** Display-only once the residence from the email step is known. */
+    isCountryLocked: boolean
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
+    /** US residents only: unticked means a separate mailing address follows. */
+    isSameMailingAddress: boolean
+    handleToggleSameMailingAddress: () => void
     cardTermsAccepted: boolean
     platformTermsAccepted: boolean
     /**
@@ -142,6 +147,7 @@ export const useCardOnboardingAddressScreen =
         const [selectedUsState, setSelectedUsState] =
             useState<Optional<SupportedUsState>>(undefined)
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
+        const [isSameMailingAddress, setIsSameMailingAddress] = useState(true)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
         const hasPreselected = useRef(false)
@@ -199,9 +205,10 @@ export const useCardOnboardingAddressScreen =
             if (isUsResident) void trigger('usState')
         }, [isUsResident, trigger])
 
-        // TODO(card): confirm whether residence is editable here — Baanx already
-        // received the country at email/verify, and this pick (even a
-        // canSignUp:false country) only updates local state.
+        // Baanx fixed the residence at the email step and the address call
+        // carries no country, so the picker is only offered when nothing was
+        // stored (a resumed session that skipped that step).
+        const isCountryLocked = !!residenceCountryIso
         const handleSelectCountry = useCallback(() => {
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
@@ -247,6 +254,10 @@ export const useCardOnboardingAddressScreen =
         )
         const handleTogglePlatformTerms = useCallback(
             () => setPlatformTermsAccepted(previous => !previous),
+            [],
+        )
+        const handleToggleSameMailingAddress = useCallback(
+            () => setIsSameMailingAddress(previous => !previous),
             [],
         )
 
@@ -295,8 +306,11 @@ export const useCardOnboardingAddressScreen =
                 addressLine1: values.addressLine1,
                 city: values.city,
                 zip: values.zip,
-                // No separate mailing address is collected; residence is used.
-                isSameMailingAddress: true,
+                // Only US residents may ship the card elsewhere, so the toggle
+                // is offered to them alone.
+                isSameMailingAddress: isUsResident
+                    ? isSameMailingAddress
+                    : true,
                 ...(values.addressLine2
                     ? { addressLine2: values.addressLine2 }
                     : {}),
@@ -320,7 +334,8 @@ export const useCardOnboardingAddressScreen =
                     allowMarketing: allowMarketing ?? false,
                     allowSms: allowSms ?? false,
                 })
-                const { userId } = await submitAddress.mutateAsync(address)
+                const { userId, accessToken } =
+                    await submitAddress.mutateAsync(address)
                 // Link best-effort: registration is already finalized (the
                 // address mutation committed the session + marked the step
                 // Completed), so a link hiccup must not strand a registered user
@@ -336,9 +351,14 @@ export const useCardOnboardingAddressScreen =
                         })
                         .catch(() => undefined)
                 }
-                // Registration is done — hand back to the setup checklist, where
-                // Connect Funds is now the live step.
-                navigation.navigate('CardOnboardingStatus')
+                // No token means the mailing address is still owed and Baanx
+                // issues the token on that step. Otherwise registration is done
+                // and the setup checklist takes over at Connect Funds.
+                navigation.navigate(
+                    accessToken === null
+                        ? 'CardOnboardingMailingAddress'
+                        : 'CardOnboardingStatus',
+                )
             } catch (error) {
                 // Checked before getCardApiError: the typed error carries no
                 // body, so it would otherwise fall through to the generic
@@ -391,8 +411,11 @@ export const useCardOnboardingAddressScreen =
                 submitConsent.isPending ||
                 linkConsent.isPending,
             selectedCountry,
+            isCountryLocked,
             isUsResident,
             selectedUsState,
+            isSameMailingAddress,
+            handleToggleSameMailingAddress,
             cardTermsAccepted,
             platformTermsAccepted,
             showsConsentOptIns,

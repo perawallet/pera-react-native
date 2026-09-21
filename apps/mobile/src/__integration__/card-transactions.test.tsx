@@ -18,7 +18,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardTransactionsScreen } from '@modules/card/screens/CardTransactionsScreen'
-import { buildMockCardTransactions } from '@modules/card/devMocks'
+import { buildMockCardTransactions } from './__fixtures__/cardTransactions'
 
 // Page-aware: page 0 returns the fixture, later pages are empty so the
 // infinite query terminates (the bare-array `hasMore = items.length > 0`).

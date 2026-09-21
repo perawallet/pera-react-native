@@ -19,6 +19,7 @@ export {
     fetchOnboardingDetails,
     submitPersonalDetails,
     submitAddress,
+    submitMailingAddress,
     submitOnboardingConsent,
     linkOnboardingConsent,
     fetchRegistrationSettings,

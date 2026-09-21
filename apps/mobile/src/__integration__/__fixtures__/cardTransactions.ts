@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-// TODO(card): dev/test-only mock data. Remove once the Baanx transactions
-// sandbox returns real data. Shape mirrors GET /v1/card/transactions (decimal
-// strings, `merchantNameLocation`, `null` for an absent merchant); it is
-// validated at runtime by `cardTransactionsListResponseSchema`.
+// Integration fixture for GET /v1/card/transactions. Shape mirrors the wire
+// format (decimal strings, `merchantNameLocation`, `null` for an absent
+// merchant) and is validated at runtime by `cardTransactionsListResponseSchema`.
 
 type MockFundingSource = {
     id?: string

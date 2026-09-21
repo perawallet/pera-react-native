@@ -21,11 +21,17 @@ import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
+export type UseAccountHeaderMenuOptions = {
+    showChartToggle?: boolean
+}
+
 export type UseAccountHeaderMenuResult = {
     items: PWDropdownItem[]
 }
 
-export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
+export const useAccountHeaderMenu = ({
+    showChartToggle = true,
+}: UseAccountHeaderMenuOptions = {}): UseAccountHeaderMenuResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { getPreference, setPreference } = usePreferences()
@@ -55,14 +61,6 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
     const items = useMemo<PWDropdownItem[]>(() => {
         const baseItems: PWDropdownItem[] = [
             {
-                label: chartVisible
-                    ? t('portfolio.hide_chart')
-                    : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
-                onPress: () =>
-                    setPreference(UserPreferences.chartVisible, !chartVisible),
-            },
-            {
                 label: privacyMode
                     ? t('common.exit_stealth_mode')
                     : t('common.enter_stealth_mode'),
@@ -76,6 +74,17 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
                     navigation.navigate('Search', { screen: 'SearchScreen' }),
             },
         ]
+
+        if (showChartToggle) {
+            baseItems.unshift({
+                label: chartVisible
+                    ? t('portfolio.hide_chart')
+                    : t('portfolio.show_chart'),
+                icon: chartVisible ? 'text-document' : 'chart',
+                onPress: () =>
+                    setPreference(UserPreferences.chartVisible, !chartVisible),
+            })
+        }
 
         if (isDeveloperMenuEnabled) {
             baseItems.push({
@@ -99,6 +108,7 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
 
         return baseItems
     }, [
+        showChartToggle,
         chartVisible,
         privacyMode,
         t,

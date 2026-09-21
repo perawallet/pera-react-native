@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@test-utils/render'
-import { waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    AutoDrawProgramUnverifiedError,
     CardAccountLinkedElsewhereError,
     FundingType,
 } from '@perawallet/wallet-core-card'
@@ -29,6 +29,7 @@ const {
     accountsState,
     mockSignOwnership,
     mockCreateAndApprove,
+    mockEnableAutoDraw,
     mockFinish,
     mockShowCardError,
     mockRequirePin,
@@ -36,10 +37,14 @@ const {
     mockGoBack,
     routeState,
 } = vi.hoisted(() => ({
-    cardStoreState: { connectedFundingSourceAddress: 'ADDR1' as string | null },
+    cardStoreState: {
+        connectedFundingSourceAddress: 'ADDR1' as string | null,
+        escrowCardAddress: null as string | null,
+    },
     accountsState: { accounts: [] as WalletAccount[] },
     mockSignOwnership: vi.fn(),
     mockCreateAndApprove: vi.fn(),
+    mockEnableAutoDraw: vi.fn(),
     mockFinish: vi.fn(),
     mockShowCardError: vi.fn(),
     mockRequirePin: vi.fn(),
@@ -58,36 +63,31 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector(cardStoreState),
     }
 })
-
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
     useAllAccounts: () => accountsState.accounts,
 }))
-
 vi.mock('@modules/card/hooks', () => ({
     useEscrowCardCreation: () => ({
         signOwnership: mockSignOwnership,
         createAndApprove: mockCreateAndApprove,
     }),
+    useAutoDrawSwitch: () => ({ enableAutoDraw: mockEnableAutoDraw }),
     useFinishCardCreation: () => ({ finish: mockFinish }),
-    // Records the options too, so a test can prove the screen relies on the
-    // shared handler's copy resolution instead of passing its own keys.
+    // Records the options too, so a test can prove which copy a failure used.
     useCardErrorToast:
         (options?: unknown) =>
         (error: unknown): Promise<void> =>
             mockShowCardError(error, options) as Promise<void>,
 }))
-
 vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: mockRequirePin,
     }),
 }))
-
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
 }))
-
 vi.mock('@react-navigation/native', async () => ({
     ...(await vi.importActual<object>('@react-navigation/native')),
     useRoute: () => ({ params: routeState }),
@@ -102,224 +102,206 @@ const CONNECTED_ACCOUNT: WalletAccount = {
     keyPairId: 'kp1',
 } as WalletAccount
 
-const stepStatus = (
-    steps: { id: string; status: string }[],
-    id: string,
-): string | undefined => steps.find(step => step.id === id)?.status
-
-const proceed = async (result: {
-    current: { onProceed: () => void; isProceeding: boolean }
-}) => {
-    act(() => {
-        result.current.onProceed()
-    })
-    await waitFor(() => expect(result.current.isProceeding).toBe(false))
-}
+const AUTO_FUNDING_ERROR_KEYS = expect.objectContaining({
+    titleKey: 'peraCard.signing.auto_funding_error_title',
+})
 
 describe('useCardCreateSigningScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         cardStoreState.connectedFundingSourceAddress = 'ADDR1'
+        cardStoreState.escrowCardAddress = null
         accountsState.accounts = [CONNECTED_ACCOUNT]
         routeState.fundingType = FundingType.Manual
         mockRequirePin.mockResolvedValue(true)
         mockSignOwnership.mockResolvedValue(PROOF)
-        mockCreateAndApprove.mockResolvedValue({ cardAddress: 'CARD1' })
+        mockCreateAndApprove.mockImplementation(async () => {
+            cardStoreState.escrowCardAddress = 'ESCROW'
+            return { cardAddress: 'ESCROW' }
+        })
+        mockEnableAutoDraw.mockResolvedValue(undefined)
+        mockShowCardError.mockResolvedValue(undefined)
     })
 
-    it('starts with only the sign step active for a Manual flow', () => {
+    it('Manual: lists two steps with the first one up next', () => {
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        expect(result.current.steps.map(s => s.id)).toEqual(['sign', 'create'])
-        expect(stepStatus(result.current.steps, 'sign')).toBe('active')
-        expect(stepStatus(result.current.steps, 'create')).toBe('pending')
+        expect(result.current.steps.map(step => step.id)).toEqual([
+            'ownership',
+            'create',
+        ])
+        expect(result.current.steps[0]?.status).toBe('active')
+        expect(result.current.steps[1]?.status).toBe('pending')
+        expect(result.current.isRunning).toBe(false)
+        expect(result.current.isComplete).toBe(false)
     })
 
-    it('Manual: one Proceed tap signs, then auto-runs create+approve, then finishes', async () => {
+    it('Manual: one tap gates on PIN, signs, creates and finishes', async () => {
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        await proceed(result)
+        act(() => result.current.onCreate())
 
-        expect(mockRequirePin).toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
+        expect(mockRequirePin).toHaveBeenCalledTimes(1)
         expect(mockSignOwnership).toHaveBeenCalledWith(CONNECTED_ACCOUNT)
         expect(mockCreateAndApprove).toHaveBeenCalledWith(
             CONNECTED_ACCOUNT,
             PROOF,
         )
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
-        expect(stepStatus(result.current.steps, 'create')).toBe('done')
+        expect(mockEnableAutoDraw).not.toHaveBeenCalled()
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, false)
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(result.current.steps.every(step => step.status === 'done')).toBe(
+            true,
+        )
     })
 
-    it('Manual: declining the PIN gate on the sign step goes back without signing', async () => {
+    it('declining the PIN gate goes back without signing', async () => {
         mockRequirePin.mockResolvedValue(false)
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        await proceed(result)
+        act(() => result.current.onCreate())
 
-        expect(mockGoBack).toHaveBeenCalled()
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
         expect(mockSignOwnership).not.toHaveBeenCalled()
-        expect(mockCreateAndApprove).not.toHaveBeenCalled()
+        expect(result.current.isRunning).toBe(false)
     })
 
-    it('Auto: one Proceed tap signs and auto-creates, landing on the authorize step', async () => {
+    it('Auto: one tap runs the proof, the creation and Auto Funding, then finishes on Auto', async () => {
         routeState.fundingType = FundingType.Auto
         const { result } = renderHook(() => useCardCreateSigningScreen())
-
-        expect(result.current.steps.map(s => s.id)).toEqual([
-            'sign',
+        expect(result.current.steps.map(step => step.id)).toEqual([
+            'ownership',
             'create',
-            'authorize',
+            'autoFunding',
         ])
 
-        await proceed(result)
+        act(() => result.current.onCreate())
 
-        expect(mockCreateAndApprove).toHaveBeenCalledWith(
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
+        expect(mockRequirePin).toHaveBeenCalledTimes(1)
+        expect(mockEnableAutoDraw).toHaveBeenCalledWith(
             CONNECTED_ACCOUNT,
-            PROOF,
+            'ESCROW',
         )
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
-        expect(stepStatus(result.current.steps, 'create')).toBe('done')
-        expect(stepStatus(result.current.steps, 'authorize')).toBe('active')
-        expect(mockFinish).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockFinish).toHaveBeenCalledWith(FundingType.Auto, false)
     })
 
-    it('Auto: a second Proceed tap on the authorize step navigates to the LSig approval screen', async () => {
+    it('Auto: a failed Auto Funding step keeps the card and offers Manual', async () => {
         routeState.fundingType = FundingType.Auto
+        mockEnableAutoDraw.mockRejectedValueOnce(new Error('lsig post 500'))
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        await proceed(result)
+        act(() => result.current.onCreate())
 
-        act(() => {
-            result.current.onProceed()
-        })
-
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'CardOnboardingAutoFundingSigning',
+        await waitFor(() => expect(result.current.hasFailed).toBe(true))
+        expect(result.current.canContinueWithManual).toBe(true)
+        expect(mockShowCardError).toHaveBeenCalledWith(
+            expect.any(Error),
+            AUTO_FUNDING_ERROR_KEYS,
         )
         expect(mockFinish).not.toHaveBeenCalled()
+
+        act(() => result.current.onContinueWithManual())
+
+        expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true)
+        expect(result.current.isComplete).toBe(true)
     })
 
-    it('shows the card error toast and stays on the same step so Proceed can retry', async () => {
-        mockSignOwnership.mockRejectedValueOnce(new Error('sign boom'))
+    it('Auto: retrying after an Auto Funding failure re-runs only that step', async () => {
+        routeState.fundingType = FundingType.Auto
+        mockEnableAutoDraw.mockRejectedValueOnce(new Error('lsig post 500'))
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        act(() => {
-            result.current.onProceed()
-        })
-        await waitFor(() => expect(mockShowCardError).toHaveBeenCalled())
-        expect(stepStatus(result.current.steps, 'sign')).toBe('active')
-        expect(mockCreateAndApprove).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
+        act(() => result.current.onCreate())
+        await waitFor(() => expect(result.current.hasFailed).toBe(true))
 
-        mockSignOwnership.mockResolvedValue(PROOF)
-        await proceed(result)
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
+        act(() => result.current.onCreate())
+
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
+        expect(mockSignOwnership).toHaveBeenCalledTimes(1)
+        expect(mockCreateAndApprove).toHaveBeenCalledTimes(1)
+        expect(mockEnableAutoDraw).toHaveBeenCalledTimes(2)
+        expect(mockFinish).toHaveBeenCalledWith(FundingType.Auto, false)
+    })
+
+    it('Auto: an unverified AutoDraw program degrades to Manual instead of offering a retry', async () => {
+        routeState.fundingType = FundingType.Auto
+        mockEnableAutoDraw.mockRejectedValueOnce(
+            new AutoDrawProgramUnverifiedError('testnet'),
+        )
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        act(() => result.current.onCreate())
+
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
+        expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true)
+        expect(mockShowCardError).not.toHaveBeenCalled()
+    })
+
+    it('a failed creation surfaces the shared toast and retries from the proof', async () => {
+        mockCreateAndApprove.mockRejectedValueOnce(new Error('backend 500'))
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        act(() => result.current.onCreate())
+
+        await waitFor(() => expect(result.current.hasFailed).toBe(true))
+        expect(result.current.canContinueWithManual).toBe(false)
+        expect(mockShowCardError).toHaveBeenCalledWith(
+            expect.any(Error),
+            undefined,
+        )
+        expect(result.current.steps[1]?.status).toBe('active')
+
+        act(() => result.current.onCreate())
+
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
+        expect(mockSignOwnership).toHaveBeenCalledTimes(2)
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, false)
     })
 
     it('hands a linked-elsewhere failure to the shared toast as its typed error', async () => {
-        mockCreateAndApprove.mockRejectedValueOnce(
-            new CardAccountLinkedElsewhereError(),
-        )
+        const linkedElsewhere = new CardAccountLinkedElsewhereError()
+        mockCreateAndApprove.mockRejectedValueOnce(linkedElsewhere)
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        await proceed(result)
+        act(() => result.current.onCreate())
 
-        // The copy for this case lives in useCardErrorToast's resolver.
-        expect(mockShowCardError).toHaveBeenCalledWith(
-            expect.any(CardAccountLinkedElsewhereError),
-            undefined,
+        await waitFor(() =>
+            expect(mockShowCardError).toHaveBeenCalledWith(
+                linkedElsewhere,
+                undefined,
+            ),
         )
-        expect(stepStatus(result.current.steps, 'create')).toBe('active')
-        expect(mockFinish).not.toHaveBeenCalled()
     })
 
-    it('marks the working step busy so the row spinner follows the cursor', async () => {
-        let resolveSign: ((proof: typeof PROOF) => void) | undefined
+    it('marks the working step busy so the row spinner follows the run', async () => {
+        let resolveSign: (proof: typeof PROOF) => void = () => {}
         mockSignOwnership.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     resolveSign = resolve
                 }),
         )
-        let resolveCreate: ((value: unknown) => void) | undefined
-        mockCreateAndApprove.mockImplementationOnce(
-            () =>
-                new Promise(resolve => {
-                    resolveCreate = resolve
-                }),
-        )
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        expect(result.current.steps.some(step => step.isBusy)).toBe(false)
+        act(() => result.current.onCreate())
 
-        act(() => {
-            result.current.onProceed()
-        })
+        await waitFor(() => expect(result.current.isRunning).toBe(true))
+        expect(result.current.steps[0]?.isBusy).toBe(true)
+        expect(result.current.steps[1]?.isBusy).toBe(false)
 
-        // Signing is in flight: the sign row carries the spinner.
-        await waitFor(() =>
-            expect(
-                result.current.steps.find(step => step.id === 'sign')?.isBusy,
-            ).toBe(true),
-        )
-
-        // Sign resolves; the cursor moves and the spinner follows to create.
-        await act(async () => {
-            resolveSign?.(PROOF)
-        })
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
-        expect(
-            result.current.steps.find(step => step.id === 'create')?.isBusy,
-        ).toBe(true)
-
-        await act(async () => {
-            resolveCreate?.({ cardAddress: 'CARD1' })
-        })
-        await waitFor(() => expect(result.current.isProceeding).toBe(false))
-        expect(result.current.steps.some(step => step.isBusy)).toBe(false)
+        act(() => resolveSign(PROOF))
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
     })
 
-    it('Manual: after completion Proceed is a no-op so the finish window cannot re-prompt', async () => {
+    it('after completion the button is a no-op so the finish window cannot re-prompt', async () => {
         const { result } = renderHook(() => useCardCreateSigningScreen())
 
-        await proceed(result)
-        expect(result.current.isComplete).toBe(true)
+        act(() => result.current.onCreate())
+        await waitFor(() => expect(result.current.isComplete).toBe(true))
 
-        act(() => {
-            result.current.onProceed()
-        })
+        act(() => result.current.onCreate())
 
         expect(mockRequirePin).toHaveBeenCalledTimes(1)
-        expect(mockSignOwnership).toHaveBeenCalledTimes(1)
-        expect(mockFinish).toHaveBeenCalledTimes(1)
-    })
-
-    it('Auto: retrying after the create step fails does not fake-advance to authorize', async () => {
-        routeState.fundingType = FundingType.Auto
-        mockCreateAndApprove.mockRejectedValueOnce(new Error('create boom'))
-        const { result } = renderHook(() => useCardCreateSigningScreen())
-
-        await proceed(result)
-
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
-        expect(stepStatus(result.current.steps, 'create')).toBe('active')
-        expect(stepStatus(result.current.steps, 'authorize')).toBe('pending')
-        expect(mockShowCardError).toHaveBeenCalledTimes(1)
-        expect(mockNavigate).not.toHaveBeenCalled()
-
-        mockCreateAndApprove.mockRejectedValueOnce(
-            new Error('create boom again'),
-        )
-        await proceed(result)
-
-        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
-        expect(stepStatus(result.current.steps, 'create')).toBe('active')
-        expect(stepStatus(result.current.steps, 'authorize')).toBe('pending')
-        expect(mockShowCardError).toHaveBeenCalledTimes(2)
-        expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

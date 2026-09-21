@@ -14,29 +14,31 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWView } from '@components/core'
-import type { CardCreateStepStatus } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
 
-type CardCreateStepRowProps = {
+export type CardStepStatus = 'pending' | 'active' | 'done' | 'failed'
+
+type CardStepRowProps = {
     stepNumber: number
     label: string
-    status: CardCreateStepStatus
+    status: CardStepStatus
     /** The step's work is in flight; a spinner replaces the number. */
     isBusy?: boolean
     testID?: string
 }
 
-/** One row of the create-card signing sequence — numbered circle + label. */
-export const CardCreateStepRow = ({
+/** One row of a multi-step card flow: numbered circle + label. */
+export const CardStepRow = ({
     stepNumber,
     label,
     status,
     isBusy = false,
     testID,
-}: CardCreateStepRowProps) => {
+}: CardStepRowProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const isPending = status === 'pending'
+    const isFailed = status === 'failed'
 
     return (
         <PWView
@@ -46,7 +48,11 @@ export const CardCreateStepRow = ({
             <PWView
                 style={[
                     styles.bullet,
-                    isPending ? styles.bulletPending : styles.bulletFilled,
+                    isFailed
+                        ? styles.bulletFailed
+                        : isPending
+                          ? styles.bulletPending
+                          : styles.bulletFilled,
                 ]}
             >
                 {status === 'done' ? (
@@ -54,6 +60,13 @@ export const CardCreateStepRow = ({
                         name='check'
                         size='xs'
                         variant='positive'
+                    />
+                ) : isFailed ? (
+                    <PWIcon
+                        name='cross'
+                        size='xs'
+                        variant='negative'
+                        testID={testID ? `${testID}-failed` : undefined}
                     />
                 ) : isBusy ? (
                     <ActivityIndicator

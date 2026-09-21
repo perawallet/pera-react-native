@@ -14,56 +14,28 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
         gap: theme.spacing.xxl,
     },
-    title: {
-        textAlign: 'center',
-    },
     body: {
-        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
+    summary: {
+        gap: theme.spacing.lg,
+    },
+    summaryRow: {
+        gap: theme.spacing.xs,
+    },
+    summaryLabel: {
+        color: theme.colors.textGrayLighter,
+    },
+    summaryHint: {
         color: theme.colors.textGray,
     },
     steps: {
         gap: theme.spacing.xl,
     },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-    },
-    bullet: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bulletPending: {
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.textGray,
-    },
-    bulletFilled: {
-        backgroundColor: theme.colors.positiveLighter,
-    },
-    bulletNumberPending: {
-        color: theme.colors.textGray,
-    },
-    bulletNumberActive: {
-        color: theme.colors.positive,
-    },
-    rowLabel: {
-        flex: 1,
-    },
-    labelPending: {
-        color: theme.colors.textGray,
-    },
-    labelActive: {
-        color: theme.colors.textMain,
-    },
-    proceedButton: {
-        marginTop: theme.spacing.md,
+    footer: {
+        gap: theme.spacing.sm,
     },
 }))

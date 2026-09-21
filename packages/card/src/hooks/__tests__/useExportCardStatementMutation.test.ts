@@ -50,7 +50,10 @@ describe('useExportCardStatementMutation', () => {
         )
 
     it('exports a statement with the chosen format and network', async () => {
-        const statement = { format: StatementFormat.Csv, blob: new Blob(['x']) }
+        const statement = {
+            format: StatementFormat.Csv,
+            bytes: new Uint8Array([120]),
+        }
         exportCardStatement.mockResolvedValue(statement)
 
         const { result } = renderHook(() => useExportCardStatementMutation(), {

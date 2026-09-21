@@ -12,12 +12,19 @@
 
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import type { CardWithdrawState } from './usePeraCardOverview'
 import { useStyles } from './styles'
+
+const WITHDRAW_TITLE_KEYS = {
+    idle: 'peraCard.account.withdraw',
+    waiting: 'peraCard.withdraw.in_progress_button',
+    ready: 'peraCard.withdraw.complete_button',
+} as const
 
 type PeraCardActionButtonsProps = {
     isAutoFunding: boolean
-    /** One withdrawal at a time: blocked while a request is still open. */
-    isWithdrawDisabled?: boolean
+    /** An open request turns the button into the way back to it. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
     onAddFunds: () => void
     /** Auto funding: tops up the linked account rather than the card. */
@@ -26,7 +33,7 @@ type PeraCardActionButtonsProps = {
 
 export const PeraCardActionButtons = ({
     isAutoFunding,
-    isWithdrawDisabled = false,
+    withdrawState,
     onWithdraw,
     onAddFunds,
     onFundLinkedAccount,
@@ -49,9 +56,8 @@ export const PeraCardActionButtons = ({
         <PWView style={styles.buttons}>
             <PWButton
                 variant='secondary'
-                title={t('peraCard.account.withdraw')}
+                title={t(WITHDRAW_TITLE_KEYS[withdrawState])}
                 onPress={onWithdraw}
-                isDisabled={isWithdrawDisabled}
                 testID='pera_card_withdraw_button'
             />
             <PWButton

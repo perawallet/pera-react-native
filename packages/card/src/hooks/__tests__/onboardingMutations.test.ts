@@ -339,9 +339,9 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useSubmitAddressMutation skips the session commit when no token is issued', async () => {
-        // The US separate-mailing path returns accessToken: null (the mailing
-        // step issues the token); onboarding is still marked complete.
+    it('useSubmitAddressMutation leaves the mailing step owed when no token is issued', async () => {
+        // The US separate-mailing path returns accessToken: null; the mailing
+        // step issues the token and completes registration.
         api.submitAddress.mockResolvedValue({
             accessToken: null,
             onboardingId: 'ob_1',
@@ -355,7 +355,7 @@ describe('onboarding mutation hooks', () => {
         expect(auth.acquireCardSessionTokens).not.toHaveBeenCalled()
         expect(session.setCardSession).not.toHaveBeenCalled()
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Completed,
+            OnboardingStep.MailingAddress,
         )
     })
 

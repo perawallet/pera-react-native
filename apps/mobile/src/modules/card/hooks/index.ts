@@ -22,7 +22,6 @@ export {
     useCardAddAccount,
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
-export { useCardComingSoonToast } from './useCardComingSoonToast'
 export {
     useCardManualDeposit,
     CardEscrowUnavailableError,
@@ -67,6 +66,11 @@ export {
 } from './useAutoDrawSwitch'
 export { useOpenCardSupport } from './useOpenCardSupport'
 export { useCardOwnerAccount } from './useCardOwnerAccount'
+export {
+    useCardUsdcCredit,
+    UsdcCreditTimeoutError,
+    type UseCardUsdcCreditResult,
+} from './useCardUsdcCredit'
 export { useCardWithdraw, type UseCardWithdrawResult } from './useCardWithdraw'
 // useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow
 // orchestrator that imports the report sheet components, and those components

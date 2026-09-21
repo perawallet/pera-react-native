@@ -42,6 +42,8 @@ export type PeraCardFlowParamList = {
     CardAddFunds: undefined
     CardConfirmSwap: { sourceAssetId: string; amount: string }
     CardWithdraw: undefined
+    /** The wait between the withdraw request and its claim, plus Cancel. */
+    CardWithdrawStatus: undefined
     CardWalletBalance: { kind: CardWalletKind }
     CardWalletBalanceWithdraw: { kind: CardWalletKind }
 }
