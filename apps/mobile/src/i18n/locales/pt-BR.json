@@ -1608,19 +1608,20 @@
         },
         "signing": {
             "title": "Criar Pera Card",
-            "body_manual": "Você vai assinar uma vez para comprovar que a conta vinculada é sua. Logo depois, criamos seu cartão.",
             "body_auto": "Você vai assinar para comprovar que a conta vinculada é sua e para permitir o financiamento automático. Depois, aprova uma transação que o ativa.",
-            "linked_account_label": "Conta vinculada",
-            "funding_type_label": "Tipo de financiamento",
-            "step_ownership_label": "Comprovar que a conta vinculada é sua",
-            "step_create_label": "Criar seu Pera Card",
+            "body_manual": "Você vai assinar uma vez para comprovar que a conta vinculada é sua. Logo depois, criamos seu cartão.",
+            "step_sign_create_label": "Comprovar que a conta vinculada é sua e criar seu Pera Card",
             "step_auto_funding_label": "Permitir o financiamento automático a partir da conta vinculada",
-            "retry_button": "Tentar novamente",
-            "continue_manual_button": "Continuar com financiamento manual",
-            "auto_funding_error_title": "Não foi possível autorizar o financiamento automático",
-            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão.",
+            "proceed_button": "Prosseguir",
             "standing_authority_title": "O que você está autorizando",
             "standing_authority_body": "Esta autorização continua ativa até você desativá-la. O limite por transação é definido pelo provedor do seu cartão, não pela sua assinatura. Você pode parar a qualquer momento alterando o Tipo de Financiamento para Manual."
+        },
+        "auto_funding_signing": {
+            "title": "Solicitação de aprovação de assinatura automática",
+            "body": "Isso permite que seu cartão puxe fundos automaticamente quando necessário, para que você não precise aprovar cada recarga. Você está assinando uma logic sig, uma assinatura pré-autorizada que permite esse uso automático de fundos da sua conta conectada.",
+            "error_title": "Não foi possível autorizar o financiamento automático",
+            "error_body": "Algo deu errado ao autorizar o financiamento automático. Tente novamente ou cancele para continuar com o financiamento manual (você pode mudar para o automático depois nas configurações do cartão).",
+            "cancel_button": "Cancelar"
         },
         "connect_account": {
             "title": "Escolha a conta do cartão",

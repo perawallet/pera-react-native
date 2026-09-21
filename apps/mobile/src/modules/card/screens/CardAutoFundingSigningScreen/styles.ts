@@ -13,11 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    content: {
-        flex: 1,
+    bodyContainer: {
+        flexGrow: 1,
         justifyContent: 'center',
+        gap: theme.spacing.lg,
         paddingHorizontal: theme.spacing.lg,
-        gap: theme.spacing.xxl,
     },
     title: {
         textAlign: 'center',
@@ -26,19 +26,12 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         color: theme.colors.textGray,
     },
-    steps: {
-        gap: theme.spacing.xl,
+    buttonContainer: {
+        gap: theme.spacing.md,
     },
-    disclosure: {
-        gap: theme.spacing.xs,
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    disclosureBody: {
-        color: theme.colors.textGray,
-    },
-    proceedButton: {
-        marginTop: theme.spacing.md,
+    errorText: {
+        color: theme.colors.negative,
+        textAlign: 'center',
+        paddingVertical: theme.spacing.sm,
     },
 }))

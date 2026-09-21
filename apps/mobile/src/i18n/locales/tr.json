@@ -1606,19 +1606,20 @@
         },
         "signing": {
             "title": "Pera Card oluştur",
-            "body_manual": "Bağlı hesabın sahibi olduğunu kanıtlamak için bir kez imzalarsın. Hemen ardından kartını oluştururuz.",
             "body_auto": "Bağlı hesabın sahibi olduğunu kanıtlamak ve otomatik fonlamaya izin vermek için imzalarsın. Ardından bunu açan tek bir işlemi onaylarsın.",
-            "linked_account_label": "Bağlı hesap",
-            "funding_type_label": "Fonlama türü",
-            "step_ownership_label": "Bağlı hesabın sahibi olduğunu kanıtla",
-            "step_create_label": "Pera Card'ını oluştur",
+            "body_manual": "Bağlı hesabın sahibi olduğunu kanıtlamak için bir kez imzalarsın. Hemen ardından kartını oluştururuz.",
+            "step_sign_create_label": "Bağlı hesabın sahibi olduğunu kanıtla ve Pera Card'ını oluştur",
             "step_auto_funding_label": "Bağlı hesaptan otomatik fonlamaya izin ver",
-            "retry_button": "Tekrar dene",
-            "continue_manual_button": "Manuel fonlama ile devam et",
-            "auto_funding_error_title": "Otomatik fonlama yetkilendirilemedi",
-            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir.",
+            "proceed_button": "Devam et",
             "standing_authority_title": "Neyi yetkilendiriyorsun",
             "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin."
+        },
+        "auto_funding_signing": {
+            "title": "Otomatik imzalama onay isteği",
+            "body": "Bu, kartının gerektiğinde fonları otomatik olarak çekmesini sağlar; böylece her yüklemeyi kendin onaylamak zorunda kalmazsın. Bağlı hesabından bu otomatik çekime izin veren bir logic sig, yani önceden yetkilendirilmiş bir imza imzalıyorsun.",
+            "error_title": "Otomatik fonlama yetkilendirilemedi",
+            "error_body": "Otomatik fonlama yetkilendirilirken bir şeyler ters gitti. Tekrar dene veya iptal edip manuel fonlamayla devam et (daha sonra kart ayarlarından otomatik fonlamaya geçebilirsin).",
+            "cancel_button": "İptal"
         },
         "connect_account": {
             "title": "Kart hesabını seç",

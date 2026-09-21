@@ -32,6 +32,9 @@ export type CardOnboardingStackParamList = {
     // The funding type chosen on the status screen; the signing screen reads
     // the connected account itself from the card store.
     CardOnboardingSigning: { fundingType: FundingType }
+    // Step 2 (Auto funding only): reads the connected account and the
+    // just-created card address from the card store.
+    CardOnboardingAutoFundingSigning: undefined
 }
 
 export type CardOnboardingScreenProps<
