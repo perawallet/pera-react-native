@@ -13,16 +13,23 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
+    AutoDrawProgramUnverifiedError,
     FundingType,
     useCardStore,
-    type CardOwnershipProof,
 } from '@perawallet/wallet-core-card'
 import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { trackEvent, CardEvent } from '@analytics'
 import {
+    useAutoDrawSwitch,
     useCardErrorToast,
     useEscrowCardCreation,
     useFinishCardCreation,
@@ -30,37 +37,63 @@ import {
 import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
+import type { CardStepStatus } from '../../components/CardStepRow'
 
-export type CardCreateStepId = 'sign' | 'create' | 'authorize'
-export type CardCreateStepStatus = 'pending' | 'active' | 'done'
+export type CardCreateStepId = 'ownership' | 'create' | 'autoFunding'
 export type CardCreateStepRowModel = {
     id: CardCreateStepId
     stepNumber: number
-    status: CardCreateStepStatus
-    /** The active step's work is in flight; the row shows a spinner. */
+    status: CardStepStatus
+    /** The step's work is in flight; the row shows a spinner. */
     isBusy: boolean
 }
 
+type CreationStage = 'idle' | 'running' | 'failed' | 'complete'
+
 type UseCardCreateSigningScreenResult = {
+    fundingType: FundingType
+    connectedAccount: Optional<WalletAccount>
     steps: CardCreateStepRowModel[]
-    isProceeding: boolean
-    /** All steps ran; the success toast/navigation is on its way. */
+    isRunning: boolean
+    hasFailed: boolean
+    /** Every step ran; the success toast and navigation are on their way. */
     isComplete: boolean
-    onProceed: () => void
+    /**
+     * The card exists but Auto Funding failed to switch on, so the user can
+     * keep the card on Manual instead of retrying.
+     */
+    canContinueWithManual: boolean
+    onCreate: () => void
+    onContinueWithManual: () => void
 }
 
+// A declined prompt arrives as the pipeline's typed error or as the
+// fee-delegation hook's plain `Error`.
+const isUserRejection = (error: unknown): boolean =>
+    error instanceof UserRejectedSigningError ||
+    (error instanceof Error && /user rejected/i.test(error.message))
+
+/**
+ * One tap creates the card: PIN, the ARC-60 ownership proof (reviewed on the
+ * pipeline's own screen), the backend create-and-approve, and for Auto
+ * Funding the delegated program signature plus the on-chain Killswitch enable
+ * (reviewed on the pipeline's transaction sheet). A failure keeps the screen
+ * so the same button retries; once the card exists a retry resumes at Auto
+ * Funding instead of creating twice.
+ */
 export const useCardCreateSigningScreen =
     (): UseCardCreateSigningScreenResult => {
         const navigation = useAppNavigation()
-
-        const { fundingType } =
+        const {
+            params: { fundingType },
+        } =
             useRoute<
                 RouteProp<CardOnboardingStackParamList, 'CardOnboardingSigning'>
-            >().params
-
+            >()
         const connectedAddress = useCardStore(
             state => state.connectedFundingSourceAddress,
         )
+        const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
             () =>
@@ -69,20 +102,36 @@ export const useCardCreateSigningScreen =
         )
 
         const { signOwnership, createAndApprove } = useEscrowCardCreation()
+        const { enableAutoDraw } = useAutoDrawSwitch()
         const { requirePinVerification } = useRequirePinVerification()
         const { finish } = useFinishCardCreation()
-        const showError = useCardErrorToast()
+        const showCreateError = useCardErrorToast()
+        const showAutoFundingError = useCardErrorToast({
+            titleKey: 'peraCard.signing.auto_funding_error_title',
+            bodyKey: 'peraCard.signing.auto_funding_error_body',
+            shouldUseBackendMessage: false,
+        })
 
+        const isAutoFunding = fundingType === FundingType.Auto
         const stepIds = useMemo<CardCreateStepId[]>(
             () =>
-                fundingType === FundingType.Auto
-                    ? ['sign', 'create', 'authorize']
-                    : ['sign', 'create'],
-            [fundingType],
+                isAutoFunding
+                    ? ['ownership', 'create', 'autoFunding']
+                    : ['ownership', 'create'],
+            [isAutoFunding],
         )
 
+        const [stage, setStage] = useState<CreationStage>('idle')
         const [currentStepIndex, setCurrentStepIndex] = useState(0)
-        const [isProceeding, setIsProceeding] = useState(false)
+        // Auto Funding failed after the card was created: a retry must skip
+        // the proof and the creation, and Manual is a valid way out.
+        const [hasCardAwaitingAutoFunding, setHasCardAwaitingAutoFunding] =
+            useState(false)
+
+        const isRunning = stage === 'running'
+        const hasFailed = stage === 'failed'
+        const isComplete = stage === 'complete'
+        const canContinueWithManual = hasFailed && hasCardAwaitingAutoFunding
 
         const steps = useMemo<CardCreateStepRowModel[]>(
             () =>
@@ -90,86 +139,130 @@ export const useCardCreateSigningScreen =
                     id,
                     stepNumber: index + 1,
                     status:
-                        index < currentStepIndex
+                        isComplete || index < currentStepIndex
                             ? 'done'
                             : index === currentStepIndex
                               ? 'active'
                               : 'pending',
-                    // The cursor advances mid-run, so the spinner follows the
-                    // step that is actually working (sign, then create, ...).
-                    isBusy: isProceeding && index === currentStepIndex,
+                    isBusy: isRunning && index === currentStepIndex,
                 })),
-            [stepIds, currentStepIndex, isProceeding],
+            [stepIds, currentStepIndex, isRunning, isComplete],
         )
 
-        const isComplete = currentStepIndex >= stepIds.length
-
-        // Step 2 has no separate user gate — it runs immediately once Step 1's
-        // proof is in hand, per the product flow: sign → (auto) create+approve
-        // → Step 3 (Auto only) or finish (Manual).
-        const runCreateStep = useCallback(
-            async (account: WalletAccount, proof: CardOwnershipProof) => {
-                await createAndApprove(account, proof)
-                if (fundingType === FundingType.Auto) {
-                    setCurrentStepIndex(index => index + 1)
-                } else {
-                    setCurrentStepIndex(stepIds.length)
-                    finish(FundingType.Manual, false)
+        const runCreation = useCallback(
+            async (account: WalletAccount) => {
+                let step: CardCreateStepId = 'ownership'
+                try {
+                    let cardAddress: Nullable<string> = escrowCardAddress
+                    if (!hasCardAwaitingAutoFunding) {
+                        setCurrentStepIndex(0)
+                        const proof = await signOwnership(account)
+                        step = 'create'
+                        setCurrentStepIndex(1)
+                        cardAddress = (await createAndApprove(account, proof))
+                            .cardAddress
+                    }
+                    if (!isAutoFunding) {
+                        setStage('complete')
+                        finish(FundingType.Manual, false)
+                        return
+                    }
+                    step = 'autoFunding'
+                    setCurrentStepIndex(2)
+                    trackEvent(CardEvent.CreateFinalizeTxProceed)
+                    if (cardAddress === null) {
+                        throw new Error(
+                            'Card address missing before Auto Funding',
+                        )
+                    }
+                    await enableAutoDraw(account, cardAddress)
+                    setStage('complete')
+                    finish(FundingType.Auto, false)
+                } catch (error) {
+                    if (step !== 'autoFunding') {
+                        setStage('failed')
+                        await showCreateError(error)
+                        return
+                    }
+                    setHasCardAwaitingAutoFunding(true)
+                    if (error instanceof AutoDrawProgramUnverifiedError) {
+                        // Can never succeed on retry, so degrade to Manual with
+                        // the same honest copy the explicit fallback uses.
+                        logger.error(
+                            'AutoDraw program failed verification, degrading to Manual funding',
+                            { error },
+                        )
+                        setStage('complete')
+                        finish(FundingType.Manual, true)
+                        return
+                    }
+                    if (!isUserRejection(error)) {
+                        logger.error('Card auto-funding authorization failed', {
+                            error,
+                        })
+                    }
+                    setStage('failed')
+                    await showAutoFundingError(error)
                 }
             },
-            [createAndApprove, fundingType, stepIds, finish],
+            [
+                escrowCardAddress,
+                hasCardAwaitingAutoFunding,
+                signOwnership,
+                createAndApprove,
+                isAutoFunding,
+                finish,
+                enableAutoDraw,
+                showCreateError,
+                showAutoFundingError,
+            ],
         )
 
-        const runSignStep = useCallback(
-            async (account: WalletAccount) => {
+        const onCreate = useCallback(() => {
+            // isComplete guards the finish window (success toast + delayed
+            // navigation): a second tap must not re-prompt PIN + signature.
+            if (!connectedAccount || isRunning || isComplete) return
+            if (!hasCardAwaitingAutoFunding) {
+                trackEvent(CardEvent.CreateArbTxProceed)
+            }
+            const run = async () => {
+                setStage('running')
                 if (!(await requirePinVerification())) {
+                    setStage('idle')
                     navigation.goBack()
                     return
                 }
-                const proof = await signOwnership(account)
-                // Only advance past 'sign' the first time — a retry of a
-                // failed create step re-signs but must not fake-advance an
-                // already-current later step.
-                setCurrentStepIndex(index => (index === 0 ? index + 1 : index))
-                await runCreateStep(account, proof)
-            },
-            [requirePinVerification, navigation, signOwnership, runCreateStep],
-        )
-
-        const onProceed = useCallback(() => {
-            // isComplete guards the finish window (success toast + delayed
-            // navigation): a second tap must not re-prompt PIN + signature.
-            if (!connectedAccount || isProceeding || isComplete) return
-
-            const stepId = stepIds[currentStepIndex]
-            if (stepId === 'authorize') {
-                trackEvent(CardEvent.CreateFinalizeTxProceed)
-                navigation.navigate('CardOnboardingAutoFundingSigning')
-                return
-            }
-
-            trackEvent(CardEvent.CreateArbTxProceed)
-            const run = async () => {
-                setIsProceeding(true)
-                try {
-                    await runSignStep(connectedAccount)
-                } catch (error) {
-                    await showError(error)
-                } finally {
-                    setIsProceeding(false)
-                }
+                await runCreation(connectedAccount)
             }
             void run()
         }, [
             connectedAccount,
-            isProceeding,
+            isRunning,
             isComplete,
-            stepIds,
-            currentStepIndex,
+            hasCardAwaitingAutoFunding,
+            requirePinVerification,
             navigation,
-            runSignStep,
-            showError,
+            runCreation,
         ])
 
-        return { steps, isProceeding, isComplete, onProceed }
+        const onContinueWithManual = useCallback(() => {
+            if (!canContinueWithManual) return
+            trackEvent(CardEvent.CreateFinalizeTxCancel)
+            // The card was already created, so declining Auto Funding keeps
+            // it on Manual rather than discarding it.
+            setStage('complete')
+            finish(FundingType.Manual, true)
+        }, [canContinueWithManual, finish])
+
+        return {
+            fundingType,
+            connectedAccount,
+            steps,
+            isRunning,
+            hasFailed,
+            isComplete,
+            canContinueWithManual,
+            onCreate,
+            onContinueWithManual,
+        }
     }

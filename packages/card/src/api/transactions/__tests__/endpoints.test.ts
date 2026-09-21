@@ -65,8 +65,9 @@ describe('transactions endpoints', () => {
     })
 
     it('exports a CSV statement via GET with the Accept header and a date range', async () => {
-        const blob = new Blob(['date,amount'])
-        request.mockResolvedValue({ data: blob })
+        request.mockResolvedValue({
+            data: new TextEncoder().encode('date,amount').buffer,
+        })
 
         const result = await exportCardStatement({
             network: 'mainnet',
@@ -78,17 +79,19 @@ describe('transactions endpoints', () => {
             expect.objectContaining({
                 method: 'GET',
                 path: '/v1/card/transactions/statement',
-                responseType: 'blob',
+                responseType: 'arraybuffer',
                 headers: { Accept: 'text/csv' },
                 params: { dateFrom: '2026-01-01', dateTo: '2026-02-01' },
             }),
         )
-        expect(result.blob).toBe(blob)
+        expect(new TextDecoder().decode(result.bytes)).toBe('date,amount')
         expect(result.format).toBe(StatementFormat.Csv)
     })
 
     it('selects application/pdf for the PDF format', async () => {
-        request.mockResolvedValue({ data: new Blob(['%PDF']) })
+        request.mockResolvedValue({
+            data: new TextEncoder().encode('%PDF').buffer,
+        })
 
         await exportCardStatement({
             network: 'mainnet',

@@ -30,6 +30,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingMailingAddressScreen } from '@modules/card/screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 
 // The final registration step returns the access token + onboarding id.
@@ -86,6 +87,10 @@ const renderFlow = () =>
             {
                 name: 'CardOnboardingStatus',
                 component: CardOnboardingStatusScreen,
+            },
+            {
+                name: 'CardOnboardingMailingAddress',
+                component: CardOnboardingMailingAddressScreen,
             },
         ],
     })
@@ -265,6 +270,112 @@ describe('Flow: Card onboarding — residential address', () => {
             usState: 'CA',
             isSameMailingAddress: true,
         })
+    })
+
+    it('Given a US residence with a separate mailing address, then the address posts the flag, the mailing step follows and completes registration', async () => {
+        useCardStore.getState().setCountryIso('US')
+        let addressBody: Record<string, unknown> | undefined
+        let mailingBody: Record<string, unknown> | undefined
+        server.use(
+            http.post('*/v1/auth/register/address', async ({ request }) => {
+                addressBody = (await request.json()) as Record<string, unknown>
+                // Baanx withholds the token while the mailing address is owed.
+                return HttpResponse.json(
+                    { accessToken: null, onboardingId: 'mock-onboarding-id' },
+                    { status: 200 },
+                )
+            }),
+            http.post(
+                '*/v1/auth/register/mailing-address',
+                async ({ request }) => {
+                    mailingBody = (await request.json()) as Record<
+                        string,
+                        unknown
+                    >
+                    return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
+                },
+            ),
+        )
+
+        renderFlow()
+        const stateField = await screen.findByTestId(
+            'card-onboarding-address-state-field',
+        )
+        fillAddressFields()
+        fireEvent.click(stateField)
+        await waitFor(() =>
+            expect(screen.getByTestId('card-us-state-CA')).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('card-us-state-CA'))
+        await waitFor(() =>
+            expect(screen.queryByTestId('card-us-state-CA')).toBeNull(),
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-address-same-mailing-checkbox'),
+        )
+        acceptBothTerms()
+        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        // No token yet, so the flow moves on to the mailing address rather
+        // than the checklist, and onboarding is not marked complete.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-mailing-address'),
+            ).toBeTruthy(),
+        )
+        expect(addressBody).toMatchObject({
+            isSameMailingAddress: false,
+            usState: 'CA',
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.MailingAddress,
+        )
+
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-mailing-address-line1-input'),
+            { target: { value: '500 Market Street' } },
+        )
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-mailing-address-city-input'),
+            { target: { value: 'San Francisco' } },
+        )
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-mailing-address-zip-input'),
+            { target: { value: '94105' } },
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-mailing-address-state-field'),
+        )
+        await waitFor(() =>
+            expect(screen.getByTestId('card-us-state-NY')).toBeTruthy(),
+        )
+        fireEvent.click(screen.getByTestId('card-us-state-NY'))
+        await waitFor(() =>
+            expect(screen.queryByTestId('card-us-state-NY')).toBeNull(),
+        )
+        const mailingConfirm = screen.getByTestId(
+            'card-onboarding-mailing-address-confirm',
+        )
+        await waitFor(() =>
+            expect(mailingConfirm.getAttribute('disabled')).toBeNull(),
+        )
+        fireEvent.click(mailingConfirm)
+
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+        )
+        expect(mailingBody).toMatchObject({
+            onboardingId: 'mock-onboarding-id',
+            addressLine1: '500 Market Street',
+            city: 'San Francisco',
+            zip: '94105',
+            usState: 'NY',
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
     })
 
     it('Given a US residence with no state picked, the state field shows a required error and Continue stays gated', async () => {

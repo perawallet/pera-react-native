@@ -21,6 +21,10 @@ export const useStyles = makeStyles(theme => ({
     fields: {
         gap: theme.spacing.sm,
     },
+    fieldSkeleton: {
+        height: theme.spacing['3xl'],
+        borderRadius: theme.spacing.sm,
+    },
     label: {
         ...getTypography(theme, 'footnoteMedium'),
         color: theme.colors.textGrayLighter,

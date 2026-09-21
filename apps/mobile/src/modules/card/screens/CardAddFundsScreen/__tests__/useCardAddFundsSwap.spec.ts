@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 
 const mockExecute = vi.fn()
+const mockRefresh = vi.hoisted(() => vi.fn())
 const mockStatus = vi.hoisted(() => ({ value: 'idle' as string }))
 const mockQuotes = vi.hoisted(() => ({
     allQuotes: [] as unknown[],
@@ -41,6 +42,7 @@ vi.mock('@modules/swap/hooks', () => ({
         isQuoteFetching: mockQuotes.isQuoteFetching,
         isQuoteError: false,
         reset: vi.fn(),
+        refresh: mockRefresh,
     }),
 }))
 
@@ -126,5 +128,16 @@ describe('useCardAddFundsSwap', () => {
         // `cancelled` renders nothing, so the user taps Confirm and watches
         // the screen do nothing at all.
         expect(outcome).toEqual({ kind: 'verifying' })
+    })
+
+    it('surfaces an expired quote so the caller can refresh it', async () => {
+        mockQuotes.allQuotes = [QUOTE]
+        mockExecute.mockResolvedValue({ kind: 'stale-quote' })
+
+        const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
+        const outcome = await result.current.executeSwap()
+
+        expect(outcome).toEqual({ kind: 'stale-quote' })
+        expect(result.current.refreshQuote).toBe(mockRefresh)
     })
 })

@@ -40,6 +40,9 @@ type CardAddFundsSwapOutcome =
     // An earlier attempt for this swap is still being verified — nothing was
     // re-signed or broadcast, and the user needs to be told why.
     | { kind: 'verifying' }
+    // The quote outlived its TTL before Confirm; nothing ran. The caller
+    // refreshes and asks the user to confirm the new rate.
+    | { kind: 'stale-quote' }
 
 type UseCardAddFundsSwapParams = {
     account: Nullable<WalletAccount>
@@ -62,6 +65,8 @@ type UseCardAddFundsSwapResult = {
     isQuoteFetching: boolean
     isSwapping: boolean
     executeSwap: () => Promise<CardAddFundsSwapOutcome>
+    /** Re-fetches the quote for the same inputs. */
+    refreshQuote: () => void
 }
 
 /**
@@ -78,7 +83,11 @@ export const useCardAddFundsSwap = ({
     amount,
     enabled,
 }: UseCardAddFundsSwapParams): UseCardAddFundsSwapResult => {
-    const { allQuotes, isQuoteFetching } = useSwapQuotes({
+    const {
+        allQuotes,
+        isQuoteFetching,
+        refresh: refreshQuote,
+    } = useSwapQuotes({
         enabled,
         swapperAddress: account?.address ?? null,
         fromAssetId: sourceAssetId,
@@ -112,10 +121,7 @@ export const useCardAddFundsSwap = ({
                 return { kind: 'pending-cosign' }
             }
             if (outcome.kind === 'stale-quote') {
-                // The card flow re-quotes continuously; a stale quote here
-                // just means this attempt raced the TTL — treat as cancelled
-                // so the user re-taps with the already-refreshed rate.
-                return { kind: 'cancelled' }
+                return { kind: 'stale-quote' }
             }
             if (outcome.kind === 'verifying-previous') {
                 return { kind: 'verifying' }
@@ -127,5 +133,13 @@ export const useCardAddFundsSwap = ({
             }
         }, [quote, execute])
 
-    return { quote, rate, usdcOut, isQuoteFetching, isSwapping, executeSwap }
+    return {
+        quote,
+        rate,
+        usdcOut,
+        isQuoteFetching,
+        isSwapping,
+        executeSwap,
+        refreshQuote,
+    }
 }

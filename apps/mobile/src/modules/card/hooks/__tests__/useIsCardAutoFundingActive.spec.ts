@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-    useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -54,7 +54,12 @@ describe('useIsCardAutoFundingActive', () => {
     beforeEach(() => {
         mocks.selectedFundingType = 'AUTO'
         mocks.connectedAddress = 'LOCAL'
-        vi.mocked(useAllAccounts).mockReturnValue([localAccount, ledgerAccount])
+        vi.mocked(useFindAccountByAddress).mockImplementation(
+            address =>
+                [localAccount, ledgerAccount].find(
+                    a => a.address === address,
+                ) ?? null,
+        )
     })
 
     it('is true when AUTO is stored and the connected account can sign the LSig', () => {
