@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Non pris en charge sur les comptes Ledger. Connectez un autre compte pour utiliser le financement automatique.",
             "funding_type_auto_coming_soon_hint": "Le financement automatique sera bientôt disponible.",
             "authorize_delegation_title": "Autoriser le financement automatique",
-            "authorize_delegation_body": "Vous autorisez le financement automatique jusqu’à {{limit}} par transaction depuis {{account}}. Pera signe une autorisation permanente et vous pouvez revenir au financement manuel à tout moment.",
+            "authorize_delegation_body": "Vous signez une autorisation permanente depuis {{account}}, qui n’expire pas et ne limite ni le montant ni l’actif pouvant être prélevé. Le plafond de {{limit}} par transaction est appliqué par le fournisseur de la carte, et non par votre signature. Revenez au financement manuel à tout moment pour la révoquer.",
             "authorize_delegation_confirm": "Autoriser",
             "options": "Options",
             "accounts_details": "Détails des comptes",
@@ -1616,7 +1616,9 @@
             "retry_button": "Réessayer",
             "continue_manual_button": "Continuer avec le financement manuel",
             "auto_funding_error_title": "Impossible d’autoriser le financement automatique",
-            "auto_funding_error_body": "Une erreur s’est produite lors de l’activation du financement automatique. Réessayez, ou continuez avec le financement manuel et changez plus tard dans les paramètres de la carte."
+            "auto_funding_error_body": "Une erreur s’est produite lors de l’activation du financement automatique. Réessayez, ou continuez avec le financement manuel et changez plus tard dans les paramètres de la carte.",
+            "standing_authority_title": "Ce que vous autorisez",
+            "standing_authority_body": "Cette autorisation n'expire pas, et la signature elle-même ne limite ni le montant ni l'actif pouvant être prélevé. Les plafonds par transaction sont appliqués par le fournisseur de la carte, et non par ce que vous signez ici. Vous pouvez la révoquer à tout moment en basculant le type de financement sur Manuel dans les paramètres de votre carte."
         },
         "connect_account": {
             "title": "Choisir le compte de la carte",

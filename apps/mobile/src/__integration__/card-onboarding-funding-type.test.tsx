@@ -286,9 +286,11 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             screen.getByTestId('card-onboarding-status-create-card'),
         )
-        fireEvent.click(
-            await screen.findByTestId('card-create-signing-proceed'),
-        )
+        await screen.findByTestId('card-create-signing-proceed')
+        expect(
+            screen.queryByTestId('card-create-signing-standing-authority'),
+        ).toBeNull()
+        fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
         await confirmArc60Signing()
 
         await waitFor(() => expect(approvalBody).not.toBeNull())
@@ -356,6 +358,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
+        expect(
+            await screen.findByTestId('card-create-signing-standing-authority'),
+        ).toBeTruthy()
         fireEvent.click(
             await screen.findByTestId('card-create-signing-proceed'),
         )

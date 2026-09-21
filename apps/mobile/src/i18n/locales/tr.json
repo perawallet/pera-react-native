@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Ledger hesaplarında desteklenmiyor. Otomatik fonlamayı kullanmak için farklı bir hesap bağla.",
             "funding_type_auto_coming_soon_hint": "Otomatik fonlama çok yakında.",
             "authorize_delegation_title": "Otomatik fonlamayı yetkilendir",
-            "authorize_delegation_body": "İşlem başına {{limit}} tutarına kadar otomatik fonlamaya yetki veriyorsun. Kaynak hesap: {{account}}. Pera kalıcı bir yetki imzalar; dilediğin zaman manuel fonlamaya geri dönebilirsin.",
+            "authorize_delegation_body": "Kalıcı bir yetki imzalıyorsun; süresi dolmaz ve imzanın kendisi çekilebilecek tutara ya da varlığa sınır koymaz. Kaynak hesap: {{account}}. İşlem başına {{limit}} tutarındaki limit, imzan tarafından değil kart sağlayıcısı tarafından uygulanır. İptal etmek için dilediğin zaman Manuel fonlamaya dön.",
             "authorize_delegation_confirm": "Yetkilendir",
             "options": "Seçenekler",
             "accounts_details": "Hesap bilgileri",
@@ -1616,7 +1616,9 @@
             "retry_button": "Tekrar dene",
             "continue_manual_button": "Manuel fonlama ile devam et",
             "auto_funding_error_title": "Otomatik fonlama yetkilendirilemedi",
-            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir."
+            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir.",
+            "standing_authority_title": "Neyi yetkilendiriyorsun",
+            "standing_authority_body": "Bu yetkilendirmenin süresi dolmaz ve imzanın kendisi çekilebilecek tutara ya da varlığa bir sınır koymaz. İşlem başına harcama limitleri burada imzaladığın şey tarafından değil, kart sağlayıcısı tarafından uygulanır. Kart ayarlarından Fonlama Tipi'ni Manuel olarak değiştirerek istediğin zaman iptal edebilirsin."
         },
         "connect_account": {
             "title": "Kart hesabını seç",

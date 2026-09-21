@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Não compatível com contas Ledger. Conecte outra conta para usar o financiamento automático.",
             "funding_type_auto_coming_soon_hint": "O financiamento automático chega em breve.",
             "authorize_delegation_title": "Autorizar financiamento automático",
-            "authorize_delegation_body": "Você está autorizando o financiamento automático de até {{limit}} por transação a partir de {{account}}. A Pera assina uma autorização permanente, e você pode voltar para o manual a qualquer momento.",
+            "authorize_delegation_body": "Você está assinando uma autorização permanente a partir de {{account}} que não expira e não limita o valor nem o ativo que pode ser debitado. O limite de {{limit}} por transação é aplicado pelo provedor do cartão, não pela sua assinatura. Volte para Manual a qualquer momento para revogá-la.",
             "authorize_delegation_confirm": "Autorizar",
             "options": "Opções",
             "accounts_details": "Dados das contas",
@@ -1618,7 +1618,9 @@
             "retry_button": "Tentar novamente",
             "continue_manual_button": "Continuar com financiamento manual",
             "auto_funding_error_title": "Não foi possível autorizar o financiamento automático",
-            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão."
+            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão.",
+            "standing_authority_title": "O que você está autorizando",
+            "standing_authority_body": "Esta autorização não expira, e a própria assinatura não limita o valor nem o ativo que pode ser debitado. Os limites por transação são aplicados pelo provedor do cartão, não pelo que você assina aqui. Você pode revogá-la a qualquer momento alterando o Tipo de Financiamento para Manual nas configurações do seu cartão."
         },
         "connect_account": {
             "title": "Escolha a conta do cartão",

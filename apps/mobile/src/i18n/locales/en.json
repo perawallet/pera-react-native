@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Not supported on Ledger accounts. Connect a different account to use Auto Funding.",
             "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
             "authorize_delegation_title": "Authorize Auto Funding",
-            "authorize_delegation_body": "You're authorizing auto-funding of up to {{limit}} per transaction from {{account}}. Pera signs a standing authorization you can switch back to Manual anytime.",
+            "authorize_delegation_body": "You're signing a standing authorization from {{account}} that doesn't expire and sets no limit on the amount or asset that can be drawn. The {{limit}} per-transaction cap is applied by the card provider, not by your signature. Switch back to Manual anytime to revoke it.",
             "authorize_delegation_confirm": "Authorize",
             "options": "Options",
             "accounts_details": "Accounts Details",
@@ -1616,7 +1616,9 @@
             "retry_button": "Try again",
             "continue_manual_button": "Continue with Manual Funding",
             "auto_funding_error_title": "Couldn't authorize Auto Funding",
-            "auto_funding_error_body": "Something went wrong switching on Auto Funding. Try again, or continue with Manual Funding and switch later from your card settings."
+            "auto_funding_error_body": "Something went wrong switching on Auto Funding. Try again, or continue with Manual Funding and switch later from your card settings.",
+            "standing_authority_title": "What you're authorizing",
+            "standing_authority_body": "This authorization does not expire, and the signature itself sets no limit on the amount or asset that can be drawn. Per-transaction spending caps are applied by the card provider, not by what you sign here. You can revoke it at any time by switching Funding Type to Manual in your card settings."
         },
         "connect_account": {
             "title": "Choose Card account",

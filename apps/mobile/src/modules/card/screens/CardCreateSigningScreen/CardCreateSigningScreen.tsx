@@ -153,6 +153,22 @@ export const CardCreateSigningScreen = () => {
                         />
                     ))}
                 </PWView>
+                {isAutoFunding && (
+                    <PWView
+                        style={styles.disclosure}
+                        testID='card-create-signing-standing-authority'
+                    >
+                        <PWText variant='bodySemibold'>
+                            {t('peraCard.signing.standing_authority_title')}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.disclosureBody}
+                        >
+                            {t('peraCard.signing.standing_authority_body')}
+                        </PWText>
+                    </PWView>
+                )}
             </PWView>
         </PWScreen>
     )
