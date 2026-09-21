@@ -11,7 +11,10 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { InvalidCredentialsFileError } from '@perawallet/wallet-core-backup'
+import {
+    InvalidCredentialsFileError,
+    useCloudBackupRestoreDraftStore,
+} from '@perawallet/wallet-core-backup'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { useRestoreBackupOptions } from '../useRestoreBackupOptions'
 
@@ -100,10 +103,12 @@ describe('useRestoreBackupOptions', () => {
         async source => {
             mockRequest.mockResolvedValueOnce(source)
 
-            expect(await choose()).toEqual([
-                'CloudBackupRestorePassphrase',
-                { importedKey: KEY },
-            ])
+            expect(await choose()).toEqual(['CloudBackupRestorePassphrase'])
+            // Through the draft store rather than a route param, so the key
+            // never enters the navigation state tree.
+            expect(
+                useCloudBackupRestoreDraftStore.getState().importedKey,
+            ).toEqual(KEY)
             expect(readBackupCredentials).toHaveBeenCalledWith(source, {
                 onReading: expect.any(Function),
                 chooseFile: expect.any(Function),

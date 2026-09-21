@@ -11,26 +11,24 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChooseCredentialsFileSheet } from '../components/ChooseCredentialsFileSheet'
+import { OPTION_LIST_SHEET_OPTIONS } from '../components/OptionListSheet'
 import {
     RestoreBackupSheet,
     type RestoreBackupSheetResult,
 } from '../components/RestoreBackupSheet'
-import type { CloudBackupRestoreKeyParams } from '../routes/types'
 import { readBackupCredentials, type CredentialsFileSource } from '../storage'
 
 /** Arguments for `navigate`/`push`, so each caller keeps its own stack's navigation. */
 export type RestoreRoute =
     | [screen: 'CloudBackupRestoreScan', params?: undefined]
-    | [
-          screen: 'CloudBackupRestorePassphrase',
-          params?: CloudBackupRestoreKeyParams,
-      ]
+    | [screen: 'CloudBackupRestorePassphrase', params?: undefined]
 
 type UseRestoreBackupOptionsResult = {
     chooseRestoreRoute: () => Promise<Nullable<RestoreRoute>>
@@ -53,11 +51,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
             setIsReadingCredentials(false)
             const chosen = await requestBottomSheet<string>({
                 contents: <ChooseCredentialsFileSheet fileNames={fileNames} />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: true,
-                    autoCreateContainer: false,
-                },
+                options: OPTION_LIST_SHEET_OPTIONS,
             })
             if (chosen) setIsReadingCredentials(true)
             return chosen ?? null
@@ -78,10 +72,10 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
                 // The user may have left while the file was read; navigating
                 // now would open the restore over wherever they went.
                 if (!navigation.isFocused()) return null
-                return [
-                    'CloudBackupRestorePassphrase',
-                    { importedKey: result.key },
-                ]
+                useCloudBackupRestoreDraftStore
+                    .getState()
+                    .setImportedKey(result.key)
+                return ['CloudBackupRestorePassphrase']
             } catch (error) {
                 logger.error(
                     'useRestoreBackupOptions: failed to read the encryption key',
@@ -104,7 +98,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
         try {
             const choice = await requestBottomSheet<RestoreBackupSheetResult>({
                 contents: <RestoreBackupSheet />,
-                options: { size: 'auto', enablePanDownToClose: true },
+                options: OPTION_LIST_SHEET_OPTIONS,
             })
             if (!choice) return null
             if (choice === 'scan') return ['CloudBackupRestoreScan']

@@ -22,7 +22,6 @@ import type {
     SerializedLedgerAccount,
     SerializedLedgerSelectableAccount,
 } from '@modules/ledger'
-import type { CloudBackupRestoreKeyParams } from '@modules/cloud-backup'
 
 /**
  * Where to go after an account is created + named, instead of the default
@@ -133,8 +132,8 @@ export type ImportFlowParamList = {
         skippedDuplicateCount: number
         failedCount: number
     }
-    CloudBackupRestorePassphrase: CloudBackupRestoreKeyParams | undefined
-    CloudBackupRestoreEncryptionKey: CloudBackupRestoreKeyParams | undefined
+    CloudBackupRestorePassphrase: undefined
+    CloudBackupRestoreEncryptionKey: undefined
     CloudBackupRestoreScan: undefined
 }
 

@@ -10,13 +10,6 @@
  limitations under the License
  */
 
-import type { BackupEncryptionKey } from '@perawallet/wallet-core-backup'
-
-/** Carried from the passphrase screen to the key screen, which starts filled in with it. */
-export type CloudBackupRestoreKeyParams = {
-    importedKey: BackupEncryptionKey
-}
-
 export type CloudBackupStackParamList = {
     CloudBackupIntro: undefined
     CloudBackupHome: undefined
@@ -28,7 +21,7 @@ export type CloudBackupStackParamList = {
     CloudBackupAccountsReview: undefined
     CloudBackupContacts: undefined
     CloudBackupContactsReview: undefined
-    CloudBackupRestorePassphrase: CloudBackupRestoreKeyParams | undefined
+    CloudBackupRestorePassphrase: undefined
     CloudBackupRestoreScan: undefined
-    CloudBackupRestoreEncryptionKey: CloudBackupRestoreKeyParams | undefined
+    CloudBackupRestoreEncryptionKey: undefined
 }

@@ -20,11 +20,7 @@ const showToast = vi.fn()
 const clearDraft = vi.fn()
 let hasMnemonic = true
 let isRestoring = false
-let routeParams: unknown
-
-vi.mock('@react-navigation/native', () => ({
-    useRoute: () => ({ params: routeParams }),
-}))
+let importedKey: unknown = null
 
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
 vi.mock('@hooks/useLanguage', () => ({
@@ -32,14 +28,21 @@ vi.mock('@hooks/useLanguage', () => ({
         t: (k: string, o?: unknown) => (o ? `${k}:${JSON.stringify(o)}` : k),
     }),
 }))
+const restoreDraftState = () => ({
+    mnemonicIndices: hasMnemonic ? new Uint16Array(12) : null,
+    mnemonicRawBytes: null,
+    importedKey,
+    clearDraft,
+})
+
 vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     ...(await importOriginal<object>()),
-    useCloudBackupRestoreDraftStore: (sel: (s: unknown) => unknown) =>
-        sel({
-            mnemonicIndices: hasMnemonic ? new Uint16Array(12) : null,
-            mnemonicRawBytes: null,
-            clearDraft,
-        }),
+    // `getState` as well as the selector call: the screen reads the imported
+    // key once off the store rather than subscribing to it.
+    useCloudBackupRestoreDraftStore: Object.assign(
+        (sel: (s: unknown) => unknown) => sel(restoreDraftState()),
+        { getState: () => restoreDraftState() },
+    ),
     useRestoreCloudBackupMutation: (options: {
         onSuccess: (result: unknown) => void
         onError: (error: unknown) => void
@@ -75,7 +78,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
         vi.clearAllMocks()
         hasMnemonic = true
         isRestoring = false
-        routeParams = undefined
+        importedKey = null
     })
 
     it('runs restore with the entered key', () => {
@@ -97,7 +100,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     })
 
     it('starts filled in with the imported key and restores with its Argon2id settings', () => {
-        routeParams = { importedKey: IMPORTED_KEY }
+        importedKey = IMPORTED_KEY
         const { result } = renderScreen()
 
         expect(result.current.encryptionKey).toBe(IMPORTED_KEY.salt)
@@ -109,7 +112,7 @@ describe('useCloudBackupRestoreEncryptionKeyScreen', () => {
     })
 
     it('restores an edited imported key on the default Argon2id settings', () => {
-        routeParams = { importedKey: IMPORTED_KEY }
+        importedKey = IMPORTED_KEY
         const { result } = renderScreen()
 
         act(() => result.current.handleKeyChange('c2FsdA=='))

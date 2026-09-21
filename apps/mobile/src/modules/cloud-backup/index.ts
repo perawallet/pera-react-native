@@ -12,7 +12,6 @@
 
 export {
     CloudBackupStackNavigator,
-    type CloudBackupRestoreKeyParams,
     type CloudBackupStackParamList,
 } from './routes'
 export * from './hooks'

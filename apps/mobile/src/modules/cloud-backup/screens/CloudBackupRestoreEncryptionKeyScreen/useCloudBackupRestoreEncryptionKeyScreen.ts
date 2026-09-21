@@ -11,18 +11,16 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useCloudBackupRestoreDraftStore,
     useRestoreCloudBackupMutation,
     type BackupEncryptionKey,
     type RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRestoreOutcome } from '../../hooks/useRestoreOutcome'
-import type { CloudBackupStackParamList } from '../../routes/types'
 
 type Translate = ReturnType<typeof useLanguage>['t']
 
@@ -55,7 +53,7 @@ const useRestoreRunner = (
     restore: (variables: RestoreCloudBackupVariables) => void,
     hasMnemonic: boolean,
     salt: string,
-    importedKey: Optional<BackupEncryptionKey>,
+    importedKey: Nullable<BackupEncryptionKey>,
 ): (() => void) =>
     useCallback(() => {
         if (!hasMnemonic || salt.length === 0) return
@@ -82,14 +80,11 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
     onDone,
 }: UseCloudBackupRestoreEncryptionKeyScreenParams): UseCloudBackupRestoreEncryptionKeyScreenResult => {
     const { t } = useLanguage()
-    const { params } =
-        useRoute<
-            RouteProp<
-                CloudBackupStackParamList,
-                'CloudBackupRestoreEncryptionKey'
-            >
-        >()
-    const importedKey = params?.importedKey
+    // Read once: editing the field must not be undone by a store update, and
+    // the draft is written before this screen mounts.
+    const [importedKey] = useState(
+        () => useCloudBackupRestoreDraftStore.getState().importedKey,
+    )
     const [encryptionKey, setEncryptionKey] = useState(importedKey?.salt ?? '')
     const { hasMnemonic, clearDraft } = useRestoreDraft()
     const outcome = useRestoreOutcome({ clearDraft, onDone })
