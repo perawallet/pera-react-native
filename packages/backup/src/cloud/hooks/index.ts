@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+export * from './useActivateCloudBackupMutation'
 export * from './useBackupReviewActionMutation'
 export * from './useCloudBackupContactImport'
 export * from './useCloudBackupImport'
 export * from './useDisableCloudBackupMutation'
-export * from './useEnableCloudBackupMutation'
+export * from './useRegisterCloudBackupMutation'
 export * from './useRemoveCloudBackupMutation'
 export * from './useResolveHdSeedForBackup'
 export * from './useResolveMnemonicForBackup'

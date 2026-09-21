@@ -18,19 +18,37 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BackupId, DeviceId } from '../models'
+import type { BackupEncryptionKey } from '../credentials/backupCredentialsFile'
 
 export type CloudBackupDraft = {
     mnemonicIndices: Uint16Array
     salt: string
 }
 
+export type CloudBackupRegistration = {
+    backupId: BackupId
+    /** Pinned to the attempt: the backup exists server-side under this device. */
+    deviceId: DeviceId
+    encryptionKey: Uint8Array
+    authSecretKey: Uint8Array
+}
+
 type CloudBackupDraftState = BaseStoreState & {
     mnemonicIndices: Uint16Array | null
     salt: string | null
+    registration: CloudBackupRegistration | null
 }
 
 type CloudBackupDraftActions = {
     setDraft: (draft: CloudBackupDraft) => void
+    /** `salt` is the one the registration was derived under. `false` when it is
+     *  not the held draft's — the keys are zeroed and dropped rather than
+     *  retained, so the caller must treat it as a failure. */
+    setRegistration: (
+        registration: CloudBackupRegistration,
+        salt: string,
+    ) => boolean
     clearDraft: () => void
 }
 
@@ -40,6 +58,7 @@ export type CloudBackupDraftStore = CloudBackupDraftState &
 const initialDraftState = {
     mnemonicIndices: null as Uint16Array | null,
     salt: null as string | null,
+    registration: null as CloudBackupRegistration | null,
 }
 
 /** Setup draft: the credentials we generate. */
@@ -47,8 +66,17 @@ export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
     set,
     get,
 ) => {
+    const zeroRetained = () => {
+        const { mnemonicIndices, registration } = get()
+        zeroBytes(
+            mnemonicIndices,
+            registration?.encryptionKey,
+            registration?.authSecretKey,
+        )
+    }
+
     const clear = () => {
-        zeroBytes(get().mnemonicIndices)
+        zeroRetained()
         set(initialDraftState)
     }
 
@@ -56,13 +84,55 @@ export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
         ...initialDraftState,
         setDraft: ({ mnemonicIndices, salt }: CloudBackupDraft) => {
             // Copy, don't alias: the caller zeroes its own buffer on unmount.
-            zeroBytes(get().mnemonicIndices)
-            set({ mnemonicIndices: mnemonicIndices.slice(), salt })
+            // A new phrase means a new backup id, so any registration held for
+            // the old one goes with it.
+            zeroRetained()
+            set({
+                mnemonicIndices: mnemonicIndices.slice(),
+                salt,
+                registration: null,
+            })
+        },
+        setRegistration: (
+            registration: CloudBackupRegistration,
+            salt: string,
+        ) => {
+            const {
+                mnemonicIndices,
+                salt: draftSalt,
+                registration: previous,
+            } = get()
+            // Salt is per-draft CSRNG, so it identifies the draft these keys
+            // were derived under. A mismatch means that draft is gone or
+            // replaced: retaining them would pair its backup id with another
+            // draft's phrase, and nothing would ever zero them.
+            if (!mnemonicIndices || draftSalt !== salt) {
+                zeroBytes(
+                    registration.encryptionKey,
+                    registration.authSecretKey,
+                )
+                return false
+            }
+            // Every write path that drops key buffers scrubs them first; a
+            // re-register would otherwise orphan the last attempt's keys.
+            if (previous && previous !== registration) {
+                zeroBytes(previous.encryptionKey, previous.authSecretKey)
+            }
+            set({ registration })
+            return true
         },
         clearDraft: clear,
         resetState: clear,
     }
 })
+
+/** Words live only for the caller's turn; the retained form stays the zeroable
+ *  index buffer in the store. */
+export const readCloudBackupDraftMnemonic = (): string[] | null => {
+    const { mnemonicIndices } = useCloudBackupDraftStore.getState()
+    if (!mnemonicIndices) return null
+    return Array.from(mnemonicIndices, index => mnemonicIndexToWord(index))
+}
 
 registerStore({
     name: 'cloud-backup-draft-store',
@@ -75,10 +145,17 @@ type CloudBackupRestoreDraftState = BaseStoreState & {
     mnemonicIndices: Uint16Array | null
     /** UTF-8 fallback for an entry containing a non-wordlist token. */
     mnemonicRawBytes: Uint8Array | null
+    /**
+     * The key read out of a saved credentials file, carried from the options
+     * sheet to the encryption-key screen. Here rather than in route params so
+     * it never enters the navigation state tree.
+     */
+    importedKey: BackupEncryptionKey | null
 }
 
 type CloudBackupRestoreDraftActions = {
     setMnemonic: (mnemonic: string[]) => void
+    setImportedKey: (importedKey: BackupEncryptionKey) => void
     clearDraft: () => void
 }
 
@@ -88,6 +165,7 @@ export type CloudBackupRestoreDraftStore = CloudBackupRestoreDraftState &
 const initialRestoreDraftState = {
     mnemonicIndices: null as Uint16Array | null,
     mnemonicRawBytes: null as Uint8Array | null,
+    importedKey: null as BackupEncryptionKey | null,
 }
 
 /**
@@ -121,6 +199,8 @@ export const useCloudBackupRestoreDraftStore =
                           },
                 )
             },
+            setImportedKey: (importedKey: BackupEncryptionKey) =>
+                set({ importedKey }),
             clearDraft: clear,
             resetState: clear,
         }

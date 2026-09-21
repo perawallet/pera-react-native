@@ -11,6 +11,6 @@
  */
 
 export * from './generateCloudBackupCredentials'
-export * from './enableCloudBackup'
+export * from './registerCloudBackup'
 export * from './keyStorage'
 export * from './backupCredentialsFile'

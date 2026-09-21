@@ -11,7 +11,9 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest'
+import { mnemonicWordsToIndices } from '@perawallet/wallet-core-kms'
 import {
+    readCloudBackupDraftMnemonic,
     readCloudBackupRestoreMnemonic,
     useCloudBackupDraftStore,
     useCloudBackupRestoreDraftStore,
@@ -96,5 +98,138 @@ describe('useCloudBackupDraftStore', () => {
         expect(
             Array.from(useCloudBackupDraftStore.getState().mnemonicIndices!),
         ).toEqual([1, 2, 3])
+    })
+
+    const REGISTRATION = () => ({
+        backupId: 'did:pera:abc',
+        deviceId: 'device-123',
+        encryptionKey: Uint8Array.from([7, 7, 7]),
+        authSecretKey: Uint8Array.from([8, 8, 8]),
+    })
+
+    const DRAFT_SALT = 'c2FsdA=='
+
+    const seedDraft = () =>
+        useCloudBackupDraftStore
+            .getState()
+            .setDraft({ mnemonicIndices: INDICES(), salt: DRAFT_SALT })
+
+    it('retains the registration alongside the draft', () => {
+        seedDraft()
+
+        expect(
+            useCloudBackupDraftStore
+                .getState()
+                .setRegistration(REGISTRATION(), DRAFT_SALT),
+        ).toBe(true)
+
+        expect(useCloudBackupDraftStore.getState().registration?.backupId).toBe(
+            'did:pera:abc',
+        )
+        expect(useCloudBackupDraftStore.getState().registration?.deviceId).toBe(
+            'device-123',
+        )
+    })
+
+    // The user left while the registration was in flight, so nothing would
+    // ever come back to zero these.
+    it('refuses and zeroes a registration for a draft that is already gone', () => {
+        const orphaned = REGISTRATION()
+
+        expect(
+            useCloudBackupDraftStore
+                .getState()
+                .setRegistration(orphaned, DRAFT_SALT),
+        ).toBe(false)
+
+        expect(useCloudBackupDraftStore.getState().registration).toBeNull()
+        expect(Array.from(orphaned.encryptionKey)).toEqual([0, 0, 0])
+        expect(Array.from(orphaned.authSecretKey)).toEqual([0, 0, 0])
+    })
+
+    it('zeroes the retained key buffers on clear', () => {
+        seedDraft()
+        useCloudBackupDraftStore
+            .getState()
+            .setRegistration(REGISTRATION(), DRAFT_SALT)
+        const retained = useCloudBackupDraftStore.getState().registration!
+
+        useCloudBackupDraftStore.getState().clearDraft()
+
+        expect(Array.from(retained.encryptionKey)).toEqual([0, 0, 0])
+        expect(Array.from(retained.authSecretKey)).toEqual([0, 0, 0])
+        expect(useCloudBackupDraftStore.getState().registration).toBeNull()
+    })
+
+    it('drops and zeroes the registration when a new draft replaces it', () => {
+        seedDraft()
+        useCloudBackupDraftStore
+            .getState()
+            .setRegistration(REGISTRATION(), DRAFT_SALT)
+        const replaced = useCloudBackupDraftStore.getState().registration!
+
+        useCloudBackupDraftStore
+            .getState()
+            .setDraft({ mnemonicIndices: INDICES(), salt: 'second' })
+
+        expect(Array.from(replaced.encryptionKey)).toEqual([0, 0, 0])
+        expect(useCloudBackupDraftStore.getState().registration).toBeNull()
+    })
+
+    it('zeroes a replaced registration rather than orphaning its keys', () => {
+        seedDraft()
+        useCloudBackupDraftStore
+            .getState()
+            .setRegistration(REGISTRATION(), DRAFT_SALT)
+        const replaced = useCloudBackupDraftStore.getState().registration!
+
+        useCloudBackupDraftStore
+            .getState()
+            .setRegistration(REGISTRATION(), DRAFT_SALT)
+
+        expect(Array.from(replaced.encryptionKey)).toEqual([0, 0, 0])
+        expect(Array.from(replaced.authSecretKey)).toEqual([0, 0, 0])
+        expect(
+            Array.from(
+                useCloudBackupDraftStore.getState().registration!.encryptionKey,
+            ),
+        ).toEqual([7, 7, 7])
+    })
+
+    // A registration derived under draft A landing after draft B replaced it
+    // would otherwise pair A's backup id and keys with B's phrase and salt.
+    it('refuses and zeroes a registration derived under a stale salt', () => {
+        seedDraft()
+        useCloudBackupDraftStore
+            .getState()
+            .setDraft({ mnemonicIndices: INDICES(), salt: 'second' })
+        const current = { ...REGISTRATION(), backupId: 'did:pera:second' }
+        useCloudBackupDraftStore.getState().setRegistration(current, 'second')
+
+        const stale = REGISTRATION()
+
+        expect(
+            useCloudBackupDraftStore
+                .getState()
+                .setRegistration(stale, DRAFT_SALT),
+        ).toBe(false)
+
+        expect(Array.from(stale.encryptionKey)).toEqual([0, 0, 0])
+        expect(Array.from(stale.authSecretKey)).toEqual([0, 0, 0])
+        expect(useCloudBackupDraftStore.getState().registration).toBe(current)
+        expect(Array.from(current.encryptionKey)).toEqual([7, 7, 7])
+        expect(Array.from(current.authSecretKey)).toEqual([8, 8, 8])
+    })
+
+    it('reads the draft phrase back as words', () => {
+        useCloudBackupDraftStore.getState().setDraft({
+            mnemonicIndices: mnemonicWordsToIndices(['zebra', 'zoo'])!,
+            salt: 'c2FsdA==',
+        })
+
+        expect(readCloudBackupDraftMnemonic()).toEqual(['zebra', 'zoo'])
+
+        useCloudBackupDraftStore.getState().clearDraft()
+        expect(readCloudBackupDraftMnemonic()).toBeNull()
     })
 })
