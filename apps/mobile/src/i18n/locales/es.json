@@ -1094,6 +1094,8 @@
             "hide_card_details": "Ocultar datos de la tarjeta",
             "issuance_pending_title": "Verificación en revisión",
             "issuance_pending_body": "Tu tarjeta se emitirá automáticamente en cuanto se apruebe tu verificación de identidad.",
+            "issuance_edd_title": "Se requieren comprobaciones adicionales",
+            "issuance_edd_body": "Verificamos tu identidad, pero hacen falta comprobaciones de cumplimiento adicionales antes de emitir tu tarjeta. Contacta con soporte si no tienes noticias nuestras.",
             "issuance_issuing_title": "Se está emitiendo tu tarjeta",
             "issuance_issuing_body": "Esto suele tardar un par de minutos.",
             "issuance_rejected_title": "Verificación no superada",

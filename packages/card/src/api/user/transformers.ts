@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { toEnumValue } from '@perawallet/wallet-core-shared'
-import { VerificationState, type CardUser } from '../../models'
+import { toEnumValue, toEnumValueOrNull } from '@perawallet/wallet-core-shared'
+import {
+    CardEligibilityReason,
+    CardEligibilityStatus,
+    VerificationState,
+    type CardUser,
+} from '../../models'
 import type { UserApiResponse } from './schema'
 
 export const transformUser = (response: UserApiResponse): CardUser => ({
@@ -27,5 +32,15 @@ export const transformUser = (response: UserApiResponse): CardUser => ({
         VerificationState,
         response.verificationState,
         VerificationState.Unverified,
+    ),
+    // Null rather than a fallback: an unmodelled status or reason must not
+    // masquerade as a known one, and the UI degrades to its generic copy.
+    eligibilityStatus: toEnumValueOrNull(
+        CardEligibilityStatus,
+        response.cardEligibilityStatus,
+    ),
+    eligibilityReason: toEnumValueOrNull(
+        CardEligibilityReason,
+        response.cardEligibilityReason,
     ),
 })

@@ -1094,6 +1094,8 @@
             "hide_card_details": "Kart bilgilerini gizle",
             "issuance_pending_title": "Doğrulama inceleniyor",
             "issuance_pending_body": "Kimlik doğrulaman onaylandığında kartın otomatik olarak oluşturulacak.",
+            "issuance_edd_title": "Ek kontroller gerekiyor",
+            "issuance_edd_body": "Kimliğin doğrulandı, ancak kartın verilmeden önce ek uyumluluk kontrolleri gerekiyor. Bizden haber alamazsan destek ekibine yaz.",
             "issuance_issuing_title": "Kartın oluşturuluyor",
             "issuance_issuing_body": "Bu genellikle birkaç dakika sürer.",
             "issuance_rejected_title": "Doğrulama başarısız",

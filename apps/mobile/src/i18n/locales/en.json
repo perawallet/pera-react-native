@@ -1094,6 +1094,8 @@
             "hide_card_details": "Hide Card Details",
             "issuance_pending_title": "Verification in review",
             "issuance_pending_body": "Your card will be issued automatically once your identity verification is approved.",
+            "issuance_edd_title": "Additional checks required",
+            "issuance_edd_body": "Your identity was verified, but extra compliance checks are needed before your card can be issued. Contact support if you haven't heard from us.",
             "issuance_issuing_title": "Your card is being issued",
             "issuance_issuing_body": "This usually takes a couple of minutes.",
             "issuance_rejected_title": "Verification unsuccessful",

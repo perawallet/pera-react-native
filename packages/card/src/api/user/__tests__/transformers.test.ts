@@ -12,7 +12,11 @@
 
 import { describe, it, expect } from 'vitest'
 import { transformUser } from '../transformers'
-import { VerificationState } from '../../../models'
+import {
+    CardEligibilityReason,
+    CardEligibilityStatus,
+    VerificationState,
+} from '../../../models'
 
 describe('transformUser', () => {
     it('maps verification states including REJECTED', () => {
@@ -31,6 +35,39 @@ describe('transformUser', () => {
             transformUser({ id: 'u1', verificationState: 'WAT' })
                 .verificationState,
         ).toBe(VerificationState.Unverified)
+    })
+
+    it('maps the eligibility status and reason', () => {
+        const user = transformUser({
+            id: 'u1',
+            verificationState: 'PENDING',
+            cardEligibilityStatus: 'ineligible',
+            cardEligibilityReason: 'edd_required',
+        })
+
+        expect(user.eligibilityStatus).toBe(CardEligibilityStatus.Ineligible)
+        expect(user.eligibilityReason).toBe(CardEligibilityReason.EddRequired)
+    })
+
+    // A reason we have no copy for must not reach the UI as a raw enum; the
+    // notice falls back to its generic "in review" wording instead.
+    it('nulls an unmodelled eligibility status or reason', () => {
+        const user = transformUser({
+            id: 'u1',
+            verificationState: 'PENDING',
+            cardEligibilityStatus: 'under_review',
+            cardEligibilityReason: 'sanctions_hit',
+        })
+
+        expect(user.eligibilityStatus).toBeNull()
+        expect(user.eligibilityReason).toBeNull()
+    })
+
+    it('nulls eligibility fields Baanx omits entirely', () => {
+        const user = transformUser({ id: 'u1', verificationState: 'VERIFIED' })
+
+        expect(user.eligibilityStatus).toBeNull()
+        expect(user.eligibilityReason).toBeNull()
     })
 
     it('coerces null optional fields to undefined', () => {

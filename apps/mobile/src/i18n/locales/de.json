@@ -1086,6 +1086,8 @@
             "hide_card_details": "Kartendetails ausblenden",
             "issuance_pending_title": "Verifizierung in Prüfung",
             "issuance_pending_body": "Deine Karte wird automatisch ausgestellt, sobald deine Identitätsprüfung genehmigt wurde.",
+            "issuance_edd_title": "Zusätzliche Prüfungen erforderlich",
+            "issuance_edd_body": "Deine Identität wurde bestätigt, aber vor der Ausgabe deiner Karte sind zusätzliche Compliance-Prüfungen nötig. Melde dich beim Support, falls du nichts von uns hörst.",
             "issuance_issuing_title": "Deine Karte wird ausgestellt",
             "issuance_issuing_body": "Dies dauert normalerweise ein paar Minuten.",
             "issuance_rejected_title": "Verifizierung nicht erfolgreich",

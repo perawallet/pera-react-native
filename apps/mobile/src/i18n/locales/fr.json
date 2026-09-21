@@ -1094,6 +1094,8 @@
             "hide_card_details": "Masquer les détails",
             "issuance_pending_title": "Vérification en cours d’examen",
             "issuance_pending_body": "Votre carte sera émise automatiquement dès que la vérification de votre identité sera approuvée.",
+            "issuance_edd_title": "Vérifications supplémentaires requises",
+            "issuance_edd_body": "Votre identité a été vérifiée, mais des contrôles de conformité supplémentaires sont nécessaires avant l'émission de votre carte. Contactez le support si vous êtes sans nouvelles.",
             "issuance_issuing_title": "Votre carte est en cours d’émission",
             "issuance_issuing_body": "Cela prend généralement quelques minutes.",
             "issuance_rejected_title": "Vérification échouée",
