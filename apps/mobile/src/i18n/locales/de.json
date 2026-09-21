@@ -645,8 +645,10 @@
             "error": "Auf diesem Gerät konnte kein QR-Code zur Synchronisierung erstellt werden."
         },
         "encryption_code": {
-            "setup_title": "Wähle einen 6-stelligen Code zum Schutz dieses QR-Codes",
-            "confirm_title": "Gib deinen Code erneut ein"
+            "setup_title": "Einmal-Code erstellen",
+            "confirm_title": "Code erneut eingeben",
+            "setup_description": "Dieser 6-stellige Code schützt nur diesen QR-Code und ist nicht deine Pera-PIN. Behalte ihn für dich; du gibst ihn nach dem Scannen auf dem anderen Gerät ein.",
+            "confirm_description": "Gib dieselben 6 Ziffern noch einmal ein, um sie zu bestätigen."
         },
         "accounts": {
             "title": "Konten",
@@ -780,7 +782,8 @@
             "invalid_qr_title": "Kein Backup-QR-Code",
             "invalid_qr_body": "Scanne den Code, den „Mit anderen Geräten synchronisieren“ auf deinem anderen Gerät anzeigt.",
             "unsupported_version_title": "Aktualisiere Pera, um fortzufahren",
-            "unsupported_version_body": "Dieser QR-Code wurde mit einer neueren Version von Pera erstellt."
+            "unsupported_version_body": "Dieser QR-Code wurde mit einer neueren Version von Pera erstellt.",
+            "code_description": "Gib den Einmal-Code ein, der auf dem Gerät mit dem QR-Code erstellt wurde, nicht deine Pera-PIN."
         },
         "intro": {
             "badge": "CLOUD-BACKUP",

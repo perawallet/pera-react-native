@@ -653,8 +653,10 @@
             "error": "No se pudo crear el código QR de sincronización en este dispositivo."
         },
         "encryption_code": {
-            "setup_title": "Elige un código de 6 dígitos para proteger este QR",
-            "confirm_title": "Vuelve a introducir tu código"
+            "setup_title": "Crea un código temporal",
+            "confirm_title": "Repite tu código",
+            "setup_description": "Este código de 6 dígitos solo protege este código QR: no es tu PIN de Pera. No se lo des a nadie; lo introducirás en el otro dispositivo después de escanear.",
+            "confirm_description": "Introduce los mismos 6 dígitos otra vez para confirmarlos."
         },
         "accounts": {
             "title": "Cuentas",
@@ -788,7 +790,8 @@
             "invalid_qr_title": "No es un código QR de copia de seguridad",
             "invalid_qr_body": "Escanea el código que muestra «Sincronizar con otros dispositivos» en tu otro dispositivo.",
             "unsupported_version_title": "Actualiza Pera para continuar",
-            "unsupported_version_body": "Este código QR se creó con una versión más reciente de Pera."
+            "unsupported_version_body": "Este código QR se creó con una versión más reciente de Pera.",
+            "code_description": "Introduce el código temporal creado en el dispositivo que muestra el código QR, no tu PIN de Pera."
         },
         "intro": {
             "badge": "COPIA EN LA NUBE",

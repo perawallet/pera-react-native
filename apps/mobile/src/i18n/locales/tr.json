@@ -653,8 +653,10 @@
             "error": "Bu cihazda eşitleme QR kodu oluşturulamadı."
         },
         "encryption_code": {
-            "setup_title": "Bu QR kodunu korumak için 6 haneli bir kod belirle",
-            "confirm_title": "Kodunu tekrar gir"
+            "setup_title": "Tek kullanımlık kod",
+            "confirm_title": "Kodunu tekrar gir",
+            "setup_description": "Bu 6 haneli kod yalnızca bu QR kodunu korur; Pera PIN kodun değildir. Kimseyle paylaşma, taramadan sonra diğer cihazda bu kodu gireceksin.",
+            "confirm_description": "Onaylamak için aynı 6 haneyi tekrar gir."
         },
         "accounts": {
             "title": "Hesaplar",
@@ -788,7 +790,8 @@
             "invalid_qr_title": "Bu bir yedekleme QR kodu değil",
             "invalid_qr_body": "Diğer cihazında “Diğer cihazlarla eşitle” seçeneğinin gösterdiği kodu tara.",
             "unsupported_version_title": "Devam etmek için Pera’yı güncelle",
-            "unsupported_version_body": "Bu QR kodu, Pera’nın daha yeni bir sürümüyle oluşturulmuş."
+            "unsupported_version_body": "Bu QR kodu, Pera’nın daha yeni bir sürümüyle oluşturulmuş.",
+            "code_description": "QR kodunu gösteren cihazda oluşturulan tek kullanımlık kodu gir, Pera PIN kodunu değil."
         },
         "intro": {
             "badge": "BULUT YEDEKLEME",

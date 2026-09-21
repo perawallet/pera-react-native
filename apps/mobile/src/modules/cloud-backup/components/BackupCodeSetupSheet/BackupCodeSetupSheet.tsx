@@ -10,34 +10,25 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
-
 import { BackupCodeEntry } from '../BackupCodeEntry'
-import { useBackupCodeSheet } from './useBackupCodeSheet'
+import { useBackupCodeSetupSheet } from './useBackupCodeSetupSheet'
 
-export type BackupCodeSheetProps = {
-    /** The scanned envelope, already validated by `parseBackupSyncQrEnvelope`. */
-    raw: string
-}
-
-export const BackupCodeSheet = ({ raw }: BackupCodeSheetProps) => {
-    const { t } = useLanguage()
-
+export const BackupCodeSetupSheet = () => {
     const {
+        title,
+        description,
         hasError,
-        isDeriving,
         handleCodeComplete,
         handleErrorAnimationComplete,
-    } = useBackupCodeSheet({ raw })
+    } = useBackupCodeSetupSheet()
 
     return (
         <BackupCodeEntry
-            testID='backup_code_sheet'
-            title={t('cloud_backup.restore_scan.code_title')}
-            description={t('cloud_backup.restore_scan.code_description')}
-            onCodeComplete={code => void handleCodeComplete(code)}
-            isDisabled={isDeriving}
+            testID='backup_code_setup_sheet'
+            title={title}
+            description={description}
             hasError={hasError}
+            onCodeComplete={handleCodeComplete}
             onErrorAnimationComplete={handleErrorAnimationComplete}
         />
     )

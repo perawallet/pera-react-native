@@ -110,7 +110,7 @@ export const useCloudBackupRestoreScanScreen = ({
             const contents = await requestBottomSheet<BackupSyncQrContents>({
                 contents: <BackupCodeSheet raw={raw} />,
                 options: {
-                    size: 'full',
+                    size: 'auto',
                     enablePanDownToClose: true,
                     autoCreateContainer: false,
                 },

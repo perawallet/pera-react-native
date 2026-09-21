@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps } from './PinEntry'
-export { usePinEntry } from './usePinEntry'
+export { BackupCodeEntry, type BackupCodeEntryProps } from './BackupCodeEntry'

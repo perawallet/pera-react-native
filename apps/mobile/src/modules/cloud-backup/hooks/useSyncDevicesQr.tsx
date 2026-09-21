@@ -18,9 +18,10 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { PinEditContent, useRequirePinVerification } from '@modules/security'
+import { useRequirePinVerification } from '@modules/security'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { BackupCodeSetupSheet } from '../components/BackupCodeSetupSheet'
 import { SyncDevicesQrSheet } from '../components/SyncDevicesQrSheet'
 
 type UseSyncDevicesQrResult = {
@@ -34,35 +35,20 @@ export const useSyncDevicesQr = (): UseSyncDevicesQrResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const backupSalt = useCloudBackupStore(state => state.salt)
 
-    // A PIN-shaped flow that deliberately sets no PIN: the confirmed code is
-    // handed back here and never reaches the keystore.
-    const requestEncryptionCode = useCallback(async (): Promise<
-        string | null
-    > => {
-        const collected: { code: string | null } = { code: null }
-        const confirmed = await requestBottomSheet<boolean>({
-            contents: (
-                <PinEditContent
-                    mode='setup'
-                    title={t('cloud_backup.encryption_code.setup_title')}
-                    confirmTitle={t(
-                        'cloud_backup.encryption_code.confirm_title',
-                    )}
-                    onPinConfirmed={async code => {
-                        collected.code = code
-                        return { ok: true }
-                    }}
-                />
-            ),
-            options: {
-                size: 'full',
-                enablePanDownToClose: false,
-                enableCloseOnBackdropPress: false,
-                autoCreateContainer: false,
-            },
-        })
-        return confirmed === true ? collected.code : null
-    }, [requestBottomSheet, t])
+    // The confirmed code is handed back here and never reaches the keystore.
+    const requestEncryptionCode = useCallback(
+        async (): Promise<string | null> =>
+            (await requestBottomSheet<string>({
+                contents: <BackupCodeSetupSheet />,
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
+                    autoCreateContainer: false,
+                },
+            })) ?? null,
+        [requestBottomSheet],
+    )
 
     const showSyncQr = useCallback(async () => {
         if (!backupSalt) {

@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps } from './components/PinEntry'
+export {
+    PinEntry,
+    type PinEntryProps,
+    usePinEntry,
+} from './components/PinEntry'
 export {
     PinEditView,
     type PinEditViewProps,

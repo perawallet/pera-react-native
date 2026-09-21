@@ -653,8 +653,10 @@
             "error": "Le QR code de synchronisation n’a pas pu être créé sur cet appareil."
         },
         "encryption_code": {
-            "setup_title": "Choisissez un code à 6 chiffres pour protéger ce QR code",
-            "confirm_title": "Saisissez à nouveau votre code"
+            "setup_title": "Créez un code temporaire",
+            "confirm_title": "Confirmez votre code",
+            "setup_description": "Ce code à 6 chiffres protège uniquement ce QR code : ce n’est pas votre code PIN Pera. Gardez-le pour vous ; vous le saisirez sur l’autre appareil après avoir scanné.",
+            "confirm_description": "Saisissez à nouveau les 6 mêmes chiffres pour les confirmer."
         },
         "accounts": {
             "title": "Comptes",
@@ -788,7 +790,8 @@
             "invalid_qr_title": "Ce n’est pas un QR code de sauvegarde",
             "invalid_qr_body": "Scannez le code affiché par « Synchroniser avec d’autres appareils » sur votre autre appareil.",
             "unsupported_version_title": "Mettez Pera à jour pour continuer",
-            "unsupported_version_body": "Ce QR code a été créé avec une version plus récente de Pera."
+            "unsupported_version_body": "Ce QR code a été créé avec une version plus récente de Pera.",
+            "code_description": "Saisissez le code temporaire créé sur l’appareil qui affiche le QR code, et non votre code PIN Pera."
         },
         "intro": {
             "badge": "SAUVEGARDE CLOUD",
