@@ -47,6 +47,7 @@ export const AccountOverviewHeader = ({
     const { t } = useLanguage()
     const {
         portfolioAlgoValue,
+        portfolioPreferredValue,
         isPending,
         period,
         setPeriod,
@@ -101,12 +102,11 @@ export const AccountOverviewHeader = ({
                             <PreferredAmount
                                 variant='h4'
                                 style={styles.valueTitle}
-                                sourceAmount={
+                                value={
                                     selectedPoint
-                                        ? selectedPoint.algoValue
-                                        : portfolioAlgoValue
+                                        ? selectedPoint.preferredValue
+                                        : portfolioPreferredValue
                                 }
-                                sourceAssetId={ALGO_ASSET.assetId}
                                 density='compact'
                                 showSymbol
                                 prefix='≈ '
@@ -121,12 +121,30 @@ export const AccountOverviewHeader = ({
                                 />
                             )}
                             {selectedPoint && (
-                                <PWText
-                                    variant='h4'
-                                    style={styles.dateDisplay}
-                                >
-                                    {formatDatetime(selectedPoint.datetime)}
-                                </PWText>
+                                <PWView style={styles.dateTimeColumn}>
+                                    <PWText
+                                        variant='h4'
+                                        style={styles.dateDisplay}
+                                    >
+                                        {formatDatetime(
+                                            selectedPoint.datetime,
+                                            undefined,
+                                            'medium',
+                                            'date',
+                                        )}
+                                    </PWText>
+                                    <PWText
+                                        variant='h4'
+                                        style={styles.dateDisplay}
+                                    >
+                                        {formatDatetime(
+                                            selectedPoint.datetime,
+                                            undefined,
+                                            'medium',
+                                            'time',
+                                        )}
+                                    </PWText>
+                                </PWView>
                             )}
                         </PWView>
                     </PWTouchableOpacity>
@@ -181,6 +199,7 @@ export const AccountOverviewHeader = ({
         styles,
         selectedPoint,
         portfolioAlgoValue,
+        portfolioPreferredValue,
         isPending,
         isBalanceComplete,
         account,
