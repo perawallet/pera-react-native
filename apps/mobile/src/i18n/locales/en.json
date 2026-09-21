@@ -1115,7 +1115,7 @@
             "funding_change_requires_manual_title": "Switch to Manual funding first",
             "funding_change_requires_manual_body": "Changing the connected account isn't available while Auto Funding is on. Switch to Manual, change the account, then re-enable Auto Funding.",
             "funding_type_auto_unavailable_hint": "Not available for this account — it can't sign an auto-funding authorization.",
-            "funding_type_auto_ledger_hint": "Not supported on Ledger accounts. Connect a different account to use Auto Funding.",
+            "funding_type_auto_ledger_hint": "Not available for Ledger accounts. Proceed with Manual Funding, or connect a standard account to enable Auto Funding.",
             "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
             "authorize_delegation_title": "Authorize Auto Funding",
             "authorize_delegation_body": "Auto Funding draws from {{account}} until you turn it off. The {{limit}} per-transaction limit is set by your card provider, not by your signature. Switch back to Manual anytime.",

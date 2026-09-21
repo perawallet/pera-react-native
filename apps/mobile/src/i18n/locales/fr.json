@@ -1115,7 +1115,7 @@
             "funding_change_requires_manual_title": "Passez d’abord au financement manuel",
             "funding_change_requires_manual_body": "La modification du compte connecté n’est pas disponible lorsque le financement automatique est activé. Passez au financement manuel, changez de compte, puis réactivez le financement automatique.",
             "funding_type_auto_unavailable_hint": "Non disponible pour ce compte — il ne peut pas signer une autorisation de financement automatique.",
-            "funding_type_auto_ledger_hint": "Non pris en charge sur les comptes Ledger. Connectez un autre compte pour utiliser le financement automatique.",
+            "funding_type_auto_ledger_hint": "Non disponible pour les comptes Ledger. Poursuivez avec le financement manuel ou connectez un compte standard pour activer le financement automatique.",
             "funding_type_auto_coming_soon_hint": "Le financement automatique sera bientôt disponible.",
             "authorize_delegation_title": "Autoriser le financement automatique",
             "authorize_delegation_body": "Le financement automatique prélève depuis {{account}} jusqu’à ce que vous le désactiviez. Le plafond de {{limit}} par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez revenir au mode Manuel à tout moment.",

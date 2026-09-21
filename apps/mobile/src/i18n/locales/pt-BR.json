@@ -1115,7 +1115,7 @@
             "funding_change_requires_manual_title": "Mude primeiro para o financiamento manual",
             "funding_change_requires_manual_body": "Não é possível alterar a conta conectada enquanto o financiamento automático está ativo. Mude para manual, altere a conta e reative o financiamento automático.",
             "funding_type_auto_unavailable_hint": "Indisponível para esta conta — ela não pode assinar uma autorização de financiamento automático.",
-            "funding_type_auto_ledger_hint": "Não compatível com contas Ledger. Conecte outra conta para usar o financiamento automático.",
+            "funding_type_auto_ledger_hint": "Indisponível para contas Ledger. Continue com o financiamento manual ou conecte uma conta padrão para ativar o financiamento automático.",
             "funding_type_auto_coming_soon_hint": "O financiamento automático chega em breve.",
             "authorize_delegation_title": "Autorizar financiamento automático",
             "authorize_delegation_body": "O financiamento automático debita de {{account}} até você desativá-lo. O limite de {{limit}} por transação é definido pelo provedor do seu cartão, não pela sua assinatura. Você pode voltar para Manual a qualquer momento.",

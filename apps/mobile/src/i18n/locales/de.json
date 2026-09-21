@@ -1107,7 +1107,7 @@
             "funding_change_requires_manual_title": "Zuerst zu manueller Finanzierung wechseln",
             "funding_change_requires_manual_body": "Das Ändern des verbundenen Kontos ist bei aktiviertem Auto-Funding nicht möglich. Wechsle zu Manuell, ändere das Konto und aktiviere Auto-Funding anschließend erneut.",
             "funding_type_auto_unavailable_hint": "Für dieses Konto nicht verfügbar — es kann keine Auto-Funding-Autorisierung signieren.",
-            "funding_type_auto_ledger_hint": "Wird bei Ledger-Konten nicht unterstützt. Verbinde ein anderes Konto, um Auto-Funding zu nutzen.",
+            "funding_type_auto_ledger_hint": "Für Ledger-Konten nicht verfügbar. Nutze die manuelle Finanzierung oder verbinde ein Standard-Konto, um Auto-Funding zu aktivieren.",
             "funding_type_auto_coming_soon_hint": "Auto-Funding ist demnächst verfügbar.",
             "authorize_delegation_title": "Auto-Funding autorisieren",
             "authorize_delegation_body": "Auto Funding bucht von {{account}} ab, bis du es deaktivierst. Das Limit von {{limit}} pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst jederzeit auf Manuell umstellen.",
