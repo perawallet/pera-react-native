@@ -80,14 +80,16 @@ const renderAsbImportFromOnboarding = () =>
         ],
     })
 
-// Fake `File` instance returned from `File.pickFileAsync`. The screen reads
-// `.text()` synchronously after the user taps the drop zone, so we just need
-// a thenable that resolves to the envelope string.
+// Successful `File.pickFileAsync` result. `as never` because `vi.mocked` types
+// the mock from the deprecated `File | File[]` overload, not the options one.
 const fakeFileFor = (contents: string) =>
     ({
-        name: 'mock-backup.txt',
-        text: async () => contents,
-    }) as unknown as File
+        canceled: false,
+        result: {
+            name: 'mock-backup.txt',
+            text: async () => contents,
+        },
+    }) as never
 
 const openImportOptions = async () => {
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))

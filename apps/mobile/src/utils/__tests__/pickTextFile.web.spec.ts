@@ -81,7 +81,7 @@ describe('pickTextFile', () => {
         vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(
             function (this: FileReader) {
                 this.onerror?.(
-                    new ProgressEvent('error') as ProgressEvent & Event,
+                    new ProgressEvent('error') as ProgressEvent<FileReader>,
                 )
             },
         )

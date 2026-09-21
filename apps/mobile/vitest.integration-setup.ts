@@ -229,7 +229,7 @@ vi.mock('expo-audio', () => ({
 
 vi.mock('expo-file-system', () => {
     // The ASB import screen uses the static `File.pickFileAsync` to surface
-    // the native picker and then reads `.text()` on the returned instance.
+    // the native picker and then reads `.text()` on the picked file.
     // Tests override the `pickFileAsync` vi.fn() per-case to supply backup
     // contents — see `__integration__/onboarding-import-asb.test.tsx`.
     // `shareFile` instead constructs `new File(Paths.cache, fileName)` and
@@ -256,7 +256,10 @@ vi.mock('expo-file-system', () => {
             return ''
         }
         write(_data: unknown): void {}
-        static pickFileAsync = vi.fn(async () => new File())
+        static pickFileAsync = vi.fn(async () => ({
+            result: new File(),
+            canceled: false,
+        }))
     }
     return {
         File,

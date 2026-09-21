@@ -1141,7 +1141,10 @@ vi.mock('expo-file-system', () => {
         async text() {
             return ''
         }
-        static pickFileAsync = vi.fn(async () => new FileMock())
+        static pickFileAsync = vi.fn(async () => ({
+            result: new FileMock(),
+            canceled: false,
+        }))
     }
     return { File: FileMock }
 })

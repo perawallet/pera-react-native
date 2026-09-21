@@ -22,8 +22,11 @@ describe('usePickBackupFile (native default)', () => {
 
     it('returns the picked file name and contents', async () => {
         vi.mocked(File.pickFileAsync).mockResolvedValueOnce({
-            name: 'backup.txt',
-            text: async () => 'envelope-contents',
+            canceled: false,
+            result: {
+                name: 'backup.txt',
+                text: async () => 'envelope-contents',
+            },
         } as never)
 
         const { result } = renderHook(() => usePickBackupFile())
@@ -35,10 +38,11 @@ describe('usePickBackupFile (native default)', () => {
         })
     })
 
-    it('resolves null when the picker rejects with a cancellation error', async () => {
-        vi.mocked(File.pickFileAsync).mockRejectedValueOnce(
-            new Error('FilePickingCancelledException'),
-        )
+    it('resolves null when the picker reports a cancelled pick', async () => {
+        vi.mocked(File.pickFileAsync).mockResolvedValueOnce({
+            canceled: true,
+            result: null,
+        } as never)
 
         const { result } = renderHook(() => usePickBackupFile())
         const file = await result.current.pickFile()
@@ -46,24 +50,21 @@ describe('usePickBackupFile (native default)', () => {
         expect(file).toBeNull()
     })
 
-    it('resolves null when the picker resolves with no file', async () => {
-        vi.mocked(File.pickFileAsync).mockResolvedValueOnce(undefined as never)
-
-        const { result } = renderHook(() => usePickBackupFile())
-        const file = await result.current.pickFile()
-
-        expect(file).toBeNull()
-    })
-
-    it('rethrows a non-cancellation error so the caller can surface it', async () => {
-        vi.mocked(File.pickFileAsync).mockRejectedValueOnce(
-            new Error('disk read failed'),
-        )
+    it('rethrows a read failure even when its message mentions cancelling', async () => {
+        vi.mocked(File.pickFileAsync).mockResolvedValueOnce({
+            canceled: false,
+            result: {
+                name: 'backup.txt',
+                text: async () => {
+                    throw new Error('Operation canceled by the provider')
+                },
+            },
+        } as never)
 
         const { result } = renderHook(() => usePickBackupFile())
 
         await expect(result.current.pickFile()).rejects.toThrow(
-            'disk read failed',
+            'Operation canceled by the provider',
         )
     })
 })
