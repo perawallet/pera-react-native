@@ -1152,6 +1152,8 @@
             "report_suspicious_before_confirm": "Continuar con el reporte",
             "error_title": "Algo salió mal",
             "error_body": "Vuelve a intentarlo.",
+            "insufficient_algo_title": "No hay suficientes ALGO",
+            "insufficient_algo_body": "Tu cuenta vinculada no tiene suficientes ALGO para cubrir la comisión de red. Añade ALGO y vuelve a intentarlo.",
             "setup_incomplete": "Configuración incompleta",
             "auto_funding_unavailable_title": "La financiación automática aún no está disponible",
             "auto_funding_unavailable_body": "Esta tarjeta no se puede autorizar para financiación automática ahora. Puedes seguir usando la financiación manual.",

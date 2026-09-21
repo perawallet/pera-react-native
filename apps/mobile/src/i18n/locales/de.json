@@ -1144,6 +1144,8 @@
             "report_suspicious_before_confirm": "Mit Meldung fortfahren",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Bitte versuche es erneut.",
+            "insufficient_algo_title": "Nicht genug ALGO",
+            "insufficient_algo_body": "Ihr verknüpftes Konto hat nicht genug ALGO für die Netzwerkgebühr. Laden Sie ALGO auf und versuchen Sie es erneut.",
             "setup_incomplete": "Einrichtung nicht abgeschlossen",
             "auto_funding_unavailable_title": "Auto-Funding ist noch nicht verfügbar",
             "auto_funding_unavailable_body": "Diese Karte kann derzeit nicht für Auto-Funding autorisiert werden. Du kannst weiterhin die manuelle Finanzierung nutzen.",

@@ -1152,6 +1152,8 @@
             "report_suspicious_before_confirm": "Continuar o registro",
             "error_title": "Algo deu errado",
             "error_body": "Tente novamente.",
+            "insufficient_algo_title": "ALGO insuficiente",
+            "insufficient_algo_body": "Sua conta vinculada não tem ALGO suficiente para cobrir a taxa de rede. Adicione ALGO e tente novamente.",
             "setup_incomplete": "Configuração incompleta",
             "auto_funding_unavailable_title": "O financiamento automático ainda não está disponível",
             "auto_funding_unavailable_body": "Este cartão não pode ser autorizado para financiamento automático agora. Você pode continuar usando o financiamento manual.",

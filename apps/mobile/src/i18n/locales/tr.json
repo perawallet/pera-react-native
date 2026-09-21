@@ -1152,6 +1152,8 @@
             "report_suspicious_before_confirm": "Bildirime devam et",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Lütfen tekrar dene.",
+            "insufficient_algo_title": "Yeterli ALGO yok",
+            "insufficient_algo_body": "Bağlı hesabınızda ağ ücretini karşılayacak kadar ALGO yok. Hesabınıza ALGO ekleyip tekrar deneyin.",
             "setup_incomplete": "Kurulum tamamlanmadı",
             "auto_funding_unavailable_title": "Otomatik fonlama henüz kullanılamıyor",
             "auto_funding_unavailable_body": "Bu kart şu anda otomatik fonlama için yetkilendirilemiyor. Manuel fonlamayı kullanmaya devam edebilirsin.",

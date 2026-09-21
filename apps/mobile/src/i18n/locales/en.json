@@ -1152,6 +1152,8 @@
             "report_suspicious_before_confirm": "Continue with Report",
             "error_title": "Something went wrong",
             "error_body": "Please try again.",
+            "insufficient_algo_title": "Not enough ALGO",
+            "insufficient_algo_body": "Your linked account doesn't have enough ALGO to cover the network fee. Add ALGO to it and try again.",
             "setup_incomplete": "Setup not complete",
             "auto_funding_unavailable_title": "Auto Funding isn't available yet",
             "auto_funding_unavailable_body": "This card can't be authorized for Auto Funding right now. You can keep using Manual Funding.",

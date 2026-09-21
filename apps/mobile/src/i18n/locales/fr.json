@@ -1152,6 +1152,8 @@
             "report_suspicious_before_confirm": "Poursuivre le signalement",
             "error_title": "Une erreur est survenue",
             "error_body": "Veuillez réessayer.",
+            "insufficient_algo_title": "Pas assez d'ALGO",
+            "insufficient_algo_body": "Votre compte lié n'a pas assez d'ALGO pour couvrir les frais de réseau. Ajoutez des ALGO et réessayez.",
             "setup_incomplete": "Configuration incomplète",
             "auto_funding_unavailable_title": "Le financement automatique n’est pas encore disponible",
             "auto_funding_unavailable_body": "Cette carte ne peut pas être autorisée pour le financement automatique pour le moment. Vous pouvez continuer à utiliser le financement manuel.",
