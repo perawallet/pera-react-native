@@ -27,7 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { USDC_RAMP_TOKEN_ID } from '@modules/onramp/constants'
@@ -36,11 +36,8 @@ import {
     useCardEscrowBalance,
     useCardFundingAccount,
     useIsCardAutoFundingActive,
+    useCardWithdraw,
 } from '../../hooks'
-import {
-    usePeraCardPendingWithdrawal,
-    type PendingWithdrawalView,
-} from './usePeraCardPendingWithdrawal'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -52,6 +49,8 @@ export type PeraCardCredits = {
 }
 
 const ZERO_BALANCE = new Decimal(0)
+
+export type CardWithdrawState = 'idle' | 'waiting' | 'ready'
 
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
@@ -68,10 +67,9 @@ type UsePeraCardOverviewResult = {
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
     /** Open timelocked withdrawal, if any; the overview hosts its Complete and Cancel steps. */
-    pendingWithdrawal: Nullable<PendingWithdrawalView>
+    /** Idle opens the form; the other two lead to the open request. */
+    withdrawState: CardWithdrawState
     onWithdraw: () => void
-    onCompleteWithdrawal: () => void
-    onCancelWithdrawal: () => void
     onAddFunds: () => void
     /** Auto funding: top up the linked account itself, via the Fund tab. */
     onFundLinkedAccount: () => void
@@ -171,8 +169,14 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const isSpendableCapped = !spendablePerTx.eq(balance)
 
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { pendingWithdrawal, onCompleteWithdrawal, onCancelWithdrawal } =
-        usePeraCardPendingWithdrawal()
+    const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
+        useCardWithdraw()
+    const withdrawState: CardWithdrawState =
+        pendingWithdrawal === null
+            ? 'idle'
+            : isWithdrawReady
+              ? 'ready'
+              : 'waiting'
 
     const onAddFunds = useCallback(() => {
         trackEvent(CardEvent.HomeAddFunds)
@@ -181,8 +185,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const onWithdraw = useCallback(() => {
         trackEvent(CardEvent.HomeWithdraw)
-        navigation.navigate('CardWithdraw')
-    }, [navigation])
+        // One request at a time: while one is open the button leads to it.
+        navigation.navigate(
+            pendingWithdrawal === null ? 'CardWithdraw' : 'CardWithdrawStatus',
+        )
+    }, [navigation, pendingWithdrawal])
 
     const onFundLinkedAccount = useCallback(() => {
         if (fundingAccount === null) return
@@ -244,10 +251,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
-        pendingWithdrawal,
+        withdrawState,
         onWithdraw,
-        onCompleteWithdrawal,
-        onCancelWithdrawal,
         onAddFunds,
         onFundLinkedAccount,
         onShowAllTransactions,

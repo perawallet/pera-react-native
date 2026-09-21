@@ -15,12 +15,12 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useCardPendingWithdrawalQuery } from '@perawallet/wallet-core-card'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { CardWithdrawConfirmationSheet } from '../../components/CardWithdrawConfirmationSheet'
 import { useCardEscrowBalance, useCardOwnerAccount } from '../../hooks'
+import type { PeraCardFlowParamList } from '../../routes/types'
 import {
     USDC_DISPLAY_PRECISION,
     USDC_FALLBACK_DECIMALS,
@@ -41,10 +41,11 @@ type UseCardWithdrawScreenResult = {
 }
 
 export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
-    const navigation = useNavigation()
+    const navigation =
+        useNavigation<
+            NativeStackNavigationProp<PeraCardFlowParamList, 'CardWithdraw'>
+        >()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { t } = useLanguage()
-    const { successToast } = useToast()
 
     const destinationAccount = useCardOwnerAccount()
     const { balance: cardBalance } = useCardEscrowBalance()
@@ -81,22 +82,15 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
             })
             if (result !== 'confirm') return
 
-            // The request only starts the timelock; the overview shows the
-            // countdown and the Complete step.
-            successToast(
-                t('peraCard.withdraw.requested_title'),
-                t('peraCard.withdraw.requested_body', {
-                    amount: amountDecimal.toFixed(USDC_DISPLAY_PRECISION),
-                }),
-            )
-            // Skip navigation if the screen lost focus while the sheet was up.
+            // The request only starts the timelock; the status screen takes
+            // over the wait and the Complete step in place of this form.
             if (navigation.isFocused()) {
-                navigation.goBack()
+                navigation.replace('CardWithdrawStatus')
             }
         } finally {
             isConfirmationOpenRef.current = false
         }
-    }, [requestBottomSheet, successToast, t, amountDecimal, navigation])
+    }, [requestBottomSheet, amountDecimal, navigation])
 
     const onWithdraw = useCallback(() => {
         void openConfirmation()
