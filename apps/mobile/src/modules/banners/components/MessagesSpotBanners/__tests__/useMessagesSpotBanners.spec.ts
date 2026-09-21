@@ -79,7 +79,6 @@ describe('useMessagesSpotBanners', () => {
 
         expect(mockRoute).toHaveBeenCalledWith({
             url: 'pera://x',
-            isExternal: false,
         })
     })
 

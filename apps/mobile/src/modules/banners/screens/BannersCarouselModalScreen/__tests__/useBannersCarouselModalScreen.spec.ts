@@ -130,7 +130,6 @@ describe('useBannersCarouselModalScreen', () => {
 
         expect(mockRoute).toHaveBeenCalledWith({
             url: 'pera://x',
-            isExternal: false,
         })
     })
 

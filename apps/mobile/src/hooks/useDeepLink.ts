@@ -39,6 +39,7 @@ import { useIsGiftCardsEnabled } from './useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import { isPeraOwnedDeeplink } from './deeplink/utils'
+import { isPushAllowedDeeplinkType } from './deeplink/page-initiated-policy'
 import {
     buildAccountDeeplink,
     buildDeeplink,
@@ -79,6 +80,15 @@ type UseDeepLinkResult = {
 const isValidDeepLink = (url: string): boolean => {
     if (isValidAlgorandAddress(url)) return true
     return parseDeeplink(url) !== null
+}
+
+// Resets the Home tab to its stack root, so landing home works from deep
+// inside the Home stack.
+const navigateHome = (replaceCurrentScreen: boolean): void => {
+    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+        screen: 'Home',
+        params: { screen: 'AccountDetails' },
+    })
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
@@ -141,6 +151,24 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     t('errors.deeplink.invalid_url_body'),
                 )
             }
+            onError?.()
+            return
+        }
+
+        // Both notification call sites (the push tap listener and the in-app
+        // Notifications list) carry a URL the backend chose, so the gate lives
+        // here rather than at either of them. The payload is dropped but the
+        // tap still lands home, so a refused push behaves like opening the app
+        // rather than like a broken one. Never log the url: a RECOVER_ADDRESS
+        // payload carries a mnemonic.
+        if (
+            source === 'notification' &&
+            !isPushAllowedDeeplinkType(parsedData.type)
+        ) {
+            logger.warn('Blocked push-initiated deeplink', {
+                type: parsedData.type,
+            })
+            navigateHome(replaceCurrentScreen)
             onError?.()
             return
         }
@@ -490,12 +518,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
-                    // Reset the Home tab to its stack root so a HOME deeplink returns
-                    // home even from deep in the Home stack.
-                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-                        screen: 'Home',
-                        params: { screen: 'AccountDetails' },
-                    })
+                    navigateHome(replaceCurrentScreen)
                     break
                 }
             }

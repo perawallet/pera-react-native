@@ -58,10 +58,7 @@ export const BannerPrompt = ({ onHide }: PromptViewProps) => {
             // Release the overlay first: it paints above the navigator, so a
             // CTA that deep-links would otherwise land behind it.
             finish()
-            routeUrl({
-                url: banner.buttonUrl,
-                isExternal: banner.isButtonUrlExternal,
-            })
+            routeUrl({ url: banner.buttonUrl })
         },
         [finish, routeUrl],
     )

@@ -95,3 +95,94 @@ const POLICY_BY_TYPE: Partial<Record<DeeplinkType, DeeplinkPagePolicy>> =
  */
 export const isOriginGatedDeeplinkType = (type: DeeplinkType): boolean =>
     POLICY_BY_TYPE[type] !== 'page-allowed'
+
+/**
+ * Whether server-chosen content — a push payload or a CMS banner CTA — may
+ * fire a given deeplink at the app.
+ *
+ * Both are a weaker trust class than a web page, not a stronger one: the user
+ * navigated nowhere, and the URL is whatever the backend put in the FCM
+ * payload or the CMS record, so a compromised backend picks both the
+ * destination and the moment. `push-allowed` is therefore reserved for the
+ * destinations Pera actually notifies about — screens showing something the
+ * user already owns. Anything that prefills a transfer, starts a signature,
+ * pairs a session or adds an account is refused; the user started none of it.
+ *
+ * Deliberately a second table rather than a reuse of DEEPLINK_PAGE_POLICY:
+ * account- and asset-detail are gated against a page (it picks the address)
+ * but are the canonical push destination (`perawallet://account-detail?…` is
+ * what a received-funds notification carries), and `setSelectedAccountAddress`
+ * ignores an address the wallet doesn't hold, so the switch can only land on
+ * the user's own account.
+ *
+ * Exhaustive by construction and default-deny for the same reasons as the page
+ * table above, including the excluded locale-tour key.
+ */
+type DeeplinkPushPolicy = 'push-allowed' | 'push-refused'
+
+const DEEPLINK_PUSH_POLICY: Record<
+    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    DeeplinkPushPolicy
+> = {
+    // --- Shows what the notification is about ---------------------------
+    [DeeplinkType.HOME]: 'push-allowed',
+    [DeeplinkType.ACCOUNT_DETAIL]: 'push-allowed',
+    [DeeplinkType.ASSET_DETAIL]: 'push-allowed',
+    [DeeplinkType.ASSET_TRANSACTIONS]: 'push-allowed',
+    // Unlike the two above, its address never reaches
+    // `setSelectedAccountAddress` — it is fed straight to the claim-assets
+    // flow, so a sender can point that screen at an address the user does not
+    // hold. It stays allowed because claiming needs a key the user then
+    // doesn't have, and it is the one destination an incoming-asset push has.
+    [DeeplinkType.ASSET_INBOX]: 'push-allowed',
+
+    // --- Opens a section, carries no address or amount -------------------
+    [DeeplinkType.CARDS]: 'push-allowed',
+    [DeeplinkType.STAKING]: 'push-allowed',
+    [DeeplinkType.BUY]: 'push-allowed',
+    // Confined to Pera's own Discover origin by `isSafeRelativePath`.
+    [DeeplinkType.DISCOVER_PATH]: 'push-allowed',
+    // A campaign push linking out is the ordinary case, and both are
+    // scheme-gated to https by `isSafeBrowserUrl` before anything loads.
+    [DeeplinkType.DISCOVER_BROWSER]: 'push-allowed',
+    [DeeplinkType.INTERNAL_BROWSER]: 'push-allowed',
+
+    // --- Pre-fills a transfer or a trade ---------------------------------
+    [DeeplinkType.ALGO_TRANSFER]: 'push-refused',
+    [DeeplinkType.ASSET_TRANSFER]: 'push-refused',
+    [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: 'push-refused',
+    [DeeplinkType.SWAP]: 'push-refused',
+    // Pops the third-party Bidali purchase sheet over whatever is on screen.
+    [DeeplinkType.SELL]: 'push-refused',
+
+    // --- Signs, submits, or authorises ------------------------------------
+    [DeeplinkType.KEYREG]: 'push-refused',
+    [DeeplinkType.ASSET_OPT_IN]: 'push-refused',
+    [DeeplinkType.SIGN_REQUEST]: 'push-refused',
+    [DeeplinkType.WALLET_CONNECT]: 'push-refused',
+    [DeeplinkType.LIQUID_AUTH]: 'push-refused',
+
+    // --- Adds or imports an account ---------------------------------------
+    [DeeplinkType.RECOVER_ADDRESS]: 'push-refused',
+    [DeeplinkType.PERA_WEB_IMPORT]: 'push-refused',
+    // Routed by notification type, never by URL (see useNotificationPress).
+    [DeeplinkType.SHARED_ACCOUNT_IMPORT]: 'push-refused',
+    [DeeplinkType.ADD_WATCH_ACCOUNT]: 'push-refused',
+
+    // --- Writes the address book (label poisoning) ------------------------
+    [DeeplinkType.ADD_CONTACT]: 'push-refused',
+    [DeeplinkType.EDIT_CONTACT]: 'push-refused',
+
+    // --- Address-bearing sheet with a server-chosen label -----------------
+    [DeeplinkType.ADDRESS_ACTIONS]: 'push-refused',
+}
+
+const PUSH_POLICY_BY_TYPE: Partial<Record<DeeplinkType, DeeplinkPushPolicy>> =
+    DEEPLINK_PUSH_POLICY
+
+/**
+ * True when server-chosen content — a push notification or a banner CTA — may
+ * fire this deeplink. Anything not explicitly marked `push-allowed` is refused.
+ */
+export const isPushAllowedDeeplinkType = (type: DeeplinkType): boolean =>
+    PUSH_POLICY_BY_TYPE[type] === 'push-allowed'
