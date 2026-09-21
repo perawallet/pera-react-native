@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Ledger hesaplarında desteklenmiyor. Otomatik fonlamayı kullanmak için farklı bir hesap bağla.",
             "funding_type_auto_coming_soon_hint": "Otomatik fonlama çok yakında.",
             "authorize_delegation_title": "Otomatik fonlamayı yetkilendir",
-            "authorize_delegation_body": "İşlem başına {{limit}} tutarına kadar otomatik fonlamaya yetki veriyorsun. Kaynak hesap: {{account}}. Pera kalıcı bir yetki imzalar; dilediğin zaman manuel fonlamaya geri dönebilirsin.",
+            "authorize_delegation_body": "Otomatik fonlama, sen kapatana kadar şu hesaptan çeker: {{account}}. İşlem başına {{limit}} tutarındaki limiti imzan değil, kart sağlayıcın belirler. İstediğin zaman Manuel fonlamaya dönebilirsin.",
             "authorize_delegation_confirm": "Yetkilendir",
             "options": "Seçenekler",
             "accounts_details": "Hesap bilgileri",
@@ -1616,7 +1616,9 @@
             "retry_button": "Tekrar dene",
             "continue_manual_button": "Manuel fonlama ile devam et",
             "auto_funding_error_title": "Otomatik fonlama yetkilendirilemedi",
-            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir."
+            "auto_funding_error_body": "Otomatik fonlama açılırken bir sorun oluştu. Tekrar dene ya da manuel fonlama ile devam edip daha sonra kart ayarlarından değiştir.",
+            "standing_authority_title": "Neyi yetkilendiriyorsun",
+            "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin."
         },
         "connect_account": {
             "title": "Kart hesabını seç",

@@ -1110,7 +1110,7 @@
             "funding_type_auto_ledger_hint": "Wird bei Ledger-Konten nicht unterstützt. Verbinde ein anderes Konto, um Auto-Funding zu nutzen.",
             "funding_type_auto_coming_soon_hint": "Auto-Funding ist demnächst verfügbar.",
             "authorize_delegation_title": "Auto-Funding autorisieren",
-            "authorize_delegation_body": "Du autorisierst die automatische Finanzierung von bis zu {{limit}} pro Transaktion von {{account}}. Pera signiert eine Dauerautorisierung, die du jederzeit auf Manuell umstellen kannst.",
+            "authorize_delegation_body": "Auto Funding bucht von {{account}} ab, bis du es deaktivierst. Das Limit von {{limit}} pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst jederzeit auf Manuell umstellen.",
             "authorize_delegation_confirm": "Autorisieren",
             "options": "Optionen",
             "accounts_details": "Kontodetails",
@@ -1608,7 +1608,9 @@
             "retry_button": "Erneut versuchen",
             "continue_manual_button": "Mit manueller Finanzierung fortfahren",
             "auto_funding_error_title": "Auto-Funding konnte nicht autorisiert werden",
-            "auto_funding_error_body": "Beim Aktivieren von Auto-Funding ist etwas schiefgelaufen. Versuche es erneut oder fahre mit manueller Finanzierung fort und wechsle später in den Karteneinstellungen."
+            "auto_funding_error_body": "Beim Aktivieren von Auto-Funding ist etwas schiefgelaufen. Versuche es erneut oder fahre mit manueller Finanzierung fort und wechsle später in den Karteneinstellungen.",
+            "standing_authority_title": "Was du autorisierst",
+            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst."
         },
         "connect_account": {
             "title": "Kartenkonto wählen",

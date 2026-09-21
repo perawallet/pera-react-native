@@ -35,6 +35,15 @@ export const useStyles = makeStyles(theme => ({
     steps: {
         gap: theme.spacing.xl,
     },
+    disclosure: {
+        gap: theme.spacing.xs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    disclosureBody: {
+        color: theme.colors.textGray,
+    },
     footer: {
         gap: theme.spacing.sm,
     },

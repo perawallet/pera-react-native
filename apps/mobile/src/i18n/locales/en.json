@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Not supported on Ledger accounts. Connect a different account to use Auto Funding.",
             "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
             "authorize_delegation_title": "Authorize Auto Funding",
-            "authorize_delegation_body": "You're authorizing auto-funding of up to {{limit}} per transaction from {{account}}. Pera signs a standing authorization you can switch back to Manual anytime.",
+            "authorize_delegation_body": "Auto Funding draws from {{account}} until you turn it off. The {{limit}} per-transaction limit is set by your card provider, not by your signature. Switch back to Manual anytime.",
             "authorize_delegation_confirm": "Authorize",
             "options": "Options",
             "accounts_details": "Accounts Details",
@@ -1616,7 +1616,9 @@
             "retry_button": "Try again",
             "continue_manual_button": "Continue with Manual Funding",
             "auto_funding_error_title": "Couldn't authorize Auto Funding",
-            "auto_funding_error_body": "Something went wrong switching on Auto Funding. Try again, or continue with Manual Funding and switch later from your card settings."
+            "auto_funding_error_body": "Something went wrong switching on Auto Funding. Try again, or continue with Manual Funding and switch later from your card settings.",
+            "standing_authority_title": "What you're authorizing",
+            "standing_authority_body": "This authorization stays active until you turn it off. Your card provider sets the per-transaction limit, not your signature. You can stop it anytime by switching Funding Type to Manual."
         },
         "connect_account": {
             "title": "Choose Card account",

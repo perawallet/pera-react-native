@@ -1118,7 +1118,7 @@
             "funding_type_auto_ledger_hint": "Não compatível com contas Ledger. Conecte outra conta para usar o financiamento automático.",
             "funding_type_auto_coming_soon_hint": "O financiamento automático chega em breve.",
             "authorize_delegation_title": "Autorizar financiamento automático",
-            "authorize_delegation_body": "Você está autorizando o financiamento automático de até {{limit}} por transação a partir de {{account}}. A Pera assina uma autorização permanente, e você pode voltar para o manual a qualquer momento.",
+            "authorize_delegation_body": "O financiamento automático debita de {{account}} até você desativá-lo. O limite de {{limit}} por transação é definido pelo provedor do seu cartão, não pela sua assinatura. Você pode voltar para Manual a qualquer momento.",
             "authorize_delegation_confirm": "Autorizar",
             "options": "Opções",
             "accounts_details": "Dados das contas",
@@ -1618,7 +1618,9 @@
             "retry_button": "Tentar novamente",
             "continue_manual_button": "Continuar com financiamento manual",
             "auto_funding_error_title": "Não foi possível autorizar o financiamento automático",
-            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão."
+            "auto_funding_error_body": "Algo deu errado ao ativar o financiamento automático. Tente novamente ou continue com financiamento manual e troque depois nas configurações do cartão.",
+            "standing_authority_title": "O que você está autorizando",
+            "standing_authority_body": "Esta autorização continua ativa até você desativá-la. O limite por transação é definido pelo provedor do seu cartão, não pela sua assinatura. Você pode parar a qualquer momento alterando o Tipo de Financiamento para Manual."
         },
         "connect_account": {
             "title": "Escolha a conta do cartão",
