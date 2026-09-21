@@ -63,6 +63,8 @@ const SENSITIVE_KEY_FRAGMENTS = [
     'cvv',
     'cvc',
     'entropy',
+    // Cloud backup's user-facing "Encryption Key" travels under this name.
+    'salt',
 ] as const
 
 // Whole-key (exact) matches only, for keys carrying raw transaction or signing

@@ -1198,6 +1198,15 @@ describe('logging', () => {
             expect(out).toContain('"backupId":"abc"')
         })
 
+        test('redacts a JSON `salt` field — the credentials file spelling of the encryption key', () => {
+            const out = redactSensitiveUrl(
+                '{"version":1,"salt":"q311Z4ReDNWpMVuH8XdvSw=="}',
+            )
+            expect(out).not.toContain('q311Z4ReDNWpMVuH8XdvSw==')
+            expect(out).toContain('"salt":"[REDACTED]"')
+            expect(out).toContain('"version":1')
+        })
+
         test('redacts JSON values for any sensitive fragment', () => {
             const json =
                 '{"mnemonic":"a b c","privateKey":"deadbeef","safe":"ok"}'
@@ -1218,6 +1227,20 @@ describe('logging', () => {
             expect(out.mnemonic).toBe('[REDACTED]')
             expect(out.privateKey).toBe('[REDACTED]')
             expect(out.user).toBe('will')
+        })
+
+        // Cloud backup's user-facing "Encryption Key" is carried under `salt`,
+        // so the belt-and-braces layer has to cover that spelling too.
+        test('redacts `salt` keys at any nesting', () => {
+            const out = redactSensitiveContext({
+                salt: 'q311Z4ReDNWpMVuH8XdvSw==',
+                credentials: { backupSalt: 'q311Z4ReDNWpMVuH8XdvSw==' },
+                destination: 'device',
+            }) as Record<string, unknown>
+
+            expect(out.salt).toBe('[REDACTED]')
+            expect(out.credentials).toEqual({ backupSalt: '[REDACTED]' })
+            expect(out.destination).toBe('device')
         })
 
         test('keeps keyPairId and publicKey diagnostics unredacted', () => {
