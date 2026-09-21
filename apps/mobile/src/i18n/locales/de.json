@@ -2568,7 +2568,7 @@
         },
         "close_account": {
             "title": "Konto schließen",
-            "body": "Dieses Konto hat keine angemeldeten Assets. Durch das Senden des gesamten Guthabens wird das Konto im Algorand-Netzwerk geschlossen.",
+            "body": "Dieses Konto hat keine angemeldeten Assets. Der Betrag wird auf {{amount}} ALGO gesetzt, das gesamte Guthaben abzüglich der Netzwerkgebühr, und das Konto wird im Algorand-Netzwerk geschlossen.",
             "confirm": "Konto schließen & senden",
             "warning": "Diese Transaktion schließt dein Konto im Algorand-Netzwerk.",
             "success_title": "Konto geschlossen",

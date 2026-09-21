@@ -2576,7 +2576,7 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
+            "body": "This account has no opted-in assets. The amount will be set to {{amount}} ALGO, the full balance less the network fee, and the account will be closed on the Algorand network.",
             "confirm": "Close Account & Send",
             "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",

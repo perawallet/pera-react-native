@@ -2576,7 +2576,7 @@
         },
         "close_account": {
             "title": "Fermer le compte",
-            "body": "Ce compte ne contient aucun actif ajouté. Envoyer la totalité du solde fermera le compte sur le réseau Algorand.",
+            "body": "Ce compte ne contient aucun actif ajouté. Le montant sera ajusté à {{amount}} ALGO, soit la totalité du solde moins les frais de réseau, et le compte sera fermé sur le réseau Algorand.",
             "confirm": "Fermer le compte et envoyer",
             "warning": "Cette transaction fermera votre compte sur le réseau Algorand.",
             "success_title": "Compte fermé",

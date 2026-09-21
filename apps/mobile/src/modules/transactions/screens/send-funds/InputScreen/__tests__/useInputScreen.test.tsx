@@ -509,6 +509,27 @@ describe('useInputScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    it('offers the close for an amount that only the close can cover', async () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.999')
+    })
+
     it('offers the min-balance confirm, not a close, for a partial spend that dips into the MBR', async () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {

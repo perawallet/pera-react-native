@@ -3463,6 +3463,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         useNetwork: vi.fn(() => ({
             network: 'mainnet',
         })),
+        useMinimumFeeConfig: vi.fn(() => ({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+            assetMbr: 100_000n,
+            baseAccountMbr: 100_000n,
+        })),
         useNetworkStore: Object.assign(
             vi.fn(() => 'mainnet'),
             {

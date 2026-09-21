@@ -2576,7 +2576,7 @@
         },
         "close_account": {
             "title": "Hesabı kapat",
-            "body": "Bu hesapta eklenmiş varlık yok. Bakiyenin tamamını göndermek, hesabı Algorand ağında kapatır.",
+            "body": "Bu hesapta eklenmiş varlık yok. Tutar, ağ ücreti düşülmüş bakiyenin tamamı olan {{amount}} ALGO olarak ayarlanacak ve hesap Algorand ağında kapatılacak.",
             "confirm": "Hesabı kapat ve gönder",
             "warning": "Bu işlem, hesabını Algorand ağında kapatacak.",
             "success_title": "Hesap kapatıldı",

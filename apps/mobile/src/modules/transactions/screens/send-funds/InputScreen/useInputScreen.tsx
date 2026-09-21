@@ -29,6 +29,7 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
@@ -38,11 +39,6 @@ import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
-
-// Protocol base minimum balance, in microAlgos. Every asset, app or box
-// opt-in raises an account's minimum above this, and the node refuses a
-// close-out while any of them is still held.
-const BASE_MIN_BALANCE = 100_000n
 
 export const useInputScreen = () => {
     const navigation =
@@ -140,6 +136,7 @@ export const useInputScreen = () => {
     // any amount derived here must reserve the fee the transaction will
     // actually carry, not the base one.
     const { minFee } = useMinFeeForSender(selectedAccount?.address)
+    const { baseAccountMbr } = useMinimumFeeConfig()
     const { data: accountInformation } = useAccountInformationQuery(
         selectedAccount?.address ?? '',
     )
@@ -227,9 +224,9 @@ export const useInputScreen = () => {
         return (
             isAlgoAssetId(selectedAssetId) &&
             (accountInformation?.assets?.length ?? 0) === 0 &&
-            (accountInformation?.minBalance ?? 0n) <= BASE_MIN_BALANCE
+            (accountInformation?.minBalance ?? 0n) <= baseAccountMbr
         )
-    }, [selectedAssetId, accountInformation])
+    }, [selectedAssetId, accountInformation, baseAccountMbr])
 
     const requestCloseAccountConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -238,14 +235,16 @@ export const useInputScreen = () => {
                     icon='warning'
                     iconVariant='error'
                     title={t('send_funds.close_account.title')}
-                    message={t('send_funds.close_account.body')}
+                    message={t('send_funds.close_account.body', {
+                        amount: closeAmount.toString(),
+                    })}
                     confirmLabel={t('send_funds.close_account.confirm')}
                     cancelLabel={t('common.cancel.label')}
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
         })
-    }, [requestBottomSheet, t])
+    }, [requestBottomSheet, t, closeAmount])
 
     const requestInsufficientBalanceConfirm = useCallback(async () => {
         return requestBottomSheet<boolean>({
@@ -368,7 +367,7 @@ export const useInputScreen = () => {
                 if (confirmed) {
                     continuePastMbr()
                 }
-            } else if (canCloseAccount && amountValue.gte(closeAmount)) {
+            } else if (canCloseAccount) {
                 const confirmed = await requestCloseAccountConfirm()
                 if (confirmed) {
                     confirmCloseAccount()
@@ -394,7 +393,6 @@ export const useInputScreen = () => {
         showToast,
         t,
         canCloseAccount,
-        closeAmount,
         isRekeyedSender,
         setIsCloseAccount,
         setAmount,
