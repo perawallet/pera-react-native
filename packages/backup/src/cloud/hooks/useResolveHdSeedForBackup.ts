@@ -15,6 +15,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import type { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
+    BACKUP_ACCESS_DOMAIN,
     entropyChildIdOf,
     useKMS,
     withSecret,
@@ -45,7 +46,7 @@ const readSeedHex = async (
     withExportedKey: KMS['withExportedKey'],
     seedKeyId: string,
 ): Promise<string | null> =>
-    withExportedKey(seedKeyId, keyData =>
+    withExportedKey(seedKeyId, BACKUP_ACCESS_DOMAIN, keyData =>
         keyData.privateKey ? bytesToHex(keyData.privateKey) : '',
     )
 
@@ -83,11 +84,13 @@ export const useResolveHdSeedForBackup = (): SerializeHdResolver => {
                     seedKeyId,
                     account.hdWalletDetails,
                 )
-                const entropyHex = await readEntropyHex(seedKeyId)
-                if (!entropyHex) return null
-
+                // The seed export is the ACL-checked read; run it first so a
+                // denied backup domain throws before the entropy is decoded.
                 const seedHex = await readSeedHex(withExportedKey, seedKeyId)
                 if (!seedHex) return null
+
+                const entropyHex = await readEntropyHex(seedKeyId)
+                if (!entropyHex) return null
 
                 return {
                     seedFirstDerivedAddress: encodeAlgorandAddress(

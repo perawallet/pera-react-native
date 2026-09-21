@@ -30,6 +30,7 @@ import {
     type SyncState,
 } from '../models'
 import { canonicalJson } from './canonicalize'
+import { BackupSyncAbortedError } from './types'
 import type { LocalItem } from './types'
 
 export type PushDirtyDeps = {
@@ -49,6 +50,10 @@ export type PushDirtyDeps = {
         deviceId: DeviceId,
         key: BackupItemKey,
     ) => Promise<DeleteItemResponse>
+    /** Re-checked between network calls, not only before the first: the delete
+     *  loop below awaits, and a `stop()` landing in that window must drop the
+     *  upload rather than let the resumed function push every dirty secret. */
+    isAborted: () => boolean
 }
 
 /** Inject the LWW timestamp into payloads that carry one before encrypting.
@@ -82,6 +87,7 @@ export const pushDirty = async ({
     // 1. Process pending-delete keys first.
     for (const [key, item] of Object.entries(items)) {
         if (!item.pendingDelete) continue
+        if (deps.isAborted()) throw new BackupSyncAbortedError()
         try {
             const res = await deps.deleteItem(
                 deps.network,
@@ -139,6 +145,7 @@ export const pushDirty = async ({
 
     if (entries.length === 0) return { ...state, items, lastSyncedSeq }
 
+    if (deps.isAborted()) throw new BackupSyncAbortedError()
     const response = await deps.batchUpsertItems(
         deps.network,
         deps.backupId,

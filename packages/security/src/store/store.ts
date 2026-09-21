@@ -84,6 +84,10 @@ export const useSecurityStore: UseBoundStore<
     persist(
         set => ({
             ...initialState,
+            // Fails closed until AutoLockGuard's listener writes the real
+            // value; `resetState` keeps the `false` above, since by then the
+            // guard is mounted and settled.
+            isAppLockActive: true,
             incrementFailedAttempts: () =>
                 set(state => ({
                     failedAttempts: state.failedAttempts + 1,

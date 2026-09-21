@@ -21,6 +21,7 @@ const {
     getDerivedPublicKeyMock,
     withSecretMock,
     loggerWarnMock,
+    grantedDomain,
 } = vi.hoisted(() => ({
     keystoreKeys: {
         value: [] as { id: string; type: string; metadata?: unknown }[],
@@ -36,6 +37,7 @@ const {
     getDerivedPublicKeyMock: vi.fn(),
     withSecretMock: vi.fn(),
     loggerWarnMock: vi.fn(),
+    grantedDomain: { value: 'backup-flow' },
 }))
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
@@ -59,6 +61,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
+    BACKUP_ACCESS_DOMAIN: 'backup-flow',
     // Mirrors the real `entropyChildIdOf`, whose metadata contract is pinned by
     // kms's own utils tests — same approach as migratePasskeys.spec.
     entropyChildIdOf: (
@@ -81,10 +84,18 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         seedIdOf: (childId?: string) =>
             childId === 'child-1' ? 'seed-1' : undefined,
         getDerivedPublicKey: getDerivedPublicKeyMock,
+        // Mirrors the real `withExportedKey`, which refuses a domain the
+        // seed's ACL does not grant before it exports anything.
         withExportedKey: async <T>(
             _keyId: string,
+            domain: string,
             handler: (keyData: unknown) => T | Promise<T>,
-        ) => handler(exportedKeyData.value),
+        ) => {
+            if (domain !== grantedDomain.value) {
+                throw new Error('KeyAccessError')
+            }
+            return handler(exportedKeyData.value)
+        },
     }),
 }))
 
@@ -128,6 +139,7 @@ describe('useResolveHdSeedForBackup', () => {
                     handler(secretBytes.value),
             )
         loggerWarnMock.mockReset()
+        grantedDomain.value = 'backup-flow'
     })
 
     it('resolves the seed root plus the entropy held in its secret-key child', async () => {
@@ -148,6 +160,16 @@ describe('useResolveHdSeedForBackup', () => {
         // The dedup key is always acc0/idx0/Peikert, never the child's own path.
         expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 0, 0, 9)
         expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 3, 7, 9)
+    })
+
+    it('skips the account when the seed ACL does not grant the backup domain', async () => {
+        grantedDomain.value = 'pera.accounts'
+        const { result } = renderHook(() => useResolveHdSeedForBackup())
+
+        const resolved = await result.current(account)
+
+        expect(resolved).toBeNull()
+        expect(withSecretMock).not.toHaveBeenCalled()
     })
 
     it('skips the account and warns when the seed has no entropy child', async () => {

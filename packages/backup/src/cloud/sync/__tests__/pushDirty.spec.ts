@@ -21,6 +21,7 @@ import {
 import { UpsertResult } from '../../api'
 import { decryptItemPayload } from '../../crypto/itemPayload'
 import { pushDirty } from '../pushDirty'
+import { BackupSyncAbortedError } from '../types'
 import type { LocalItem } from '../types'
 
 const encryptionKey = new Uint8Array(32).fill(7)
@@ -44,6 +45,7 @@ const baseDeps = () => ({
     encryptionKey,
     batchUpsertItems: vi.fn(),
     deleteItem: vi.fn(async () => ({ seq: 99 })),
+    isAborted: () => false,
 })
 
 describe('pushDirty', () => {
@@ -150,6 +152,50 @@ describe('pushDirty', () => {
             pendingDelete: false,
             localContentHash: null,
         })
+    })
+
+    it('does not upload when a stop lands while a deletion is in flight', async () => {
+        let stopped = false
+        const deps = {
+            ...baseDeps(),
+            deleteItem: vi.fn(async () => {
+                stopped = true
+                return { seq: 99 }
+            }),
+            isAborted: () => stopped,
+        }
+        const state = createEmptySyncState('b')
+        state.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            pendingDelete: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+        state.items['accounts/A'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: 1,
+        }
+
+        await expect(
+            pushDirty({
+                state,
+                localItems: [item('accounts/A')],
+                deps,
+            }),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(deps.batchUpsertItems).not.toHaveBeenCalled()
     })
 
     it('injects the last-write-wins timestamp into a contact payload', async () => {

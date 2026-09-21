@@ -56,6 +56,7 @@ import {
     type BackupSocketFactory,
     type BackupWebSocketEvent,
 } from './webSocketClient'
+import { BackupSyncAbortedError } from './types'
 import type {
     BackupActionOutcome,
     BackupSyncSources,
@@ -96,6 +97,9 @@ export class BackupSyncManager {
     private unwatchAccounts: Nullable<() => void> = null
     private unwatchContacts: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
+    /** Bumped by `stop()`. A run compares it against the value it captured, so
+     *  a stop landing mid-run aborts it instead of letting it finish. */
+    private stopEpoch = 0
     private accountsFingerprint = ''
     private contactsFingerprint = ''
     private readonly state: BackupSyncStatePort
@@ -129,6 +133,7 @@ export class BackupSyncManager {
         ctx: { network: Network; backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
+        const epoch = this.stopEpoch
         // Nested, not sequenced: each scope zeroes its key material on exit,
         // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
@@ -140,6 +145,7 @@ export class BackupSyncManager {
                         deviceId: ctx.deviceId,
                         encryptionKey,
                         hashAddress,
+                        isAborted: () => this.stopEpoch !== epoch,
                         listAccounts: () => this.deps.sources.listAccounts(),
                         serializeAccount: account =>
                             serializeAccountForBackup(account, {
@@ -344,12 +350,16 @@ export class BackupSyncManager {
         this.unwatchContacts?.()
         this.watchLocalStores()
         await this.syncNow()
+        // A stop() during that await already aborted the run; without this the
+        // suspended start() would still install the socket and the interval.
+        if (!this.running) return
         this.connectSocket()
         this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
     }
 
     stop(): void {
         this.running = false
+        this.stopEpoch += 1
         if (this.periodic != null) {
             clearInterval(this.periodic)
             this.periodic = null
@@ -403,6 +413,8 @@ export class BackupSyncManager {
                 )
             }
         } catch (error) {
+            // A stop mid-run is deliberate, not a failed sync.
+            if (error instanceof BackupSyncAbortedError) return
             logger.warn('BackupSyncManager: sync failed', {
                 error: error instanceof Error ? error.message : String(error),
             })

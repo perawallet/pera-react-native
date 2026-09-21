@@ -360,7 +360,7 @@ export const useKMS = () => {
         // algo25 / quantum: the phrase derives from the seed's own
         // private-key bytes — both schemes share the 25-word format
         // (24 data words + 1 checksum over 32 bytes of entropy).
-        return withExportedKey(seedKey.id, async seedData => {
+        return withExportedKey(seedKey.id, domain, async seedData => {
             if (!seedData.privateKey) {
                 throw new KeyManagementError('Seed has no private key bytes')
             }

@@ -11,7 +11,8 @@
  */
 
 import { describe, expect, it, vi, beforeEach, type Mock } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, render, renderHook } from '@testing-library/react'
+import { createElement, useEffect } from 'react'
 import { AppState } from 'react-native'
 
 const {
@@ -52,6 +53,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { error: vi.fn() },
+    registerStore: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -64,6 +66,7 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
     useIsCloudBackupEnabled: isEnabledMock,
 }))
 
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBackupSyncLifecycle } from '../useBackupSyncLifecycle'
 
 const setAppState = (state: string) => {
@@ -81,6 +84,7 @@ describe('useBackupSyncLifecycle', () => {
         vi.clearAllMocks()
         isEnabledMock.mockReturnValue(true)
         backupIdRef.current = 'did:pera:abc'
+        act(() => useSecurityStore.getState().setAppLockActive(false))
         setAppState('active')
     })
 
@@ -113,6 +117,26 @@ describe('useBackupSyncLifecycle', () => {
         expect(managerMock.start).toHaveBeenCalledTimes(1)
 
         unmount()
+        expect(managerMock.stop).toHaveBeenCalled()
+    })
+
+    it('waits for the app lock overlay to clear before syncing', () => {
+        act(() => useSecurityStore.getState().setAppLockActive(true))
+
+        renderHook(() => useBackupSyncLifecycle())
+        expect(managerMock.start).not.toHaveBeenCalled()
+
+        act(() => useSecurityStore.getState().setAppLockActive(false))
+
+        expect(managerMock.start).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops the manager when the app locks mid-session', () => {
+        renderHook(() => useBackupSyncLifecycle())
+        expect(managerMock.start).toHaveBeenCalledTimes(1)
+
+        act(() => useSecurityStore.getState().setAppLockActive(true))
+
         expect(managerMock.stop).toHaveBeenCalled()
     })
 
@@ -149,5 +173,32 @@ describe('useBackupSyncLifecycle', () => {
                 type: 'info',
             }),
         )
+    })
+
+    // AutoLockGuard is a child of the component that runs this hook, so its
+    // effect cannot raise the flag before the parent's effect has already
+    // captured it — only the store's own default gates the first render.
+    it('gates a cold start on the store default, before the guard reports in', async () => {
+        vi.resetModules()
+        const { useSecurityStore: freshStore } =
+            await import('@perawallet/wallet-core-security')
+        const { useBackupSyncLifecycle: freshHook } =
+            await import('../useBackupSyncLifecycle')
+
+        const LockRaiser = () => {
+            const setAppLockActive = freshStore(state => state.setAppLockActive)
+            useEffect(() => {
+                setAppLockActive(true)
+            }, [setAppLockActive])
+            return null
+        }
+        const Root = () => {
+            freshHook()
+            return createElement(LockRaiser)
+        }
+
+        render(createElement(Root))
+
+        expect(managerMock.start).not.toHaveBeenCalled()
     })
 })

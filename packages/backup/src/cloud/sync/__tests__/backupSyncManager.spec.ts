@@ -181,6 +181,7 @@ import {
 } from '../backupSyncManager'
 import { BackupItemStatus, accountItemKey, secretsItemKey } from '../../models'
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { BackupSyncAbortedError } from '../types'
 import type { BackupSyncSources } from '../types'
 
 // Must match the key mockWithBackupItemKey hands the manager.
@@ -272,6 +273,33 @@ describe('BackupSyncManager', () => {
         await mgr.start()
         expect(mockSyncBackup).toHaveBeenCalledTimes(1)
         expect(mockConnect).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('tells an in-flight run to abort once stop() lands', async () => {
+        let isAborted: (() => boolean) | undefined
+        mockSyncBackup.mockImplementation(
+            async (deps: { isAborted: () => boolean }) => {
+                isAborted = deps.isAborted
+                return { backupId: 'backup-123', lastSyncResult: 'SUCCESS' }
+            },
+        )
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.start()
+        expect(isAborted?.()).toBe(false)
+
+        mgr.stop()
+        expect(isAborted?.()).toBe(true)
+    })
+
+    it('records no failure for a run the stop aborted', async () => {
+        mockSyncBackup.mockRejectedValue(new BackupSyncAbortedError())
+        const mgr = new BackupSyncManager(makeDeps())
+
+        await mgr.start()
+
+        expect(mockSetSyncState).not.toHaveBeenCalled()
         mgr.stop()
     })
 

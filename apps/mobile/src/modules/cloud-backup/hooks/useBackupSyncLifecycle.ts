@@ -24,6 +24,7 @@ import {
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -165,10 +166,16 @@ const useForegroundBackupSync = (isActive: boolean) => {
 export const useBackupSyncLifecycle = () => {
     const isCloudBackupEnabled = useIsCloudBackupEnabled()
     const backupId = useCloudBackupStore(state => state.backupId)
+    // Mounted outside AutoLockGuard, which only hides its children. The store
+    // defaults this to `true` and the guard's listener clears it, so a cold
+    // start is gated too, not just a mid-session lock.
+    const isAppLockActive = useSecurityStore(state => state.isAppLockActive)
 
     useBackupSyncManagerSetup()
     // `backupId` lands in the same turn as the on-device keys, so gating on it
     // is what starts the manager when backup is enabled mid-session —
     // `start()` silently no-ops while there are no credentials.
-    useForegroundBackupSync(isCloudBackupEnabled && backupId != null)
+    useForegroundBackupSync(
+        isCloudBackupEnabled && backupId != null && !isAppLockActive,
+    )
 }
