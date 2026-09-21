@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { assertMaxLength } from '@perawallet/wallet-core-shared'
 import {
-    isDerivableArgon2idConfig,
+    decodeBase64Salt,
+    isCanonicalArgon2idConfig,
     isDerivableSaltLength,
     isPositiveInteger,
     isRecord,
@@ -42,6 +43,9 @@ const FILE_NAME_PATTERN = new RegExp(
 
 const BACKUP_CREDENTIALS_FILE_TYPE = 'backup-credentials'
 const BACKUP_CREDENTIALS_FILE_VERSION = 1
+// A real credentials file is a few hundred bytes, and of the three read paths
+// that land here only the device picker bounds what it hands over.
+const MAX_FILE_LENGTH = 16 * 1024
 
 /**
  * Names the file after the backup it unlocks, so a user can keep one per backup
@@ -79,11 +83,8 @@ export type BackupEncryptionKey = {
 }
 
 const hasDerivableSalt = (salt: string): boolean => {
-    try {
-        return isDerivableSaltLength(decodeFromBase64(salt).length)
-    } catch {
-        return false
-    }
+    const decoded = decodeBase64Salt(salt)
+    return decoded !== null && isDerivableSaltLength(decoded.length)
 }
 
 export const parseBackupCredentialsFile = (
@@ -91,6 +92,7 @@ export const parseBackupCredentialsFile = (
 ): BackupEncryptionKey => {
     let parsed: unknown
     try {
+        assertMaxLength(contents, MAX_FILE_LENGTH, 'backup credentials file')
         parsed = JSON.parse(contents)
     } catch {
         throw new InvalidCredentialsFileError()
@@ -110,7 +112,7 @@ export const parseBackupCredentialsFile = (
     if (
         typeof parsed.salt !== 'string' ||
         !argon2id ||
-        !isDerivableArgon2idConfig(argon2id) ||
+        !isCanonicalArgon2idConfig(argon2id) ||
         !hasDerivableSalt(parsed.salt)
     ) {
         throw new InvalidCredentialsFileError()

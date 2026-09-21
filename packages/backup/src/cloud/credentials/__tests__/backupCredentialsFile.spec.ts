@@ -119,6 +119,8 @@ describe('parseBackupCredentialsFile', () => {
         ['a string version', fileWith({ v: '1' })],
         ['a missing salt', fileWith({ salt: undefined })],
         ['a salt whose length is not base64', fileWith({ salt: '!!!' })],
+        // Decodes to nine bytes, because base64-js zero-fills what it can't map.
+        ['a salt of spaces', fileWith({ salt: '            ' })],
         ['a salt too short to derive under', fileWith({ salt: 'c2FsdA==' })],
         ['a malformed KDF block', fileWith({ argon2id: { time_cost: -1 } })],
     ])('rejects %s', (_, contents) => {
@@ -128,15 +130,35 @@ describe('parseBackupCredentialsFile', () => {
         )
     })
 
-    test('refuses a KDF that would allocate absurd memory, since any file can be picked', () => {
-        const file = fileWith({
+    test('refuses a file longer than any credentials file could be', () => {
+        // Padded on a field the parser ignores, so only the length cap can
+        // reject it — padding the salt would trip the base64 guard instead.
+        const padding = (length: number) =>
+            fileWith({ note: 'x'.repeat(length) })
+
+        expect(() => parseBackupCredentialsFile(padding(16 * 1024))).toThrow(
+            InvalidCredentialsFileError,
+        )
+        expect(() => parseBackupCredentialsFile(padding(16))).not.toThrow()
+    })
+
+    const kdfWith = (overrides: Record<string, number>): string =>
+        fileWith({
             argon2id: {
                 ...JSON.parse(buildBackupCredentialsFile(SALT)).argon2id,
-                memory_cost: 4_194_304,
+                ...overrides,
             },
         })
 
-        expect(() => parseBackupCredentialsFile(file)).toThrow(
+    // A saved key only opens the backup it was written for, and that backup's
+    // parameters are fixed — so a block below them is as wrong as one above.
+    test.each([
+        ['would allocate absurd memory', { memory_cost: 4_194_304 }],
+        ['is weaker than the backup it claims to open', { memory_cost: 1 }],
+        ['asks for a single pass', { time_cost: 1 }],
+        ['asks for a shorter key', { output_length: 16 }],
+    ])('refuses a KDF that %s', (_, overrides) => {
+        expect(() => parseBackupCredentialsFile(kdfWith(overrides))).toThrow(
             InvalidCredentialsFileError,
         )
     })

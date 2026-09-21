@@ -17,12 +17,11 @@ import {
     sealAesGcm,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import {
-    encodeToBase64,
-    decodeFromBase64,
-} from '@perawallet/wallet-core-shared'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
 import {
+    decodeBase64Salt,
+    isCanonicalArgon2idConfig,
     isDerivableArgon2idConfig,
     isDerivableSaltLength,
     isPositiveInteger,
@@ -132,6 +131,11 @@ const readConfig = (value: unknown): Argon2idConfig => {
 
 // Both KDF blocks are attacker-chosen: the inner one only proves whoever built
 // the QR knew the code.
+//
+// The envelope's own KDF is bounded rather than pinned, because it protects the
+// QR alone and a later build may legitimately raise it. The inner block is the
+// backup's master-key KDF, which is fixed cross-platform, so anything but the
+// canonical parameters derives a key that opens nothing.
 const assertDerivable = (config: Argon2idConfig): void => {
     if (!isDerivableArgon2idConfig(config)) {
         throw new BackupSyncQrError(
@@ -140,11 +144,17 @@ const assertDerivable = (config: Argon2idConfig): void => {
     }
 }
 
+const assertCanonical = (config: Argon2idConfig): void => {
+    if (!isCanonicalArgon2idConfig(config)) {
+        throw new BackupSyncQrError(
+            'Sync QR carries non-canonical backup parameters',
+        )
+    }
+}
+
 const readSalt = (value: string): Uint8Array => {
-    let salt: Uint8Array
-    try {
-        salt = decodeFromBase64(value)
-    } catch {
+    const salt = decodeBase64Salt(value)
+    if (!salt) {
         throw new BackupSyncQrError('Not a sync QR payload')
     }
     if (!isDerivableSaltLength(salt.length)) {
@@ -225,7 +235,7 @@ export const decryptBackupSyncQr = async (
             throw new BackupSyncQrError()
         }
         const argon2id = readConfig(opened.argon2id)
-        assertDerivable(argon2id)
+        assertCanonical(argon2id)
         return {
             mnemonic: opened.mnemonic,
             backupSalt: opened.salt,

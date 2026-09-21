@@ -11,8 +11,8 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig, BackupId } from '../models'
+import { decodeBase64Salt } from './argon2idConfig'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
 import { deriveBackupId } from './deriveBackupId'
 import { deriveBackupChildKeys } from './deriveBackupChildKeys'
@@ -49,13 +49,15 @@ export const deriveBackupKeys = async ({
     let encryptionKey: Uint8Array | null = null
     let secretKey: Uint8Array | null = null
 
+    // base64-js maps characters outside the alphabet to zero bytes, so a
+    // garbled paste of the right length would otherwise derive a plausible key
+    // that opens nothing.
+    const saltBytes = decodeBase64Salt(salt)
+    if (!saltBytes) throw new Error('Backup salt is not base64')
+
     try {
         password = backupMnemonicToPassword(mnemonic)
-        masterKey = await deriveBackupMasterKey(
-            password,
-            decodeFromBase64(salt),
-            argon2id,
-        )
+        masterKey = await deriveBackupMasterKey(password, saltBytes, argon2id)
         ;({ encryptionKey, authSeed } = deriveBackupChildKeys(masterKey))
 
         const { publicKey, secretKey: authSecretKey } =
