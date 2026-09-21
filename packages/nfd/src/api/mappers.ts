@@ -45,8 +45,8 @@ export const transformSearchResults = (
         // A name search returns a backend-asserted address that can become a
         // send destination. The backend is semi-trusted, so a malformed/garbage
         // address must never reach the destination picker. This closes the
-        // malformed-response case; a VALID attacker-supplied address still needs
-        // on-chain registry verification, which is a follow-up.
+        // malformed-response case; a VALID attacker-supplied address is caught
+        // by `verifyNfdAddress` against the NFD contract before it can be sent to.
         .filter(item => {
             if (isValidAlgorandAddress(item.address)) return true
             logger.warn('NFD search result dropped: invalid Algorand address', {

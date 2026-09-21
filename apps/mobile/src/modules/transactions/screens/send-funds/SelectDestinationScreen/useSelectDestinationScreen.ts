@@ -12,7 +12,11 @@
 
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useCallback, useEffect, useState } from 'react'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { verifyNfdAddress } from '@perawallet/wallet-core-nfd'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigationState, useRoute } from '@react-navigation/native'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
@@ -70,11 +74,74 @@ export const useSelectDestinationScreen = () => {
     const canClose = route.key === rootRouteKey
     const handleClose = useCallback(() => onFinished?.(), [onFinished])
 
+    // A name's address comes from Pera's backend. It only becomes the
+    // destination once the NFD contract itself vouches for it; nothing here
+    // trusts the search result or a cache.
+    const { network } = useNetwork()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+    const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
+    const verificationRef = useRef<AbortController | null>(null)
+    useEffect(() => () => verificationRef.current?.abort(), [])
+
+    const verifyThenResolve = useCallback(
+        async (address: string, name: string) => {
+            verificationRef.current?.abort()
+            const controller = new AbortController()
+            verificationRef.current = controller
+            setIsVerifyingNfd(true)
+            try {
+                const verification = await verifyNfdAddress({
+                    name,
+                    address,
+                    network,
+                    signal: controller.signal,
+                })
+                if (verification === 'verified') {
+                    resolveDestination(address)
+                    return
+                }
+                showToast({
+                    title: t(
+                        verification === 'mismatch'
+                            ? 'send_funds.destination.nfd_mismatch_title'
+                            : 'send_funds.destination.nfd_unavailable_title',
+                        { name },
+                    ),
+                    body: t(
+                        verification === 'mismatch'
+                            ? 'send_funds.destination.nfd_mismatch_body'
+                            : 'send_funds.destination.nfd_unavailable_body',
+                        { name },
+                    ),
+                    type: 'error',
+                })
+            } catch (error) {
+                if (controller.signal.aborted) return
+                throw error
+            } finally {
+                if (!controller.signal.aborted) setIsVerifyingNfd(false)
+            }
+        },
+        [network, resolveDestination, showToast, t],
+    )
+
+    const handleSelected = useCallback(
+        (address: string, nfdName?: string) => {
+            if (nfdName) {
+                void verifyThenResolve(address, nfdName)
+                return
+            }
+            resolveDestination(address)
+        },
+        [verifyThenResolve, resolveDestination],
+    )
+
     return {
         selectedAsset,
         selectedAccount,
-        handleSelected: resolveDestination,
-        isCheckingExternalOptIn: isResolvingDestination,
+        handleSelected,
+        isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
         isAutoAdvancing,
         canClose,
         onClose: handleClose,
