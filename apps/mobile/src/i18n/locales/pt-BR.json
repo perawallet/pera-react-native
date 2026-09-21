@@ -1521,6 +1521,7 @@
             "us_state_error_title": "Não foi possível carregar os estados",
             "us_state_error_body": "Verifique sua conexão e tente novamente.",
             "us_state_retry": "Tentar novamente",
+            "same_mailing_address": "Meu endereço de correspondência é o mesmo que meu endereço residencial",
             "card_terms": "Li e entendi os <0>Termos e condições</0> de emissão do cartão e os aceito.",
             "platform_terms": "Li e entendi os <0>Termos e condições</0> da Pera e os aceito.",
             "confirm_button": "Continuar",
@@ -1528,6 +1529,10 @@
             "error_body": "Não conseguimos salvar seu endereço. Tente novamente.",
             "already_registered_title": "Cadastro já concluído",
             "already_registered_body": "Seus dados já estão registrados. Entre para continuar a configuração do seu cartão."
+        },
+        "mailing_address": {
+            "navigation_title": "Endereço de correspondência",
+            "body": "Seu cartão físico será enviado para este endereço."
         },
         "verification": {
             "title": "Comece a gastar\non-chain",

@@ -1519,6 +1519,7 @@
             "us_state_error_title": "Eyaletler yüklenemedi",
             "us_state_error_body": "Lütfen bağlantını kontrol edip tekrar dene.",
             "us_state_retry": "Tekrar dene",
+            "same_mailing_address": "Posta adresim ikamet adresimle aynı",
             "card_terms": "Kart ihracına ilişkin <0>Şartlar ve Koşullar</0> metnini okudum, anladım ve kabul ediyorum.",
             "platform_terms": "Pera’nın <0>Şartlar ve Koşullar</0> metnini okudum, anladım ve kabul ediyorum.",
             "confirm_button": "Devam et",
@@ -1526,6 +1527,10 @@
             "error_body": "Adresini kaydedemedik. Lütfen tekrar dene.",
             "already_registered_title": "Kayıt zaten tamamlanmış",
             "already_registered_body": "Bilgilerin sistemimizde kayıtlı. Kart kurulumuna devam etmek için lütfen giriş yap."
+        },
+        "mailing_address": {
+            "navigation_title": "Posta adresi",
+            "body": "Fiziksel kartın bu adrese gönderilecek."
         },
         "verification": {
             "title": "Zincir üzerinde\nharcamaya başla",

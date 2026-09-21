@@ -54,7 +54,10 @@ decides where a returning user resumes.
 Eligible countries and US states come from `GET /v1/auth/settings`, so
 eligibility changes without a release. US residents also enter their SSN on
 the personal-details step; Baanx requires it for them and takes the nine
-digits without separators.
+digits without separators. A US resident shipping the card elsewhere unticks
+the same-mailing box on the address step: Baanx then withholds the session
+token from that call and issues it on `POST /v1/auth/register/mailing-address`
+instead, so that step is the one that completes registration.
 
 ## Funding
 

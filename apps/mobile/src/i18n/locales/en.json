@@ -1519,6 +1519,7 @@
             "us_state_error_title": "Couldn't load states",
             "us_state_error_body": "Please check your connection and try again.",
             "us_state_retry": "Try again",
+            "same_mailing_address": "My mailing address is the same as my residential address",
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
             "platform_terms": "I have read and understood Pera's <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
@@ -1526,6 +1527,10 @@
             "error_body": "We couldn't save your address. Please try again.",
             "already_registered_title": "Registration already complete",
             "already_registered_body": "Your details are already on file. Please sign in to continue setting up your card."
+        },
+        "mailing_address": {
+            "navigation_title": "Mailing Address",
+            "body": "Your physical card will be sent to this address."
         },
         "verification": {
             "title": "Begin spending\non-chain",

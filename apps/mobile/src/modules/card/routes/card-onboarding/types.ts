@@ -27,6 +27,8 @@ export type CardOnboardingStackParamList = {
     CardOnboardingStatus: { autoConnectSelected?: boolean }
     CardOnboardingPersonalDetails: undefined
     CardOnboardingAddress: undefined
+    // US residents who ship the card elsewhere; issues the session token.
+    CardOnboardingMailingAddress: undefined
     // The funding type chosen on the status screen; the signing screen reads
     // the connected account itself from the card store.
     CardOnboardingSigning: { fundingType: FundingType }

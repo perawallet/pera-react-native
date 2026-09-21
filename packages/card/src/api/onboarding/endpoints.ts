@@ -21,6 +21,7 @@ import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
 import type {
     AddressInput,
+    MailingAddressInput,
     PersonalDetailsInput,
     RegistrationSettings,
     VeriffSession,
@@ -228,6 +229,29 @@ export const submitAddress = async (
         network: params.network,
         method: 'POST',
         path: '/v1/auth/register/address',
+        data: params.address,
+        signal: params.signal,
+    })
+    const parsed = addressResponseSchema.parse(response.data)
+    return {
+        accessToken: parsed.accessToken,
+        onboardingId: parsed.onboardingId,
+        userId: parsed.user?.id ?? null,
+    }
+}
+
+export type SubmitMailingAddressParams = NetworkParams & {
+    address: MailingAddressInput
+}
+// Reached only when the address step was posted with isSameMailingAddress
+// false; Baanx then withholds the token there and issues it here instead.
+export const submitMailingAddress = async (
+    params: SubmitMailingAddressParams,
+): Promise<SubmitAddressResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/mailing-address',
         data: params.address,
         signal: params.signal,
     })

@@ -1511,6 +1511,7 @@
             "us_state_error_title": "Bundesstaaten konnten nicht geladen werden",
             "us_state_error_body": "Bitte überprüfe deine Verbindung und versuche es erneut.",
             "us_state_retry": "Erneut versuchen",
+            "same_mailing_address": "Meine Postanschrift ist dieselbe wie meine Wohnadresse",
             "card_terms": "Ich habe die Karten-<0>Allgemeinen Geschäftsbedingungen</0> gelesen, verstanden und akzeptiere sie.",
             "platform_terms": "Ich habe die <0>Allgemeinen Geschäftsbedingungen</0> von Pera gelesen, verstanden und akzeptiere sie.",
             "confirm_button": "Weiter",
@@ -1518,6 +1519,10 @@
             "error_body": "Wir konnten deine Adresse nicht speichern. Bitte versuche es erneut.",
             "already_registered_title": "Registrierung bereits abgeschlossen",
             "already_registered_body": "Deine Angaben liegen bereits vor. Bitte melde dich an, um die Einrichtung deiner Karte fortzusetzen."
+        },
+        "mailing_address": {
+            "navigation_title": "Postanschrift",
+            "body": "Deine physische Karte wird an diese Adresse geschickt."
         },
         "verification": {
             "title": "Beginne On-Chain\nauszugeben",

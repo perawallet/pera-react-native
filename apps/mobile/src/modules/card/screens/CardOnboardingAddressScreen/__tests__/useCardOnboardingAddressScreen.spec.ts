@@ -455,6 +455,45 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it('US: a separate mailing address posts the flag and continues to the mailing step', async () => {
+        mockCountryIso = 'US'
+        mockMutateAsync.mockResolvedValueOnce({
+            accessToken: null,
+            onboardingId: 'mock-onboarding-id',
+            userId: null,
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+        expect(result.current.isSameMailingAddress).toBe(true)
+
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                addressLine1: '1 Main Street',
+                city: 'Los Angeles',
+                zip: '90001',
+                usState: 'CA',
+            })
+            result.current.handleToggleCardTerms()
+            result.current.handleTogglePlatformTerms()
+            result.current.handleToggleSameMailingAddress()
+        })
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingMailingAddress',
+            ),
+        )
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                isSameMailingAddress: false,
+                usState: 'CA',
+            }),
+        )
+    })
+
     it("surfaces Baanx's own error message when the submit is rejected", async () => {
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 400 },

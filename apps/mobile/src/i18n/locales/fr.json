@@ -1519,6 +1519,7 @@
             "us_state_error_title": "Impossible de charger les États",
             "us_state_error_body": "Veuillez vérifier votre connexion et réessayer.",
             "us_state_retry": "Réessayer",
+            "same_mailing_address": "Mon adresse postale est la même que mon adresse de résidence",
             "card_terms": "J’ai lu et compris les <0>conditions générales</0> d’émission de la carte et je les accepte.",
             "platform_terms": "J’ai lu et compris les <0>conditions générales</0> de Pera et je les accepte.",
             "confirm_button": "Continuer",
@@ -1526,6 +1527,10 @@
             "error_body": "Nous n’avons pas pu enregistrer votre adresse. Veuillez réessayer.",
             "already_registered_title": "Inscription déjà terminée",
             "already_registered_body": "Vos informations sont déjà enregistrées. Veuillez vous connecter pour continuer la configuration de votre carte."
+        },
+        "mailing_address": {
+            "navigation_title": "Adresse postale",
+            "body": "Votre carte physique sera envoyée à cette adresse."
         },
         "verification": {
             "title": "Commencez à payer\non-chain",

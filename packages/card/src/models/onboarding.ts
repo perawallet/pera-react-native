@@ -23,6 +23,8 @@ export const OnboardingStep = {
     Verification: 'VERIFICATION',
     PersonalDetails: 'PERSONAL_DETAILS',
     Address: 'ADDRESS',
+    /** US residents shipping the card elsewhere; the address step withheld the token. */
+    MailingAddress: 'MAILING_ADDRESS',
     Completed: 'COMPLETED',
 } as const
 export type OnboardingStep =
@@ -102,6 +104,16 @@ export type AddressInput = {
     usState?: string
     /** When true, the mailing address equals the residential address. */
     isSameMailingAddress: boolean
+}
+
+/** US residents only; this step issues the session token the address step withheld. */
+export type MailingAddressInput = {
+    onboardingId: string
+    addressLine1: string
+    addressLine2?: string
+    city: string
+    zip: string
+    usState: string
 }
 
 /** Validation for the email-send onboarding step (email + country). */
@@ -336,3 +348,14 @@ export const addressSchema = z
     })
 
 export type AddressFormValues = z.infer<typeof addressSchema>
+
+/** The mailing step exists only for US residents, so the state is always required. */
+export const mailingAddressSchema = z.object({
+    addressLine1: z.string().trim().min(1),
+    addressLine2: z.string().trim().optional(),
+    city: z.string().trim().min(1),
+    zip: z.string().trim().min(1),
+    usState: z.string().min(1),
+})
+
+export type MailingAddressFormValues = z.infer<typeof mailingAddressSchema>

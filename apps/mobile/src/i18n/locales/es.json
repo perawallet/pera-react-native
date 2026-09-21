@@ -1519,6 +1519,7 @@
             "us_state_error_title": "No se pudieron cargar los estados",
             "us_state_error_body": "Comprueba tu conexión y vuelve a intentarlo.",
             "us_state_retry": "Reintentar",
+            "same_mailing_address": "Mi dirección postal es la misma que mi dirección de residencia",
             "card_terms": "He leído y entiendo los <0>términos y condiciones</0> de emisión de la tarjeta y los acepto.",
             "platform_terms": "He leído y entiendo los <0>términos y condiciones</0> de Pera y los acepto.",
             "confirm_button": "Continuar",
@@ -1526,6 +1527,10 @@
             "error_body": "No pudimos guardar tu dirección. Vuelve a intentarlo.",
             "already_registered_title": "Registro ya completado",
             "already_registered_body": "Tus datos ya están registrados. Inicia sesión para continuar configurando tu tarjeta."
+        },
+        "mailing_address": {
+            "navigation_title": "Dirección postal",
+            "body": "Tu tarjeta física se enviará a esta dirección."
         },
         "verification": {
             "title": "Empieza a gastar\non-chain",

@@ -59,6 +59,9 @@ export type UseCardOnboardingAddressScreenResult = {
     isCountryLocked: boolean
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
+    /** US residents only: unticked means a separate mailing address follows. */
+    isSameMailingAddress: boolean
+    handleToggleSameMailingAddress: () => void
     cardTermsAccepted: boolean
     platformTermsAccepted: boolean
     /**
@@ -144,6 +147,7 @@ export const useCardOnboardingAddressScreen =
         const [selectedUsState, setSelectedUsState] =
             useState<Optional<SupportedUsState>>(undefined)
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
+        const [isSameMailingAddress, setIsSameMailingAddress] = useState(true)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
         const hasPreselected = useRef(false)
@@ -252,6 +256,10 @@ export const useCardOnboardingAddressScreen =
             () => setPlatformTermsAccepted(previous => !previous),
             [],
         )
+        const handleToggleSameMailingAddress = useCallback(
+            () => setIsSameMailingAddress(previous => !previous),
+            [],
+        )
 
         const handleToggleMarketing = useCallback(
             () => setAllowMarketing(!(allowMarketing ?? false)),
@@ -298,8 +306,11 @@ export const useCardOnboardingAddressScreen =
                 addressLine1: values.addressLine1,
                 city: values.city,
                 zip: values.zip,
-                // No separate mailing address is collected; residence is used.
-                isSameMailingAddress: true,
+                // Only US residents may ship the card elsewhere, so the toggle
+                // is offered to them alone.
+                isSameMailingAddress: isUsResident
+                    ? isSameMailingAddress
+                    : true,
                 ...(values.addressLine2
                     ? { addressLine2: values.addressLine2 }
                     : {}),
@@ -323,7 +334,8 @@ export const useCardOnboardingAddressScreen =
                     allowMarketing: allowMarketing ?? false,
                     allowSms: allowSms ?? false,
                 })
-                const { userId } = await submitAddress.mutateAsync(address)
+                const { userId, accessToken } =
+                    await submitAddress.mutateAsync(address)
                 // Link best-effort: registration is already finalized (the
                 // address mutation committed the session + marked the step
                 // Completed), so a link hiccup must not strand a registered user
@@ -339,9 +351,14 @@ export const useCardOnboardingAddressScreen =
                         })
                         .catch(() => undefined)
                 }
-                // Registration is done — hand back to the setup checklist, where
-                // Connect Funds is now the live step.
-                navigation.navigate('CardOnboardingStatus')
+                // No token means the mailing address is still owed and Baanx
+                // issues the token on that step. Otherwise registration is done
+                // and the setup checklist takes over at Connect Funds.
+                navigation.navigate(
+                    accessToken === null
+                        ? 'CardOnboardingMailingAddress'
+                        : 'CardOnboardingStatus',
+                )
             } catch (error) {
                 // Checked before getCardApiError: the typed error carries no
                 // body, so it would otherwise fall through to the generic
@@ -397,6 +414,8 @@ export const useCardOnboardingAddressScreen =
             isCountryLocked,
             isUsResident,
             selectedUsState,
+            isSameMailingAddress,
+            handleToggleSameMailingAddress,
             cardTermsAccepted,
             platformTermsAccepted,
             showsConsentOptIns,
