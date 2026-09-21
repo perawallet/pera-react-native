@@ -12,34 +12,26 @@
 
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useActivateCloudBackupMutation } from '@perawallet/wallet-core-backup'
+import { useRegisterCloudBackupMutation } from '@perawallet/wallet-core-backup'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CloudBackupStackParamList } from '../routes/types'
 
-type UseEnableCloudBackupResult = {
-    enableBackup: () => void
-    isEnabling: boolean
+type UseRegisterCloudBackupResult = {
+    registerBackup: () => void
+    isRegistering: boolean
 }
 
-export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
+export const useRegisterCloudBackup = (): UseRegisterCloudBackupResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
 
-    const mutation = useActivateCloudBackupMutation({
-        onSuccess: () => {
-            showToast({
-                title: t('cloud_backup.enable.success'),
-                body: '',
-                type: 'success',
-            })
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CloudBackupOverview' }],
-            })
-        },
+    const mutation = useRegisterCloudBackupMutation({
+        // `replace`: unmounting the quiz drops the resolved plaintext words it
+        // holds in state; a push would keep them live behind the next screen.
+        onSuccess: () => navigation.replace('CloudBackupStoreEncryptionKey'),
         onError: () => {
             showToast({
                 title: t('cloud_backup.enable.error'),
@@ -49,5 +41,8 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
         },
     })
 
-    return { enableBackup: mutation.mutate, isEnabling: mutation.isPending }
+    return {
+        registerBackup: mutation.mutate,
+        isRegistering: mutation.isPending,
+    }
 }

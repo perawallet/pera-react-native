@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { PWLoadingOverlay, PWScreen, PWText, PWView } from '@components/core'
-import { PanelButton } from '@components/PanelButton'
+import { OptionList, type OptionListOption } from '@components/OptionList'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCloudBackupScreen } from './useCloudBackupScreen'
 import { useStyles } from './styles'
@@ -21,6 +22,28 @@ export const CloudBackupScreen = () => {
     const styles = useStyles()
     const { handleSetUpBackup, handleRestoreBackup, isReadingCredentials } =
         useCloudBackupScreen()
+
+    const options = useMemo<OptionListOption[]>(
+        () => [
+            {
+                key: 'setup',
+                leftIcon: 'cloud-upload',
+                title: t('cloud_backup.main.setup_title'),
+                description: t('cloud_backup.main.setup_description'),
+                onPress: handleSetUpBackup,
+                testID: 'cloud_backup_setup_option',
+            },
+            {
+                key: 'restore',
+                leftIcon: 'cloud-download',
+                title: t('cloud_backup.main.restore_title'),
+                description: t('cloud_backup.main.restore_description'),
+                onPress: () => void handleRestoreBackup(),
+                testID: 'cloud_backup_restore_option',
+            },
+        ],
+        [handleSetUpBackup, handleRestoreBackup, t],
+    )
 
     return (
         <>
@@ -43,24 +66,7 @@ export const CloudBackupScreen = () => {
                     </PWText>
                 </PWView>
 
-                <PWView style={styles.options}>
-                    <PanelButton
-                        leftIcon='cloud-upload'
-                        titleWeight='h3'
-                        title={t('cloud_backup.main.setup_title')}
-                        description={t('cloud_backup.main.setup_description')}
-                        onPress={handleSetUpBackup}
-                        testID='cloud_backup_setup_option'
-                    />
-                    <PanelButton
-                        leftIcon='cloud-download'
-                        titleWeight='h3'
-                        title={t('cloud_backup.main.restore_title')}
-                        description={t('cloud_backup.main.restore_description')}
-                        onPress={() => void handleRestoreBackup()}
-                        testID='cloud_backup_restore_option'
-                    />
-                </PWView>
+                <OptionList options={options} />
             </PWScreen>
 
             <PWLoadingOverlay

@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import {
-    useNavigation,
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useCloudBackupStore,
@@ -68,6 +64,7 @@ type UseCloudBackupOverviewResult = {
     onPressCredentialAddress: () => Promise<void>
     onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
+    isSavingCredentials: boolean
 }
 
 const formatSyncedAt = (millis: number | null): string => {
@@ -92,13 +89,12 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-    const route =
-        useRoute<RouteProp<CloudBackupStackParamList, 'CloudBackupOverview'>>()
     const { disableBackup } = useDisableCloudBackup()
     const { removeBackup } = useRemoveCloudBackup()
     const { isSyncing } = useBackupSync()
     const { showSyncQr } = useSyncDevicesQr()
-    const { storeCredentials } = useStoreBackupCredentials()
+    const { storeCredentials, isSaving: isSavingCredentials } =
+        useStoreBackupCredentials()
     const backupId = useCloudBackupStore(state => state.backupId)
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
@@ -175,19 +171,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         if (choice === 'store') await storeCredentials({ hasVerifiedPin: true })
     }, [requirePinVerification, requestBottomSheet, storeCredentials])
 
-    const shouldPromptStoreCredentials =
-        route.params?.shouldPromptStoreCredentials ?? false
-    const hasPromptedRef = useRef(false)
-
-    useEffect(() => {
-        if (!shouldPromptStoreCredentials || hasPromptedRef.current) return
-        hasPromptedRef.current = true
-        // The param outlives this screen instance, so clear it as well or a
-        // remount of the stack reopens the sheet.
-        navigation.setParams({ shouldPromptStoreCredentials: undefined })
-        void storeCredentials({ hasVerifiedPin: true })
-    }, [shouldPromptStoreCredentials, navigation, storeCredentials])
-
     const onPressSyncDevices = useCallback(async () => {
         trackEvent(CloudBackupEvent.OverviewSyncDevices)
         await showSyncQr()
@@ -242,5 +225,6 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,
+        isSavingCredentials,
     }
 }

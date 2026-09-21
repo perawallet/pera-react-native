@@ -576,11 +576,15 @@
             "proceed": "Continuar",
             "error_message": "Seleção incorreta. Tente novamente."
         },
-        "confirm": {
-            "title": "Você guardou sua chave de criptografia?",
+        "store_encryption_key": {
+            "title": "Guarde sua chave de criptografia",
+            "description": "Guarde sua chave de criptografia em um lugar seguro. Você precisa dela junto com sua Passphrase para restaurar este backup.",
             "checkbox_label": "Sim, guardei minha chave de criptografia",
             "enable_button": "Ativar o backup na nuvem agora",
-            "show_again_button": "Mostrar minhas credenciais novamente"
+            "leave_title": "O backup na nuvem ainda não está ativo",
+            "leave_body": "Nada será salvo até você ativar, e você terá que começar de novo.",
+            "leave_confirm": "Sair mesmo assim",
+            "leave_cancel": "Ficar"
         },
         "enable": {
             "success": "Backup na nuvem ativado",
@@ -602,6 +606,7 @@
             "store_locally": "Salvar localmente",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Salvando sua chave de criptografia…",
             "success": "Chave de criptografia salva",
             "error": "Não foi possível salvar sua chave de criptografia",
             "no_credentials": "O backup na nuvem não está configurado neste dispositivo."

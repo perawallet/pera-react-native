@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
-import { useRoute } from '@react-navigation/native'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCloudBackupOverview } from '../useCloudBackupOverview'
@@ -102,7 +101,6 @@ const {
 }))
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => navigationMock,
-    useRoute: vi.fn(() => ({ params: {} })),
 }))
 vi.mock('../../../hooks', () => ({
     useDisableCloudBackup: () => ({
@@ -197,7 +195,6 @@ const mockStores = (opts: {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    ;(useRoute as unknown as Mock).mockReturnValue({ params: {} })
     ;(useBottomSheet as unknown as Mock).mockReturnValue({
         request: mockRequestBottomSheet,
     })
@@ -585,61 +582,5 @@ describe('useCloudBackupOverview', () => {
         renderHook(() => useCloudBackupOverview())
 
         expect(markIntroductionSeenMock).not.toHaveBeenCalled()
-    })
-
-    describe('arriving from a freshly enabled backup', () => {
-        beforeEach(() => {
-            ;(useRoute as unknown as Mock).mockReturnValue({
-                params: { shouldPromptStoreCredentials: true },
-            })
-            mockStores({
-                backupId: 'did:pera:abc',
-                syncState: null,
-                accounts: [],
-                contacts: [],
-            })
-        })
-
-        test('offers to store the credentials without asking for the PIN again', () => {
-            renderHook(() => useCloudBackupOverview())
-
-            expect(storeCredentialsMock).toHaveBeenCalledWith({
-                hasVerifiedPin: true,
-            })
-            expect(requirePinVerificationMock).not.toHaveBeenCalled()
-        })
-
-        test('offers once, however often the screen re-renders', () => {
-            const { rerender } = renderHook(() => useCloudBackupOverview())
-
-            rerender()
-            rerender()
-
-            expect(storeCredentialsMock).toHaveBeenCalledTimes(1)
-        })
-
-        // The param outlives this screen instance, so a remount of the stack
-        // would reopen the sheet unless it is cleared.
-        test('clears the param it acted on', () => {
-            renderHook(() => useCloudBackupOverview())
-
-            expect(navigationMock.setParams).toHaveBeenCalledWith({
-                shouldPromptStoreCredentials: undefined,
-            })
-        })
-    })
-
-    test('offers nothing on a plain visit to the overview', () => {
-        mockStores({
-            backupId: 'did:pera:abc',
-            syncState: null,
-            accounts: [],
-            contacts: [],
-        })
-
-        renderHook(() => useCloudBackupOverview())
-
-        expect(storeCredentialsMock).not.toHaveBeenCalled()
-        expect(navigationMock.setParams).not.toHaveBeenCalled()
     })
 })

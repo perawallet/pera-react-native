@@ -12,8 +12,6 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import * as Haptics from 'expo-haptics'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCloudBackupDraftStore } from '@perawallet/wallet-core-backup'
 import {
     MNEMONIC_WORDLIST,
@@ -23,25 +21,12 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBackupQuiz, type BackupQuizQuestion } from '@modules/backup'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { useRequirePinVerification } from '@modules/security'
+import { useBackRemovalGuard } from '@hooks/useBackRemovalGuard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import {
-    EncryptionKeyConfirmSheet,
-    type EncryptionKeyConfirmResult,
-} from '../../components/EncryptionKeyConfirmSheet'
-import { useEnableCloudBackup } from '../../hooks'
-import type { CloudBackupStackParamList } from '../../routes/types'
+import { useRegisterCloudBackup } from '../../hooks/useRegisterCloudBackup'
 
 const VERIFICATION_WORD_COUNT = 3
-
-const CONFIRM_SHEET_OPTIONS = {
-    size: 'auto',
-    enablePanDownToClose: true,
-} as const
-
-type EnableBackup = ReturnType<typeof useEnableCloudBackup>['enableBackup']
 
 /** Positions are picked first and a word resolved for only those — the rest of
  *  the phrase never leaves the index buffer. */
@@ -82,40 +67,6 @@ const useVerificationPairs = (): VerificationPairs => {
     }
 }
 
-/**
- * Takes `enableBackup` rather than calling `useEnableCloudBackup` itself: a
- * second call would spin up a second mutation, leaving the screen's
- * `isEnabling` bound to an instance nothing ever runs.
- */
-const useEncryptionKeyConfirmation = (
-    enableBackup: EnableBackup,
-): (() => void) => {
-    const { request: requestBottomSheet } = useBottomSheet()
-    const { requirePinVerification } = useRequirePinVerification()
-    const navigation =
-        useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
-
-    const confirmEncryptionKey = useCallback(async () => {
-        const result = await requestBottomSheet<EncryptionKeyConfirmResult>({
-            contents: <EncryptionKeyConfirmSheet />,
-            options: CONFIRM_SHEET_OPTIONS,
-        })
-
-        if (result === 'show-credentials') {
-            navigation.popTo('CloudBackupSetup')
-        } else if (result === 'enable') {
-            if (!(await requirePinVerification())) return
-            enableBackup()
-        }
-    }, [requestBottomSheet, requirePinVerification, navigation, enableBackup])
-
-    // `useBackupQuiz` types its callback `() => void`.
-    return useCallback(
-        () => void confirmEncryptionKey(),
-        [confirmEncryptionKey],
-    )
-}
-
 const useWrongAnswerFeedback = (): (() => void) => {
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -135,15 +86,19 @@ type UseCloudBackupVerifyScreenResult = {
     onSelect: (questionIndex: number, word: string) => void
     onSubmit: () => void
     isFilled: boolean
-    isEnabling: boolean
+    isRegistering: boolean
 }
 
 export const useCloudBackupVerifyScreen =
     (): UseCloudBackupVerifyScreenResult => {
-        const { enableBackup, isEnabling } = useEnableCloudBackup()
+        const { registerBackup, isRegistering } = useRegisterCloudBackup()
         const { correctPairs, reroll } = useVerificationPairs()
-        const onSuccess = useEncryptionKeyConfirmation(enableBackup)
         const showWrongAnswerFeedback = useWrongAnswerFeedback()
+
+        // Leaving mid-registration strands it: the mutation completes after the
+        // unmount, but the `replace` it navigates with is dropped once this
+        // route has left the stack.
+        useBackRemovalGuard({ isBlocking: isRegistering })
 
         const onWrong = useCallback(() => {
             reroll()
@@ -153,7 +108,7 @@ export const useCloudBackupVerifyScreen =
         const { items, onSelect, onSubmit, isFilled } = useBackupQuiz(
             correctPairs,
             MNEMONIC_WORDLIST,
-            onSuccess,
+            registerBackup,
             onWrong,
         )
 
@@ -162,5 +117,11 @@ export const useCloudBackupVerifyScreen =
             onSubmit()
         }, [onSubmit])
 
-        return { items, onSelect, onSubmit: handleSubmit, isFilled, isEnabling }
+        return {
+            items,
+            onSelect,
+            onSubmit: handleSubmit,
+            isFilled,
+            isRegistering,
+        }
     }

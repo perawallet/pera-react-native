@@ -576,11 +576,15 @@
             "proceed": "Devam et",
             "error_message": "Yanlış seçim. Lütfen tekrar dene."
         },
-        "confirm": {
-            "title": "Şifreleme anahtarını sakladın mı?",
+        "store_encryption_key": {
+            "title": "Şifreleme anahtarını sakla",
+            "description": "Şifreleme anahtarını güvenli bir yerde sakla. Bu yedeği geri yüklemek için Passphrase’inle birlikte bu anahtara ihtiyacın var.",
             "checkbox_label": "Evet, şifreleme anahtarımı sakladım",
             "enable_button": "Bulut yedeklemeyi şimdi etkinleştir",
-            "show_again_button": "Kimlik bilgilerimi tekrar göster"
+            "leave_title": "Bulut yedekleme henüz açık değil",
+            "leave_body": "Sen açana kadar hiçbir şey yedeklenmez ve baştan başlaman gerekir.",
+            "leave_confirm": "Yine de çık",
+            "leave_cancel": "Kal"
         },
         "enable": {
             "success": "Bulut yedekleme etkinleştirildi",
@@ -602,6 +606,7 @@
             "store_locally": "Yerel olarak sakla",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Şifreleme anahtarın saklanıyor…",
             "success": "Şifreleme anahtarı saklandı",
             "error": "Şifreleme anahtarın saklanamadı",
             "no_credentials": "Bu cihazda bulut yedekleme ayarlanmamış."

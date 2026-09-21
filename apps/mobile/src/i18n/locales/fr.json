@@ -576,11 +576,15 @@
             "proceed": "Continuer",
             "error_message": "Sélection incorrecte. Veuillez réessayer."
         },
-        "confirm": {
-            "title": "Avez-vous enregistré votre clé de chiffrement ?",
+        "store_encryption_key": {
+            "title": "Conservez votre clé de chiffrement",
+            "description": "Conservez votre clé de chiffrement en lieu sûr. Vous en avez besoin avec votre Passphrase pour restaurer cette sauvegarde.",
             "checkbox_label": "Oui, j’ai enregistré ma clé de chiffrement",
             "enable_button": "Activer la sauvegarde cloud maintenant",
-            "show_again_button": "Afficher à nouveau mes identifiants"
+            "leave_title": "La sauvegarde cloud n’est pas encore activée",
+            "leave_body": "Rien n’est sauvegardé tant que vous ne l’activez pas, et vous devrez tout recommencer.",
+            "leave_confirm": "Quitter quand même",
+            "leave_cancel": "Rester"
         },
         "enable": {
             "success": "Sauvegarde cloud activée",
@@ -602,6 +606,7 @@
             "store_locally": "Enregistrer localement",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Enregistrement de votre clé de chiffrement…",
             "success": "Clé de chiffrement enregistrée",
             "error": "Impossible d’enregistrer votre clé de chiffrement",
             "no_credentials": "La sauvegarde cloud n’est pas configurée sur cet appareil."

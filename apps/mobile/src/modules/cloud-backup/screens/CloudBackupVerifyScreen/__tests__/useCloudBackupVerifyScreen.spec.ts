@@ -21,19 +21,21 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
-const {
-    navigateMock,
-    popToMock,
-    requestMock,
-    enableBackupMock,
-    requirePinVerificationMock,
-} = vi.hoisted(() => ({
-    navigateMock: vi.fn(),
-    popToMock: vi.fn(),
-    requestMock: vi.fn(),
-    enableBackupMock: vi.fn(),
-    requirePinVerificationMock: vi.fn(),
-}))
+type BeforeRemoveEvent = {
+    data: { action: { type: string } }
+    preventDefault: () => void
+}
+
+const { registerBackupMock, registerState, addListenerMock, setOptionsMock } =
+    vi.hoisted(() => ({
+        registerBackupMock: vi.fn(),
+        registerState: { isRegistering: false },
+        addListenerMock: vi.fn(
+            (_event: string, _listener: (event: BeforeRemoveEvent) => void) =>
+                vi.fn(),
+        ),
+        setOptionsMock: vi.fn(),
+    }))
 
 const MNEMONIC = [
     'marble',
@@ -81,29 +83,18 @@ vi.mock('@modules/backup', () => ({
     })),
 }))
 
-vi.mock('@react-navigation/native', () => ({
-    useNavigation: vi.fn(() => ({ navigate: navigateMock, popTo: popToMock })),
-}))
-
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: vi.fn(() => ({ request: requestMock })),
-}))
-
-vi.mock('@modules/security', () => ({
-    useRequirePinVerification: () => ({
-        requirePinVerification: requirePinVerificationMock,
+vi.mock('../../../hooks/useRegisterCloudBackup', () => ({
+    useRegisterCloudBackup: () => ({
+        registerBackup: registerBackupMock,
+        isRegistering: registerState.isRegistering,
     }),
 }))
 
-vi.mock('../../../hooks', () => ({
-    useEnableCloudBackup: vi.fn(() => ({
-        enableBackup: enableBackupMock,
-        isEnabling: false,
-    })),
-}))
-
-vi.mock('../../components/EncryptionKeyConfirmSheet', () => ({
-    EncryptionKeyConfirmSheet: () => null,
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        addListener: addListenerMock,
+        setOptions: setOptionsMock,
+    }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -122,13 +113,19 @@ vi.mock('expo-haptics', () => ({
 beforeEach(() => {
     vi.clearAllMocks()
     pickCallCount = 0
-    requirePinVerificationMock.mockResolvedValue(true)
+    registerState.isRegistering = false
 })
 
-const flushPromises = () =>
-    act(async () => {
-        await new Promise(resolve => setTimeout(resolve, 0))
-    })
+const renderAndTakeBeforeRemoveListener = (): ((
+    event: BeforeRemoveEvent,
+) => void) => {
+    renderHook(() => useCloudBackupVerifyScreen())
+    const [eventName, listener] = addListenerMock.mock.calls[0]
+
+    expect(eventName).toBe('beforeRemove')
+
+    return listener
+}
 
 describe('useCloudBackupVerifyScreen', () => {
     test('builds a 3-word quiz from the draft index buffer', () => {
@@ -175,62 +172,14 @@ describe('useCloudBackupVerifyScreen', () => {
         expect(quizSubmit).toHaveBeenCalledTimes(1)
     })
 
-    test("enables cloud backup only after the PIN gate passes when the confirm sheet resolves 'enable'", async () => {
-        let passGate: (verified: boolean) => void = () => undefined
-        requirePinVerificationMock.mockReturnValueOnce(
-            new Promise<boolean>(resolve => {
-                passGate = resolve
-            }),
+    // Identity, not a call count: a sheet or PIN gate wrapping `registerBackup`
+    // would still satisfy "was eventually called".
+    test('registers the backup as soon as the quiz passes', () => {
+        renderHook(() => useCloudBackupVerifyScreen())
+
+        expect((useBackupQuiz as Mock).mock.calls[0][2]).toBe(
+            registerBackupMock,
         )
-        requestMock.mockResolvedValue('enable')
-        renderHook(() => useCloudBackupVerifyScreen())
-        const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
-
-        await act(async () => {
-            await onSuccess()
-        })
-        await flushPromises()
-
-        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
-        expect(enableBackupMock).not.toHaveBeenCalled()
-
-        passGate(true)
-        await flushPromises()
-
-        expect(enableBackupMock).toHaveBeenCalledTimes(1)
-        expect(popToMock).not.toHaveBeenCalled()
-    })
-
-    test('does not enable cloud backup when the PIN gate is cancelled', async () => {
-        requirePinVerificationMock.mockResolvedValueOnce(false)
-        requestMock.mockResolvedValue('enable')
-        renderHook(() => useCloudBackupVerifyScreen())
-        const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
-
-        await act(async () => {
-            await onSuccess()
-        })
-        await flushPromises()
-
-        expect(requirePinVerificationMock).toHaveBeenCalledTimes(1)
-        expect(enableBackupMock).not.toHaveBeenCalled()
-    })
-
-    // `popTo`, not `navigate`: navigate would push a second Setup screen, which
-    // regenerates the credentials the user asked to see again.
-    test("pops back to setup when the sheet resolves 'show-credentials'", async () => {
-        requestMock.mockResolvedValue('show-credentials')
-        renderHook(() => useCloudBackupVerifyScreen())
-        const onSuccess = (useBackupQuiz as Mock).mock.calls[0][2]
-
-        await act(async () => {
-            await onSuccess()
-        })
-
-        expect(popToMock).toHaveBeenCalledWith('CloudBackupSetup')
-        expect(navigateMock).not.toHaveBeenCalled()
-        expect(enableBackupMock).not.toHaveBeenCalled()
-        expect(requirePinVerificationMock).not.toHaveBeenCalled()
     })
 
     // Fixed positions leave a 27-combination quiz that can be ground through
@@ -250,5 +199,59 @@ describe('useCloudBackupVerifyScreen', () => {
         expect(after.map((p: { index: number }) => p.index)).not.toEqual(
             before.map((p: { index: number }) => p.index),
         )
+    })
+
+    test('refuses a back action while the registration is in flight', () => {
+        registerState.isRegistering = true
+        const listener = renderAndTakeBeforeRemoveListener()
+        const preventDefault = vi.fn()
+
+        act(() =>
+            listener({ data: { action: { type: 'GO_BACK' } }, preventDefault }),
+        )
+
+        expect(preventDefault).toHaveBeenCalled()
+    })
+
+    test('lets a back action through when no registration is in flight', () => {
+        const listener = renderAndTakeBeforeRemoveListener()
+        const preventDefault = vi.fn()
+
+        act(() =>
+            listener({ data: { action: { type: 'GO_BACK' } }, preventDefault }),
+        )
+
+        expect(preventDefault).not.toHaveBeenCalled()
+    })
+
+    // The success path navigates while `isRegistering` is still true, so a
+    // guard that blocked every removal would strand the flow it protects.
+    test('does not block the replace that follows a successful registration', () => {
+        registerState.isRegistering = true
+        const listener = renderAndTakeBeforeRemoveListener()
+        const preventDefault = vi.fn()
+
+        act(() =>
+            listener({ data: { action: { type: 'REPLACE' } }, preventDefault }),
+        )
+
+        expect(preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('drops the back affordances only while the registration is in flight', () => {
+        const { rerender } = renderHook(() => useCloudBackupVerifyScreen())
+
+        expect(setOptionsMock).toHaveBeenLastCalledWith({
+            headerLeft: undefined,
+            gestureEnabled: undefined,
+        })
+
+        registerState.isRegistering = true
+        rerender()
+
+        expect(setOptionsMock).toHaveBeenLastCalledWith({
+            headerLeft: expect.any(Function),
+            gestureEnabled: false,
+        })
     })
 })

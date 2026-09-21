@@ -568,11 +568,15 @@
             "proceed": "Fortfahren",
             "error_message": "Falsche Auswahl. Bitte versuche es erneut."
         },
-        "confirm": {
-            "title": "Hast du deinen Verschlüsselungsschlüssel gespeichert?",
+        "store_encryption_key": {
+            "title": "Verschlüsselungsschlüssel speichern",
+            "description": "Bewahre deinen Verschlüsselungsschlüssel sicher auf. Zusammen mit deiner Passphrase brauchst du ihn, um dieses Backup wiederherzustellen.",
             "checkbox_label": "Ja, ich habe meinen Verschlüsselungsschlüssel gespeichert",
             "enable_button": "Cloud-Backup jetzt aktivieren",
-            "show_again_button": "Meine Zugangsdaten erneut anzeigen"
+            "leave_title": "Cloud-Backup ist noch nicht aktiv",
+            "leave_body": "Bis du es aktivierst, wird nichts gesichert, und du musst von vorn beginnen.",
+            "leave_confirm": "Trotzdem verlassen",
+            "leave_cancel": "Bleiben"
         },
         "enable": {
             "success": "Cloud-Backup aktiviert",
@@ -594,6 +598,7 @@
             "store_locally": "Lokal speichern",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Dein Verschlüsselungsschlüssel wird gespeichert…",
             "success": "Verschlüsselungsschlüssel gespeichert",
             "error": "Dein Verschlüsselungsschlüssel konnte nicht gespeichert werden",
             "no_credentials": "Cloud-Backup ist auf diesem Gerät nicht eingerichtet."

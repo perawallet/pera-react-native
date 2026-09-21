@@ -576,11 +576,15 @@
             "proceed": "Continuar",
             "error_message": "Selección incorrecta. Vuelve a intentarlo."
         },
-        "confirm": {
-            "title": "¿Has guardado tu clave de cifrado?",
+        "store_encryption_key": {
+            "title": "Guarda tu clave de cifrado",
+            "description": "Guarda tu clave de cifrado en un lugar seguro. La necesitas junto con tu Passphrase para restaurar esta copia de seguridad.",
             "checkbox_label": "Sí, he guardado mi clave de cifrado",
             "enable_button": "Activar la copia de seguridad en la nube",
-            "show_again_button": "Volver a mostrar mis credenciales"
+            "leave_title": "La copia de seguridad en la nube aún no está activa",
+            "leave_body": "No se guardará nada hasta que la actives, y tendrás que empezar de nuevo.",
+            "leave_confirm": "Salir de todos modos",
+            "leave_cancel": "Quedarme"
         },
         "enable": {
             "success": "Copia de seguridad en la nube activada",
@@ -602,6 +606,7 @@
             "store_locally": "Guardar localmente",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Guardando tu clave de cifrado…",
             "success": "Clave de cifrado guardada",
             "error": "No se pudo guardar tu clave de cifrado",
             "no_credentials": "La copia de seguridad en la nube no está configurada en este dispositivo."

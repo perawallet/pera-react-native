@@ -10,5 +10,8 @@
  limitations under the License
  */
 
-export { EncryptionKeyConfirmSheet } from './EncryptionKeyConfirmSheet'
-export type { EncryptionKeyConfirmResult } from './useEncryptionKeyConfirmSheet'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: { gap: theme.spacing.xl },
+}))

@@ -10,16 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    header: {
-        gap: theme.spacing.sm,
-        marginBottom: theme.spacing.xxl,
-    },
-    note: {
-        paddingHorizontal: theme.spacing.lg,
-        color: theme.colors.textGray,
-        textAlign: 'center',
-    },
-}))
+export { CloudBackupStoreEncryptionKeyScreen } from './CloudBackupStoreEncryptionKeyScreen'

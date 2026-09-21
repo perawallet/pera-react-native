@@ -576,11 +576,15 @@
             "proceed": "Proceed",
             "error_message": "Incorrect selection. Please try again."
         },
-        "confirm": {
-            "title": "Have you stored your Encryption Key?",
+        "store_encryption_key": {
+            "title": "Store your Encryption Key",
+            "description": "Keep your Encryption Key somewhere safe. You need it together with your Passphrase to restore this backup.",
             "checkbox_label": "Yes, I stored my Encryption Key",
             "enable_button": "Enable Cloud Backup now",
-            "show_again_button": "Show my credentials again"
+            "leave_title": "Cloud Backup isn’t on yet",
+            "leave_body": "Nothing is backed up until you turn it on, and you’ll have to start over.",
+            "leave_confirm": "Leave anyway",
+            "leave_cancel": "Stay"
         },
         "enable": {
             "success": "Cloud Backup enabled",
@@ -602,6 +606,7 @@
             "store_locally": "Store Locally",
             "icloud": "Apple iCloud",
             "google_drive": "Google Drive",
+            "storing": "Storing your Encryption Key…",
             "success": "Encryption Key stored",
             "error": "Couldn’t store your Encryption Key",
             "no_credentials": "Cloud backup isn’t set up on this device."

@@ -13,29 +13,26 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-/** Only the two callbacks the wrapper supplies; the mutation itself is covered
- *  by the package's own spec. */
 type MutationCallbacks = {
-    onSuccess?: () => void
+    onSuccess?: (data: { backupId: string }) => void
     onError?: (error: Error) => void
 }
-const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
+
+const { showToastMock, replaceMock, mutateMock, capturedOptions } = vi.hoisted(
     () => ({
         showToastMock: vi.fn(),
-        resetMock: vi.fn(),
+        replaceMock: vi.fn(),
         mutateMock: vi.fn(),
-        capturedOptions: {
-            value: null as MutationCallbacks | null,
-        },
+        capturedOptions: { value: null as MutationCallbacks | null },
     }),
 )
 
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ reset: resetMock }),
+    useNavigation: () => ({ replace: replaceMock }),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useActivateCloudBackupMutation: (options: never) => {
+    useRegisterCloudBackupMutation: (options: never) => {
         capturedOptions.value = options
         return { mutate: mutateMock, isPending: false }
     },
@@ -49,35 +46,29 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { useEnableCloudBackup } from '../useEnableCloudBackup'
+import { useRegisterCloudBackup } from '../useRegisterCloudBackup'
 
 beforeEach(() => {
     vi.clearAllMocks()
     capturedOptions.value = null
 })
 
-describe('useEnableCloudBackup', () => {
-    // The store-key screen has just asked; prompting again on Overview would
-    // be a second ask for something already offered.
-    test('confirms and lands on the overview with nothing left to prompt', () => {
-        renderHook(() => useEnableCloudBackup())
+describe('useRegisterCloudBackup', () => {
+    test('replaces the verify screen with the store-key screen on success', () => {
+        renderHook(() => useRegisterCloudBackup())
 
-        act(() => capturedOptions.value?.onSuccess?.())
-
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.enable.success',
-                type: 'success',
-            }),
+        act(() =>
+            capturedOptions.value?.onSuccess?.({ backupId: 'did:pera:abc' }),
         )
-        expect(resetMock).toHaveBeenCalledWith({
-            index: 0,
-            routes: [{ name: 'CloudBackupOverview' }],
-        })
+
+        expect(replaceMock).toHaveBeenCalledWith(
+            'CloudBackupStoreEncryptionKey',
+        )
+        expect(showToastMock).not.toHaveBeenCalled()
     })
 
     test('shows an error toast and stays put on failure', () => {
-        renderHook(() => useEnableCloudBackup())
+        renderHook(() => useRegisterCloudBackup())
 
         act(() => capturedOptions.value?.onError?.(new Error('network down')))
 
@@ -87,6 +78,6 @@ describe('useEnableCloudBackup', () => {
                 type: 'error',
             }),
         )
-        expect(resetMock).not.toHaveBeenCalled()
+        expect(replaceMock).not.toHaveBeenCalled()
     })
 })
