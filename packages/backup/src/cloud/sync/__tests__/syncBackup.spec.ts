@@ -65,6 +65,8 @@ const deps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
+    listPasskeys: async () => [],
+    importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
 })
 
 describe('syncBackup', () => {

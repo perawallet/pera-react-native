@@ -19,6 +19,7 @@ import {
 } from '../../models'
 import { UpsertResult } from '../../api'
 import { decryptItemPayload } from '../../crypto/itemPayload'
+import { buildLocalPasskeyItems } from '../buildLocalPasskeyItems'
 import { pushDirty } from '../pushDirty'
 import type { LocalItem } from '../types'
 
@@ -187,5 +188,45 @@ describe('pushDirty', () => {
             name: 'Alice',
             updatedAt: 777,
         })
+    })
+
+    it('injects the last-write-wins timestamp into a passkey payload', async () => {
+        const deps = baseDeps()
+        deps.batchUpsertItems.mockResolvedValue({ results: [] })
+        const state = createEmptySyncState('b')
+        state.items['passkeys/Y3JlZC1pZA=='] = {
+            type: BackupItemType.PASSKEY,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: true,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: null,
+            localContentHash: 'h',
+            localUpdatedAt: 1_700_000_000,
+        }
+        const localItems = buildLocalPasskeyItems(
+            [
+                {
+                    credentialId: 'Y3JlZC1pZA==',
+                    origin: 'webauthn.io',
+                    identity: 'alice',
+                    counter: 0,
+                    publicKeySpkiDer: 'cHVi',
+                    seedAddress: 'SEEDADDRESS',
+                    createdAt: 1,
+                },
+            ],
+            0,
+        )
+
+        await pushDirty({ state, localItems, deps })
+
+        const [, , , request] = deps.batchUpsertItems.mock.calls[0]
+        const plaintext = decryptItemPayload(request.items[0].payload, {
+            encryptionKey,
+            backupId: 'b',
+            key: 'passkeys/Y3JlZC1pZA==',
+        })
+        expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
     })
 })

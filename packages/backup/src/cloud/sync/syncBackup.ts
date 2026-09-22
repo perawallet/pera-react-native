@@ -17,6 +17,7 @@ import type { Manifest, SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
+import { buildLocalPasskeyItems } from './buildLocalPasskeyItems'
 import { pushDirty } from './pushDirty'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import { reconcile } from './reconcile'
@@ -61,12 +62,15 @@ export const syncBackup = async (
             skipped: accounts.skipped,
         })
     }
+    const passkeys = await deps.listPasskeys()
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
             ...buildLocalContactItems(deps.listContacts(), now),
+            ...buildLocalPasskeyItems(passkeys, now),
         ],
-        // Account-only: a contact cannot fail to serialize.
+        // Account-only: a contact cannot fail to serialize, and a credential
+        // that could not be re-derived never reaches this list.
         skipped: accounts.skipped,
     }
     let next = reconcile(state, local, now)

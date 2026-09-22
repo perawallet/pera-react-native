@@ -22,6 +22,7 @@ import { encryptItemPayload } from '../crypto/itemPayload'
 import {
     isAccountItemKey,
     isContactItemKey,
+    isPasskeyItemKey,
     BackupItemStatus,
     type BackupId,
     type BackupItemKey,
@@ -58,7 +59,9 @@ const withUpdatedAt = (
     updatedAt: number | null | undefined,
 ): string => {
     const carriesUpdatedAt =
-        isAccountItemKey(item.key) || isContactItemKey(item.key)
+        isAccountItemKey(item.key) ||
+        isContactItemKey(item.key) ||
+        isPasskeyItemKey(item.key)
     const payload =
         carriesUpdatedAt && updatedAt != null
             ? { ...(item.payload as Record<string, unknown>), updatedAt }

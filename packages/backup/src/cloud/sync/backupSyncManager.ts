@@ -145,6 +145,13 @@ export class BackupSyncManager {
                 importAccounts: this.deps.importAccounts,
                 listContacts: () => useContactsStore.getState().contacts ?? [],
                 importContacts: this.deps.importContacts,
+                // Passkey push/pull is wired in a later task.
+                listPasskeys: async () => [],
+                importPasskeys: async () => ({
+                    imported: 0,
+                    skipped: [],
+                    failed: [],
+                }),
             }),
         )
     }

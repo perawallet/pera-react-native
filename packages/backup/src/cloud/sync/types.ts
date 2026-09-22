@@ -125,6 +125,22 @@ export type ContactImportFn = (
     contacts: ContactBackupPayload[],
 ) => Promise<ContactImportSummary>
 
+/** Why a credential in the backup was not written to this device. */
+export type PasskeySkipReason =
+    | 'seed-missing'
+    | 'pubkey-mismatch'
+    | 'already-present'
+
+export type PasskeyImportSummary = {
+    imported: number
+    skipped: { credentialId: string; reason: PasskeySkipReason }[]
+    failed: { credentialId: string; reason: string }[]
+}
+
+export type PasskeyImportFn = (
+    passkeys: PasskeyBackupPayload[],
+) => Promise<PasskeyImportSummary>
+
 export type SyncEngineDeps = {
     network: Network
     backupId: BackupId
@@ -144,6 +160,11 @@ export type SyncEngineDeps = {
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */
     importContacts: ContactImportFn
+    /** Credentials this device has proven it can re-derive. Async because
+     *  proving one runs a PBKDF2 per owning seed inside a KMS session. */
+    listPasskeys: () => Promise<BackupPasskey[]>
+    /** Decrypted remote credentials → native provider records. */
+    importPasskeys: PasskeyImportFn
 }
 
 export type { PulledAccount }
