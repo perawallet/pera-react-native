@@ -40,3 +40,15 @@ export const isContactItemKey = (key: BackupItemKey): boolean =>
 /** Address a `contacts/` key names, or null for any other item. */
 export const contactAddressFromItemKey = (key: BackupItemKey): string | null =>
     isContactItemKey(key) ? key.slice(BACKUP_CONTACTS_KEY_PREFIX.length) : null
+
+export const BACKUP_PASSKEYS_KEY_PREFIX = 'passkeys/'
+
+export const passkeyItemKey = (credentialId: string): BackupItemKey =>
+    `${BACKUP_PASSKEYS_KEY_PREFIX}${credentialId}`
+
+export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
+
+/** Credential id a `passkeys/` key names, or null for any other item. */
+export const passkeyIdFromItemKey = (key: BackupItemKey): string | null =>
+    isPasskeyItemKey(key) ? key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length) : null

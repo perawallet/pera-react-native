@@ -16,6 +16,9 @@ import {
     contactAddressFromItemKey,
     contactItemKey,
     isContactItemKey,
+    isPasskeyItemKey,
+    passkeyIdFromItemKey,
+    passkeyItemKey,
 } from '../itemKeys'
 
 describe('contact item keys', () => {
@@ -32,5 +35,21 @@ describe('contact item keys', () => {
     it('reads the address back, and null for any other item', () => {
         expect(contactAddressFromItemKey('contacts/ADDR')).toBe('ADDR')
         expect(contactAddressFromItemKey('accounts/ADDR')).toBeNull()
+    })
+})
+
+describe('passkey item keys', () => {
+    it('builds and recognises a passkey key', () => {
+        const key = passkeyItemKey('Y3JlZC1pZA==')
+
+        expect(key).toBe('passkeys/Y3JlZC1pZA==')
+        expect(isPasskeyItemKey(key)).toBe(true)
+        expect(passkeyIdFromItemKey(key)).toBe('Y3JlZC1pZA==')
+    })
+
+    it('does not claim account or contact keys', () => {
+        expect(isPasskeyItemKey('accounts/ADDR')).toBe(false)
+        expect(isPasskeyItemKey('contacts/ADDR')).toBe(false)
+        expect(passkeyIdFromItemKey('contacts/ADDR')).toBeNull()
     })
 })

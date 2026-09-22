@@ -156,3 +156,27 @@ export const contactBackupPayloadSchema = z.object({
 })
 
 export type ContactBackupPayload = z.infer<typeof contactBackupPayloadSchema>
+
+/** No discriminant: the `passkeys/` prefix and the PASSKEY item type already
+ *  identify the shape. `origin`, `identity` and `counter` are the derivation
+ *  inputs, stored as the strings that provably reproduced this credential;
+ *  `userId`/`userName`/`displayName` only build the native record and label the
+ *  UI, and must never reach derivation — they are not consistently encoded
+ *  across the platforms that wrote them. */
+export const passkeyBackupPayloadSchema = z.object({
+    credentialId: z.string(),
+    origin: z.string(),
+    identity: z.string(),
+    counter: nonNegativeInt,
+    /** Base64 of the 91-byte X.509 SPKI DER; the restore-time match target. */
+    publicKeySpkiDer: z.string(),
+    /** First-derived address of the owning seed, joining to its `secrets/` item. */
+    seedAddress: z.string(),
+    userId: z.string().optional(),
+    userName: z.string().optional(),
+    displayName: z.string().optional(),
+    createdAt: nonNegativeInt,
+    updatedAt,
+})
+
+export type PasskeyBackupPayload = z.infer<typeof passkeyBackupPayloadSchema>
