@@ -13,10 +13,6 @@
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
-import path from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
@@ -24,20 +20,6 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         passWithNoTests: true,
-        setupFiles: ['./vitest.setup.ts'],
-    },
-    resolve: {
-        alias: {
-            'react-native': path.resolve(__dirname, './vitest.rn-stub.ts'),
-            'react-native-quick-crypto': path.resolve(
-                __dirname,
-                './vitest.rn-quick-crypto-stub.ts',
-            ),
-            '@perawallet/wallet-core-kms': path.resolve(
-                __dirname,
-                '../kms/src/index.ts',
-            ),
-        },
     },
     ...poolConfig,
 })
