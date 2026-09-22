@@ -110,6 +110,12 @@ workflows:
     # same suite with APP_ENV unset — and handing a test job the production
     # secrets just to satisfy the guard would widen their exposure for nothing.
     - VALIDATE_PROFILE: test
+    # Turbo's default fans every task out at once. On a cold cache that is 70
+    # build+test tasks on one box, and the contention pushes individual tests
+    # past vitest's 5s timeout: packages/device takes 3s locally and 20s here.
+    # The failures land in whichever package loses the race, so they read as
+    # flakes rather than as the resource limit they are.
+    - TURBO_CONCURRENCY: "3"
     # Publishes TEST_STATUS so the release cards can show a red Tests row
     # instead of rendering the gated builds as a benign "skipped".
     - ROW_ID: TEST
