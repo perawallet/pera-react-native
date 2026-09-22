@@ -37,10 +37,10 @@ export type SyncItemState = {
     pendingImport?: boolean
     /** Epoch millis local content last diverged; written as payload.updatedAt. */
     localUpdatedAt?: number | null
-    /** Display name cached for CONTACT items, so a contact that lives only in
-     *  the backup can be named in the review list without downloading it
-     *  there. Null for every other type; safe to cache because a contact
-     *  payload holds no secret material. */
+    /** Display name cached for CONTACT and PASSKEY items, so an item that
+     *  lives only in the backup can be named in the review list without
+     *  downloading it there. Null for every other type; safe to cache because
+     *  neither payload holds secret material. */
     label?: string | null
 }
 
