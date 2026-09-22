@@ -112,6 +112,14 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
+            // Placeholders until the app-layer passkey hooks land; real
+            // implementations replace these, not this call site's shape.
+            listPasskeys: async () => [],
+            importPasskeys: async () => ({
+                imported: 0,
+                skipped: [],
+                failed: [],
+            }),
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

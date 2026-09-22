@@ -289,4 +289,51 @@ describe('syncBackup', () => {
             knownVer: 1,
         })
     })
+
+    it('still pushes accounts and contacts when listPasskeys rejects', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g3',
+            lastSeq: 0,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: 'accounts/W',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 1,
+                },
+                {
+                    key: 'contacts/C1',
+                    result: UpsertResult.OK,
+                    new_ver: 1,
+                    seq: 2,
+                },
+            ],
+        })
+        const warn = vi.spyOn(logger, 'warn')
+
+        const next = await syncBackup(
+            {
+                ...deps(),
+                listContacts: () => [{ address: 'C1', name: 'Alice' }],
+                listPasskeys: async () => {
+                    throw new Error('KMS session denied')
+                },
+            },
+            createEmptySyncState('b'),
+        )
+
+        const [, , , request] = batchUpsertItems.mock.calls[0]
+        expect(
+            request.items.map((entry: { key: string }) => entry.key).sort(),
+        ).toEqual(['accounts/W', 'contacts/C1'])
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(warn).toHaveBeenCalledWith(
+            'syncBackup: listPasskeys failed, skipping passkeys',
+            { error: 'KMS session denied' },
+        )
+    })
 })

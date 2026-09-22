@@ -62,7 +62,15 @@ export const syncBackup = async (
             skipped: accounts.skipped,
         })
     }
-    const passkeys = await deps.listPasskeys()
+    // A KMS/biometric failure here must not block accounts and contacts from
+    // pushing; reconcile treats a missing item as "not yet re-derived", never
+    // as a delete, so skipping passkeys for this cycle is safe.
+    const passkeys = await deps.listPasskeys().catch(error => {
+        logger.warn('syncBackup: listPasskeys failed, skipping passkeys', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return []
+    })
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,

@@ -264,6 +264,12 @@ describe('Flow: Cloud backup → Restore', () => {
                 importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,
                 resolveHd: hdHook.current,
+                listPasskeys: async () => [],
+                importPasskeys: async () => ({
+                    imported: 0,
+                    skipped: [],
+                    failed: [],
+                }),
             }).syncNow()
 
             expect(getItem(`accounts/${first.address}`)).toBeDefined()

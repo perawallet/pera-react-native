@@ -209,6 +209,12 @@ const makeDeps = () => ({
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
     resolveMnemonic: vi.fn(async () => null),
     resolveHd: vi.fn(async () => null),
+    listPasskeys: vi.fn(async () => []),
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
 })
 
 const setAccounts = (accounts: { address: string; name?: string }[]) => {
@@ -290,6 +296,21 @@ describe('BackupSyncManager', () => {
 
         expect(mockSyncBackup).toHaveBeenCalledWith(
             expect.objectContaining({ deviceId: 'dev-id' }),
+            expect.anything(),
+        )
+    })
+
+    it('threads listPasskeys/importPasskeys from deps through to syncBackup', async () => {
+        const deps = makeDeps()
+        const mgr = new BackupSyncManager(deps)
+
+        await mgr.syncNow()
+
+        expect(mockSyncBackup).toHaveBeenCalledWith(
+            expect.objectContaining({
+                listPasskeys: deps.listPasskeys,
+                importPasskeys: deps.importPasskeys,
+            }),
             expect.anything(),
         )
     })

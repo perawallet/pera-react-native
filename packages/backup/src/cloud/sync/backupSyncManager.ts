@@ -82,6 +82,8 @@ export type BackupSyncManagerDeps = {
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
+    listPasskeys: SyncEngineDeps['listPasskeys']
+    importPasskeys: SyncEngineDeps['importPasskeys']
     socketFactory?: BackupSocketFactory
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
@@ -145,13 +147,8 @@ export class BackupSyncManager {
                 importAccounts: this.deps.importAccounts,
                 listContacts: () => useContactsStore.getState().contacts ?? [],
                 importContacts: this.deps.importContacts,
-                // Passkey push/pull is wired in a later task.
-                listPasskeys: async () => [],
-                importPasskeys: async () => ({
-                    imported: 0,
-                    skipped: [],
-                    failed: [],
-                }),
+                listPasskeys: this.deps.listPasskeys,
+                importPasskeys: this.deps.importPasskeys,
             }),
         )
     }
