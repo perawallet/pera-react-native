@@ -139,6 +139,21 @@ describe('passkeyBackupInputs', () => {
         expect(inputs?.counter).toBe(0)
     })
 
+    // IMPORTANT 6: iOS writes `createdAt` in seconds
+    // (`CredentialProviderViewController.swift`'s
+    // `Date().timeIntervalSince1970`), so the seconds branch of
+    // `normalizeTimestamp` is the live one for a real iOS-written record.
+    it('normalises a seconds-range createdAt to milliseconds', async () => {
+        const key = await buildReproducibleKey('alice', {
+            userName: 'alice',
+            createdAt: 1_700_000_000,
+        })
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs?.createdAt).toBe(1_700_000_000_000)
+    })
+
     it('picks the user-handle candidate when that is what derived the key', async () => {
         const key = await buildReproducibleKey('handle-value', {
             userHandle: 'handle-value',
@@ -168,10 +183,28 @@ describe('passkeyBackupInputs', () => {
         expect(inputs?.counter).toBe(3)
     })
 
+    // The other direction of CRITICAL 1: a credential the user has actually
+    // signed in with carries a non-zero WebAuthn signature counter
+    // (`metadata.count`) alongside a derivation counter (`metadata.counter`)
+    // that's still 0. That signature counter must be ignored, not fed into
+    // derivation.
+    it('reproduces a credential that also carries a non-zero signature counter', async () => {
+        const key = await buildReproducibleKey(
+            'alice',
+            { userName: 'alice', count: 7 },
+            0,
+        )
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs).not.toBeNull()
+        expect(inputs?.counter).toBe(0)
+    })
+
     // Regression for CRITICAL 2: `keystore-core`'s own domain-key derivation
-    // stores the raw 64-byte point (no `0x04` prefix), not the 91-byte SPKI
-    // DER iOS/Android/the extension store. Comparing raw bytes against SPKI
-    // DER always mismatches for these credentials.
+    // (the extension's path) stores the raw 64-byte point (no `0x04`
+    // prefix), not the 91-byte SPKI DER iOS and Android store. Comparing raw
+    // bytes against SPKI DER always mismatches for these credentials.
     it('reproduces a credential whose stored public key is the raw 64-byte point', async () => {
         const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
         const derived = await derivePasskeyCredential({
@@ -252,13 +285,34 @@ describe('passkeyBackupInputs', () => {
     })
 
     // The legacy importer (`writeNativePasskeyEntry` without a
-    // `parentKeyId`) is excluded via the same no-`parentKeyId` check as any
-    // other unreproducible credential. Pinned explicitly so a later change
-    // to that writer can't silently start admitting these: they derive from
-    // a mnemonic string, not seed entropy, and feed `userName` verbatim
-    // without lowercasing, so they could never be reproduced here anyway.
-    it('excludes a legacy-imported credential (no parentKeyId)', async () => {
-        const key = buildKey({ origin: 'webauthn.io', userName: 'Alice' })
+    // `parentKeyId`) is excluded via the no-`parentKeyId` check exercised by
+    // "returns null when the credential has no parent key id" above. This
+    // test isolates the OTHER reason it could never be reproduced even if a
+    // future writer did start setting `parentKeyId`: the legacy path derives
+    // from `userName` fed in verbatim (unlowercased), while every candidate
+    // this module tries is lowercased — so a credential whose real
+    // derivation identity had uppercase letters can never match.
+    it('excludes a credential derived from a verbatim (non-lowercased) identity', async () => {
+        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+        const derived = await derivePasskeyCredential({
+            mainKey,
+            origin: 'webauthn.io',
+            identity: 'Alice',
+        })
+        const key = {
+            id: derived.credentialId,
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            publicKey: derived.publicKeySpkiDer,
+            metadata: {
+                origin: 'webauthn.io',
+                parentKeyId: MAIN_KEY_ID,
+                counter: 0,
+                userName: 'Alice',
+                createdAt: 1_700_000_000_000,
+            },
+        } as unknown as Key
 
         expect(
             await passkeyBackupInputs(key, resolveEntropy, subtle),

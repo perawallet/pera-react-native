@@ -81,13 +81,15 @@ const decodedBase64Candidate = (value: string): string | undefined => {
 }
 
 /**
- * Every identity string a known writer could have derived from. iOS/the
- * extension derive from the user-handle bytes via `toDerivationUserHandle`
- * (utf8, else base64url) lowercased; Android derives from the plain user
- * name. Both `userHandle` and `userId` carry that handle value
- * base64-encoded depending on the writer (see `writeNativePasskeyEntry.ts`),
- * so each is tried both raw and decoded. No stored field says which one
- * applies, so the public-key comparison arbitrates instead of a version tag.
+ * Every identity string a known writer could have derived from. iOS derives
+ * from the user-handle bytes via `toDerivationUserHandle` (utf8, else
+ * base64url) lowercased, but stores the bytes standard-base64 under both
+ * `userHandle` and `userId` (`PasskeyCredentialStore.swift`'s
+ * `saveKeystoreCredential`) — not the derivation input. The engine
+ * (`keystore-signer.ts`) stores the already-lowercased derivation identity
+ * verbatim under `userHandle` instead. So each field is tried both raw and
+ * decoded; no stored field says which writer wrote it, and the public-key
+ * comparison arbitrates instead of a version tag.
  */
 export const identityCandidates = (
     metadata: Record<string, unknown>,
@@ -115,10 +117,11 @@ const SPKI_DER_LENGTH = 91
 
 /**
  * Writers disagree on the stored public-key encoding: `keystore-core`'s own
- * domain-key derivation stores the raw 64-byte point (`deriveBits`, no
- * `0x04` prefix), while iOS/Android/the extension store 91-byte SPKI DER.
- * Normalise to SPKI DER — the form `derivePasskeyCredential` produces —
- * before comparing. Throws on an input that is neither shape; callers catch.
+ * domain-key derivation (the extension's path, via `deriveDomainKey`) stores
+ * the raw 64-byte point (`getPurePKBytes`, no `0x04` prefix), while iOS and
+ * Android store 91-byte SPKI DER. Normalise to SPKI DER — the form
+ * `derivePasskeyCredential` produces — before comparing. Throws on an input
+ * that is neither shape; callers catch.
  */
 const toSpkiDer = (publicKey: Uint8Array): Uint8Array => {
     if (publicKey.length === SPKI_DER_LENGTH) return publicKey
@@ -159,9 +162,20 @@ export const passkeyBackupInputs = async (
     try {
         storedSpkiDer = toSpkiDer(storedPublicKey)
     } catch {
+        // Neither 64/65 nor 91 bytes: a writer this module doesn't know
+        // about. Unlike "no candidate matched", this path leaves no other
+        // evidence, so it's logged even though it's not thrown.
+        logger.warn(
+            'passkeyBackupInputs: stored public key is not a recognised length',
+            { origin, storedPublicKeyLength: storedPublicKey.length },
+        )
         return null
     }
 
+    // `entropy` is owned by `resolveSeedEntropy`'s caller, not by this
+    // function — it's zeroed (or not) at that buffer's own lifetime, e.g.
+    // `withSecret`'s `finally`. Only `mainKey` and each `derived.privateKey`,
+    // which this function allocates, are this function's to zero.
     const entropy = await resolveSeedEntropy(seedKeyId)
     if (entropy == null) return null
 
