@@ -138,7 +138,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
     })
 
     it(
-        'Given the recovery-key word slots are rendered on iOS, then every slot requests the ASCII-capable keyboard so an IME cannot enter its composing state',
+        'Given the recovery-key word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME',
         async () => {
             vi.mocked(File.pickFileAsync).mockResolvedValueOnce(
                 fakeFileFor(buildSingleAccountAsbBackup()),
@@ -161,8 +161,8 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 expect(
                     screen
                         .getByTestId(`asb_import_key_word_${idx}`)
-                        .getAttribute('keyboardType'),
-                ).toBe('ascii-capable')
+                        .getAttribute('data-sensitive'),
+                ).toBe('true')
             }
         },
         SLOW_TEST_TIMEOUT_MS,

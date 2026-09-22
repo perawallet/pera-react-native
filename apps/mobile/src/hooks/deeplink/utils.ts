@@ -39,7 +39,6 @@ const decodeParam = (value: string): string => {
 /**
  * Parse query parameters from a URL
  */
-
 export const parseQueryParams = (url: string): Record<string, string> => {
     const params: Record<string, string> = {}
 

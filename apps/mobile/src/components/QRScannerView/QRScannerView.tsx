@@ -119,9 +119,8 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     // A framed QR can itself be the secret (the Pera Web transfer code carries
     // the raw secretbox key). Gated rather than held from mount: this stays
     // mounted while closed on the portfolio, menu and contact form, where
-    // locking would make the whole app non-capturable. The Modal then waits
-    // for the lock, because Android copies the activity's FLAG_SECURE into a
-    // dialog's window only while creating that dialog.
+    // locking would make the whole app non-capturable. The Modal waits for the
+    // lock to settle; see usePreventScreenCapture.
     const isCaptureLockSettled = usePreventScreenCapture(
         SCREEN_CAPTURE_TAG,
         isScannerRequested,

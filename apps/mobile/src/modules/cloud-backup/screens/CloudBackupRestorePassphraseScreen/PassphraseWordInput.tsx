@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { Platform } from 'react-native'
 import { useTheme } from '@rneui/themed'
 
 import { PWInput, PWText, PWView, type PWInputRef } from '@components/core'
@@ -87,17 +86,7 @@ export const PassphraseWordInput = ({
                     returnKeyType={isLast ? 'done' : 'next'}
                     blurOnSubmit={isLast}
                     autoFocus={autoFocus}
-                    autoCapitalize='none'
-                    autoCorrect={false}
-                    spellCheck={false}
-                    autoComplete='off'
-                    // Same word-slot keyboard as ImportAccountScreen; the
-                    // rationale lives there.
-                    keyboardType={
-                        Platform.OS === 'android'
-                            ? 'visible-password'
-                            : 'ascii-capable'
-                    }
+                    isSensitive
                 />
             </PWView>
         </PWView>

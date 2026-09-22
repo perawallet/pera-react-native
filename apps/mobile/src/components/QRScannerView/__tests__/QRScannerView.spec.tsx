@@ -172,8 +172,6 @@ describe('QRScannerView', () => {
             render(renderScanner(true))
 
             expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1)
-            // Android copies FLAG_SECURE into the Modal's dialog window only
-            // while creating it, so nothing may open before the lock settles.
             expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
 
             expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()

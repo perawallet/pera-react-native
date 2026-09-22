@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
@@ -87,11 +87,49 @@ describe('usePreventScreenCapture', () => {
     test('reports the lock as settled only once the native call resolves', async () => {
         const { result } = renderHook(() => usePreventScreenCapture('qr'))
 
-        // Callers that open their own OS window gate on this: Android copies
-        // FLAG_SECURE into a dialog's window only while creating it.
         expect(result.current).toBe(false)
 
         await waitFor(() => expect(result.current).toBe(true))
+    })
+
+    test('stays unsettled when disabled before the native call resolves', async () => {
+        let resolvePrevent: () => void = () => {}
+        vi.mocked(preventScreenCaptureAsync).mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                resolvePrevent = resolve
+            }),
+        )
+        const { result, rerender } = renderHook(
+            ({ enabled }) => usePreventScreenCapture('qr', enabled),
+            { initialProps: { enabled: true } },
+        )
+
+        rerender({ enabled: false })
+        await act(async () => {
+            resolvePrevent()
+            await new Promise(resolve => setTimeout(resolve, 0))
+        })
+
+        expect(result.current).toBe(false)
+    })
+
+    test('settles a nested holder off the pending native call instead of a second one', async () => {
+        let resolvePrevent: () => void = () => {}
+        vi.mocked(preventScreenCaptureAsync).mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                resolvePrevent = resolve
+            }),
+        )
+        renderHook(() => usePreventScreenCapture('qr'))
+        const nested = renderHook(() => usePreventScreenCapture('paste-link'))
+
+        await act(async () => {})
+        expect(nested.result.current).toBe(false)
+
+        resolvePrevent()
+
+        await waitFor(() => expect(nested.result.current).toBe(true))
+        expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1)
     })
 
     test('reports settled immediately when the build-time flag disables it', () => {
@@ -99,7 +137,6 @@ describe('usePreventScreenCapture', () => {
 
         const { result } = renderHook(() => usePreventScreenCapture('qr'))
 
-        // Nothing to wait for in an e2e build; a gated caller must not hang.
         expect(result.current).toBe(true)
     })
 

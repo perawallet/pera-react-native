@@ -54,11 +54,7 @@ export const parseCoinbaseFormat = (
     const assetPart = parts[0].replace(ALGO_URI_PREFIX, '')
     const actionPart = parts[1].split('?')[0]
 
-    if (
-        actionPart === 'transfer' &&
-        params.address &&
-        isValidAlgorandAddress(params.address)
-    ) {
+    if (actionPart === 'transfer' && isValidAlgorandAddress(params.address)) {
         return {
             type: DeeplinkType.ASSET_TRANSFER,
             sourceUrl: url,
