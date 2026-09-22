@@ -19,7 +19,7 @@ import {
 import {
     sealNativeProviderRecord,
     toNativeByteArray,
-} from '@perawallet/wallet-core-passkeys/native'
+} from './nativeProviderRecord'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>

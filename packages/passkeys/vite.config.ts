@@ -28,10 +28,13 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
+                'react-native',
+                'react-native-quick-crypto',
                 '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
                 '@tanstack/react-query',
                 '@tanstack/store',
+                '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-passkey-autofill',
                 '@perawallet/wallet-extension-provider',
