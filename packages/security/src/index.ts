@@ -15,7 +15,18 @@ export const name = '@perawallet/wallet-core-security'
 export * from './constants'
 export * from './models'
 export * from './hooks'
-export * from './pinRecord'
+// The comparisons stay internal: `usePinCode().verifyPin` is the only way in,
+// so no caller can test a PIN without the attempt being charged.
+export {
+    PIN_RECORD_VERSION,
+    type PinRecord,
+    applyDuressPin,
+    constantTimeEqual,
+    createEmptyDuressSlot,
+    createPinRecord,
+    parsePinRecord,
+    serializePinRecord,
+} from './pinRecord'
 export * from './pinRecordMigration'
 export * from './biometricBlob'
 export * from './store'

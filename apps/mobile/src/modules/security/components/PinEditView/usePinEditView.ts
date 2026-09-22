@@ -204,15 +204,11 @@ export const usePinEditView = ({
                         } else {
                             onSuccess?.()
                         }
-                    } else if (result.kind === 'duress') {
+                    } else {
                         // The user is already unlocked here (settings, view-
                         // passphrase, etc.) so wiping would be wrong; the
-                        // duress branch is only honoured at the lock screen.
-                        // Show the same error as a wrong PIN but do not
-                        // increment the failed-attempt counter — a stray
-                        // duress entry should not contribute to lockout.
-                        setHasError(true)
-                    } else {
+                        // duress branch is only honoured at the lock screen,
+                        // and a duress match reads as a wrong PIN.
                         setHasError(true)
                     }
                     break

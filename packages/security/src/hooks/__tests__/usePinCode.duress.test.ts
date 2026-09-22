@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
-import { __resetMonotonicLockoutForTests, usePinCode } from '../usePinCode'
+import { usePinCode } from '../usePinCode'
 import { useBiometrics } from '../useBiometrics'
 import { useSecurityStore } from '../../store'
 import {
@@ -140,7 +140,6 @@ describe('usePinCode — duress slot', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        __resetMonotonicLockoutForTests()
         kmsMocks.pinBytes = null
         kmsMocks.legacyDuressBytes = null
         kmsMocks.biometricBytes = null
@@ -373,13 +372,62 @@ describe('usePinCode — duress slot', () => {
         })
         expect(duressOutcome).toEqual({ kind: 'duress' })
 
-        // The settings path does not wipe on duress, so the user stays in the
-        // app — and the regular PIN must still work.
         let regularOutcome
         await act(async () => {
             regularOutcome = await result.current.verifyPin('123456')
         })
         expect(regularOutcome).toEqual({ kind: 'ok' })
+    }, 60_000)
+
+    test('a duress entry during a record lockout restores the record and leaves the lockout in force', async () => {
+        const { result } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.savePin('123456')
+            await result.current.saveDuressPin('111111')
+        })
+        const locked: PinRecord = {
+            ...currentPinRecord()!,
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+            lockoutEndTime: Date.now() + 60_000,
+        }
+        kmsMocks.pinBytes = serializePinRecord(locked)
+        mockSetFailedAttempts.mockClear()
+        mockSetLockoutEndTime.mockClear()
+
+        let duressOutcome
+        await act(async () => {
+            duressOutcome = await result.current.verifyPin('111111')
+        })
+
+        expect(duressOutcome).toEqual({ kind: 'duress' })
+        expect(currentPinRecord()).toEqual(locked)
+        expect(mockSetFailedAttempts).not.toHaveBeenCalled()
+        expect(mockSetLockoutEndTime).not.toHaveBeenCalled()
+
+        let regularOutcome
+        await act(async () => {
+            regularOutcome = await result.current.verifyPin('123456')
+        })
+        expect(regularOutcome).toEqual({ kind: 'fail' })
+    }, 60_000)
+
+    test('the duress-PIN setup check is charged as a failed attempt and never refunded', async () => {
+        const { result } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.savePin('123456')
+        })
+
+        let setupCheck
+        await act(async () => {
+            setupCheck = await result.current.verifyPin('111111')
+            await result.current.saveDuressPin('111111')
+        })
+
+        expect(setupCheck).toEqual({ kind: 'fail' })
+        expect(currentPinRecord()).toMatchObject({
+            duressEnabled: 1,
+            failedAttempts: 1,
+        })
     }, 60_000)
 
     test('mounting migrates a legacy v2 record + separate duress record into one v3 record', async () => {

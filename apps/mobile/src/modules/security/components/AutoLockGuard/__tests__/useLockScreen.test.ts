@@ -278,7 +278,6 @@ describe('useLockScreen', () => {
         })
 
         it('surfaces the error and stays locked when the PIN is invalid', async () => {
-            // Attempt bookkeeping is verifyPin's, not this hook's.
             mockVerifyPin.mockResolvedValue({ kind: 'fail' })
 
             const { result } = renderHook(() =>
