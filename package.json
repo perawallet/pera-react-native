@@ -3,8 +3,8 @@
   "type": "module",
   "scripts": {
     "setup": "bash tools/setup.sh",
-    "build": "bash tools/generate-config.sh && turbo run build",
-    "build:packages": "bash tools/generate-config.sh && turbo run build --filter='./packages/*'",
+    "build": "bash tools/generate-config.sh && pnpm check:autodraw-hash && turbo run build",
+    "build:packages": "bash tools/generate-config.sh && pnpm check:autodraw-hash && turbo run build --filter='./packages/*'",
     "dev": "turbo run dev",
     "dev:packages": "turbo run dev --filter='./packages/*' --parallel",
     "android": "turbo run android --filter=mobile",
@@ -41,6 +41,7 @@
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
     "check:patch-pins": "node tools/check-patch-pins.mjs",
     "check:single-algosdk": "node tools/check-single-algosdk.mjs",
+    "check:autodraw-hash": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-autodraw-template-hash.mjs",
     "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "check:dts-emit": "node tools/check-dts-emit.mjs",
     "fallow": "fallow --skip health"
