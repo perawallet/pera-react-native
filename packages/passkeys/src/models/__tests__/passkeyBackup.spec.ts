@@ -13,11 +13,25 @@
 import { describe, expect, it, vi } from 'vitest'
 import { webcrypto } from 'node:crypto'
 import type { Key } from '@algorandfoundation/keystore-core'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 // Same technique as `derivePasskeyCredential.spec.ts`: the real native module
 // has no loadable build here, and every test below passes `subtle` explicitly.
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
+// `@perawallet/wallet-core-kms`'s single-file bundle unconditionally pulls in
+// `@perawallet/wallet-extension-provider` -> `react-native-mmkv`, which also
+// has no loadable build outside a device runtime. `zeroBytes` itself is a
+// trivial `fill(0)`, so it's reimplemented rather than imported for real.
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    zeroBytes: (
+        ...buffers: Array<Uint8Array | Uint16Array | null | undefined>
+    ) => {
+        for (const buf of buffers) buf?.fill(0)
+    },
+}))
+
+import { toDerivationUserHandle } from '../../authenticator/authenticator'
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
@@ -49,12 +63,14 @@ const buildKey = (metadata: Record<string, unknown>): Key =>
 const buildReproducibleKey = async (
     identity: string,
     extraMetadata: Record<string, unknown> = {},
+    counter = 0,
 ): Promise<Key> => {
     const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
     const derived = await derivePasskeyCredential({
         mainKey,
         origin: 'webauthn.io',
         identity,
+        counter,
     })
     return {
         id: derived.credentialId,
@@ -65,7 +81,7 @@ const buildReproducibleKey = async (
         metadata: {
             origin: 'webauthn.io',
             parentKeyId: MAIN_KEY_ID,
-            count: 0,
+            counter,
             createdAt: 1_700_000_000_000,
             ...extraMetadata,
         },
@@ -79,6 +95,10 @@ describe('seedKeyIdFromPasskeyMainKeyId', () => {
 
     it('returns null for an id that is not a passkey main key', () => {
         expect(seedKeyIdFromPasskeyMainKeyId('seed-1')).toBeNull()
+    })
+
+    it('returns null rather than an empty string for a bare suffix', () => {
+        expect(seedKeyIdFromPasskeyMainKeyId('-passkey-main')).toBeNull()
     })
 })
 
@@ -130,8 +150,89 @@ describe('passkeyBackupInputs', () => {
         expect(inputs?.identity).toBe('handle-value')
     })
 
+    // Regression for CRITICAL 1: `metadata.count` is the WebAuthn signature
+    // counter (bumped on every assertion, never fed into derivation);
+    // `metadata.counter` is the derivation counter. Reading the wrong one
+    // means any passkey the user has signed in with at least once fails to
+    // reproduce.
+    it('reproduces a credential derived with a non-zero derivation counter', async () => {
+        const key = await buildReproducibleKey(
+            'alice',
+            { userName: 'alice' },
+            3,
+        )
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs).not.toBeNull()
+        expect(inputs?.counter).toBe(3)
+    })
+
+    // Regression for CRITICAL 2: `keystore-core`'s own domain-key derivation
+    // stores the raw 64-byte point (no `0x04` prefix), not the 91-byte SPKI
+    // DER iOS/Android/the extension store. Comparing raw bytes against SPKI
+    // DER always mismatches for these credentials.
+    it('reproduces a credential whose stored public key is the raw 64-byte point', async () => {
+        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+        const derived = await derivePasskeyCredential({
+            mainKey,
+            origin: 'webauthn.io',
+            identity: 'alice',
+        })
+        // Strip the 26-byte SPKI prefix and the 0x04 point-form indicator,
+        // leaving the bare 64-byte X||Y point `deriveBits` produces.
+        const rawPoint = derived.publicKeySpkiDer.slice(27)
+        const key = {
+            id: derived.credentialId,
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            publicKey: rawPoint,
+            metadata: {
+                origin: 'webauthn.io',
+                parentKeyId: MAIN_KEY_ID,
+                counter: 0,
+                userName: 'alice',
+                createdAt: 1_700_000_000_000,
+            },
+        } as unknown as Key
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs).not.toBeNull()
+        expect(inputs?.identity).toBe('alice')
+        // The payload always carries the derived 91-byte SPKI DER, never an
+        // echo of the 64-byte form the record happened to store.
+        expect(inputs?.publicKeySpkiDer).toBe(
+            encodeToBase64(derived.publicKeySpkiDer),
+        )
+    })
+
+    // Regression for CRITICAL 3: iOS derives from
+    // `userHandleString = String(data:encoding:.utf8) ?? base64URLEncodedString()`
+    // but stores standard base64. For a handle whose bytes are not valid
+    // utf8, the derivation input is the base64url fallback — not the raw
+    // base64 string and not a failed-and-abandoned utf8 decode.
+    it('reproduces a credential whose user handle is not valid utf8, via the base64url fallback', async () => {
+        const handleBytes = new Uint8Array([0xff, 0xfe, 0xfd, 0xfc])
+        const identity = toDerivationUserHandle(handleBytes)
+        const key = await buildReproducibleKey(identity, {
+            userHandle: encodeToBase64(handleBytes),
+        })
+
+        const inputs = await passkeyBackupInputs(key, resolveEntropy, subtle)
+
+        expect(inputs).not.toBeNull()
+        expect(inputs?.identity).toBe(identity)
+    })
+
     it('returns null when no candidate reproduces the stored public key', async () => {
-        const key = await buildReproducibleKey('alice')
+        // A userName is required so `identityCandidates` yields at least one
+        // candidate — otherwise the comparison loop never runs and the test
+        // passes vacuously regardless of what `publicKey` is set to.
+        const key = await buildReproducibleKey('alice', {
+            userName: 'not-alice',
+        })
         const tampered = {
             ...key,
             publicKey: new Uint8Array(91).fill(1),
@@ -144,6 +245,20 @@ describe('passkeyBackupInputs', () => {
 
     it('returns null when the credential has no parent key id', async () => {
         const key = buildKey({ origin: 'webauthn.io', userName: 'alice' })
+
+        expect(
+            await passkeyBackupInputs(key, resolveEntropy, subtle),
+        ).toBeNull()
+    })
+
+    // The legacy importer (`writeNativePasskeyEntry` without a
+    // `parentKeyId`) is excluded via the same no-`parentKeyId` check as any
+    // other unreproducible credential. Pinned explicitly so a later change
+    // to that writer can't silently start admitting these: they derive from
+    // a mnemonic string, not seed entropy, and feed `userName` verbatim
+    // without lowercasing, so they could never be reproduced here anyway.
+    it('excludes a legacy-imported credential (no parentKeyId)', async () => {
+        const key = buildKey({ origin: 'webauthn.io', userName: 'Alice' })
 
         expect(
             await passkeyBackupInputs(key, resolveEntropy, subtle),

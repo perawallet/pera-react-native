@@ -11,16 +11,22 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import {
+    bytesEqual,
+    concatBytes,
     decodeFromBase64,
     encodeToBase64,
     logger,
 } from '@perawallet/wallet-core-shared'
+import { toDerivationUserHandle } from '../authenticator/authenticator'
+import { splitP256PublicKey } from '../authenticator/webauthn-structures'
 import {
     derivePasskeyCredential,
     derivePasskeyMainKey,
+    p256RawPublicKeyToSpkiDer,
 } from '../crypto/derivePasskeyCredential'
-import { isMigrationFlagged } from './passkey'
+import { isMigrationFlagged, normalizeTimestamp } from './passkey'
 
 /** Suffix `passkeyMainKeyId` appends to a seed key id. Restated rather than
  *  imported so this module stays out of the provider's dependency graph. */
@@ -28,23 +34,26 @@ const PASSKEY_MAIN_KEY_SUFFIX = '-passkey-main'
 
 export const seedKeyIdFromPasskeyMainKeyId = (
     mainKeyId: string,
-): string | null =>
-    mainKeyId.endsWith(PASSKEY_MAIN_KEY_SUFFIX)
-        ? mainKeyId.slice(0, -PASSKEY_MAIN_KEY_SUFFIX.length)
-        : null
+): string | null => {
+    if (!mainKeyId.endsWith(PASSKEY_MAIN_KEY_SUFFIX)) return null
+    const seedKeyId = mainKeyId.slice(0, -PASSKEY_MAIN_KEY_SUFFIX.length)
+    return seedKeyId.length > 0 ? seedKeyId : null
+}
 
 export type PasskeyBackupInputs = {
     credentialId: string
     origin: string
     /** The exact string that reproduced this credential. Replayed, never rebuilt. */
     identity: string
+    /** The derivation counter (`metadata.counter`), NOT the WebAuthn signature counter. */
     counter: number
-    /** Base64 of the 91-byte SPKI DER. */
+    /** Base64 of the derived 91-byte SPKI DER — never an echo of whatever the record stored. */
     publicKeySpkiDer: string
     seedKeyId: string
     userId?: string
     userName?: string
     displayName?: string
+    /** Unix ms. */
     createdAt: number
 }
 
@@ -57,27 +66,28 @@ const readString = (
         : undefined
 
 /**
- * `userHandle`/`userId` travel as base64-encoded bytes, and iOS derives from
- * their decoded utf8 text rather than the base64 form (mirrors
- * `ASPasskeyCredentialIdentity.userHandleString`). A value that is not valid
- * base64, or whose bytes are not valid utf8, simply yields no decoded
+ * `userHandle`/`userId` travel as base64-encoded bytes. Decoding and running
+ * them through `toDerivationUserHandle` reproduces exactly what iOS/the
+ * extension fed into derivation (utf8 text, or its base64url form when the
+ * bytes aren't valid utf8). A value that isn't valid base64 yields no decoded
  * candidate — the raw form is still tried on its own.
  */
 const decodedBase64Candidate = (value: string): string | undefined => {
     try {
-        return new TextDecoder('utf-8', { fatal: true }).decode(
-            decodeFromBase64(value),
-        )
+        return toDerivationUserHandle(decodeFromBase64(value))
     } catch {
         return undefined
     }
 }
 
 /**
- * Every identity string a known writer could have fed into derivation. iOS uses
- * the utf8 user handle, Android the user name, the extension the canonical user
- * id — all lowercased. Which one applies is not recorded anywhere reliable, so
- * the public-key comparison arbitrates instead of a stored version tag.
+ * Every identity string a known writer could have derived from. iOS/the
+ * extension derive from the user-handle bytes via `toDerivationUserHandle`
+ * (utf8, else base64url) lowercased; Android derives from the plain user
+ * name. Both `userHandle` and `userId` carry that handle value
+ * base64-encoded depending on the writer (see `writeNativePasskeyEntry.ts`),
+ * so each is tried both raw and decoded. No stored field says which one
+ * applies, so the public-key comparison arbitrates instead of a version tag.
  */
 export const identityCandidates = (
     metadata: Record<string, unknown>,
@@ -101,6 +111,20 @@ export const identityCandidates = (
 }
 
 const PASSKEY_KEY_TYPE = 'hd-derived-p256'
+const SPKI_DER_LENGTH = 91
+
+/**
+ * Writers disagree on the stored public-key encoding: `keystore-core`'s own
+ * domain-key derivation stores the raw 64-byte point (`deriveBits`, no
+ * `0x04` prefix), while iOS/Android/the extension store 91-byte SPKI DER.
+ * Normalise to SPKI DER — the form `derivePasskeyCredential` produces —
+ * before comparing. Throws on an input that is neither shape; callers catch.
+ */
+const toSpkiDer = (publicKey: Uint8Array): Uint8Array => {
+    if (publicKey.length === SPKI_DER_LENGTH) return publicKey
+    const { x, y } = splitP256PublicKey(publicKey)
+    return p256RawPublicKeyToSpkiDer(concatBytes(x, y))
+}
 
 /**
  * A credential's backup inputs, or `null` when this device cannot reproduce it.
@@ -121,50 +145,76 @@ export const passkeyBackupInputs = async (
     const origin = readString(metadata, 'origin')
     const parentKeyId = readString(metadata, 'parentKeyId')
     const storedPublicKey = key.publicKey
+    // A credential the legacy importer wrote (`writeNativePasskeyEntry`
+    // without a `parentKeyId`) is excluded here rather than by name: it's
+    // derived from a mnemonic string, not seed entropy, and feeds `userName`
+    // verbatim without lowercasing, so it could never be reproduced by this
+    // function even if it did carry a parent key id.
     if (!origin || !parentKeyId || !storedPublicKey) return null
 
     const seedKeyId = seedKeyIdFromPasskeyMainKeyId(parentKeyId)
     if (seedKeyId === null) return null
 
-    const entropy = await resolveSeedEntropy(seedKeyId)
-    if (entropy === null) return null
-
-    const counter =
-        typeof metadata.count === 'number' ? (metadata.count as number) : 0
-    const mainKey = await derivePasskeyMainKey(entropy, subtle)
-    const expected = encodeToBase64(storedPublicKey)
-
-    for (const identity of identityCandidates(metadata)) {
-        const derived = await derivePasskeyCredential({
-            mainKey,
-            origin,
-            identity,
-            counter,
-        })
-        if (encodeToBase64(derived.publicKeySpkiDer) !== expected) continue
-
-        return {
-            credentialId: key.id,
-            origin,
-            identity,
-            counter,
-            publicKeySpkiDer: expected,
-            seedKeyId,
-            userId: readString(metadata, 'userId'),
-            userName: readString(metadata, 'userName'),
-            displayName: readString(metadata, 'displayName'),
-            createdAt:
-                typeof metadata.createdAt === 'number'
-                    ? (metadata.createdAt as number)
-                    : Date.now(),
-        }
+    let storedSpkiDer: Uint8Array
+    try {
+        storedSpkiDer = toSpkiDer(storedPublicKey)
+    } catch {
+        return null
     }
 
-    // Not an error: a credential from a writer whose identity rule is not in the
-    // candidate list is excluded rather than mis-derived. Logged with the origin
-    // so a systematic gap is diagnosable.
-    logger.warn('passkeyBackupInputs: no candidate reproduced the credential', {
-        origin,
-    })
-    return null
+    const entropy = await resolveSeedEntropy(seedKeyId)
+    if (entropy == null) return null
+
+    // The derivation counter `keystore-core` writes, NOT the WebAuthn
+    // signature counter (`metadata.count`, which iOS/Android bump on every
+    // assertion and never feed into derivation).
+    const counter =
+        typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
+
+    const mainKey = await derivePasskeyMainKey(entropy, subtle)
+    try {
+        for (const identity of identityCandidates(metadata)) {
+            const derived = await derivePasskeyCredential({
+                mainKey,
+                origin,
+                identity,
+                counter,
+            })
+            try {
+                if (!bytesEqual(derived.publicKeySpkiDer, storedSpkiDer))
+                    continue
+
+                return {
+                    credentialId: key.id,
+                    origin,
+                    identity,
+                    counter,
+                    publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
+                    seedKeyId,
+                    userId: readString(metadata, 'userId'),
+                    userName: readString(metadata, 'userName'),
+                    displayName: readString(metadata, 'displayName'),
+                    createdAt:
+                        normalizeTimestamp(
+                            typeof metadata.createdAt === 'number'
+                                ? (metadata.createdAt as number)
+                                : undefined,
+                        ) ?? Date.now(),
+                }
+            } finally {
+                zeroBytes(derived.privateKey)
+            }
+        }
+
+        // Not an error: a credential from a writer whose identity rule is not
+        // in the candidate list is excluded rather than mis-derived. Logged
+        // with the origin so a systematic gap is diagnosable.
+        logger.warn(
+            'passkeyBackupInputs: no candidate reproduced the credential',
+            { origin },
+        )
+        return null
+    } finally {
+        zeroBytes(mainKey)
+    }
 }
