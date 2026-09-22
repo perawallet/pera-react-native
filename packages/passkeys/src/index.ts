@@ -15,6 +15,7 @@ export const name = '@perawallet/wallet-core-passkeys'
 export * from './models'
 export * from './hooks'
 export * from './bootstrap'
+export * from './crypto'
 // The Android credential provider's on-disk contract. Exported because
 // `packages/migrate` writes records the provider must be able to read, and
 // phase 3 (below) reads them back to migrate them into `k/`+`m/`.
