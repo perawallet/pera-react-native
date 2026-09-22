@@ -13,32 +13,7 @@
 // @vitest-environment node
 import { createPublicKey } from 'node:crypto'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { describe, it, expect, beforeAll, vi } from 'vitest'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-
-// The real `@perawallet/wallet-core-passkeys` root also exports
-// `readFlaggedPasskeyCredentials`, which pulls `@algorandfoundation/react-native-keystore`
-// and through it `react-native-mmkv` — no loadable build outside Metro (same
-// reason `migratePasskeys.spec.ts` mocks this module). Reimplemented here
-// rather than stubbed: these two helpers are exactly what this file used to
-// define locally, and the tests below assert their real byte output.
-const P256_SPKI_PREFIX = Uint8Array.from([
-    0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
-    0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03,
-    0x42, 0x00,
-])
-vi.mock('@perawallet/wallet-core-passkeys', () => ({
-    p256RawPublicKeyToSpkiDer: (pubRaw: Uint8Array): Uint8Array => {
-        const der = new Uint8Array(P256_SPKI_PREFIX.length + 1 + pubRaw.length)
-        der.set(P256_SPKI_PREFIX, 0)
-        der[P256_SPKI_PREFIX.length] = 0x04
-        der.set(pubRaw, P256_SPKI_PREFIX.length + 1)
-        return der
-    },
-    credentialIdBytesToStandardBase64: (bytes: Uint8Array): string =>
-        encodeToBase64(bytes),
-}))
-
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
     credentialIdBytesToStandardBase64,
     decodeCredentialIdToBytes,

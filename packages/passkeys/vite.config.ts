@@ -21,6 +21,7 @@ export default defineConfig({
                 index: resolve(__dirname, 'src/index.ts'),
                 webauthn: resolve(__dirname, 'src/webauthn.ts'),
                 native: resolve(__dirname, 'src/native.ts'),
+                crypto: resolve(__dirname, 'src/crypto.ts'),
             },
             formats: ['es'],
         },

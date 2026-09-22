@@ -17,6 +17,10 @@
     "./native": {
       "types": "./dist/native.d.ts",
       "default": "./dist/native.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto.d.ts",
+      "default": "./dist/crypto.js"
     }
   },
   "scripts": {

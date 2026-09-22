@@ -16,7 +16,7 @@ import { deriveLiquidAuthMainKey } from '@perawallet/wallet-core-kms'
 import {
     credentialIdBytesToStandardBase64,
     p256RawPublicKeyToSpkiDer,
-} from '@perawallet/wallet-core-passkeys'
+} from '@perawallet/wallet-core-passkeys/crypto'
 import { decodeFromBase64, hexToBytes } from '@perawallet/wallet-core-shared'
 
 /**
