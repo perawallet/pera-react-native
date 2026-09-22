@@ -109,6 +109,7 @@ export const syncBackup = async (
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
             readItems,
             decrypt: decryptItemPayload,
         },

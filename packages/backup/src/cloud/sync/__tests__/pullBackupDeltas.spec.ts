@@ -44,6 +44,11 @@ const deps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
 })
 
 describe('pullBackupDeltas', () => {

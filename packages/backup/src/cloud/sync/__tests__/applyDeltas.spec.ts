@@ -32,6 +32,11 @@ const baseDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    importPasskeys: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
     readItems: vi.fn(),
     decrypt: vi.fn(),
 })
