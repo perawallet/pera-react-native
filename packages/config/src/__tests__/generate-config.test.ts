@@ -93,6 +93,11 @@ describe('tools/generate-config.sh', () => {
         expect(output).toContain('reownProjectId: "test-project-id"')
     })
 
+    test('emits cardAutoDrawTemplateHash from CARD_AUTODRAW_TEMPLATE_HASH', () => {
+        const output = run({ CARD_AUTODRAW_TEMPLATE_HASH: 'abc123' })
+        expect(output).toContain('cardAutoDrawTemplateHash: "abc123"')
+    })
+
     test('omits reownProjectId when REOWN_PROJECT_ID is unset', () => {
         const output = run({ REOWN_PROJECT_ID: '' })
         expect(output).not.toContain('reownProjectId')

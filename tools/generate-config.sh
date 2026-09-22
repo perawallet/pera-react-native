@@ -217,6 +217,8 @@ append_config "MAINNET_CARD_KILLSWITCH_APP_ID" "mainnetCardKillswitchAppId" "str
 append_config "TESTNET_CARD_KILLSWITCH_APP_ID" "testnetCardKillswitchAppId" "string"
 append_config "MAINNET_CARD_AUTODRAW_PROGRAM_HASH" "mainnetCardAutoDrawProgramHash" "string"
 append_config "TESTNET_CARD_AUTODRAW_PROGRAM_HASH" "testnetCardAutoDrawProgramHash" "string"
+# Environment-independent pin of the TEAL template itself; see docs/PERA_CARD.md.
+append_config "CARD_AUTODRAW_TEMPLATE_HASH" "cardAutoDrawTemplateHash" "string"
 append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
 append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 
