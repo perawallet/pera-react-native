@@ -68,20 +68,28 @@ export const bridgeUrlFromV1Uri = (uri: string): string | null => {
     }
 }
 
+const LOOPBACK_HOSTNAME =
+    /^(?:localhost|\[::1\]|127(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})$/
+
 /**
- * The connector opens the bridge socket in its constructor, before the user
- * sees an approval sheet, so a deeplink alone reaches an attacker-chosen host.
- * Cleartext there puts the pairing secret and every relayed payload on the
- * wire in the clear. Checked at pairing and again on revive, since a stored
- * record predates this guard.
+ * The connector dials the bridge from its constructor, before any approval.
+ * The URI key never crosses the bridge, but cleartext exposes topic ids,
+ * client metadata and message timing and size, and lets an on-path attacker
+ * drop or replay frames. Loopback never leaves the device.
  */
 export const isSecureBridgeUrl = (bridge: string): boolean => {
+    let url: URL
     try {
-        const { protocol } = new URL(bridge)
-        return protocol === 'https:' || protocol === 'wss:'
+        url = new URL(bridge)
     } catch {
         return false
     }
+    if (url.protocol === 'https:' || url.protocol === 'wss:') return true
+    if (url.protocol !== 'http:' && url.protocol !== 'ws:') return false
+    // The raw authority must equal the WHATWG host: RN's iOS WebSocket (NSURL)
+    // reads `ws://127.0.0.1\@evil.com` as host evil.com.
+    const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#]*)/i.exec(bridge)?.[1]
+    return authority === url.host && LOOPBACK_HOSTNAME.test(url.hostname)
 }
 
 // Applied on every read: the registry hands over erased records, and persisted

@@ -517,6 +517,12 @@ describe('walletconnect v1 handler behaviour', () => {
         return connector
     }
 
+    const withBridge = (bridge: string) =>
+        V1_URI.replace(
+            'bridge=https%3A%2F%2Fb.example',
+            `bridge=${encodeURIComponent(bridge)}`,
+        )
+
     /** Pairs, delivers a handshake and approves it for `accounts`. */
     const connect = async (accounts: string[] = ['AAAA']) => {
         const harness = await setup()
@@ -564,17 +570,35 @@ describe('walletconnect v1 handler behaviour', () => {
         ])
     })
 
-    it('refuses to pair over a cleartext bridge, before any socket is opened', async () => {
+    it.each([
+        'http://b.example',
+        'ws://b.example',
+        'ws://192.168.1.10',
+        'ws://localhost.evil.com',
+        'ws://127.0.0.1.evil.com',
+        'ws://127.0.0.1\\@evil.com',
+        'ws://127.0.0.1.:52100',
+    ])('refuses to pair over %s, before any socket is opened', async bridge => {
         const { handler } = await setup()
-        const insecure = V1_URI.replace(
-            'bridge=https%3A%2F%2Fb.example',
-            'bridge=http%3A%2F%2Fb.example',
-        )
 
-        await expect(handler.pair(insecure)).rejects.toThrow(
+        await expect(handler.pair(withBridge(bridge))).rejects.toThrow(
             'bridge must be https or wss',
         )
         expect(wc.FakeConnector.instances).toHaveLength(0)
+    })
+
+    it.each([
+        'wss://b.example',
+        'ws://127.0.0.1:52100',
+        'ws://localhost:52100',
+        'http://[::1]:52100',
+    ])('pairs over %s', async bridge => {
+        const { handler } = await setup()
+        const uri = withBridge(bridge)
+
+        await handler.pair(uri)
+
+        expect(lastConnector().options.uri).toBe(uri)
     })
 
     it('refuses a URI carrying two bridges — the SDK would dial the last', async () => {

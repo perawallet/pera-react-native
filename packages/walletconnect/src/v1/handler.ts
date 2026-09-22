@@ -753,9 +753,9 @@ export const createWalletConnectV1Handler = (
     ): Promise<WalletConnectV1Connection> => {
         if (rebindLive(connection.id)) return asStatus(connection, 'active')
 
-        // Records stored before the pairing-time check can carry a cleartext or
-        // malformed bridge. Same outcome as a constructor failure below —
-        // inactive rather than dropped, so the dApp stays in settings.
+        // Imported records (native-app migration, legacy store) never went
+        // through `pair`. Inactive rather than dropped, like a constructor
+        // failure below, so the dApp stays in settings.
         if (!isSecureBridgeUrl(connection.metadata.bridge)) {
             reportError(
                 new WalletConnectBridgeConnectionError(

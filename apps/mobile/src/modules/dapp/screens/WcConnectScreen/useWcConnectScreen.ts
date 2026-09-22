@@ -11,12 +11,14 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Linking } from 'react-native'
 import {
     useSelectedAccountAddress,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { useApprovalArming } from '../../hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
@@ -37,6 +39,7 @@ type UseWcConnectScreenResult = {
     isConnecting: boolean
     handleConnect: () => void
     handleCancel: () => void
+    handlePressUrl: () => void
     /** A decision failed to reach the bridge; the button stays spinning by design. */
     deliveryError: boolean
 }
@@ -117,6 +120,13 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         void reject()
     }, [reject])
 
+    const handlePressUrl = useCallback((): void => {
+        const url = toValidatedBrowserUrl(proposal?.peer.url)
+        if (!url) return
+        // A new browser tab: nothing renders mobile's webview here.
+        void Linking.openURL(url)
+    }, [proposal])
+
     return {
         peer: proposal?.peer ?? null,
         permissions: proposal?.requested.methods ?? [],
@@ -133,6 +143,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         isConnecting,
         handleConnect,
         handleCancel,
+        handlePressUrl,
         deliveryError,
     }
 }

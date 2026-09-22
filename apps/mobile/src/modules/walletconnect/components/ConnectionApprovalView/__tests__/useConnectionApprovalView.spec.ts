@@ -16,16 +16,22 @@ import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
 import { useConnectionApprovalView } from '../useConnectionApprovalView'
 
-const { trackEvent, confirmQuantumDappUsage, errorToast, showError } =
-    vi.hoisted(() => ({
-        trackEvent: vi.fn(),
-        confirmQuantumDappUsage: vi.fn(
-            async (_accounts: string[]): Promise<'continue' | 'cancel'> =>
-                'continue',
-        ),
-        errorToast: vi.fn(),
-        showError: vi.fn(),
-    }))
+const {
+    trackEvent,
+    confirmQuantumDappUsage,
+    errorToast,
+    showError,
+    pushWebView,
+} = vi.hoisted(() => ({
+    trackEvent: vi.fn(),
+    confirmQuantumDappUsage: vi.fn(
+        async (_accounts: string[]): Promise<'continue' | 'cancel'> =>
+            'continue',
+    ),
+    errorToast: vi.fn(),
+    showError: vi.fn(),
+    pushWebView: vi.fn(),
+}))
 
 vi.mock('@analytics', async importOriginal => ({
     ...(await importOriginal<typeof import('@analytics')>()),
@@ -42,6 +48,10 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError }),
+}))
+
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({ pushWebView }),
 }))
 
 const makeProposal = (overrides = {}) => ({
@@ -64,6 +74,7 @@ describe('useConnectionApprovalView', () => {
         trackEvent.mockClear()
         errorToast.mockClear()
         showError.mockClear()
+        pushWebView.mockClear()
     })
 
     it('approves through the proposal, with no registry lookup', async () => {
@@ -295,5 +306,44 @@ describe('useConnectionApprovalView', () => {
         // second tap landing during that gap — this is what closes it.
         expect(confirmQuantumDappUsage).toHaveBeenCalledTimes(1)
         expect(proposal.approve).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+        'javascript:alert(document.cookie)',
+        'data:text/html,<script>alert(1)</script>',
+        'file:///etc/passwd',
+        'intent://evil.example#Intent;scheme=https;end',
+        'content://com.evil.provider/secret',
+        'http://insecure.example',
+        '//evil.example',
+        '',
+    ])('does not open the WebView for the peer url %j', url => {
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(
+                makeProposal({ peer: { name: 'Tinyman', url } }) as never,
+            ),
+        )
+
+        act(() => result.current.handlePressUrl())
+
+        expect(pushWebView).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        ['https://tinyman.org/pools', 'https://tinyman.org/pools'],
+        ['tinyman.org', 'https://tinyman.org'],
+    ])('opens the WebView for the peer url %j at %j', (url, expected) => {
+        const { result } = renderHook(() =>
+            useConnectionApprovalView(
+                makeProposal({ peer: { name: 'Tinyman', url } }) as never,
+            ),
+        )
+
+        act(() => result.current.handlePressUrl())
+
+        expect(pushWebView).toHaveBeenCalledWith({
+            id: expect.any(String),
+            url: expected,
+        })
     })
 })
