@@ -20,7 +20,12 @@ import {
     useHandleMultisigNotification,
 } from '@modules/messages/hooks'
 
+import { navigateHome } from './deeplink/navigateToScreen'
 import { useDeepLink } from './useDeepLink'
+
+// A push tap that can't be honoured lands on Home, not wherever the app was
+// left; the in-app Notifications list passes no onError and stays put.
+const landHome = (): void => navigateHome(false)
 
 /**
  * Bridges OS push-notification taps to the app's routing (foreground,
@@ -56,7 +61,12 @@ export const useNotificationDeeplinkListener = () => {
                     return
                 }
                 if (payload.url && isValidDeepLink(payload.url)) {
-                    void handleDeepLink(payload.url, false, 'notification')
+                    void handleDeepLink(
+                        payload.url,
+                        false,
+                        'notification',
+                        landHome,
+                    )
                 }
             })
 

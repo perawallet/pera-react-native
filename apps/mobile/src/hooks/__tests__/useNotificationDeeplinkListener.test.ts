@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => {
         handleDeepLink: vi.fn(),
         isValidDeepLink: vi.fn((_: string) => true),
         handleMultisigNotification: vi.fn(),
+        navigateHome: vi.fn(),
         addNotificationOpenListener: vi.fn(
             (listener: (payload: NotificationOpenPayload) => void) => {
                 state.listener = listener
@@ -53,6 +54,10 @@ vi.mock('../useDeepLink', () => ({
         handleDeepLink: mocks.handleDeepLink,
         isValidDeepLink: mocks.isValidDeepLink,
     }),
+}))
+
+vi.mock('../deeplink/navigateToScreen', () => ({
+    navigateHome: mocks.navigateHome,
 }))
 
 vi.mock('@modules/messages/hooks', () => ({
@@ -101,7 +106,22 @@ describe('useNotificationDeeplinkListener', () => {
             'perawallet://app/cards',
             false,
             'notification',
+            expect.any(Function),
         )
+    })
+
+    it('lands on Home when the dispatcher refuses the tapped deeplink', () => {
+        renderHook(() => useNotificationDeeplinkListener())
+        act(() =>
+            mocks.state.listener?.({
+                url: 'perawallet://app/keyreg?address=A',
+            }),
+        )
+        const onError = mocks.handleDeepLink.mock.calls[0][3] as () => void
+
+        act(() => onError())
+
+        expect(mocks.navigateHome).toHaveBeenCalledWith(false)
     })
 
     it('ignores a notification URL that is not a valid deeplink', () => {

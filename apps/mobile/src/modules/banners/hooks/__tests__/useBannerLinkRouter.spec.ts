@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
+import { parseDeeplink } from '@hooks/deeplink/parser'
 import { DeeplinkType } from '@hooks/deeplink/types'
 
 const mockHandleDeepLink = vi.fn()
@@ -26,6 +27,10 @@ vi.mock('@hooks/useDeepLink', () => ({
 }))
 
 import { useBannerLinkRouter } from '../useBannerLinkRouter'
+
+const ADDRESS = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+const WC_URI =
+    'wc%3A7f6e504bfad60b485450578e05678ed3e8e8c4751d3c6160be17160d63ec90f9%402%3Frelay-protocol%3Dirn%26symKey%3D587d5484ce2a2a6ee3ba1962fdd7e8588e06200c46823bd18fbd67def96ad303'
 
 beforeEach(() => {
     mockHandleDeepLink.mockReset()
@@ -49,7 +54,7 @@ describe('useBannerLinkRouter', () => {
                 url: 'https://example.com',
             }),
         )
-        expect(Linking.openURL).toHaveBeenCalledWith('https://example.com')
+        expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/')
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
     })
 
@@ -67,17 +72,6 @@ describe('useBannerLinkRouter', () => {
             'in-app',
         )
         expect(Linking.openURL).not.toHaveBeenCalled()
-    })
-
-    it('falls back to Linking.openURL when URL is not a valid deep link', () => {
-        const { result } = renderHook(() => useBannerLinkRouter())
-        act(() =>
-            result.current.route({
-                url: 'https://example.com',
-            }),
-        )
-        expect(Linking.openURL).toHaveBeenCalledWith('https://example.com')
-        expect(mockHandleDeepLink).not.toHaveBeenCalled()
     })
 
     it.each([
@@ -129,7 +123,7 @@ describe('useBannerLinkRouter', () => {
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('refuses a deep link the server marked external, which would re-enter as a full-trust OS link', () => {
+    it('never opens an unparsed URL in an app scheme outside the allowlist', () => {
         const { result } = renderHook(() => useBannerLinkRouter())
 
         act(() => result.current.route({ url: 'pera://keyreg' }))
@@ -139,8 +133,6 @@ describe('useBannerLinkRouter', () => {
     })
 
     it('gates an https Pera link the CMS could otherwise route past the policy', () => {
-        // The bypass: an https universal link passes the scheme allowlist, so
-        // handing it to the OS re-enters the app as a full-trust deeplink.
         mockParseDeeplink.mockReturnValue({ type: DeeplinkType.KEYREG })
         const { result } = renderHook(() => useBannerLinkRouter())
 
@@ -155,9 +147,6 @@ describe('useBannerLinkRouter', () => {
     })
 
     it('classifies the normalized URL, not the raw one the CMS sent', () => {
-        // A scheme-less Pera universal link parses as nothing until the
-        // external fallback prepends `https://` — at which point it is a
-        // refused opt-in link the OS would hand straight back.
         mockParseDeeplink.mockImplementation((url: string) =>
             url.startsWith('https://')
                 ? { type: DeeplinkType.ASSET_OPT_IN }
@@ -172,7 +161,11 @@ describe('useBannerLinkRouter', () => {
         )
 
         expect(Linking.openURL).not.toHaveBeenCalled()
-        expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        expect(mockHandleDeepLink).toHaveBeenCalledWith(
+            'https://perawallet.app/qr/perawallet/asset/opt-in?asset=31566704',
+            false,
+            'in-app',
+        )
     })
 
     it('normalizes a bare domain before opening it', () => {
@@ -187,5 +180,63 @@ describe('useBannerLinkRouter', () => {
         expect(Linking.openURL).toHaveBeenCalledWith(
             'https://perawallet.app/discover',
         )
+    })
+
+    describe('with the real parser', () => {
+        beforeEach(() => {
+            mockParseDeeplink.mockImplementation(parseDeeplink)
+        })
+
+        it('dispatches an HTTPS-spelled opt-in link in canonical form instead of opening it', () => {
+            const { result } = renderHook(() => useBannerLinkRouter())
+
+            act(() =>
+                result.current.route({
+                    url: 'HTTPS://perawallet.app/qr/perawallet/asset/opt-in?asset=1',
+                }),
+            )
+
+            expect(mockHandleDeepLink).toHaveBeenCalledWith(
+                'https://perawallet.app/qr/perawallet/asset/opt-in?asset=1',
+                false,
+                'in-app',
+            )
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            [
+                'an HTTPS-spelled transfer link',
+                `HTTPS://perawallet.app/qr/perawallet/${ADDRESS}?amount=1000000`,
+            ],
+            [
+                'an upper-case WalletConnect pairing link',
+                `HTTPS://PERAWALLET.APP/qr/perawallet-wc/wc?uri=${WC_URI}`,
+            ],
+            [
+                'an App Link path that does not parse',
+                'https://perawallet.app/qr/perawallet/app/not-an-action',
+            ],
+        ])('neither dispatches nor opens %s', (_label, url) => {
+            const { result } = renderHook(() => useBannerLinkRouter())
+
+            act(() => result.current.route({ url }))
+
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
+        it('opens a lowercase https link that is not a Pera deeplink', () => {
+            const { result } = renderHook(() => useBannerLinkRouter())
+
+            act(() =>
+                result.current.route({ url: 'https://example.com/promo' }),
+            )
+
+            expect(Linking.openURL).toHaveBeenCalledWith(
+                'https://example.com/promo',
+            )
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
     })
 })

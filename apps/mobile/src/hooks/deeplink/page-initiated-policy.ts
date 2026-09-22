@@ -97,26 +97,12 @@ export const isOriginGatedDeeplinkType = (type: DeeplinkType): boolean =>
     POLICY_BY_TYPE[type] !== 'page-allowed'
 
 /**
- * Whether server-chosen content — a push payload or a CMS banner CTA — may
- * fire a given deeplink at the app.
- *
- * Both are a weaker trust class than a web page, not a stronger one: the user
- * navigated nowhere, and the URL is whatever the backend put in the FCM
- * payload or the CMS record, so a compromised backend picks both the
- * destination and the moment. `push-allowed` is therefore reserved for the
- * destinations Pera actually notifies about — screens showing something the
- * user already owns. Anything that prefills a transfer, starts a signature,
- * pairs a session or adds an account is refused; the user started none of it.
- *
- * Deliberately a second table rather than a reuse of DEEPLINK_PAGE_POLICY:
- * account- and asset-detail are gated against a page (it picks the address)
- * but are the canonical push destination (`perawallet://account-detail?…` is
- * what a received-funds notification carries), and `setSelectedAccountAddress`
- * ignores an address the wallet doesn't hold, so the switch can only land on
- * the user's own account.
- *
- * Exhaustive by construction and default-deny for the same reasons as the page
- * table above, including the excluded locale-tour key.
+ * Whether server-chosen content (a push payload, a CMS banner CTA) may fire a
+ * deeplink: only the destinations Pera's pushes and campaigns open, each
+ * bounded by its handler. Unlike the page table it admits the account and
+ * asset screens pushes open, since switching the selected account only lands
+ * on one the wallet holds. Exhaustive and default-deny for the page table's
+ * reasons.
  */
 type DeeplinkPushPolicy = 'push-allowed' | 'push-refused'
 
@@ -157,7 +143,9 @@ const DEEPLINK_PUSH_POLICY: Record<
 
     // --- Signs, submits, or authorises ------------------------------------
     [DeeplinkType.KEYREG]: 'push-refused',
-    [DeeplinkType.ASSET_OPT_IN]: 'push-refused',
+    // The backend's opt-in-request push. The handler confirms asset and fee on
+    // a sheet first, and signing refuses an account the wallet doesn't hold.
+    [DeeplinkType.ASSET_OPT_IN]: 'push-allowed',
     [DeeplinkType.SIGN_REQUEST]: 'push-refused',
     [DeeplinkType.WALLET_CONNECT]: 'push-refused',
     [DeeplinkType.LIQUID_AUTH]: 'push-refused',

@@ -20,7 +20,7 @@ import {
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
-import { normalizeUrl } from './utils'
+import { getUniversalLinkPath, normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import {
@@ -29,7 +29,6 @@ import {
     FIDO_SCHEME,
     LIQUID_SCHEME,
     PERAWALLET_SCHEME,
-    PERAWALLET_UNIVERSAL_LINK_HOST,
     PERAWALLET_WC_SCHEME,
 } from './constants'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
@@ -65,27 +64,23 @@ const parseWalletConnectDeeplink = (
  *   /qr/perawallet/<rest>             → perawallet://<rest>
  *   /qr/perawallet-wc/<rest>          → perawallet-wc://<rest>
  */
-const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
-    const normalizedUrl = normalizeUrl(url)
+const parseUniversalLink = (path: string): Nullable<AnyParsedDeeplink> => {
+    const appPrefix = `/qr/${PERAWALLET_SCHEME}/app/`
+    const wcPrefix = `/qr/${PERAWALLET_WC_SCHEME}/`
+    const legacyPrefix = `/qr/${PERAWALLET_SCHEME}/`
 
-    if (normalizedUrl.includes(`/qr/${PERAWALLET_SCHEME}/app/`)) {
-        const convertedUrl = url.replace(
-            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_SCHEME}/app/`,
-            `${PERAWALLET_SCHEME}://app/`,
+    if (path.startsWith(appPrefix)) {
+        return parsePerawalletAppUri(
+            `${PERAWALLET_SCHEME}://app/${path.slice(appPrefix.length)}`,
         )
-        return parsePerawalletAppUri(convertedUrl)
-    } else if (normalizedUrl.includes(`/qr/${PERAWALLET_WC_SCHEME}/`)) {
-        const convertedUrl = url.replace(
-            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_WC_SCHEME}/`,
-            `${PERAWALLET_WC_SCHEME}://`,
+    } else if (path.startsWith(wcPrefix)) {
+        return parseWalletConnectDeeplink(
+            `${PERAWALLET_WC_SCHEME}://${path.slice(wcPrefix.length)}`,
         )
-        return parseWalletConnectDeeplink(convertedUrl)
-    } else if (normalizedUrl.includes(`/qr/${PERAWALLET_SCHEME}/`)) {
-        const convertedUrl = url.replace(
-            `${PERAWALLET_UNIVERSAL_LINK_HOST}/qr/${PERAWALLET_SCHEME}/`,
-            `${PERAWALLET_SCHEME}://`,
+    } else if (path.startsWith(legacyPrefix)) {
+        return parsePerawalletUri(
+            `${PERAWALLET_SCHEME}://${path.slice(legacyPrefix.length)}`,
         )
-        return parsePerawalletUri(convertedUrl)
     }
 
     return null
@@ -209,8 +204,9 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
         return parseCoinbaseFormat(url)
     }
 
-    if (normalizedUrl.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)) {
-        return parseUniversalLink(url)
+    const universalLinkPath = getUniversalLinkPath(url)
+    if (universalLinkPath !== null) {
+        return parseUniversalLink(universalLinkPath)
     }
 
     if (normalizedUrl.includes('/app/')) {

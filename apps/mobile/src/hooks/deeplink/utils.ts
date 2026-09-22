@@ -111,6 +111,20 @@ export const normalizeUrl = (url: string): string => {
     return trimmed.toLowerCase()
 }
 
+/**
+ * Path and query of a `https://perawallet.app/…` link, else null. Scheme and
+ * host are case-insensitive; the path is not (addresses, base64).
+ */
+export const getUniversalLinkPath = (url: string): string | null => {
+    const trimmed = url.trim()
+    const origin = trimmed.slice(0, PERAWALLET_UNIVERSAL_LINK_HOST.length)
+    const path = trimmed.slice(PERAWALLET_UNIVERSAL_LINK_HOST.length)
+    return origin.toLowerCase() === PERAWALLET_UNIVERSAL_LINK_HOST &&
+        path.startsWith('/')
+        ? path
+        : null
+}
+
 export const extractPath = (url: string): string => {
     try {
         const appIndex = url.indexOf('/app/')
@@ -137,6 +151,6 @@ export const isPeraOwnedDeeplink = (url: string): boolean => {
     return (
         normalized.startsWith(`${PERAWALLET_SCHEME}:`) ||
         normalized.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
-        normalized.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)
+        getUniversalLinkPath(url) !== null
     )
 }

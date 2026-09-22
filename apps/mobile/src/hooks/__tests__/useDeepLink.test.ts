@@ -28,6 +28,7 @@ import {
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
+import { isPushAllowedDeeplinkType } from '../deeplink/page-initiated-policy'
 import { Linking, Platform } from 'react-native'
 import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairingProgressStore'
 import {
@@ -2249,6 +2250,31 @@ describe('useDeeplinkListener', () => {
     })
 
     describe('push-initiated deeplink policy', () => {
+        it('allows exactly these deeplink types from server-chosen content', () => {
+            expect(
+                new Set(
+                    Object.values(DeeplinkType).filter(
+                        isPushAllowedDeeplinkType,
+                    ),
+                ),
+            ).toEqual(
+                new Set([
+                    DeeplinkType.HOME,
+                    DeeplinkType.ACCOUNT_DETAIL,
+                    DeeplinkType.ASSET_DETAIL,
+                    DeeplinkType.ASSET_TRANSACTIONS,
+                    DeeplinkType.ASSET_INBOX,
+                    DeeplinkType.ASSET_OPT_IN,
+                    DeeplinkType.CARDS,
+                    DeeplinkType.STAKING,
+                    DeeplinkType.BUY,
+                    DeeplinkType.DISCOVER_PATH,
+                    DeeplinkType.DISCOVER_BROWSER,
+                    DeeplinkType.INTERNAL_BROWSER,
+                ]),
+            )
+        })
+
         it.each([
             DeeplinkType.ALGO_TRANSFER,
             DeeplinkType.KEYREG,
@@ -2258,7 +2284,7 @@ describe('useDeeplinkListener', () => {
             DeeplinkType.ADD_CONTACT,
             DeeplinkType.RECOVER_ADDRESS,
         ])(
-            'drops a %s deeplink arriving from a notification and lands home',
+            'drops a %s deeplink arriving from a notification without navigating',
             async type => {
                 ;(parseDeeplink as Mock).mockReturnValue({
                     type,
@@ -2278,11 +2304,8 @@ describe('useDeeplinkListener', () => {
                     )
                 })
 
-                expect(mockNavigate).toHaveBeenCalledTimes(1)
-                expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
-                    screen: 'Home',
-                    params: { screen: 'AccountDetails' },
-                })
+                expect(mockNavigate).not.toHaveBeenCalled()
+                expect(mockDispatch).not.toHaveBeenCalled()
                 expect(mockRequestByType).not.toHaveBeenCalled()
                 expect(onError).toHaveBeenCalled()
                 expect(logger.warn).toHaveBeenCalledWith(
@@ -2291,6 +2314,49 @@ describe('useDeeplinkListener', () => {
                 )
             },
         )
+
+        it('leaves the in-app Notifications list in place when it refuses a tapped item', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.KEYREG,
+                senderAddress: 'addr1',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/keyreg?address=addr1',
+                    true,
+                    'notification',
+                )
+            })
+
+            expect(StackActions.replace).not.toHaveBeenCalled()
+            expect(mockDispatch).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('opens the opt-in confirmation for an opt-in-request push', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.ASSET_OPT_IN,
+                assetId: '31566704',
+                address: 'addr1',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://asset/opt-in?account=addr1&asset=31566704',
+                    false,
+                    'notification',
+                )
+            })
+
+            expect(mockRequestByType).toHaveBeenCalledWith(
+                'asset-opt-in',
+                { assetId: '31566704', accountAddress: 'addr1' },
+                expect.anything(),
+            )
+        })
 
         it('never logs the refused URL, which can carry a mnemonic', async () => {
             ;(parseDeeplink as Mock).mockReturnValue({

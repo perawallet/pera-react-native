@@ -37,7 +37,7 @@ import { useLanguage } from './useLanguage'
 import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from './useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
-import { navigateToScreen } from './deeplink/navigateToScreen'
+import { navigateHome, navigateToScreen } from './deeplink/navigateToScreen'
 import { isPeraOwnedDeeplink } from './deeplink/utils'
 import { isPushAllowedDeeplinkType } from './deeplink/page-initiated-policy'
 import {
@@ -80,15 +80,6 @@ type UseDeepLinkResult = {
 const isValidDeepLink = (url: string): boolean => {
     if (isValidAlgorandAddress(url)) return true
     return parseDeeplink(url) !== null
-}
-
-// Resets the Home tab to its stack root, so landing home works from deep
-// inside the Home stack.
-const navigateHome = (replaceCurrentScreen: boolean): void => {
-    navigateToScreen(replaceCurrentScreen, 'TabBar', {
-        screen: 'Home',
-        params: { screen: 'AccountDetails' },
-    })
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
@@ -155,12 +146,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
             return
         }
 
-        // Both notification call sites (the push tap listener and the in-app
-        // Notifications list) carry a URL the backend chose, so the gate lives
-        // here rather than at either of them. The payload is dropped but the
-        // tap still lands home, so a refused push behaves like opening the app
-        // rather than like a broken one. Never log the url: a RECOVER_ADDRESS
-        // payload carries a mnemonic.
+        // Gated here, not at the push listener or the Notifications list: both
+        // pass a URL the backend chose. Never log it; it can carry a mnemonic.
         if (
             source === 'notification' &&
             !isPushAllowedDeeplinkType(parsedData.type)
@@ -168,7 +155,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
             logger.warn('Blocked push-initiated deeplink', {
                 type: parsedData.type,
             })
-            navigateHome(replaceCurrentScreen)
             onError?.()
             return
         }

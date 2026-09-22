@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import { isPushAllowedDeeplinkType } from '@hooks/deeplink/page-initiated-policy'
+import { getUniversalLinkPath } from '@hooks/deeplink/utils'
 import { useDeepLink } from '@hooks/useDeepLink'
 
 type RouteInput = {
@@ -25,11 +26,10 @@ type UseBannerLinkRouterResult = {
 }
 
 /**
- * What a marketing CTA legitimately opens outside the app: a web page, a store
- * listing, a support mail, a phone number. `pera://` is absent on purpose — a
- * banner URL marked external would otherwise re-enter the app through the OS
- * as a full-trust deeplink. Not `isSafeBrowserUrl`, which is https-only for
- * its webview callers and stays that way.
+ * What a marketing CTA legitimately opens outside the app. An allowlist: the
+ * OS routes the app's own schemes (`perawallet://`, `wc:` …) back in as
+ * full-trust deeplinks. Not `isSafeBrowserUrl`, which is https-only for its
+ * webview callers.
  */
 const BANNER_URL_SCHEMES = [
     'https:',
@@ -50,9 +50,8 @@ const toValidatedBannerUrl = (url: string): string | null => {
         ? trimmed
         : `https://${trimmed}`
     try {
-        return BANNER_URL_SCHEMES.includes(new URL(normalized).protocol)
-            ? normalized
-            : null
+        const { protocol, href } = new URL(normalized)
+        return BANNER_URL_SCHEMES.includes(protocol) ? href : null
     } catch {
         return null
     }
@@ -64,16 +63,11 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
     const route = useCallback(
         ({ url }: RouteInput) => {
             if (!url) return
-            // Normalized BEFORE it is classified, because adding the `https://`
-            // is what can turn a bare `perawallet.app/qr/…` string into a
-            // recognized universal link. Classifying the raw string and opening
-            // the normalized one would hand that link to the OS, which routes it
-            // straight back in as a full-trust deeplink.
+            // Classify the canonical form that is then dispatched or opened: a
+            // bare or `HTTPS://` Pera link must not pass as an external URL.
             const externalUrl = toValidatedBannerUrl(url)
             const candidate = externalUrl ?? url
 
-            // Parsed regardless of `isExternal`: that flag is CMS content, so
-            // letting it choose the path lets the server skip the gate.
             const parsed = parseDeeplink(candidate)
             if (parsed) {
                 // CMS content sits in the same trust class as a push payload:
@@ -93,6 +87,14 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
                 logger.warn('Blocked banner URL with an unsupported scheme', {
                     scheme: SCHEME_PATTERN.exec(url)?.[0] ?? '(none)',
                 })
+                return
+            }
+            // Unparsed, but under the app's own App Link paths: the OS would
+            // route it back in as a full-trust deeplink.
+            if (getUniversalLinkPath(externalUrl)?.startsWith('/qr/')) {
+                logger.warn(
+                    'Blocked unparsed banner URL under an App Link path',
+                )
                 return
             }
             // No OS handler for the URL is a device condition, not our bug.
