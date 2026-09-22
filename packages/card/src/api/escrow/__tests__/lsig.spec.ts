@@ -12,18 +12,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { getNetworkConfig, getAlgorandClient, appEnvironment } = vi.hoisted(
-    () => ({
+const { getNetworkConfig, getAlgorandClient, appEnvironment, templateHash } =
+    vi.hoisted(() => ({
         getNetworkConfig: vi.fn(),
         getAlgorandClient: vi.fn(),
         appEnvironment: { value: 'development' as string },
-    }),
-)
+        templateHash: { value: '' as string },
+    }))
 
 vi.mock('@perawallet/wallet-core-config', async () => ({
     ...(await vi.importActual('@perawallet/wallet-core-config')),
     get config() {
-        return { appEnvironment: appEnvironment.value }
+        return {
+            appEnvironment: appEnvironment.value,
+            cardAutoDrawTemplateHash: templateHash.value,
+        }
     },
     getNetworkConfig,
 }))
@@ -36,6 +39,10 @@ import {
     verifyAutoDrawProgram,
     AutoDrawProgramUnverifiedError,
 } from '../lsig'
+import {
+    computeAutoDrawTemplateHash,
+    AutoDrawTealUnverifiedError,
+} from '../verify-teal'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 
@@ -118,6 +125,26 @@ describe('compileAutoDrawProgram', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         appEnvironment.value = 'development'
+        templateHash.value = computeAutoDrawTemplateHash()
+    })
+
+    // The template pin runs before anything reaches algod, so a tampered or
+    // unpinned template never even gets compiled, let alone signed.
+    it('rejects before compiling when the template pin does not match', async () => {
+        templateHash.value = 'deadbeef'
+        getNetworkConfig.mockReturnValue({
+            genesisHash: TESTNET_GENESIS,
+            cardW3CardAppId: '111',
+            cardKillswitchAppId: '222',
+            cardUsdcAssetId: '10458941',
+        })
+        const compile = vi.fn()
+        getAlgorandClient.mockReturnValue({ client: { algod: { compile } } })
+
+        await expect(
+            compileAutoDrawProgram({ network: 'testnet' }),
+        ).rejects.toBeInstanceOf(AutoDrawTealUnverifiedError)
+        expect(compile).not.toHaveBeenCalled()
     })
 
     // algod is third-party; its compiled bytes are what gets signed,

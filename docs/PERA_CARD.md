@@ -84,11 +84,25 @@ Registered wallets come from `GET /v1/wallet/external`. An allowance of 0 means
 the delegation is inactive, which is how a revoked AutoDraw presents.
 A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 
-> [!WARNING]
-> The AutoDraw TEAL template is pinned by an ed25519 signature, but the pinned
-> public key and signature are still empty pre-launch placeholders. Until they
-> are populated, verification is dormant and only logs. It does not guard the
-> compile path. This must be filled in before AutoDraw ships.
+### AutoDraw integrity
+
+The delegated program is pinned twice. Both checks fail closed in every
+environment, because staging builds sign real keys too:
+
+- The vendored template (`packages/card/src/api/escrow/autodraw-teal.ts`) must
+  hash to `CARD_AUTODRAW_TEMPLATE_HASH`, one SHA-256 for every network. It is
+  checked by `pnpm check:autodraw-hash` inside `pnpm build`, and again by
+  `verifyAutoDrawTealTemplate` before the user signs.
+- The algod-compiled program must hash to the network's
+  `*_CARD_AUTODRAW_PROGRAM_HASH` (`verifyAutoDrawProgram`). This one depends on
+  the app ids and genesis hash, and is the only check that covers a node
+  returning different bytes than the source it was given.
+
+Both pins are Bitrise secrets baked in by `tools/generate-config.sh`, never
+remote config, so a change to the repo cannot supply its own expected value.
+Changing the template or redeploying a card app means running
+`pnpm check:autodraw-hash --print` and updating the matching secrets in the same
+change; otherwise the build refuses.
 
 ## Credits
 

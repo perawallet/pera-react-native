@@ -15,6 +15,7 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     FundingType,
 } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -149,6 +150,24 @@ describe('useCardAutoFundingSigningScreen', () => {
         // "please try again" error toast would strand the user here.
         mockEnableAutoDraw.mockRejectedValueOnce(
             new AutoDrawProgramUnverifiedError('mainnet'),
+        )
+
+        const { result } = renderHook(() => useCardAutoFundingSigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+
+        await waitFor(() =>
+            expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
+        expect(result.current.error).toBeNull()
+    })
+
+    it('degrades to Manual funding when the bundled TEAL template fails its pin', async () => {
+        mockEnableAutoDraw.mockRejectedValueOnce(
+            new AutoDrawTealUnverifiedError(),
         )
 
         const { result } = renderHook(() => useCardAutoFundingSigningScreen())
