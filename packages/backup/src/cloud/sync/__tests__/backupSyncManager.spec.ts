@@ -218,7 +218,29 @@ const makeDeps = () => ({
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
     resolveMnemonic: vi.fn(async () => null),
     resolveHd: vi.fn(async () => null),
+    isLocked: vi.fn(() => false),
 })
+
+const PERIODIC_SYNC_MS = 5 * 60 * 1000
+
+const holdNextSync = () => {
+    const held = {
+        deps: null as { isAborted: () => boolean } | null,
+        release: () => {},
+    }
+    mockSyncBackup.mockImplementationOnce(
+        (deps: { isAborted: () => boolean }) =>
+            new Promise(resolve => {
+                held.deps = deps
+                held.release = () =>
+                    resolve({
+                        backupId: 'backup-123',
+                        lastSyncResult: 'SUCCESS',
+                    })
+            }),
+    )
+    return held
+}
 
 const setAccounts = (accounts: { address: string; name?: string }[]) => {
     accountsState.current = accounts
@@ -276,21 +298,78 @@ describe('BackupSyncManager', () => {
         mgr.stop()
     })
 
-    it('tells an in-flight run to abort once stop() lands', async () => {
-        let isAborted: (() => boolean) | undefined
-        mockSyncBackup.mockImplementation(
-            async (deps: { isAborted: () => boolean }) => {
-                isAborted = deps.isAborted
-                return { backupId: 'backup-123', lastSyncResult: 'SUCCESS' }
-            },
-        )
+    it('aborts an in-flight run once stop() lands', async () => {
+        const held = holdNextSync()
         const mgr = new BackupSyncManager(makeDeps())
-
-        await mgr.start()
-        expect(isAborted?.()).toBe(false)
+        const started = mgr.start()
+        expect(held.deps?.isAborted()).toBe(false)
 
         mgr.stop()
-        expect(isAborted?.()).toBe(true)
+
+        expect(held.deps?.isAborted()).toBe(true)
+        held.release()
+        await started
+    })
+
+    it('aborts an in-flight run once the app locks', async () => {
+        const held = holdNextSync()
+        const deps = makeDeps()
+        const mgr = new BackupSyncManager(deps)
+        const started = mgr.start()
+        expect(held.deps?.isAborted()).toBe(false)
+
+        deps.isLocked.mockReturnValue(true)
+
+        expect(held.deps?.isAborted()).toBe(true)
+        held.release()
+        await started
+        mgr.stop()
+    })
+
+    it('reads no key and runs no sync while the app is locked', async () => {
+        const deps = makeDeps()
+        deps.isLocked.mockReturnValue(true)
+        const mgr = new BackupSyncManager(deps)
+
+        await mgr.syncNow()
+
+        expect(mockWithBackupEncryptionKey).not.toHaveBeenCalled()
+        expect(mockSyncBackup).not.toHaveBeenCalled()
+    })
+
+    it('ignores a socket-driven pull while the app is locked', async () => {
+        const deps = makeDeps()
+        deps.isLocked.mockReturnValue(true)
+        const mgr = new BackupSyncManager(deps)
+
+        await mgr.handleSocketEvent({
+            kind: 'itemsUpdated',
+            fromSeq: 1,
+            toSeq: 2,
+        })
+
+        expect(mockWithBackupEncryptionKey).not.toHaveBeenCalled()
+        expect(mockPullBackupDeltas).not.toHaveBeenCalled()
+    })
+
+    it('keeps one socket and one interval when a restart lands during the initial sync', async () => {
+        const held = holdNextSync()
+        const mgr = new BackupSyncManager(makeDeps())
+        const first = mgr.start()
+        mgr.stop()
+        await mgr.start()
+        held.release()
+        await first
+
+        expect(mockConnect).toHaveBeenCalledTimes(1)
+        mockSyncBackup.mockClear()
+        await vi.advanceTimersByTimeAsync(PERIODIC_SYNC_MS)
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+
+        mgr.stop()
+        mockSyncBackup.mockClear()
+        await vi.advanceTimersByTimeAsync(PERIODIC_SYNC_MS)
+        expect(mockSyncBackup).not.toHaveBeenCalled()
     })
 
     it('records no failure for a run the stop aborted', async () => {

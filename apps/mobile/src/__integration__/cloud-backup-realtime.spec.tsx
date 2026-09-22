@@ -135,6 +135,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
             importContacts: contactImportHook.current.importContacts,
             resolveMnemonic: mnemonicHook.current,
             resolveHd: async () => null,
+            isLocked: () => false,
             socketFactory: fakeSocketFactory,
         })
 

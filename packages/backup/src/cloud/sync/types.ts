@@ -39,8 +39,6 @@ export class UnsupportedBackupAccountTypeError extends Error {
     }
 }
 
-/** Thrown when a `stop()` lands mid-run: the remaining seed reads and the push
- *  are dropped instead of completed. */
 export class BackupSyncAbortedError extends Error {
     constructor() {
         super('Backup sync aborted')
@@ -140,9 +138,8 @@ export type SyncEngineDeps = {
     ) => Promise<SerializedAccount | null>
     /** Decrypted remote accounts → wallet (import/update). */
     importAccounts: SyncImportFn
-    /** True once a `stop()` has landed since this run began. Checked before
-     *  each account's key read and before the push, so stopping actually
-     *  prevents the upload rather than only clearing the interval. */
+    /** True once `stop()` or the app lock lands mid-run; the engine then throws
+     *  `BackupSyncAbortedError` before its next seed read, remote apply or push. */
     isAborted: () => boolean
     /** Snapshot of local contacts to serialize/push. */
     listContacts: () => Contact[]

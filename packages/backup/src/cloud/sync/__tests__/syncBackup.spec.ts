@@ -37,6 +37,7 @@ import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
+    DeltaOperation,
     accountItemKey,
     contactItemKey,
     createEmptySyncState,
@@ -384,6 +385,37 @@ describe('syncBackup', () => {
         ).rejects.toThrow(BackupSyncAbortedError)
 
         expect(batchUpsertItems).not.toHaveBeenCalled()
+    })
+
+    it('imports nothing when a stop lands during the delta fetch', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g6',
+            lastSeq: 1,
+            items: {},
+        })
+        let stopped = false
+        fetchDelta.mockImplementationOnce(async () => {
+            stopped = true
+            return [
+                {
+                    seq: 1,
+                    key: 'accounts/R',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'h',
+                },
+            ]
+        })
+        const stoppable = { ...deps(), isAborted: () => stopped }
+
+        await expect(
+            syncBackup(stoppable, createEmptySyncState('b')),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(stoppable.importAccounts).not.toHaveBeenCalled()
     })
 
     it('pushes local contacts alongside accounts', async () => {

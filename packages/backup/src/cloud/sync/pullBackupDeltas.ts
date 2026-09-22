@@ -16,6 +16,7 @@ import { decryptItemPayload } from '../crypto/itemPayload'
 import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
+import { BackupSyncAbortedError } from './types'
 import type { SyncEngineDeps } from './types'
 
 /** WebSocket-triggered lightweight pull: fetch deltas from the local cursor and
@@ -31,6 +32,7 @@ export const pullBackupDeltas = async (
         | 'encryptionKey'
         | 'importAccounts'
         | 'importContacts'
+        | 'isAborted'
     >,
     state: SyncState,
     now: number = Date.now(),
@@ -54,6 +56,7 @@ export const pullBackupDeltas = async (
         return { ...state, lastSyncResult: 'FAILED' }
     }
 
+    if (deps.isAborted()) throw new BackupSyncAbortedError()
     const next = await applyDeltas({
         state,
         deltas,

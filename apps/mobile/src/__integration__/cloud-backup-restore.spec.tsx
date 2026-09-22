@@ -257,6 +257,7 @@ describe('Flow: Cloud backup → Restore', () => {
             importContacts: contactImportHook.current.importContacts,
             resolveMnemonic: mnemonicHook.current,
             resolveHd: hdHook.current,
+            isLocked: () => false,
         }).syncNow()
 
         expect(

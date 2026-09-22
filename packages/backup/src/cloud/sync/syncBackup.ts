@@ -112,6 +112,7 @@ export const syncBackup = async (
         next,
         async () => manifest,
     )
+    abortIfStopped(deps)
     next = await applyDeltas({
         state: next,
         deltas,

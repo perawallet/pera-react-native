@@ -34,6 +34,7 @@ import {
     createEmptySyncState,
 } from '../../models'
 import { pullBackupDeltas } from '../pullBackupDeltas'
+import { BackupSyncAbortedError } from '../types'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const ACCOUNT_KEY = accountItemKey(hashAddress('X'))
@@ -51,6 +52,7 @@ const deps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 0, failed: [] })),
+    isAborted: () => false,
 })
 
 describe('pullBackupDeltas', () => {
@@ -77,6 +79,32 @@ describe('pullBackupDeltas', () => {
         const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
         expect(fetchDelta).toHaveBeenCalledWith('mainnet', 'b', 'dev', 0)
         expect(next.lastSyncedSeq).toBe(9)
+    })
+
+    it('imports nothing when a stop lands during the delta fetch', async () => {
+        let stopped = false
+        fetchDelta.mockImplementationOnce(async () => {
+            stopped = true
+            return [
+                {
+                    seq: 9,
+                    key: ACCOUNT_KEY,
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'h',
+                },
+            ]
+        })
+        const stoppable = { ...deps(), isAborted: () => stopped }
+
+        await expect(
+            pullBackupDeltas(stoppable, createEmptySyncState('b')),
+        ).rejects.toThrow(BackupSyncAbortedError)
+
+        expect(readItems).not.toHaveBeenCalled()
+        expect(stoppable.importAccounts).not.toHaveBeenCalled()
     })
 
     it('is a no-op (no error) when there are no deltas', async () => {

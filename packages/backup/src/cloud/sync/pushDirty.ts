@@ -50,9 +50,8 @@ export type PushDirtyDeps = {
         deviceId: DeviceId,
         key: BackupItemKey,
     ) => Promise<DeleteItemResponse>
-    /** Re-checked between network calls, not only before the first: the delete
-     *  loop below awaits, and a `stop()` landing in that window must drop the
-     *  upload rather than let the resumed function push every dirty secret. */
+    /** Checked before each delete, which stops further deletes, and before the
+     *  upload, which drops it even when the stop lands during the last delete. */
     isAborted: () => boolean
 }
 

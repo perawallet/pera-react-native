@@ -115,6 +115,7 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
+            isLocked: () => useSecurityStore.getState().isAppLockActive,
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

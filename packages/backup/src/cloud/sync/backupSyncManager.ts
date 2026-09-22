@@ -79,6 +79,8 @@ export type BackupSyncManagerDeps = {
     resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd: SerializeHdResolver
+    /** App-lock state from the app layer; nothing syncs or pulls while it holds. */
+    isLocked: () => boolean
     socketFactory?: BackupSocketFactory
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
@@ -97,8 +99,6 @@ export class BackupSyncManager {
     private unwatchAccounts: Nullable<() => void> = null
     private unwatchContacts: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
-    /** Bumped by `stop()`. A run compares it against the value it captured, so
-     *  a stop landing mid-run aborts it instead of letting it finish. */
     private stopEpoch = 0
     private accountsFingerprint = ''
     private contactsFingerprint = ''
@@ -145,7 +145,8 @@ export class BackupSyncManager {
                         deviceId: ctx.deviceId,
                         encryptionKey,
                         hashAddress,
-                        isAborted: () => this.stopEpoch !== epoch,
+                        isAborted: () =>
+                            this.stopEpoch !== epoch || this.deps.isLocked(),
                         listAccounts: () => this.deps.sources.listAccounts(),
                         serializeAccount: account =>
                             serializeAccountForBackup(account, {
@@ -349,12 +350,16 @@ export class BackupSyncManager {
         this.unwatchAccounts?.()
         this.unwatchContacts?.()
         this.watchLocalStores()
+        const epoch = this.stopEpoch
         await this.syncNow()
-        // A stop() during that await already aborted the run; without this the
-        // suspended start() would still install the socket and the interval.
-        if (!this.running) return
+        // Stale once a stop() lands during that await, even if a newer start()
+        // followed: installing here too would leak a socket and an interval.
+        if (this.stopEpoch !== epoch) return
         this.connectSocket()
-        this.periodic = setInterval(() => void this.syncNow(), PERIODIC_SYNC_MS)
+        this.periodic = setInterval(() => {
+            if (!this.running) return
+            void this.syncNow()
+        }, PERIODIC_SYNC_MS)
     }
 
     stop(): void {
@@ -392,7 +397,7 @@ export class BackupSyncManager {
     }
 
     async syncNow(): Promise<void> {
-        if (this.syncInProgress) return
+        if (this.syncInProgress || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) {
             logger.warn('BackupSyncManager: sync skipped, no backup context')
@@ -430,7 +435,7 @@ export class BackupSyncManager {
     }
 
     private async runPull(): Promise<void> {
-        if (this.syncInProgress) return
+        if (this.syncInProgress || this.deps.isLocked()) return
         const ctx = this.context()
         if (!ctx) return
         this.setSyncing(true)
@@ -442,6 +447,7 @@ export class BackupSyncManager {
             )
             if (next) this.state.setSyncState(next)
         } catch (error) {
+            if (error instanceof BackupSyncAbortedError) return
             logger.warn('BackupSyncManager: pull failed', {
                 error: error instanceof Error ? error.message : String(error),
             })

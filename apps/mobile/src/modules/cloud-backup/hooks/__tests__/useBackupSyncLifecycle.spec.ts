@@ -140,6 +140,16 @@ describe('useBackupSyncLifecycle', () => {
         expect(managerMock.stop).toHaveBeenCalled()
     })
 
+    it('hands the manager the live app-lock state', () => {
+        renderHook(() => useBackupSyncLifecycle())
+        const deps = (initializeMock as Mock).mock.calls[0][0]
+        expect(deps.isLocked()).toBe(false)
+
+        act(() => useSecurityStore.getState().setAppLockActive(true))
+
+        expect(deps.isLocked()).toBe(true)
+    })
+
     it('waits for the foreground when the app cold-starts in the background', () => {
         // Push-launched and iOS-prewarmed starts run with no UI on screen, and
         // syncing reads every account's key material.
