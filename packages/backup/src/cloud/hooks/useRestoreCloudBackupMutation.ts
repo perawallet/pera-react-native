@@ -74,6 +74,13 @@ export const useRestoreCloudBackupMutation = (
                 network,
                 importAccounts,
                 importContacts,
+                // Placeholder until the app-layer passkey hooks land; real
+                // implementations replace this, not this call site's shape.
+                importPasskeys: async () => ({
+                    imported: 0,
+                    skipped: [],
+                    failed: [],
+                }),
             })
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.

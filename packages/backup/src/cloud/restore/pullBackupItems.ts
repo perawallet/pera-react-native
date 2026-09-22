@@ -16,16 +16,19 @@ import { fetchManifest, readItems } from '../api'
 import {
     parseAddressPayload,
     parseContactPayload,
+    parsePasskeyPayload,
     parseSecretsPayload,
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_CONTACTS_KEY_PREFIX,
+    BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
     isContactItemKey,
+    isPasskeyItemKey,
     type AddressBackupPayload,
     type BackupId,
     type BackupItemKey,
@@ -33,6 +36,7 @@ import {
     type DeviceId,
     type FetchedItem,
     type ManifestItem,
+    type PasskeyBackupPayload,
     type SecretsBackupPayload,
 } from '../models'
 
@@ -58,6 +62,7 @@ export type PullBackupItemsResult = {
     manifestItems: Record<BackupItemKey, ManifestItem>
     accounts: PulledAccount[]
     contacts: ContactBackupPayload[]
+    passkeys: PasskeyBackupPayload[]
     skipped: SkippedItem[]
 }
 
@@ -101,7 +106,8 @@ const selectWantedKeys = (
                 item.status === BackupItemStatus.ACTIVE &&
                 (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
                     key.startsWith(BACKUP_SECRETS_KEY_PREFIX) ||
-                    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)),
+                    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ||
+                    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)),
         )
         .map(([key]) => key)
 
@@ -141,6 +147,7 @@ type CollectedPayloads = {
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
     contacts: ContactBackupPayload[]
+    passkeys: PasskeyBackupPayload[]
     skipped: SkippedItem[]
 }
 
@@ -152,9 +159,24 @@ const collectItemPayloads = (
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
     const contacts: ContactBackupPayload[] = []
+    const passkeys: PasskeyBackupPayload[] = []
     const skipped: SkippedItem[] = []
 
     for (const item of items) {
+        if (isPasskeyItemKey(item.key)) {
+            const plaintext = decryptItem(item, encryptionKey, backupId)
+            if (plaintext === null) {
+                skipped.push({ key: item.key, reason: 'decrypt' })
+                continue
+            }
+            try {
+                passkeys.push(parsePasskeyPayload(plaintext))
+            } catch {
+                skipped.push({ key: item.key, reason: 'parse' })
+            }
+            continue
+        }
+
         // A contact's address is the record, not the routing key, so it is
         // never looked up here; `null` is what selects the contact branch.
         const isContact = isContactItemKey(item.key)
@@ -189,7 +211,7 @@ const collectItemPayloads = (
         }
     }
 
-    return { addressPayloads, secretsPayloads, contacts, skipped }
+    return { addressPayloads, secretsPayloads, contacts, passkeys, skipped }
 }
 
 /** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
@@ -236,7 +258,7 @@ export const pullBackupItems = async ({
         deviceId,
         wantedKeys,
     )
-    const { addressPayloads, secretsPayloads, contacts, skipped } =
+    const { addressPayloads, secretsPayloads, contacts, passkeys, skipped } =
         collectItemPayloads(items, encryptionKey, backupId)
 
     return {
@@ -245,6 +267,7 @@ export const pullBackupItems = async ({
         manifestItems: manifest.items,
         accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
         contacts,
+        passkeys,
         skipped,
     }
 }

@@ -43,9 +43,11 @@ const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
 
 const CONTACT_SUMMARY = { imported: 1, failed: [] }
+const PASSKEY_SUMMARY = { imported: 1, skipped: [], failed: [] }
 
 const importAccounts = vi.fn()
 const importContacts = vi.fn()
+const importPasskeys = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -54,6 +56,7 @@ const params = () => ({
     network: 'mainnet' as const,
     importAccounts,
     importContacts,
+    importPasskeys,
 })
 
 const keys = (fill = 5) => ({
@@ -81,6 +84,7 @@ const pull = {
     },
     accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
+    passkeys: [{ credentialId: 'cred-1', seedAddress: 'A' }],
     skipped: [],
 }
 
@@ -102,6 +106,7 @@ describe('restoreCloudBackup', () => {
         pullBackupItemsMock.mockReset().mockResolvedValue(pull)
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
         importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+        importPasskeys.mockReset().mockResolvedValue(PASSKEY_SUMMARY)
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -196,6 +201,44 @@ describe('restoreCloudBackup', () => {
         expect(result.summary).toBe(SUMMARY)
         expect(result.contactSummary).toEqual({ imported: 0, failed: [] })
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('imports passkeys after accounts and contacts, so their owning seed is already in the keystore', async () => {
+        const order: string[] = []
+        importAccounts.mockImplementation(async () => {
+            order.push('accounts')
+            return SUMMARY
+        })
+        importContacts.mockImplementation(async () => {
+            order.push('contacts')
+            return CONTACT_SUMMARY
+        })
+        importPasskeys.mockImplementation(async passkeys => {
+            order.push('passkeys')
+            expect(passkeys).toEqual(pull.passkeys)
+            return PASSKEY_SUMMARY
+        })
+
+        await restoreCloudBackup(params())
+
+        expect(order).toEqual(['accounts', 'contacts', 'passkeys'])
+    })
+
+    test('keeps a restore whose accounts landed when the passkey import throws', async () => {
+        importPasskeys.mockRejectedValue(new Error('keystore busy'))
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('does not call the passkey importer when the backup holds none', async () => {
+        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [] })
+
+        await restoreCloudBackup(params())
+
+        expect(importPasskeys).not.toHaveBeenCalled()
     })
 
     test('persists the keys before pulling, so the signed request can read them', async () => {
