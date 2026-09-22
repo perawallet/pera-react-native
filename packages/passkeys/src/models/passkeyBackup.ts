@@ -66,10 +66,12 @@ const readString = (
         : undefined
 
 /**
- * `userHandle`/`userId` travel as base64-encoded bytes. Decoding and running
- * them through `toDerivationUserHandle` reproduces exactly what iOS/the
- * extension fed into derivation (utf8 text, or its base64url form when the
- * bytes aren't valid utf8). A value that isn't valid base64 yields no decoded
+ * `userHandle`/`userId` travel as base64-encoded bytes on iOS-written
+ * records. Decoding and running them through `toDerivationUserHandle`
+ * reproduces exactly what iOS fed into derivation (utf8 text, or its
+ * base64url form when the bytes aren't valid utf8) — the extension never
+ * calls `toDerivationUserHandle`; `keystore-signer.ts` just lowercases the
+ * plain string it's given. A value that isn't valid base64 yields no decoded
  * candidate — the raw form is still tried on its own.
  */
 const decodedBase64Candidate = (value: string): string | undefined => {
