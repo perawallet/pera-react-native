@@ -7,20 +7,6 @@ app:
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
 pipelines:
-  # Staging and production are split across two pipelines rather than built
-  # together on every tag: four build machines a night (two of them
-  # g2.mac.large) is what sent Bitrise usage through the roof.
-  #
-  # The smoke gate rides along with staging because only the staging builds
-  # bake DISABLE_SCREEN_CAPTURE_PREVENTION, and Appium cannot drive a
-  # FLAG_SECURE surface — a production build hangs rather than failing
-  # usefully. So the gate is nightly-only, and an rc is covered by the
-  # nightlies it descends from rather than directly.
-  #
-  # Neither pipeline sets abort_on_fail, and that default is load-bearing: it
-  # is what keeps a red iOS smoke gate from killing the Android build running
-  # beside it. should_always_run on notify is the matching half — the card
-  # still posts when a build it depends on failed.
   nightly-builds:
     workflows:
       test: {}
@@ -34,9 +20,6 @@ pipelines:
         - generate-changelog
       notify-nightly:
         depends_on:
-        # `test` is listed even though the builds already gate on it — shared
-        # pipeline variables only reach dependent workflows, and without it
-        # TEST_STATUS would never arrive here.
         - test
         - generate-changelog
         - ios-staging
@@ -59,7 +42,6 @@ pipelines:
         - generate-changelog
       notify-release:
         depends_on:
-        # See nightly-builds for why `test` is listed here.
         - test
         - generate-changelog
         - ios-production
@@ -67,7 +49,6 @@ pipelines:
         should_always_run: workflow
     triggers:
       tag:
-      # rc and stable both cut production builds; only the suffix differs.
       - name:
           regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$"
   web-release-builds:
@@ -85,9 +66,6 @@ pipelines:
         - test
       notify-release-web:
         depends_on:
-        # `test` is listed even though the two builds already gate on it —
-        # shared pipeline variables only reach dependent workflows, and
-        # without it TEST_STATUS would never arrive here.
         - test
         - generate-changelog
         - web-production
@@ -100,24 +78,8 @@ workflows:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
     envs:
-    # Deliberately NOT production. This workflow runs `pnpm test` and nothing
-    # else — validate-env.sh's `test` profile requires no secrets, and the
-    # workflow never runs setup-env-secrets.sh, so the per-environment secrets
-    # are unset here. With ENVIRONMENT=production the Generate Config step
-    # exported APP_ENV=production, and generate-config.sh then (correctly)
-    # refused to bake a production config that would fall back to the staging
-    # backend URLs. Tests don't need production config — GitHub Actions runs the
-    # same suite with APP_ENV unset — and handing a test job the production
-    # secrets just to satisfy the guard would widen their exposure for nothing.
     - VALIDATE_PROFILE: test
-    # Turbo's default fans every task out at once. On a cold cache that is 70
-    # build+test tasks on one box, and the contention pushes individual tests
-    # past vitest's 5s timeout: packages/device takes 3s locally and 20s here.
-    # The failures land in whichever package loses the race, so they read as
-    # flakes rather than as the resource limit they are.
-    - TURBO_CONCURRENCY: "3"
-    # Publishes TEST_STATUS so the release cards can show a red Tests row
-    # instead of rendering the gated builds as a benign "skipped".
+    - TURBO_CONCURRENCY: '3'
     - ROW_ID: TEST
     steps:
     - git-clone@8: {}
@@ -130,13 +92,6 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
-    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
-    # node_version_file does not parse — it silently fell through to the
-    # stack default (Node 26) while GitHub Actions' setup-node read the same
-    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
-    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
-    # copying jsdom's own, so `window.localStorage` came back undefined only
-    # here. Resolve the pin explicitly and hand nvm an exact version.
     - script@1:
         title: Resolve pinned Node version
         inputs:
@@ -305,14 +260,9 @@ workflows:
     - USE_CACHE: 'true'
     - VALIDATE_PROFILE: ios
     - ROW_ID: IOS_STAGING
-    # The gate drives this workflow's own artifact — ios-staging already bakes
-    # DISABLE_SCREEN_CAPTURE_PREVENTION, so no second build is needed.
     - RUN_SMOKE: 'true'
     after_run:
     - _ios-build
-    # After _publish-result, not before: that step snapshots
-    # BITRISE_BUILD_STATUS, so the staging row stays green when the build and
-    # the TestFlight upload succeeded and only the gate went red.
     - _publish-result
     - _smoke-ios
     meta:
@@ -372,26 +322,7 @@ workflows:
         - paths: apps/mobile/vendor/bundle
     - restore-cache@3:
         inputs:
-        # Key on BOTH pnpm-lock.yaml AND .npmrc, exact match only (no bare-prefix
-        # fallback). Two independent inputs decide the node_modules layout:
-        #   - pnpm-lock.yaml pins versions;
-        #   - .npmrc's public-hoist-pattern controls which packages get hoisted to
-        #     the root (e.g. @expo/config-plugins, which @react-native-firebase/app's
-        #     config plugin require()s WITHOUT declaring — see EXConstants
-        #     "Generate app.config" archive failures, PR #1015).
-        # A .npmrc hoist change does NOT change pnpm-lock.yaml, so keying on the
-        # lock alone restores a tree missing the hoist symlink, and
-        # `pnpm install --frozen-lockfile` no-ops over it (2s) instead of healing
-        # it. A bare-prefix fallback compounds this by seeding the new key from an
-        # unrelated tree. Both inputs in the key; any change forces a fresh install.
         - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}-{{ checksum ".npmrc" }}
-    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
-    # node_version_file does not parse — it silently fell through to the
-    # stack default (Node 26) while GitHub Actions' setup-node read the same
-    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
-    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
-    # copying jsdom's own, so `window.localStorage` came back undefined only
-    # here. Resolve the pin explicitly and hand nvm an exact version.
     - script@1:
         title: Resolve pinned Node version
         inputs:
@@ -458,6 +389,8 @@ workflows:
             # APP_ENV must be set here so generate-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
+            # An rc ships as its stable version, so bake the tag without -rc.N.
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run generate:config
     - script@1:
         title: Build packages
@@ -470,6 +403,7 @@ workflows:
             # (step shells don't inherit prior steps' exports) or the
             # bundled appEnvironment silently falls back to development.
             export APP_ENV="${ENVIRONMENT:-development}"
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run build:packages
     - script@1:
         title: Inject Google Service Info
@@ -481,18 +415,7 @@ workflows:
             echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
     - restore-cache@3:
         inputs:
-        # Keyed on pnpm-lock.yaml, not Podfile.lock: apps/mobile/ios is gitignored
-        # and generated by the prebuild step BELOW, so a Podfile.lock checksum
-        # cannot resolve here and the key would fall through to a bare prefix —
-        # restoring a Pods/ (incl. ExpoModulesCore.xcframework) built from an
-        # unrelated dependency set. `prebuild --no-clean` keeps it, and linking a
-        # freshly compiled module against stale Expo headers aborts at launch with
-        # a dyld missing-symbol. No prefix fallback for the same reason: nothing
-        # reconciles Pods/ after restore the way pnpm install reconciles node_modules.
         - key: ios-pods-{{ checksum "pnpm-lock.yaml" }}
-    # Must precede Expo Prebuild: app.config.builder.js reads APP_VERSION /
-    # BUILD_NUMBER to bake the version into the generated native project. Same
-    # ordering as the Android workflow — keep the two in step.
     - script@1:
         title: Resolve marketing version (tag-driven)
         inputs:
@@ -525,16 +448,8 @@ workflows:
     - restore-cache@3:
         run_if: '{{enveq "USE_CACHE" "true"}}'
         inputs:
-        # Exact key only. A prefix fallback here restores compiled objects built
-        # against a different dependency set, which is the same mixed-ABI hazard
-        # as the Pods cache above.
         - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
             }}-{{ checksum "pnpm-lock.yaml" }}
-    # Deprecated, but kept deliberately: it unconditionally installs the
-    # uploaded certs + profiles that fastlane pins by name (CODE_SIGN_STYLE=
-    # Manual). Its replacement, manage-ios-code-signing, only installs the
-    # uploaded profiles as an ASC-API *fallback* and can't see the AutoFill
-    # extension target, so the archive fails with "No profile ... found".
     - certificate-and-profile-installer@1: {}
     - script@1:
         title: Build & Deploy iOS
@@ -630,7 +545,6 @@ workflows:
     - DISTRIBUTION: firebase
     - VALIDATE_PROFILE: android
     - ROW_ID: ANDROID_STAGING
-    # See ios-staging.
     - RUN_SMOKE: 'true'
     after_run:
     - _android-build
@@ -657,8 +571,6 @@ workflows:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
   _android-build:
-    # AGP resolves this NDK for react-native-falcon's CMake build. Pinned so the
-    # cache key and the install step below cannot drift apart.
     envs:
     - ANDROID_NDK_VERSION: 27.0.12077973
     steps:
@@ -731,13 +643,6 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
-    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
-    # node_version_file does not parse — it silently fell through to the
-    # stack default (Node 26) while GitHub Actions' setup-node read the same
-    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
-    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
-    # copying jsdom's own, so `window.localStorage` came back undefined only
-    # here. Resolve the pin explicitly and hand nvm an exact version.
     - script@1:
         title: Resolve pinned Node version
         inputs:
@@ -804,6 +709,8 @@ workflows:
             # APP_ENV must be set here so generate-config.sh bakes
             # appEnvironment into the bundled config (defaults to development).
             export APP_ENV="${ENVIRONMENT:-development}"
+            # An rc ships as its stable version, so bake the tag without -rc.N.
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run generate:config
     - script@1:
         title: Build packages
@@ -816,6 +723,7 @@ workflows:
             # (step shells don't inherit prior steps' exports) or the
             # bundled appEnvironment silently falls back to development.
             export APP_ENV="${ENVIRONMENT:-development}"
+            export BITRISE_GIT_TAG="${BITRISE_GIT_TAG%%-rc.*}"
             pnpm run build:packages
     - script@1:
         title: Inject Google Services JSON
@@ -996,9 +904,7 @@ workflows:
     - save-cache@1:
         inputs:
         - key: android-ndk-$ANDROID_NDK_VERSION
-        # Resolved and verified by the install step, so this cannot point at a
-        # path that does not exist.
-        - paths: $ANDROID_NDK_HOME
+        - paths: "$ANDROID_NDK_HOME"
     - script@1:
         is_always_run: true
         title: Collect signed artifacts
@@ -1080,13 +986,6 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
-    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
-    # node_version_file does not parse — it silently fell through to the
-    # stack default (Node 26) while GitHub Actions' setup-node read the same
-    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
-    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
-    # copying jsdom's own, so `window.localStorage` came back undefined only
-    # here. Resolve the pin explicitly and hand nvm an exact version.
     - script@1:
         title: Resolve pinned Node version
         inputs:
@@ -1235,12 +1134,6 @@ workflows:
             envman add --key SMOKE_ARTIFACT --value "$PATCHED"
     - script@1:
         title: Run smoke gate
-        # ~11 min covers upload + pip + the run at their worst. The margin above
-        # that absorbs a short BrowserStack queue; beyond it we are almost
-        # certainly stuck behind the Mon/Wed/Fri regression, which holds its
-        # session for hours. BrowserStack has no priority queue, so bound the
-        # wait: a release should fail fast and legibly rather than idle a
-        # g2.mac.large until someone notices.
         timeout: 1800
         inputs:
         - content: |
@@ -1285,7 +1178,6 @@ workflows:
     steps:
     - script@1:
         title: Run smoke gate
-        # See _smoke-ios for why this is bounded.
         timeout: 1800
         inputs:
         - content: |
@@ -1346,8 +1238,8 @@ workflows:
             ${ROW_ID}_INSTALL
   notify-release-web:
     description: Post one consolidated Web (browser extension) release card (all
-      build statuses + changelog) — mirrors notify-release's structure/format for
-      the RN builds, kept as a separate card since web-release-builds is a
+      build statuses + changelog) — mirrors notify-release's structure/format
+      for the RN builds, kept as a separate card since web-release-builds is a
       separate, manually-triggered pipeline.
     meta:
       bitrise.io:
@@ -1358,113 +1250,223 @@ workflows:
         is_always_run: true
         title: Send Web Release Slack Notification
         inputs:
-        - content: |
-            #!/usr/bin/env bash
-            # set -e without -x: keep the Slack webhook URL out of the trace log.
+        - content: "#!/usr/bin/env bash
+
+            # set -e without -x: keep the Slack webhook URL out of the trace
+            log.
+
             set -e
 
+
             # Channel label and tag/branch from tag shape or fallback.
-            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
-              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
-              case "$BITRISE_GIT_TAG" in
-                *-alpha.*) CHANNEL="Nightly" ;;
-                *-rc.*)    CHANNEL="RC" ;;
-                v*)        CHANNEL="Release" ;;
-                *)         CHANNEL="Release" ;;
-              esac
+
+            if [ -n \"${BITRISE_GIT_TAG:-}\" ]; then
+
+            \  TAG_OR_BRANCH=\"$BITRISE_GIT_TAG\"
+
+            \  case \"$BITRISE_GIT_TAG\" in
+
+            \    *-alpha.*) CHANNEL=\"Nightly\" ;;
+
+            \    *-rc.*)    CHANNEL=\"RC\" ;;
+
+            \    v*)        CHANNEL=\"Release\" ;;
+
+            \    *)         CHANNEL=\"Release\" ;;
+
+            \  esac
+
             else
-              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
-              CHANNEL="Manual"
+
+            \  TAG_OR_BRANCH=\"${BITRISE_GIT_BRANCH:-manual}\"
+
+            \  CHANNEL=\"Manual\"
+
             fi
 
+
             # One mrkdwn row per build. Platform/env/destination are static;
+
             # status + links come from each build's shared pipeline variables
-            # (empty status = the build never ran). Literal \n separates rows.
-            row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
-              local e
-              # An empty status means the build never ran, which on these
-              # pipelines only happens when an upstream workflow (`test`,
-              # `generate-changelog`) already failed. That is a failed
-              # release, so it reads as ❌ on the build's own row rather
-              # than as a neutral skip next to a separate Tests row.
-              case "$1" in
-                ok) e="✅" ;;
-                *)  e="❌" ;;
-              esac
-              local r="${e}  *${5}*  →  ${6}"
-              if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
-              if [ -n "$3" ] && [ -n "$4" ]; then r="${r}  ·  <${3}|${4}>"; fi
-              printf '%s' "$r"
+
+            # (empty status = the build never ran). Literal \\n separates rows.
+
+            row() { # $1 status  $2 build_url  $3 install_url  $4
+            artifact_label  $5 label  $6 dest
+
+            \  local e
+
+            \  # An empty status means the build never ran, which on these
+
+            \  # pipelines only happens when an upstream workflow (`test`,
+
+            \  # `generate-changelog`) already failed. That is a failed
+
+            \  # release, so it reads as ❌ on the build's own row rather
+
+            \  # than as a neutral skip next to a separate Tests row.
+
+            \  case \"$1\" in
+
+            \    ok) e=\"✅\" ;;
+
+            \    *)  e=\"❌\" ;;
+
+            \  esac
+
+            \  local r=\"${e}  *${5}*  →  ${6}\"
+
+            \  if [ -n \"$2\" ]; then r=\"${r}  ·  <${2}|Build>\"; fi
+
+            \  if [ -n \"$3\" ] && [ -n \"$4\" ]; then
+            r=\"${r}  ·  <${3}|${4}>\"; fi
+
+            \  printf '%s' \"$r\"
+
             }
 
-            ROWS="$(row "${WEB_PRODUCTION_STATUS:-}" "${WEB_PRODUCTION_URL:-}" "${WEB_PRODUCTION_INSTALL:-}" "Zip" "Web production" "Bitrise artifact")"
-            ROWS="${ROWS}\n$(row "${WEB_STAGING_STATUS:-}" "${WEB_STAGING_URL:-}" "${WEB_STAGING_INSTALL:-}" "Zip" "Web staging" "Bitrise artifact")"
+
+            ROWS=\"$(row \"${WEB_PRODUCTION_STATUS:-}\"
+            \"${WEB_PRODUCTION_URL:-}\" \"${WEB_PRODUCTION_INSTALL:-}\" \"Zip\"
+            \"Web production\" \"Bitrise artifact\")\"
+
+            ROWS=\"${ROWS}\\n$(row \"${WEB_STAGING_STATUS:-}\"
+            \"${WEB_STAGING_URL:-}\" \"${WEB_STAGING_INSTALL:-}\" \"Zip\" \"Web
+            staging\" \"Bitrise artifact\")\"
+
 
             # Header icon per channel on success (any failed build flips it
+
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
-            case "$CHANNEL" in
-              Release) OVERALL="🚀" ;;
-              RC)      OVERALL="⭐" ;;
-              Nightly) OVERALL="🌙" ;;
-              *)       OVERALL="📦" ;;
+
+            case \"$CHANNEL\" in
+
+            \  Release) OVERALL=\"🚀\" ;;
+
+            \  RC)      OVERALL=\"⭐\" ;;
+
+            \  Nightly) OVERALL=\"🌙\" ;;
+
+            \  *)       OVERALL=\"📦\" ;;
+
             esac
-            COLOR="#36a64f"
+
+            COLOR=\"#36a64f\"
+
             # Anything that is not an explicit `ok` turns the card red.
+
             # Matching only on `fail` used to let a failed `test` through as
+
             # green, because gated builds publish no status at all and the
-            # empty string fell into the benign "skipped" bucket. TEST_STATUS
+
+            # empty string fell into the benign \"skipped\" bucket. TEST_STATUS
+
             # is checked here deliberately even though tests get no row of
+
             # their own — the header/colour is the only signal that the skips
+
             # below were caused by a red test run rather than by nothing.
-            for s in "${TEST_STATUS:-}" "${WEB_STAGING_STATUS:-}" "${WEB_PRODUCTION_STATUS:-}"; do
-              if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+
+            for s in \"${TEST_STATUS:-}\" \"${WEB_STAGING_STATUS:-}\"
+            \"${WEB_PRODUCTION_STATUS:-}\"; do
+
+            \  if [ \"$s\" != \"ok\" ]; then OVERALL=\"❌\"; COLOR=\"#ec0000\";
+            fi
+
             done
 
+
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
+
             # and the release card silently never arrives. --retry covers
+
             # transient Slack hiccups (retries only transient failures).
-            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
-              -H "Content-Type: application/json" \
-              -d @- << EOF
+
+            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST
+            \"$SLACK_WEBHOOK_URL\" \\
+
+            \  -H \"Content-Type: application/json\" \\
+
+            \  -d @- << EOF
+
             {
-              "username": "Bitrise",
-              "icon_emoji": ":bitrise:",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}",
-                    "emoji": true
-                  }
-                }
-              ],
-              "attachments": [
-                {
-                  "color": "${COLOR}",
-                  "blocks": [
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "${ROWS}"
-                      }
-                    },
-                    {
-                      "type": "divider"
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Changes since last build:*\n${CHANGELOG}"
-                      }
-                    }
-                  ]
-                }
-              ]
+
+            \  \"username\": \"Bitrise\",
+
+            \  \"icon_emoji\": \":bitrise:\",
+
+            \  \"blocks\": [
+
+            \    {
+
+            \      \"type\": \"header\",
+
+            \      \"text\": {
+
+            \        \"type\": \"plain_text\",
+
+            \        \"text\": \"${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}\",
+
+            \        \"emoji\": true
+
+            \      }
+
+            \    }
+
+            \  ],
+
+            \  \"attachments\": [
+
+            \    {
+
+            \      \"color\": \"${COLOR}\",
+
+            \      \"blocks\": [
+
+            \        {
+
+            \          \"type\": \"section\",
+
+            \          \"text\": {
+
+            \            \"type\": \"mrkdwn\",
+
+            \            \"text\": \"${ROWS}\"
+
+            \          }
+
+            \        },
+
+            \        {
+
+            \          \"type\": \"divider\"
+
+            \        },
+
+            \        {
+
+            \          \"type\": \"section\",
+
+            \          \"text\": {
+
+            \            \"type\": \"mrkdwn\",
+
+            \            \"text\": \"*Changes since last
+            build:*\\n${CHANGELOG}\"
+
+            \          }
+
+            \        }
+
+            \      ]
+
+            \    }
+
+            \  ]
+
             }
-            EOF
+
+            EOF\n"
   notify-nightly:
     description: Post the nightly card — staging builds plus both smoke gates
     envs:
@@ -1486,163 +1488,325 @@ workflows:
     after_run:
     - _notify-card
   _notify-card:
-    description: Post one consolidated release card (all build statuses + changelog).
-      Shared by notify-nightly and notify-release, which differ only in CARD_ROWS —
-      the two pipelines build different things, so a card listing rows that never
-      ran would read as a failed release.
+    description: Post one consolidated release card (all build statuses +
+      changelog). Shared by notify-nightly and notify-release, which differ only
+      in CARD_ROWS — the two pipelines build different things, so a card listing
+      rows that never ran would read as a failed release.
     steps:
     - script@1:
         is_always_run: true
         title: Send Release Slack Notification
         inputs:
-        - content: |
-            #!/usr/bin/env bash
-            # set -e without -x: keep the Slack webhook URL out of the trace log.
+        - content: "#!/usr/bin/env bash
+
+            # set -e without -x: keep the Slack webhook URL out of the trace
+            log.
+
             set -e
 
+
             # Channel label and tag/branch from tag shape or fallback.
-            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
-              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
-              case "$BITRISE_GIT_TAG" in
-                *-alpha.*) CHANNEL="Nightly" ;;
-                *-rc.*)    CHANNEL="RC" ;;
-                v*)        CHANNEL="Release" ;;
-                *)         CHANNEL="Release" ;;
-              esac
+
+            if [ -n \"${BITRISE_GIT_TAG:-}\" ]; then
+
+            \  TAG_OR_BRANCH=\"$BITRISE_GIT_TAG\"
+
+            \  case \"$BITRISE_GIT_TAG\" in
+
+            \    *-alpha.*) CHANNEL=\"Nightly\" ;;
+
+            \    *-rc.*)    CHANNEL=\"RC\" ;;
+
+            \    v*)        CHANNEL=\"Release\" ;;
+
+            \    *)         CHANNEL=\"Release\" ;;
+
+            \  esac
+
             else
-              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
-              CHANNEL="Manual"
+
+            \  TAG_OR_BRANCH=\"${BITRISE_GIT_BRANCH:-manual}\"
+
+            \  CHANNEL=\"Manual\"
+
             fi
+
 
             # One mrkdwn row per build. Platform/env/destination are static;
+
             # status + links come from each build's shared pipeline variables
-            # (empty status = the build never ran). Literal \n separates rows.
-            row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
-              local e
-              # An empty status means the build never ran, which on these
-              # pipelines only happens when an upstream workflow (`test`,
-              # `generate-changelog`) already failed. That is a failed
-              # release, so it reads as ❌ on the build's own row rather
-              # than as a neutral skip next to a separate Tests row.
-              case "$1" in
-                ok) e="✅" ;;
-                *)  e="❌" ;;
-              esac
-              local r="${e}  *${5}*  →  ${6}"
-              if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
-              if [ -n "$3" ] && [ -n "$4" ]; then r="${r}  ·  <${3}|${4}>"; fi
-              printf '%s' "$r"
+
+            # (empty status = the build never ran). Literal \\n separates rows.
+
+            row() { # $1 status  $2 build_url  $3 install_url  $4
+            artifact_label  $5 label  $6 dest
+
+            \  local e
+
+            \  # An empty status means the build never ran, which on these
+
+            \  # pipelines only happens when an upstream workflow (`test`,
+
+            \  # `generate-changelog`) already failed. That is a failed
+
+            \  # release, so it reads as ❌ on the build's own row rather
+
+            \  # than as a neutral skip next to a separate Tests row.
+
+            \  case \"$1\" in
+
+            \    ok) e=\"✅\" ;;
+
+            \    *)  e=\"❌\" ;;
+
+            \  esac
+
+            \  local r=\"${e}  *${5}*  →  ${6}\"
+
+            \  if [ -n \"$2\" ]; then r=\"${r}  ·  <${2}|Build>\"; fi
+
+            \  if [ -n \"$3\" ] && [ -n \"$4\" ]; then
+            r=\"${r}  ·  <${3}|${4}>\"; fi
+
+            \  printf '%s' \"$r\"
+
             }
+
 
             # Rows follow the pipeline: nightly-builds only builds staging and
+
             # only it runs the smoke gates, release-builds only builds
+
             # production. Listing a row the pipeline never ran would show an
+
             # empty status, which reads below as a failed build.
-            if [ "${CARD_ROWS:-production}" = "staging" ]; then
-              ROWS="$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
-              ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
-              # No install link: smoke binaries have screen-capture prevention
-              # disabled and are deliberately not published anywhere.
-              ROWS="${ROWS}\n$(row "${IOS_SMOKE_STATUS:-}" "${IOS_SMOKE_URL:-}" "" "" "iOS smoke gate" "BrowserStack")"
-              ROWS="${ROWS}\n$(row "${ANDROID_SMOKE_STATUS:-}" "${ANDROID_SMOKE_URL:-}" "" "" "Android smoke gate" "BrowserStack")"
-              # An array, not a string: an empty status must survive as its own
-              # element. Word-splitting a plain string would drop it, and an
-              # empty status is exactly the "never ran" case that must go red.
-              CHECKS=("${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}")
+
+            if [ \"${CARD_ROWS:-production}\" = \"staging\" ]; then
+
+            \  ROWS=\"$(row \"${ANDROID_STAGING_STATUS:-}\"
+            \"${ANDROID_STAGING_URL:-}\" \"${ANDROID_STAGING_INSTALL:-}\"
+            \"APK\" \"Android staging\" \"Firebase\")\"
+
+            \  ROWS=\"${ROWS}\\n$(row \"${IOS_STAGING_STATUS:-}\"
+            \"${IOS_STAGING_URL:-}\" \"${IOS_STAGING_INSTALL:-}\" \"IPA\" \"iOS
+            staging\" \"TestFlight\")\"
+
+            \  # No install link: smoke binaries have screen-capture prevention
+
+            \  # disabled and are deliberately not published anywhere.
+
+            \  ROWS=\"${ROWS}\\n$(row \"${IOS_SMOKE_STATUS:-}\"
+            \"${IOS_SMOKE_URL:-}\" \"\" \"\" \"iOS smoke gate\"
+            \"BrowserStack\")\"
+
+            \  ROWS=\"${ROWS}\\n$(row \"${ANDROID_SMOKE_STATUS:-}\"
+            \"${ANDROID_SMOKE_URL:-}\" \"\" \"\" \"Android smoke gate\"
+            \"BrowserStack\")\"
+
+            \  # An array, not a string: an empty status must survive as its own
+
+            \  # element. Word-splitting a plain string would drop it, and an
+
+            \  # empty status is exactly the \"never ran\" case that must go
+            red.
+
+            \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_STAGING_STATUS:-}\"
+            \"${ANDROID_STAGING_STATUS:-}\" \"${IOS_SMOKE_STATUS:-}\"
+            \"${ANDROID_SMOKE_STATUS:-}\")
+
             else
-              ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
-              ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
-              CHECKS=("${TEST_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}")
+
+            \  ROWS=\"$(row \"${ANDROID_PRODUCTION_STATUS:-}\"
+            \"${ANDROID_PRODUCTION_URL:-}\" \"${ANDROID_PRODUCTION_INSTALL:-}\"
+            \"APK\" \"Android production\" \"Play internal\")\"
+
+            \  ROWS=\"${ROWS}\\n$(row \"${IOS_PRODUCTION_STATUS:-}\"
+            \"${IOS_PRODUCTION_URL:-}\" \"${IOS_PRODUCTION_INSTALL:-}\" \"IPA\"
+            \"iOS production\" \"TestFlight\")\"
+
+            \  CHECKS=(\"${TEST_STATUS:-}\" \"${IOS_PRODUCTION_STATUS:-}\"
+            \"${ANDROID_PRODUCTION_STATUS:-}\")
+
             fi
+
 
             # Header icon per channel on success (any failed build flips it
+
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
-            case "$CHANNEL" in
-              Release) OVERALL="🚀" ;;
-              RC)      OVERALL="⭐" ;;
-              Nightly) OVERALL="🌙" ;;
-              *)       OVERALL="📦" ;;
+
+            case \"$CHANNEL\" in
+
+            \  Release) OVERALL=\"🚀\" ;;
+
+            \  RC)      OVERALL=\"⭐\" ;;
+
+            \  Nightly) OVERALL=\"🌙\" ;;
+
+            \  *)       OVERALL=\"📦\" ;;
+
             esac
-            COLOR="#36a64f"
+
+            COLOR=\"#36a64f\"
+
             # Anything that is not an explicit `ok` turns the card red.
+
             # Matching only on `fail` used to let a failed `test` through as
+
             # green, because gated builds publish no status at all and the
-            # empty string fell into the benign "skipped" bucket. TEST_STATUS
+
+            # empty string fell into the benign \"skipped\" bucket. TEST_STATUS
+
             # is checked here deliberately even though tests get no row of
+
             # their own — the header/colour is the only signal that the skips
+
             # below were caused by a red test run rather than by nothing. The
+
             # smoke gates run inside the staging workflows and always publish
+
             # a status, so an empty one likewise means the build never got
+
             # there rather than that the gate was skipped.
+
             #
+
             # CHECKS is scoped to this pipeline's own rows, set above.
-            for s in "${CHECKS[@]}"; do
-              if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+
+            for s in \"${CHECKS[@]}\"; do
+
+            \  if [ \"$s\" != \"ok\" ]; then OVERALL=\"❌\"; COLOR=\"#ec0000\";
+            fi
+
             done
 
+
             # The card only ever shows a summary — capped at 7 entries a
+
             # section and again at 2500 characters, because Slack drops the
+
             # whole payload past 3000. The uploaded artifact is the unabridged
-            # copy. Literal \n: the payload below is JSON, not shell.
-            NOTES_LINK=""
-            if [ -n "${CHANGELOG_URL:-}" ]; then
-              NOTES_LINK="\n\n<${CHANGELOG_URL}|Full changelog>"
+
+            # copy. Literal \\n: the payload below is JSON, not shell.
+
+            NOTES_LINK=\"\"
+
+            if [ -n \"${CHANGELOG_URL:-}\" ]; then
+
+            \  NOTES_LINK=\"\\n\\n<${CHANGELOG_URL}|Full changelog>\"
+
             fi
+
             # Only stable tags get a GitHub release — publish-github-release.sh
+
             # is stable-only by design — so linking one unconditionally sent
+
             # every nightly and rc card to a 404.
-            case "${BITRISE_GIT_TAG:-}" in
-              *-alpha.* | *-rc.*) ;;
-              v[0-9]*)
-                NOTES_LINK="${NOTES_LINK}\n<https://github.com/perawallet/pera-react-native/releases/tag/${BITRISE_GIT_TAG}|Release notes>"
-                ;;
+
+            case \"${BITRISE_GIT_TAG:-}\" in
+
+            \  *-alpha.* | *-rc.*) ;;
+
+            \  v[0-9]*)
+
+            \    NOTES_LINK=\"${NOTES_LINK}\\n<https://github.com/perawallet/pe\
+            ra-react-native/releases/tag/${BITRISE_GIT_TAG}|Release notes>\"
+
+            \    ;;
+
             esac
 
+
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
+
             # and the release card silently never arrives. --retry covers
+
             # transient Slack hiccups (retries only transient failures).
-            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
-              -H "Content-Type: application/json" \
-              -d @- << EOF
+
+            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST
+            \"$SLACK_WEBHOOK_URL\" \\
+
+            \  -H \"Content-Type: application/json\" \\
+
+            \  -d @- << EOF
+
             {
-              "username": "Bitrise",
-              "icon_emoji": ":bitrise:",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${OVERALL} RN ${CHANNEL} ${TAG_OR_BRANCH}",
-                    "emoji": true
-                  }
-                }
-              ],
-              "attachments": [
-                {
-                  "color": "${COLOR}",
-                  "blocks": [
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "${ROWS}"
-                      }
-                    },
-                    {
-                      "type": "divider"
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Changes since last build:*\n${CHANGELOG}${NOTES_LINK}"
-                      }
-                    }
-                  ]
-                }
-              ]
+
+            \  \"username\": \"Bitrise\",
+
+            \  \"icon_emoji\": \":bitrise:\",
+
+            \  \"blocks\": [
+
+            \    {
+
+            \      \"type\": \"header\",
+
+            \      \"text\": {
+
+            \        \"type\": \"plain_text\",
+
+            \        \"text\": \"${OVERALL} RN ${CHANNEL} ${TAG_OR_BRANCH}\",
+
+            \        \"emoji\": true
+
+            \      }
+
+            \    }
+
+            \  ],
+
+            \  \"attachments\": [
+
+            \    {
+
+            \      \"color\": \"${COLOR}\",
+
+            \      \"blocks\": [
+
+            \        {
+
+            \          \"type\": \"section\",
+
+            \          \"text\": {
+
+            \            \"type\": \"mrkdwn\",
+
+            \            \"text\": \"${ROWS}\"
+
+            \          }
+
+            \        },
+
+            \        {
+
+            \          \"type\": \"divider\"
+
+            \        },
+
+            \        {
+
+            \          \"type\": \"section\",
+
+            \          \"text\": {
+
+            \            \"type\": \"mrkdwn\",
+
+            \            \"text\": \"*Changes since last
+            build:*\\n${CHANGELOG}${NOTES_LINK}\"
+
+            \          }
+
+            \        }
+
+            \      ]
+
+            \    }
+
+            \  ]
+
             }
-            EOF
+
+            EOF\n"
 meta:
   bitrise.io:
     stack: ubuntu-noble-24.04-bitrise-2025-android
