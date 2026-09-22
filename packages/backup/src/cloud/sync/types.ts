@@ -24,6 +24,7 @@ import type {
     BackupItemType,
     ContactBackupPayload,
     DeviceId,
+    PasskeyBackupPayload,
     SecretsBackupPayload,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
@@ -49,7 +50,27 @@ export type BackupActionOutcome = 'settled' | 'queued' | 'refused'
 export type SerializedItem = {
     key: BackupItemKey
     type: BackupItemType
-    payload: AddressBackupPayload | SecretsBackupPayload | ContactBackupPayload
+    payload:
+        | AddressBackupPayload
+        | SecretsBackupPayload
+        | ContactBackupPayload
+        | PasskeyBackupPayload
+}
+
+/** A credential this device has already proven it can re-derive. `seedAddress`
+ *  is the first-derived address of the owning seed, which is how the seed's
+ *  `secrets/` item is keyed. */
+export type BackupPasskey = {
+    credentialId: string
+    origin: string
+    identity: string
+    counter: number
+    publicKeySpkiDer: string
+    seedAddress: string
+    userId?: string
+    userName?: string
+    displayName?: string
+    createdAt: number
 }
 
 export type SerializedAccount = {
