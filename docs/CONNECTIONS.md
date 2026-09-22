@@ -99,6 +99,7 @@ A handler added on web must be constructed in both `useConnectionsProvider.web.t
 and `networksFor` are answered) and `runOffscreenApp.ts` (so it is live).
 
 WalletConnect v2 is native-only. The browser bundle must not carry `@reown/walletkit` (CI greps
+<!-- doc-hygiene-ignore-next-line stale-path reason: build output dir, produced by CI before the grep -->
 `apps/browser/dist` for it), so the handler ships from the walletconnect package's `./v2` subpath and
 neither web realm constructs it; a v2 URI there fails as `no-handler` rather than silently.
 
