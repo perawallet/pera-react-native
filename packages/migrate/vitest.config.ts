@@ -75,6 +75,10 @@ export default defineConfig({
                 __dirname,
                 '../passkeys/src/native.ts',
             ),
+            '@perawallet/wallet-core-passkeys/crypto': path.resolve(
+                __dirname,
+                '../passkeys/src/crypto.ts',
+            ),
             '@perawallet/wallet-core-database/test-utils': path.resolve(
                 __dirname,
                 '../database/src/test-utils/index.ts',
