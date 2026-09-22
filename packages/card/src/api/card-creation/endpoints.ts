@@ -13,6 +13,7 @@
 import {
     addDeviceIntegrityHeader,
     type Network,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getCardApiError, type CardApiError } from '../errors'
 import { getCardTransport } from '../transport'
@@ -23,7 +24,10 @@ import {
     CardOwnershipProofRejectedError,
     CardSetupIncompleteError,
 } from './errors'
-import { createCardResponseSchema } from './schema'
+import {
+    createCardResponseSchema,
+    fundingAddressLinkResponseSchema,
+} from './schema'
 
 // The backend mints the card on-chain and waits for confirmation; ky's 10 s
 // default aborts that mid-flight and reports a failure for a call that is
@@ -134,4 +138,51 @@ const mapCreateCardError = (
         return new CardCreateUnavailableError(code)
     }
     return error
+}
+
+export type FundingAddressLinkState =
+    | 'unlinked'
+    | 'linked_to_caller'
+    | 'linked_to_other'
+
+export type FundingAddressLink = {
+    state: FundingAddressLinkState
+    /** The caller's own card, when one exists. Never another user's. */
+    cardAddress: Nullable<string>
+}
+
+export type FetchFundingAddressLinkParams = {
+    network: Network
+    address: string
+    baanxUserId: string
+    integrityToken: string
+    signal?: AbortSignal
+}
+
+/**
+ * Whether `address` can be connected as this Baanx user's funding source.
+ *
+ * Lets a caller refuse an account at selection time instead of discovering it
+ * after the ownership signature, when {@link createCard} fails with
+ * ACCOUNT_LINKED_ELSEWHERE. `linked_to_caller` is not a refusal: creation
+ * resumes against the existing link, including when no card was minted yet.
+ */
+export const fetchFundingAddressLink = async (
+    params: FetchFundingAddressLinkParams,
+): Promise<FundingAddressLink> => {
+    const { network, address, baanxUserId, integrityToken, signal } = params
+
+    const response = await getCardTransport().request({
+        network,
+        route: 'proxy',
+        method: 'GET',
+        path: '/api/v3/baanx/card-address',
+        params: { address, baanx_user_id: baanxUserId },
+        headers: addDeviceIntegrityHeader({
+            'x-app-integrity-token': integrityToken,
+        }),
+        signal,
+    })
+    const parsed = fundingAddressLinkResponseSchema.parse(response.data)
+    return { state: parsed.linkState, cardAddress: parsed.cardAddress }
 }

@@ -52,6 +52,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             restartPolling: mockRestartPolling,
             refetch: vi.fn(),
         }),
+        useFundingAddressLinkMutation: () => ({
+            checkFundingAddress: mockCheckFundingAddress,
+            isPending: false,
+        }),
         useCardStore: Object.assign(
             (
                 selector: (state: {
@@ -97,6 +101,8 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockLogout = vi.fn()
 let mockHasPollTimedOut = false
+const mockCheckFundingAddress = vi.fn()
+const mockShowCardError = vi.fn()
 let mockIsStateUnknown = false
 let mockIsLoading = false
 const mockRestartPolling = vi.fn()
@@ -107,6 +113,7 @@ vi.mock('@modules/card/hooks', async () => ({
         typeof import('../../../hooks/useOpenCardSupport')
     >('../../../hooks/useOpenCardSupport')),
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
+    useCardErrorToast: () => mockShowCardError,
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
     }),
@@ -204,6 +211,12 @@ const account = (
 
 beforeEach(() => {
     vi.clearAllMocks()
+    // Free unless a test says otherwise: the preflight is not what is under
+    // test in most of these.
+    mockCheckFundingAddress.mockResolvedValue({
+        state: 'unlinked',
+        cardAddress: null,
+    })
     Object.assign(mockCapabilities, { inAppWebView: true })
     mockVerificationState = null
     mockHasPollTimedOut = false
@@ -439,10 +452,10 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.connectedAccount?.address).toBe('ADDR1')
     })
 
-    it('connects the chosen account locally — no network call', async () => {
-        // Baanx has no Algorand funding-source-link endpoint yet; this must
-        // never call one. Selecting an account just records it locally — the
-        // create-card call itself binds the address on-chain.
+    it('connects the chosen account locally, without linking it anywhere', async () => {
+        // Baanx has no Algorand funding-source-link endpoint, and the preflight
+        // below is a read: selecting an account still only records it locally,
+        // and the create-card call is what binds the address on-chain.
         mockOnboardingStep = OnboardingStep.Completed
         mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
@@ -457,6 +470,71 @@ describe('useCardOnboardingStatusScreen', () => {
             ),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    // The reported failure: the address belongs to another Baanx user, so
+    // creation would 400 after three signing prompts. Refuse at selection.
+    it('refuses an account another Baanx user already holds', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
+        mockCheckFundingAddress.mockResolvedValue({
+            state: 'linked_to_other',
+            cardAddress: null,
+        })
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleConnectAccount('connect')
+        })
+
+        await waitFor(() => expect(mockShowCardError).toHaveBeenCalled())
+        expect(mockSetConnectedFundingSourceAddress).not.toHaveBeenCalled()
+        expect(mockTrackEvent).not.toHaveBeenCalledWith(
+            CardEvent.CreateVerifyAccountSelect,
+        )
+    })
+
+    // Linked to this user with no card yet is the resumable case: the backend
+    // finishes the half-made creation, so it must not be refused here.
+    it('accepts an account this user already holds', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
+        mockCheckFundingAddress.mockResolvedValue({
+            state: 'linked_to_caller',
+            cardAddress: null,
+        })
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleConnectAccount('connect')
+        })
+
+        await waitFor(() =>
+            expect(mockSetConnectedFundingSourceAddress).toHaveBeenCalledWith(
+                'ADDR1',
+            ),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
+    })
+
+    // An unanswerable preflight is not a refusal: the create call stays the
+    // backstop, so a failed check must not block a legitimate account.
+    it('connects anyway when the preflight cannot be answered', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
+        mockCheckFundingAddress.mockRejectedValue(new Error('offline'))
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleConnectAccount('connect')
+        })
+
+        await waitFor(() =>
+            expect(mockSetConnectedFundingSourceAddress).toHaveBeenCalledWith(
+                'ADDR1',
+            ),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
     })
 
     it('does nothing when the picker resolves without an account', async () => {
