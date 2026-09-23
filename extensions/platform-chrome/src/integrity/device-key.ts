@@ -62,6 +62,8 @@ export type EnrolmentMarker = {
     enrolledAt: string
 }
 
+// Per network: mainnet and testnet are separate backend deployments with separate
+// databases, so an enrolment on one means nothing to the other.
 const enrolmentRecordKey = (network: string): string => `enrolment:${network}`
 
 /**
