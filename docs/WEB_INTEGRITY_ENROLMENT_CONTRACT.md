@@ -49,6 +49,7 @@ sequenceDiagram
     SW->>SW: kid = base64url(sha256(SPKI of install public key))
     SW->>Page: show-check-frame(url with kid), hidden
     Page->>Frame: mount iframe, visually hidden
+    Frame->>SW: hello; content script answers ready and sends PAGE_READY
     Frame->>CF: render widget (action, cData = kid, interaction-only)
     alt Cloudflare needs a click
         Frame->>SW: interactive-required (via content script)
@@ -60,7 +61,7 @@ sequenceDiagram
     Frame->>SW: content script relays TURNSTILE_SOLVED over a runtime port
     SW->>SW: verify port.sender.origin, url path, kid matches pending enrolment
     SW->>BE: POST /api/v3/public/integrity/enrol (device_id, public_key, turnstile_token)
-    BE->>CF: siteverify (secret, token, remoteip)
+    BE->>CF: siteverify (secret, token)
     CF-->>BE: success, action, cdata, hostname, challenge_ts
     BE->>BE: action and cdata == kid(public_key) and hostname allowed; store enrolment
     BE-->>SW: 200 enrolled
@@ -74,11 +75,19 @@ enrolment (section 6.4); enrolment is a prerequisite the backend enforces and th
 
 ### 4.1 Location and environments
 
-| environment | check page                                       | Turnstile sitekey                                                                                                                                                      |
-| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| production  | `https://integrity.perawallet.app/check`         | production sitekey, hostname allowlist = that host                                                                                                                     |
-| staging     | `https://integrity-staging.perawallet.app/check` | staging sitekey                                                                                                                                                        |
-| local / e2e | any origin the dev build's manifest lists        | Cloudflare test sitekeys: `1x00000000000000000000BB` (passes invisibly), `1x00000000000000000000AA` (passes, visible), `3x00000000000000000000FF` (forces interactive) |
+| environment | check page                                       | Turnstile sitekey                               |
+| ----------- | ------------------------------------------------ | ----------------------------------------------- |
+| production  | `https://integrity.perawallet.app/check`         | one widget whose allowlist holds both hosts     |
+| staging     | `https://integrity-staging.perawallet.app/check` | the same widget, so the same sitekey and secret |
+| local / e2e | any origin the dev build's manifest lists        | Cloudflare test sitekeys                        |
+
+Test sitekeys: `1x00000000000000000000BB` passes invisibly, `1x00000000000000000000AA` passes
+visibly, `3x00000000000000000000FF` forces the checkbox, `2x00000000000000000000AB` always fails. On
+`localhost` the page takes a `sitekey` query parameter so an e2e run can pick one.
+
+Sharing one secret means `siteverify` accepts a staging solve under the production secret, so the
+backend's hostname check (section 6.2) is what keeps a staging solve from enrolling in production.
+Each environment's `TURNSTILE_ALLOWED_HOSTNAMES` must name its own host only.
 
 A dedicated subdomain rather than a path on the marketing site: the extension's content script must
 match this origin exactly, the page needs its own strict CSP, and the host doubles as the Turnstile
@@ -95,7 +104,9 @@ https://integrity.perawallet.app/check?v=1&kid=<base64url sha256 of SPKI DER>&la
 - `kid`: 43 characters, base64url without padding (`[A-Za-z0-9_-]`), which is exactly Turnstile's
   `cData` alphabet. This is the binding value; the page validates the shape and puts it in `cData`
   verbatim.
-- `lang`: optional, for the page's own copy. Turnstile picks the browser language itself.
+- `lang`: optional, for the page's own copy, and ignored for any language the page has no
+  translation for: tagging English text with another language makes screen readers mispronounce it.
+  Turnstile picks the browser language itself.
 
 Nothing secret or personal is in the URL. The installation id never leaves the extension. The page
 behaves the same whether it is framed or opened as a tab; it does not need to know which.
@@ -109,11 +120,14 @@ turnstile.render('#check', {
     cData: kidFromQuery, // the binding
     appearance: 'interaction-only', // nothing rendered unless Cloudflare needs a click
     'refresh-expired': 'manual', // the extension owns retries, not the widget
+    'feedback-enabled': false, // its error report is a beacon the page's connect-src forbids
     'before-interactive-callback': onInteractiveRequired, // the extension expands the frame
     'after-interactive-callback': onInteractiveDone,
     callback: onSolved,
-    'error-callback': onError,
+    'error-callback': onError, // returns true, or Turnstile also runs its own error handling
     'expired-callback': onExpired,
+    'timeout-callback': onTimeout, // a shown checkbox nobody completed
+    'unsupported-callback': onUnsupported,
 })
 ```
 
@@ -128,50 +142,50 @@ valid for 300 seconds, so the page hands it over immediately.
 
 The page has no direct access to `chrome.runtime`: the manifest keeps `externally_connectable`
 closed on purpose. It posts to its own window, and an extension content script injected on this
-origin relays to the service worker over a runtime port. The page only needs this:
+origin relays to the service worker over a runtime port. Every message is
+`{ type: 'pera:integrity-check', v: 1, event, kid, ... }`, posted to `window.location.origin`:
 
-```js
-window.postMessage(
-    { type: 'pera:integrity-check', v: 1, event: 'interactive-required', kid },
-    window.location.origin,
-)
-window.postMessage(
-    { type: 'pera:integrity-check', v: 1, event: 'interactive-done', kid },
-    window.location.origin,
-)
-window.postMessage(
-    {
-        type: 'pera:integrity-check',
-        v: 1,
-        event: 'solved',
-        kid,
-        turnstileToken,
-    },
-    window.location.origin,
-)
-window.postMessage(
-    { type: 'pera:integrity-check', v: 1, event: 'error', kid, code },
-    window.location.origin,
-)
-```
+| `event`                | sent when                              | extra fields              |
+| ---------------------- | -------------------------------------- | ------------------------- |
+| `hello`                | the page script starts                 | none                      |
+| `interactive-required` | Cloudflare is about to show a checkbox | none                      |
+| `interactive-done`     | the checkbox was completed             | none                      |
+| `solved`               | a token is ready                       | `turnstileToken`          |
+| `error`                | the attempt failed                     | `code`, optional `detail` |
 
-`code` for `error` is one of `TURNSTILE_BLOCKED` (script failed to load, usually a blocker or
-offline), `TURNSTILE_ERROR` (widget error callback, Cloudflare's code attached as `detail`),
-`TURNSTILE_EXPIRED` (token expired before it was picked up), `UNSUPPORTED_VERSION`, `INVALID_KID`.
+The content script answers `hello` with `{ type: 'pera:integrity-check', v: 1, event: 'ready' }` on
+the same window. The page cannot simply wait for an unprompted `ready`: the content script runs at
+`document_start`, before the page's script exists. Without a `ready` within 3 seconds the page shows
+that it only works when opened by the Pera extension, and keeps running the widget.
+
+`kid` is echoed only when well formed and is otherwise the empty string, so a malformed URL relays
+nothing the page did not validate. Turnstile's own iframe traffic arrives on the same window, so the
+content script must ignore any message whose `type` is not `pera:integrity-check`.
+
+| `code`                | meaning                                                  | `detail`                                                                                            |
+| --------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_BLOCKED`   | the script failed or had not loaded after 10 seconds     | `script-load-failed`                                                                                |
+| `TURNSTILE_ERROR`     | the widget failed                                        | Cloudflare's code, or `render-failed`, `reset-failed`, `unsupported-browser`, `no-sitekey-for-host` |
+| `TURNSTILE_EXPIRED`   | the token expired before pickup, or a checkbox timed out | none, or `interactive-timeout`                                                                      |
+| `UNSUPPORTED_VERSION` | the page does not speak this `v`                         | none                                                                                                |
+| `INVALID_KID`         | `kid` is not 43 base64url characters                     | none, and `kid` is empty                                                                            |
+
+`UNSUPPORTED_VERSION`, `INVALID_KID` and `no-sitekey-for-host` cannot succeed on a retry; every
+other error can.
 
 While the widget is invisible the page renders nothing but its status text, so a hidden frame has
-nothing to show. Once interaction is required the page shows the widget, a one-line explanation
-("Quick check before Pera can sponsor your first transactions") and a retry button on error. When
-the extension is not detected within a few seconds (no `ready` event from the content script), it
-shows a plain message that the page only works when opened by the Pera extension.
+nothing to show. Once interaction is required the page shows the widget and a one-line explanation
+("Quick check to verify you before using Pera"), plus a retry button on a retryable error.
 
 ### 4.5 CSP and hygiene
 
-`script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com;
-connect-src 'self'`. No `X-Frame-Options` or `frame-ancestors` that would block a
-`chrome-extension://` parent: the page is designed to be framed by the extension. No analytics, no
-cookies, no third-party scripts besides Turnstile: this page is a bot check, and every extra script
-is attack surface on the one origin the extension listens to.
+`default-src 'none'; script-src 'self' https://challenges.cloudflare.com; frame-src
+https://challenges.cloudflare.com; connect-src 'self'; style-src 'self'; base-uri 'none';
+form-action 'none'`, with a referrer policy that still sends the origin, because Cloudflare matches
+it against the widget's hostname allowlist. No `X-Frame-Options` or `frame-ancestors` that would
+block a `chrome-extension://` parent: the page is designed to be framed by the extension. No
+analytics, no cookies, no third-party scripts besides Turnstile: this page is a bot check, and every
+extra script is attack surface on the one origin the extension listens to.
 
 ## 5. Extension contract
 
@@ -211,7 +225,7 @@ only when:
 
 - no extension page is open to host the frame (a re-enrolment triggered while only the toolbar
   popup is open, which closes on focus loss and cannot host a long-lived frame);
-- the frame never reports `ready` within 5 seconds (page blocked, offline, or a CSP or
+- no `PAGE_READY` arrives on the port within 5 seconds (page blocked, offline, or a CSP or
   frame-ancestors regression on the web side);
 - the page reports `TURNSTILE_BLOCKED`.
 
@@ -231,7 +245,10 @@ differs.
   POST once immediately and then stop: the token is single-use, so a second server-side attempt
   after a 5xx that actually processed it fails, and that failure means "check again on the next
   trigger".
-- On `error`, tab closed, or deadline: abort, release the lock, record a failure.
+- On `error`, tab closed, or deadline: abort, release the lock, record a failure. The exception is a
+  retryable `error` (section 4.4) in the fallback tab: the page's retry button is the
+  user-initiated retry there, so the attempt stays open until the tab closes or the deadline. An
+  abort at that point would let the page announce success for a token nobody is waiting for.
 
 Enrolment can become visible, so it must never loop. At most one automatic attempt per trigger,
 with exponential backoff between triggers (floor 5 minutes, cap 24 hours) persisted in
@@ -259,12 +276,14 @@ Manifest additions (a Web Store review, so the hosts are decided once):
 `chrome.tabs.create`, `chrome.tabs.remove` and `chrome.tabs.onRemoved` work without the `tabs`
 permission.
 
-The content script listens for the page's `postMessage` (same-origin only), acknowledges with a
-`pera:integrity-check` / `ready` event so the page can detect the extension, and forwards over
-`chrome.runtime.connect({ name: 'pera-integrity-check' })`:
+The content script listens for the page's `postMessage` (same origin only, and only
+`type: 'pera:integrity-check'`). On `hello` it answers the page with `ready`, opens
+`chrome.runtime.connect({ name: 'pera-integrity-check' })` and sends `PAGE_READY`, the worker's
+liveness signal for section 5.2. Every later event is forwarded on that port:
 
 ```ts
 type IntegrityCheckPortMessage =
+    | { type: 'PAGE_READY'; v: 1; kid: string }
     | { type: 'INTERACTIVE_REQUIRED'; v: 1; kid: string }
     | { type: 'INTERACTIVE_DONE'; v: 1; kid: string }
     | { type: 'TURNSTILE_SOLVED'; v: 1; kid: string; turnstileToken: string }
@@ -286,6 +305,9 @@ disconnects the port and logs at debug:
 3. An enrolment is pending, started by this worker, whose `kid` equals the message's `kid`, and the
    port's `sender.tab.id` equals the tab hosting the frame or the fallback tab the worker opened.
 4. `turnstileToken` is a non-empty string of at most 2048 characters.
+
+An `INVALID_KID` error carries an empty `kid`, so it can never pass rule 3. Accept it on the
+`sender.tab.id` match alone and abort, since that URL cannot succeed on a retry.
 
 `INTERACTIVE_REQUIRED` only ever expands the frame; the page cannot use it to make the extension do
 anything else, and a hostile page that fakes it merely shows itself. The page stays untrusted after
@@ -320,22 +342,22 @@ reachable with no integrity token and no Bearer.
 }
 ```
 
-| status | body                                                        | when                                                                                                                                             |
-| ------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `200`  | `{ "enrolled": true, "kid": "<base64url sha256 of SPKI>" }` | new enrolment or re-enrolment                                                                                                                    |
-| `400`  | `{ "error", "code": "TURNSTILE_INVALID" }`                  | `siteverify` returned `success: false` (includes expired and already-used tokens)                                                                |
-| `400`  | `{ "error", "code": "TURNSTILE_BINDING_MISMATCH" }`         | `siteverify` `cdata` differs from `kid(public_key)`, or `action` differs from `pera-extension-enrol`, or `hostname` is not an allowed check page |
-| `400`  | `{ "error", "code": "INVALID_PUBLIC_KEY" }`                 | SPKI does not import as ECDSA P-256                                                                                                              |
-| `409`  | `{ "error", "code": "PUBLIC_KEY_IN_USE" }`                  | the key is already enrolled under a different `device_id` (section 6.3)                                                                          |
-| `503`  | `{ "error", "code": "TURNSTILE_UNAVAILABLE" }`              | `siteverify` unreachable; the client treats it as transient                                                                                      |
+| status | body                                                        | when                                                                                                                                                                                   |
+| ------ | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{ "enrolled": true, "kid": "<base64url sha256 of SPKI>" }` | new enrolment or re-enrolment                                                                                                                                                          |
+| `400`  | `{ "error", "code": "TURNSTILE_INVALID" }`                  | `siteverify` returned `success: false` (includes expired and already-used tokens)                                                                                                      |
+| `400`  | `{ "error", "code": "TURNSTILE_BINDING_MISMATCH" }`         | `siteverify` `cdata` differs from `kid(public_key)`, or `action` differs from `pera-extension-enrol`, or `hostname` is not an allowed check page, or the solve is older than 5 minutes |
+| `400`  | `{ "error", "code": "INVALID_PUBLIC_KEY" }`                 | SPKI does not import as ECDSA P-256                                                                                                                                                    |
+| `409`  | `{ "error", "code": "PUBLIC_KEY_IN_USE" }`                  | the key is already enrolled under a different `device_id` (section 6.3)                                                                                                                |
+| `503`  | `{ "error", "code": "TURNSTILE_UNAVAILABLE" }`              | `siteverify` unreachable; the client treats it as transient                                                                                                                            |
 
 ### 6.2 Verification
 
 1. Validate shapes; import the SPKI with WebCrypto exactly as attest does; compute
    `kid = base64url(sha256(spkiDer))`.
 2. Call `https://challenges.cloudflare.com/turnstile/v0/siteverify` with `secret` (env
-   `TURNSTILE_SECRET_KEY`), `response` (the token) and `remoteip` (informational). Timeout 5
-   seconds.
+   `TURNSTILE_SECRET_KEY`) and `response` (the token), with a 5-second timeout. No `remoteip`:
+   behind the load balancer the address the service sees is not reliably the solver's.
 3. Require `success === true`, `action === 'pera-extension-enrol'`, `cdata === kid`, `hostname` in
    the allowed set (env `TURNSTILE_ALLOWED_HOSTNAMES`, comma-separated), and `challenge_ts` within
    the last 5 minutes.
@@ -405,14 +427,15 @@ keep theirs.
    one style.
 7. **Backoff is per trigger with a 24-hour cap.** Enrolment can show UI; a mint-style 60-minute cap
    would surface the check hourly to a user whose enrolment keeps failing.
-8. **`remoteip` is informational.** Requiring the enrol request IP to match the page load would break
-   users on dual-stack or rotating mobile networks for no gain the key binding does not already give.
+8. **No `remoteip`.** The service cannot reliably see the solver's address behind the load
+   balancer, and requiring the enrol request IP to match the page load would break users on
+   dual-stack or rotating mobile networks for no gain the key binding does not already give.
 
 ## 8. Rollout order
 
 The pieces have to land in this order, because each is tested against the one before it:
 
-1. Web: check page on the staging host with the staging sitekey, frameable by the extension.
+1. Web: check page on the staging host with the real sitekey, frameable by the extension.
 2. Backend: `enrol` endpoint, table, `siteverify`, tests against the test secret; enforcement off.
 3. Extension: content script, relay, frame host, worker flow, marker, revocation codes.
 4. Staging soak with enforcement off, watching enrolment counts, error codes, and how often
