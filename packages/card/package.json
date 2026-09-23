@@ -34,7 +34,6 @@
     "zod": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "tweetnacl": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:"
   },

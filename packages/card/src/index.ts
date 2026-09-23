@@ -39,6 +39,7 @@ export {
     // Exported so the funding-type flows can degrade to Manual with honest
     // copy instead of a generic "please try again".
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     type EscrowChainConfig,
 } from './api/escrow'
 export {

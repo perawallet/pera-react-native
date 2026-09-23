@@ -187,6 +187,10 @@ export const configSchema = z
         // never remote config.
         mainnetCardAutoDrawProgramHash: z.string(),
         testnetCardAutoDrawProgramHash: z.string(),
+        // Lowercase hex SHA-256 of the AutoDraw TEAL template's UTF-8 bytes. One
+        // value for every network: the template is hashed before app ids are
+        // rendered in. Build-time only, never remote config.
+        cardAutoDrawTemplateHash: z.string(),
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
 
@@ -402,6 +406,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     // Empty until the program is pinned per network; an empty pin fails closed.
     mainnetCardAutoDrawProgramHash: '',
     testnetCardAutoDrawProgramHash: '',
+    cardAutoDrawTemplateHash: '',
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
 
@@ -518,6 +523,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetCardKillswitchAppId: 'TESTNET_CARD_KILLSWITCH_APP_ID',
     mainnetCardAutoDrawProgramHash: 'MAINNET_CARD_AUTODRAW_PROGRAM_HASH',
     testnetCardAutoDrawProgramHash: 'TESTNET_CARD_AUTODRAW_PROGRAM_HASH',
+    cardAutoDrawTemplateHash: 'CARD_AUTODRAW_TEMPLATE_HASH',
     mainnetCardUsdcAssetId: 'MAINNET_CARD_USDC_ASSET_ID',
     testnetCardUsdcAssetId: 'TESTNET_CARD_USDC_ASSET_ID',
 

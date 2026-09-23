@@ -10,18 +10,17 @@
  limitations under the License
  */
 
-export {
-    compileAutoDrawProgram,
-    renderAutoDrawTeal,
-    resolveEscrowChainConfig,
-    verifyAutoDrawProgram,
-    AutoDrawProgramUnverifiedError,
-    CardEscrowNotConfiguredError,
-    type EscrowChainConfig,
-    type RenderAutoDrawTealArgs,
-} from './lsig'
-export {
-    computeAutoDrawTemplateHash,
-    verifyAutoDrawTealTemplate,
-    AutoDrawTealUnverifiedError,
-} from './verify-teal'
+import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+/** The current non-expired device attestation token, or null. */
+export const getValidIntegrityToken = (): Nullable<string> => {
+    const { integrityToken, expiresAt } = useAppIntegrityStore.getState()
+    if (!integrityToken || !expiresAt) {
+        return null
+    }
+    const expiry = Date.parse(expiresAt)
+    return Number.isFinite(expiry) && expiry > Date.now()
+        ? integrityToken
+        : null
+}

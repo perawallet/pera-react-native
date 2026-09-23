@@ -73,6 +73,24 @@ case "$PROFILE" in
       # flip cannot recover it — the warning is the only signal before release.
       "GOOGLE_IOS_CLIENT_ID" "GOOGLE_WEB_CLIENT_ID" "IOS_ICLOUD_CONTAINER_ID"
     )
+    # AutoDraw LogicSig pins. Unprefixed: one set of card apps serves both
+    # environments on testnet, and the template hash is environment-independent.
+    # An empty pin fails closed on the device, so a missing secret would only
+    # surface as auto funding never working in the release.
+    required_global+=(
+      "CARD_AUTODRAW_TEMPLATE_HASH"
+      "TESTNET_CARD_W3CARD_APP_ID"
+      "TESTNET_CARD_KILLSWITCH_APP_ID"
+      "TESTNET_CARD_AUTODRAW_PROGRAM_HASH"
+    )
+    # Mainnet card apps are not deployed; an empty mainnet pin is the intended
+    # fail-closed state until they are. USDC ids have code defaults.
+    optional_global+=(
+      "MAINNET_CARD_W3CARD_APP_ID"
+      "MAINNET_CARD_KILLSWITCH_APP_ID"
+      "MAINNET_CARD_AUTODRAW_PROGRAM_HASH"
+      "TESTNET_CARD_USDC_ASSET_ID"
+    )
     ;;
   android)
     required_global+=(
@@ -101,6 +119,24 @@ case "$PROFILE" in
       # iOS client id is only the URL scheme. Unset means the Drive row always
       # reports itself unconfigured.
       "GOOGLE_WEB_CLIENT_ID"
+    )
+    # AutoDraw LogicSig pins. Unprefixed: one set of card apps serves both
+    # environments on testnet, and the template hash is environment-independent.
+    # An empty pin fails closed on the device, so a missing secret would only
+    # surface as auto funding never working in the release.
+    required_global+=(
+      "CARD_AUTODRAW_TEMPLATE_HASH"
+      "TESTNET_CARD_W3CARD_APP_ID"
+      "TESTNET_CARD_KILLSWITCH_APP_ID"
+      "TESTNET_CARD_AUTODRAW_PROGRAM_HASH"
+    )
+    # Mainnet card apps are not deployed; an empty mainnet pin is the intended
+    # fail-closed state until they are. USDC ids have code defaults.
+    optional_global+=(
+      "MAINNET_CARD_W3CARD_APP_ID"
+      "MAINNET_CARD_KILLSWITCH_APP_ID"
+      "MAINNET_CARD_AUTODRAW_PROGRAM_HASH"
+      "TESTNET_CARD_USDC_ASSET_ID"
     )
     ;;
   web)

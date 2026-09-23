@@ -85,6 +85,19 @@ describe('config/main', () => {
         expect(overrideEnvironmentMap.reownProjectId).toBe('REOWN_PROJECT_ID')
     })
 
+    // Empty is the committed default so open-source builds parse; the card
+    // package fails closed on it, so only a Bitrise-injected value enables
+    // AutoDraw.
+    test('defaults cardAutoDrawTemplateHash to the empty string', () => {
+        expect(getConfig({}).cardAutoDrawTemplateHash).toBe('')
+    })
+
+    test('maps cardAutoDrawTemplateHash onto CARD_AUTODRAW_TEMPLATE_HASH', () => {
+        expect(overrideEnvironmentMap.cardAutoDrawTemplateHash).toBe(
+            'CARD_AUTODRAW_TEMPLATE_HASH',
+        )
+    })
+
     test('exposes bounded-timeout defaults in milliseconds', () => {
         expect(config.algodReadTimeout).toBe(10_000)
         expect(config.algodSubmitTimeout).toBe(30_000)

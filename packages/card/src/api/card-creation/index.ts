@@ -12,11 +12,18 @@
 
 export {
     createCard,
+    fetchFundingAddressLink,
     type CreateCardParams,
     type CreateCardResult,
     type CardSiwaSignData,
+    type FetchFundingAddressLinkParams,
+    type FundingAddressLink,
+    type FundingAddressLinkState,
 } from './endpoints'
-export { createCardResponseSchema } from './schema'
+export {
+    createCardResponseSchema,
+    fundingAddressLinkResponseSchema,
+} from './schema'
 export {
     CardAccountLinkedElsewhereError,
     CardCreateInProgressError,

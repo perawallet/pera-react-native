@@ -11,78 +11,55 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import nacl from 'tweetnacl'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { AUTODRAW_TEAL_TEMPLATE } from '../autodraw-teal'
 import {
-    isAutoDrawTealSignatureValid,
+    computeAutoDrawTemplateHash,
     verifyAutoDrawTealTemplate,
-    AUTODRAW_TEAL_PUBLIC_KEY,
-    AUTODRAW_TEAL_SIGNATURE,
+    AutoDrawTealUnverifiedError,
 } from '../verify-teal'
 
-// `Uint8Array.from` keeps tweetnacl's cross-realm instanceof check happy under
-// vitest — see the same normalization in verify-teal.ts.
-const templateBytes = Uint8Array.from(
-    new TextEncoder().encode(AUTODRAW_TEAL_TEMPLATE),
-)
+const hashOf = (text: string) =>
+    bytesToHex(sha256(new TextEncoder().encode(text)))
 
-describe('isAutoDrawTealSignatureValid', () => {
-    it('accepts a signature the pinned key would produce over the exact template', () => {
-        const keyPair = nacl.sign.keyPair()
-        const signature = nacl.sign.detached(templateBytes, keyPair.secretKey)
-
-        expect(
-            isAutoDrawTealSignatureValid(
-                encodeToBase64(keyPair.publicKey),
-                encodeToBase64(signature),
-            ),
-        ).toBe(true)
-    })
-
-    it('rejects a signature over DIFFERENT bytes (tampered template)', () => {
-        const keyPair = nacl.sign.keyPair()
-        const signature = nacl.sign.detached(
-            Uint8Array.from(
-                new TextEncoder().encode(
-                    `${AUTODRAW_TEAL_TEMPLATE}// tampered`,
-                ),
-            ),
-            keyPair.secretKey,
+describe('computeAutoDrawTemplateHash', () => {
+    it('is the lowercase hex SHA-256 of the exact template bytes', () => {
+        expect(computeAutoDrawTemplateHash()).toBe(
+            hashOf(AUTODRAW_TEAL_TEMPLATE),
         )
-
-        expect(
-            isAutoDrawTealSignatureValid(
-                encodeToBase64(keyPair.publicKey),
-                encodeToBase64(signature),
-            ),
-        ).toBe(false)
-    })
-
-    it('rejects a signature from a DIFFERENT key', () => {
-        const signer = nacl.sign.keyPair()
-        const other = nacl.sign.keyPair()
-        const signature = nacl.sign.detached(templateBytes, signer.secretKey)
-
-        expect(
-            isAutoDrawTealSignatureValid(
-                encodeToBase64(other.publicKey),
-                encodeToBase64(signature),
-            ),
-        ).toBe(false)
-    })
-
-    it('rejects empty material (never throws)', () => {
-        expect(isAutoDrawTealSignatureValid('', '')).toBe(false)
-        expect(isAutoDrawTealSignatureValid('not-base64!!', 'x')).toBe(false)
+        expect(computeAutoDrawTemplateHash()).toMatch(/^[0-9a-f]{64}$/)
     })
 })
 
 describe('verifyAutoDrawTealTemplate', () => {
-    it('is dormant (does not throw) while the pinned material is unset', () => {
-        // Pre-launch placeholder state — verification is intentionally dormant.
-        expect(AUTODRAW_TEAL_PUBLIC_KEY).toBe('')
-        expect(AUTODRAW_TEAL_SIGNATURE).toBe('')
-        expect(() => verifyAutoDrawTealTemplate()).not.toThrow()
+    it('accepts the pinned hash', () => {
+        expect(() =>
+            verifyAutoDrawTealTemplate(hashOf(AUTODRAW_TEAL_TEMPLATE)),
+        ).not.toThrow()
+    })
+
+    // The pin is pasted into Bitrise by hand; tolerate the casing and
+    // whitespace that survives a copy-paste instead of failing closed on it.
+    it('accepts an upper-case, padded pin', () => {
+        expect(() =>
+            verifyAutoDrawTealTemplate(
+                `  ${hashOf(AUTODRAW_TEAL_TEMPLATE).toUpperCase()}  `,
+            ),
+        ).not.toThrow()
+    })
+
+    it('rejects a pin for different bytes (tampered template)', () => {
+        expect(() =>
+            verifyAutoDrawTealTemplate(
+                hashOf(`${AUTODRAW_TEAL_TEMPLATE}// tampered`),
+            ),
+        ).toThrow(AutoDrawTealUnverifiedError)
+    })
+
+    it('rejects an empty pin (fail closed, no dormant mode)', () => {
+        expect(() => verifyAutoDrawTealTemplate('')).toThrow(
+            AutoDrawTealUnverifiedError,
+        )
     })
 })
