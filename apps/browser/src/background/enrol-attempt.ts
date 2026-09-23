@@ -12,9 +12,22 @@
 
 import {
     INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
+    INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_ENROL_NEEDED_SESSION_KEY,
 } from '@perawallet/wallet-extension-platform-chrome'
 import type { ActiveNetwork } from './network'
+import { createSessionBackoff } from './session-backoff'
+
+const MINUTE_MS = 60 * 1000
+
+// Enrolment can show UI, so it never loops: one attempt per trigger, and a
+// 24-hour cap rather than the mint loop's hour. Here rather than in
+// integrity-enrol.ts so the mint loop can record a failure without a cycle.
+export const enrolBackoff = createSessionBackoff({
+    key: INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
+    floorMs: 5 * MINUTE_MS,
+    capMs: 24 * 60 * MINUTE_MS,
+})
 
 export type EnrolAttempt = {
     token: string

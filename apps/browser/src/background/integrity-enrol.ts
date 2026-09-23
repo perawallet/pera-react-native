@@ -19,7 +19,6 @@ import { logger } from '@perawallet/wallet-core-shared'
 import {
     INTEGRITY_CHECK_PATH,
     INTEGRITY_CHECK_PORT_PREFIX,
-    INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_HOST_PORT_PREFIX,
     buildCheckUrl,
     clearInstallKey,
@@ -39,6 +38,7 @@ import {
 } from '@perawallet/wallet-extension-platform-chrome'
 import {
     clearEnrolmentNeeded,
+    enrolBackoff,
     isAttemptLive,
     newCheckToken,
     readAttempt,
@@ -48,7 +48,6 @@ import {
 import { resumeIntegrityMint } from './integrity'
 import { withNamedLock } from './named-lock'
 import { readActiveNetwork } from './network'
-import { createSessionBackoff } from './session-backoff'
 
 export const INTEGRITY_ENROL_LOCK = 'pera-integrity-enrol'
 export const INTEGRITY_ENROL_DEADLINE_ALARM = 'pera-integrity-enrol-deadline'
@@ -56,16 +55,7 @@ export const INTEGRITY_ENROL_DEADLINE_ALARM = 'pera-integrity-enrol-deadline'
 export const ENROL_DEADLINE_MS = 4 * 60 * 1000
 export const LIVENESS_TIMEOUT_MS = 5000
 
-const MINUTE_MS = 60 * 1000
 const NO_ACTION: IntegrityEnrolDecision = { action: 'none' }
-
-// Enrolment can show UI, so it never loops: one attempt per trigger, and a
-// 24-hour cap rather than the mint loop's hour.
-export const enrolBackoff = createSessionBackoff({
-    key: INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
-    floorMs: 5 * MINUTE_MS,
-    capMs: 24 * 60 * MINUTE_MS,
-})
 
 const isEnrolmentEnabled = (): boolean =>
     config.webIntegrityMintEnabled && config.webIntegrityEnrolEnabled

@@ -29,12 +29,14 @@ import {
     clearSessionIntegrityToken,
     ensureDeviceInstallationID,
     exportInstallPublicKey,
+    getEnrolmentMarker,
+    getInstallKeyId,
     getSessionIntegrityToken,
     putSessionIntegrityToken,
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { markEnrolmentNeeded } from './enrol-attempt'
+import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
 import { readActiveNetwork, type ActiveNetwork } from './network'
@@ -113,6 +115,14 @@ const mint = async (network: ActiveNetwork): Promise<void> => {
     await mintBackoff.clear()
 }
 
+const isMarkedEnrolled = async (network: ActiveNetwork): Promise<boolean> => {
+    const [marker, kid] = await Promise.all([
+        getEnrolmentMarker(network),
+        getInstallKeyId(),
+    ])
+    return marker?.kid === kid
+}
+
 const isForbidden = (error: unknown): boolean =>
     (error as { status?: number } | null)?.status === 403
 
@@ -148,8 +158,12 @@ export const ensureIntegrityToken = async (): Promise<void> => {
                 if (isForbidden(error)) {
                     const code = readIntegrityErrorCode(error)
                     if (code === 'APP_INTEGRITY_ENROLMENT_REQUIRED') {
-                        // The key is sound; this network's backend just has no enrolment
-                        // for it, whatever the local marker says.
+                        // The key is sound; this backend just has no enrolment for it. A marker
+                        // for this key means the backend contradicts us (replica lag, a defect),
+                        // so enrolment backs off rather than re-enrolling on the next page.
+                        if (await isMarkedEnrolled(network)) {
+                            await enrolBackoff.recordFailure()
+                        }
                         await clearEnrolmentMarker(network)
                         await markEnrolmentNeeded()
                     } else {

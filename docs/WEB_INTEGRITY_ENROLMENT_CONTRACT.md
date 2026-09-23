@@ -387,7 +387,10 @@ The mint loop never enrols; it distinguishes attest 403s by `code` and raises
 `integrity:enrol-needed` for section 5.1's third trigger:
 
 - `APP_INTEGRITY_ENROLMENT_REQUIRED` keeps the key, clears only the active network's marker (the
-  backend is the authority, whatever the marker says), and raises the flag.
+  backend is the authority, whatever the marker says), and raises the flag. When that marker held
+  the current `kid`, the backend contradicts an enrolment it accepted (replica lag, a defect), so
+  it also records an enrolment failure: otherwise the successful enrol that just cleared the backoff
+  would be followed at once by another solve.
 - `APP_INTEGRITY_REVOKED` clears the key and the minted token, then raises the flag; the old
   markers die by their `kid`.
 - Any other 403 clears the key and the token and lets the next mint start clean.

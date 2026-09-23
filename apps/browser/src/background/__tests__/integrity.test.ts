@@ -29,6 +29,10 @@ const mockClearInstallKey = vi.fn()
 const mockClearSessionIntegrityToken = vi.fn()
 const mockSetIntegrityTokenProvider = vi.fn()
 const mockClearEnrolmentMarker = vi.fn()
+const mockGetEnrolmentMarker = vi.fn(
+    async (): Promise<{ kid: string; enrolledAt: string } | null> => null,
+)
+const mockGetInstallKeyId = vi.fn(async () => 'kid-current')
 
 // integrity.ts imports the /api subpath, not the package root — the root
 // barrel also re-exports the Zustand store, which this suite must not import
@@ -77,6 +81,8 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
         clearInstallKey: mockClearInstallKey,
         clearSessionIntegrityToken: mockClearSessionIntegrityToken,
         clearEnrolmentMarker: mockClearEnrolmentMarker,
+        getEnrolmentMarker: mockGetEnrolmentMarker,
+        getInstallKeyId: mockGetInstallKeyId,
     }
 })
 
@@ -307,6 +313,43 @@ describe('ensureIntegrityToken', () => {
         expect(fake.session.has('integrity:enrol-needed')).toBe(true)
         expect(fake.session.has('integrity:backoff')).toBe(true)
     })
+
+    it('backs enrolment off when ENROLMENT_REQUIRED contradicts a marker for this key', async () => {
+        mockGetEnrolmentMarker.mockResolvedValueOnce({
+            kid: 'kid-current',
+            enrolledAt: 'x',
+        })
+        mockAttestDevice.mockRejectedValueOnce(
+            forbidden('APP_INTEGRITY_ENROLMENT_REQUIRED'),
+        )
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(mockGetEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(fake.session.has('integrity:enrol-backoff')).toBe(true)
+        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(fake.session.has('integrity:enrol-needed')).toBe(true)
+    })
+
+    it.each([
+        ['no marker', null],
+        ['a marker for another key', { kid: 'kid-old', enrolledAt: 'x' }],
+    ])(
+        'leaves enrolment unthrottled on ENROLMENT_REQUIRED with %s',
+        async (_label, marker) => {
+            mockGetEnrolmentMarker.mockResolvedValueOnce(marker)
+            mockAttestDevice.mockRejectedValueOnce(
+                forbidden('APP_INTEGRITY_ENROLMENT_REQUIRED'),
+            )
+            const { ensureIntegrityToken } = await import('../integrity')
+
+            await ensureIntegrityToken()
+
+            expect(fake.session.has('integrity:enrol-backoff')).toBe(false)
+            expect(fake.session.has('integrity:enrol-needed')).toBe(true)
+        },
+    )
 
     it('drops the key and asks for enrolment on APP_INTEGRITY_REVOKED', async () => {
         mockAttestDevice.mockRejectedValueOnce(
