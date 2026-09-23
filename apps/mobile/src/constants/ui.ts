@@ -133,3 +133,9 @@ export const PROMPT_REVEAL_OFFSET = 32
 // document.body and would otherwise fill the whole viewport, match the same
 // card width). Never binds in the popup, which is already narrower than it.
 export const WEB_EXPANDED_CARD_MAX_WIDTH = 420
+
+/** The expanded check frame, clamped to the viewport by maxWidth and maxHeight. */
+export const INTEGRITY_CHECK_MODAL_WIDTH = 440
+export const INTEGRITY_CHECK_MODAL_HEIGHT = 560
+/** The hidden frame's size: rendered, so Turnstile runs, but invisible. */
+export const INTEGRITY_CHECK_HIDDEN_SIZE = 1

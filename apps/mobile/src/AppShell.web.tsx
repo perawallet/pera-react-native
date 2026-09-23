@@ -60,6 +60,7 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
@@ -263,6 +264,7 @@ const WebShellErrorBoundary = ({
 // and throws `Cannot read properties of undefined (reading 'colors')`.
 const AppShellThemedRoot = (): React.JSX.Element => {
     const rootStyles = useAppShellRootStyles()
+    const { t } = useLanguage()
 
     // Native does this in RootComponent, which the web shell replaces — so
     // without it here the reachability probe never runs and onlineManager
@@ -287,6 +289,13 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                                     <ShellRouter />
                                 </VaultGate>
                                 <ActivityAutoLock />
+                                {/* Outside VaultGate: locking must not kill a check mid-solve, and enrolment needs no unlocked vault. */}
+                                <BaseErrorBoundary
+                                    t={t}
+                                    fallback={() => null}
+                                >
+                                    <IntegrityCheckFrameHost />
+                                </BaseErrorBoundary>
                             </QueryProvider>
                         </NotifierWrapper>
                     </KeyboardProvider>

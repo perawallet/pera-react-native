@@ -477,6 +477,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             max: 9999,
             // must exceed RNW Modal portals at 9999
             toast: 10_000,
+            // above toasts and RNW Modal portals: the check may need a click
+            integrityCheck: 10_001,
         },
         borderRadius: {
             none: 0,
