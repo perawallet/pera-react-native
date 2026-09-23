@@ -12,12 +12,27 @@
 
 type Areas = { local: Map<string, unknown>; session: Map<string, unknown> }
 
+type MessageListener = (
+    message: unknown,
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: unknown) => void,
+) => boolean | undefined | void
+
 export type LocalChromeFake = {
     chrome: typeof chrome
     local: Map<string, unknown>
     session: Map<string, unknown>
     alarms: Map<string, { periodInMinutes?: number }>
     fireAlarm: (name: string) => Promise<void>
+    sendMessage: (
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+    ) => Promise<unknown>
+}
+
+export const EXTENSION_PAGE_SENDER: chrome.runtime.MessageSender = {
+    id: 'ext-id',
+    url: 'chrome-extension://ext-id/popup.html',
 }
 
 const area = (store: Map<string, unknown>) => ({
@@ -45,6 +60,7 @@ export const createLocalChromeFake = (): LocalChromeFake => {
     const areas: Areas = { local: new Map(), session: new Map() }
     const alarms = new Map<string, { periodInMinutes?: number }>()
     const alarmListeners = new Set<(alarm: { name: string }) => void>()
+    const messageListeners = new Set<MessageListener>()
 
     const fireAlarm = async (name: string): Promise<void> => {
         if (!alarms.has(name)) return
@@ -52,7 +68,43 @@ export const createLocalChromeFake = (): LocalChromeFake => {
         await Promise.resolve()
     }
 
+    const sendMessage = (
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+    ): Promise<unknown> =>
+        new Promise((resolve, reject) => {
+            let hasResponded = false
+            let isAsync = false
+            const respond = (response?: unknown): void => {
+                if (hasResponded) return
+                hasResponded = true
+                resolve(response)
+            }
+            for (const listener of messageListeners) {
+                if (listener(message, sender, respond) === true) {
+                    isAsync = true
+                }
+            }
+            if (!hasResponded && !isAsync) {
+                reject(
+                    new Error(
+                        'The message port closed before a response was received.',
+                    ),
+                )
+            }
+        })
+
     const fake = {
+        runtime: {
+            id: 'ext-id',
+            getURL: (path: string) => `chrome-extension://ext-id/${path}`,
+            onMessage: {
+                addListener: (listener: MessageListener) =>
+                    messageListeners.add(listener),
+                removeListener: (listener: MessageListener) =>
+                    messageListeners.delete(listener),
+            },
+        },
         storage: {
             local: area(areas.local),
             session: area(areas.session),
@@ -89,5 +141,6 @@ export const createLocalChromeFake = (): LocalChromeFake => {
         session: areas.session,
         alarms,
         fireAlarm,
+        sendMessage,
     }
 }
