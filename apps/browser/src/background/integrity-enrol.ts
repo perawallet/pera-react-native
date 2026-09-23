@@ -60,9 +60,9 @@ const NO_ACTION: IntegrityEnrolDecision = { action: 'none' }
 const isEnrolmentEnabled = (): boolean =>
     config.webIntegrityMintEnabled && config.webIntegrityEnrolEnabled
 
-// Open host ports per token. Counted, not a set: a remount or StrictMode's
-// double effect opens the new port before the old one's close arrives. In
-// memory on purpose: a page still open reconnects after a worker restart.
+// Open host ports per token, in memory on purpose: a page still open reconnects after a
+// worker restart. A remount or StrictMode closes the old port before opening the new one;
+// handleHostGone waits on the lock and re-checks, so the quick reopen keeps the attempt.
 const hostPortCounts = new Map<string, number>()
 
 const isHosted = (token: string): boolean =>
