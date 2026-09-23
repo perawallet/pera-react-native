@@ -45,26 +45,13 @@ Node changes host globals under the test suite.
 
 ## Secret resolution and per-environment validation
 
-`ci/pipelines.yml`'s `secrets` list names are a mix of `PRODUCTION_`/
-`STAGING_`-prefixed and bare names, depending on how the operator populated
-the secret store. Whichever name the daemon resolved a value under, the job
-sees it injected as the bare name only — it never re-exposes the prefixed
-name.
+A job whose `env` sets `ENVIRONMENT` has each declared secret `X` resolved as
+`<ENVIRONMENT>_X` first (`PRODUCTION_X`, `STAGING_X`), falling back to a bare
+`X`, which the daemon logs by name. A value found under the prefix reaches the
+job under both names; a bare fallback reaches it as `X` only.
 
-`tools/validate-env.sh`'s per-environment checks were written for Bitrise,
-where the prefixed name is always what's set (aliasing to the bare name is a
-later, separate step). Under the daemon the prefixed name is never set, so
-every one of those checks falls through to its bare-name branch and prints a
-`NOTE`. That fallback is correct and intentional — see the comment in
-`tools/validate-env.sh`, which is shared with Bitrise and not changed for the
-daemon's sake — but it means the check no longer proves anything about which
-environment's secrets a job got: it accepts whatever sits under the bare
-name, unconditionally. If the secret store holds only a bare
-`ANDROID_GOOGLE_SERVICES_BASE64`, a staging nightly silently gets the
-production Firebase project (or the reverse), and the only signal is a
-`NOTE` line among dozens in the job log.
-
-The consequence: the per-environment guarantee — this job gets staging
-secrets, that job gets production secrets — now lives entirely in how the
-operator populates the secret store per pipeline. Nothing in this repository
-checks it.
+That is the shape `tools/setup-env-secrets.sh` leaves a Bitrise job in, so
+`tools/validate-env.sh` runs unchanged on both: it requires the prefixed name
+for every per-environment secret and fails a job that has no
+environment-specific value for one. A staging nightly cannot silently pick up
+the production Firebase project from a bare `ANDROID_GOOGLE_SERVICES_BASE64`.

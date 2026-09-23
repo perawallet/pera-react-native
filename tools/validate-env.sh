@@ -15,14 +15,6 @@ set -euo pipefail
 # and aliased to unprefixed names at build time by setup-env-secrets.sh. This
 # script validates the PREFIXED source names so it can run before aliasing.
 #
-# Under pera-ci there is no separate aliasing step: the daemon resolves a
-# secret by prefix itself and injects it into the job's environment under the
-# bare name only, so the prefixed name is never set there. The prefixed
-# checks below accept the bare name as a fallback — that's the post-aliasing
-# state the prefixed check was standing in for, so accepting it is strictly
-# more correct, and it changes nothing on Bitrise, where the prefixed name is
-# always set.
-#
 # bash 3.2 safe: the iOS build runs on macOS whose /bin/bash is 3.2.
 
 PROFILE="${VALIDATE_PROFILE:-}"
@@ -171,29 +163,13 @@ for v in ${required_global[@]+"${required_global[@]}"}; do
   is_set "$v" || missing+=( "$v" )
 done
 for v in ${required_prefixed[@]+"${required_prefixed[@]}"}; do
-  if is_set "${PREFIX}${v}"; then
-    :
-  elif is_set "$v"; then
-    # On the daemon this is the normal path: it resolves the prefix itself and
-    # injects the bare name. On Bitrise the prefixed name is always set, so
-    # reaching this means a stale unprefixed value is standing in for a missing
-    # per-environment secret — the one way this check passes when it should not.
-    echo "NOTE: ${PREFIX}${v} is not set; accepting the unprefixed $v"
-  else
-    missing+=( "${PREFIX}${v}" )
-  fi
+  is_set "${PREFIX}${v}" || missing+=( "${PREFIX}${v}" )
 done
 for v in ${optional_global[@]+"${optional_global[@]}"}; do
   is_set "$v" || echo "WARNING: optional var $v is not set"
 done
 for v in ${optional_prefixed[@]+"${optional_prefixed[@]}"}; do
-  if is_set "${PREFIX}${v}"; then
-    :
-  elif is_set "$v"; then
-    echo "NOTE: ${PREFIX}${v} is not set; accepting the unprefixed $v"
-  else
-    echo "WARNING: optional var ${PREFIX}${v} is not set"
-  fi
+  is_set "${PREFIX}${v}" || echo "WARNING: optional var ${PREFIX}${v} is not set"
 done
 
 if [ ${#missing[@]} -gt 0 ]; then
