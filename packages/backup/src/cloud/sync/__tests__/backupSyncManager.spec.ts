@@ -215,7 +215,7 @@ const makeDeps = () => ({
         skipped: [],
         failed: [],
     })),
-    subscribeToKeystore: vi.fn(() => () => {}),
+    subscribePasskeyChanges: vi.fn(() => () => {}),
 })
 
 const setAccounts = (accounts: { address: string; name?: string }[]) => {
@@ -651,5 +651,83 @@ describe('BackupSyncManager account watcher', () => {
 
         expect(mockSyncBackup).toHaveBeenCalledTimes(2)
         mgr.stop()
+    })
+})
+
+describe('BackupSyncManager passkey watcher', () => {
+    const ACCOUNT_DEBOUNCE_MS = 2000
+
+    beforeEach(() => {
+        vi.useFakeTimers()
+        vi.clearAllMocks()
+        mockSyncBackup.mockResolvedValue({
+            backupId: 'backup-123',
+            lastSyncResult: 'SUCCESS',
+        })
+        mockHasBackupCredentials.mockReturnValue(true)
+        storedSyncState.current = null
+        storedDeviceId.current = null
+        accountsState.current = []
+        accountsListeners.current = []
+        contactsState.current = []
+        contactsListeners.current = []
+        mockWithBackupEncryptionKey.mockImplementation(
+            async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+        )
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('schedules a sync when the injected watcher reports a passkey change', async () => {
+        let onChange: () => void = () => {}
+        const subscribePasskeyChanges = vi.fn((cb: () => void) => {
+            onChange = cb
+            return vi.fn()
+        })
+        const mgr = new BackupSyncManager({
+            ...makeDeps(),
+            subscribePasskeyChanges,
+        })
+        await mgr.start()
+        mockSyncBackup.mockClear()
+
+        // The manager never calls `listPasskeys` here: the cheap filtering
+        // that decided this was worth a sync already ran in the injector.
+        onChange()
+        await vi.advanceTimersByTimeAsync(ACCOUNT_DEBOUNCE_MS)
+
+        expect(mockSyncBackup).toHaveBeenCalledTimes(1)
+        mgr.stop()
+    })
+
+    it('unsubscribes on stop() and does not leak a second listener across a stop/start cycle', async () => {
+        const unsubscribeFirst = vi.fn()
+        const unsubscribeSecond = vi.fn()
+        const subscribePasskeyChanges = vi
+            .fn()
+            .mockReturnValueOnce(unsubscribeFirst)
+            .mockReturnValueOnce(unsubscribeSecond)
+        const mgr = new BackupSyncManager({
+            ...makeDeps(),
+            subscribePasskeyChanges,
+        })
+
+        await mgr.start()
+        expect(subscribePasskeyChanges).toHaveBeenCalledTimes(1)
+        expect(unsubscribeFirst).not.toHaveBeenCalled()
+
+        mgr.stop()
+        expect(unsubscribeFirst).toHaveBeenCalledTimes(1)
+
+        await mgr.start()
+        expect(subscribePasskeyChanges).toHaveBeenCalledTimes(2)
+        expect(unsubscribeSecond).not.toHaveBeenCalled()
+
+        mgr.stop()
+        expect(unsubscribeSecond).toHaveBeenCalledTimes(1)
+        // The first cycle's teardown isn't invoked again by the second.
+        expect(unsubscribeFirst).toHaveBeenCalledTimes(1)
     })
 })

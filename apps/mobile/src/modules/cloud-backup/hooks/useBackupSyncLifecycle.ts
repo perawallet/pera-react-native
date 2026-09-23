@@ -25,6 +25,7 @@ import {
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
+import { isPasskeyKey } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -63,8 +64,36 @@ const runManagerAction = (action: 'start' | 'stop') => {
 const startBackupSync = () => runManagerAction('start')
 const stopBackupSync = () => runManagerAction('stop')
 
-const subscribeToKeystore = (listener: () => void): (() => void) => {
-    const sub = getKeystoreStore().subscribe(listener)
+type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
+
+const counterOf = (key: KeystoreKey): number => {
+    const metadata = key.metadata as Record<string, unknown> | undefined
+    return typeof metadata?.counter === 'number' ? metadata.counter : 0
+}
+
+/** Cheap enough to run on every keystore write: no derivation, just the id and
+ *  the derivation counter already sitting in memory. `listPasskeys` (which
+ *  proves reproducibility via PBKDF2 per owning seed) only runs once this
+ *  actually changes. */
+const passkeyKeysFingerprint = (): string =>
+    getKeystoreStore()
+        .state.keys.filter(isPasskeyKey)
+        .map(key => `${key.id}:${counterOf(key)}`)
+        .sort()
+        .join('|')
+
+/** The keystore store fires on every write — account import, HD derivation,
+ *  ledger add, all of it — so this filters to passkey keys and fingerprints
+ *  them before deciding whether `onChange` (the manager's expensive
+ *  `listPasskeys` sweep) needs to run at all. */
+const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
+    let last = passkeyKeysFingerprint()
+    const sub = getKeystoreStore().subscribe(() => {
+        const next = passkeyKeysFingerprint()
+        if (next === last) return
+        last = next
+        onChange()
+    })
     return () => sub.unsubscribe()
 }
 
@@ -122,7 +151,7 @@ const useBackupSyncManagerSetup = () => {
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
             listPasskeys: unwiredPasskeyListFn,
             importPasskeys: unwiredPasskeyImportFn,
-            subscribeToKeystore,
+            subscribePasskeyChanges,
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

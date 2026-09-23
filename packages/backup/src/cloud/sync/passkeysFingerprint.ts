@@ -10,19 +10,27 @@
  limitations under the License
  */
 
-import { contentHash } from './canonicalize'
+import { canonicalJson, contentHash } from './canonicalize'
 import type { BackupPasskey } from './types'
 
 /** Sorted so a reordered list is not a change; covers the derivation inputs and
- *  the label, which are the only fields a sync needs to notice. */
+ *  the label, which are the only fields a sync needs to notice. Each entry is
+ *  canonical JSON rather than delimiter-joined fields: `origin` and `identity`
+ *  are unconstrained strings, so a literal separator inside one could make two
+ *  structurally different credentials collide. */
 export const passkeysFingerprint = (
     passkeys: readonly BackupPasskey[],
 ): string =>
     contentHash(
         [...passkeys]
-            .map(
-                p =>
-                    `${p.credentialId}|${p.origin}|${p.identity}|${p.counter}|${p.displayName ?? ''}`,
+            .map(p =>
+                canonicalJson({
+                    credentialId: p.credentialId,
+                    origin: p.origin,
+                    identity: p.identity,
+                    counter: p.counter,
+                    displayName: p.displayName ?? '',
+                }),
             )
             .sort()
             .join('\n'),

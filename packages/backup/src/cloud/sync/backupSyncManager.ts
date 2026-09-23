@@ -59,7 +59,6 @@ import {
 } from './reviewActions'
 import { accountFingerprint } from './accountFingerprint'
 import { contactsFingerprint } from './contactsFingerprint'
-import { passkeysFingerprint } from './passkeysFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -91,7 +90,11 @@ export type BackupSyncManagerDeps = {
     resolveHd: SerializeHdResolver
     listPasskeys: SyncEngineDeps['listPasskeys']
     importPasskeys: SyncEngineDeps['importPasskeys']
-    subscribeToKeystore: SyncEngineDeps['subscribeToKeystore']
+    /** Fires on any keystore write that could touch a passkey; the manager
+     *  doesn't distinguish a passkey change from a false alarm here — the
+     *  caller does that cheaply, since deciding here would mean deriving
+     *  first via `listPasskeys`, which is the expensive part. */
+    subscribePasskeyChanges: (onChange: () => void) => () => void
     socketFactory?: BackupSocketFactory
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
@@ -109,7 +112,6 @@ export class BackupSyncManager {
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private accountsFingerprint = ''
     private contactsFingerprint = ''
-    private passkeysFingerprintValue = ''
 
     constructor(private readonly deps: BackupSyncManagerDeps) {}
 
@@ -159,7 +161,6 @@ export class BackupSyncManager {
                 importContacts: this.deps.importContacts,
                 listPasskeys: this.deps.listPasskeys,
                 importPasskeys: this.deps.importPasskeys,
-                subscribeToKeystore: this.deps.subscribeToKeystore,
             }),
         )
     }
@@ -380,14 +381,12 @@ export class BackupSyncManager {
 
         // A credential minted by the OS provider extension is written outside
         // the JS process and fires nothing here; the periodic and foreground
-        // syncs are what pick those up.
-        this.unwatchPasskeys = this.deps.subscribeToKeystore(() => {
-            void this.deps.listPasskeys().then(passkeys => {
-                const next = passkeysFingerprint(passkeys)
-                if (next === this.passkeysFingerprintValue) return
-                this.passkeysFingerprintValue = next
-                this.scheduleLocalSync()
-            })
+        // syncs are what pick those up. The cheap filtering that keeps a
+        // caller's unrelated keystore write from reaching this at all lives
+        // with `subscribePasskeyChanges`'s injector, not here — this is
+        // already told only about changes worth a sync.
+        this.unwatchPasskeys = this.deps.subscribePasskeyChanges(() => {
+            this.scheduleLocalSync()
         })
     }
 

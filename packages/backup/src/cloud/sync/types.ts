@@ -199,10 +199,6 @@ export type SyncEngineDeps = {
     listPasskeys: () => Promise<BackupPasskey[]>
     /** Decrypted remote credentials → native provider records. */
     importPasskeys: PasskeyImportFn
-    /** Subscribes to the keystore's reactive store; returns an unsubscribe
-     *  function. Injected rather than imported here so this package doesn't
-     *  depend on the platform provider directly. */
-    subscribeToKeystore: (listener: () => void) => () => void
 }
 
 export type { PulledAccount }

@@ -152,7 +152,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
                     skipped: [],
                     failed: [],
                 }),
-                subscribeToKeystore: () => () => {},
+                subscribePasskeyChanges: () => () => {},
                 socketFactory: fakeSocketFactory,
             })
 
