@@ -20,7 +20,7 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AccountPicker } from '@modules/accounts/components/AccountPicker'
+import { AccountPicker } from '@modules/accounts'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'

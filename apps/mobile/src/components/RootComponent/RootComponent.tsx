@@ -32,7 +32,7 @@ import {
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { useNetworkStatusListener } from '@modules/network'
-import { WebViewOverlay } from '@modules/webview'
+import { WebViewOverlay } from '@modules/webview/shell'
 import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
@@ -40,14 +40,16 @@ import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrati
 import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
-import { ConnectionsProvider } from '@modules/connections'
-import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
+import { ConnectionsProvider } from '@modules/connections/shell'
+import { PairingProgressOverlay } from '@modules/walletconnect/shell'
 import { useTokenListener } from '@modules/token'
-import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
-import { MultisigOverlays } from '@modules/multisig/components/MultisigOverlays'
-import { SwapOverlays } from '@modules/swap/components/SwapOverlays'
-import { useSyncMultisigAccountsOnNetworkSwitch } from '@modules/multisig/hooks/useSyncMultisigAccountsOnNetworkSwitch'
+import { AutoLockGuard } from '@modules/security/shell'
+import { SigningOverlays } from '@modules/signing/shell'
+import {
+    useSyncMultisigAccountsOnNetworkSwitch,
+    MultisigOverlays,
+} from '@modules/multisig/shell'
+import { SwapOverlays } from '@modules/swap/shell'
 import {
     getAppStatePlatform,
     getPollingTransitionAction,

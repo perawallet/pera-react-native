@@ -18,7 +18,7 @@ import {
     getMultisigIntentKind,
     isTerminalMultisigNotification,
     useHandleMultisigNotification,
-} from '@modules/messages/hooks'
+} from '@modules/messages'
 
 import { useDeepLink } from './useDeepLink'
 

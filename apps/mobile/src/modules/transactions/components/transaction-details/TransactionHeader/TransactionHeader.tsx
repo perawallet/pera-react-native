@@ -20,7 +20,7 @@ import { TransactionStatusBadge } from '../../TransactionStatusBadge'
 import { useMemo } from 'react'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import { TransactionIcon } from '../../TransactionIcon'
+import { TransactionIcon } from '@components/TransactionIcon'
 import { AddressDisplay } from '@components/AddressDisplay'
 
 export const TransactionHeader = ({

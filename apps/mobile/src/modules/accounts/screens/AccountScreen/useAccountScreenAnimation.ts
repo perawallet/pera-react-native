@@ -24,7 +24,7 @@ import {
     BANNER_REVEAL_DELAY_MS,
     BANNER_REVEAL_DURATION_MS,
 } from '@constants/ui'
-import { BANNER_REVEAL_EASING } from '@modules/banners/components/animations'
+import { BANNER_REVEAL_EASING } from '@modules/banners'
 
 export type UseAccountScreenAnimationResult = {
     animatedCornerStyle: AnimatedStyle<ViewStyle>

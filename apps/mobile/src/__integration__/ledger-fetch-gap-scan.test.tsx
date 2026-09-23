@@ -39,9 +39,10 @@ import {
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { LedgerFetchAccountsScreen } from '@modules/ledger/screens/LedgerFetchAccountsScreen'
-
-import type { SerializedLedgerAccount } from '@modules/ledger/utils'
+import {
+    LedgerFetchAccountsScreen,
+    type SerializedLedgerAccount,
+} from '@modules/ledger'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 

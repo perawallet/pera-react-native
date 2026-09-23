@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PseudoResources } from '@modules/locale-tour/types'
+import type { PseudoResources } from '@modules/locale-tour'
 
 // Nothing here imports ./pseudolocale, which is what keeps the accent tables
 // and the generated bundle out of the graph entirely.

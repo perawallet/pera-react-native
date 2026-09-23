@@ -14,7 +14,7 @@ import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { useSourceMetadataView } from './useSourceMetadataView'
-import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
+import { ProjectVerificationIcon } from '@modules/projects'
 
 export type SourceMetadataViewProps = {
     metadata: SignRequestSource

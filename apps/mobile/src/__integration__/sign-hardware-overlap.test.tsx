@@ -58,7 +58,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 

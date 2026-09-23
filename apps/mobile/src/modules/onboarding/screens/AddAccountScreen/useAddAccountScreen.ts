@@ -30,7 +30,7 @@ import { useWebView } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import type { IconName } from '@components/core'
-import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
+import { useMultisigCreationStore } from '@modules/multisig'
 import type { AccountOption } from '@modules/onboarding/types'
 import { trackEvent, OnboardingEvent } from '@analytics'
 

@@ -16,11 +16,12 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useSwapExecution, useSwapQuotes } from '@modules/swap/hooks'
 import {
+    useSwapExecution,
+    useSwapQuotes,
     formatSwapRate,
     pickBestByAmountOut,
-} from '@modules/swap/hooks/swapQuoteHelpers'
+} from '@modules/swap'
 
 const SWAPPING_STATUSES = new Set([
     'preparing',

@@ -39,7 +39,7 @@ import { getFilterTimes } from './utils'
 import {
     buildTransactionListRows,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 import {
     PeraServiceUnavailableError,
     type Nullable,

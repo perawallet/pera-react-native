@@ -8,6 +8,7 @@ import errorMessageKeyExists from './lanekeep/rules/error-message-key-exists.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
+import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
@@ -51,6 +52,7 @@ export default defineConfig({
         noChromeImportsOutsideWeb,
         noCrossProtocolImports,
         noWcImportsInConnectionsModule,
+        noDeepModuleImports,
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,

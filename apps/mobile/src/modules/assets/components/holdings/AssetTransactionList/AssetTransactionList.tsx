@@ -25,13 +25,13 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
-import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
-import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import {
+    TransactionListItem,
+    TransactionDateHeader,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
-} from '@modules/transactions/utils/transactionListRows'
+} from '@modules/transactions'
 
 export type AssetTransactionListProps = {
     account: WalletAccount

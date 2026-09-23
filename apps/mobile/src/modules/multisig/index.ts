@@ -10,5 +10,14 @@
  limitations under the License
  */
 
-export { MultisigStackNavigator } from './routes'
+// The navigator lives in `@modules/multisig/routes`: accounts, onboarding,
+// messages and signing all import this file, and the multisig screens import
+// them back.
+export { ExportShareAccountContent } from './components/ExportShareAccountContent'
+export { MultisigDeclineButton } from './components/MultisigDeclineButton'
+export { MultisigIntroductionDialog } from './components/MultisigIntroductionDialog'
+export { useHandleMultisigSignTap } from './hooks/useHandleMultisigSignTap'
+export { useMultisigCreationStore } from './hooks/useMultisigCreation'
+export { usePendingSignaturesSheet } from './hooks/usePendingSignaturesSheet'
+export { getNextSharedAccountName, getSignedResponseCount } from './utils'
 export type { MultisigStackParamList } from './routes'

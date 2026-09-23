@@ -60,7 +60,7 @@ import {
 import { PeraCardOverview } from '@modules/card/components/PeraCardOverview'
 import { CardWithdrawScreen } from '@modules/card/screens/CardWithdrawScreen'
 import { CardWithdrawStatusScreen } from '@modules/card/screens/CardWithdrawStatusScreen'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 
 import {
     ALGO25_TEST_ADDRESS,

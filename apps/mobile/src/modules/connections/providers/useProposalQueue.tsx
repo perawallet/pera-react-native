@@ -26,8 +26,10 @@ import {
 } from '@perawallet/wallet-core-connections'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet, type BottomSheetOptions } from '@modules/bottom-sheet'
-import { ConnectionApprovalView } from '@modules/walletconnect/components/ConnectionApprovalView'
-import { ConnectionApprovalSuccessView } from '@modules/walletconnect/components/ConnectionApprovalSuccessView'
+import {
+    ConnectionApprovalView,
+    ConnectionApprovalSuccessView,
+} from '@modules/walletconnect/shell'
 
 export type ProposalQueueHandle = Pick<
     ProposalQueue,

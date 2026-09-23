@@ -81,7 +81,7 @@ const {
     mockShowSignRequest: vi.fn(),
 }))
 
-vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
+vi.mock('@modules/multisig', () => ({
     usePendingSignaturesSheet: () => ({
         showSignRequest: mockShowSignRequest,
     }),
@@ -206,7 +206,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     }),
 }))
 
-vi.mock('@modules/onboarding/hooks', () => ({
+vi.mock('@modules/onboarding', () => ({
     usePeraWebImportFlowStore: {
         getState: () => ({ setQr: mockPeraWebSetQr }),
     },
@@ -269,7 +269,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@modules/transactions/hooks', () => ({
+vi.mock('@modules/transactions', () => ({
     useSendFundsStore: {
         getState: () => ({
             reset: mockSendFundsReset,

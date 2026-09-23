@@ -12,7 +12,7 @@
 
 import { memo, useCallback } from 'react'
 import { PWTouchableOpacity } from '@components/core'
-import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
+import { AccountWithBalance } from '@components/AccountWithBalance'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 

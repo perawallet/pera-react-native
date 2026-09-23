@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PseudoResources } from '@modules/locale-tour/types'
+import type { PseudoResources } from '@modules/locale-tour'
 
 import { BASE_LOCALE, PSEUDO_LOCALE, TRANSLATION_BUNDLES } from './locales'
 import { buildPseudoBundle } from './pseudolocale'

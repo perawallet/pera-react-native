@@ -11,3 +11,4 @@
  */
 
 export * from './components/PromptContainer'
+export type { PromptViewProps } from './models'

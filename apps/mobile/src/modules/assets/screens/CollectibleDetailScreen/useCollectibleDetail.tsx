@@ -43,11 +43,11 @@ import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
+import { OptOutConfirmationContent } from '@modules/accounts'
 import {
     SendFundsContent,
     SEND_FUNDS_SHEET_ID,
-} from '@modules/transactions/components/send-funds/SendFundsContent'
+} from '@modules/transactions/routes'
 import {
     FullScreenMediaViewer,
     type FullScreenMediaItem,

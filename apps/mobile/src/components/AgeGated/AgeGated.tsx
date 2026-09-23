@@ -13,9 +13,11 @@
 import { type PropsWithChildren, useEffect } from 'react'
 import { useIsFocused } from '@react-navigation/native'
 
-import { useAgeGate } from '@modules/age-gate/hooks/useAgeGate'
-import { AgeRestrictedFallback } from '@modules/age-gate/components/AgeRestrictedFallback'
-import { AgeGateLoading } from '@modules/age-gate/components/AgeGateLoading'
+import {
+    useAgeGate,
+    AgeRestrictedFallback,
+    AgeGateLoading,
+} from '@modules/age-gate'
 
 // Must be rendered within a navigation context — the check (which can open the
 // global declaration sheet) only runs while the gated screen is focused, so a

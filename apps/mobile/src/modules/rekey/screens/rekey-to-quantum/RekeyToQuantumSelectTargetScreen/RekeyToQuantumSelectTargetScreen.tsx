@@ -13,7 +13,7 @@
 import { PWScreen } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountPicker } from '@modules/accounts/components/AccountPicker'
+import { AccountPicker } from '@modules/accounts'
 import { useRekeyToQuantumSelectTargetScreen } from './useRekeyToQuantumSelectTargetScreen'
 
 export const RekeyToQuantumSelectTargetScreen = () => {

@@ -60,10 +60,12 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { useClaimAssetsStore } from '@modules/transactions/hooks/claim-assets/useClaimAssets'
-import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim-assets/AssetTransferRequestsScreen/AssetTransferRequestsScreen'
-import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
-import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import {
+    AssetTransferRequestsScreen,
+    AssetClaimDetailScreen,
+    ClaimProcessingScreen,
+    TransactionSuccessScreen,
+} from '@modules/transactions/routes'
 
 import {
     ALGO25_TEST_ADDRESS,

@@ -17,7 +17,7 @@ import {
     type PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { AccountDisplay } from '@components/AccountDisplay'
 import { SignedDataWarning } from '../SignedDataWarning'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

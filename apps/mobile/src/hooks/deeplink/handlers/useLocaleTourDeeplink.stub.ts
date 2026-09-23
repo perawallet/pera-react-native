@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { LocaleTourDeeplinkHandler } from '@modules/locale-tour/types'
+import type { LocaleTourDeeplinkHandler } from '@modules/locale-tour'
 
 // This file contains no `import('@modules/locale-tour')`, and that absence is
 // the whole mechanism: Metro bundles a dynamic import as a real graph edge, so

@@ -18,7 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
+import { toValidatedBrowserUrl } from '@modules/webview'
 import { useApprovalArming } from '../../hooks/useApprovalArming.web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 

@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { PWSheetLayout } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { AccountPicker } from '@modules/accounts/components/AccountPicker'
+import { AccountPicker } from '@modules/accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type OptInAccountSelectionContentProps = {

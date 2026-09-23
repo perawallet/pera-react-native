@@ -49,8 +49,8 @@ import {
     useAssetOptInMutation,
     useAssetOptOutMutation,
 } from '@perawallet/wallet-core-transactions'
-import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
-import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
+import { OptInConfirmationContent } from '@modules/assets'
+import { OptOutConfirmationContent } from '@modules/accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { Decimal } from 'decimal.js'
 import {

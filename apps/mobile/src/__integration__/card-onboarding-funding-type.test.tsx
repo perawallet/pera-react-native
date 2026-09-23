@@ -131,7 +131,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,

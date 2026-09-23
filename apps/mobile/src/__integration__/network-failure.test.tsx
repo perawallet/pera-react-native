@@ -53,10 +53,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 
-import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { useSendFundsStore } from '@modules/transactions'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
-import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
+import { TransactionSuccessScreen } from '@modules/transactions/routes'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,

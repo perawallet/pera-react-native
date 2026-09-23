@@ -18,3 +18,4 @@ export { LedgerSelectAccountsScreen } from './screens/LedgerSelectAccountsScreen
 export { LedgerVerifyScreen } from './screens/LedgerVerifyScreen'
 export { LedgerTroubleshootingScreen } from './screens/LedgerTroubleshootingScreen'
 export * from './utils'
+export { useLedgerErrorAction } from './hooks'

@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 
 import { getLocaleTourRunner } from '@modules/locale-tour/registry'
-import type { LocaleTourDeeplinkHandler } from '@modules/locale-tour/types'
+import type { LocaleTourDeeplinkHandler } from '@modules/locale-tour'
 
 /**
  * `step` drives one surface: an external screenshot driver owns the loop, so

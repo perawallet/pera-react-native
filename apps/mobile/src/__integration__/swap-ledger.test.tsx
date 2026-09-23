@@ -60,7 +60,7 @@ import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { SigningOverlays } from '@modules/signing/shell'
 import {
     useSwapExecution,
     type SwapExecutionOutcome,

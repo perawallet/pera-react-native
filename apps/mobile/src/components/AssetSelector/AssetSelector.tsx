@@ -17,7 +17,7 @@ import {
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { useStyles } from './styles'
 
 type AssetSelectorVariant = 'pay' | 'receive'

@@ -12,7 +12,7 @@
 
 import { type PropsWithChildren } from 'react'
 import { ConnectionRegistryContext } from '@perawallet/wallet-core-connections'
-import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
+import { WalletConnectErrorBoundary } from '@modules/walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
 import { useConnectionsProvider } from './useConnectionsProvider'
 

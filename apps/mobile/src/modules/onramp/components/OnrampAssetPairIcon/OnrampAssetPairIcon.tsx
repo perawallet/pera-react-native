@@ -11,7 +11,7 @@
  */
 
 import { PWView } from '@components/core'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@components/AssetIcon'
 import { CircleFlag } from '@components/CircleFlag'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'

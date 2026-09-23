@@ -54,7 +54,7 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
-import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen/TransactionDetailsScreen'
+import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'

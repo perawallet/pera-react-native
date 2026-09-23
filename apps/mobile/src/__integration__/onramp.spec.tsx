@@ -66,7 +66,7 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { useWebViewStore } from '@modules/webview'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
-import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
+import { OnrampScreen } from '@modules/onramp/routes'
 import {
     mockRampPairs,
     mockRampRegion,

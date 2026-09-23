@@ -36,7 +36,7 @@ import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptInConfirmationContent } from '@modules/assets'
 import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
 import { OnrampTermsContent } from '../OnrampTermsContent'
 import {

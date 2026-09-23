@@ -30,9 +30,16 @@ Create `apps/mobile/src/modules/[module-name]/routes/index.tsx` with stack navig
 
 ### 4. Register in Navigation
 
-Update `apps/mobile/src/routes/` to include the new module routes.
+Update `apps/mobile/src/routes/` to include the new module routes, importing them from
+`@modules/[module-name]/routes`.
 
-### 5. Add Tests
+### 5. Add the Public Entry
+
+Create `apps/mobile/src/modules/[module-name]/index.ts` with named exports of what other modules use.
+Navigators and mountable screens stay in `routes/index.tsx`; see "Module Boundaries" in
+`apps/mobile/CLAUDE.md` for the other entries.
+
+### 6. Add Tests
 
 **Do NOT write component-rendering unit tests for the screen or module components.** Module screens are covered by integration tests under `apps/mobile/src/__integration__/`. For unit tests:
 
@@ -41,7 +48,7 @@ Update `apps/mobile/src/routes/` to include the new module routes.
 - **Module utils** → test the pure functions in `__tests__/`.
 - **Flow coverage** → if this module introduces a non-trivial user flow (multi-screen, network-dependent, state-changing), add an integration test in `apps/mobile/src/__integration__/<flow>.test.tsx`. See `docs/TESTING.md` for the harness.
 
-### 6. Verify
+### 7. Verify
 
 ```sh
 pnpm pre-push --no-fail-on-error
