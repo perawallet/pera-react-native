@@ -20,11 +20,6 @@
 /// <reference types="chrome" />
 
 export * from './errors'
-export * from './extension'
-export * from './storage'
-export * from './store'
-export * from './types'
-export { context } from './constants'
 export {
     createVault,
     changePassword,

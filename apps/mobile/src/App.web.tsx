@@ -22,9 +22,6 @@ import {
     hydratePlatform,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
-// Bootstrap-only subpath: hydrateKeystoreStorage without the vendored ./keystore
-// graph, whose large pure-JS crypto has no business loading before hydration.
-import { hydrateKeystoreStorage } from '@perawallet/wallet-extension-keystore-chrome/bootstrap'
 
 type ShellComponent = React.ComponentType
 
@@ -90,11 +87,7 @@ export const App = (): React.JSX.Element => {
                 // reads chrome.storage.local.
                 installOffscreenStorageShim()
             }
-            await Promise.all([
-                hydratePlatform(),
-                // Nothing in the offscreen document reads keystore storage — no vault UI ever mounts there.
-                ...(isOffscreen ? [] : [hydrateKeystoreStorage()]),
-            ])
+            await hydratePlatform()
 
             if (isOffscreen) {
                 // Headless surface; store-bearing imports stay behind this dynamic

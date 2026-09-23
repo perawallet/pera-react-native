@@ -6,7 +6,8 @@
 > Sources of truth: `apps/browser/manifest.json` (realms, permissions, CSP),
 > `apps/browser/src/{background,content,offscreen}` (realm entry points),
 > `extensions/platform-chrome` (message routing, storage, dApp/WC/passkey plumbing),
-> `extensions/keystore-chrome` (vault, signing).
+> `extensions/keystore-chrome` (vault, WebAuthn signer), `extensions/provider/src/keystore/*.web.ts`
+> (the keystore engine).
 
 ---
 
@@ -108,9 +109,9 @@ the master key. Legacy PBKDF2 blobs (`600k` iters) are re-wrapped as Argon2id on
 The **offscreen document deliberately has no vault** — so it cannot sign. Signing happens only
 in the **UI realm**, where the vault is unlocked. WalletConnect requests that survive in the
 offscreen socket are **forwarded to the SW**, which opens an approval surface in the UI.
-The keystore `sign` path exposes a **raw signing primitive** (see the NOTE block in
-`keystore-chrome/extension.ts`) — raw over the given bytes, no Algorand tag prefix, no
-hash-and-sign. Callers are responsible for the prefix.
+Keys are held and used by the `@algorandfoundation/keystore-web` engine
+(`extensions/provider/src/keystore/createKeystore.web.ts`), whose driver resolves the vault master
+key on every seal and open, so a lock in any context stops the next operation everywhere.
 
 ### 3.4 App integrity (attribution, not attestation)
 
@@ -156,7 +157,14 @@ rules and failure handling are specified in `docs/WEB_INTEGRITY_ENROLMENT_CONTRA
 
 ## 6. Ported code
 
-`keystore-chrome/src/{store,extension,storage/state}.ts` are ports of
-`@algorandfoundation/react-native-keystore@1.0.0-canary.12`, carrying `oxlint-disable … casts
-preserved from source` banners. Review them by **diffing against upstream**, not by local
-restyling — staying diffable against the source is the deliberate trade.
+`keystore-chrome/src/keystore/` holds the key types and error class the WebAuthn signer needs,
+ported verbatim from `@algorandfoundation/keystore@1.0.0-canary.17` and carrying `oxlint-disable …
+upstream style preserved` banners. Review them by **diffing against upstream**, not by local
+restyling. Everything else in the package (vault, auto-lock, lockout, passkey unlock, the WebAuthn
+signer) is our own code.
+
+On web, Metro still resolves `@algorandfoundation/react-native-keystore` to this package (see
+`apps/mobile/metro.config.js`): shared barrels import it statically, and the real package would pull
+native modules into the web bundle. It exports none of that package's names, so they read as
+`undefined` there; the code paths that use them never run on web. `keystore:*` entries in
+`chrome.storage.local` on older profiles are unread by any code path.
