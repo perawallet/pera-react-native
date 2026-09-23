@@ -83,6 +83,31 @@ describe('manifest.json Discover/Bidali content scripts', () => {
     })
 })
 
+const integrityEntries = manifest.content_scripts.filter(entry =>
+    entry.js.includes('content-integrity-check.js'),
+)
+
+describe('manifest.json integrity check content script', () => {
+    it('registers exactly one entry', () => {
+        expect(integrityEntries).toHaveLength(1)
+    })
+
+    it('matches exactly the two check page hosts', () => {
+        expect(integrityEntries[0]?.matches).toEqual([
+            'https://integrity.perawallet.app/*',
+            'https://integrity-staging.perawallet.app/*',
+        ])
+    })
+
+    it('runs isolated, at document start, in every frame', () => {
+        expect(integrityEntries[0]).toMatchObject({
+            run_at: 'document_start',
+            world: 'ISOLATED',
+            all_frames: true,
+        })
+    })
+})
+
 // Loopback is the browser's own secure-context carve-out, so it's the only
 // plaintext host we inject into. Anything else over http:// would let an
 // on-path attacker reach the dapp/WebAuthn relays for a domain whose real

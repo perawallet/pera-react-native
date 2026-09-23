@@ -96,6 +96,16 @@
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": false
+    },
+    {
+      "matches": [
+        "https://integrity.perawallet.app/*",
+        "https://integrity-staging.perawallet.app/*"
+      ],
+      "js": ["content-integrity-check.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true
     }
   ],
   "_comment_webauthn_all_frames": "Top frame only, unlike the entries above. The wrapper intercepts before the browser evaluates the publickey-credentials-* Permissions-Policy, so in an iframe it would bypass that gate and report a framed ceremony to the RP as top-level (crossOrigin: false, no topOrigin). PasskeyRouter also declines any sender.frameId other than 0, which holds however these scripts are registered.",
