@@ -5,9 +5,8 @@
 # checklist. validate-env.sh checks five of them under a PRODUCTION_/STAGING_
 # prefix for staging, six for production (REOWN_PROJECT_ID is added
 # conditionally — see tools/validate-env.sh): the daemon resolves each by
-# that prefix but injects it into the job's environment under the bare name
-# only, and validate-env.sh's prefixed checks accept the bare name too — see
-# docs/RUNNING.md in pera-ci.
+# that prefix and injects it under both the prefixed and the bare name, so
+# those must be stored prefixed in secrets.env — see docs/RUNNING.md in pera-ci.
 #
 # Names generate-config.sh can also bake, left out on purpose: algod/indexer/
 # genesis/explorer/support/legal URLs, ALGOD_API_KEY, INDEXER_API_KEY, the
