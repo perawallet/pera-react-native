@@ -15,6 +15,8 @@ import {
     accountItemKey,
     contactAddressFromItemKey,
     contactItemKey,
+    passkeyIdFromItemKey,
+    passkeyItemKey,
 } from './itemKeys'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
@@ -32,6 +34,11 @@ export type BackupAccountReview = ReviewBuckets<string>
 export type BackupContactReview = ReviewBuckets<{
     address: string
     name: string
+}>
+
+export type BackupPasskeyReview = ReviewBuckets<{
+    credentialId: string
+    label: string
 }>
 
 /** Whether the backup holds this item, from the device's point of view. The
@@ -100,6 +107,20 @@ export const deriveBackupContactReview = (
         (address, item) => ({ address, name: item.label ?? '' }),
     )
 
+/** `label` comes from the cached display name for the same reason a contact's
+ *  does: a credential only the backup holds would otherwise render as a bare
+ *  base64 credential id. */
+export const deriveBackupPasskeyReview = (
+    syncState: SyncState | null,
+    localCredentialIds: readonly string[],
+): BackupPasskeyReview =>
+    deriveReview(
+        syncState,
+        localCredentialIds,
+        passkeyIdFromItemKey,
+        (credentialId, item) => ({ credentialId, label: item.label ?? '' }),
+    )
+
 const isKeyBackedUp = (
     syncState: SyncState | null,
     key: BackupItemKey,
@@ -120,6 +141,11 @@ export const isContactBackedUp = (
     syncState: SyncState | null,
     address: string,
 ): boolean => isKeyBackedUp(syncState, contactItemKey(address))
+
+export const isPasskeyBackedUp = (
+    syncState: SyncState | null,
+    credentialId: string,
+): boolean => isKeyBackedUp(syncState, passkeyItemKey(credentialId))
 
 export const areKeysDeletedFromBackup = (
     syncState: SyncState | null,
