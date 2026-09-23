@@ -84,6 +84,7 @@ export const AccountInfoCard = ({
                 <PWText
                     variant='h4'
                     style={styles.accountTypeText}
+                    testID='account_type_label'
                     truncate
                 >
                     {typeMain}
