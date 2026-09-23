@@ -747,6 +747,8 @@
             "unnamed": "İsimsiz passkey",
             "empty_title": "Henüz passkey yok",
             "empty_body": "Bu cihazda oluşturduğun passkey’ler Cloud Backup'ın tarafından korunur.",
+            "unsupported_title": "Bu passkey’ler yedeklenemez",
+            "unsupported_body": "Pera yalnızca bir Universal Wallet’in kurtarma passphrase’inden yeniden oluşturabildiği passkey’leri yedekler. Bu cihazdakiler başka bir yolla oluşturulmuş, bu yüzden sadece burada kalır.",
             "review_empty_title": "İncelenecek bir şey yok",
             "review_empty_body": "Bu cihazdaki her passkey Cloud Backup'ında.",
             "back_up_success": "Passkey yedeklendi",

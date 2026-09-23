@@ -747,6 +747,8 @@
             "unnamed": "Unnamed passkey",
             "empty_title": "No passkeys yet",
             "empty_body": "Passkeys you create on this device will be protected by your Cloud Backup.",
+            "unsupported_title": "These passkeys can’t be backed up",
+            "unsupported_body": "Pera can only back up a passkey it can re-create from a Universal Wallet’s recovery passphrase. The ones on this device were made another way, so they stay here only.",
             "review_empty_title": "Nothing to review",
             "review_empty_body": "Every passkey on this device is in your Cloud Backup.",
             "back_up_success": "Passkey backed up",

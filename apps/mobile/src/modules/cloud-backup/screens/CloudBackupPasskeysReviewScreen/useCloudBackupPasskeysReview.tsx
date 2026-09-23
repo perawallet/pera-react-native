@@ -23,6 +23,7 @@ import { useBackupPasskeyReview } from '../../hooks/useBackupPasskeyReview'
 type UseCloudBackupPasskeysReviewResult = {
     availableFromBackup: BackupPasskeyReview['availableFromBackup']
     notBackedUpPasskeys: BackupPasskey[]
+    isLoading: boolean
     isExpanded: boolean
     busyCredentialId: string | null
     onToggleExpanded: () => void
@@ -38,6 +39,7 @@ export const useCloudBackupPasskeysReview =
         const {
             availableFromBackup,
             notBackedUpPasskeys,
+            isLoading,
             busyCredentialId,
             addFromBackup,
             deleteFromBackup,
@@ -73,6 +75,7 @@ export const useCloudBackupPasskeysReview =
         return {
             availableFromBackup,
             notBackedUpPasskeys,
+            isLoading,
             isExpanded,
             busyCredentialId,
             onToggleExpanded: useCallback(

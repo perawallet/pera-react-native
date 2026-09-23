@@ -28,6 +28,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
     const {
         availableFromBackup,
         notBackedUpPasskeys,
+        isLoading,
         isExpanded,
         busyCredentialId,
         onToggleExpanded,
@@ -43,6 +44,7 @@ export const CloudBackupPasskeysReviewScreen = () => {
                     icon='cloud-check'
                     title={t('cloud_backup.passkeys.review_empty_title')}
                     body={t('cloud_backup.passkeys.review_empty_body')}
+                    isLoading={isLoading}
                     shouldTruncateBody={false}
                 />
             </PWScreen>

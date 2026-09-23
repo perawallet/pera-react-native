@@ -63,6 +63,9 @@ type UseCloudBackupOverviewResult = {
     contactsNotBackedUp: number
     passkeysInSync: number
     passkeysNotBackedUp: number
+    /** False while the passkey counts are still a guess; the row then shows no
+     *  subtitle rather than claiming everything is in sync. */
+    arePasskeysResolved: boolean
     onPressAccounts: () => void
     onPressContacts: () => void
     onPressPasskeys: () => void
@@ -104,7 +107,8 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
     const contacts = useContactsStore(state => state.contacts)
-    const { passkeys } = useProvenPasskeysQuery()
+    const { passkeys, isResolved: arePasskeysResolved } =
+        useProvenPasskeysQuery()
     const { isIntroductionSeen, markIntroductionSeen } =
         useCloudBackupIntroduction()
 
@@ -242,6 +246,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         contactsNotBackedUp: contactReview.notBackedUp.length,
         passkeysInSync: passkeyReview.backedUp.size,
         passkeysNotBackedUp: passkeyReview.notBackedUp.length,
+        arePasskeysResolved,
         onPressAccounts,
         onPressContacts,
         onPressPasskeys,

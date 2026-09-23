@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { BackupPasskey } from '@perawallet/wallet-core-backup'
+import { usePasskeysQuery } from '@perawallet/wallet-core-passkeys'
 import { useBackupPasskeyReview } from '../../hooks/useBackupPasskeyReview'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -21,6 +22,9 @@ type UseCloudBackupPasskeysResult = {
     passkeys: BackupPasskey[]
     isBackedUp: (credentialId: string) => boolean
     isLoading: boolean
+    /** The device holds credentials the sweep could not prove reproducible, so
+     *  an empty list here is not the same as "no passkeys yet". */
+    hasUnsupportedPasskeys: boolean
     notBackedUpCount: number
     availableFromBackupCount: number
     busyCredentialId: string | null
@@ -40,11 +44,13 @@ export const useCloudBackupPasskeys = (): UseCloudBackupPasskeysResult => {
         busyCredentialId,
         backUpPasskey,
     } = useBackupPasskeyReview()
+    const { passkeys: devicePasskeys } = usePasskeysQuery()
 
     return {
         passkeys,
         isBackedUp,
         isLoading,
+        hasUnsupportedPasskeys: devicePasskeys.length > passkeys.length,
         notBackedUpCount: notBackedUpPasskeys.length,
         availableFromBackupCount: availableFromBackup.length,
         busyCredentialId,

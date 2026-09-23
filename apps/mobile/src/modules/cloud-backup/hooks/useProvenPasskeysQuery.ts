@@ -20,6 +20,11 @@ import { useListPasskeysForBackup } from './useListPasskeysForBackup'
 export type UseProvenPasskeysQueryResult = {
     passkeys: BackupPasskey[]
     isLoading: boolean
+    /** False while the list cannot be trusted: the sweep is still running, or
+     *  it failed and no earlier sync tick left a result behind. An empty list
+     *  read as fact renders as "0 passkeys, all in sync", which is the wrong
+     *  direction for a backup screen to guess in. */
+    isResolved: boolean
 }
 
 /** Proving a credential costs a PBKDF2 per owning seed, so the sweep runs here
@@ -29,10 +34,14 @@ export const useProvenPasskeysQuery = (): UseProvenPasskeysQueryResult => {
     const listPasskeys = useListPasskeysForBackup()
     const provenPasskeys = useProvenPasskeysStore(state => state.provenPasskeys)
 
-    const { isLoading } = useQuery({
+    const { isLoading, isError } = useQuery({
         queryKey: ['cloud-backup', 'proven-passkeys'],
         queryFn: listPasskeys,
     })
 
-    return { passkeys: provenPasskeys, isLoading }
+    return {
+        passkeys: provenPasskeys,
+        isLoading,
+        isResolved: provenPasskeys.length > 0 || (!isLoading && !isError),
+    }
 }

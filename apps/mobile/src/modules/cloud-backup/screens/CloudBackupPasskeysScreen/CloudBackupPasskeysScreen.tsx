@@ -28,6 +28,7 @@ export const CloudBackupPasskeysScreen = () => {
         passkeys,
         isBackedUp,
         isLoading,
+        hasUnsupportedPasskeys,
         notBackedUpCount,
         availableFromBackupCount,
         busyCredentialId,
@@ -36,14 +37,24 @@ export const CloudBackupPasskeysScreen = () => {
     } = useCloudBackupPasskeys()
 
     // Proving the credentials runs a PBKDF2 per seed, so the first open has a
-    // real wait; showing the empty state through it would read as "none".
+    // real wait; showing the empty state through it would read as "none". And
+    // a device whose credentials all failed the proof does hold passkeys — it
+    // just cannot back any of them up, which is a different thing to say.
     if (passkeys.length === 0 && availableFromBackupCount === 0) {
         return (
             <PWScreen testID='cloud_backup_passkeys_screen'>
                 <EmptyView
                     icon='person-key'
-                    title={t('cloud_backup.passkeys.empty_title')}
-                    body={t('cloud_backup.passkeys.empty_body')}
+                    title={t(
+                        hasUnsupportedPasskeys
+                            ? 'cloud_backup.passkeys.unsupported_title'
+                            : 'cloud_backup.passkeys.empty_title',
+                    )}
+                    body={t(
+                        hasUnsupportedPasskeys
+                            ? 'cloud_backup.passkeys.unsupported_body'
+                            : 'cloud_backup.passkeys.empty_body',
+                    )}
                     isLoading={isLoading}
                     shouldTruncateBody={false}
                 />

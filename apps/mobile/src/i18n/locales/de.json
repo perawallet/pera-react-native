@@ -739,6 +739,8 @@
             "unnamed": "Passkey ohne Namen",
             "empty_title": "Noch keine Passkeys",
             "empty_body": "Passkeys, die du auf diesem Gerät erstellst, werden durch dein Cloud-Backup geschützt.",
+            "unsupported_title": "Diese Passkeys können nicht gesichert werden",
+            "unsupported_body": "Pera kann nur einen Passkey sichern, den es aus der Wiederherstellungsphrase eines Universal Wallets neu erzeugen kann. Die Passkeys auf diesem Gerät sind anders entstanden und bleiben deshalb nur hier.",
             "review_empty_title": "Nichts zu prüfen",
             "review_empty_body": "Jeder Passkey auf diesem Gerät ist in deinem Cloud-Backup.",
             "back_up_success": "Passkey gesichert",

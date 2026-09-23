@@ -52,6 +52,7 @@ export const CloudBackupOverviewScreen = () => {
         contactsNotBackedUp,
         passkeysInSync,
         passkeysNotBackedUp,
+        arePasskeysResolved,
         onPressAccounts,
         onPressContacts,
         onPressPasskeys,
@@ -153,19 +154,21 @@ export const CloudBackupOverviewScreen = () => {
                                 icon='key'
                                 title={t('cloud_backup.overview.passkeys')}
                                 subtitle={
-                                    passkeysNotBackedUp > 0
-                                        ? t(
-                                              'cloud_backup.overview.passkeys_not_backed_up',
-                                              {
-                                                  count: passkeysNotBackedUp,
-                                              },
-                                          )
-                                        : t(
-                                              'cloud_backup.overview.passkeys_in_sync',
-                                              {
-                                                  count: passkeysInSync,
-                                              },
-                                          )
+                                    !arePasskeysResolved
+                                        ? undefined
+                                        : passkeysNotBackedUp > 0
+                                          ? t(
+                                                'cloud_backup.overview.passkeys_not_backed_up',
+                                                {
+                                                    count: passkeysNotBackedUp,
+                                                },
+                                            )
+                                          : t(
+                                                'cloud_backup.overview.passkeys_in_sync',
+                                                {
+                                                    count: passkeysInSync,
+                                                },
+                                            )
                                 }
                                 subtitleIcon={
                                     passkeysNotBackedUp > 0

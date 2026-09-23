@@ -747,6 +747,8 @@
             "unnamed": "Passkey sin nombre",
             "empty_title": "Aún no hay passkeys",
             "empty_body": "Las passkeys que crees en este dispositivo estarán protegidas por tu Cloud Backup.",
+            "unsupported_title": "Estas passkeys no se pueden respaldar",
+            "unsupported_body": "Pera solo puede respaldar una passkey que pueda volver a crear desde la passphrase de recuperación de una Universal Wallet. Las de este dispositivo se crearon de otra forma, así que se quedan solo aquí.",
             "review_empty_title": "Nada por revisar",
             "review_empty_body": "Todas las passkeys de este dispositivo están en tu Cloud Backup.",
             "back_up_success": "Passkey respaldada",
