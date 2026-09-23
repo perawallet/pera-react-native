@@ -31,6 +31,7 @@ import {
     TERMS_ACCEPTANCE_PROMPT_ID,
 } from '@modules/onboarding/components/TermsAndConditionsSheet'
 import { UserPreferences } from '@constants/user-preferences'
+import { routeCapabilities } from '@routes/capabilities'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 import { PromptPriority } from '@modules/prompts/constants'
 import { usePromptStore } from '@modules/prompts/store'
@@ -135,7 +136,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 priority: PromptPriority.securityPinSetup,
                 isGate: false,
                 component: PinSecurityPrompt,
-                isDue: !getPreference(UserPreferences._securityPinSetupPrompt),
+                isDue:
+                    routeCapabilities.pin &&
+                    !getPreference(UserPreferences._securityPinSetupPrompt),
             },
             {
                 id: UserPreferences._legacyQuantumNoticePrompt,

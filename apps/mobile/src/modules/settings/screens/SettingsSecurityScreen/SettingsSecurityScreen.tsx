@@ -29,6 +29,7 @@ export const SettingsSecurityScreen = () => {
     const styles = useStyles()
 
     const {
+        isPinFeatureEnabled,
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
@@ -51,79 +52,83 @@ export const SettingsSecurityScreen = () => {
     return (
         <PWScreen testID='settings_security_screen'>
             <PWView style={styles.container}>
-                <PWView style={styles.section}>
-                    <PWText
-                        variant='body'
-                        style={styles.sectionTitle}
-                    >
-                        {t('settings.security.security_settings_section')}
-                    </PWText>
-
-                    <PWView style={styles.listItem}>
-                        <PWView style={styles.listItemContent}>
-                            <PWIcon name='shield-check' />
-                            <PWText
-                                style={styles.listItemLabel}
-                                truncate
-                            >
-                                {t('settings.security.enable_pin_security')}
-                            </PWText>
-                        </PWView>
-                        <PWView style={styles.trailingContainer}>
-                            <PWSwitch
-                                value={isPinEnabled}
-                                onValueChange={value =>
-                                    void handlePinToggle(value)
-                                }
-                                testID='settings_security_pin_toggle'
-                            />
-                        </PWView>
-                    </PWView>
-
-                    {isPinEnabled && (
-                        <PWTouchableOpacity
-                            style={styles.listItem}
-                            onPress={() => void handleChangePinPress()}
-                            testID='settings_security_change_pin_button'
+                {isPinFeatureEnabled && (
+                    <PWView style={styles.section}>
+                        <PWText
+                            variant='body'
+                            style={styles.sectionTitle}
                         >
-                            <PWView style={styles.listItemContent}>
-                                <PWIcon name='locked' />
-                                <PWText
-                                    style={styles.listItemLabel}
-                                    truncate
-                                >
-                                    {t('settings.security.change_pin')}
-                                </PWText>
-                            </PWView>
-                            <PWView style={styles.trailingContainer}>
-                                <PWIcon name='chevron-right' />
-                            </PWView>
-                        </PWTouchableOpacity>
-                    )}
+                            {t('settings.security.security_settings_section')}
+                        </PWText>
 
-                    {isPinEnabled && isBiometricsAvailable && (
                         <PWView style={styles.listItem}>
                             <PWView style={styles.listItemContent}>
-                                <PWIcon name='faceid' />
+                                <PWIcon name='shield-check' />
                                 <PWText
                                     style={styles.listItemLabel}
                                     truncate
                                 >
-                                    {t('settings.security.enable_biometrics')}
+                                    {t('settings.security.enable_pin_security')}
                                 </PWText>
                             </PWView>
                             <PWView style={styles.trailingContainer}>
                                 <PWSwitch
-                                    value={isBiometricEnabled}
+                                    value={isPinEnabled}
                                     onValueChange={value =>
-                                        void handleBiometricToggle(value)
+                                        void handlePinToggle(value)
                                     }
-                                    testID='settings_security_biometric_toggle'
+                                    testID='settings_security_pin_toggle'
                                 />
                             </PWView>
                         </PWView>
-                    )}
-                </PWView>
+
+                        {isPinEnabled && (
+                            <PWTouchableOpacity
+                                style={styles.listItem}
+                                onPress={() => void handleChangePinPress()}
+                                testID='settings_security_change_pin_button'
+                            >
+                                <PWView style={styles.listItemContent}>
+                                    <PWIcon name='locked' />
+                                    <PWText
+                                        style={styles.listItemLabel}
+                                        truncate
+                                    >
+                                        {t('settings.security.change_pin')}
+                                    </PWText>
+                                </PWView>
+                                <PWView style={styles.trailingContainer}>
+                                    <PWIcon name='chevron-right' />
+                                </PWView>
+                            </PWTouchableOpacity>
+                        )}
+
+                        {isPinEnabled && isBiometricsAvailable && (
+                            <PWView style={styles.listItem}>
+                                <PWView style={styles.listItemContent}>
+                                    <PWIcon name='faceid' />
+                                    <PWText
+                                        style={styles.listItemLabel}
+                                        truncate
+                                    >
+                                        {t(
+                                            'settings.security.enable_biometrics',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWView style={styles.trailingContainer}>
+                                    <PWSwitch
+                                        value={isBiometricEnabled}
+                                        onValueChange={value =>
+                                            void handleBiometricToggle(value)
+                                        }
+                                        testID='settings_security_biometric_toggle'
+                                    />
+                                </PWView>
+                            </PWView>
+                        )}
+                    </PWView>
+                )}
 
                 <PWView style={styles.section}>
                     <TitledExpandablePanel

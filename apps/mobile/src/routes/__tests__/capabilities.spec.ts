@@ -60,6 +60,8 @@ describe('route capabilities', () => {
             pushNotificationSettings: true,
             storeRating: false,
             vaultSecuritySettings: true,
+            // The vault password is the extension's lock; no app PIN.
+            pin: false,
             // Menu icon bar swaps the camera for paste-a-deeplink on
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,

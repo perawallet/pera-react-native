@@ -25,9 +25,19 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(),
 }))
 
+const { mockRemoteFlags, mockRouteCapabilities } = vi.hoisted(() => ({
+    mockRemoteFlags: {} as Record<string, boolean>,
+    mockRouteCapabilities: { pin: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockRouteCapabilities,
+}))
+
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfig: () => ({
-        getBooleanValue: (_key: string, fallback: boolean) => fallback,
+        getBooleanValue: (key: string, fallback: boolean) =>
+            mockRemoteFlags[key] ?? fallback,
     }),
     RemoteConfigKeys: {
         enable_motion_lock: 'enable-motion-lock',
@@ -81,6 +91,10 @@ describe('useSettingsSecurityScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteCapabilities.pin = true
+        for (const key of Object.keys(mockRemoteFlags)) {
+            delete mockRemoteFlags[key]
+        }
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckDuressPinEnabled.mockResolvedValue(false)
         mockGetPreference.mockReturnValue(undefined)
@@ -407,6 +421,39 @@ describe('useSettingsSecurityScreen', () => {
                 'asset-freeze-support-enabled',
                 false,
             )
+        })
+    })
+
+    describe('pin capability', () => {
+        beforeEach(() => {
+            mockRemoteFlags['enable-motion-lock'] = true
+            mockRemoteFlags['enable-duress-pin'] = true
+        })
+
+        it('offers PIN, shake to lock and duress PIN where the platform has a PIN', () => {
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            expect(result.current.isPinFeatureEnabled).toBe(true)
+            expect(result.current.isShakeToLockFeatureEnabled).toBe(true)
+            expect(result.current.isDuressPinFeatureEnabled).toBe(true)
+        })
+
+        it('hides every PIN feature when the platform has no PIN, even with the remote flags on', () => {
+            mockRouteCapabilities.pin = false
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            expect(result.current.isPinFeatureEnabled).toBe(false)
+            expect(result.current.isShakeToLockFeatureEnabled).toBe(false)
+            expect(result.current.isDuressPinFeatureEnabled).toBe(false)
+        })
+
+        it('keeps the advanced panel collapsed on web when only PIN features were flagged on', () => {
+            mockRouteCapabilities.pin = false
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            expect(result.current.isAdvancedSecurityEnabled).toBe(false)
         })
     })
 })
