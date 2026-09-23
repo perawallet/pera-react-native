@@ -115,7 +115,8 @@ hash-and-sign. Callers are responsible for the prefix.
 
 SW-owned non-extractable **P-256** keypair in IndexedDB (`pera-integrity`), minting a
 short-lived JWT into `chrome.storage.session`. **Both flags default off** — no behavior today.
-Full context: `docs/superpowers/specs/2026-08-03-web-app-integrity-design.md`.
+Enrolment, which makes that key a revocable identity, is specified in
+`docs/WEB_INTEGRITY_ENROLMENT_CONTRACT.md`.
 
 ---
 
