@@ -26,11 +26,16 @@ const GET_OPTIONS = {
 }
 
 const senderFor = (origin: string): chrome.runtime.MessageSender =>
-    ({ origin, url: `${origin}/app`, tab: { id: 7 } }) as never
+    ({ origin, url: `${origin}/app`, tab: { id: 7 }, frameId: 0 }) as never
 
-const call = (router: PasskeyRouter, message: unknown, origin: string) =>
+const call = (
+    router: PasskeyRouter,
+    message: unknown,
+    origin: string,
+    sender: chrome.runtime.MessageSender = senderFor(origin),
+) =>
     new Promise<any>(resolve => {
-        const kept = router.handleMessage(message, senderFor(origin), resolve)
+        const kept = router.handleMessage(message, sender, resolve)
         expect(kept).toBe(true)
     })
 
@@ -75,6 +80,46 @@ describe('PasskeyRouter', () => {
         expect(res).toEqual({ decline: true })
         expect(openPasskeyCreate).not.toHaveBeenCalled()
     })
+
+    it.each([
+        ['a sub-frame', 3],
+        ['a sender with no frameId', undefined],
+    ])(
+        'declines %s without opening an approval, so the page falls through to native',
+        async (_label, frameId) => {
+            const { router, openPasskeyCreate, openPasskeyGet } = setup()
+            const origin = 'https://webauthn.io'
+            const sender = { ...senderFor(origin), frameId } as never
+
+            const createRes = await call(
+                router,
+                {
+                    scope: WEBAUTHN_RELAY_SCOPE,
+                    request: {
+                        kind: 'create',
+                        origin,
+                        options: CREATE_OPTIONS,
+                    },
+                },
+                origin,
+                sender,
+            )
+            const getRes = await call(
+                router,
+                {
+                    scope: WEBAUTHN_RELAY_SCOPE,
+                    request: { kind: 'get', origin, options: GET_OPTIONS },
+                },
+                origin,
+                sender,
+            )
+
+            expect(createRes).toEqual({ decline: true })
+            expect(getRes).toEqual({ decline: true })
+            expect(openPasskeyCreate).not.toHaveBeenCalled()
+            expect(openPasskeyGet).not.toHaveBeenCalled()
+        },
+    )
 
     it('stamps PendingApproval.origin from sender.origin, never the page-asserted request.origin', async () => {
         const { router, openPasskeyCreate } = setup({

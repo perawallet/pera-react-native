@@ -17,6 +17,7 @@ import { describe, it, expect } from 'vitest'
 type ContentScriptEntry = {
     matches: string[]
     js: string[]
+    all_frames?: boolean
 }
 
 // vitest's root for this package is apps/browser/ (see vitest.config.ts),
@@ -96,6 +97,18 @@ describe('manifest.json secure-origin posture', () => {
                 if (!match.startsWith('http://')) continue
                 expect(ALLOWED_PLAINTEXT_MATCHES).toContain(match)
             }
+        }
+    })
+
+    // A framed wrapper would pre-empt the browser's publickey-credentials-*
+    // Permissions-Policy gate and report the ceremony as top-level.
+    it('injects the WebAuthn pair into the top frame only', () => {
+        const webauthnEntries = manifest.content_scripts.filter(entry =>
+            entry.js.some(js => js.includes('webauthn')),
+        )
+        expect(webauthnEntries).toHaveLength(2)
+        for (const entry of webauthnEntries) {
+            expect(entry.all_frames).toBe(false)
         }
     })
 
