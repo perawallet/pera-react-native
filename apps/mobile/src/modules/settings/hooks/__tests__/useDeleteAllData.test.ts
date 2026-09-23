@@ -91,6 +91,11 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
         mockClearWalletConnectV2Storage(...args),
 }))
 
+const mockDestroyVault = vi.fn().mockResolvedValue(undefined)
+vi.mock('../destroyVault', () => ({
+    destroyVault: (...args: unknown[]) => mockDestroyVault(...args),
+}))
+
 const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
     mockAccountsResetState: vi.fn(),
     mockAccountsClearStorage: vi.fn(),
@@ -477,6 +482,42 @@ describe('useDeleteAllData', () => {
         ).resolves.toBeUndefined()
         expect(logger.error).toHaveBeenCalledWith(
             'Failed to clear the WalletConnect v2 storage',
+            { error: expect.any(Error) },
+        )
+    })
+
+    it('destroys the vault as the last step, after every other clear', async () => {
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDestroyVault).toHaveBeenCalledOnce()
+        const vaultOrder = mockDestroyVault.mock.invocationCallOrder[0]
+        for (const step of [
+            mockClearKeystore,
+            mockSavePin,
+            mockClearDatabase,
+            clearAllStores as Mock,
+            mockClearWalletConnectV2Storage,
+        ]) {
+            expect(step.mock.invocationCallOrder[0]).toBeLessThan(vaultOrder)
+        }
+    })
+
+    it('logs and resolves when destroying the vault fails', async () => {
+        mockDestroyVault.mockRejectedValueOnce(new Error('storage gone'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await expect(
+            act(async () => {
+                await result.current.deleteAllData()
+            }),
+        ).resolves.toBeUndefined()
+        expect(logger.error).toHaveBeenCalledWith(
+            'Failed to destroy the vault',
             { error: expect.any(Error) },
         )
     })
