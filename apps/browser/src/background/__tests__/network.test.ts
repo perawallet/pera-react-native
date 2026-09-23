@@ -12,7 +12,8 @@
 
 import { describe, it, expect } from 'vitest'
 
-import { parseActiveNetwork } from '../network'
+import { createLocalChromeFake } from './chrome-fake'
+import { parseActiveNetwork, readActiveNetwork } from '../network'
 
 describe('parseActiveNetwork', () => {
     it('reads testnet from the persisted zustand envelope string', () => {
@@ -59,5 +60,25 @@ describe('parseActiveNetwork', () => {
         expect(
             parseActiveNetwork('{"state":{"network":"fnet"},"version":1}'),
         ).toBe('mainnet')
+    })
+})
+
+describe('readActiveNetwork', () => {
+    it('reads the active network from chrome.storage.local', async () => {
+        const fake = createLocalChromeFake()
+        globalThis.chrome = fake.chrome
+        fake.local.set(
+            'kv:network-store',
+            '{"state":{"network":"testnet"},"version":1}',
+        )
+
+        expect(await readActiveNetwork()).toBe('testnet')
+    })
+
+    it('defaults to mainnet when nothing is stored', async () => {
+        const fake = createLocalChromeFake()
+        globalThis.chrome = fake.chrome
+
+        expect(await readActiveNetwork()).toBe('mainnet')
     })
 })

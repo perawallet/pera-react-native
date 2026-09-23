@@ -14,6 +14,7 @@
 // packages/app-integrity/src/api.ts for why.
 import {
     attestDevice,
+    readIntegrityErrorCode,
     requestChallenge,
 } from '@perawallet/wallet-core-app-integrity/api'
 import { config } from '@perawallet/wallet-core-config'
@@ -23,16 +24,22 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     INTEGRITY_BACKOFF_SESSION_KEY,
+    clearEnrolmentMarker,
     clearInstallKey,
     clearSessionIntegrityToken,
     ensureDeviceInstallationID,
     exportInstallPublicKey,
+    getEnrolmentMarker,
+    getInstallKeyId,
     getSessionIntegrityToken,
     putSessionIntegrityToken,
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { parseActiveNetwork, type ActiveNetwork } from './network'
+import { enrolBackoff, markEnrolmentNeeded } from './enrol-attempt'
+import { createSessionBackoff } from './session-backoff'
+import { withNamedLock } from './named-lock'
+import { readActiveNetwork, type ActiveNetwork } from './network'
 
 export const INTEGRITY_RENEW_ALARM = 'pera-integrity-renew'
 
@@ -45,10 +52,11 @@ const REFRESH_AT_FRACTION = 0.6
 const BACKOFF_FLOOR_MS = 5 * 60 * 1000
 const BACKOFF_CAP_MS = 60 * 60 * 1000
 
-// The network store persists under this key; there is no shared export for it, see network.ts.
-const NETWORK_STORAGE_KEY = 'kv:network-store'
-
-type BackoffState = { failures: number; nextAttemptAt: number }
+const mintBackoff = createSessionBackoff({
+    key: INTEGRITY_BACKOFF_SESSION_KEY,
+    floorMs: BACKOFF_FLOOR_MS,
+    capMs: BACKOFF_CAP_MS,
+})
 
 // This realm's own view of the token — the SW can't use useAppIntegrityStore
 // (see packages/app-integrity/src/api.ts for why). Seeded from
@@ -73,68 +81,8 @@ export const isIntegrityTokenStale = (
     return now >= mintedAt + (expiresAt - mintedAt) * REFRESH_AT_FRACTION
 }
 
-const readBackoff = async (): Promise<BackoffState> => {
-    const stored = await chrome.storage.session.get(
-        INTEGRITY_BACKOFF_SESSION_KEY,
-    )
-    const value = stored[INTEGRITY_BACKOFF_SESSION_KEY] as
-        | Partial<BackoffState>
-        | undefined
-    return {
-        failures: typeof value?.failures === 'number' ? value.failures : 0,
-        nextAttemptAt:
-            typeof value?.nextAttemptAt === 'number' ? value.nextAttemptAt : 0,
-    }
-}
-
-const recordFailure = async (): Promise<void> => {
-    const { failures } = await readBackoff()
-    const next = failures + 1
-    const delay = Math.min(BACKOFF_FLOOR_MS * 2 ** (next - 1), BACKOFF_CAP_MS)
-    await chrome.storage.session.set({
-        [INTEGRITY_BACKOFF_SESSION_KEY]: {
-            failures: next,
-            nextAttemptAt: Date.now() + delay,
-        },
-    })
-}
-
-const clearBackoff = async (): Promise<void> => {
-    await chrome.storage.session.remove(INTEGRITY_BACKOFF_SESSION_KEY)
-}
-
-// jsdom has no navigator.locks, so a bare fallback would silently drop
-// serialization under test. This FIFO queue backs it with a real same-realm
-// mutex: each waiter chains onto the previous holder's completion.
-let mutexQueue: Promise<void> = Promise.resolve()
-
-const withMintLock = async (fn: () => Promise<void>): Promise<void> => {
-    if (typeof navigator !== 'undefined' && navigator.locks) {
-        await navigator.locks.request('pera-integrity-mint', fn)
-        return
-    }
-    const previous = mutexQueue
-    let release = (): void => {}
-    mutexQueue = new Promise<void>(resolve => {
-        release = resolve
-    })
-    await previous
-    try {
-        await fn()
-    } finally {
-        release()
-    }
-}
-
-const resolveNetwork = async (): Promise<ActiveNetwork> => {
-    const stored = await chrome.storage.local.get(NETWORK_STORAGE_KEY)
-    const raw = stored[NETWORK_STORAGE_KEY]
-    return parseActiveNetwork(typeof raw === 'string' ? raw : undefined)
-}
-
-const mint = async (): Promise<void> => {
+const mint = async (network: ActiveNetwork): Promise<void> => {
     const deviceInstallationId = await ensureDeviceInstallationID()
-    const network = await resolveNetwork()
 
     const challenge = await requestChallenge({
         deviceInstallationId,
@@ -164,10 +112,18 @@ const mint = async (): Promise<void> => {
         deviceInstallationId,
     })
     cachedToken = { integrityToken, expiresAt, mintedAt, deviceInstallationId }
-    await clearBackoff()
+    await mintBackoff.clear()
 }
 
-const isRevoked = (error: unknown): boolean =>
+const isMarkedEnrolled = async (network: ActiveNetwork): Promise<boolean> => {
+    const [marker, kid] = await Promise.all([
+        getEnrolmentMarker(network),
+        getInstallKeyId(),
+    ])
+    return marker?.kid === kid
+}
+
+const isForbidden = (error: unknown): boolean =>
     (error as { status?: number } | null)?.status === 403
 
 /**
@@ -183,10 +139,9 @@ export const ensureIntegrityToken = async (): Promise<void> => {
         if (existing) cachedToken = existing
         if (existing && !isIntegrityTokenStale(existing, Date.now())) return
 
-        const backoff = await readBackoff()
-        if (backoff.nextAttemptAt > Date.now()) return
+        if (await mintBackoff.isBlocked()) return
 
-        await withMintLock(async () => {
+        await withNamedLock('pera-integrity-mint', async () => {
             // Re-check both gates inside the lock: another realm (or a
             // queued waiter in the in-memory fallback) may have minted, or
             // just recorded a failure, while this caller waited its turn.
@@ -194,23 +149,35 @@ export const ensureIntegrityToken = async (): Promise<void> => {
             if (fresh) cachedToken = fresh
             if (fresh && !isIntegrityTokenStale(fresh, Date.now())) return
 
-            const innerBackoff = await readBackoff()
-            if (innerBackoff.nextAttemptAt > Date.now()) return
+            if (await mintBackoff.isBlocked()) return
 
+            const network = await readActiveNetwork()
             try {
-                await mint()
+                await mint(network)
             } catch (error) {
-                if (isRevoked(error)) {
-                    // Enrolment is a later step, so there is nothing to re-run
-                    // yet — drop the identity so the next attempt starts clean.
-                    await clearInstallKey()
-                    await clearSessionIntegrityToken()
-                    // The existing/fresh read above may have already warmed
-                    // this from the now-revoked stored token — expiry alone
-                    // won't catch a revocation, so drop it explicitly too.
-                    cachedToken = null
+                if (isForbidden(error)) {
+                    const code = readIntegrityErrorCode(error)
+                    if (code === 'APP_INTEGRITY_ENROLMENT_REQUIRED') {
+                        // The key is sound; this backend just has no enrolment for it. A marker
+                        // for this key means the backend contradicts us (replica lag, a defect),
+                        // so enrolment backs off rather than re-enrolling on the next page.
+                        if (await isMarkedEnrolled(network)) {
+                            await enrolBackoff.recordFailure()
+                        }
+                        await clearEnrolmentMarker(network)
+                        await markEnrolmentNeeded()
+                    } else {
+                        await clearInstallKey()
+                        await clearSessionIntegrityToken()
+                        // The read above may have warmed this from the rejected token.
+                        cachedToken = null
+                        // A new key has no enrolment anywhere, so the old marker is dead by
+                        // its kid and needs no clearing.
+                        if (code === 'APP_INTEGRITY_REVOKED')
+                            await markEnrolmentNeeded()
+                    }
                 }
-                await recordFailure()
+                await mintBackoff.recordFailure()
                 logger.warn('Web integrity mint failed', { error })
             }
         })
@@ -249,4 +216,14 @@ export const installIntegrityRenewal = (): void => {
     })()
 
     void ensureIntegrityToken()
+}
+
+/**
+ * Clears the mint backoff and mints now. Enrolment calls this when it
+ * succeeds: under enforcement the mint that asked for enrolment backed off, and
+ * waiting that out would leave the install without a token for up to an hour.
+ */
+export const resumeIntegrityMint = async (): Promise<void> => {
+    await mintBackoff.clear()
+    await ensureIntegrityToken()
 }

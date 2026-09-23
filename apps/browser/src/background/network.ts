@@ -33,3 +33,12 @@ export const parseActiveNetwork = (raw: string | undefined): ActiveNetwork => {
         ? (network as ActiveNetwork)
         : Networks.mainnet
 }
+
+// The network store persists under this key; there is no shared export for it.
+const NETWORK_STORAGE_KEY = 'kv:network-store'
+
+export const readActiveNetwork = async (): Promise<ActiveNetwork> => {
+    const stored = await chrome.storage.local.get(NETWORK_STORAGE_KEY)
+    const raw = stored[NETWORK_STORAGE_KEY]
+    return parseActiveNetwork(typeof raw === 'string' ? raw : undefined)
+}

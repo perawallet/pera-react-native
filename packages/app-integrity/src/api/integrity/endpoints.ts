@@ -13,22 +13,26 @@
 import {
     queryClient,
     IDEMPOTENT_POST_RETRY,
+    SINGLE_USE_POST_RETRY,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import {
     challengeResponseSchema,
     attestResponseSchema,
     verifyResponseSchema,
+    enrolResponseSchema,
 } from './schema'
 import {
     transformAttestResponse,
     transformVerifyResponse,
+    transformEnrolResponse,
 } from './transformers'
 import type {
     AttestPayload,
     IntegrityPlatform,
     IntegrityRegistration,
     IntegrityVerification,
+    IntegrityEnrolment,
 } from '../../models'
 
 export type RequestChallengeParams = {
@@ -134,4 +138,37 @@ export const verifyIntegrityToken = async ({
         signal,
     })
     return transformVerifyResponse(verifyResponseSchema.parse(response.data))
+}
+
+export type EnrolDeviceParams = {
+    deviceInstallationId: string
+    publicKey: string
+    turnstileToken: string
+    network: Network
+    signal?: AbortSignal
+}
+
+export const enrolDevice = async ({
+    deviceInstallationId,
+    publicKey,
+    turnstileToken,
+    network,
+    signal,
+}: EnrolDeviceParams): Promise<IntegrityEnrolment> => {
+    const response = await queryClient<unknown>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: '/api/v3/public/integrity/enrol',
+        data: {
+            device_id: deviceInstallationId,
+            public_key: publicKey,
+            turnstile_token: turnstileToken,
+        },
+        signal,
+        // The Turnstile token is single-use, so a second attempt after the
+        // server spent it can only fail.
+        retry: SINGLE_USE_POST_RETRY,
+    })
+    return transformEnrolResponse(enrolResponseSchema.parse(response.data))
 }

@@ -30,8 +30,8 @@ import { generatedEnv } from './generated-env'
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 /**
- * Excludes `discoverBaseUrl`: getConfig derives it from appEnvironment
- * structurally, so there is nothing to override.
+ * Excludes `discoverBaseUrl` and `integrityCheckOrigin`: getConfig derives
+ * both from appEnvironment structurally, so there is nothing to override.
  */
 const hasEnvOverride = (field: string): boolean =>
     field in overrideEnvironmentMap
@@ -122,6 +122,7 @@ export const configSchema = z
         reactQueryPersistenceAge: z.number().int(),
 
         discoverBaseUrl: z.url(),
+        integrityCheckOrigin: z.url(),
         /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
         onrampSupportEmail: z.email(),
         /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
@@ -153,6 +154,7 @@ export const configSchema = z
         debugEnabled: z.boolean(),
         webIntegrityMintEnabled: z.boolean(),
         webIntegrityBearerEnabled: z.boolean(),
+        webIntegrityEnrolEnabled: z.boolean(),
         profilingEnabled: z.boolean(),
         pollingEnabled: z.boolean(),
 
@@ -254,7 +256,9 @@ export const configSchema = z
 
 export type Config = z.infer<typeof configSchema>
 
-type ConfigOverrides = Partial<Omit<Config, 'discoverBaseUrl'>>
+type ConfigOverrides = Partial<
+    Omit<Config, 'discoverBaseUrl' | 'integrityCheckOrigin'>
+>
 
 const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     development: 'https://discover-mobile-staging.perawallet.app/',
@@ -262,10 +266,23 @@ const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
     production: 'https://discover-mobile.perawallet.app/',
 }
 
+// The backend of each environment only accepts solves from its own check page.
+const integrityCheckOriginByEnvironment: Record<
+    Config['appEnvironment'],
+    string
+> = {
+    development: 'https://integrity-staging.perawallet.app',
+    staging: 'https://integrity-staging.perawallet.app',
+    production: 'https://integrity.perawallet.app',
+}
+
 /**
  * Production configuration with safe defaults for open source builds.
  */
-const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
+const productionConfig: Omit<
+    Config,
+    'discoverBaseUrl' | 'integrityCheckOrigin'
+> = {
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
@@ -378,11 +395,12 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
     debugEnabled: false,
-    // Step 1 of the web app-integrity rollout: minting runs, nothing consumes
-    // the token. Both off by default so a store build is unaffected until an
-    // env var opts in. See docs/superpowers/specs/2026-08-03-web-app-integrity-design.md
+    // Web app-integrity rollout: every flag defaults off so a build is
+    // unaffected until an env var opts in. See docs/BROWSER_ARCHITECTURE.md,
+    // section 3.4.
     webIntegrityMintEnabled: false,
     webIntegrityBearerEnabled: false,
+    webIntegrityEnrolEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
     disableScreenCapturePrevention: false,
@@ -510,6 +528,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     webIntegrityMintEnabled: 'WEB_INTEGRITY_MINT_ENABLED',
     webIntegrityBearerEnabled: 'WEB_INTEGRITY_BEARER_ENABLED',
+    webIntegrityEnrolEnabled: 'WEB_INTEGRITY_ENROL_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
     disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
@@ -550,6 +569,8 @@ export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
         ...mergedConfig,
         discoverBaseUrl:
             discoverBaseUrlByEnvironment[mergedConfig.appEnvironment],
+        integrityCheckOrigin:
+            integrityCheckOriginByEnvironment[mergedConfig.appEnvironment],
     })
 }
 

@@ -245,6 +245,7 @@ for (const [entry, outfile] of [
     ['src/content/bidali-relay.ts', 'content-bidali-relay.js'],
     ['src/content/webauthn-main.ts', 'content-webauthn-main.js'],
     ['src/content/webauthn-relay.ts', 'content-webauthn-relay.js'],
+    ['src/content/integrity-check.ts', 'content-integrity-check.js'],
 ]) {
     await build({
         entryPoints: [path.join(root, entry)],
@@ -378,6 +379,7 @@ if (!/getURL\(["']dotlottie-player\.wasm["']\)/.test(uiCode)) {
 const BUNDLE_LIMITS = [
     ['content-inject-main.js', 32 * 1024],
     ['content-relay-isolated.js', 16 * 1024],
+    ['content-integrity-check.js', 16 * 1024],
     ['background.js', 3 * 1024 * 1024],
 ]
 

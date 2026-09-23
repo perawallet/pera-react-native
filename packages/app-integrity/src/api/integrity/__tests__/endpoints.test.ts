@@ -19,15 +19,21 @@ const idempotentPostRetryMock = vi.hoisted(() => ({
     methods: ['post'],
     shouldRetry: () => true,
 }))
+const singleUsePostRetryMock = vi.hoisted(() => ({
+    methods: ['post'],
+    shouldRetry: () => false,
+}))
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: (...args: unknown[]) => queryClientMock(...args),
     IDEMPOTENT_POST_RETRY: idempotentPostRetryMock,
+    SINGLE_USE_POST_RETRY: singleUsePostRetryMock,
 }))
 
 import {
     requestChallenge,
     attestDevice,
     verifyIntegrityToken,
+    enrolDevice,
 } from '../endpoints'
 
 describe('integrity endpoints', () => {
@@ -218,5 +224,52 @@ describe('attestDevice web variant', () => {
                 data: { device_id: 'install-1', platform: 'web' },
             }),
         )
+    })
+})
+
+describe('enrolDevice', () => {
+    const params = {
+        deviceInstallationId: 'd1',
+        publicKey: 'spki-b64',
+        turnstileToken: 'tok',
+        network: 'mainnet' as const,
+    }
+
+    it('posts snake_case fields with the single-use retry', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { enrolled: true, kid: 'K' },
+        })
+
+        const result = await enrolDevice(params)
+
+        expect(result).toEqual({ enrolled: true, kid: 'K' })
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'POST',
+                url: '/api/v3/public/integrity/enrol',
+                data: {
+                    device_id: 'd1',
+                    public_key: 'spki-b64',
+                    turnstile_token: 'tok',
+                },
+                retry: singleUsePostRetryMock,
+            }),
+        )
+    })
+
+    it('rejects a response with no kid', async () => {
+        queryClientMock.mockResolvedValue({ data: { enrolled: true } })
+
+        await expect(enrolDevice(params)).rejects.toThrow()
+    })
+
+    it('rejects a 200 that says it did not enrol', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { enrolled: false, kid: 'K' },
+        })
+
+        await expect(enrolDevice(params)).rejects.toThrow()
     })
 })

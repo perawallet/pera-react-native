@@ -16,13 +16,13 @@ An MV3 extension is not one program — it is several isolated JS contexts with 
 capabilities, lifetimes, and trust levels. Every correctness and security question starts
 with "which realm is this running in, and what can it reach?"
 
-| Realm                        | Entry / bundle                                        | Lifetime                                       | Owns                                                                                                     | Can it sign?                       | Has DB?            |
-| ---------------------------- | ----------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------- | ------------------ |
-| **Service worker**           | `background.js` (`src/background/index.ts`)           | Ephemeral — evicted ~30s idle, woken by events | Message routing hub, dApp/WC/passkey routers, offscreen lifecycle, integrity mint, push, autolock alarms | **No**                             | No                 |
-| **Offscreen document**       | `src/offscreen/runOffscreenApp.ts`                    | Long-lived (kept alive deliberately)           | The sqlite DB host (OPFS worker), warm-poll `SyncService`, the long-lived WalletConnect v1 socket        | **No — vault deliberately absent** | **Yes (host)**     |
-| **Content scripts**          | `src/content/*` (7 MAIN/ISOLATED pairs)               | Per-tab, per-navigation                        | Page↔extension bridges (ARC-0027, WebAuthn interception, Discover, Bidali, connect-modal)                | No                                 | No                 |
-| **UI: popup + expanded tab** | `popup.html` → RN-web app (`apps/mobile` Metro build) | Ephemeral (popup) / user-controlled (tab)      | The React app, vault **unlock**, transaction signing, approval surfaces                                  | **Yes** (vault unlocked here)      | Client of the host |
-| **Web-shell boot**           | `apps/mobile/src/App.web.tsx` → `AppShell.web.tsx`    | With the UI realm                              | Hydrate → dynamic-import boot, storage-proxy shim install, integrity-token sync                          | —                                  | —                  |
+| Realm                        | Entry / bundle                                                                      | Lifetime                                      | Owns                                                                                                                   | Can it sign?                      | Has DB?            |
+| ---------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ------------------ |
+| **Service worker**           | `background.js` (`src/background/index.ts`)                                         | Ephemeral, evicted ~30s idle, woken by events | Message routing hub, dApp/WC/passkey routers, offscreen lifecycle, integrity mint and enrolment, push, autolock alarms | **No**                            | No                 |
+| **Offscreen document**       | `src/offscreen/runOffscreenApp.ts`                                                  | Long-lived (kept alive deliberately)          | The sqlite DB host (OPFS worker), warm-poll `SyncService`, the long-lived WalletConnect v1 socket                      | **No, vault deliberately absent** | **Yes (host)**     |
+| **Content scripts**          | `src/content/*` (MAIN/ISOLATED pairs, plus the ISOLATED-only integrity check relay) | Per-tab, per-navigation                       | Page↔extension bridges (ARC-0027, WebAuthn interception, Discover, Bidali, connect-modal, integrity check page)        | No                                | No                 |
+| **UI: popup + expanded tab** | `popup.html` → RN-web app (`apps/mobile` Metro build)                               | Ephemeral (popup) / user-controlled (tab)     | The React app, vault **unlock**, transaction signing, approval surfaces                                                | **Yes** (vault unlocked here)     | Client of the host |
+| **Web-shell boot**           | `apps/mobile/src/App.web.tsx` → `AppShell.web.tsx`                                  | With the UI realm                             | Hydrate → dynamic-import boot, storage-proxy shim install, integrity-token sync                                        | n/a                               | n/a                |
 
 **The two toolchains trap.** The service worker is bundled by **esbuild** (reads
 `packages/*/dist`); the popup/UI is bundled by **Metro** (reads `packages/*/src`). The same
@@ -49,7 +49,7 @@ graph TD
       WCR[WC approval router + heartbeat]
       APPROVALS[ApprovalWindowBridge]
       STOREPROXY[Storage proxy host]
-      INTEG[Integrity mint loop]
+      INTEG[Integrity mint + enrolment]
     end
 
     SW -->|opens| APPROVALWIN[Approval window UI]
@@ -69,6 +69,7 @@ graph TD
 | `pera-dapp-approval`                                                                                      | SW ↔ approval window | ARC-0027 connect/sign approval                                    |
 | `pera-wc-control`, `pera-wc-request`, `pera-wc-error-notice`, `pera-wc-pair-outcome`, `pera-wc-page-pair` | SW ↔ offscreen ↔ UI  | WalletConnect control, sign requests, errors, pairing             |
 | `pera-webauthn-relay`                                                                                     | content ↔ SW         | Intercepted `navigator.credentials` ceremonies → passkey approval |
+| `pera-integrity-enrol`                                                                                    | UI → SW              | An extension page asks whether it should host the integrity check |
 
 ---
 
@@ -114,9 +115,18 @@ hash-and-sign. Callers are responsible for the prefix.
 ### 3.4 App integrity (attribution, not attestation)
 
 SW-owned non-extractable **P-256** keypair in IndexedDB (`pera-integrity`), minting a
-short-lived JWT into `chrome.storage.session`. **Both flags default off** — no behavior today.
-Enrolment, which makes that key a revocable identity, is specified in
-`docs/WEB_INTEGRITY_ENROLMENT_CONTRACT.md`.
+short-lived JWT into `chrome.storage.session`. Three build flags gate it, all default off:
+`WEB_INTEGRITY_MINT_ENABLED` (the mint loop), `WEB_INTEGRITY_BEARER_ENABLED` (the UI realm
+attaches the token to its requests) and `WEB_INTEGRITY_ENROL_ENABLED` (enrolment, which also needs
+the mint flag).
+
+Enrolment makes that key a revocable identity by binding it to a Cloudflare Turnstile solve on our
+check page. The popup or expanded tab asks the SW over `pera-integrity-enrol`; the SW decides, and
+answers with a check URL carrying a per-attempt token. The page frames it hidden, the check page's
+content script relays the solve to the SW over a `pera-integrity-check:<token>` port, and the SW
+enrols. The attempt lives in `chrome.storage.session` so worker eviction loses nothing, and a
+focused tab is the fallback only while the asking page is still open. The handshake, validation
+rules and failure handling are specified in `docs/WEB_INTEGRITY_ENROLMENT_CONTRACT.md`.
 
 ---
 
@@ -125,8 +135,8 @@ Enrolment, which makes that key a revocable identity, is specified in
 | Store                                         | Keys                                                                                                                                                                                                                                                                                                                                                       | Notes                                                                                                                                                                                                 |
 | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `chrome.storage.local`                        | `kv:accounts-store`, `kv:network-store`, `kv:custom-network-store`, `kv:polling-store`, `kv:wallet-connect-store`, `kv:settings-store`; `device:installation-id`; `vault:wrapped-master-key(+prf,+cred-id)`, `vault:auto-lock-minutes`, `vault:lockout`; dApp permissions; legacy-migration sentinels; `webauthnInterceptionEnabled`; TanStack Query cache | `kv:*` values are JSON **strings** (the KV service stringifies). `device:installation-id` is deliberately root-level (not `kv:`) so it survives "clear data". `unlimitedStorage` lifts the 10 MB cap. |
-| `chrome.storage.session` (`TRUSTED_CONTEXTS`) | `vault:master-key`, `integrity:token`, `integrity:backoff`                                                                                                                                                                                                                                                                                                 | Memory-only, cleared on browser close. The unwrapped master key lives **only** here.                                                                                                                  |
-| **IndexedDB** `pera-integrity`                | `install-key`                                                                                                                                                                                                                                                                                                                                              | Non-extractable P-256 keypair (private half never leaves).                                                                                                                                            |
+| `chrome.storage.session` (`TRUSTED_CONTEXTS`) | `vault:master-key`, `integrity:token`, `integrity:backoff`, `integrity:enrol-attempt`, `integrity:enrol-backoff`, `integrity:enrol-needed`                                                                                                                                                                                                                 | Memory-only, cleared on browser close. The unwrapped master key lives **only** here.                                                                                                                  |
+| **IndexedDB** `pera-integrity`                | `install-key`, `enrolment:<network>`                                                                                                                                                                                                                                                                                                                       | Non-extractable P-256 keypair (private half never leaves), and one enrolment marker per network.                                                                                                      |
 | **OPFS**                                      | sqlite database                                                                                                                                                                                                                                                                                                                                            | Owned by the offscreen DB-worker; evictable without `unlimitedStorage`.                                                                                                                               |
 
 ---

@@ -17,6 +17,7 @@ const ensureOffscreenDocumentMock = vi.fn().mockResolvedValue(undefined)
 const installConnectionsApprovalRouterMock = vi.fn()
 const installConnectionsHeartbeatMock = vi.fn()
 const handleIntegrityAlarmMock = vi.fn().mockResolvedValue(undefined)
+const handleEnrolDeadlineAlarmMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
@@ -83,6 +84,13 @@ vi.mock('../integrity', () => ({
     installIntegrityRenewal: vi.fn(),
 }))
 
+// Enrolment has its own suite; here its deadline alarm only has to be routable.
+vi.mock('../integrity-enrol', () => ({
+    INTEGRITY_ENROL_DEADLINE_ALARM: 'pera-integrity-enrol-deadline',
+    handleEnrolDeadlineAlarm: handleEnrolDeadlineAlarmMock,
+    installIntegrityEnrolment: vi.fn(),
+}))
+
 type AlarmListener = (alarm: chrome.alarms.Alarm) => void
 
 describe('background/index onAlarm routing', () => {
@@ -93,6 +101,7 @@ describe('background/index onAlarm routing', () => {
         handleAutoLockAlarmMock.mockClear()
         ensureOffscreenDocumentMock.mockClear()
         handleIntegrityAlarmMock.mockClear()
+        handleEnrolDeadlineAlarmMock.mockClear()
 
         globalThis.chrome = {
             runtime: {
@@ -130,6 +139,16 @@ describe('background/index onAlarm routing', () => {
         onAlarmListener(alarm)
 
         expect(handleIntegrityAlarmMock).toHaveBeenCalledWith(alarm)
+        expect(handleAutoLockAlarmMock).not.toHaveBeenCalled()
+    })
+
+    it('routes the enrolment deadline alarm to enrolment, not handleAutoLockAlarm', () => {
+        const alarm = {
+            name: 'pera-integrity-enrol-deadline',
+        } as chrome.alarms.Alarm
+        onAlarmListener(alarm)
+
+        expect(handleEnrolDeadlineAlarmMock).toHaveBeenCalledWith(alarm)
         expect(handleAutoLockAlarmMock).not.toHaveBeenCalled()
     })
 

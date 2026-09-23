@@ -25,6 +25,11 @@ export type IntegrityVerification = {
     platform: IntegrityPlatform
 }
 
+export type IntegrityEnrolment = {
+    enrolled: boolean
+    kid: string
+}
+
 export type AttestPayload =
     | {
           deviceInstallationId: string

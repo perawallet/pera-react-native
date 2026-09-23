@@ -60,6 +60,7 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
@@ -287,6 +288,8 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                                     <ShellRouter />
                                 </VaultGate>
                                 <ActivityAutoLock />
+                                {/* Outside VaultGate: locking must not kill a check mid-solve, and enrolment needs no unlocked vault. */}
+                                <IntegrityCheckFrameHost />
                             </QueryProvider>
                         </NotifierWrapper>
                     </KeyboardProvider>

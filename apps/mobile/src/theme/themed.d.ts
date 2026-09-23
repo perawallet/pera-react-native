@@ -222,6 +222,7 @@ declare module '@rneui/themed' {
             overlay1: number
             max: number
             toast: number
+            integrityCheck: number
         }
         borderRadius: {
             none: number

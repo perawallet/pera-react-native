@@ -36,6 +36,11 @@ import {
     handleIntegrityAlarm,
     installIntegrityRenewal,
 } from './integrity'
+import {
+    INTEGRITY_ENROL_DEADLINE_ALARM,
+    handleEnrolDeadlineAlarm,
+    installIntegrityEnrolment,
+} from './integrity-enrol'
 import { ensureOffscreenDocument } from './offscreen'
 import { installPushHandlers } from './push'
 
@@ -51,6 +56,7 @@ installPushHandlers()
 // already have its listener attached, and the token provider must be live
 // before the first outgoing request on this wake.
 installIntegrityRenewal()
+installIntegrityEnrolment()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
@@ -95,6 +101,10 @@ chrome.alarms.onAlarm.addListener(alarm => {
     }
     if (alarm.name === INTEGRITY_RENEW_ALARM) {
         void handleIntegrityAlarm(alarm)
+        return
+    }
+    if (alarm.name === INTEGRITY_ENROL_DEADLINE_ALARM) {
+        void handleEnrolDeadlineAlarm(alarm)
         return
     }
     void handleAutoLockAlarm(alarm)
