@@ -10,6 +10,12 @@
  limitations under the License
  */
 
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    fromUrlSafeBase64,
+    toUrlSafeBase64,
+} from '@perawallet/wallet-core-shared'
 import type { BackupItemKey } from './types'
 
 export const BACKUP_ACCOUNTS_KEY_PREFIX = 'accounts/'
@@ -43,12 +49,37 @@ export const contactAddressFromItemKey = (key: BackupItemKey): string | null =>
 
 export const BACKUP_PASSKEYS_KEY_PREFIX = 'passkeys/'
 
+/** The server accepts only `[A-Za-z0-9_\-.]` in each `/`-separated segment of
+ *  an item key, and a credential id is standard base64: its `/` would split
+ *  the key into extra segments, and `+`/`=` fail the pattern outright, which
+ *  the real backend answers with `422 INVALID_ITEM_KEY`.
+ *
+ *  The id's bytes are therefore base64url-encoded rather than its characters
+ *  remapped: remapping only round-trips an id that is already canonical
+ *  base64, and a credential id is whatever the writer chose to key its native
+ *  record on. The payload keeps the raw id, because that is what the native
+ *  record is stored under. */
 export const passkeyItemKey = (credentialId: string): BackupItemKey =>
-    `${BACKUP_PASSKEYS_KEY_PREFIX}${credentialId}`
+    `${BACKUP_PASSKEYS_KEY_PREFIX}${toUrlSafeBase64(
+        encodeToBase64(new TextEncoder().encode(credentialId)),
+    )}`
 
 export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
 
-/** Credential id a `passkeys/` key names, or null for any other item. */
-export const passkeyIdFromItemKey = (key: BackupItemKey): string | null =>
-    isPasskeyItemKey(key) ? key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length) : null
+/** Credential id a `passkeys/` key names, or null for any other item. Decodes
+ *  back to the raw id every other layer keys on. */
+export const passkeyIdFromItemKey = (key: BackupItemKey): string | null => {
+    if (!isPasskeyItemKey(key)) return null
+    const encoded = key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length)
+    try {
+        return new TextDecoder().decode(
+            decodeFromBase64(fromUrlSafeBase64(encoded)),
+        )
+    } catch {
+        // A key this device did not write. Treating it as "not a passkey key"
+        // keeps a foreign item out of the review buckets rather than throwing
+        // in the middle of a sync.
+        return null
+    }
+}

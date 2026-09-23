@@ -37,6 +37,7 @@ import {
     deleteBackupKeys,
     getBackupSyncManager,
     initializeBackupSyncManager,
+    passkeyItemKey,
     useBackupSyncStateStore,
     useCloudBackupContactImport,
     useCloudBackupImport,
@@ -226,7 +227,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            expect(getItem(`passkeys/${passkey.credentialId}`)).toBeDefined()
+            expect(getItem(passkeyItemKey(passkey.credentialId))).toBeDefined()
             // Precondition for the post-restore assertion below: the pushing
             // device holds the credential in the keystore, never as a native
             // provider record, so only the restore can put one there.
@@ -276,7 +277,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            expect(getItem(`passkeys/${passkey.credentialId}`)).toBeDefined()
+            expect(getItem(passkeyItemKey(passkey.credentialId))).toBeDefined()
 
             await wipeDevice()
             renderCloudBackupFlow()
@@ -317,7 +318,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const itemKey = `passkeys/${passkey.credentialId}`
+            const itemKey = passkeyItemKey(passkey.credentialId)
             expect(getItem(itemKey)?.status).toBe('ACTIVE')
 
             const outcome =
@@ -347,7 +348,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const itemKey = `passkeys/${passkey.credentialId}`
+            const itemKey = passkeyItemKey(passkey.credentialId)
             const ctx = {
                 encryptionKey: keys.encryptionKey,
                 backupId: keys.backupId,
@@ -416,7 +417,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const orphanKey = `passkeys/${orphan.credentialId}`
+            const orphanKey = passkeyItemKey(orphan.credentialId)
             pushFromOtherDevice(
                 orphanKey,
                 encryptItemPayload(

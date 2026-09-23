@@ -36,6 +36,14 @@ export const toUrlSafeBase64 = (b64: string): string => {
     return b64.slice(0, end).replace(/\+/g, '-').replace(/\//g, '_')
 }
 
+/** Inverse of {@link toUrlSafeBase64}: restores the standard alphabet and the
+ *  `=` padding a decoder needs. */
+export const fromUrlSafeBase64 = (urlSafe: string): string => {
+    const standard = urlSafe.replace(/-/g, '+').replace(/_/g, '/')
+    const remainder = standard.length % 4
+    return remainder === 0 ? standard : standard + '='.repeat(4 - remainder)
+}
+
 export const hexToBytes = (hex: string): Uint8Array => {
     const bytes = new Uint8Array(hex.length / 2)
     for (let i = 0; i < hex.length; i += 2) {

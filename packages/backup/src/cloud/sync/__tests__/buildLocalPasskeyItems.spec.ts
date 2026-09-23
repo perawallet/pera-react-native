@@ -31,7 +31,9 @@ describe('buildLocalPasskeyItems', () => {
     it('builds one PASSKEY item per credential under the passkeys prefix', () => {
         const [item] = buildLocalPasskeyItems([passkey], 42)
 
-        expect(item.key).toBe('passkeys/Y3JlZC1pZA==')
+        // The id's bytes travel base64url: the server's key alphabet has no
+        // '+', '/' or '='.
+        expect(item.key).toBe('passkeys/WTNKbFpDMXBaQT09')
         expect(item.type).toBe(BackupItemType.PASSKEY)
         expect(item.payload).toMatchObject({
             credentialId: 'Y3JlZC1pZA==',

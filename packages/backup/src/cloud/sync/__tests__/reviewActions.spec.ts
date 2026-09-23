@@ -11,6 +11,7 @@
  */
 
 // @vitest-environment node
+import { passkeyItemKey } from '../../models/itemKeys'
 import { describe, expect, it, vi } from 'vitest'
 import {
     BackupItemStatus,
@@ -520,10 +521,12 @@ describe('contact review actions', () => {
     })
 })
 
+const PASSKEY_ONE_KEY = passkeyItemKey('one')
+
 describe('passkey review actions', () => {
     const passkey = (overrides: Partial<SyncItemState> = {}): SyncState => {
         const state = createEmptySyncState('b')
-        state.items['passkeys/one'] = tracked({
+        state.items[PASSKEY_ONE_KEY] = tracked({
             type: BackupItemType.PASSKEY,
             ...overrides,
         })
@@ -535,7 +538,14 @@ describe('passkey review actions', () => {
         deps.readItems.mockResolvedValue(
             payload === null
                 ? []
-                : [{ key: 'passkeys/one', ver: 4, hash: 'rh', payload: 'enc' }],
+                : [
+                      {
+                          key: PASSKEY_ONE_KEY,
+                          ver: 4,
+                          hash: 'rh',
+                          payload: 'enc',
+                      },
+                  ],
         )
         deps.decrypt.mockReturnValue(JSON.stringify(payload ?? {}))
         return deps
@@ -547,13 +557,13 @@ describe('passkey review actions', () => {
             'one',
         )
 
-        expect(next.items['passkeys/one']).toBeUndefined()
+        expect(next.items[PASSKEY_ONE_KEY]).toBeUndefined()
     })
 
     it('keepPasskeyInBackup holds the item for review with its label', () => {
         const next = keepPasskeyInBackup(passkey(), 'one', 'Alice')
 
-        expect(next.items['passkeys/one']).toMatchObject({
+        expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
             pendingImport: true,
             label: 'Alice',
         })
@@ -574,8 +584,8 @@ describe('passkey review actions', () => {
             deps,
         })
 
-        expect(result.keys).toEqual(['passkeys/one'])
-        expect(result.state.items['passkeys/one'].status).toBe(
+        expect(result.keys).toEqual([PASSKEY_ONE_KEY])
+        expect(result.state.items[PASSKEY_ONE_KEY].status).toBe(
             BackupItemStatus.IGNORED,
         )
     })
@@ -629,7 +639,7 @@ describe('passkey review actions', () => {
             expect.objectContaining({ credentialId: 'one' }),
         ])
         expect(summary.imported).toBe(1)
-        expect(next.items['passkeys/one']).toMatchObject({
+        expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
             pendingImport: false,
             label: 'Alice',
             knownVer: 4,
@@ -654,7 +664,7 @@ describe('passkey review actions', () => {
             deps,
         })
 
-        expect(next.items['passkeys/one']).toMatchObject({
+        expect(next.items[PASSKEY_ONE_KEY]).toMatchObject({
             label: 'https://example.com',
         })
     })

@@ -16,6 +16,7 @@ import {
     useCloudBackupStore,
     useBackupSyncStateStore,
     deriveBackupSyncStatus,
+    passkeyItemKey,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
@@ -36,6 +37,9 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
     deriveBackupSyncStatus: vi.fn(),
     backupIdToAddress: (v: string) => v.replace('did:pera:', ''),
     ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/backup/src/cloud/models/itemKeys')
+    >('../../../../../../../../packages/backup/src/cloud/models/itemKeys')),
+    ...(await vi.importActual<
         typeof import('../../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
     >(
         '../../../../../../../../packages/backup/src/cloud/models/reviewBuckets',
@@ -47,8 +51,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContactsStore: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
     truncateAlgorandAddress: (v: string) => `truncated(${v})`,
+    // The passkey item key encodes the credential id, so the real codecs have
+    // to be here for `passkeyItemKey` to agree with what the hook derives.
+    ...(await vi.importActual<
+        typeof import('../../../../../../../../packages/shared/src/utils/strings')
+    >('../../../../../../../../packages/shared/src/utils/strings')),
 }))
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: vi.fn(),
@@ -340,7 +349,7 @@ describe('useCloudBackupOverview', () => {
     test('counts passkeys in sync and not backed up', () => {
         const syncState = emptySync()
         syncState.items = {
-            'passkeys/cred-1': uploaded({ type: 'PASSKEY' }),
+            [passkeyItemKey('cred-1')]: uploaded({ type: 'PASSKEY' }),
         }
         mockPasskeys(['cred-1', 'cred-2'])
         mockStores({
@@ -359,7 +368,7 @@ describe('useCloudBackupOverview', () => {
     test('reports zero not-backed-up when every credential is in the backup', () => {
         const syncState = emptySync()
         syncState.items = {
-            'passkeys/cred-1': uploaded({ type: 'PASSKEY' }),
+            [passkeyItemKey('cred-1')]: uploaded({ type: 'PASSKEY' }),
         }
         mockPasskeys(['cred-1'])
         mockStores({

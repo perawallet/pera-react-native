@@ -12,7 +12,12 @@
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { encodeToBase64, decodeFromBase64, toUrlSafeBase64 } from '../strings'
+import {
+    encodeToBase64,
+    decodeFromBase64,
+    toUrlSafeBase64,
+    fromUrlSafeBase64,
+} from '../strings'
 import { hexToBytes, bytesToHex, utf8ByteLength } from '../strings'
 import { dedupeSecondaryLabel } from '../strings'
 import {
@@ -513,5 +518,26 @@ describe('utils/strings - default locale', () => {
             'date',
         )
         expect(deResult).not.toBe(enResult)
+    })
+})
+
+describe('fromUrlSafeBase64', () => {
+    // The backup server's item keys allow only `[A-Za-z0-9_\-.]`, so a
+    // standard-base64 credential id travels url-safe and has to come back
+    // byte-identical.
+    test('round-trips a standard base64 string through the url-safe form', () => {
+        // A credential id is base64 of a 32-byte hash, so it carries one '='
+        // and, for these bytes, both '+' and '/'.
+        const standard = encodeToBase64(
+            Uint8Array.from({ length: 32 }, (_, i) => i * 8 + 3),
+        )
+        expect(standard).toMatch(/[+/]/)
+        expect(standard.endsWith('=')).toBe(true)
+
+        expect(fromUrlSafeBase64(toUrlSafeBase64(standard))).toBe(standard)
+    })
+
+    test('leaves a string that needs no padding alone', () => {
+        expect(fromUrlSafeBase64('abcd')).toBe('abcd')
     })
 })

@@ -194,7 +194,7 @@ describe('pushDirty', () => {
         const deps = baseDeps()
         deps.batchUpsertItems.mockResolvedValue({ results: [] })
         const state = createEmptySyncState('b')
-        state.items['passkeys/Y3JlZC1pZA=='] = {
+        state.items['passkeys/WTNKbFpDMXBaQT09'] = {
             type: BackupItemType.PASSKEY,
             knownVer: 1,
             baseVer: 1,
@@ -225,7 +225,7 @@ describe('pushDirty', () => {
         const plaintext = decryptItemPayload(request.items[0].payload, {
             encryptionKey,
             backupId: 'b',
-            key: 'passkeys/Y3JlZC1pZA==',
+            key: 'passkeys/WTNKbFpDMXBaQT09',
         })
         expect(JSON.parse(plaintext).updatedAt).toBe(1_700_000_000)
     })

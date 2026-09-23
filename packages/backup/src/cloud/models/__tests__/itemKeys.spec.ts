@@ -20,6 +20,7 @@ import {
     passkeyIdFromItemKey,
     passkeyItemKey,
 } from '../itemKeys'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 describe('contact item keys', () => {
     it('builds a contacts/ key from an address', () => {
@@ -42,7 +43,8 @@ describe('passkey item keys', () => {
     it('builds and recognises a passkey key', () => {
         const key = passkeyItemKey('Y3JlZC1pZA==')
 
-        expect(key).toBe('passkeys/Y3JlZC1pZA==')
+        // The id's bytes travel base64url-encoded; the raw id comes back.
+        expect(key).toBe('passkeys/WTNKbFpDMXBaQT09')
         expect(isPasskeyItemKey(key)).toBe(true)
         expect(passkeyIdFromItemKey(key)).toBe('Y3JlZC1pZA==')
     })
@@ -51,5 +53,37 @@ describe('passkey item keys', () => {
         expect(isPasskeyItemKey('accounts/ADDR')).toBe(false)
         expect(isPasskeyItemKey('contacts/ADDR')).toBe(false)
         expect(passkeyIdFromItemKey('contacts/ADDR')).toBeNull()
+    })
+})
+
+describe('passkey item keys', () => {
+    // The server rejects any key whose `/`-separated segments are not
+    // `[A-Za-z0-9_\-.]+`, and a credential id is standard base64: its `/`
+    // would split the key into extra segments and `+`/`=` fail the pattern
+    // outright. Proven against the real backend, which answered
+    // `422 INVALID_ITEM_KEY`.
+    const SERVER_SEGMENT = /^[A-Za-z0-9_\-.]+$/
+
+    it('keeps every segment inside the alphabet the server accepts', () => {
+        const credentialId = encodeToBase64(
+            Uint8Array.from({ length: 32 }, (_, i) => i * 8 + 3),
+        )
+        expect(credentialId).toMatch(/[+/=]/)
+
+        const key = passkeyItemKey(credentialId)
+
+        for (const segment of key.split('/')) {
+            expect(segment).toMatch(SERVER_SEGMENT)
+        }
+    })
+
+    it('round-trips the raw credential id the native record is stored under', () => {
+        const credentialId = encodeToBase64(
+            Uint8Array.from({ length: 32 }, (_, i) => i * 8 + 3),
+        )
+
+        expect(passkeyIdFromItemKey(passkeyItemKey(credentialId))).toBe(
+            credentialId,
+        )
     })
 })

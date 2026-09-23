@@ -36,6 +36,7 @@ import {
     isContactBackedUp,
     isPasskeyBackedUp,
 } from '../reviewBuckets'
+import { passkeyItemKey } from '../itemKeys'
 
 const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
     type: BackupItemType.ACCOUNT,
@@ -369,7 +370,7 @@ describe('deriveBackupPasskeyReview', () => {
 
     it('splits credentials into backed up and not backed up', () => {
         const state = stateWith({
-            'passkeys/one': passkey({ label: 'Alice' }),
+            [passkeyItemKey('one')]: passkey({ label: 'Alice' }),
         })
 
         const review = deriveBackupPasskeyReview(state, ['one', 'two'])
@@ -380,7 +381,10 @@ describe('deriveBackupPasskeyReview', () => {
 
     it('offers a held credential the device no longer has, with its label', () => {
         const state = stateWith({
-            'passkeys/one': passkey({ pendingImport: true, label: 'Alice' }),
+            [passkeyItemKey('one')]: passkey({
+                pendingImport: true,
+                label: 'Alice',
+            }),
         })
 
         const review = deriveBackupPasskeyReview(state, [])
@@ -391,7 +395,7 @@ describe('deriveBackupPasskeyReview', () => {
     })
 
     it('reports a credential the backup holds live as backed up', () => {
-        const state = stateWith({ 'passkeys/one': passkey() })
+        const state = stateWith({ [passkeyItemKey('one')]: passkey() })
 
         expect(isPasskeyBackedUp(state, 'one')).toBe(true)
         expect(isPasskeyBackedUp(state, 'two')).toBe(false)
