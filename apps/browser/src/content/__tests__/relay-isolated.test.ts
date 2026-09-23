@@ -367,6 +367,10 @@ describe('relay-isolated handshake hardening', () => {
 
         await import('../relay-isolated')
 
+        Object.defineProperty(navigator, 'userActivation', {
+            value: { isActive: true },
+            configurable: true,
+        })
         window.dispatchEvent(
             new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
                 detail: { uri: 'wc:topic@1?bridge=b&key=00' },
@@ -376,10 +380,35 @@ describe('relay-isolated handshake hardening', () => {
         // Callback form (not the promise form), so a no-receiver rejection
         // becomes `lastError` instead of an unhandled promise rejection.
         expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
-            expect.objectContaining({
+            {
                 scope: WC_PAGE_PAIR_SCOPE,
                 uri: 'wc:topic@1?bridge=b&key=00',
+                hasUserActivation: true,
+            },
+            expect.any(Function),
+        )
+
+        vi.unstubAllGlobals()
+    })
+
+    it('stamps hasUserActivation false on a pair event with no gesture behind it', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        stubChrome(sendMessage)
+
+        await import('../relay-isolated')
+
+        Object.defineProperty(navigator, 'userActivation', {
+            value: { isActive: false },
+            configurable: true,
+        })
+        window.dispatchEvent(
+            new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
+                detail: { uri: 'wc:topic@1?bridge=b&key=00' },
             }),
+        )
+
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ hasUserActivation: false }),
             expect.any(Function),
         )
 

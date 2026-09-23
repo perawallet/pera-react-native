@@ -702,6 +702,92 @@ describe('startConnectionsHost', () => {
             )
         })
 
+        it('abandons a page-initiated pairing that never produces an outcome', async () => {
+            vi.useFakeTimers()
+            await control({
+                kind: 'pair',
+                uri: 'wc:topic@1?bridge=b&key=k',
+                requesterOrigin: 'https://requester.example',
+            })
+
+            await vi.advanceTimersByTimeAsync(CONNECTION_LATE_PAIRING_GRACE_MS)
+
+            expect(fake.registry.abandonPairing).toHaveBeenCalledWith(
+                'pairing-1',
+            )
+        })
+
+        it('leaves an extension-initiated pairing alone on timeout', async () => {
+            vi.useFakeTimers()
+            await control({
+                kind: 'pair',
+                uri: 'wc:topic@1?bridge=b&key=k',
+                origin: { source: 'qr' },
+            })
+
+            await vi.advanceTimersByTimeAsync(CONNECTION_LATE_PAIRING_GRACE_MS)
+
+            expect(fake.registry.abandonPairing).not.toHaveBeenCalled()
+        })
+
+        it('does not abandon a page-initiated pairing that produced a proposal', async () => {
+            vi.useFakeTimers()
+            await control({
+                kind: 'pair',
+                uri: 'wc:topic@1?bridge=b&key=k',
+                requesterOrigin: 'https://requester.example',
+            })
+
+            fake.emitProposal(makeProposal({ pairingId: 'pairing-1' }))
+            await vi.advanceTimersByTimeAsync(CONNECTION_LATE_PAIRING_GRACE_MS)
+
+            expect(fake.registry.abandonPairing).not.toHaveBeenCalled()
+        })
+
+        it('caps unsettled pairings by abandoning the oldest', async () => {
+            let counter = 0
+            vi.mocked(fake.registry.pair).mockImplementation(
+                async () => `pairing-${++counter}`,
+            )
+
+            for (let i = 0; i < 6; i++) {
+                await control({
+                    kind: 'pair',
+                    uri: 'wc:topic@1?bridge=b&key=k',
+                    requesterOrigin: 'https://requester.example',
+                })
+            }
+
+            expect(fake.registry.abandonPairing).toHaveBeenCalledTimes(1)
+            expect(fake.registry.abandonPairing).toHaveBeenCalledWith(
+                'pairing-1',
+            )
+        })
+
+        it('does not count settled pairings toward the unsettled cap', async () => {
+            let counter = 0
+            vi.mocked(fake.registry.pair).mockImplementation(
+                async () => `pairing-${++counter}`,
+            )
+
+            await control({
+                kind: 'pair',
+                uri: 'wc:topic@1?bridge=b&key=k',
+                requesterOrigin: 'https://requester.example',
+            })
+            fake.emitProposal(makeProposal({ pairingId: 'pairing-1' }))
+
+            for (let i = 0; i < 5; i++) {
+                await control({
+                    kind: 'pair',
+                    uri: 'wc:topic@1?bridge=b&key=k',
+                    requesterOrigin: 'https://requester.example',
+                })
+            }
+
+            expect(fake.registry.abandonPairing).not.toHaveBeenCalled()
+        })
+
         it('reports a failed pair as { ok: false }', async () => {
             vi.mocked(fake.registry.pair).mockRejectedValueOnce(
                 new Error('No connection handler accepts this URI'),

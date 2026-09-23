@@ -22,6 +22,12 @@ const WC_URI_MAX_LENGTH = 4096
 export type WcPagePairMessage = {
     scope: typeof WC_PAGE_PAIR_SCOPE
     uri: string
+    /**
+     * Read in the ISOLATED world (page scripts cannot alter that world's view
+     * of `navigator.userActivation`), so the service worker can refuse pair
+     * requests no user gesture stands behind.
+     */
+    hasUserActivation: boolean
 }
 
 export const isWcPagePairMessage = (
@@ -30,6 +36,7 @@ export const isWcPagePairMessage = (
     if (typeof value !== 'object' || value === null) return false
     const candidate = value as Record<string, unknown>
     if (candidate.scope !== WC_PAGE_PAIR_SCOPE) return false
+    if (typeof candidate.hasUserActivation !== 'boolean') return false
     const { uri } = candidate
     if (typeof uri !== 'string') return false
     if (uri.length === 0 || uri.length > WC_URI_MAX_LENGTH) return false

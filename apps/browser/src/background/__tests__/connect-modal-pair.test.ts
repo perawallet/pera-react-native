@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import {
+    describe,
+    it,
+    expect,
+    vi,
+    beforeEach,
+    afterEach,
+    type Mock,
+} from 'vitest'
 import {
     CONNECTIONS_CONTROL_SCOPE,
     WC_PAGE_PAIR_SCOPE,
@@ -58,7 +66,7 @@ describe('installConnectModalPairRoute', () => {
 
     it('forwards a pair control message stamped with the verified origin, ensuring the offscreen document first', async () => {
         const result = chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
             { origin: 'https://dapp.example', tab: { id: 7 } },
         )
 
@@ -89,7 +97,7 @@ describe('installConnectModalPairRoute', () => {
         )
 
         chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
             { origin: 'https://dapp.example', tab: { id: 7 } },
         )
 
@@ -108,7 +116,11 @@ describe('installConnectModalPairRoute', () => {
 
         expect(() =>
             chromeMock.deliver(
-                { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+                {
+                    scope: WC_PAGE_PAIR_SCOPE,
+                    uri: URI,
+                    hasUserActivation: true,
+                },
                 { origin: 'https://dapp.example', tab: { id: 7 } },
             ),
         ).not.toThrow()
@@ -128,6 +140,7 @@ describe('installConnectModalPairRoute', () => {
             {
                 scope: WC_PAGE_PAIR_SCOPE,
                 uri: URI,
+                hasUserActivation: true,
                 requesterOrigin: 'https://trusted.example',
             },
             { origin: 'https://attacker.example', tab: { id: 7 } },
@@ -142,15 +155,73 @@ describe('installConnectModalPairRoute', () => {
         })
     })
 
+    it('drops a pair with no user activation behind it', () => {
+        chromeMock.deliver(
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: false },
+            { origin: 'https://dapp.example', tab: { id: 7 } },
+        )
+        expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
+        expect(ensureOffscreenDocumentLike).not.toHaveBeenCalled()
+    })
+
+    it('drops a pair with the activation flag missing (old or forged content script)', () => {
+        chromeMock.deliver(
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+            { origin: 'https://dapp.example', tab: { id: 7 } },
+        )
+        expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
+        expect(ensureOffscreenDocumentLike).not.toHaveBeenCalled()
+    })
+
+    describe('per-origin budget', () => {
+        beforeEach(() => {
+            vi.useFakeTimers()
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        const pairFrom = (origin: string) =>
+            chromeMock.deliver(
+                {
+                    scope: WC_PAGE_PAIR_SCOPE,
+                    uri: URI,
+                    hasUserActivation: true,
+                },
+                { origin, tab: { id: 7 } },
+            )
+
+        it('drops pairs from an origin past its budget, without starving other origins', () => {
+            for (let i = 0; i < 5; i++) pairFrom('https://spammer.example')
+            expect(ensureOffscreenDocumentLike).toHaveBeenCalledTimes(3)
+
+            pairFrom('https://dapp.example')
+            expect(ensureOffscreenDocumentLike).toHaveBeenCalledTimes(4)
+        })
+
+        it('replenishes the budget once the window has passed', () => {
+            for (let i = 0; i < 4; i++) pairFrom('https://dapp.example')
+            expect(ensureOffscreenDocumentLike).toHaveBeenCalledTimes(3)
+
+            vi.advanceTimersByTime(61_000)
+            pairFrom('https://dapp.example')
+            expect(ensureOffscreenDocumentLike).toHaveBeenCalledTimes(4)
+        })
+    })
+
     it('rejects a sender with no origin', () => {
-        chromeMock.deliver({ scope: WC_PAGE_PAIR_SCOPE, uri: URI }, {})
+        chromeMock.deliver(
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
+            {},
+        )
         expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
         expect(ensureOffscreenDocumentLike).not.toHaveBeenCalled()
     })
 
     it('rejects the opaque "null" origin', () => {
         chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
             { origin: 'null' },
         )
         expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
@@ -159,7 +230,7 @@ describe('installConnectModalPairRoute', () => {
 
     it('rejects a non-http(s) origin', () => {
         chromeMock.deliver(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: URI },
+            { scope: WC_PAGE_PAIR_SCOPE, uri: URI, hasUserActivation: true },
             { origin: 'file://' },
         )
         expect(chromeMock.runtime.sendMessage).not.toHaveBeenCalled()
@@ -190,6 +261,7 @@ describe('installConnectModalPairRoute', () => {
             {
                 scope: WC_PAGE_PAIR_SCOPE,
                 uri: URI,
+                hasUserActivation: true,
                 maliciousExtra: 'evil',
                 anotherExtra: 42,
             },
