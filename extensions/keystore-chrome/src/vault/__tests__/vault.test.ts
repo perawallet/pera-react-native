@@ -16,6 +16,7 @@ import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {
     createVault,
     changePassword,
+    destroyVault,
     isUnlocked,
     isVaultInitialized,
     lockVault,
@@ -111,6 +112,58 @@ describe('vault', () => {
         unsubscribe()
         await unlockVault('pw')
         expect(listener).toHaveBeenCalledTimes(2)
+    })
+
+    describe('destroyVault', () => {
+        it('removes every vault key, the session key and the auto-lock alarm', async () => {
+            await createVault('pw')
+            fake.data.set('vault:wrapped-master-key-prf', 'prf-blob')
+            fake.data.set('vault:prf-credential-id', 'cred-id')
+            fake.data.set('vault:lockout', { failedAttempts: 2 })
+            fake.data.set('vault:auto-lock-minutes', 30)
+            fake.data.set('unrelated', 'kept')
+
+            await destroyVault()
+
+            expect(
+                [...fake.data.keys()].filter(k => k.startsWith('vault:')),
+            ).toEqual([])
+            expect(fake.data.get('unrelated')).toBe('kept')
+            expect(fake.sessionData.size).toBe(0)
+            expect(fake.alarms.size).toBe(0)
+            expect(await isVaultInitialized()).toBe(false)
+            expect(await isUnlocked()).toBe(false)
+        })
+
+        it('lets a new vault mint a fresh master key the old password cannot open', async () => {
+            await createVault('old-password')
+            const oldMaster = await getSessionMasterKey()
+
+            await destroyVault()
+            await createVault('new-password')
+
+            expect(await getSessionMasterKey()).not.toEqual(oldMaster)
+            await lockVault()
+            await expect(unlockVault('old-password')).rejects.toBeInstanceOf(
+                InvalidPasswordError,
+            )
+        })
+
+        it('reports the vault uninitialized by the time listeners see the lock', async () => {
+            await createVault('pw')
+            const initializedAtLock: boolean[] = []
+            const unsubscribe = onLockStateChanged(unlocked => {
+                if (!unlocked) {
+                    void isVaultInitialized().then(v =>
+                        initializedAtLock.push(v),
+                    )
+                }
+            })
+
+            await destroyVault()
+            await vi.waitFor(() => expect(initializedAtLock).toEqual([false]))
+            unsubscribe()
+        })
     })
 
     it('persists the vault blob with the pinned KDF parameters', async () => {

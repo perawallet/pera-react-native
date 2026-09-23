@@ -157,12 +157,16 @@ const ShellRouter = (): React.JSX.Element => {
         }
         case 'create-password': {
             return (
-                <CreatePasswordScreen
-                    onDone={() => {
-                        // no-op: createVault flips the session state, which
-                        // useVaultLockState observes and re-routes to onboarding.
-                    }}
-                />
+                <>
+                    <CreatePasswordScreen
+                        onDone={() => {
+                            // no-op: createVault flips the session state, which
+                            // useVaultLockState observes and re-routes to onboarding.
+                        }}
+                    />
+                    {/* A wipe lands here with its success sheet queued. */}
+                    <BottomSheetManager />
+                </>
             )
         }
         case 'onboarding': {

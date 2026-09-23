@@ -32,6 +32,7 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
+import { destroyVault } from './destroyVault'
 
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
@@ -185,6 +186,15 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to clear the WalletConnect v2 storage', {
                 error: e,
             })
+        }
+
+        // 13. Extension only: destroy the password vault so the next wallet
+        // gets a fresh master key. Last, because earlier steps may still open
+        // sealed material; the shell then routes to CreatePasswordScreen.
+        try {
+            await destroyVault()
+        } catch (e) {
+            logger.error('Failed to destroy the vault', { error: e })
         }
     }, [queryClient, keys, deleteKey, savePin, deleteDevices, contextRegistry])
 

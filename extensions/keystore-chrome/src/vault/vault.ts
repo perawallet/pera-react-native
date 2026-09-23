@@ -20,6 +20,8 @@ import {
     VaultNotInitializedError,
 } from '../errors'
 import {
+    AUTO_LOCK_MINUTES_KEY,
+    LOCKOUT_STORAGE_KEY,
     PRF_BLOB_KEY,
     PRF_CRED_ID_KEY,
     VAULT_STORAGE_KEY,
@@ -418,6 +420,24 @@ export const unlockVault = async (password: string): Promise<void> => {
 
 export const lockVault = async (): Promise<void> => {
     await disarmAutoLock()
+    await clearSessionMasterKey()
+}
+
+/**
+ * Removes the vault so the next createVault mints a fresh master key; a wipe
+ * that left it would seal a "new" wallet under the old key and password.
+ * Local keys go before the session key: surfaces re-read initialization on
+ * the lock event, and must already see the vault gone.
+ */
+export const destroyVault = async (): Promise<void> => {
+    await disarmAutoLock()
+    await chrome.storage.local.remove([
+        VAULT_STORAGE_KEY,
+        PRF_BLOB_KEY,
+        PRF_CRED_ID_KEY,
+        LOCKOUT_STORAGE_KEY,
+        AUTO_LOCK_MINUTES_KEY,
+    ])
     await clearSessionMasterKey()
 }
 
