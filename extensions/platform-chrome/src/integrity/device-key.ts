@@ -54,6 +54,16 @@ const toBase64 = (buffer: ArrayBuffer): string => {
     return btoa(binary)
 }
 
+const toBase64Url = (buffer: ArrayBuffer): string =>
+    toBase64(buffer).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+
+export type EnrolmentMarker = {
+    kid: string
+    enrolledAt: string
+}
+
+const enrolmentRecordKey = (network: string): string => `enrolment:${network}`
+
 /**
  * The installation keypair, generated on first use. `extractable: false`
  * applies to the PRIVATE key only — the public half of an asymmetric pair is
@@ -101,6 +111,41 @@ export const getOrCreateInstallKey = (): Promise<CryptoKeyPair> => {
 export const exportInstallPublicKey = async (): Promise<string> => {
     const { publicKey } = await getOrCreateInstallKey()
     return toBase64(await crypto.subtle.exportKey('spki', publicKey))
+}
+
+/** base64url(sha256(SPKI DER)) of the install public key, unpadded: the kid enrolment binds. */
+export const getInstallKeyId = async (): Promise<string> => {
+    const { publicKey } = await getOrCreateInstallKey()
+    const spki = await crypto.subtle.exportKey('spki', publicKey)
+    return toBase64Url(await crypto.subtle.digest('SHA-256', spki))
+}
+
+export const getEnrolmentMarker = async (
+    network: string,
+): Promise<EnrolmentMarker | null> => {
+    const stored = await withStore<unknown>('readonly', store =>
+        store.get(enrolmentRecordKey(network)),
+    )
+    const marker = stored as Partial<EnrolmentMarker> | undefined
+    return typeof marker?.kid === 'string' &&
+        typeof marker.enrolledAt === 'string'
+        ? { kid: marker.kid, enrolledAt: marker.enrolledAt }
+        : null
+}
+
+export const putEnrolmentMarker = async (
+    network: string,
+    marker: EnrolmentMarker,
+): Promise<void> => {
+    await withStore('readwrite', store =>
+        store.put(marker, enrolmentRecordKey(network)),
+    )
+}
+
+export const clearEnrolmentMarker = async (network: string): Promise<void> => {
+    await withStore('readwrite', store =>
+        store.delete(enrolmentRecordKey(network)),
+    )
 }
 
 /**

@@ -50,9 +50,14 @@ export {
 export {
     INSTALL_KEY_DB_NAME,
     clearInstallKey,
+    clearEnrolmentMarker,
     exportInstallPublicKey,
+    getEnrolmentMarker,
+    getInstallKeyId,
     getOrCreateInstallKey,
+    putEnrolmentMarker,
     signChallenge,
+    type EnrolmentMarker,
 } from './integrity/device-key'
 export {
     INTEGRITY_TOKEN_SESSION_KEY,

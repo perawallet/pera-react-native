@@ -15,13 +15,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import {
     clearInstallKey,
+    clearEnrolmentMarker,
     exportInstallPublicKey,
+    getEnrolmentMarker,
+    getInstallKeyId,
     getOrCreateInstallKey,
+    putEnrolmentMarker,
     signChallenge,
 } from '../device-key'
 
 const fromBase64 = (value: string): Uint8Array =>
     Uint8Array.from(atob(value), char => char.charCodeAt(0))
+
+const toBase64Url = (bytes: ArrayBuffer): string =>
+    btoa(String.fromCharCode(...new Uint8Array(bytes)))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
 
 describe('install key', () => {
     beforeEach(() => {
@@ -111,5 +121,67 @@ describe('install key', () => {
         const after = await exportInstallPublicKey()
 
         expect(after).not.toBe(before)
+    })
+})
+
+describe('install key id', () => {
+    beforeEach(() => {
+        globalThis.indexedDB = new IDBFactory()
+    })
+
+    it('is the unpadded base64url SHA-256 of the exported SPKI', async () => {
+        const spki = fromBase64(await exportInstallPublicKey())
+        const expected = toBase64Url(
+            await crypto.subtle.digest('SHA-256', spki),
+        )
+
+        const kid = await getInstallKeyId()
+
+        expect(kid).toBe(expected)
+        expect(kid).toMatch(/^[A-Za-z0-9_-]{43}$/)
+    })
+
+    it('is stable for the same key', async () => {
+        expect(await getInstallKeyId()).toBe(await getInstallKeyId())
+    })
+})
+
+describe('enrolment marker', () => {
+    beforeEach(() => {
+        globalThis.indexedDB = new IDBFactory()
+    })
+
+    const marker = {
+        kid: 'k'.repeat(43),
+        enrolledAt: '2026-09-23T10:00:00.000Z',
+    }
+
+    it('is absent until written', async () => {
+        expect(await getEnrolmentMarker('mainnet')).toBeNull()
+    })
+
+    it('round-trips per network', async () => {
+        await putEnrolmentMarker('mainnet', marker)
+
+        expect(await getEnrolmentMarker('mainnet')).toEqual(marker)
+        expect(await getEnrolmentMarker('testnet')).toBeNull()
+    })
+
+    it('clears one network without touching another', async () => {
+        await putEnrolmentMarker('mainnet', marker)
+        await putEnrolmentMarker('testnet', marker)
+
+        await clearEnrolmentMarker('mainnet')
+
+        expect(await getEnrolmentMarker('mainnet')).toBeNull()
+        expect(await getEnrolmentMarker('testnet')).toEqual(marker)
+    })
+
+    it('leaves the install key in place', async () => {
+        const before = await exportInstallPublicKey()
+        await putEnrolmentMarker('mainnet', marker)
+        await clearEnrolmentMarker('mainnet')
+
+        expect(await exportInstallPublicKey()).toBe(before)
     })
 })
