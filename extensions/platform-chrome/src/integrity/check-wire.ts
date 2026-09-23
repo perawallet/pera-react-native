@@ -109,23 +109,29 @@ export const parseCheckPageMessage = (
     if (typeof data.kid !== 'string') return null
     const kid = data.kid
     switch (data.event) {
-        case 'hello':
+        case 'hello': {
             return { event: 'hello', kid }
-        case 'interactive-required':
+        }
+        case 'interactive-required': {
             return { event: 'interactive-required', kid }
-        case 'interactive-done':
+        }
+        case 'interactive-done': {
             return { event: 'interactive-done', kid }
-        case 'solved':
+        }
+        case 'solved': {
             return typeof data.turnstileToken === 'string'
                 ? { event: 'solved', kid, turnstileToken: data.turnstileToken }
                 : null
-        case 'error':
+        }
+        case 'error': {
             if (typeof data.code !== 'string') return null
             return typeof data.detail === 'string'
                 ? { event: 'error', kid, code: data.code, detail: data.detail }
                 : { event: 'error', kid, code: data.code }
-        default:
+        }
+        default: {
             return null
+        }
     }
 }
 
@@ -134,20 +140,24 @@ export const toCheckPortMessage = (
 ): IntegrityCheckPortMessage => {
     const v = INTEGRITY_CHECK_VERSION
     switch (message.event) {
-        case 'hello':
+        case 'hello': {
             return { type: 'PAGE_READY', v, kid: message.kid }
-        case 'interactive-required':
+        }
+        case 'interactive-required': {
             return { type: 'INTERACTIVE_REQUIRED', v, kid: message.kid }
-        case 'interactive-done':
+        }
+        case 'interactive-done': {
             return { type: 'INTERACTIVE_DONE', v, kid: message.kid }
-        case 'solved':
+        }
+        case 'solved': {
             return {
                 type: 'TURNSTILE_SOLVED',
                 v,
                 kid: message.kid,
                 turnstileToken: message.turnstileToken,
             }
-        case 'error':
+        }
+        case 'error': {
             return message.detail === undefined
                 ? {
                       type: 'TURNSTILE_ERROR',
@@ -162,6 +172,7 @@ export const toCheckPortMessage = (
                       code: message.code,
                       detail: message.detail,
                   }
+        }
     }
 }
 
@@ -169,15 +180,19 @@ export const frameEventFor = (
     message: CheckPageMessage,
 ): IntegrityFrameEvent | null => {
     switch (message.event) {
-        case 'interactive-required':
+        case 'interactive-required': {
             return 'expand'
-        case 'interactive-done':
+        }
+        case 'interactive-done': {
             return 'collapse'
+        }
         case 'solved':
-        case 'error':
+        case 'error': {
             return 'finished'
-        default:
+        }
+        default: {
             return null
+        }
     }
 }
 
@@ -190,12 +205,15 @@ export const parseCheckPortMessage = (
     const v = INTEGRITY_CHECK_VERSION
     const kid = data.kid
     switch (data.type) {
-        case 'PAGE_READY':
+        case 'PAGE_READY': {
             return { type: 'PAGE_READY', v, kid }
-        case 'INTERACTIVE_REQUIRED':
+        }
+        case 'INTERACTIVE_REQUIRED': {
             return { type: 'INTERACTIVE_REQUIRED', v, kid }
-        case 'INTERACTIVE_DONE':
+        }
+        case 'INTERACTIVE_DONE': {
             return { type: 'INTERACTIVE_DONE', v, kid }
+        }
         case 'TURNSTILE_SOLVED': {
             const token = data.turnstileToken
             return typeof token === 'string' &&
@@ -204,7 +222,7 @@ export const parseCheckPortMessage = (
                 ? { type: 'TURNSTILE_SOLVED', v, kid, turnstileToken: token }
                 : null
         }
-        case 'TURNSTILE_ERROR':
+        case 'TURNSTILE_ERROR': {
             if (typeof data.code !== 'string') return null
             return typeof data.detail === 'string'
                 ? {
@@ -215,8 +233,10 @@ export const parseCheckPortMessage = (
                       detail: data.detail,
                   }
                 : { type: 'TURNSTILE_ERROR', v, kid, code: data.code }
-        default:
+        }
+        default: {
             return null
+        }
     }
 }
 
