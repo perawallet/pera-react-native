@@ -127,8 +127,10 @@ export const postAlgorandDelegationApproval = async (
                 currency,
                 amount: '0',
                 txHash: txId,
-                signData,
-                signature,
+                // Baanx's names, shared with its EVM/Solana contracts: sigHash
+                // carries the signature itself, not a hash of it.
+                sigData: signData,
+                sigHash: signature,
                 token,
             },
             signal,
@@ -143,8 +145,8 @@ export const postAlgorandDelegationApproval = async (
 
 export type PostDelegatorLsigParams = {
     network: Network
-    /** Token SYMBOL the LogicSig covers, e.g. "usdc" — not the delegation token. */
-    token: string
+    /** Currency code the LogicSig covers, as Baanx expects it, e.g. "usdc". */
+    currency: string
     /** Delegator (funding-source) address that signed the LogicSig. */
     delegatorAddress: string
     /** Base64 msgpack-encoded signed delegated LogicSigAccount. */
@@ -163,16 +165,23 @@ export type PostDelegatorLsigParams = {
 export const postDelegatorLsig = async (
     params: PostDelegatorLsigParams,
 ): Promise<void> => {
-    const { network, token, delegatorAddress, lsigBytes, cardAddress, signal } =
-        params
+    const {
+        network,
+        currency,
+        delegatorAddress,
+        lsigBytes,
+        cardAddress,
+        signal,
+    } = params
 
     const response = await getCardTransport().request({
         network,
         method: 'POST',
         path: '/v1/delegation/algorand/delegator-lsig',
         authenticated: true,
+        // Baanx rejects unknown fields on this route with a 422.
         data: {
-            token,
+            currency,
             delegatorAddress,
             lsigBytes,
             cardAddress,

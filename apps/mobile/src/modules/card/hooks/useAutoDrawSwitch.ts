@@ -89,7 +89,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 )
                 await postDelegatorLsig({
                     network,
-                    token: DEFAULT_CARD_CURRENCY.toLowerCase(),
+                    currency: DEFAULT_CARD_CURRENCY.toLowerCase(),
                     delegatorAddress: account.address,
                     lsigBytes: encodeToBase64(lsigBytes),
                     cardAddress,

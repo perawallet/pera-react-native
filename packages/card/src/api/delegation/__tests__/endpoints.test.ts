@@ -124,8 +124,8 @@ describe('postAlgorandDelegationApproval', () => {
                     currency: 'usdc',
                     amount: '0',
                     txHash: 'TX123',
-                    signData,
-                    signature: 'c2ln',
+                    sigData: signData,
+                    sigHash: 'c2ln',
                     token: 'ABC_tok',
                 },
             }),
@@ -175,7 +175,7 @@ describe('postDelegatorLsig', () => {
 
     const lsigParams = {
         network: 'testnet' as const,
-        token: 'usdc',
+        currency: 'usdc',
         delegatorAddress: 'FUNDING_ADDR',
         lsigBytes: 'bHNpZw==',
         cardAddress: 'ESCROW_CARD',
@@ -192,7 +192,7 @@ describe('postDelegatorLsig', () => {
                 path: '/v1/delegation/algorand/delegator-lsig',
                 authenticated: true,
                 data: {
-                    token: 'usdc',
+                    currency: 'usdc',
                     delegatorAddress: 'FUNDING_ADDR',
                     lsigBytes: 'bHNpZw==',
                     cardAddress: 'ESCROW_CARD',
