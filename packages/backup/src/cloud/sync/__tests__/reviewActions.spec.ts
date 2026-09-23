@@ -580,6 +580,18 @@ describe('passkey review actions', () => {
         )
     })
 
+    it('deletePasskeyFromBackup makes no request for a credential already gone', async () => {
+        const deps = baseDeps()
+
+        await deletePasskeyFromBackup({
+            state: passkey({ status: BackupItemStatus.IGNORED }),
+            credentialId: 'one',
+            deps,
+        })
+
+        expect(deps.deleteItem).not.toHaveBeenCalled()
+    })
+
     it('importPasskeyFromBackup reports a credential the backup does not hold', async () => {
         const deps = servingPasskey(null)
 
@@ -589,6 +601,7 @@ describe('passkey review actions', () => {
             deps,
         })
 
+        expect(deps.readItems).not.toHaveBeenCalled()
         expect(summary.imported).toBe(0)
         expect(summary.failed[0].credentialId).toBe('one')
     })
@@ -620,6 +633,29 @@ describe('passkey review actions', () => {
             pendingImport: false,
             label: 'Alice',
             knownVer: 4,
+        })
+    })
+
+    it('importPasskeyFromBackup falls back to the origin when no display name was cached', async () => {
+        const deps = servingPasskey({
+            credentialId: 'one',
+            origin: 'https://example.com',
+            identity: 'user@example.com',
+            counter: 0,
+            publicKeySpkiDer: 'pk',
+            seedAddress: 'SEED',
+            createdAt: 5,
+            updatedAt: 5,
+        })
+
+        const { state: next } = await importPasskeyFromBackup({
+            state: passkey({ pendingImport: true }),
+            credentialId: 'one',
+            deps,
+        })
+
+        expect(next.items['passkeys/one']).toMatchObject({
+            label: 'https://example.com',
         })
     })
 })
