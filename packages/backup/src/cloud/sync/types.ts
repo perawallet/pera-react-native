@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     Algo25Account,
@@ -140,6 +141,20 @@ export type PasskeyImportSummary = {
 export type PasskeyImportFn = (
     passkeys: PasskeyBackupPayload[],
 ) => Promise<PasskeyImportSummary>
+
+/** No passkey writer exists yet in this codebase, so every call site that
+ *  needs a `PasskeyImportFn` shares this one: it gives the sync engine and the
+ *  restore flow something type-correct to call, and logs whenever credentials
+ *  are actually dropped so that loss leaves a trace instead of the silent
+ *  empty summary a local no-op closure would produce. */
+export const unwiredPasskeyImportFn: PasskeyImportFn = async passkeys => {
+    if (passkeys.length > 0) {
+        logger.warn('unwiredPasskeyImportFn: dropped passkeys with no writer', {
+            count: passkeys.length,
+        })
+    }
+    return { imported: 0, skipped: [], failed: [] }
+}
 
 export type SyncEngineDeps = {
     network: Network

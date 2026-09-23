@@ -15,6 +15,7 @@ import { AppState } from 'react-native'
 import {
     getBackupSyncManager,
     initializeBackupSyncManager,
+    unwiredPasskeyImportFn,
     useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
@@ -112,14 +113,10 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
-            // Placeholders until the app-layer passkey hooks land; real
-            // implementations replace these, not this call site's shape.
+            // No app-layer passkey store exists yet to enumerate local
+            // credentials from, so there is nothing to list.
             listPasskeys: async () => [],
-            importPasskeys: async () => ({
-                imported: 0,
-                skipped: [],
-                failed: [],
-            }),
+            importPasskeys: unwiredPasskeyImportFn,
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

@@ -56,7 +56,10 @@ export type {
     BackupWebSocketMessage,
     ParsedBackupWebSocketMessage,
 } from './webSocketMessage'
-export { UnsupportedBackupAccountTypeError } from './types'
+export {
+    UnsupportedBackupAccountTypeError,
+    unwiredPasskeyImportFn,
+} from './types'
 export type {
     BackupActionOutcome,
     SerializedItem,
@@ -68,6 +71,8 @@ export type {
     ImportSummary,
     ContactImportFn,
     ContactImportSummary,
+    PasskeyImportFn,
+    PasskeyImportSummary,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'
