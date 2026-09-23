@@ -260,7 +260,7 @@ describe('pullBackupItems', () => {
         expect(result.accounts).toHaveLength(0)
         expect(result.addressByKey).toEqual({})
         expect(result.skipped).toEqual([
-            { key: accountKey('NAMELESS'), reason: 'missing-address' },
+            { key: accountKey('NAMELESS'), reason: 'parse' },
         ])
     })
 

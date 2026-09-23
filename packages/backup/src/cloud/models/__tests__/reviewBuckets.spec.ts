@@ -17,6 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    applyDeltas,
     buildLocalItems,
     reconcile,
     serializeAccountForBackup,
@@ -26,10 +27,11 @@ import { accountItemKey, contactItemKey, secretsItemKey } from '../itemKeys'
 import { BackupAccountType } from '../payloads'
 import {
     createEmptySyncState,
+    trackedItemsFromManifest,
     type SyncItemState,
     type SyncState,
 } from '../syncState'
-import { BackupItemStatus, BackupItemType } from '../types'
+import { BackupItemStatus, BackupItemType, DeltaOperation } from '../types'
 import {
     areKeysDeletedFromBackup,
     deriveBackupAccountReview,
@@ -123,6 +125,65 @@ describe('deriveBackupAccountReview', () => {
         expect(
             deriveBackupAccountReview(state, []).availableFromBackup,
         ).toEqual([{ address: 'GONE', type: 'hardware' }])
+    })
+
+    /* The chain a restored device walks: a tombstone seeded from the manifest
+     * with no address, re-activated elsewhere, arriving held-for-review. */
+    it('offers an account back after a restored tombstone is re-activated elsewhere', async () => {
+        const key = accountKey('GONE')
+        const state: SyncState = {
+            ...createEmptySyncState('b'),
+            items: trackedItemsFromManifest({
+                [key]: {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 3,
+                    status: BackupItemStatus.IGNORED,
+                    hash: 'old',
+                    lastSeq: 8,
+                },
+            }),
+        }
+        expect(state.items[key].address).toBeUndefined()
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key,
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps: {
+                network: 'mainnet',
+                backupId: 'did:pera:ADDR',
+                deviceId: 'dev',
+                encryptionKey: new Uint8Array(32).fill(7),
+                importAccounts: async () => ({
+                    imported: 0,
+                    skippedDuplicate: 0,
+                    failed: [],
+                }),
+                importContacts: async () => ({ imported: 0, failed: [] }),
+                readItems: async () => [
+                    { key, ver: 4, hash: 'rh', payload: 'enc' },
+                ],
+                decrypt: () =>
+                    JSON.stringify({
+                        type: BackupAccountType.watch,
+                        address: 'GONE',
+                        customName: null,
+                    }),
+            },
+        })
+
+        expect(deriveBackupAccountReview(next, []).availableFromBackup).toEqual(
+            [{ address: 'GONE', type: 'watch' }],
+        )
     })
 
     it('omits an item this device has never decrypted from every bucket', () => {

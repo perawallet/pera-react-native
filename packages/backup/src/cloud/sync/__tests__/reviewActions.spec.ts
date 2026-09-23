@@ -78,8 +78,8 @@ const baseDeps = () => ({
     decrypt: vi.fn(),
 })
 
-/** Every fixture declares its plaintext per key: nothing can recover an address
- *  from a hashed key, so the test has to say which record each key holds. */
+/** Every fixture declares its plaintext per key: the test has to say which
+ *  record each opaque key holds. */
 const servingPlaintext = (byKey: Record<BackupItemKey, unknown>) =>
     vi.fn((_payload: string, ctx: { key: BackupItemKey }) =>
         JSON.stringify(byKey[ctx.key] ?? {}),

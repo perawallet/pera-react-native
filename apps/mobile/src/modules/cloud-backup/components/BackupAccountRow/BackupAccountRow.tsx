@@ -31,9 +31,8 @@ export type BackupAccountRowProps = {
     /** Absent for an address held only in the backup: nothing on this device
      *  has this account locally. */
     account?: WalletAccount
-    /** The cached type for an address held only in the backup, used to pick a
-     *  glyph. Ignored once `account` is present. `hdSeed` and `null` (never
-     *  decrypted) fall back to the unknown-account glyph. */
+    /** Picks the glyph for an address held only in the backup; ignored once
+     *  `account` is present. */
     accountType?: BackupAccountType | null
     isBackedUp: boolean
     trailing?: ReactNode

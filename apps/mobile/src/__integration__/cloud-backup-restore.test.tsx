@@ -135,8 +135,7 @@ const expectRestoreLandedOnOverview = async () => {
     })
 }
 
-/** The pair a pushed Algo25 account leaves behind. Nothing in a hashed key
- *  names an address, so the secrets payload has to carry its own. */
+/** The pair a pushed Algo25 account leaves behind. */
 const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
     {
         key: accountItemKey(hashAddress(ALGO25_TEST_ADDRESS)),

@@ -24,8 +24,7 @@ import { pushDirty } from '../pushDirty'
 import type { LocalItem } from '../types'
 
 const encryptionKey = new Uint8Array(32).fill(7)
-/** `key` is an opaque hash here, same as in production; the test declares the
- *  plaintext address explicitly rather than recovering it from the key. */
+/** `key` is an opaque hash, as in production, so the address is declared. */
 const item = (key: string, address: string): LocalItem => ({
     key,
     type: BackupItemType.ACCOUNT,

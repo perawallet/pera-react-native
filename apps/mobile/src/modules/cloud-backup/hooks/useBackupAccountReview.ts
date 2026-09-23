@@ -30,7 +30,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
     notBackedUpAccounts: WalletAccount[]
-    /** Accounts the backup holds that this device deleted, with their cached type. */
+    /** Accounts the backup holds that this device deleted. */
     availableFromBackup: BackupAccountReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
     busyAddress: string | null

@@ -21,33 +21,46 @@ export type ItemKeyHash = string & { readonly __itemKeyHash: unique symbol }
 
 export type ItemKeyHasher = (address: string) => ItemKeyHash
 
-/** Hashing after `dispose` silently hashes under an all-zero key, so dispose
- *  only once the hasher is unreachable. */
 export type DisposableItemKeyHasher = ItemKeyHasher & { dispose: () => void }
+
+export class ItemKeyHasherDisposedError extends Error {
+    constructor() {
+        super('Item key hasher used after dispose')
+        this.name = 'ItemKeyHasherDisposedError'
+    }
+}
+
+const encoder = new TextEncoder()
 
 export const hashItemAddress = (
     address: string,
     itemKey: Uint8Array,
 ): ItemKeyHash =>
-    bytesToHex(
-        hmac(sha256, itemKey, new TextEncoder().encode(address)),
-    ) as ItemKeyHash
+    bytesToHex(hmac(sha256, itemKey, encoder.encode(address))) as ItemKeyHash
 
-/** Closes over its own copy of `K_item` so callers can hash without passing the
- *  key down every call, and so the hasher survives the keystore scope zeroing
- *  the buffer it lent. That copy is live until `dispose`, which is what
- *  {@link withItemKeyHasher} exists to guarantee. */
+/** Owns a copy, so the hasher outlives the keystore scope zeroing the buffer it
+ *  lent. Hashing after `dispose` throws rather than falling back to the zeroed
+ *  copy: `HMAC(0^32, address)` is the same function for every wallet, so such a
+ *  key would collide across backups and invert by dictionary. */
 export const createItemKeyHasher = (
     itemKey: Uint8Array,
 ): DisposableItemKeyHasher => {
     const owned = new Uint8Array(itemKey)
-    return Object.assign((address: string) => hashItemAddress(address, owned), {
-        dispose: () => zeroBytes(owned),
-    })
+    let isDisposed = false
+    return Object.assign(
+        (address: string) => {
+            if (isDisposed) throw new ItemKeyHasherDisposedError()
+            return hashItemAddress(address, owned)
+        },
+        {
+            dispose: () => {
+                isDisposed = true
+                zeroBytes(owned)
+            },
+        },
+    )
 }
 
-/** Scopes a hasher to `run`, zeroing its copy of `K_item` on both the success
- *  and the throw path. */
 export const withItemKeyHasher = async <T>(
     itemKey: Uint8Array,
     run: (hashAddress: ItemKeyHasher) => Promise<T>,

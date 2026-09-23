@@ -15,7 +15,6 @@ import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import {
     isAccountItemKey,
     type AddressBackupPayload,
-    type BackupAccountType,
     type BackupItemKey,
     type FetchedItem,
     type SecretsBackupPayload,
@@ -30,12 +29,12 @@ import {
     type CollectPayloadsDeps,
 } from './collectPayloads'
 
+type ParsedAccountPayload =
+    | { kind: 'address'; payload: AddressBackupPayload }
+    | { kind: 'secrets'; payload: SecretsBackupPayload }
+
 /** `items` is mutated in place: each readable item's version/hash bookkeeping
- *  is written back under its own key.
- *
- *  Both maps are keyed on the payload's own address, not on the item key: the
- *  key is a hash of the address and cannot be inverted. An account's address
- *  record and its secrets record repeat the same address, so they still join. */
+ *  is written back under its own key. */
 export const collectAccountPayloads = ({
     fetched,
     items,
@@ -61,27 +60,41 @@ export const collectAccountPayloads = ({
             continue
         }
 
-        let parsed: { address: string; type: BackupAccountType }
+        let parsed: ParsedAccountPayload
         try {
-            if (isAddress) {
-                const payload = parseAddressPayload(plaintext)
-                addressPayloads.set(payload.address, payload)
-                parsed = payload
-            } else {
-                const payload = parseSecretsPayload(plaintext)
-                secretsPayloads.set(payload.address, payload)
-                parsed = payload
-            }
+            parsed = isAddress
+                ? { kind: 'address', payload: parseAddressPayload(plaintext) }
+                : { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
         } catch {
             logger.warn('collectAccountPayloads: failed to parse', {
                 key: item.key,
             })
             continue
         }
+        const { address, type } = parsed.payload
+
+        // Cached but not imported: the user deleted this account here on
+        // purpose, and only the review row needs it back.
+        if (existing?.pendingImport === true) {
+            items[item.key] = {
+                ...existing,
+                knownVer: item.ver,
+                baseVer: item.ver,
+                lastRemoteHash: item.hash,
+                address,
+                accountType: type,
+            }
+            continue
+        }
+
+        if (parsed.kind === 'address')
+            addressPayloads.set(address, parsed.payload)
+        else secretsPayloads.set(address, parsed.payload)
+
         items[item.key] = {
             ...adoptRemote(items[item.key] as SyncItemState, item, plaintext),
-            address: parsed.address,
-            accountType: parsed.type,
+            address,
+            accountType: type,
         }
     }
 

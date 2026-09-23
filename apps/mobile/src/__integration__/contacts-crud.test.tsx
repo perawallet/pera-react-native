@@ -177,8 +177,7 @@ const readContacts = () => {
     return result.current.contacts
 }
 
-// No backup is activated here — the sync manager is mocked — so the fixture
-// only has to hash its own keys the one way.
+// No backup is activated here: the sync manager is mocked.
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 /** Minimum sync state for `useIsContactBackedUp` to report true, which is what

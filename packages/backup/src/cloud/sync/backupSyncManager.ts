@@ -131,10 +131,8 @@ export class BackupSyncManager {
         ctx: { network: Network; backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
-        // Nested, not sequenced: each scope zeroes its key material on exit, and
-        // the hasher's copy of K_item outlives the keystore's buffer. Either
-        // scope's null means the same thing, so Nullable<Nullable<T>> collapses
-        // to the declared one.
+        // Nested, not sequenced: each scope zeroes its key material on exit,
+        // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
             withBackupItemKey(itemKey =>
                 withItemKeyHasher(itemKey, hashAddress =>

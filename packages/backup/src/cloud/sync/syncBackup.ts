@@ -78,11 +78,8 @@ export const syncBackup = async (
     // 2. Manifest short-circuit.
     const manifest = await fetchManifestOrNull(deps)
 
-    /* An address-keyed backup predates key hashing. Its payloads still decrypt,
-     * so syncing would import every item and then push the same accounts back
-     * under their hashed keys, doubling the backup. There is no rename on the
-     * service, and a re-key would leave the old addresses in the changelog, so
-     * the user re-creates the backup through Remove instead. */
+    /* A legacy backup's payloads still decrypt, so syncing would import every
+     * item and push the same accounts back under hashed keys, doubling it. */
     const legacyKeyCount = Object.keys(manifest?.items ?? {}).filter(
         isLegacyItemKey,
     ).length

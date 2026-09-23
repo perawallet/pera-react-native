@@ -124,6 +124,28 @@ describe('collectAccountPayloads', () => {
         expect(items[SECRETS_KEY]).toMatchObject({ address: ADDRESS })
     })
 
+    // Rejected by the schema, so this collector needs no check of its own.
+    it('rejects a payload whose address is empty', () => {
+        const items: Record<BackupItemKey, SyncItemState> = {
+            [ADDRESS_KEY]: tracked(),
+        }
+
+        const accounts = collectAccountPayloads({
+            fetched: [fetched(ADDRESS_KEY)],
+            items,
+            deps: deps({
+                [ADDRESS_KEY]: JSON.stringify({
+                    type: BackupAccountType.algo25,
+                    address: '',
+                    customName: null,
+                }),
+            }),
+        })
+
+        expect(accounts).toEqual([])
+        expect(items[ADDRESS_KEY].address).toBeUndefined()
+    })
+
     it('leaves no tracked address when the item cannot be decrypted', () => {
         const items: Record<BackupItemKey, SyncItemState> = {
             [ADDRESS_KEY]: tracked(),

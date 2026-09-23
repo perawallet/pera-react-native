@@ -41,9 +41,11 @@ export type ApplyDeltasDeps = CollectPayloadsDeps & {
     ) => Promise<FetchedItem[]>
 }
 
-const isAccountFamilyKey = (key: BackupItemKey): boolean =>
-    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+const isSecretsKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+
+const isAccountFamilyKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) || isSecretsKey(key)
 
 export const applyDeltas = async ({
     state,
@@ -112,9 +114,10 @@ export const applyDeltas = async ({
         }
         if (d.status !== BackupItemStatus.ACTIVE) continue
         if (!isKnownKey) continue
-        // A held account is never downloaded; a held contact is, because the
-        // cached name is the whole record and the review row has to show it.
-        if (pendingImport && !isContactKey) continue
+        // A held item's own record is still downloaded, because its cached
+        // address is what puts the row on the review screen. Only the secret
+        // stays untouched until the user adds the account back.
+        if (pendingImport && isSecretsKey(d.key)) continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||

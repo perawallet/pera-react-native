@@ -80,9 +80,8 @@ export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
 } | null>
 
 /** A local item with its content hash (sha256 of canonical payload sans
- *  updatedAt). `address` and `accountType` are lifted out of the payload so the
- *  tracked item can cache them: the key is a hash, so nothing downstream can
- *  work them out again. `accountType` is null for contacts. */
+ *  updatedAt). `address`/`accountType` are lifted out of the payload for the
+ *  tracked item to cache; `accountType` is null for contacts. */
 export type LocalItem = SerializedItem & {
     contentHash: string
     address: string
@@ -119,8 +118,8 @@ export type SyncEngineDeps = {
     deviceId: DeviceId
     /** AES-256-GCM item key; held only for the duration of one sync run. */
     encryptionKey: Uint8Array
-    /** Address → item-key hash. Closes over `K_item`, so it is only valid inside
-     *  the keystore scope that produced it. */
+    /** Closes over `K_item`, so it is only valid inside the keystore scope that
+     *  produced it. */
     hashAddress: ItemKeyHasher
     /** Snapshot of local accounts to serialize/push. */
     listAccounts: () => WalletAccount[]

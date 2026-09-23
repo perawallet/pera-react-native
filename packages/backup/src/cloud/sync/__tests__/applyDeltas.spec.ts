@@ -258,6 +258,12 @@ describe('applyDeltas', () => {
 
     it('holds a returning account for review instead of re-importing it', async () => {
         const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 4, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
         const state = createEmptySyncState('b')
         // The tombstone this device left when the user deleted the account.
         state.items['accounts/X'] = {
@@ -287,7 +293,6 @@ describe('applyDeltas', () => {
             deps,
         })
 
-        expect(deps.readItems).not.toHaveBeenCalled()
         expect(deps.importAccounts).not.toHaveBeenCalled()
         expect(next.items['accounts/X']).toMatchObject({
             status: BackupItemStatus.ACTIVE,
@@ -295,8 +300,97 @@ describe('applyDeltas', () => {
         })
     })
 
+    // Without the cached address the row silently disappears from "Add from
+    // backup".
+    it('caches the address of a held account without importing it', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 4, hash: 'rh', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
+        const state = createEmptySyncState('b')
+        // Seeded from the manifest by a restore: tracked but never read.
+        state.items['accounts/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.IGNORED,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        const next = await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'accounts/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.importAccounts).not.toHaveBeenCalled()
+        expect(next.items['accounts/X']).toMatchObject({
+            pendingImport: true,
+            address: 'X',
+            accountType: 'watch',
+        })
+    })
+
+    // The address record is safe to read; the secret is not.
+    it('leaves a held account secrets record undownloaded', async () => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue([])
+        const state = createEmptySyncState('b')
+        state.items['secrets/X'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 3,
+            baseVer: 3,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            pendingImport: true,
+            lastRemoteHash: 'old',
+            localContentHash: null,
+            localUpdatedAt: null,
+        }
+
+        await applyDeltas({
+            state,
+            deltas: [
+                {
+                    seq: 9,
+                    key: 'secrets/X',
+                    type: BackupItemType.ACCOUNT,
+                    ver: 4,
+                    status: BackupItemStatus.ACTIVE,
+                    op: DeltaOperation.UPSERT,
+                    hash: 'rh',
+                },
+            ],
+            deps,
+        })
+
+        expect(deps.readItems).not.toHaveBeenCalled()
+    })
+
     it('keeps an account under review across later deltas', async () => {
         const deps = baseDeps()
+        deps.readItems.mockResolvedValue([
+            { key: 'accounts/X', ver: 5, hash: 'rh2', payload: 'enc' },
+        ])
+        deps.decrypt.mockReturnValue(
+            JSON.stringify({ type: 'watch', address: 'X', customName: null }),
+        )
         const state = createEmptySyncState('b')
         state.items['accounts/X'] = {
             type: BackupItemType.ACCOUNT,

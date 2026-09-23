@@ -102,8 +102,6 @@ describe('Flow: Cloud backup → real-time manager', () => {
                     mnemonic: BACKUP_MNEMONIC,
                     salt: BACKUP_SALT,
                 })
-            // The same `K_item` the engine reads back out of the keystore, so a
-            // key the test builds is the key the engine writes.
             const hashAddress = createItemKeyHasher(itemKey)
 
             await persistBackupKeys({

@@ -43,6 +43,7 @@ export {
     hashItemAddress,
     createItemKeyHasher,
     withItemKeyHasher,
+    ItemKeyHasherDisposedError,
 } from './itemKeyHash'
 export type {
     ItemKeyHash,

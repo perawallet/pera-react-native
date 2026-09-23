@@ -14,13 +14,13 @@ import { describe, test, expect } from 'vitest'
 import {
     createItemKeyHasher,
     hashItemAddress,
+    ItemKeyHasherDisposedError,
     withItemKeyHasher,
     type ItemKeyHasher,
 } from '../itemKeyHash'
 
 const KEY = new Uint8Array(32).fill(1)
 const OTHER_KEY = new Uint8Array(32).fill(2)
-const ZERO_KEY = new Uint8Array(32)
 const ADDRESS = 'AAAA'
 
 describe('hashItemAddress', () => {
@@ -58,9 +58,7 @@ describe('createItemKeyHasher', () => {
         expect(hash(ADDRESS)).toBe(hashItemAddress(ADDRESS, KEY))
     })
 
-    // The keystore zeroes the buffer it lends when its scope ends. A hasher
-    // reading through to that buffer would keep working right up to the moment
-    // it silently started keying every item off 32 zero bytes.
+    // The keystore zeroes the buffer it lends once its scope ends.
     test('is unaffected by the source buffer being zeroed', () => {
         const source = new Uint8Array(KEY)
         const hash = createItemKeyHasher(source)
@@ -70,12 +68,12 @@ describe('createItemKeyHasher', () => {
         expect(hash(ADDRESS)).toBe(hashItemAddress(ADDRESS, KEY))
     })
 
-    test('zeroes its own copy on dispose', () => {
+    test('refuses to hash once disposed', () => {
         const hash = createItemKeyHasher(KEY)
 
         hash.dispose()
 
-        expect(hash(ADDRESS)).toBe(hashItemAddress(ADDRESS, ZERO_KEY))
+        expect(() => hash(ADDRESS)).toThrow(ItemKeyHasherDisposedError)
     })
 })
 
@@ -86,17 +84,17 @@ describe('withItemKeyHasher', () => {
         expect(hash).toBe(hashItemAddress(ADDRESS, KEY))
     })
 
-    test('zeroes the copy once the scope returns', async () => {
+    test('disposes the copy once the scope returns', async () => {
         const escaped: ItemKeyHasher[] = []
 
         await withItemKeyHasher(KEY, async hash => {
             escaped.push(hash)
         })
 
-        expect(escaped[0](ADDRESS)).toBe(hashItemAddress(ADDRESS, ZERO_KEY))
+        expect(() => escaped[0](ADDRESS)).toThrow(ItemKeyHasherDisposedError)
     })
 
-    test('zeroes the copy when the scope throws', async () => {
+    test('disposes the copy when the scope throws', async () => {
         const escaped: ItemKeyHasher[] = []
 
         await expect(
@@ -106,6 +104,6 @@ describe('withItemKeyHasher', () => {
             }),
         ).rejects.toThrow('sync failed')
 
-        expect(escaped[0](ADDRESS)).toBe(hashItemAddress(ADDRESS, ZERO_KEY))
+        expect(() => escaped[0](ADDRESS)).toThrow(ItemKeyHasherDisposedError)
     })
 })

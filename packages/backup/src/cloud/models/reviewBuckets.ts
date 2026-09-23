@@ -52,9 +52,8 @@ const deriveReview = <TAvailable>(
     const held: [string, SyncItemState][] = []
 
     for (const [key, item] of Object.entries(syncState?.items ?? {})) {
-        // The key is a hash, so an item this device never decrypted has no
-        // address to recover. Skip it: guessing would put a stranger's row in
-        // a list the user acts on.
+        // Skipped rather than guessed: a wrong address puts a stranger's row
+        // in a list the user acts on.
         const address = item.address
         if (!isOwnKey(key) || address == null || !isLiveInBackup(item)) continue
 

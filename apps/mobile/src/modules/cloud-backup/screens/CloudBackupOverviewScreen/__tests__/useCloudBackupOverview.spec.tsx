@@ -161,9 +161,8 @@ type SyncStateFixture = {
     >
 }
 
-/** `knownVer > 0` is what marks an item as actually uploaded, and the hashed key
- *  gives the address back to nobody, so the fixtures have to carry both to read
- *  as backed up. */
+/** `knownVer > 0` is what marks an item as actually uploaded, so a fixture
+ *  needs both it and an address to read as backed up. */
 const uploaded = (
     address: string,
     over: Partial<SyncStateFixture['items'][string]> = {},

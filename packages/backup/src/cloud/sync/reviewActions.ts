@@ -89,8 +89,7 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     decrypt: decryptItemPayload,
 })
 
-/** The key is an HMAC of the address, so an address is found by the copy the
- *  tracked item caches, never by rebuilding the key. */
+/** Matched on the cached address, never by rebuilding the key from it. */
 const trackedKeysUnder = (
     state: SyncState,
     address: string,
@@ -119,8 +118,6 @@ const keysFor = (state: SyncState, address: string): BackupItemKey[] => [
     ...trackedKeysUnder(state, address, BACKUP_SECRETS_KEY_PREFIX),
 ]
 
-/** Keys the backup currently holds for one address: its address record and its
- *  secrets record. */
 const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
     keysFor(state, address).filter(isLiveIn(state))
 
@@ -180,9 +177,6 @@ type CollectedPayloads = {
     secretsPayloads: Map<string, SecretsBackupPayload>
 }
 
-/** Both maps are keyed on the payload's own address: the item key is a hash and
- *  cannot be inverted, and an account's address record and secrets record
- *  repeat the same address, so they still join. */
 const collect = (
     items: FetchedItem[],
     deps: ReviewActionDeps,
@@ -247,7 +241,7 @@ export const importFromBackup = async ({
     const addressPayload = collected.addressPayloads.get(address)
     if (addressPayload?.type === BackupAccountType.hdWallet) {
         // Hashed, not matched: the seed is filed under an account this device
-        // may not hold, so no tracked item caches that address.
+        // may not hold, so nothing caches that address.
         const seedKey = secretsItemKey(
             deps.hashAddress(addressPayload.seedFirstDerivedAddress),
         )
@@ -366,7 +360,7 @@ const secretKeyToDelete = async (
     }
 
     // Hashed, not matched: the seed is filed under an account this device may
-    // not hold, so no tracked item caches that address.
+    // not hold, so nothing caches that address.
     const seedKey = secretsItemKey(
         deps.hashAddress(own.seedFirstDerivedAddress),
     )

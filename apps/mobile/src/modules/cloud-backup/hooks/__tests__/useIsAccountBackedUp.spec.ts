@@ -43,8 +43,7 @@ const live = {
     lastRemoteHash: 'h',
 }
 
-// The key is a hash, so the cached `address` is all that ties an item back to
-// an account; an item without one reads as never decrypted.
+// The cached `address` is all that ties an item back to an account.
 syncStateMock.current = {
     items: {
         [accountItemKey(hashAddress('A'))]: { ...live, address: 'A' },

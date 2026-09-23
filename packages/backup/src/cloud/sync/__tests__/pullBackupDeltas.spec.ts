@@ -116,9 +116,6 @@ describe('pullBackupDeltas', () => {
         expect(next.items[ACCOUNT_KEY].knownVer).toBe(1)
     })
 
-    // `syncBackup` refuses this backup, so the socket has to as well: otherwise
-    // an `itemsUpdated` event imports it behind that refusal and reports it as
-    // a healthy sync.
     it('refuses deltas from a backup still keyed by plaintext address', async () => {
         fetchDelta.mockResolvedValue([
             {

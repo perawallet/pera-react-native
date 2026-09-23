@@ -252,11 +252,9 @@ export const restoreCloudBackup = async ({
             encryptionKey,
         })
 
-        /* An address-keyed backup predates the `address` field its secrets
-         * payloads now must carry, so those no longer parse while its address
-         * records still do: a partial import leaves watch-only copies of the
-         * accounts the user believes they just restored. The count is all that
-         * is logged, because here the key is the address. */
+        /* A legacy backup's secrets payloads lack the `address` field and no
+         * longer parse, while its address records still do: importing would
+         * leave watch-only copies of the accounts the user just restored. */
         const legacyKeyCount = Object.keys(pull.manifestItems).filter(
             isLegacyItemKey,
         ).length

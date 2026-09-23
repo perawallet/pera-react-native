@@ -41,9 +41,8 @@ export const pullBackupDeltas = async (
         () => fetchManifest(deps.network, deps.backupId, deps.deviceId),
     )
 
-    /* `syncBackup` refuses an address-keyed backup, and the socket must refuse
-     * it too or an `itemsUpdated` event imports it behind that refusal. Only the
-     * count is logged: in such a backup the key is the address. */
+    /* The socket has to refuse what `syncBackup` refuses, or an `itemsUpdated`
+     * event imports a legacy backup behind that refusal. */
     const legacyKeyCount = deltas.filter(delta =>
         isLegacyItemKey(delta.key),
     ).length

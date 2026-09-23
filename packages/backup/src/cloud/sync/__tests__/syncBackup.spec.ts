@@ -262,9 +262,6 @@ describe('syncBackup', () => {
         expect(next.items[accountKey('W')].pendingDelete).toBeUndefined()
     })
 
-    // An address-keyed backup predates key hashing. Its items decrypt fine, so
-    // syncing would import them and then push the same accounts back under
-    // hashed keys, doubling the backup.
     it('refuses to sync a backup still keyed by plaintext address', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g4',

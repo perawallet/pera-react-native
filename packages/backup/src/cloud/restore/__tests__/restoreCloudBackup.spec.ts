@@ -218,8 +218,8 @@ describe('restoreCloudBackup', () => {
         })
     })
 
-    // The key is an HMAC of the address, so an item seeded without one is
-    // invisible to every review list until some later delta decrypts it.
+    // An item seeded without an address is invisible to every review list
+    // until some later delta decrypts it.
     test('stamps each read item with the address the pull decrypted', async () => {
         const { syncState } = await restoreCloudBackup(params())
 
@@ -276,9 +276,6 @@ describe('restoreCloudBackup', () => {
         expect(order).toEqual(['persist', 'pull'])
     })
 
-    // Its secrets payloads no longer parse while its address records still do,
-    // so importing would leave watch-only copies of accounts whose keys the
-    // user believes they just restored.
     test('refuses a backup still keyed by plaintext address, before importing', async () => {
         pullBackupItemsMock.mockResolvedValue({
             ...pull,

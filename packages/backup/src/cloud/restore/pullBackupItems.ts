@@ -46,9 +46,7 @@ export type PulledAccount = {
 
 export type SkippedItem = {
     key: BackupItemKey
-    /** `missing-address`: the decrypted payload named no address, and the key
-     *  is a hash, so nothing else can place the item. */
-    reason: 'decrypt' | 'parse' | 'missing-address'
+    reason: 'decrypt' | 'parse'
 }
 
 export type PullBackupItemsResult = {
@@ -193,16 +191,6 @@ const collectItemPayloads = (
         }
 
         const { address } = parsed.payload
-        if (address === '') {
-            // The schema requires the field, not a value, and an empty address
-            // is unplaceable: it would collide every such item onto one entry.
-            logger.warn('pullBackupItems: item payload names no address', {
-                key: item.key,
-            })
-            skipped.push({ key: item.key, reason: 'missing-address' })
-            continue
-        }
-
         addressByKey[item.key] = address
         if (parsed.kind === 'contact') contacts.push(parsed.payload)
         else if (parsed.kind === 'address')
