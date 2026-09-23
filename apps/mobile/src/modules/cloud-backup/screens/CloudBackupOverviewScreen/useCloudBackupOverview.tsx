@@ -19,6 +19,7 @@ import {
     deriveBackupSyncStatus,
     deriveBackupAccountReview,
     deriveBackupContactReview,
+    deriveBackupPasskeyReview,
     backupIdToAddress,
 } from '@perawallet/wallet-core-backup'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -46,6 +47,7 @@ import {
     useSyncDevicesQr,
     useCloudBackupIntroduction,
     useStoreBackupCredentials,
+    useProvenPasskeysQuery,
 } from '../../hooks'
 import type { CloudBackupStackParamList } from '../../routes/types'
 
@@ -59,8 +61,11 @@ type UseCloudBackupOverviewResult = {
     accountsNotBackedUp: number
     contactsInSync: number
     contactsNotBackedUp: number
+    passkeysInSync: number
+    passkeysNotBackedUp: number
     onPressAccounts: () => void
     onPressContacts: () => void
+    onPressPasskeys: () => void
     onPressCredentialAddress: () => Promise<void>
     onPressSyncDevices: () => Promise<void>
     onPressTurnOff: () => Promise<void>
@@ -99,6 +104,7 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const syncState = useBackupSyncStateStore(state => state.syncState)
     const accounts = useAccountsStore(state => state.accounts)
     const contacts = useContactsStore(state => state.contacts)
+    const { passkeys } = useProvenPasskeysQuery()
     const { isIntroductionSeen, markIntroductionSeen } =
         useCloudBackupIntroduction()
 
@@ -116,6 +122,15 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const contactReview = useMemo(
         () => deriveBackupContactReview(syncState, contactAddresses),
         [syncState, contactAddresses],
+    )
+
+    const credentialIds = useMemo(
+        () => passkeys.map(passkey => passkey.credentialId),
+        [passkeys],
+    )
+    const passkeyReview = useMemo(
+        () => deriveBackupPasskeyReview(syncState, credentialIds),
+        [syncState, credentialIds],
     )
 
     const addresses = useMemo(
@@ -151,6 +166,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
     const onPressContacts = useCallback(() => {
         trackEvent(CloudBackupEvent.OverviewContacts)
         navigation.navigate('CloudBackupContacts')
+    }, [navigation])
+
+    const onPressPasskeys = useCallback(() => {
+        trackEvent(CloudBackupEvent.OverviewPasskeys)
+        navigation.navigate('CloudBackupPasskeys')
     }, [navigation])
 
     const onPressCredentialAddress = useCallback(async () => {
@@ -220,8 +240,11 @@ export const useCloudBackupOverview = (): UseCloudBackupOverviewResult => {
         accountsNotBackedUp: notBackedUp.length,
         contactsInSync: contactReview.backedUp.size,
         contactsNotBackedUp: contactReview.notBackedUp.length,
+        passkeysInSync: passkeyReview.backedUp.size,
+        passkeysNotBackedUp: passkeyReview.notBackedUp.length,
         onPressAccounts,
         onPressContacts,
+        onPressPasskeys,
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,

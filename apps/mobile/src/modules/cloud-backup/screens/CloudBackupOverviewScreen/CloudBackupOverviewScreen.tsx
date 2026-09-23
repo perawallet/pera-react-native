@@ -50,8 +50,11 @@ export const CloudBackupOverviewScreen = () => {
         accountsNotBackedUp,
         contactsInSync,
         contactsNotBackedUp,
+        passkeysInSync,
+        passkeysNotBackedUp,
         onPressAccounts,
         onPressContacts,
+        onPressPasskeys,
         onPressCredentialAddress,
         onPressSyncDevices,
         onPressTurnOff,
@@ -144,6 +147,35 @@ export const CloudBackupOverviewScreen = () => {
                                 showChevron
                                 onPress={onPressContacts}
                                 testID='cloud_backup_overview_contacts'
+                            />
+                            <OverviewRow
+                                variant='filled'
+                                icon='key'
+                                title={t('cloud_backup.overview.passkeys')}
+                                subtitle={
+                                    passkeysNotBackedUp > 0
+                                        ? t(
+                                              'cloud_backup.overview.passkeys_not_backed_up',
+                                              {
+                                                  count: passkeysNotBackedUp,
+                                              },
+                                          )
+                                        : t(
+                                              'cloud_backup.overview.passkeys_in_sync',
+                                              {
+                                                  count: passkeysInSync,
+                                              },
+                                          )
+                                }
+                                subtitleIcon={
+                                    passkeysNotBackedUp > 0
+                                        ? 'cloud-off'
+                                        : undefined
+                                }
+                                subtitleIconVariant='error'
+                                showChevron
+                                onPress={onPressPasskeys}
+                                testID='cloud_backup_overview_passkeys'
                             />
                         </PWView>
                     </PWView>
