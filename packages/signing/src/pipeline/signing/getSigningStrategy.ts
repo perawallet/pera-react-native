@@ -79,6 +79,7 @@ export const createSigningStrategySelector = (
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,
+        getAllAccounts: options.getAllAccounts,
     })
 
     // Given an account that is already the resolved signing account

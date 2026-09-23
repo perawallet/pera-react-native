@@ -57,32 +57,3 @@ export const resolveMinFeeForSender = ({
     const isPQSigner = signer !== null && isQuantumAccount(signer)
     return calculateMinTxnFee({ baseMinFee, isPQSigner, pqMultiplier })
 }
-
-export type MinFeeResolverDependencies = {
-    /** Snapshot accessor for all wallet accounts */
-    getAccounts: () => WalletAccount[]
-    /** Same shape as SourceDependencies.getSuggestedParams */
-    getSuggestedParams: () => Promise<{ minFee: bigint }>
-    /** Accessor for remote-config fee values (useMinimumFeeConfig subset) */
-    getMinFeeConfig: () => { minTxnFee: bigint; pqMultiplier: bigint }
-}
-
-/**
- * Builds the async `resolveMinFeeForSender` dependency injected into
- * `SourceDependencies`. See {@link resolveMinFeeForSender} for semantics.
- */
-export const createMinFeeResolver = (
-    deps: MinFeeResolverDependencies,
-): ((senderAddress: string) => Promise<bigint>) => {
-    return async (senderAddress: string): Promise<bigint> => {
-        const { minFee } = await deps.getSuggestedParams()
-        const { minTxnFee, pqMultiplier } = deps.getMinFeeConfig()
-        return resolveMinFeeForSender({
-            senderAddress,
-            accounts: deps.getAccounts(),
-            suggestedMinFee: minFee,
-            configMinTxnFee: minTxnFee,
-            pqMultiplier,
-        })
-    }
-}
