@@ -14,3 +14,9 @@
 export const INTEGRITY_TOKEN_SESSION_KEY = 'integrity:token'
 /** chrome.storage.session — consecutive mint failures and the next allowed attempt. */
 export const INTEGRITY_BACKOFF_SESSION_KEY = 'integrity:backoff'
+/** chrome.storage.session: the in-flight enrolment attempt, so worker eviction loses nothing. */
+export const INTEGRITY_ENROL_ATTEMPT_SESSION_KEY = 'integrity:enrol-attempt'
+/** chrome.storage.session: consecutive enrolment failures and the next allowed attempt. */
+export const INTEGRITY_ENROL_BACKOFF_SESSION_KEY = 'integrity:enrol-backoff'
+/** chrome.storage.session: set when attest asked for enrolment; open extension pages watch it. */
+export const INTEGRITY_ENROL_NEEDED_SESSION_KEY = 'integrity:enrol-needed'

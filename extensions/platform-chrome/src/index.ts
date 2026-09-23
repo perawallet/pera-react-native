@@ -66,7 +66,13 @@ export {
     putSessionIntegrityToken,
     type SessionIntegrityToken,
 } from './integrity/session-token'
-export { INTEGRITY_BACKOFF_SESSION_KEY } from './integrity/storage-keys'
+export {
+    INTEGRITY_BACKOFF_SESSION_KEY,
+    INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
+    INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
+    INTEGRITY_ENROL_NEEDED_SESSION_KEY,
+} from './integrity/storage-keys'
+export * from './integrity/check-wire'
 export {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
