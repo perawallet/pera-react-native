@@ -63,6 +63,12 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         skipped: [],
         failed: [],
     }),
+    // Deterministic stand-in for the real `canonicalJson` (sorted-key JSON):
+    // the hook only needs "same input -> same string", and the real
+    // implementation drags in the whole package's dependency graph, which
+    // this file otherwise keeps fully mocked out.
+    canonicalJson: (value: unknown) =>
+        JSON.stringify(value, Object.keys(value as object).sort()),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({

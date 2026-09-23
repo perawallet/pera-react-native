@@ -13,6 +13,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { AppState } from 'react-native'
 import {
+    canonicalJson,
     getBackupSyncManager,
     initializeBackupSyncManager,
     unwiredPasskeyImportFn,
@@ -66,19 +67,36 @@ const stopBackupSync = () => runManagerAction('stop')
 
 type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
 
+const metadataOf = (key: KeystoreKey): Record<string, unknown> =>
+    (key.metadata as Record<string, unknown> | undefined) ?? {}
+
 const counterOf = (key: KeystoreKey): number => {
-    const metadata = key.metadata as Record<string, unknown> | undefined
-    return typeof metadata?.counter === 'number' ? metadata.counter : 0
+    const counter = metadataOf(key).counter
+    return typeof counter === 'number' ? counter : 0
 }
 
-/** Cheap enough to run on every keystore write: no derivation, just the id and
- *  the derivation counter already sitting in memory. `listPasskeys` (which
- *  proves reproducibility via PBKDF2 per owning seed) only runs once this
- *  actually changes. */
+/** Cheap enough to run on every keystore write: no derivation, just fields
+ *  already sitting in memory on the keystore snapshot. Covers both what
+ *  `listPasskeys` derivation depends on (`id`, `counter` — `origin`/`identity`
+ *  never change for an existing credential, and add/remove shows up in the id
+ *  set) and what the review row renders (`origin`, `displayName`, `userName`;
+ *  the row's label is `displayName ?? origin`), so a credential whose display
+ *  metadata changed doesn't wait for an unrelated sync to refresh it.
+ *  `canonicalJson` per entry rather than delimiter-joining, since these are
+ *  unconstrained strings that could otherwise collide across the separator. */
 const passkeyKeysFingerprint = (): string =>
     getKeystoreStore()
         .state.keys.filter(isPasskeyKey)
-        .map(key => `${key.id}:${counterOf(key)}`)
+        .map(key => {
+            const metadata = metadataOf(key)
+            return canonicalJson({
+                id: key.id,
+                counter: counterOf(key),
+                origin: metadata.origin ?? null,
+                displayName: metadata.displayName ?? null,
+                userName: metadata.userName ?? null,
+            })
+        })
         .sort()
         .join('|')
 
