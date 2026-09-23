@@ -41,6 +41,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     },
 }))
 
+vi.mock('../../pinRecord', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../pinRecord')>()
+    return {
+        ...actual,
+        verifyPinAgainstRecord: vi.fn(actual.verifyPinAgainstRecord),
+        verifyPinAgainstDuressSlot: vi.fn(actual.verifyPinAgainstDuressSlot),
+    }
+})
+
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
 import {
@@ -49,6 +58,7 @@ import {
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     PIN_RECORD_VERSION,
@@ -56,6 +66,9 @@ import {
     createPinRecord,
     parsePinRecord,
     serializePinRecord,
+    verifyPinAgainstDuressSlot,
+    verifyPinAgainstRecord,
+    type PinRecord,
 } from '../../pinRecord'
 
 vi.mock('../../store', () => ({
@@ -460,7 +473,7 @@ describe('usePinCode', () => {
         })
     }, 30_000)
 
-    test('handleFailedAttempt increments and persists to the record', async () => {
+    test('a failed verify increments and persists the attempt to the record', async () => {
         setupMock({ failedAttempts: 2, lockoutEndTime: null })
 
         const baseRecord = await createPinRecord('123456')
@@ -473,20 +486,139 @@ describe('usePinCode', () => {
         const { result } = renderHook(() => usePinCode())
 
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
         expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
-        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        expect(lastCall).toBeDefined()
-        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
-        // the snapshot the mock stashed at call time instead.
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(3)
         expect(persisted?.lockoutEndTime).toBeNull()
     }, 30_000)
 
-    test('handleFailedAttempt triggers lockout after max attempts', async () => {
+    test('charges the record before comparing, so an interrupted attempt still counts', async () => {
+        setupMock({ failedAttempts: 2, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord({
+            ...(await createPinRecord('123456')),
+            failedAttempts: 2,
+        })
+        vi.mocked(verifyPinAgainstRecord).mockRejectedValueOnce(
+            new Error('interrupted'),
+        )
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await expect(result.current.verifyPin('123456')).rejects.toThrow(
+                'interrupted',
+            )
+        })
+
+        expect(parsePinRecord(kmsMocks.pinBytes!)?.failedAttempts).toBe(3)
+    }, 30_000)
+
+    test('refunds a correct PIN with one write that overlaps the duress hash and lands before `ok`', async () => {
+        setupMock({ failedAttempts: 3, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord({
+            ...(await createPinRecord('123456')),
+            failedAttempts: 3,
+        })
+        const { result } = renderHook(() => usePinCode())
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(3)
+        })
+        kmsMocks.withSecret.mockClear()
+        kmsMocks.commitSecret.mockClear()
+
+        const commit = kmsMocks.commitSecret.getMockImplementation()!
+        let releaseRefund = () => {}
+        kmsMocks.commitSecret
+            .mockImplementationOnce(commit)
+            .mockImplementationOnce(async args => {
+                await new Promise<void>(resolve => {
+                    releaseRefund = () => resolve()
+                })
+                await commit(args)
+            })
+        const hashDuressSlot = vi
+            .mocked(verifyPinAgainstDuressSlot)
+            .getMockImplementation()!
+        let duressHashed: Promise<boolean> = Promise.resolve(false)
+        const duressHashStarted = new Promise<void>(resolve => {
+            vi.mocked(verifyPinAgainstDuressSlot).mockImplementationOnce(
+                (...args) => {
+                    duressHashed = hashDuressSlot(...args)
+                    resolve()
+                    return duressHashed
+                },
+            )
+        })
+
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
+        await act(async () => {
+            const verifying = result.current.verifyPin('123456').then(o => {
+                outcome = o
+            })
+            await duressHashStarted
+            await duressHashed
+            await new Promise(resolve => setTimeout(resolve, 0))
+            expect(outcome).toBeNull()
+
+            releaseRefund()
+            await verifying
+        })
+
+        expect(outcome).toEqual({ kind: 'ok' })
+        expect(kmsMocks.withSecret).toHaveBeenCalledTimes(1)
+        expect(kmsMocks.commitSecret).toHaveBeenCalledTimes(2)
+        expect(parsePinRecord(kmsMocks.pinBytes!)?.failedAttempts).toBe(0)
+    }, 30_000)
+
+    test('still unlocks when the refund write fails, leaving the attempt charged', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
+        const commit = kmsMocks.commitSecret.getMockImplementation()!
+        kmsMocks.commitSecret
+            .mockImplementationOnce(commit)
+            .mockRejectedValueOnce(new Error('keystore unavailable'))
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const { result } = renderHook(() => usePinCode())
+
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
+        await act(async () => {
+            outcome = await result.current.verifyPin('123456')
+        })
+
+        expect(outcome).toEqual({ kind: 'ok' })
+        expect(parsePinRecord(kmsMocks.pinBytes!)?.failedAttempts).toBe(1)
+        expect(warn).toHaveBeenCalledOnce()
+        warn.mockRestore()
+    }, 30_000)
+
+    test('a correct PIN refunds the charged attempt', async () => {
+        setupMock({ failedAttempts: 3, lockoutEndTime: null })
+
+        const baseRecord = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...baseRecord,
+            failedAttempts: 3,
+            lockoutEndTime: null,
+        })
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.verifyPin('123456')
+        })
+
+        expect(parsePinRecord(kmsMocks.pinBytes!)?.failedAttempts).toBe(0)
+    }, 30_000)
+
+    test('a failed verify triggers lockout after max attempts', async () => {
         vi.useFakeTimers()
         const now = Date.now()
         vi.setSystemTime(now)
@@ -506,22 +638,19 @@ describe('usePinCode', () => {
         const { result } = renderHook(() => usePinCode())
 
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
-        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
-        // the snapshot the mock stashed at call time instead.
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.lockoutEndTime).toBe(
             now + INITIAL_LOCKOUT_SECONDS * 1000,
         )
     }, 30_000)
 
-    test('handleFailedAttempt doubles lockout duration on second lockout', async () => {
+    test('a failed verify doubles the lockout duration on the second lockout', async () => {
         vi.useFakeTimers()
         const now = Date.now()
         vi.setSystemTime(now)
@@ -541,11 +670,58 @@ describe('usePinCode', () => {
         const { result } = renderHook(() => usePinCode())
 
         await act(async () => {
-            await result.current.handleFailedAttempt()
+            await result.current.verifyPin('654321')
         })
 
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(
             now + INITIAL_LOCKOUT_SECONDS * 2 * 1000,
+        )
+    }, 30_000)
+
+    test('never puts a lockout in the store for a correct PIN on a lockout boundary', async () => {
+        setupMock({
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            lockoutEndTime: null,
+        })
+        kmsMocks.pinBytes = serializePinRecord({
+            ...(await createPinRecord('123456')),
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+        })
+        const hashRegular = vi
+            .mocked(verifyPinAgainstRecord)
+            .getMockImplementation()!
+        let recordDuringHash: Nullable<PinRecord> = null
+        vi.mocked(verifyPinAgainstRecord).mockImplementationOnce((...args) => {
+            recordDuringHash = parsePinRecord(kmsMocks.pinBytes!)
+            return hashRegular(...args)
+        })
+
+        const { result } = renderHook(() => usePinCode())
+        await waitFor(() => {
+            expect(mockSetFailedAttempts).toHaveBeenCalledWith(
+                MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
+            )
+        })
+        mockSetFailedAttempts.mockClear()
+        mockSetLockoutEndTime.mockClear()
+
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
+        await act(async () => {
+            outcome = await result.current.verifyPin('123456')
+        })
+
+        expect(outcome).toEqual({ kind: 'ok' })
+        expect(recordDuringHash).toMatchObject({
+            failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+            lockoutEndTime: expect.any(Number),
+        })
+        expect(mockSetFailedAttempts).not.toHaveBeenCalledWith(
+            MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+        )
+        expect(mockSetLockoutEndTime).not.toHaveBeenCalledWith(
+            expect.any(Number),
         )
     }, 30_000)
 
@@ -595,9 +771,6 @@ describe('usePinCode', () => {
 
         expect(mockResetFailedAttempts).toHaveBeenCalled()
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
-        const lastCall = kmsMocks.commitSecret.mock.calls.at(-1)
-        // `lastCall![0].bytes` is zeroed by writeRecord's finally; read
-        // the snapshot the mock stashed at call time instead.
         const persisted = parsePinRecord(kmsMocks.pinBytes!)
         expect(persisted?.failedAttempts).toBe(0)
         expect(persisted?.lockoutEndTime).toBeNull()

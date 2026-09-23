@@ -43,7 +43,6 @@ vi.mock('@modules/security/hooks/useShakeToLockHandler', () => ({
 
 describe('useLockScreen', () => {
     const mockVerifyPin = vi.fn()
-    const mockHandleFailedAttempt = vi.fn()
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockoutEndTime = vi.fn()
     const mockCheckBiometricsEnabled = vi.fn()
@@ -56,7 +55,6 @@ describe('useLockScreen', () => {
         mockCheckBiometricsEnabled.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
             verifyPin: mockVerifyPin,
-            handleFailedAttempt: mockHandleFailedAttempt,
             resetFailedAttempts: mockResetFailedAttempts,
             isLockedOut: false,
             lockoutEndTime: null,
@@ -106,7 +104,6 @@ describe('useLockScreen', () => {
         const lockoutEndTime = Date.now() + 60_000
         ;(usePinCode as Mock).mockReturnValue({
             verifyPin: mockVerifyPin,
-            handleFailedAttempt: mockHandleFailedAttempt,
             resetFailedAttempts: mockResetFailedAttempts,
             isLockedOut: true,
             lockoutEndTime,
@@ -219,7 +216,6 @@ describe('useLockScreen', () => {
             })
 
             expect(mockVerifyPin).toHaveBeenCalledWith('1234')
-            expect(mockResetFailedAttempts).toHaveBeenCalled()
             expect(mockOnUnlock).toHaveBeenCalled()
         })
 
@@ -281,7 +277,7 @@ describe('useLockScreen', () => {
             expect(result.current.isDuressWipeInProgress).toBe(false)
         })
 
-        it('should handle failed attempt when PIN is invalid', async () => {
+        it('surfaces the error and stays locked when the PIN is invalid', async () => {
             mockVerifyPin.mockResolvedValue({ kind: 'fail' })
 
             const { result } = renderHook(() =>
@@ -292,7 +288,6 @@ describe('useLockScreen', () => {
                 await result.current.handlePinComplete('1234')
             })
 
-            expect(mockHandleFailedAttempt).toHaveBeenCalled()
             expect(result.current.hasError).toBe(true)
             expect(mockOnUnlock).not.toHaveBeenCalled()
         })
@@ -326,7 +321,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -346,7 +340,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -371,7 +364,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -393,7 +385,6 @@ describe('useLockScreen', () => {
         it('should reset remaining seconds when not locked out', () => {
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: false,
                 lockoutEndTime: null,
@@ -543,7 +534,6 @@ describe('useLockScreen', () => {
 
                 ;(usePinCode as Mock).mockReturnValue({
                     verifyPin: mockVerifyPin,
-                    handleFailedAttempt: mockHandleFailedAttempt,
                     resetFailedAttempts: mockResetFailedAttempts,
                     isLockedOut: true,
                     lockoutEndTime: Date.now() + 60_000,
@@ -675,7 +665,6 @@ describe('useLockScreen', () => {
                 // prompt is still waiting for activation.
                 ;(usePinCode as Mock).mockReturnValue({
                     verifyPin: mockVerifyPin,
-                    handleFailedAttempt: mockHandleFailedAttempt,
                     resetFailedAttempts: mockResetFailedAttempts,
                     isLockedOut: true,
                     lockoutEndTime: Date.now() + 60_000,

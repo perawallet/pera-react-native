@@ -61,13 +61,8 @@ export const usePinEditView = ({
     confirmTitle,
 }: UsePinEditViewParams): UsePinEditViewResult => {
     const { t } = useLanguage()
-    const {
-        savePin,
-        verifyPin,
-        handleFailedAttempt,
-        resetFailedAttempts,
-        isLockedOut,
-    } = usePinCode()
+    const { savePin, verifyPin, resetFailedAttempts, isLockedOut } =
+        usePinCode()
     const { checkBiometricsEnabled, unlockWithBiometrics } = useBiometrics()
     const { showError } = useErrorToast()
 
@@ -203,39 +198,24 @@ export const usePinEditView = ({
                 case 'verify': {
                     const result = await verifyPin(pin)
                     if (result.kind === 'ok') {
-                        void resetFailedAttempts()
                         setHasError(false)
                         if (currentMode === 'change_old') {
                             setCurrentMode('setup')
                         } else {
                             onSuccess?.()
                         }
-                    } else if (result.kind === 'duress') {
+                    } else {
                         // The user is already unlocked here (settings, view-
                         // passphrase, etc.) so wiping would be wrong; the
-                        // duress branch is only honoured at the lock screen.
-                        // Show the same error as a wrong PIN but do not
-                        // increment the failed-attempt counter — a stray
-                        // duress entry should not contribute to lockout.
-                        setHasError(true)
-                    } else {
-                        void handleFailedAttempt()
+                        // duress branch is only honoured at the lock screen,
+                        // and a duress match reads as a wrong PIN.
                         setHasError(true)
                     }
                     break
                 }
             }
         },
-        [
-            currentMode,
-            storedPin,
-            savePin,
-            verifyPin,
-            handleFailedAttempt,
-            resetFailedAttempts,
-            onSuccess,
-            onPinConfirmed,
-        ],
+        [currentMode, storedPin, savePin, verifyPin, onSuccess, onPinConfirmed],
     )
 
     const handleErrorAnimationComplete = useCallback(() => {
