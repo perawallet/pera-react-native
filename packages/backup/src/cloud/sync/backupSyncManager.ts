@@ -28,6 +28,7 @@ import {
 import {
     withBackupAuthSecretKey,
     withBackupEncryptionKey,
+    withBackupItemKey,
     hasBackupCredentials,
     deleteBackupKeys,
 } from '../credentials/keyStorage'
@@ -40,6 +41,7 @@ import {
     type SyncState,
 } from '../models'
 import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
+import { withItemKeyHasher } from '../crypto/itemKeyHash'
 import {
     deleteContactFromBackup,
     deleteFromBackup,
@@ -129,23 +131,33 @@ export class BackupSyncManager {
         ctx: { network: Network; backupId: string; deviceId: string },
         run: (deps: SyncEngineDeps) => Promise<T>,
     ): Promise<Nullable<T>> {
+        // Nested, not sequenced: each scope zeroes its key material on exit,
+        // and the hasher's copy of K_item outlives the keystore's buffer.
         return withBackupEncryptionKey(encryptionKey =>
-            run({
-                network: ctx.network,
-                backupId: ctx.backupId,
-                deviceId: ctx.deviceId,
-                encryptionKey,
-                listAccounts: () => useAccountsStore.getState().accounts,
-                serializeAccount: account =>
-                    serializeAccountForBackup(account, {
-                        updatedAt: Date.now(),
-                        resolveMnemonic: this.deps.resolveMnemonic,
-                        resolveHd: this.deps.resolveHd,
+            withBackupItemKey(itemKey =>
+                withItemKeyHasher(itemKey, hashAddress =>
+                    run({
+                        network: ctx.network,
+                        backupId: ctx.backupId,
+                        deviceId: ctx.deviceId,
+                        encryptionKey,
+                        hashAddress,
+                        listAccounts: () =>
+                            useAccountsStore.getState().accounts,
+                        serializeAccount: account =>
+                            serializeAccountForBackup(account, {
+                                updatedAt: Date.now(),
+                                hashAddress,
+                                resolveMnemonic: this.deps.resolveMnemonic,
+                                resolveHd: this.deps.resolveHd,
+                            }),
+                        importAccounts: this.deps.importAccounts,
+                        listContacts: () =>
+                            useContactsStore.getState().contacts ?? [],
+                        importContacts: this.deps.importContacts,
                     }),
-                importAccounts: this.deps.importAccounts,
-                listContacts: () => useContactsStore.getState().contacts ?? [],
-                importContacts: this.deps.importContacts,
-            }),
+                ),
+            ),
         )
     }
 

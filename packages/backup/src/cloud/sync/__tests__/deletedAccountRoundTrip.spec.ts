@@ -15,22 +15,27 @@
 // The buckets asserted here are exactly what the review screens render.
 import { describe, expect, it, vi } from 'vitest'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     DeltaOperation,
+    accountItemKey,
     createEmptySyncState,
     deriveBackupAccountReview,
     type SyncState,
 } from '../../models'
-import { UpsertResult } from '../../api'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { UpsertResult, type BatchUpsertRequest } from '../../api'
 import { applyDeltas } from '../applyDeltas'
 import { deleteFromBackup, markAccountForBackup } from '../reviewActions'
 import { pushDirty } from '../pushDirty'
 import { reconcile } from '../reconcile'
 import type { LocalItem, LocalSnapshot } from '../types'
 
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
 const ADDRESS = 'ACCOUNTX'
-const ACCOUNT_KEY = `accounts/${ADDRESS}`
+const ACCOUNT_KEY = accountItemKey(hashAddress(ADDRESS))
 const NOW = 1_000
 
 const localItem = (hash: string): LocalItem => ({
@@ -38,6 +43,8 @@ const localItem = (hash: string): LocalItem => ({
     type: BackupItemType.ACCOUNT,
     contentHash: hash,
     payload: { type: 'watch', address: ADDRESS } as never,
+    address: ADDRESS,
+    accountType: BackupAccountType.watch,
 })
 
 const snapshot = (items: LocalItem[]): LocalSnapshot => ({ items, skipped: 0 })
@@ -53,6 +60,8 @@ const syncedState = (): SyncState => {
         lastRemoteHash: 'r1',
         localContentHash: 'h1',
         localUpdatedAt: null,
+        address: ADDRESS,
+        accountType: BackupAccountType.watch,
     }
     return state
 }
@@ -62,16 +71,23 @@ const pushDeps = () => ({
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
-    batchUpsertItems: vi.fn(async () => ({
-        results: [
-            {
-                key: ACCOUNT_KEY,
-                result: UpsertResult.OK,
-                new_ver: 2,
-                seq: 7,
-            },
-        ],
-    })),
+    batchUpsertItems: vi.fn(
+        async (
+            _network: unknown,
+            _backupId: unknown,
+            _deviceId: unknown,
+            _request: BatchUpsertRequest,
+        ) => ({
+            results: [
+                {
+                    key: ACCOUNT_KEY,
+                    result: UpsertResult.OK,
+                    new_ver: 2,
+                    seq: 7,
+                },
+            ],
+        }),
+    ),
     deleteItem: vi.fn(async () => ({ seq: 6 })),
 })
 
@@ -80,6 +96,7 @@ const pullDeps = () => ({
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
+    hashAddress,
     importAccounts: vi.fn(async () => ({
         imported: 1,
         skippedDuplicate: 0,
@@ -144,6 +161,8 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             lastRemoteHash: 'r2',
             localContentHash: null,
             localUpdatedAt: null,
+            address: ADDRESS,
+            accountType: BackupAccountType.watch,
         }
 
         const staged = reconcile(
@@ -183,6 +202,8 @@ describe('an account deleted on one device and re-backed-up on another', () => {
             lastRemoteHash: 'r2',
             localContentHash: null,
             localUpdatedAt: null,
+            address: ADDRESS,
+            accountType: BackupAccountType.watch,
         }
 
         const afterPull = await applyDeltas({
@@ -204,7 +225,9 @@ describe('an account deleted on one device and re-backed-up on another', () => {
         expect(deps.importAccounts).not.toHaveBeenCalled()
 
         const review = deriveBackupAccountReview(afterPull, [])
-        expect(review.availableFromBackup).toEqual([ADDRESS])
+        expect(review.availableFromBackup).toEqual([
+            { address: ADDRESS, type: BackupAccountType.watch },
+        ])
 
         // And the next reconcile must not read that absence as a fresh delete.
         const afterReconcile = reconcile(afterPull, snapshot([]), NOW)

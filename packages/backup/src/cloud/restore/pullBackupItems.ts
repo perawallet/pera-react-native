@@ -46,7 +46,7 @@ export type PulledAccount = {
 
 export type SkippedItem = {
     key: BackupItemKey
-    reason: 'decrypt' | 'parse' | 'missing-address'
+    reason: 'decrypt' | 'parse'
 }
 
 export type PullBackupItemsResult = {
@@ -56,6 +56,9 @@ export type PullBackupItemsResult = {
      *  tombstones and items the restore could not read, which the caller still
      *  has to track or it will offer them to the server as new. */
     manifestItems: Record<BackupItemKey, ManifestItem>
+    /** The address each read item was filed under. This pull is the only place
+     *  a restore can learn it: the key is an HMAC of the address. */
+    addressByKey: Record<BackupItemKey, string>
     accounts: PulledAccount[]
     contacts: ContactBackupPayload[]
     skipped: SkippedItem[]
@@ -66,14 +69,6 @@ type PullBackupItemsParams = {
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
-}
-
-const addressFromKey = (key: BackupItemKey): string | null => {
-    if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
-        return key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length)
-    if (key.startsWith(BACKUP_SECRETS_KEY_PREFIX))
-        return key.slice(BACKUP_SECRETS_KEY_PREFIX.length)
-    return null
 }
 
 const chunk = <T>(items: T[], size: number): T[][] => {
@@ -141,9 +136,31 @@ type CollectedPayloads = {
     addressPayloads: Map<string, AddressBackupPayload>
     secretsPayloads: Map<string, SecretsBackupPayload>
     contacts: ContactBackupPayload[]
+    addressByKey: Record<BackupItemKey, string>
     skipped: SkippedItem[]
 }
 
+type ParsedItemPayload =
+    | { kind: 'address'; payload: AddressBackupPayload }
+    | { kind: 'secrets'; payload: SecretsBackupPayload }
+    | { kind: 'contact'; payload: ContactBackupPayload }
+
+/** The prefixes are deliberately in the clear, so they still say which of the
+ *  three shapes a payload is; everything after the prefix is a hash. */
+const parseItemPayload = (
+    key: BackupItemKey,
+    plaintext: string,
+): ParsedItemPayload => {
+    if (isContactItemKey(key))
+        return { kind: 'contact', payload: parseContactPayload(plaintext) }
+    if (key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX))
+        return { kind: 'address', payload: parseAddressPayload(plaintext) }
+    return { kind: 'secrets', payload: parseSecretsPayload(plaintext) }
+}
+
+/** Both maps are keyed on the payload's own address: the item key is an HMAC
+ *  of it and cannot be inverted, while an account's address record and its
+ *  secrets record repeat the same address, so they still join. */
 const collectItemPayloads = (
     items: FetchedItem[],
     encryptionKey: Uint8Array,
@@ -152,44 +169,36 @@ const collectItemPayloads = (
     const addressPayloads = new Map<string, AddressBackupPayload>()
     const secretsPayloads = new Map<string, SecretsBackupPayload>()
     const contacts: ContactBackupPayload[] = []
+    const addressByKey: Record<BackupItemKey, string> = {}
     const skipped: SkippedItem[] = []
 
     for (const item of items) {
-        // A contact's address is the record, not the routing key, so it is
-        // never looked up here; `null` is what selects the contact branch.
-        const isContact = isContactItemKey(item.key)
-        const address = isContact ? null : addressFromKey(item.key)
-        if (!isContact && address === null) {
-            logger.warn('pullBackupItems: unexpected item key format', {
-                key: item.key,
-            })
-            skipped.push({ key: item.key, reason: 'missing-address' })
-            continue
-        }
-
         const plaintext = decryptItem(item, encryptionKey, backupId)
         if (plaintext === null) {
             skipped.push({ key: item.key, reason: 'decrypt' })
             continue
         }
 
+        let parsed: ParsedItemPayload
         try {
-            if (address === null) {
-                contacts.push(parseContactPayload(plaintext))
-            } else if (item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)) {
-                addressPayloads.set(address, parseAddressPayload(plaintext))
-            } else {
-                secretsPayloads.set(address, parseSecretsPayload(plaintext))
-            }
+            parsed = parseItemPayload(item.key, plaintext)
         } catch {
             logger.warn('pullBackupItems: failed to parse item', {
                 key: item.key,
             })
             skipped.push({ key: item.key, reason: 'parse' })
+            continue
         }
+
+        const { address } = parsed.payload
+        addressByKey[item.key] = address
+        if (parsed.kind === 'contact') contacts.push(parsed.payload)
+        else if (parsed.kind === 'address')
+            addressPayloads.set(address, parsed.payload)
+        else secretsPayloads.set(address, parsed.payload)
     }
 
-    return { addressPayloads, secretsPayloads, contacts, skipped }
+    return { addressPayloads, secretsPayloads, contacts, addressByKey, skipped }
 }
 
 /** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
@@ -206,7 +215,8 @@ export const buildPulledAccounts = (
             secretsPayload: secretsPayloads.get(address) ?? null,
         }),
     )
-    for (const [address, secretsPayload] of secretsPayloads.entries()) {
+    for (const secretsPayload of secretsPayloads.values()) {
+        const { address } = secretsPayload
         if (
             secretsPayload.type === BackupAccountType.hdSeed &&
             !addressPayloads.has(address)
@@ -236,13 +246,19 @@ export const pullBackupItems = async ({
         deviceId,
         wantedKeys,
     )
-    const { addressPayloads, secretsPayloads, contacts, skipped } =
-        collectItemPayloads(items, encryptionKey, backupId)
+    const {
+        addressPayloads,
+        secretsPayloads,
+        contacts,
+        addressByKey,
+        skipped,
+    } = collectItemPayloads(items, encryptionKey, backupId)
 
     return {
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
         manifestItems: manifest.items,
+        addressByKey,
         accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
         contacts,
         skipped,

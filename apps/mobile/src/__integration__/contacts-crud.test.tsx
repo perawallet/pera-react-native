@@ -77,10 +77,13 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     BackupItemStatus,
     BackupItemType,
-    contactItemKey,
     createEmptySyncState,
     useBackupSyncStateStore,
 } from '@perawallet/wallet-core-backup'
+import {
+    contactItemKey,
+    createItemKeyHasher,
+} from '@perawallet/wallet-core-backup/test-handlers'
 import { PWButton } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen/AddContactScreen'
@@ -174,19 +177,24 @@ const readContacts = () => {
     return result.current.contacts
 }
 
+// No backup is activated here: the sync manager is mocked.
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
 /** Minimum sync state for `useIsContactBackedUp` to report true, which is what
- *  makes EditContactScreen ask about the backup before removing a contact. */
+ *  makes EditContactScreen ask about the backup before removing a contact.
+ *  The key is a hash, so `address` is the only way back to the contact. */
 const markContactBackedUp = (address: string) => {
     useBackupSyncStateStore.getState().setSyncState({
         ...createEmptySyncState('did:pera:TESTBACKUP'),
         items: {
-            [contactItemKey(address)]: {
+            [contactItemKey(hashAddress(address))]: {
                 type: BackupItemType.CONTACT,
                 knownVer: 1,
                 baseVer: 1,
                 isDirty: false,
                 status: BackupItemStatus.ACTIVE,
                 lastRemoteHash: null,
+                address,
             },
         },
     })

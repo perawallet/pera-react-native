@@ -29,6 +29,7 @@ export type RegisterCloudBackupResult = {
      *  and owns zeroing them; nothing here writes to the device. */
     encryptionKey: Uint8Array
     authSecretKey: Uint8Array
+    itemKey: Uint8Array
 }
 
 export const registerCloudBackup = async ({
@@ -41,7 +42,7 @@ export const registerCloudBackup = async ({
     const { buildBackupRegisterProof, deriveBackupKeys } =
         await import('../crypto')
 
-    const { backupId, encryptionKey, authPublicKey, authSecretKey } =
+    const { backupId, encryptionKey, authPublicKey, authSecretKey, itemKey } =
         await deriveBackupKeys({ mnemonic, salt })
 
     try {
@@ -61,9 +62,9 @@ export const registerCloudBackup = async ({
             wallet_signature: signature,
         })
     } catch (error) {
-        zeroBytes(encryptionKey, authSecretKey)
+        zeroBytes(encryptionKey, authSecretKey, itemKey)
         throw error
     }
 
-    return { backupId, encryptionKey, authSecretKey }
+    return { backupId, encryptionKey, authSecretKey, itemKey }
 }

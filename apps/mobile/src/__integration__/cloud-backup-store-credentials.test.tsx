@@ -99,6 +99,7 @@ beforeEach(async () => {
     await persistBackupKeys({
         encryptionKey: new Uint8Array(32).fill(1),
         authSecretKey: new Uint8Array(64).fill(2),
+        itemKey: new Uint8Array(32).fill(3),
         mnemonic: PHRASE,
     })
     useCloudBackupStore.getState().setConfigured({

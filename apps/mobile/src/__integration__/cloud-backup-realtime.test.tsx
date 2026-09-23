@@ -44,7 +44,9 @@ import {
     type WebSocketLike,
 } from '@perawallet/wallet-core-backup'
 import {
+    accountItemKey,
     buildSyncHandlers,
+    createItemKeyHasher,
     encryptItemPayload,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
@@ -95,15 +97,17 @@ describe('Flow: Cloud backup → real-time manager', () => {
         async () => {
             const account = await seedAlgo25Account()
 
-            const { backupId, encryptionKey, authSecretKey } =
+            const { backupId, encryptionKey, authSecretKey, itemKey } =
                 await deriveBackupKeys({
                     mnemonic: BACKUP_MNEMONIC,
                     salt: BACKUP_SALT,
                 })
+            const hashAddress = createItemKeyHasher(itemKey)
 
             await persistBackupKeys({
                 encryptionKey,
                 authSecretKey,
+                itemKey,
                 mnemonic: BACKUP_MNEMONIC,
             })
             useCloudBackupStore.getState().setConfigured({
@@ -155,7 +159,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
             await waitFor(
                 () =>
                     expect(
-                        getItem(`accounts/${account.address}`),
+                        getItem(accountItemKey(hashAddress(account.address))),
                     ).toBeDefined(),
                 { timeout: 10_000 },
             )
@@ -176,7 +180,7 @@ describe('Flow: Cloud backup → real-time manager', () => {
             const seqBeforePull =
                 useBackupSyncStateStore.getState().syncState?.lastSyncedSeq ?? 0
 
-            const remoteKey = `accounts/${REMOTE_WATCH_ADDRESS}`
+            const remoteKey = accountItemKey(hashAddress(REMOTE_WATCH_ADDRESS))
             pushFromOtherDevice(
                 remoteKey,
                 encryptItemPayload(

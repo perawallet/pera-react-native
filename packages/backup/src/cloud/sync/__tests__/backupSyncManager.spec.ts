@@ -21,6 +21,7 @@ const {
     mockDeleteFromBackup,
     mockHasBackupCredentials,
     mockWithBackupEncryptionKey,
+    mockWithBackupItemKey,
     mockWithBackupAuthSecretKey,
     mockDeleteBackupKeys,
     mockConnect,
@@ -46,6 +47,9 @@ const {
     mockHasBackupCredentials: vi.fn(() => true),
     mockWithBackupEncryptionKey: vi.fn(
         async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+    ),
+    mockWithBackupItemKey: vi.fn(async (fn: (key: Uint8Array) => unknown) =>
+        fn(new Uint8Array(32).fill(1)),
     ),
     mockWithBackupAuthSecretKey: vi.fn(
         async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(64)),
@@ -90,6 +94,7 @@ vi.mock('../reviewActions', () => ({
 vi.mock('../../credentials/keyStorage', () => ({
     hasBackupCredentials: mockHasBackupCredentials,
     withBackupEncryptionKey: mockWithBackupEncryptionKey,
+    withBackupItemKey: mockWithBackupItemKey,
     withBackupAuthSecretKey: mockWithBackupAuthSecretKey,
     deleteBackupKeys: mockDeleteBackupKeys,
 }))
@@ -169,7 +174,11 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+// Partial: the item-key hasher reaches the real `bytesToHex` at call time.
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { warn: vi.fn(), info: vi.fn() },
 }))
 
@@ -196,7 +205,11 @@ import {
     initializeBackupSyncManager,
     getBackupSyncManager,
 } from '../backupSyncManager'
-import { BackupItemStatus, accountItemKey } from '../../models'
+import { BackupItemStatus, accountItemKey, secretsItemKey } from '../../models'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+
+// Must match the key mockWithBackupItemKey hands the manager.
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -248,6 +261,10 @@ describe('BackupSyncManager', () => {
         contactsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+        )
+        mockWithBackupItemKey.mockImplementation(
+            async (fn: (key: Uint8Array) => unknown) =>
+                fn(new Uint8Array(32).fill(1)),
         )
     })
 
@@ -374,6 +391,8 @@ describe('BackupSyncManager', () => {
     describe('backUpAccount', () => {
         const ADDR = 'BACKED-UP-ADDR'
 
+        const backedUpKey = accountItemKey(hashAddress(ADDR))
+
         const syncLeaves = (item: Record<string, unknown>) => {
             mockSetSyncState.mockImplementation((state: unknown) => {
                 storedSyncState.current = state
@@ -381,7 +400,7 @@ describe('BackupSyncManager', () => {
             mockSyncBackup.mockResolvedValue({
                 backupId: 'backup-123',
                 lastSyncResult: 'SUCCESS',
-                items: { [accountItemKey(ADDR)]: item },
+                items: { [backedUpKey]: { address: ADDR, ...item } },
             })
         }
 
@@ -432,7 +451,9 @@ describe('BackupSyncManager', () => {
 
         it('settles once the keys are no longer marked for deletion', async () => {
             deleteLeaves({
-                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
+                [accountItemKey(hashAddress(ADDR))]: {
+                    status: BackupItemStatus.IGNORED,
+                },
             })
             const mgr = new BackupSyncManager(makeDeps())
 
@@ -442,7 +463,7 @@ describe('BackupSyncManager', () => {
 
         it('queues when the request failed and left a retry behind', async () => {
             deleteLeaves({
-                [accountItemKey(ADDR)]: {
+                [accountItemKey(hashAddress(ADDR))]: {
                     status: BackupItemStatus.ACTIVE,
                     pendingDelete: true,
                 },
@@ -455,7 +476,9 @@ describe('BackupSyncManager', () => {
 
         it('refuses without staging anything while a sync holds the lock', async () => {
             deleteLeaves({
-                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
+                [accountItemKey(hashAddress(ADDR))]: {
+                    status: BackupItemStatus.IGNORED,
+                },
             })
             mockWithBackupEncryptionKey.mockResolvedValueOnce(null)
             const mgr = new BackupSyncManager(makeDeps())
@@ -465,11 +488,13 @@ describe('BackupSyncManager', () => {
         })
 
         // An HD account's seed lives under its first derived sibling, so the
-        // stranded key is `secrets/SEED-FIRST`, not `secrets/<ADDR>`.
+        // stranded key hashes that sibling's address, not the account's.
         it('queues when the stranded key is the seed under a sibling address', async () => {
             deleteLeaves({
-                [accountItemKey(ADDR)]: { status: BackupItemStatus.IGNORED },
-                'secrets/SEED-FIRST': {
+                [accountItemKey(hashAddress(ADDR))]: {
+                    status: BackupItemStatus.IGNORED,
+                },
+                [secretsItemKey(hashAddress('SEED-FIRST'))]: {
                     status: BackupItemStatus.ACTIVE,
                     pendingDelete: true,
                 },
@@ -507,6 +532,10 @@ describe('BackupSyncManager account watcher', () => {
         contactsListeners.current = []
         mockWithBackupEncryptionKey.mockImplementation(
             async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+        )
+        mockWithBackupItemKey.mockImplementation(
+            async (fn: (key: Uint8Array) => unknown) =>
+                fn(new Uint8Array(32).fill(1)),
         )
     })
 

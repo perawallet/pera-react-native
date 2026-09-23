@@ -105,6 +105,7 @@ describe('useCloudBackupDraftStore', () => {
         deviceId: 'device-123',
         encryptionKey: Uint8Array.from([7, 7, 7]),
         authSecretKey: Uint8Array.from([8, 8, 8]),
+        itemKey: Uint8Array.from([6, 6, 6]),
     })
 
     const DRAFT_SALT = 'c2FsdA=='
@@ -145,6 +146,7 @@ describe('useCloudBackupDraftStore', () => {
         expect(useCloudBackupDraftStore.getState().registration).toBeNull()
         expect(Array.from(orphaned.encryptionKey)).toEqual([0, 0, 0])
         expect(Array.from(orphaned.authSecretKey)).toEqual([0, 0, 0])
+        expect(Array.from(orphaned.itemKey)).toEqual([0, 0, 0])
     })
 
     it('zeroes the retained key buffers on clear', () => {
@@ -158,6 +160,7 @@ describe('useCloudBackupDraftStore', () => {
 
         expect(Array.from(retained.encryptionKey)).toEqual([0, 0, 0])
         expect(Array.from(retained.authSecretKey)).toEqual([0, 0, 0])
+        expect(Array.from(retained.itemKey)).toEqual([0, 0, 0])
         expect(useCloudBackupDraftStore.getState().registration).toBeNull()
     })
 
@@ -189,6 +192,7 @@ describe('useCloudBackupDraftStore', () => {
 
         expect(Array.from(replaced.encryptionKey)).toEqual([0, 0, 0])
         expect(Array.from(replaced.authSecretKey)).toEqual([0, 0, 0])
+        expect(Array.from(replaced.itemKey)).toEqual([0, 0, 0])
         expect(
             Array.from(
                 useCloudBackupDraftStore.getState().registration!.encryptionKey,
@@ -216,9 +220,11 @@ describe('useCloudBackupDraftStore', () => {
 
         expect(Array.from(stale.encryptionKey)).toEqual([0, 0, 0])
         expect(Array.from(stale.authSecretKey)).toEqual([0, 0, 0])
+        expect(Array.from(stale.itemKey)).toEqual([0, 0, 0])
         expect(useCloudBackupDraftStore.getState().registration).toBe(current)
         expect(Array.from(current.encryptionKey)).toEqual([7, 7, 7])
         expect(Array.from(current.authSecretKey)).toEqual([8, 8, 8])
+        expect(Array.from(current.itemKey)).toEqual([6, 6, 6])
     })
 
     it('reads the draft phrase back as words', () => {
