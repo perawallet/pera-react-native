@@ -52,3 +52,28 @@ describe('unwiredPasskeyImportFn', () => {
         expect(summary).toEqual({ imported: 0, skipped: [], failed: [] })
     })
 })
+
+describe('unwiredPasskeyListFn', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it('warns once per session across repeated calls, not once per call', async () => {
+        // The warn-once guard is module-level state, so a fresh module
+        // registry (and a logger pulled from that same registry) is the only
+        // way to start from "never warned" without depending on test order.
+        vi.resetModules()
+        const { logger: freshLogger } =
+            await import('@perawallet/wallet-core-shared')
+        const { unwiredPasskeyListFn: freshUnwiredPasskeyListFn } =
+            await import('../types')
+        const warn = vi.spyOn(freshLogger, 'warn')
+
+        const first = await freshUnwiredPasskeyListFn()
+        const second = await freshUnwiredPasskeyListFn()
+
+        expect(first).toEqual([])
+        expect(second).toEqual([])
+        expect(warn).toHaveBeenCalledTimes(1)
+    })
+})

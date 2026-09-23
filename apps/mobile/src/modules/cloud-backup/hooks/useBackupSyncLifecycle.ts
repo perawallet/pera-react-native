@@ -16,6 +16,7 @@ import {
     getBackupSyncManager,
     initializeBackupSyncManager,
     unwiredPasskeyImportFn,
+    unwiredPasskeyListFn,
     useCloudBackupContactImport,
     useCloudBackupImport,
     useCloudBackupStore,
@@ -113,9 +114,7 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
-            // No app-layer passkey store exists yet to enumerate local
-            // credentials from, so there is nothing to list.
-            listPasskeys: async () => [],
+            listPasskeys: unwiredPasskeyListFn,
             importPasskeys: unwiredPasskeyImportFn,
             onBackupDeleted: () =>
                 latest.current.showToast({
