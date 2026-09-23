@@ -141,6 +141,13 @@ export const passkeyBackupInputs = async (
     key: Key,
     resolveSeedEntropy: (seedKeyId: string) => Promise<Uint8Array | null>,
     subtle?: SubtleCrypto,
+    /** Shared across a sweep so a user's credentials, which cluster on one
+     *  seed, pay one 210,000-iteration PBKDF2 between them rather than one
+     *  each. Holds promises, not keys: a sweep runs its credentials
+     *  concurrently, so caching only resolved values would still start every
+     *  derivation. A cached key outlives this call, so it is the sweep's to
+     *  zero, not this function's. */
+    mainKeyCache?: Map<string, Promise<Uint8Array | null>>,
 ): Promise<PasskeyBackupInputs | null> => {
     if (key.type !== PASSKEY_KEY_TYPE) return null
 
@@ -187,7 +194,20 @@ export const passkeyBackupInputs = async (
     const counter =
         typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
 
-    const mainKey = await derivePasskeyMainKey(entropy, subtle)
+    let mainKey: Uint8Array | null
+    if (mainKeyCache) {
+        if (!mainKeyCache.has(seedKeyId)) {
+            mainKeyCache.set(
+                seedKeyId,
+                derivePasskeyMainKey(entropy, subtle).catch(() => null),
+            )
+        }
+        mainKey = await mainKeyCache.get(seedKeyId)!
+    } else {
+        mainKey = await derivePasskeyMainKey(entropy, subtle)
+    }
+    if (mainKey === null) return null
+
     try {
         for (const identity of identityCandidates(metadata)) {
             const derived = await derivePasskeyCredential({
@@ -231,6 +251,6 @@ export const passkeyBackupInputs = async (
         )
         return null
     } finally {
-        zeroBytes(mainKey)
+        if (!mainKeyCache) zeroBytes(mainKey)
     }
 }

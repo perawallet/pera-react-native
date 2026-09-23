@@ -18,6 +18,9 @@ import { useProvenPasskeysStore } from '@perawallet/wallet-core-backup'
 const keystoreKeys = vi.fn().mockReturnValue([])
 const inputsFor = vi.fn()
 const getDerivedPublicKeyMock = vi.fn()
+const entropyChildIdOfMock = vi.fn<() => string | undefined>()
+const withSecretMock = vi.fn<() => Promise<Uint8Array | null>>()
+const zeroBytesMock = vi.fn<(secret: Uint8Array) => void>()
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
@@ -28,8 +31,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    entropyChildIdOf: vi.fn(),
-    withSecret: vi.fn(async () => null),
+    entropyChildIdOf: () => entropyChildIdOfMock(),
+    withSecret: () => withSecretMock(),
+    zeroBytes: (secret: Uint8Array) => zeroBytesMock(secret),
     useKMS: () => ({ getDerivedPublicKey: getDerivedPublicKeyMock }),
 }))
 
@@ -48,6 +52,9 @@ describe('useListPasskeysForBackup', () => {
             .mockReset()
             .mockResolvedValue(new Uint8Array([9]))
         inputsFor.mockReset()
+        entropyChildIdOfMock.mockReset().mockReturnValue(undefined)
+        withSecretMock.mockReset().mockResolvedValue(null)
+        zeroBytesMock.mockReset()
     })
 
     it('drops credentials that cannot be re-derived', async () => {
@@ -109,5 +116,43 @@ describe('useListPasskeysForBackup', () => {
         expect(useProvenPasskeysStore.getState().provenPasskeys).toEqual(
             passkeys,
         )
+    })
+
+    // Proving each credential costs a 210k-iteration PBKDF2 over the same seed
+    // entropy, and a user's credentials cluster on one wallet, so the sweep
+    // reads the secret once and shares one main-key cache across the batch.
+    it('reads a seed secret once for every credential that shares it, then zeroes it', async () => {
+        keystoreKeys.mockReturnValue([{ id: 'a' }, { id: 'b' }])
+        entropyChildIdOfMock.mockReturnValue('entropy-1')
+        const entropy = new Uint8Array([1, 2, 3])
+        withSecretMock.mockResolvedValue(entropy)
+        inputsFor.mockImplementation(
+            async (
+                key: { id: string },
+                resolveEntropy: (seedKeyId: string) => Promise<unknown>,
+            ) => {
+                await resolveEntropy('seed-1')
+                return {
+                    credentialId: key.id,
+                    origin: 'webauthn.io',
+                    identity: 'alice',
+                    counter: 0,
+                    publicKeySpkiDer: 'cHVi',
+                    seedKeyId: 'seed-1',
+                    createdAt: 1,
+                }
+            },
+        )
+
+        const { result } = renderHook(() => useListPasskeysForBackup())
+        await result.current()
+
+        expect(withSecretMock).toHaveBeenCalledTimes(1)
+        // One cache instance for the whole sweep, or every credential derives
+        // its own main key.
+        const caches = inputsFor.mock.calls.map(call => call[3])
+        expect(caches).toHaveLength(2)
+        expect(caches[0]).toBe(caches[1])
+        expect(zeroBytesMock).toHaveBeenCalledWith(entropy)
     })
 })
