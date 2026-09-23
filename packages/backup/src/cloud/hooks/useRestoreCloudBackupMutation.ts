@@ -17,13 +17,14 @@ import {
     restoreCloudBackup,
     type RestoreCloudBackupResult,
 } from '../restore/restoreCloudBackup'
-import { unwiredPasskeyImportFn } from '../sync/types'
 import type { Argon2idConfig } from '../models'
 import { readCloudBackupRestoreMnemonic } from '../store/draftStore'
 import { useCloudBackupStore } from '../store/store'
 import { useBackupSyncStateStore } from '../store/syncStateStore'
 import { useCloudBackupContactImport } from './useCloudBackupContactImport'
 import { useCloudBackupImport } from './useCloudBackupImport'
+import { useCloudBackupPasskeyImport } from './useCloudBackupPasskeyImport'
+import { useResolveSeedEntropyForBackup } from './useResolveSeedEntropyForBackup'
 
 export type RestoreCloudBackupVariables = {
     /** Base64 salt the UI calls the "encryption key". */
@@ -51,6 +52,9 @@ export const useRestoreCloudBackupMutation = (
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const { importAccounts } = useCloudBackupImport()
     const { importContacts } = useCloudBackupContactImport()
+    const { importPasskeys } = useCloudBackupPasskeyImport(
+        useResolveSeedEntropyForBackup(),
+    )
 
     return useMutation({
         throwOnError: false,
@@ -75,7 +79,7 @@ export const useRestoreCloudBackupMutation = (
                 network,
                 importAccounts,
                 importContacts,
-                importPasskeys: unwiredPasskeyImportFn,
+                importPasskeys,
             })
             // The backup is registered server-side under exactly this device
             // id, and every later signed request has to reuse it.

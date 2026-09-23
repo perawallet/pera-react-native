@@ -22,6 +22,7 @@ import {
     useCloudBackupStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    useResolveSeedEntropyForBackup,
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
@@ -37,7 +38,6 @@ import {
     isActiveAppState,
 } from '@utils/app-state'
 import { useListPasskeysForBackup } from './useListPasskeysForBackup'
-import { useResolveSeedEntropyForBackup } from './useResolveSeedEntropyForBackup'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']

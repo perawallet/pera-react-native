@@ -13,7 +13,6 @@
 import { useCallback } from 'react'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import type { SeedEntropyResolver } from '@perawallet/wallet-core-backup'
 import {
     SeedScheme,
     entropyChildIdOf,
@@ -22,6 +21,7 @@ import {
     withSecret,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 
 /**
  * Mirrors `useResolveHdSeedForBackup`, but in reverse: that hook starts from

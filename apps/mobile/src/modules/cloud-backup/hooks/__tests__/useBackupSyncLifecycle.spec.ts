@@ -67,6 +67,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         select({ backupId: backupIdRef.current }),
     useResolveHdSeedForBackup: () => resolveHdMock,
     useResolveMnemonicForBackup: () => resolveMnemonicMock,
+    useResolveSeedEntropyForBackup: () => resolveSeedEntropyMock,
     useCloudBackupPasskeyImport: () => ({
         importPasskeys: importPasskeysMock,
     }),
@@ -80,10 +81,6 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 
 vi.mock('../useListPasskeysForBackup', () => ({
     useListPasskeysForBackup: () => listPasskeysMock,
-}))
-
-vi.mock('../useResolveSeedEntropyForBackup', () => ({
-    useResolveSeedEntropyForBackup: () => resolveSeedEntropyMock,
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({

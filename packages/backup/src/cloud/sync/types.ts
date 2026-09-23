@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     Algo25Account,
@@ -141,24 +140,6 @@ export type PasskeyImportSummary = {
 export type PasskeyImportFn = (
     passkeys: PasskeyBackupPayload[],
 ) => Promise<PasskeyImportSummary>
-
-/** A no-op implementation of `PasskeyImportFn`: it satisfies the interface
- *  without persisting anything, so every call site needing one can share it
- *  instead of each defining its own closure. Calling it means every
- *  credential passed to it is dropped; this logs that so the loss leaves a
- *  trace instead of vanishing into an empty summary. Fires on restore only,
- *  which is rare, so a per-call warning is fine here. Cloud-backup restore
- *  has no app-layer seed-entropy resolver of its own (the mobile app's
- *  passkey injection is sync-only), so this call site remains genuinely
- *  unwired. */
-export const unwiredPasskeyImportFn: PasskeyImportFn = async passkeys => {
-    if (passkeys.length > 0) {
-        logger.warn('unwiredPasskeyImportFn: dropped passkeys with no writer', {
-            count: passkeys.length,
-        })
-    }
-    return { imported: 0, skipped: [], failed: [] }
-}
 
 export type SyncEngineDeps = {
     network: Network
