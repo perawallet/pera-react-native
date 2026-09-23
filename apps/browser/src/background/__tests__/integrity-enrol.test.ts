@@ -32,6 +32,8 @@ const markers = new Map<string, { kid: string; enrolledAt: string }>()
 const mockGetInstallKeyId = vi.fn(async () => KID)
 const mockEnrolDevice = vi.fn()
 const mockResumeIntegrityMint = vi.fn(async () => {})
+const mockClearInstallKey = vi.fn(async () => {})
+const mockClearSessionIntegrityToken = vi.fn(async () => {})
 const flags = { mint: true, enrol: true }
 
 vi.mock('@perawallet/wallet-core-app-integrity/api', async () => {
@@ -50,6 +52,8 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
         getInstallKeyId: mockGetInstallKeyId,
         exportInstallPublicKey: async () => 'spki-b64',
         ensureDeviceInstallationID: async () => 'install-1',
+        clearInstallKey: mockClearInstallKey,
+        clearSessionIntegrityToken: mockClearSessionIntegrityToken,
         getEnrolmentMarker: async (network: string) =>
             markers.get(network) ?? null,
         putEnrolmentMarker: async (
@@ -450,6 +454,44 @@ describe('integrity enrolment', () => {
                 expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
             },
         )
+
+        const rejectedWith = (code: string) =>
+            Object.assign(new Error(code), {
+                originalError: { data: { error: 'x', code } },
+            })
+
+        it('drops the install key and token when the key is bound to another device', async () => {
+            mockEnrolDevice.mockRejectedValue(rejectedWith('PUBLIC_KEY_IN_USE'))
+            const { token } = await start()
+            connect(token).deliver(solved)
+
+            await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+            expect(mockClearInstallKey).toHaveBeenCalledTimes(1)
+            expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
+            expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+            expect(markers.has('mainnet')).toBe(false)
+        })
+
+        it('still finishes the attempt when dropping the key fails', async () => {
+            mockEnrolDevice.mockRejectedValue(rejectedWith('PUBLIC_KEY_IN_USE'))
+            mockClearInstallKey.mockRejectedValueOnce(new Error('idb'))
+            const { token } = await start()
+            connect(token).deliver(solved)
+
+            await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+            expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+        })
+
+        it('keeps the install key on any other enrol error', async () => {
+            mockEnrolDevice.mockRejectedValue(rejectedWith('TURNSTILE_INVALID'))
+            const { token } = await start()
+            connect(token).deliver(solved)
+
+            await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+            expect(mockClearInstallKey).not.toHaveBeenCalled()
+            expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+            expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+        })
 
         it('ends the attempt on a framed error', async () => {
             const { token } = await start()

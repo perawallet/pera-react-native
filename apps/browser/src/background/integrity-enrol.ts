@@ -22,6 +22,8 @@ import {
     INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_HOST_PORT_PREFIX,
     buildCheckUrl,
+    clearInstallKey,
+    clearSessionIntegrityToken,
     ensureDeviceInstallationID,
     exportInstallPublicKey,
     getEnrolmentMarker,
@@ -287,6 +289,17 @@ const finishAttempt = async (
     }
 }
 
+// Swallows its own failure: the attempt must still finish, or it sits in
+// `enrolling` until the deadline.
+const dropInstallKey = async (): Promise<void> => {
+    try {
+        await clearInstallKey()
+        await clearSessionIntegrityToken()
+    } catch (error) {
+        logger.warn('Web integrity install key reset failed', { error })
+    }
+}
+
 const submitEnrolment = async (
     attempt: EnrolAttempt,
     turnstileToken: string,
@@ -314,10 +327,10 @@ const submitEnrolment = async (
         })
         return true
     } catch (error) {
-        logger.warn('Web integrity enrolment failed', {
-            code: readIntegrityErrorCode(error),
-            error,
-        })
+        const code = readIntegrityErrorCode(error)
+        logger.warn('Web integrity enrolment failed', { code, error })
+        // The backend binds this key to another device_id, so only a new key can enrol.
+        if (code === 'PUBLIC_KEY_IN_USE') await dropInstallKey()
         return false
     }
 }
