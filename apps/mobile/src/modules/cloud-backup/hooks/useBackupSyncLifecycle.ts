@@ -16,10 +16,9 @@ import {
     canonicalJson,
     getBackupSyncManager,
     initializeBackupSyncManager,
-    unwiredPasskeyImportFn,
-    unwiredPasskeyListFn,
     useCloudBackupContactImport,
     useCloudBackupImport,
+    useCloudBackupPasskeyImport,
     useCloudBackupStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
@@ -37,6 +36,8 @@ import {
     getPollingTransitionAction,
     isActiveAppState,
 } from '@utils/app-state'
+import { useListPasskeysForBackup } from './useListPasskeysForBackup'
+import { useResolveSeedEntropyForBackup } from './useResolveSeedEntropyForBackup'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']
@@ -45,6 +46,10 @@ type BackupSyncCallbacks = {
     >['importContacts']
     resolveHd: SerializeHdResolver
     resolveMnemonic: SerializeMnemonicResolver
+    listPasskeys: ReturnType<typeof useListPasskeysForBackup>
+    importPasskeys: ReturnType<
+        typeof useCloudBackupPasskeyImport
+    >['importPasskeys']
     showToast: ReturnType<typeof useToast>['showToast']
     t: ReturnType<typeof useLanguage>['t']
 }
@@ -124,12 +129,18 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const { importContacts } = useCloudBackupContactImport()
     const resolveHd = useResolveHdSeedForBackup()
     const resolveMnemonic = useResolveMnemonicForBackup()
+    const listPasskeys = useListPasskeysForBackup()
+    const { importPasskeys } = useCloudBackupPasskeyImport(
+        useResolveSeedEntropyForBackup(),
+    )
 
     const latest = useRef<BackupSyncCallbacks>({
         importAccounts,
         importContacts,
         resolveHd,
         resolveMnemonic,
+        listPasskeys,
+        importPasskeys,
         showToast,
         t,
     })
@@ -140,6 +151,8 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
             importContacts,
             resolveHd,
             resolveMnemonic,
+            listPasskeys,
+            importPasskeys,
             showToast,
             t,
         }
@@ -148,6 +161,8 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
         importContacts,
         resolveHd,
         resolveMnemonic,
+        listPasskeys,
+        importPasskeys,
         showToast,
         t,
     ])
@@ -167,8 +182,8 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
-            listPasskeys: unwiredPasskeyListFn,
-            importPasskeys: unwiredPasskeyImportFn,
+            listPasskeys: () => latest.current.listPasskeys(),
+            importPasskeys: passkeys => latest.current.importPasskeys(passkeys),
             subscribePasskeyChanges,
             onBackupDeleted: () =>
                 latest.current.showToast({

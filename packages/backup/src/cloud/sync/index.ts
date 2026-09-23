@@ -59,7 +59,6 @@ export type {
 export {
     UnsupportedBackupAccountTypeError,
     unwiredPasskeyImportFn,
-    unwiredPasskeyListFn,
 } from './types'
 export type {
     BackupActionOutcome,
@@ -72,8 +71,10 @@ export type {
     ImportSummary,
     ContactImportFn,
     ContactImportSummary,
+    BackupPasskey,
     PasskeyImportFn,
     PasskeyImportSummary,
+    PasskeySkipReason,
     SerializeHdResolver,
     SerializeMnemonicResolver,
 } from './types'

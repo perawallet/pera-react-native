@@ -28,6 +28,9 @@ const {
     importContactsMock,
     resolveHdMock,
     resolveMnemonicMock,
+    listPasskeysMock,
+    importPasskeysMock,
+    resolveSeedEntropyMock,
     isEnabledMock,
     backupIdRef,
     keysRef,
@@ -40,6 +43,13 @@ const {
     importContactsMock: vi.fn(),
     resolveHdMock: vi.fn(),
     resolveMnemonicMock: vi.fn(),
+    listPasskeysMock: vi.fn(async () => []),
+    importPasskeysMock: vi.fn(async () => ({
+        imported: 0,
+        skipped: [],
+        failed: [],
+    })),
+    resolveSeedEntropyMock: vi.fn(),
     isEnabledMock: vi.fn(),
     backupIdRef: { current: null as string | null },
     keysRef: { current: [] as FakeKeystoreKey[] },
@@ -57,11 +67,8 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         select({ backupId: backupIdRef.current }),
     useResolveHdSeedForBackup: () => resolveHdMock,
     useResolveMnemonicForBackup: () => resolveMnemonicMock,
-    unwiredPasskeyListFn: async () => [],
-    unwiredPasskeyImportFn: async () => ({
-        imported: 0,
-        skipped: [],
-        failed: [],
+    useCloudBackupPasskeyImport: () => ({
+        importPasskeys: importPasskeysMock,
     }),
     // Deterministic stand-in for the real `canonicalJson` (sorted-key JSON):
     // the hook only needs "same input -> same string", and the real
@@ -69,6 +76,14 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     // this file otherwise keeps fully mocked out.
     canonicalJson: (value: unknown) =>
         JSON.stringify(value, Object.keys(value as object).sort()),
+}))
+
+vi.mock('../useListPasskeysForBackup', () => ({
+    useListPasskeysForBackup: () => listPasskeysMock,
+}))
+
+vi.mock('../useResolveSeedEntropyForBackup', () => ({
+    useResolveSeedEntropyForBackup: () => resolveSeedEntropyMock,
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
