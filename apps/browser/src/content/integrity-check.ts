@@ -24,28 +24,24 @@ import {
     type IntegrityFrameEvent,
 } from '@perawallet/wallet-extension-platform-chrome'
 
-// The check page cannot reach chrome.runtime, so this relays its window
-// messages to the worker and tells the hosting extension page when to expand
-// or remove the frame. A page opened without a check token was opened by
-// someone other than the extension, so the relay stays silent.
+// The check page cannot reach chrome.runtime, so this relays its messages to the
+// worker and tells the hosting page when to expand or remove the frame. No check
+// token means the extension did not open the page, so the relay stays silent.
 export const runIntegrityCheckRelay = (): void => {
     const token = new URLSearchParams(window.location.search).get(
         INTEGRITY_CHECK_TOKEN_PARAM,
     )
     if (!isCheckToken(token)) return
 
-    // Not `new URL(chrome.runtime.getURL('')).origin`: WHATWG URL treats
-    // chrome-extension: as a non-special scheme and serializes its origin as
-    // the literal string "null". getURL('') always ends in a bare '/', so
-    // stripping it is the origin.
+    // Not `new URL(getURL('')).origin`, which is "null" outside Chrome (a non-special
+    // scheme); getURL('') always ends in a bare '/', so stripping it is the origin.
     const extensionOrigin = chrome.runtime.getURL('').replace(/\/$/, '')
     const isFramed = window.top !== window
     let port: chrome.runtime.Port | null = null
     let announcement: IntegrityCheckPortMessage | null = null
 
-    // An idle worker is evicted after 30 seconds, which drops this port
-    // mid-solve. Reconnecting wakes it, and re-announcing tells it the page is
-    // still alive before anything else arrives.
+    // An idle worker is evicted after 30 seconds, dropping this port mid-solve.
+    // Reconnecting wakes it; re-announcing tells it the page is still alive.
     const connect = (): chrome.runtime.Port => {
         const next = chrome.runtime.connect({
             name: `${INTEGRITY_CHECK_PORT_PREFIX}${token}`,
