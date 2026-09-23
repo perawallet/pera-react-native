@@ -60,7 +60,10 @@ export const useIntegrityCheckFrameHost =
         const iframeRef = useRef<HTMLIFrameElement | null>(null)
         const wasOnboarding = useRef(isOnboarding)
         const isOnboardingNow = useRef(isOnboarding)
-        const canHost = HOSTING_SURFACES.includes(getSurface())
+        const canHost =
+            config.webIntegrityMintEnabled &&
+            config.webIntegrityEnrolEnabled &&
+            HOSTING_SURFACES.includes(getSurface())
 
         const request = useCallback(
             async (reason: IntegrityEnrolReason) => {

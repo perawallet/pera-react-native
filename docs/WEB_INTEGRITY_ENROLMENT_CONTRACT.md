@@ -225,7 +225,8 @@ an install in use. The `reason` names the moment:
    cannot address a page; an open page asks, and section 5.3 covers there being none.
 
 The worker answers `none` when this network's marker matches the current key (section 5.5), while
-an attempt is live, while backoff holds, and whenever either build flag is off (section 8).
+an attempt is live, while backoff holds, and whenever either build flag is off (section 8). With
+either flag off the pages neither ask nor watch the flag, so a flagged-off build sends nothing.
 
 Enrolment must not require an unlocked vault: it touches only the `pera-integrity` IndexedDB,
 `chrome.storage.session`, the frame host in an extension page, `chrome.tabs` for the fallback, and

@@ -28,6 +28,8 @@ const mocks = vi.hoisted(() => {
         endedListener: null as (() => void) | null,
         surface: 'popup',
         isOnboarding: false,
+        isMintEnabled: true,
+        isEnrolEnabled: true,
     }
 })
 
@@ -65,6 +67,12 @@ vi.mock('@perawallet/wallet-core-config', async () => {
         config: {
             ...actual.config,
             integrityCheckOrigin: 'https://integrity-staging.perawallet.app',
+            get webIntegrityMintEnabled() {
+                return mocks.isMintEnabled
+            },
+            get webIntegrityEnrolEnabled() {
+                return mocks.isEnrolEnabled
+            },
         },
     }
 })
@@ -96,6 +104,8 @@ describe('useIntegrityCheckFrameHost', () => {
         mocks.endedListener = null
         mocks.surface = 'popup'
         mocks.isOnboarding = false
+        mocks.isMintEnabled = true
+        mocks.isEnrolEnabled = true
         useIntegrityCheckFrameStore.getState().hide()
     })
 
@@ -119,6 +129,31 @@ describe('useIntegrityCheckFrameHost', () => {
 
         expect(mocks.request).not.toHaveBeenCalled()
     })
+
+    it.each([
+        [
+            'the mint flag',
+            () => {
+                mocks.isMintEnabled = false
+            },
+        ],
+        [
+            'the enrol flag',
+            () => {
+                mocks.isEnrolEnabled = false
+            },
+        ],
+    ])(
+        'neither asks nor watches for enrolment while %s is off',
+        (_label, arrange) => {
+            arrange()
+
+            renderHook(() => useIntegrityCheckFrameHost())
+
+            expect(mocks.request).not.toHaveBeenCalled()
+            expect(mocks.neededListener).toBeNull()
+        },
+    )
 
     it('waits through onboarding and asks the moment it finishes', async () => {
         mocks.request.mockResolvedValue({ action: 'none' })
