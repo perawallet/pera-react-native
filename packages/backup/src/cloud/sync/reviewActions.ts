@@ -16,6 +16,7 @@ import { deleteItem, readItems } from '../api'
 import {
     parseAddressPayload,
     parseContactPayload,
+    parsePasskeyPayload,
     parseSecretsPayload,
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
@@ -23,6 +24,7 @@ import {
     accountItemKey,
     contactItemKey,
     isAccountItemKey,
+    passkeyItemKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
@@ -42,6 +44,8 @@ import type {
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportFn,
+    PasskeyImportSummary,
     SyncEngineDeps,
     SyncImportFn,
 } from './types'
@@ -53,6 +57,7 @@ export type ReviewActionDeps = {
     encryptionKey: Uint8Array
     importAccounts: SyncImportFn
     importContacts: ContactImportFn
+    importPasskeys: PasskeyImportFn
     readItems: (
         network: Network,
         backupId: BackupId,
@@ -82,6 +87,7 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     encryptionKey: deps.encryptionKey,
     importAccounts: deps.importAccounts,
     importContacts: deps.importContacts,
+    importPasskeys: deps.importPasskeys,
     readItems,
     deleteItem,
     decrypt: decryptItemPayload,
@@ -555,6 +561,146 @@ export const importContactFromBackup = async ({
                         fetched,
                     ),
                     label: payload.name,
+                },
+            },
+        },
+        summary,
+    }
+}
+
+/** Mirror of `markContactForBackup`: dropping the tombstone rather than
+ *  reviving it is what makes the re-upload correct, since the server deleted
+ *  the key and it has to go back at version 0. */
+export const markPasskeyForBackup = (
+    state: SyncState,
+    credentialId: string,
+): SyncState => {
+    const items = { ...state.items }
+    delete items[passkeyItemKey(credentialId)]
+    return { ...state, items }
+}
+
+/** Keeps the backup's copy of a credential the user is removing from this
+ *  device. `label` is stamped here because this device may never have
+ *  downloaded the item it pushed, and the review row has nothing else to
+ *  render. */
+export const keepPasskeyInBackup = (
+    state: SyncState,
+    credentialId: string,
+    label: string,
+): SyncState => {
+    const key = passkeyItemKey(credentialId)
+    const tracked = state.items[key]
+    if (!tracked || tracked.status !== BackupItemStatus.ACTIVE) return state
+
+    return {
+        ...state,
+        items: {
+            ...state.items,
+            [key]: {
+                ...tracked,
+                pendingImport: true,
+                isDirty: false,
+                pendingDelete: false,
+                label,
+            },
+        },
+    }
+}
+
+export const deletePasskeyFromBackup = async ({
+    state,
+    credentialId,
+    deps,
+}: {
+    state: SyncState
+    credentialId: string
+    deps: ReviewActionDeps
+}): Promise<BackupDeleteResult> => {
+    const key = passkeyItemKey(credentialId)
+    const keys =
+        state.items[key]?.status === BackupItemStatus.ACTIVE ? [key] : []
+
+    return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
+}
+
+const passkeyNotInBackup = (
+    state: SyncState,
+    credentialId: string,
+): { state: SyncState; summary: PasskeyImportSummary } => ({
+    state,
+    summary: {
+        imported: 0,
+        skipped: [],
+        failed: [{ credentialId, reason: 'Not present in the backup' }],
+    },
+})
+
+/** Re-reads the item rather than trusting the cached `label`, so `label` stays
+ *  a pure display concern and writes have one code path. */
+export const importPasskeyFromBackup = async ({
+    state,
+    credentialId,
+    deps,
+}: {
+    state: SyncState
+    credentialId: string
+    deps: ReviewActionDeps
+}): Promise<{ state: SyncState; summary: PasskeyImportSummary }> => {
+    const key = passkeyItemKey(credentialId)
+    if (state.items[key]?.status !== BackupItemStatus.ACTIVE) {
+        return passkeyNotInBackup(state, credentialId)
+    }
+
+    const [fetched] = await deps.readItems(
+        deps.network,
+        deps.backupId,
+        deps.deviceId,
+        [key],
+    )
+    if (!fetched) return passkeyNotInBackup(state, credentialId)
+
+    let payload
+    try {
+        payload = parsePasskeyPayload(
+            deps.decrypt(fetched.payload, {
+                encryptionKey: deps.encryptionKey,
+                backupId: deps.backupId,
+                key,
+            }),
+        )
+    } catch (error) {
+        logger.warn('reviewActions: unreadable passkey', { key })
+        return {
+            state,
+            summary: {
+                imported: 0,
+                skipped: [],
+                failed: [
+                    {
+                        credentialId,
+                        reason:
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                    },
+                ],
+            },
+        }
+    }
+
+    const summary = await deps.importPasskeys([payload])
+    return {
+        state: {
+            ...state,
+            items: {
+                ...state.items,
+                [key]: {
+                    ...clearReviewed(
+                        state.items[key] as SyncItemState,
+                        fetched,
+                    ),
+                    label: payload.displayName ?? payload.origin,
                 },
             },
         },

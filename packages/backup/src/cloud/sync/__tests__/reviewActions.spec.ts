@@ -22,12 +22,16 @@ import {
 import {
     deleteContactFromBackup,
     deleteFromBackup,
+    deletePasskeyFromBackup,
     importContactFromBackup,
     importFromBackup,
+    importPasskeyFromBackup,
     keepAccountInBackup,
     keepContactInBackup,
+    keepPasskeyInBackup,
     markAccountForBackup,
     markContactForBackup,
+    markPasskeyForBackup,
 } from '../reviewActions'
 
 const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
@@ -53,6 +57,11 @@ const baseDeps = () => ({
         failed: [],
     })),
     importContacts: vi.fn(async () => ({ imported: 1, failed: [] })),
+    importPasskeys: vi.fn(async () => ({
+        imported: 1,
+        skipped: [],
+        failed: [],
+    })),
     readItems: vi.fn(),
     deleteItem: vi.fn(async () => ({ seq: 1 })),
     decrypt: vi.fn(),
@@ -508,5 +517,109 @@ describe('contact review actions', () => {
         })
 
         expect(deps.deleteItem).not.toHaveBeenCalled()
+    })
+})
+
+describe('passkey review actions', () => {
+    const passkey = (overrides: Partial<SyncItemState> = {}): SyncState => {
+        const state = createEmptySyncState('b')
+        state.items['passkeys/one'] = tracked({
+            type: BackupItemType.PASSKEY,
+            ...overrides,
+        })
+        return state
+    }
+
+    const servingPasskey = (payload: Record<string, unknown> | null) => {
+        const deps = baseDeps()
+        deps.readItems.mockResolvedValue(
+            payload === null
+                ? []
+                : [{ key: 'passkeys/one', ver: 4, hash: 'rh', payload: 'enc' }],
+        )
+        deps.decrypt.mockReturnValue(JSON.stringify(payload ?? {}))
+        return deps
+    }
+
+    it('markPasskeyForBackup drops the tombstone so the item re-uploads at version 0', () => {
+        const next = markPasskeyForBackup(
+            passkey({ status: BackupItemStatus.IGNORED }),
+            'one',
+        )
+
+        expect(next.items['passkeys/one']).toBeUndefined()
+    })
+
+    it('keepPasskeyInBackup holds the item for review with its label', () => {
+        const next = keepPasskeyInBackup(passkey(), 'one', 'Alice')
+
+        expect(next.items['passkeys/one']).toMatchObject({
+            pendingImport: true,
+            label: 'Alice',
+        })
+    })
+
+    it('keepPasskeyInBackup leaves a state the backup does not hold alone', () => {
+        const state = passkey({ status: BackupItemStatus.IGNORED })
+
+        expect(keepPasskeyInBackup(state, 'one', 'Alice')).toBe(state)
+    })
+
+    it('deletePasskeyFromBackup tombstones the key it deleted', async () => {
+        const deps = baseDeps()
+
+        const result = await deletePasskeyFromBackup({
+            state: passkey(),
+            credentialId: 'one',
+            deps,
+        })
+
+        expect(result.keys).toEqual(['passkeys/one'])
+        expect(result.state.items['passkeys/one'].status).toBe(
+            BackupItemStatus.IGNORED,
+        )
+    })
+
+    it('importPasskeyFromBackup reports a credential the backup does not hold', async () => {
+        const deps = servingPasskey(null)
+
+        const { summary } = await importPasskeyFromBackup({
+            state: passkey({ status: BackupItemStatus.IGNORED }),
+            credentialId: 'one',
+            deps,
+        })
+
+        expect(summary.imported).toBe(0)
+        expect(summary.failed[0].credentialId).toBe('one')
+    })
+
+    it('importPasskeyFromBackup re-reads the item and imports it', async () => {
+        const deps = servingPasskey({
+            credentialId: 'one',
+            origin: 'https://example.com',
+            identity: 'user@example.com',
+            counter: 0,
+            publicKeySpkiDer: 'pk',
+            seedAddress: 'SEED',
+            displayName: 'Alice',
+            createdAt: 5,
+            updatedAt: 5,
+        })
+
+        const { state: next, summary } = await importPasskeyFromBackup({
+            state: passkey({ pendingImport: true }),
+            credentialId: 'one',
+            deps,
+        })
+
+        expect(deps.importPasskeys).toHaveBeenCalledWith([
+            expect.objectContaining({ credentialId: 'one' }),
+        ])
+        expect(summary.imported).toBe(1)
+        expect(next.items['passkeys/one']).toMatchObject({
+            pendingImport: false,
+            label: 'Alice',
+            knownVer: 4,
+        })
     })
 })
