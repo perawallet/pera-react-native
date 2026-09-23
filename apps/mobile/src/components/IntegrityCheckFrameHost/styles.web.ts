@@ -53,7 +53,7 @@ export const useStyles = makeStyles(theme => ({
         maxWidth: '100%',
         maxHeight: '100%',
         overflow: 'hidden',
-        borderRadius: theme.spacing.xl,
+        borderRadius: theme.borderRadius.lg,
         backgroundColor: theme.colors.background,
     },
 }))
