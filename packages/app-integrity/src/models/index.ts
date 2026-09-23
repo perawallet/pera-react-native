@@ -12,7 +12,7 @@
 
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
-export type IntegrityPlatform = 'ios' | 'android'
+export type IntegrityPlatform = 'ios' | 'android' | 'web'
 
 export type IntegrityRegistration = {
     integrityToken: string
@@ -33,6 +33,12 @@ export type AttestPayload =
           attestation: string
       }
     | { deviceInstallationId: string; platform: 'android'; attestation: string }
+    | {
+          deviceInstallationId: string
+          platform: 'web'
+          publicKey: string
+          signature: string
+      }
 
 export type AppIntegrityStatus =
     | 'idle'

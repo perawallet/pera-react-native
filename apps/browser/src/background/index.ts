@@ -30,6 +30,12 @@ import {
     installDappHostResponseRoute,
     installDappPageRequestRoute,
 } from './dapp'
+import {
+    INTEGRITY_RENEW_ALARM,
+    ensureIntegrityToken,
+    handleIntegrityAlarm,
+    installIntegrityRenewal,
+} from './integrity'
 import { ensureOffscreenDocument } from './offscreen'
 import { installPushHandlers } from './push'
 
@@ -40,6 +46,11 @@ startStorageProxyHost()
 // Also top-level: constructing the messaging instance registers the SDK's `push`
 // listener, so an async init would let a worker woken by a push miss that push.
 installPushHandlers()
+
+// Same top-level discipline: a worker woken by INTEGRITY_RENEW_ALARM must
+// already have its listener attached, and the token provider must be live
+// before the first outgoing request on this wake.
+installIntegrityRenewal()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
@@ -82,6 +93,10 @@ chrome.alarms.onAlarm.addListener(alarm => {
             })
         return
     }
+    if (alarm.name === INTEGRITY_RENEW_ALARM) {
+        void handleIntegrityAlarm(alarm)
+        return
+    }
     void handleAutoLockAlarm(alarm)
 })
 
@@ -90,6 +105,11 @@ chrome.alarms.onAlarm.addListener(alarm => {
 void ensureOffscreenDocument().catch((error: unknown) => {
     console.error('[pera] startup ensure-offscreen failed:', error)
 })
+
+// Every SW wake re-checks the token, so a popup opening after an eviction
+// finds one already warm rather than racing a mint against the user's first
+// tap. ensureIntegrityToken never throws, so this needs no .catch.
+void ensureIntegrityToken()
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const msg = message as { scope?: string; kind?: string }

@@ -379,6 +379,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../../packages/accounts
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../../packages/app-integrity
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../../packages/assets
@@ -1553,6 +1556,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

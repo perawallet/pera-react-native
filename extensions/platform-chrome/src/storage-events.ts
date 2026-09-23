@@ -10,6 +10,25 @@
  limitations under the License
  */
 
+const onStorageKeyChanged = (
+    areaName: 'local' | 'session',
+    keys: string[],
+    listener: (key: string) => void,
+): (() => void) => {
+    const wanted = new Set(keys)
+    const handler = (
+        changes: Record<string, unknown>,
+        changedArea: string,
+    ): void => {
+        if (changedArea !== areaName) return
+        for (const key of Object.keys(changes)) {
+            if (wanted.has(key)) listener(key)
+        }
+    }
+    chrome.storage.onChanged.addListener(handler)
+    return () => chrome.storage.onChanged.removeListener(handler)
+}
+
 /**
  * Typed subscription to chrome.storage.local key changes, for mobile-side
  * web code: apps/mobile compiles without chrome ambient types (they used to
@@ -18,17 +37,11 @@
 export const onLocalStorageKeyChanged = (
     keys: string[],
     listener: (key: string) => void,
-): (() => void) => {
-    const wanted = new Set(keys)
-    const handler = (
-        changes: Record<string, unknown>,
-        areaName: string,
-    ): void => {
-        if (areaName !== 'local') return
-        for (const key of Object.keys(changes)) {
-            if (wanted.has(key)) listener(key)
-        }
-    }
-    chrome.storage.onChanged.addListener(handler)
-    return () => chrome.storage.onChanged.removeListener(handler)
-}
+): (() => void) => onStorageKeyChanged('local', keys, listener)
+
+// Same rationale as onLocalStorageKeyChanged, for the session area — used by
+// UI realms adopting the service worker's minted integrity token.
+export const onSessionStorageKeyChanged = (
+    keys: string[],
+    listener: (key: string) => void,
+): (() => void) => onStorageKeyChanged('session', keys, listener)

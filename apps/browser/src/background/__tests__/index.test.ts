@@ -16,13 +16,14 @@ const handleAutoLockAlarmMock = vi.fn().mockResolvedValue(undefined)
 const ensureOffscreenDocumentMock = vi.fn().mockResolvedValue(undefined)
 const installConnectionsApprovalRouterMock = vi.fn()
 const installConnectionsHeartbeatMock = vi.fn()
+const handleIntegrityAlarmMock = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-keystore-chrome/vault/autolock', () => ({
     handleAutoLockAlarm: handleAutoLockAlarmMock,
 }))
 
 // index.ts pulls in the dapp relay + passkey relay wiring, which is out of
-// scope here — only the onAlarm dispatch (heartbeat vs. auto-lock) is under
+// scope here — only the onAlarm dispatch (heartbeat, integrity, auto-lock) is under
 // test, so those classes are stubbed to inert no-ops.
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     ApprovalWindowBridge: class {
@@ -73,6 +74,15 @@ vi.mock('../connections', () => ({
     installConnectionsHeartbeat: installConnectionsHeartbeatMock,
 }))
 
+// The mint loop has its own suite; here it only has to be routable. Left real, it reads the network
+// list from the config mock above at module scope and fails the import.
+vi.mock('../integrity', () => ({
+    INTEGRITY_RENEW_ALARM: 'pera-integrity-renew',
+    ensureIntegrityToken: vi.fn().mockResolvedValue(undefined),
+    handleIntegrityAlarm: handleIntegrityAlarmMock,
+    installIntegrityRenewal: vi.fn(),
+}))
+
 type AlarmListener = (alarm: chrome.alarms.Alarm) => void
 
 describe('background/index onAlarm routing', () => {
@@ -82,6 +92,7 @@ describe('background/index onAlarm routing', () => {
         vi.resetModules()
         handleAutoLockAlarmMock.mockClear()
         ensureOffscreenDocumentMock.mockClear()
+        handleIntegrityAlarmMock.mockClear()
 
         globalThis.chrome = {
             runtime: {
@@ -112,6 +123,14 @@ describe('background/index onAlarm routing', () => {
         onAlarmListener(alarm)
 
         expect(handleAutoLockAlarmMock).toHaveBeenCalledWith(alarm)
+    })
+
+    it('routes the integrity renew alarm to the mint loop, not handleAutoLockAlarm', () => {
+        const alarm = { name: 'pera-integrity-renew' } as chrome.alarms.Alarm
+        onAlarmListener(alarm)
+
+        expect(handleIntegrityAlarmMock).toHaveBeenCalledWith(alarm)
+        expect(handleAutoLockAlarmMock).not.toHaveBeenCalled()
     })
 
     it('does not forward the heartbeat alarm to handleAutoLockAlarm', () => {

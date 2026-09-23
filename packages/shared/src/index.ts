@@ -12,6 +12,7 @@
 
 export * from './api/query-client'
 export * from './api/integrity-bypass'
+export * from './api/integrity-token-provider'
 export * from './api/mutation-policy'
 export * from './api/query-render-state'
 export * from './api/account-fast-lookup'
