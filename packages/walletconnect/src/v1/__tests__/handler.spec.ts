@@ -629,7 +629,7 @@ describe('walletconnect v1 handler behaviour', () => {
         const { handler } = await setup()
 
         await expect(handler.pair(withBridge(bridge))).rejects.toThrow(
-            'bridge must be https or wss',
+            'Not a WalletConnect v1 pairing URI',
         )
         expect(wc.FakeConnector.instances).toHaveLength(0)
     })
