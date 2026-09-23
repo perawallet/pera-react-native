@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { AppState } from 'react-native'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { useSettingsPasskeysScreen } from '../useSettingsPasskeysScreen'
@@ -27,6 +27,12 @@ const mocks = vi.hoisted(() => ({
     hasHDWallet: true,
     hasStrongBiometricOrCredential: true,
     usePasskeyMigrationBanner: vi.fn(),
+    requestSheet: vi.fn(),
+    showToast: vi.fn(),
+    isCloudBackupEnabled: true,
+    isPasskeyBackedUp: vi.fn(() => false),
+    deletePasskeyFromBackup: vi.fn(async () => 'settled'),
+    keepPasskeyInBackup: vi.fn(async () => true),
 }))
 
 vi.mock('../../../components/PasskeyMigrationBanner', () => ({
@@ -66,7 +72,33 @@ vi.mock('../openCredentialProviderSettings', () => ({
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: vi.fn() }),
+    useBottomSheet: () => ({ request: mocks.requestSheet }),
+}))
+
+vi.mock('@modules/cloud-backup', () => ({
+    DeleteFromBackupSheet: () => null,
+}))
+
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    getBackupSyncManager: () => ({
+        deletePasskeyFromBackup: mocks.deletePasskeyFromBackup,
+        keepPasskeyInBackup: mocks.keepPasskeyInBackup,
+    }),
+    isPasskeyBackedUp: () => mocks.isPasskeyBackedUp(),
+    useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
+        selector({ syncState: null }),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { warn: vi.fn() },
+}))
+
+vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
+    useIsCloudBackupEnabled: () => mocks.isCloudBackupEnabled,
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mocks.showToast }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
@@ -140,6 +172,12 @@ describe('useSettingsPasskeysScreen', () => {
         mocks.isProviderActive = true
         mocks.hasHDWallet = true
         mocks.hasStrongBiometricOrCredential = true
+        mocks.isCloudBackupEnabled = true
+        mocks.isPasskeyBackedUp.mockReturnValue(false)
+        mocks.deletePasskeyFromBackup.mockResolvedValue('settled')
+        mocks.keepPasskeyInBackup.mockResolvedValue(true)
+        // Every sheet in this flow resolves a value; the confirm comes first.
+        mocks.requestSheet.mockResolvedValue(true)
         setMigration({})
         vi.spyOn(AppState, 'addEventListener').mockReturnValue({
             remove: vi.fn(),
@@ -312,6 +350,83 @@ describe('useSettingsPasskeysScreen', () => {
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.canRemove(row)).toBe(false)
+    })
+
+    describe('removing a credential the cloud backup holds', () => {
+        const backedUpPasskey = {
+            id: 'cred-1',
+            keyId: 'raw-cred-1',
+            displayName: 'example.com',
+            source: 'keystore',
+            needsMigration: false,
+        } as Passkey
+
+        const requestDelete = async (passkey: Passkey) => {
+            const { result } = renderHook(() => useSettingsPasskeysScreen())
+            await act(async () => {
+                result.current.onRequestDelete(passkey)
+            })
+        }
+
+        it('removes a credential the backup does not hold without asking', async () => {
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.requestSheet).toHaveBeenCalledTimes(1)
+            expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
+            expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
+        })
+
+        it('records the delete against the raw keystore id before removing', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.deletePasskeyFromBackup).toHaveBeenCalledWith(
+                'raw-cred-1',
+            )
+            expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
+        })
+
+        it('keeps the backup copy when the user declines, then removes', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+            mocks.requestSheet
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(false)
+
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.keepPasskeyInBackup).toHaveBeenCalledWith(
+                'raw-cred-1',
+                'example.com',
+            )
+            expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
+            expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
+        })
+
+        it('leaves the credential in place when the backup refuses the choice', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+            mocks.deletePasskeyFromBackup.mockResolvedValue('refused')
+
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.showToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+            expect(mocks.removePasskey).not.toHaveBeenCalled()
+        })
+
+        it('leaves the credential in place when the choice sheet is dismissed', async () => {
+            mocks.isPasskeyBackedUp.mockReturnValue(true)
+            mocks.requestSheet
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(undefined)
+
+            await requestDelete(backedUpPasskey)
+
+            expect(mocks.keepPasskeyInBackup).not.toHaveBeenCalled()
+            expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
+            expect(mocks.removePasskey).not.toHaveBeenCalled()
+        })
     })
 
     it('exposes the banner state it composed', () => {

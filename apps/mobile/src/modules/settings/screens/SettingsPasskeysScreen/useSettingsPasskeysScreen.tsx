@@ -14,9 +14,12 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { AppState } from 'react-native'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { DeleteFromBackupSheet } from '@modules/cloud-backup'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useIsCloudBackupEnabled } from '@hooks/useIsCloudBackupEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { useToast } from '@hooks/useToast'
 import { isActiveAppState } from '@utils/app-state'
 import {
     usePasskeyMigrationBanner,
@@ -31,6 +34,12 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
 import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
+import {
+    getBackupSyncManager,
+    isPasskeyBackedUp,
+    useBackupSyncStateStore,
+} from '@perawallet/wallet-core-backup'
+import { logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, PasskeysEvent } from '@analytics'
 
 export type SettingsPasskeysScreenState =
@@ -99,8 +108,11 @@ export const useSettingsPasskeysScreen =
         const { request } = useBottomSheet()
         const { removePasskey } = useRemovePasskeyMutation()
         const { showError } = useErrorToast()
+        const { showToast } = useToast()
         const { t } = useLanguage()
         const scanner = useModalState()
+        const isCloudBackupEnabled = useIsCloudBackupEnabled()
+        const syncState = useBackupSyncStateStore(state => state.syncState)
 
         // Re-check provider + biometric status when the app returns to the
         // foreground — covers the user enabling Pera as the credential provider
@@ -118,6 +130,74 @@ export const useSettingsPasskeysScreen =
             })
             return () => sub.remove()
         }, [refreshStatus, refreshBiometric])
+
+        /** Whether removal may proceed. A credential the backup holds has to
+         *  land in one bucket or the other first: a refused or dismissed
+         *  choice would strand it in neither, so removal is abandoned rather
+         *  than run anyway. The credential id the backup keys on is the raw
+         *  keystore id, not the base64url `id` WebAuthn uses. */
+        const resolveBackupChoice = useCallback(
+            async (passkey: Passkey): Promise<boolean> => {
+                if (
+                    !isCloudBackupEnabled ||
+                    !isPasskeyBackedUp(syncState, passkey.keyId)
+                )
+                    return true
+
+                const choice = await request<boolean>({
+                    contents: (
+                        <DeleteFromBackupSheet
+                            title={t(
+                                'cloud_backup.passkeys.delete_sheet_title',
+                            )}
+                            message={t(
+                                'cloud_backup.passkeys.delete_sheet_body',
+                            )}
+                            declineLabel={t(
+                                'cloud_backup.accounts.keep_action',
+                            )}
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+                if (choice === undefined) return false
+
+                try {
+                    const isRecorded = choice
+                        ? (await getBackupSyncManager().deletePasskeyFromBackup(
+                              passkey.keyId,
+                          )) !== 'refused'
+                        : await getBackupSyncManager().keepPasskeyInBackup(
+                              passkey.keyId,
+                              passkey.displayName,
+                          )
+                    if (isRecorded) return true
+                } catch (error) {
+                    logger.warn(
+                        'useSettingsPasskeysScreen: backup choice failed',
+                        {
+                            credentialId: passkey.keyId,
+                            error:
+                                error instanceof Error
+                                    ? error.message
+                                    : String(error),
+                        },
+                    )
+                }
+
+                showToast({
+                    title: t(
+                        choice
+                            ? 'cloud_backup.passkeys.delete_error'
+                            : 'cloud_backup.passkeys.keep_error',
+                    ),
+                    body: '',
+                    type: 'error',
+                })
+                return false
+            },
+            [isCloudBackupEnabled, syncState, request, showToast, t],
+        )
 
         const onRequestDelete = useCallback(
             async (passkey: Passkey) => {
@@ -137,6 +217,7 @@ export const useSettingsPasskeysScreen =
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
                 if (!confirmed) return
+                if (!(await resolveBackupChoice(passkey))) return
                 try {
                     await removePasskey(passkey)
                     trackEvent(PasskeysEvent.Deleted)
@@ -146,7 +227,7 @@ export const useSettingsPasskeysScreen =
                     showError(error, t('settings.passkeys.error_title'))
                 }
             },
-            [request, removePasskey, showError, t],
+            [request, resolveBackupChoice, removePasskey, showError, t],
         )
 
         const onOpenProviderSettings = useCallback(async () => {
