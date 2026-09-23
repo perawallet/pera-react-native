@@ -1,126 +1,100 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
-  "//": "globalEnv lists every variable tools/generate-config.sh reads. packages/config/src/generated-env.ts is gitignored, so $TURBO_DEFAULT$ never hashed it: a dist built from staging secrets and one built from production secrets shared the SAME task hash. `turbo run build` then restored the stale dist/** over the copy apps/browser/scripts/build.mjs had just rebuilt, and the esbuild surfaces (background service worker, content scripts, db-worker) shipped the committed staging defaults while the Metro UI bundle — which resolves packages/*/src directly — shipped the real values. Hashing the inputs to the generated file restores the invariant that differing config can never reuse an artifact.",
-  "globalEnv": [
-    "APP_ENV",
-    "PERA_ENV_OVERLAY",
-    "PERA_DEFAULT_NETWORK",
-    "DEFAULT_NETWORK",
-    "MAINNET_*",
-    "TESTNET_*",
-    "BACKEND_API_KEY",
-    "ALGOD_API_KEY",
-    "INDEXER_API_KEY",
-    "APP_STORE_APPLE_ID",
-    "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER",
-    "FIREBASE_*",
-    "GA_MEASUREMENT_API_SECRET",
-    "SENTRY_DSN",
-    "BITRISE_GIT_TAG",
-    "BITRISE_BUILD_NUMBER",
-    "SUPPORT_BASE_URL",
-    "TOS_URL",
-    "PRIVACY_POLICY_URL",
-    "DEMO_DAPP_URL",
-    "DEBUG_ENABLED",
-    "PROFILING_ENABLED",
-    "POLLING_ENABLED",
-    "DISABLE_SCREEN_CAPTURE_PREVENTION",
-    "WEB_INTEGRITY_MINT_ENABLED",
-    "WEB_INTEGRITY_BEARER_ENABLED"
-  ],
-  "tasks": {
-    "generate:config": {
-      "cache": false,
-      "outputs": [
-        "packages/config/src/generated-env.ts"
-      ]
-    },
-    "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        ".env*"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
-    },
-    "dev": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false,
-      "persistent": true
-    },
-    "dev:packages": {
-      "dependsOn": [
-        "^dev:packages"
-      ],
-      "cache": false,
-      "persistent": true
-    },
-    "lint": {},
-    "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ],
-      "inputs": [
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx",
-        "vitest.config.ts",
-        "vitest.setup.ts"
-      ]
-    },
-    "test:unit": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ],
-      "inputs": [
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "src/**/*.test.ts",
-        "src/**/*.test.tsx",
-        "vitest.config.ts",
-        "vitest.setup.ts"
-      ]
-    },
-    "test:watch": {
-      "cache": false,
-      "persistent": true
-    },
-    "transit": {
-      "dependsOn": [
-        "^transit"
-      ]
-    },
-    "android": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false,
-      "persistent": true
-    },
-    "ios": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false,
-      "persistent": true
-    },
-    "start": {
-      "cache": false,
-      "persistent": true
+    "$schema": "https://turborepo.com/schema.json",
+    "//": "globalEnv lists every variable tools/generate-config.sh reads. packages/config/src/generated-env.ts is gitignored, so $TURBO_DEFAULT$ never hashed it: a dist built from staging secrets and one built from production secrets shared the SAME task hash. `turbo run build` then restored the stale dist/** over the copy apps/browser/scripts/build.mjs had just rebuilt, and the esbuild surfaces (background service worker, content scripts, db-worker) shipped the committed staging defaults while the Metro UI bundle — which resolves packages/*/src directly — shipped the real values. Hashing the inputs to the generated file restores the invariant that differing config can never reuse an artifact.",
+    "globalEnv": [
+        "APP_ENV",
+        "PERA_ENV_OVERLAY",
+        "PERA_DEFAULT_NETWORK",
+        "DEFAULT_NETWORK",
+        "MAINNET_*",
+        "TESTNET_*",
+        "BACKEND_API_KEY",
+        "ALGOD_API_KEY",
+        "INDEXER_API_KEY",
+        "APP_STORE_APPLE_ID",
+        "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER",
+        "FIREBASE_*",
+        "GA_MEASUREMENT_API_SECRET",
+        "SENTRY_DSN",
+        "BITRISE_GIT_TAG",
+        "BITRISE_BUILD_NUMBER",
+        "SUPPORT_BASE_URL",
+        "TOS_URL",
+        "PRIVACY_POLICY_URL",
+        "DEMO_DAPP_URL",
+        "DEBUG_ENABLED",
+        "PROFILING_ENABLED",
+        "POLLING_ENABLED",
+        "DISABLE_SCREEN_CAPTURE_PREVENTION",
+        "WEB_INTEGRITY_MINT_ENABLED",
+        "WEB_INTEGRITY_BEARER_ENABLED",
+        "WEB_INTEGRITY_ENROL_ENABLED"
+    ],
+    "tasks": {
+        "generate:config": {
+            "cache": false,
+            "outputs": ["packages/config/src/generated-env.ts"]
+        },
+        "build": {
+            "dependsOn": ["^build"],
+            "inputs": ["$TURBO_DEFAULT$", ".env*"],
+            "outputs": ["dist/**"]
+        },
+        "dev": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "persistent": true
+        },
+        "dev:packages": {
+            "dependsOn": ["^dev:packages"],
+            "cache": false,
+            "persistent": true
+        },
+        "lint": {},
+        "test": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "inputs": [
+                "src/**/*.ts",
+                "src/**/*.tsx",
+                "src/**/*.test.ts",
+                "src/**/*.test.tsx",
+                "vitest.config.ts",
+                "vitest.setup.ts"
+            ]
+        },
+        "test:unit": {
+            "dependsOn": ["^build"],
+            "outputs": ["coverage/**"],
+            "inputs": [
+                "src/**/*.ts",
+                "src/**/*.tsx",
+                "src/**/*.test.ts",
+                "src/**/*.test.tsx",
+                "vitest.config.ts",
+                "vitest.setup.ts"
+            ]
+        },
+        "test:watch": {
+            "cache": false,
+            "persistent": true
+        },
+        "transit": {
+            "dependsOn": ["^transit"]
+        },
+        "android": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "persistent": true
+        },
+        "ios": {
+            "dependsOn": ["^build"],
+            "cache": false,
+            "persistent": true
+        },
+        "start": {
+            "cache": false,
+            "persistent": true
+        }
     }
-  }
 }

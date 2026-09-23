@@ -196,6 +196,7 @@ append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
 # time, so they must be baked here or the flags can never be turned on in a build.
 append_config "WEB_INTEGRITY_MINT_ENABLED" "webIntegrityMintEnabled" "boolean"
 append_config "WEB_INTEGRITY_BEARER_ENABLED" "webIntegrityBearerEnabled" "boolean"
+append_config "WEB_INTEGRITY_ENROL_ENABLED" "webIntegrityEnrolEnabled" "boolean"
 # e2e-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
 # Set ONLY in the e2e build job — never in store-submission builds.
 append_config "DISABLE_SCREEN_CAPTURE_PREVENTION" "disableScreenCapturePrevention" "boolean"

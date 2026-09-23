@@ -35,7 +35,8 @@ export function loadEnvOverrides(): OverridesType {
                 key === 'pollingEnabled' ||
                 key === 'disableScreenCapturePrevention' ||
                 key === 'webIntegrityMintEnabled' ||
-                key === 'webIntegrityBearerEnabled'
+                key === 'webIntegrityBearerEnabled' ||
+                key === 'webIntegrityEnrolEnabled'
             ) {
                 overrides[key] = envValue === 'true'
             } else {
