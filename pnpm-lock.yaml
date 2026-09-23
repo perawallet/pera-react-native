@@ -2262,6 +2262,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-passkeys':
+        specifier: workspace:*
+        version: link:../passkeys
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2296,6 +2299,9 @@ importers:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
     devDependencies:
+      '@algorandfoundation/react-native-keystore':
+        specifier: 1.0.0-canary.19
+        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -2311,6 +2317,12 @@ importers:
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
+      react-native:
+        specifier: 0.86.2
+        version: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+      react-native-quick-crypto:
+        specifier: ^1.0.17
+        version: 1.1.6(expo-build-properties@57.0.9(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -14932,9 +14944,7 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 

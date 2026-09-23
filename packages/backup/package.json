@@ -28,6 +28,7 @@
         "@perawallet/wallet-core-contacts": "workspace:*",
         "@perawallet/wallet-core-device": "workspace:*",
         "@perawallet/wallet-core-kms": "workspace:*",
+        "@perawallet/wallet-core-passkeys": "workspace:*",
         "@perawallet/wallet-core-shared": "workspace:*",
         "@perawallet/wallet-extension-platform": "workspace:*",
         "@perawallet/wallet-extension-provider": "workspace:*",
@@ -41,11 +42,14 @@
         "zustand": "catalog:"
     },
     "devDependencies": {
+        "@algorandfoundation/react-native-keystore": "catalog:",
         "@perawallet/wallet-core-devtools": "workspace:*",
         "@testing-library/react": "catalog:",
         "@types/react": "catalog:",
         "decimal.js": "catalog:",
         "msw": "catalog:",
+        "react-native": "catalog:",
+        "react-native-quick-crypto": "catalog:",
         "typescript": "catalog:",
         "vite": "catalog:",
         "vitest": "catalog:"
