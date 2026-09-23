@@ -74,6 +74,12 @@ export {
 } from './integrity/storage-keys'
 export * from './integrity/check-wire'
 export {
+    holdIntegrityCheckHost,
+    onHostedCheckEnded,
+    onIntegrityEnrolmentNeeded,
+    requestIntegrityEnrolment,
+} from './integrity/enrol-client'
+export {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
     CONNECTIONS_EVENT_SCOPE,
