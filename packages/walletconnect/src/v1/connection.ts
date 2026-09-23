@@ -41,9 +41,25 @@ export type WalletConnectV1Connection = Connection & {
     metadata: WalletConnectV1Metadata
 }
 
+// The bridge host is dApp-chosen by protocol design, but the scheme must be
+// one the client can only turn into a secure WebSocket: it maps http(s) to
+// ws(s) and passes anything else through to `new WebSocket(...)` unchanged,
+// and the URI can arrive from any web page (extension) or deeplink (mobile).
+// No `new URL` here — Hermes' implementation is not trusted with hostile input.
+const hasSecureBridge = (uri: string): boolean => {
+    const bridge = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
+    if (!bridge) return false
+    try {
+        return /^(?:https|wss):\/\//i.test(decodeURIComponent(bridge))
+    } catch {
+        // Malformed percent-encoding.
+        return false
+    }
+}
+
 // dApps also emit bridge-less `wc://?…` focus signals; routing one into the v1 client throws.
 export const isV1PairingUri = (uri: string): boolean =>
-    walletConnectUriVersion(uri) === 1 && /[?&]bridge=[^&]+/.test(uri)
+    walletConnectUriVersion(uri) === 1 && hasSecureBridge(uri)
 
 // Applied on every read: the registry hands over erased records, and persisted
 // ones can be stale or half-migrated.

@@ -132,8 +132,8 @@ chrome.runtime.onMessage.addListener(
 )
 
 // Connect-modal pair requests are one-way: forward to the SW and drop. The SW
-// validates `sender.origin`, so a pair failure is deliberately invisible to
-// the dapp.
+// validates `sender.origin` and refuses pairs without user activation, so a
+// pair failure is deliberately invisible to the dapp.
 window.addEventListener(CONNECT_MODAL_PAIR_EVENT, (event: Event) => {
     const detail = (event as CustomEvent<ConnectModalPairDetail>).detail
     if (typeof detail?.uri !== 'string') return
@@ -142,7 +142,13 @@ window.addEventListener(CONNECT_MODAL_PAIR_EVENT, (event: Event) => {
         // would leave a dead-SW rejection unhandled. lastError is read only to
         // silence Chrome's unchecked-lastError warning.
         chrome.runtime.sendMessage(
-            { scope: WC_PAGE_PAIR_SCOPE, uri: detail.uri },
+            {
+                scope: WC_PAGE_PAIR_SCOPE,
+                uri: detail.uri,
+                // Read in this ISOLATED world, like onRequest above: a page
+                // dispatching the fixed pair event cannot forge it.
+                hasUserActivation: hasUserActivation(),
+            },
             () => {
                 void chrome.runtime.lastError
             },

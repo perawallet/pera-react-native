@@ -65,12 +65,12 @@ export const WEBAUTHN_CHANNEL_RELAY_READY_EVENT =
 // `sender.origin` on arrival regardless of who dispatched the event.
 //
 // This event name is fixed and page-discoverable by design, so ANY page
-// script can dispatch it directly — reaching the pair path with no modal, no
-// injected row, and no click at all. Pairing is inert until the user selects
-// accounts and approves in the wallet: that approval is the actual enforced
-// boundary here, and the click on the injected row is a UX affordance that
-// makes provenance legible to the user, not a security control this event's
-// fixed name provides.
+// script can dispatch it directly — with no modal and no injected row. The
+// enforced boundaries live downstream, where page script cannot reach: the
+// isolated relay stamps its own read of `navigator.userActivation` (so a pair
+// with no user gesture behind it is refused), the SW budgets pairs per
+// `sender.origin`, the offscreen host caps unsettled pairings, and signing
+// still requires the user to approve accounts in the wallet.
 export const CONNECT_MODAL_PAIR_EVENT = '__pera_connect_modal_pair__'
 
 export type ConnectModalPairDetail = { uri: string }

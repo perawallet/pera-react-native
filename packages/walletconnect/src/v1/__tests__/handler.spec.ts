@@ -312,6 +312,36 @@ describe('walletconnect v1 handler specifics', () => {
         ).toBe(false)
     })
 
+    it('accepts only https/wss bridges — the client turns any other bridge into an attacker-chosen socket', () => {
+        const handler = createWalletConnectV1Handler({
+            getNetwork: testGetNetwork,
+            sessionKeys,
+        })
+        const uriWithBridge = (bridge: string): string =>
+            `wc:topic@1?bridge=${encodeURIComponent(bridge)}&key=beef`
+
+        expect(handler.canHandleUri(V1_URI)).toBe(true)
+        expect(handler.canHandleUri(uriWithBridge('wss://b.example'))).toBe(
+            true,
+        )
+
+        expect(handler.canHandleUri(uriWithBridge('http://b.example'))).toBe(
+            false,
+        )
+        expect(handler.canHandleUri(uriWithBridge('ws://b.example'))).toBe(
+            false,
+        )
+        expect(handler.canHandleUri(uriWithBridge('javascript:alert(1)'))).toBe(
+            false,
+        )
+        // A scheme-relative or bare value must not slip through either.
+        expect(handler.canHandleUri('wc:topic@1?bridge=b&key=beef')).toBe(false)
+        // Malformed percent-encoding must decline, not throw.
+        expect(handler.canHandleUri('wc:topic@1?bridge=%zz&key=beef')).toBe(
+            false,
+        )
+    })
+
     it('reports the topic and bridge origin but never the key', () => {
         const described = createWalletConnectV1Handler({
             getNetwork: testGetNetwork,
