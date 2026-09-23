@@ -25,9 +25,10 @@ import {
 import { passkeyBackupInputs } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 
-/** Resolves a seed key id's entropy directly — unlike `SeedEntropyResolver`
- *  (Task 14, keyed by seed address for the restore path), `passkeyBackupInputs`
- *  already knows the owning seed's key id from the credential's own metadata. */
+/** Resolves a seed key id's entropy directly. `SeedEntropyResolver` keys by
+ *  seed address because that is all a restored payload carries;
+ *  `passkeyBackupInputs` already knows the owning seed's key id from the
+ *  credential's own metadata. */
 const resolveEntropyByKeyId = async (
     seedKeyId: string,
 ): Promise<Uint8Array | null> => {
