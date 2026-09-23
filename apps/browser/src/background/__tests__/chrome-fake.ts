@@ -49,6 +49,8 @@ export type LocalChromeFake = {
         sender: chrome.runtime.MessageSender,
     ) => FakePort
     closeTab: (tabId: number) => void
+    /** The user navigates the tab elsewhere; undefined is what an origin without host permission reads as. */
+    setTabUrl: (tabId: number, url: string | undefined) => void
 }
 
 export const EXTENSION_PAGE_SENDER: chrome.runtime.MessageSender = {
@@ -83,7 +85,6 @@ export const createLocalChromeFake = (): LocalChromeFake => {
     const alarmListeners = new Set<(alarm: { name: string }) => void>()
     const messageListeners = new Set<MessageListener>()
     const connectListeners = new Set<(port: chrome.runtime.Port) => void>()
-    const tabRemovedListeners = new Set<(tabId: number) => void>()
     const tabs = new Map<number, { url?: string }>()
     let nextTabId = 100
 
@@ -164,8 +165,14 @@ export const createLocalChromeFake = (): LocalChromeFake => {
 
     const closeTab = (tabId: number): void => {
         tabs.delete(tabId)
-        for (const listener of tabRemovedListeners) listener(tabId)
     }
+
+    const setTabUrl = (tabId: number, url: string | undefined): void => {
+        tabs.set(tabId, { url })
+    }
+
+    const noTab = (tabId: number): Error =>
+        new Error(`No tab with id: ${tabId}.`)
 
     const fake = {
         runtime: {
@@ -191,12 +198,14 @@ export const createLocalChromeFake = (): LocalChromeFake => {
                 tabs.set(id, { url })
                 return { id, url } as chrome.tabs.Tab
             },
-            remove: async (tabId: number) => closeTab(tabId),
-            onRemoved: {
-                addListener: (listener: (tabId: number) => void) =>
-                    tabRemovedListeners.add(listener),
-                removeListener: (listener: (tabId: number) => void) =>
-                    tabRemovedListeners.delete(listener),
+            get: async (tabId: number) => {
+                const tab = tabs.get(tabId)
+                if (!tab) throw noTab(tabId)
+                return { id: tabId, url: tab.url } as chrome.tabs.Tab
+            },
+            remove: async (tabId: number) => {
+                if (!tabs.has(tabId)) throw noTab(tabId)
+                closeTab(tabId)
             },
         },
         storage: {
@@ -236,5 +245,6 @@ export const createLocalChromeFake = (): LocalChromeFake => {
         sendMessage,
         connectPort,
         closeTab,
+        setTabUrl,
     }
 }

@@ -68,9 +68,34 @@ export const enrolBackoff = createSessionBackoff({
 const isEnrolmentEnabled = (): boolean =>
     config.webIntegrityMintEnabled && config.webIntegrityEnrolEnabled
 
-// Tokens whose hosting page holds its port open. In memory on purpose: a page
-// still open reconnects after a worker restart drops the port.
-const hostedTokens = new Set<string>()
+// Open host ports per token. Counted, not a set: a remount or StrictMode's
+// double effect opens the new port before the old one's close arrives. In
+// memory on purpose: a page still open reconnects after a worker restart.
+const hostPortCounts = new Map<string, number>()
+
+const isHosted = (token: string): boolean =>
+    (hostPortCounts.get(token) ?? 0) > 0
+
+// Parsed rather than prefix-matched, so `/checkout` on the same origin is not the check page.
+const isCheckPageUrl = (value: string | undefined): boolean => {
+    if (!value) return false
+    try {
+        const url = new URL(value)
+        return (
+            url.origin === config.integrityCheckOrigin &&
+            url.pathname === INTEGRITY_CHECK_PATH
+        )
+    } catch {
+        return false
+    }
+}
+
+// The host permission exposes a tab's url only while it shows our origin, so a
+// rejected read (tab gone) and an undefined url (user navigated away) both mean no.
+const isTabOnCheckPage = async (tabId: number): Promise<boolean> => {
+    const tab = await chrome.tabs.get(tabId).catch(() => undefined)
+    return isCheckPageUrl(tab?.url)
+}
 
 const isUnfinishedFrameAttempt = (
     attempt: EnrolAttempt | null,
@@ -116,7 +141,7 @@ const checkFrameLiveness = async (token: string): Promise<void> => {
             if (!isUnfinishedFrameAttempt(attempt, token) || attempt.isReady) {
                 return
             }
-            if (!hostedTokens.has(token)) {
+            if (!isHosted(token)) {
                 await abandonAttempt(attempt)
                 return
             }
@@ -207,6 +232,7 @@ export const installIntegrityEnrolRequestRoute = ({
 const handleHostGone = async (token: string): Promise<void> => {
     try {
         await withNamedLock(INTEGRITY_ENROL_LOCK, async () => {
+            if (isHosted(token)) return
             const attempt = await readAttempt()
             if (isUnfinishedFrameAttempt(attempt, token)) {
                 await abandonAttempt(attempt)
@@ -230,9 +256,11 @@ export const handleHostPortConnect = (
         port.disconnect()
         return
     }
-    hostedTokens.add(token)
+    hostPortCounts.set(token, (hostPortCounts.get(token) ?? 0) + 1)
     port.onDisconnect.addListener(() => {
-        hostedTokens.delete(token)
+        const remaining = (hostPortCounts.get(token) ?? 1) - 1
+        if (remaining > 0) hostPortCounts.set(token, remaining)
+        else hostPortCounts.delete(token)
         void handleHostGone(token)
     })
 }
@@ -249,8 +277,12 @@ const finishAttempt = async (
     } else {
         await enrolBackoff.recordFailure()
     }
-    if (attempt.surface === 'tab' && attempt.tabId !== undefined) {
-        // The user may have closed it in the meantime.
+    // Only while it still shows the check: the user may have taken the tab elsewhere.
+    if (
+        attempt.surface === 'tab' &&
+        attempt.tabId !== undefined &&
+        (await isTabOnCheckPage(attempt.tabId))
+    ) {
         await chrome.tabs.remove(attempt.tabId).catch(() => undefined)
     }
 }
@@ -337,7 +369,9 @@ const handleCheckPortMessage = async (
                         message.code === 'TURNSTILE_BLOCKED' &&
                         attempt.surface === 'frame'
                     ) {
-                        await moveAttemptToTab(attempt)
+                        // Same rule as liveness: no tab the user did not stay for.
+                        if (isHosted(token)) await moveAttemptToTab(attempt)
+                        else await abandonAttempt(attempt)
                         return
                     }
                     // In the tab the page's retry button is the user-initiated
@@ -381,22 +415,49 @@ const handleCheckPortMessage = async (
     }
 }
 
+// Watching the tab's own port rather than tabs.onRemoved, which would wake the
+// worker on every tab close in the browser. Frame closes belong to the host port;
+// a tab closed while the worker was evicted is left to the deadline.
+const handleCheckPortClosed = async (token: string): Promise<void> => {
+    try {
+        await withNamedLock(INTEGRITY_ENROL_LOCK, async () => {
+            const attempt = await readAttempt()
+            if (
+                !attempt ||
+                attempt.token !== token ||
+                attempt.surface !== 'tab' ||
+                attempt.phase !== 'checking' ||
+                attempt.tabId === undefined
+            ) {
+                return
+            }
+            // A reload shows the check page again and reconnects with the same token.
+            if (await isTabOnCheckPage(attempt.tabId)) return
+            // Closed or navigated away: either way the tab is not ours to close.
+            await finishAttempt({ ...attempt, tabId: undefined }, 'failed')
+        })
+    } catch (error) {
+        logger.warn('Web integrity check tab close failed', { error })
+    }
+}
+
 export const handleCheckPortConnect = (port: chrome.runtime.Port): void => {
     // onConnect fans out to every listener; another route's port is not ours to close.
     if (!port.name.startsWith(INTEGRITY_CHECK_PORT_PREFIX)) return
     const token = port.name.slice(INTEGRITY_CHECK_PORT_PREFIX.length)
-    const origin = port.sender?.origin
-    const url = port.sender?.url ?? ''
     if (
         !isCheckToken(token) ||
-        origin !== config.integrityCheckOrigin ||
-        !url.startsWith(`${origin}${INTEGRITY_CHECK_PATH}`)
+        port.sender?.origin !== config.integrityCheckOrigin ||
+        !isCheckPageUrl(port.sender.url)
     ) {
         port.disconnect()
         return
     }
     port.onMessage.addListener(raw => {
         void handleCheckPortMessage(port, token, raw)
+    })
+    port.onDisconnect.addListener(() => {
+        void handleCheckPortClosed(token)
     })
 }
 
@@ -418,28 +479,8 @@ export const handleEnrolDeadlineAlarm = async (
     }
 }
 
-export const handleEnrolTabRemoved = async (tabId: number): Promise<void> => {
-    try {
-        await withNamedLock(INTEGRITY_ENROL_LOCK, async () => {
-            const attempt = await readAttempt()
-            if (
-                !attempt ||
-                attempt.surface !== 'tab' ||
-                attempt.tabId !== tabId ||
-                attempt.phase !== 'checking'
-            ) {
-                return
-            }
-            // The tab is already gone, so there is nothing left to close.
-            await finishAttempt({ ...attempt, tabId: undefined }, 'failed')
-        })
-    } catch (error) {
-        logger.warn('Web integrity enrolment tab close failed', { error })
-    }
-}
-
-// Top level in the worker entry, so a worker woken by a port, a tab event or a
-// message already has its listener.
+// Top level in the worker entry, so a worker woken by a port or a message
+// already has its listener.
 export const installIntegrityEnrolment = ({
     chromeLike = chrome,
 }: { chromeLike?: typeof chrome } = {}): void => {
@@ -448,7 +489,4 @@ export const installIntegrityEnrolment = ({
     chromeLike.runtime.onConnect.addListener(port =>
         handleHostPortConnect(port, chromeLike),
     )
-    chromeLike.tabs.onRemoved.addListener(tabId => {
-        void handleEnrolTabRemoved(tabId)
-    })
 }

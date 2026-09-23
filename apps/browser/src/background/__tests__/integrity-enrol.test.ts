@@ -331,6 +331,17 @@ describe('integrity enrolment', () => {
             kid: KID,
             turnstileToken: 'tok',
         }
+        // The frame stays silent, so the liveness rule moves the attempt to a tab.
+        const startInTab = async () => {
+            const started = await start()
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() => expect(attempt().surface).toBe('tab'))
+            return {
+                ...started,
+                tabToken: attempt().token as string,
+                tabId: attempt().tabId as number,
+            }
+        }
 
         it('leaves ports of other routes alone', async () => {
             await start()
@@ -353,6 +364,10 @@ describe('integrity enrolment', () => {
             [
                 'another path',
                 { origin: CHECK_ORIGIN, url: `${CHECK_ORIGIN}/other` },
+            ],
+            [
+                'a path that only starts like the check page',
+                { origin: CHECK_ORIGIN, url: `${CHECK_ORIGIN}/checkout?v=1` },
             ],
         ])('refuses a port from %s', async (_label, sender) => {
             const { token } = await start()
@@ -534,14 +549,73 @@ describe('integrity enrolment', () => {
             })
 
             it('ends the attempt when the user closes the tab', async () => {
-                await start()
-                await vi.advanceTimersByTimeAsync(5000)
-                await vi.waitFor(() => expect(attempt().surface).toBe('tab'))
+                const { tabToken, tabId } = await startInTab()
+                const tabPort = connect(tabToken)
 
-                fake.closeTab(attempt().tabId as number)
+                fake.closeTab(tabId)
+                tabPort.close()
 
                 await vi.waitFor(() => expect(attempt().phase).toBe('done'))
                 expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+            })
+
+            it('ends the attempt without closing the tab when the user navigates it elsewhere', async () => {
+                const { tabToken, tabId } = await startInTab()
+                const tabPort = connect(tabToken)
+
+                fake.setTabUrl(tabId, undefined)
+                tabPort.close()
+
+                await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+                expect(fake.tabs.has(tabId)).toBe(true)
+                expect(fake.session.has(BACKOFF_KEY)).toBe(true)
+            })
+
+            it('keeps the attempt when the tab reloads the check page', async () => {
+                const { tabToken } = await startInTab()
+
+                connect(tabToken).close()
+                await vi.advanceTimersByTimeAsync(0)
+
+                expect(attempt().phase).toBe('checking')
+            })
+
+            it('ignores the frame port closing, which the host port covers', async () => {
+                const { token } = await start()
+
+                connect(token).close()
+                await vi.advanceTimersByTimeAsync(0)
+
+                expect(attempt().phase).toBe('checking')
+            })
+
+            it('refuses the frame after the attempt moved to a tab', async () => {
+                const { token } = await startInTab()
+                const late = connect(token)
+
+                late.deliver({ type: 'PAGE_READY', v: 1, kid: KID })
+
+                await vi.waitFor(() => expect(late.isDisconnected()).toBe(true))
+                expect(attempt().isReady).toBe(false)
+            })
+
+            it('keeps a tab attempt open when the tab reports Turnstile blocked', async () => {
+                const { tabToken, tabId } = await startInTab()
+
+                connect(tabToken).deliver({
+                    type: 'TURNSTILE_ERROR',
+                    v: 1,
+                    kid: KID,
+                    code: 'TURNSTILE_BLOCKED',
+                })
+                await vi.advanceTimersByTimeAsync(0)
+
+                expect(attempt()).toMatchObject({
+                    phase: 'checking',
+                    surface: 'tab',
+                    token: tabToken,
+                })
+                expect([...fake.tabs.keys()]).toEqual([tabId])
             })
         })
 
@@ -590,6 +664,37 @@ describe('integrity enrolment', () => {
                 expect(attempt().phase).toBe('checking')
             })
 
+            it('keeps the attempt while another host port for the token is open', async () => {
+                const { token, host } = await start()
+                const remounted = fake.connectPort(
+                    `pera-integrity-host:${token}`,
+                    EXTENSION_PAGE_SENDER,
+                )
+
+                host?.close()
+                await vi.advanceTimersByTimeAsync(0)
+                expect(attempt().phase).toBe('checking')
+
+                remounted.close()
+                await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+                expect(fake.session.has(BACKOFF_KEY)).toBe(false)
+            })
+
+            it('opens no tab for a blocked frame whose page has closed', async () => {
+                const { token } = await start({ isHosted: false })
+
+                connect(token).deliver({
+                    type: 'TURNSTILE_ERROR',
+                    v: 1,
+                    kid: KID,
+                    code: 'TURNSTILE_BLOCKED',
+                })
+
+                await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+                expect(fake.tabs.size).toBe(0)
+                expect(fake.session.has(BACKOFF_KEY)).toBe(false)
+            })
+
             it('refuses a host port from outside the extension', async () => {
                 const { token } = await start({ isHosted: false })
 
@@ -624,6 +729,29 @@ describe('integrity enrolment', () => {
                 } as chrome.alarms.Alarm)
 
                 expect(fake.session.has(BACKOFF_KEY)).toBe(false)
+            })
+
+            it('closes the fallback tab while it still shows the check', async () => {
+                const { module, tabId } = await startInTab()
+
+                await module.handleEnrolDeadlineAlarm({
+                    name: module.INTEGRITY_ENROL_DEADLINE_ALARM,
+                } as chrome.alarms.Alarm)
+
+                expect(attempt().phase).toBe('done')
+                expect(fake.tabs.has(tabId)).toBe(false)
+            })
+
+            it('leaves the fallback tab open once the user navigated it elsewhere', async () => {
+                const { module, tabId } = await startInTab()
+                fake.setTabUrl(tabId, undefined)
+
+                await module.handleEnrolDeadlineAlarm({
+                    name: module.INTEGRITY_ENROL_DEADLINE_ALARM,
+                } as chrome.alarms.Alarm)
+
+                expect(attempt().phase).toBe('done')
+                expect(fake.tabs.has(tabId)).toBe(true)
             })
         })
     })
