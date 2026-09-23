@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import { setupServer } from 'msw/node'
 import type { HttpHandler } from 'msw'
-import { buildRestoreHandlers } from '../msw-handlers'
+import { buildRestoreHandlers, itemTypeOf } from '../msw-handlers'
 import { API_PREFIX, backupRoot } from '../constants'
 import { decryptItemPayload } from '../../crypto/itemPayload'
 
@@ -327,5 +327,14 @@ describe('buildRegisterHandler', () => {
 
         expect(res.status).toBe(200)
         registerServer.close()
+    })
+})
+
+describe('item type inference', () => {
+    it('types each key family from its prefix', () => {
+        expect(itemTypeOf('accounts/ADDR')).toBe('ACCOUNT')
+        expect(itemTypeOf('secrets/ADDR')).toBe('ACCOUNT')
+        expect(itemTypeOf('contacts/ADDR')).toBe('CONTACT')
+        expect(itemTypeOf('passkeys/CRED')).toBe('PASSKEY')
     })
 })

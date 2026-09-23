@@ -17,7 +17,11 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import { backupIdToAddress } from '../crypto/backupIdToAddress'
-import { BACKUP_CONTACTS_KEY_PREFIX } from '../models'
+import {
+    BACKUP_CONTACTS_KEY_PREFIX,
+    BACKUP_PASSKEYS_KEY_PREFIX,
+    BackupItemType,
+} from '../models'
 import type { BackupId, BackupItemKey } from '../models'
 import { API_PREFIX, backupRoot } from './constants'
 
@@ -119,8 +123,13 @@ export type BuildRestoreHandlersParams = SignatureVerification & {
 
 /** The wire type follows the key prefix, the way the real server records it —
  *  a `contacts/` item announced as an ACCOUNT would hide a routing bug. */
-const itemTypeOf = (key: string): 'ACCOUNT' | 'CONTACT' =>
-    key.startsWith(BACKUP_CONTACTS_KEY_PREFIX) ? 'CONTACT' : 'ACCOUNT'
+export const itemTypeOf = (key: string): BackupItemType => {
+    if (key.startsWith(BACKUP_CONTACTS_KEY_PREFIX))
+        return BackupItemType.CONTACT
+    if (key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX))
+        return BackupItemType.PASSKEY
+    return BackupItemType.ACCOUNT
+}
 
 export const buildRestoreHandlers = ({
     backupId,
@@ -147,7 +156,7 @@ export const buildRestoreHandlers = ({
                 string,
                 {
                     key: string
-                    type: 'ACCOUNT' | 'CONTACT'
+                    type: BackupItemType
                     ver: number
                     status: 'ACTIVE'
                     hash: string
@@ -346,7 +355,7 @@ type SyncRouteContext = {
 
 const toManifestEntry = (item: SyncStoreItem) => ({
     key: item.key,
-    type: 'ACCOUNT' as const,
+    type: itemTypeOf(item.key),
     ver: item.ver,
     status: item.status,
     hash: item.hash,
@@ -356,7 +365,7 @@ const toManifestEntry = (item: SyncStoreItem) => ({
 const toDeltaEntry = (item: SyncStoreItem) => ({
     seq: item.seq,
     key: item.key,
-    type: 'ACCOUNT' as const,
+    type: itemTypeOf(item.key),
     ver: item.ver,
     status: item.status,
     op: 'UPSERT' as const,
