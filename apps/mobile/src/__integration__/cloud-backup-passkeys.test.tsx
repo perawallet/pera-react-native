@@ -32,7 +32,6 @@ import {
 } from '@test-utils/algorand-keystore-test'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    BackupAccountType,
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
@@ -48,10 +47,7 @@ import {
     useResolveMnemonicForBackup,
     useResolveSeedEntropyForBackup,
 } from '@perawallet/wallet-core-backup'
-import {
-    buildRestoreHandlers,
-    buildSyncHandlers,
-} from '@perawallet/wallet-core-backup/test-handlers'
+import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
 import {
     nativePasskeyEntryExists,
     openNativeProviderRecord,
@@ -85,11 +81,6 @@ import {
     seedHDWalletAccounts,
     seedPasskey,
 } from './__fixtures__/cloudBackup'
-import {
-    ALGO25_TEST_ADDRESS,
-    ALGO25_TEST_MNEMONIC,
-} from './__fixtures__/onboarding'
-
 const DEVICE_ID = 'test-device-id'
 
 const renderCloudBackupFlow = () =>
@@ -236,7 +227,9 @@ describe('Flow: Cloud backup → Passkeys', () => {
             await startRealSyncManager().syncNow()
 
             expect(getItem(`passkeys/${passkey.credentialId}`)).toBeDefined()
-            // Only inputs travel: the private key is re-derived on the far side.
+            // Precondition for the post-restore assertion below: the pushing
+            // device holds the credential in the keystore, never as a native
+            // provider record, so only the restore can put one there.
             expect(nativePasskeyEntryExists(passkey.credentialId)).toBe(false)
 
             await wipeDevice()
@@ -269,7 +262,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             })
             await seedHDWalletAccounts()
             const { seedKeyId: secondSeedKeyId } = await seedHDWalletAccounts({
-                shouldReplaceAccounts: false,
+                isAdditionalWallet: true,
             })
             const passkey = await seedPasskey({
                 seedKeyId: secondSeedKeyId,
@@ -387,65 +380,81 @@ describe('Flow: Cloud backup → Passkeys', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
-
+    // A positive control in the same run: the orphan and the provable
+    // credential travel in one backup, so "nothing was written" cannot pass by
+    // the import never running. The orphan's public key is genuinely derived,
+    // so a missing seed is the only reason it can be skipped.
     it(
-        'Given a backed-up credential whose owning seed is not in the backup, when the device is restored, then nothing is written',
+        'Given a credential whose owning seed is not in the backup, when the device is restored, then it alone is skipped',
         async () => {
             const keys = await deriveBackupKeys({
                 mnemonic: BACKUP_MNEMONIC,
                 salt: BACKUP_SALT,
             })
-            const credentialId = 'orphan-credential'
 
-            server.use(
-                ...buildRestoreHandlers({
+            // The orphan's wallet is derived and then wiped before the backup
+            // is configured, so the engine never sees it. The manager watches
+            // the accounts store, so leaving it on the device would have it
+            // push the secret and give the credential a seed after all.
+            const { seedKeyId: orphanSeedKeyId } = await seedHDWalletAccounts()
+            const orphan = await seedPasskey({
+                seedKeyId: orphanSeedKeyId,
+                origin: 'orphan.example',
+            })
+            await wipeDevice()
+
+            const { seedKeyId } = await seedHDWalletAccounts({
+                isAdditionalWallet: true,
+            })
+            const backedUp = await seedPasskey({ seedKeyId })
+            await configureBackup(keys)
+
+            const { handlers, getItem, pushFromOtherDevice } =
+                buildSyncHandlers({
                     backupId: keys.backupId,
-                    encryptionKey: keys.encryptionKey,
-                    items: [
-                        {
-                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                address: ALGO25_TEST_ADDRESS,
-                                customName: 'Restored',
-                            }),
-                        },
-                        {
-                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                mnemonic: ALGO25_TEST_MNEMONIC,
-                            }),
-                        },
-                        {
-                            key: `passkeys/${credentialId}`,
-                            plaintext: JSON.stringify({
-                                credentialId,
-                                origin: 'example.com',
-                                identity: 'user@example.com',
-                                counter: 0,
-                                publicKeySpkiDer: encodeToBase64(
-                                    new Uint8Array(91),
-                                ),
-                                // No restored account derives to this address.
-                                seedAddress: ALGO25_TEST_ADDRESS,
-                                createdAt: 1,
-                                updatedAt: 1,
-                            }),
-                        },
-                    ],
-                }),
+                })
+            server.use(...handlers)
+            await startRealSyncManager().syncNow()
+
+            const orphanKey = `passkeys/${orphan.credentialId}`
+            pushFromOtherDevice(
+                orphanKey,
+                encryptItemPayload(
+                    JSON.stringify({
+                        credentialId: orphan.credentialId,
+                        origin: 'orphan.example',
+                        identity: 'user@example.com',
+                        counter: 0,
+                        publicKeySpkiDer: orphan.publicKeySpkiDer,
+                        seedAddress: orphan.seedAddress,
+                        createdAt: 1,
+                        updatedAt: 1,
+                    }),
+                    {
+                        encryptionKey: keys.encryptionKey,
+                        backupId: keys.backupId,
+                        key: orphanKey,
+                    },
+                ),
             )
 
+            // The orphan wallet must never have reached the backup, or the
+            // restore would have a seed to re-derive from after all.
+            expect(getItem(`secrets/${orphan.seedAddress}`)).toBeUndefined()
+
+            await wipeDevice()
             renderCloudBackupFlow()
             await runRestoreFlow()
 
-            await waitFor(() => {
-                expect(
-                    useBackupSyncStateStore.getState().syncState,
-                ).not.toBeNull()
-            })
-            expect(nativePasskeyEntryExists(credentialId)).toBe(false)
+            await waitFor(
+                () => {
+                    expect(
+                        nativePasskeyEntryExists(backedUp.credentialId),
+                    ).toBe(true)
+                },
+                { timeout: 10_000 },
+            )
+            expect(nativePasskeyEntryExists(orphan.credentialId)).toBe(false)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

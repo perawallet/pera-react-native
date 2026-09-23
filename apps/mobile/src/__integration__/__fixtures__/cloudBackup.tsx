@@ -40,6 +40,7 @@ import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
+    HD_TEST_MNEMONIC_24_ALT_INDICES,
     HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
 
@@ -90,9 +91,12 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
 /** Each account's `keyPairId` has to be the derived child id, so `seedIdOf`
  *  can walk from the account back to its seed. */
 export const seedHDWalletAccounts = async (params?: {
-    /** Omitted for a second, unrelated wallet: the key is generated at random. */
-    mnemonicIndices?: Uint16Array
-    shouldReplaceAccounts?: boolean
+    /** A second, unrelated wallet: seeded from the alternate pinned mnemonic
+     *  and appended to the accounts already on the device. Reusing the first
+     *  mnemonic would give both wallets the same entropy and the same
+     *  first-derived address, which is exactly what a multi-seed test has to
+     *  tell apart. */
+    isAdditionalWallet?: boolean
 }): Promise<{
     first: WalletAccount
     second: WalletAccount
@@ -100,7 +104,9 @@ export const seedHDWalletAccounts = async (params?: {
 }> => {
     const { result: kms } = renderHook(() => useKMS())
     const seed = await kms.current.createHDWalletKey({
-        mnemonicIndices: params?.mnemonicIndices ?? HD_TEST_MNEMONIC_24_INDICES,
+        mnemonicIndices: params?.isAdditionalWallet
+            ? HD_TEST_MNEMONIC_24_ALT_INDICES
+            : HD_TEST_MNEMONIC_24_INDICES,
     })
     expect(seed).not.toBeNull()
     const seedKeyId = seed!.seedKey.id ?? ''
@@ -141,10 +147,9 @@ export const seedHDWalletAccounts = async (params?: {
 
     const first = await make(0, 0, 'HD First')
     const second = await make(0, 1, 'HD Second')
-    const existing =
-        params?.shouldReplaceAccounts === false
-            ? useAccountsStore.getState().accounts
-            : []
+    const existing = params?.isAdditionalWallet
+        ? useAccountsStore.getState().accounts
+        : []
     useAccountsStore.getState().setAccounts([...existing, first, second])
     return { first, second, seedKeyId }
 }
@@ -154,8 +159,11 @@ type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
 const PASSKEY_KEY_TYPE = 'hd-derived-p256'
 
 /** A credential derived from a seed's own entropy, hydrated into the keystore
- *  store the way the credential provider hydrates one it minted — this is the
- *  only shape `passkeyBackupInputs` can prove reproducible. */
+ *  store the way the wallet's own engine writes one: the derivation identity
+ *  stored verbatim under `userHandle`, and the public key as SPKI DER. iOS
+ *  instead stores the handle bytes standard-base64 and the extension stores a
+ *  raw 64-byte point, so those two writers' shapes are covered by
+ *  `passkeyBackup.spec.ts` rather than end to end here. */
 export const seedPasskey = async (params: {
     seedKeyId: string
     origin?: string
