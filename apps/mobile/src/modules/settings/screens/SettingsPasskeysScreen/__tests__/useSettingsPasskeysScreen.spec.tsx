@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
     requestSheet: vi.fn(),
     showToast: vi.fn(),
     isCloudBackupEnabled: true,
-    isPasskeyBackedUp: vi.fn(() => false),
+    isPasskeyBackedUp: vi.fn<(s: unknown, id: string) => boolean>(() => false),
     deletePasskeyFromBackup: vi.fn(async () => 'settled'),
     keepPasskeyInBackup: vi.fn(async () => true),
 }))
@@ -84,7 +84,8 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
         deletePasskeyFromBackup: mocks.deletePasskeyFromBackup,
         keepPasskeyInBackup: mocks.keepPasskeyInBackup,
     }),
-    isPasskeyBackedUp: () => mocks.isPasskeyBackedUp(),
+    isPasskeyBackedUp: (syncState: unknown, credentialId: string) =>
+        mocks.isPasskeyBackedUp(syncState, credentialId),
     useBackupSyncStateStore: (selector: (s: unknown) => unknown) =>
         selector({ syncState: null }),
 }))
@@ -360,6 +361,7 @@ describe('useSettingsPasskeysScreen', () => {
             source: 'keystore',
             needsMigration: false,
         } as Passkey
+        const unbackedPasskey = { ...backedUpPasskey } as Passkey
 
         const requestDelete = async (passkey: Passkey) => {
             const { result } = renderHook(() => useSettingsPasskeysScreen())
@@ -369,18 +371,25 @@ describe('useSettingsPasskeysScreen', () => {
         }
 
         it('removes a credential the backup does not hold without asking', async () => {
-            await requestDelete(backedUpPasskey)
+            await requestDelete(unbackedPasskey)
 
             expect(mocks.requestSheet).toHaveBeenCalledTimes(1)
             expect(mocks.deletePasskeyFromBackup).not.toHaveBeenCalled()
-            expect(mocks.removePasskey).toHaveBeenCalledWith(backedUpPasskey)
+            expect(mocks.removePasskey).toHaveBeenCalledWith(unbackedPasskey)
         })
 
+        // The backup keys on the raw keystore id; `Passkey.id` is its base64url
+        // form and differs whenever the raw id contains `/` or `+`. Querying
+        // with the wrong one makes the gate silently never fire.
         it('records the delete against the raw keystore id before removing', async () => {
             mocks.isPasskeyBackedUp.mockReturnValue(true)
 
             await requestDelete(backedUpPasskey)
 
+            expect(mocks.isPasskeyBackedUp).toHaveBeenCalledWith(
+                null,
+                'raw-cred-1',
+            )
             expect(mocks.deletePasskeyFromBackup).toHaveBeenCalledWith(
                 'raw-cred-1',
             )
