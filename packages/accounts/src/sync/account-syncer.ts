@@ -12,7 +12,10 @@
 
 import type { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import {
+    getAlgorandClient,
+    microAlgosToAlgos,
+} from '@perawallet/wallet-core-blockchain'
 import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
@@ -256,11 +259,11 @@ async function doFetchAndPersistAccount(
     )
 
     const authAddress = info.authAddr?.toString() ?? null
-    const algoBalance = new Decimal(info.amount.toString()).div(1_000_000)
+    const algoBalance = microAlgosToAlgos(info.amount)
     const totalAssetsOptedIn = info.totalAssetsOptedIn ?? 0
     const totalCreatedAssets = info.totalCreatedAssets ?? 0
     const totalAppsOptedIn = info.totalAppsOptedIn ?? 0
-    const minBalance = new Decimal(info.minBalance.toString()).div(1_000_000)
+    const minBalance = microAlgosToAlgos(info.minBalance)
     const status = info.status ?? 'Offline'
 
     // Diff against the persisted balance row so the sync service can tell

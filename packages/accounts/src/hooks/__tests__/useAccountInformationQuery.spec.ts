@@ -26,13 +26,19 @@ vi.mock('../../db', () => ({
     getAccountHoldings: mockGetAccountHoldings,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-    Address: {
-        fromString: (addr: string) => addr,
-    },
-    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const { algosToMicroAlgosBigInt, toBigInt } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    return {
+        useNetwork: () => ({ network: 'mainnet' }),
+        Address: {
+            fromString: (addr: string) => addr,
+        },
+        algosToMicroAlgosBigInt,
+        toBigInt,
+    }
+})
 
 describe('useAccountInformationQuery', () => {
     let queryClient: QueryClient

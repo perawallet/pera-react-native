@@ -11,14 +11,14 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_DECIMALS, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     TransactionHistoryItem,
     TransactionBalanceImpact,
     TransactionAssetSummary,
     TransactionSwapGroupDetail,
 } from '../models/types'
-import { ALGO_DECIMALS, resolveAssetFacts } from '../utils/algoAssetFacts'
+import { resolveAssetFacts } from '../utils/algoAssetFacts'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`

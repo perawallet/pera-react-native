@@ -593,8 +593,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             const { Decimal } = require('decimal.js')
             return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
         }),
-        toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
-            BigInt(decimal.toFixed(0)),
+        toBigInt: vi.fn(
+            (decimal: { toFixed: (dp: number, rm: number) => string }) => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const { Decimal } = require('decimal.js')
+                return BigInt(decimal.toFixed(0, Decimal.ROUND_DOWN))
+            },
         ),
         baseUnitsToDisplayUnits: vi.fn(
             (baseUnits: bigint | number | string, decimals: number) => {

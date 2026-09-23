@@ -18,3 +18,6 @@ export const ALGO_ASSET_ID = '0'
  * to this one value. Distinct from {@link ALGO_ASSET_ID} (`'0'`).
  */
 export const ALGO_ASSET_NAME = 'ALGO'
+
+/** ALGO's decimals: 1 ALGO = 10^6 microAlgos. A chain invariant, not asset metadata. */
+export const ALGO_DECIMALS = 6

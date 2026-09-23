@@ -15,6 +15,7 @@ import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
     Address,
+    algosToMicroAlgosBigInt,
     toBigInt,
     type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
@@ -54,10 +55,10 @@ export const useAccountInformationQuery = (
 
             return {
                 minBalance: balance
-                    ? toBigInt(balance.minBalance.mul(1_000_000))
+                    ? algosToMicroAlgosBigInt(balance.minBalance)
                     : 0n,
                 amount: balance
-                    ? toBigInt(balance.algoBalance.mul(1_000_000))
+                    ? algosToMicroAlgosBigInt(balance.algoBalance)
                     : 0n,
                 address: Address.fromString(address),
                 status: balance?.status ?? 'Offline',
