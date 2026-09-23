@@ -53,6 +53,79 @@ _android_secrets: &android_secrets
   # mainnet card isn't live yet (see main.ts's mainnetBaanxTenantId TODO).
   - TESTNET_BAANX_CLIENT_KEY
 
+# The backend, Bidali and card config generate-config.sh bakes into every
+# client, repeated per platform below because YAML can't merge sequences. See
+# the android list for why each is here and what is left out.
+#
+# The iOS signing material is consumed by ci/jobs/lib/ios-keychain.sh.
+# APP_STORE_CONNECT_API_KEY_CONTENT is stored base64-encoded, unlike on
+# Bitrise, because the .p8 is multi-line and the daemon's values are not.
+_ios_secrets: &ios_secrets
+  - APP_STORE_CONNECT_API_KEY_CONTENT_BASE64
+  - APP_STORE_CONNECT_API_KEY_ISSUER_ID
+  - APP_STORE_CONNECT_API_KEY_KEY_ID
+  - IOS_TEAM_ID
+  - IOS_CERTIFICATE_P12_BASE64
+  - IOS_CERTIFICATE_PASSWORD
+  - IOS_PROVISIONING_PROFILE_BASE64
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_BASE64
+  # Read by the Fastfile to pin each target's profile; must name the profiles
+  # decoded from the two blobs above.
+  - IOS_PROVISIONING_PROFILE_NAME
+  - IOS_AUTOFILL_PROVISIONING_PROFILE_NAME
+  - IOS_GOOGLE_SERVICE_INFO_BASE64
+  - APP_STORE_APPLE_ID
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_BAANX_CLIENT_KEY
+
+# validate-env.sh's web profile treats the Firebase Web SDK, GA4 and Sentry
+# names as optional because the extension degrades without them. They are
+# declared here anyway, which makes them required: the degradation is silent
+# (no Remote Config, analytics, crash reporting or push), and the daemon has
+# no optional-secret form to warn instead.
+_web_secrets: &web_secrets
+  - SLACK_WEBHOOK_URL
+  - MAINNET_BACKEND_URL
+  - TESTNET_BACKEND_URL
+  - BACKEND_API_KEY
+  - BACKUP_BASE_URL
+  - REOWN_PROJECT_ID
+  - MAINNET_BIDALI_API_KEY
+  - TESTNET_BIDALI_API_KEY
+  - MAINNET_CARD_W3CARD_APP_ID
+  - TESTNET_CARD_W3CARD_APP_ID
+  - MAINNET_CARD_KILLSWITCH_APP_ID
+  - TESTNET_CARD_KILLSWITCH_APP_ID
+  - MAINNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_CARD_AUTODRAW_PROGRAM_HASH
+  - TESTNET_BAANX_CLIENT_KEY
+  - FIREBASE_API_KEY
+  - FIREBASE_AUTH_DOMAIN
+  - FIREBASE_DATABASE_URL
+  - FIREBASE_PROJECT_ID
+  - FIREBASE_STORAGE_BUCKET
+  - FIREBASE_MESSAGING_SENDER_ID
+  - FIREBASE_APP_ID
+  - FIREBASE_MEASUREMENT_ID
+  # Must belong to the same Firebase project as FIREBASE_PROJECT_ID, or
+  # Chrome's push service rejects the subscription and no token is minted.
+  - FIREBASE_VAPID_KEY
+  - GA_MEASUREMENT_API_SECRET
+  - SENTRY_DSN
+
 pipelines:
   release:
     on_tag: '^v\d+\.\d+\.\d+(-rc\.\d+)?$'
@@ -81,9 +154,32 @@ pipelines:
           BUILD_NUMBER_OFFSET: '0'
         secrets: *android_secrets
         timeout_minutes: 90
+      # No changelog: TestFlight takes no release notes from this lane.
+      ios-production:
+        script: ci/jobs/ios.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: ios
+          ENVIRONMENT: production
+          APP_ENV: production
+          IOS_SCHEME: PeraAlgoWallet
+          # As android's: raise past Bitrise's last BITRISE_BUILD_NUMBER
+          # before uploads are enabled, or TestFlight rejects the build number.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *ios_secrets
+        timeout_minutes: 120
+      web-production:
+        script: ci/jobs/web.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: web
+          ENVIRONMENT: production
+          APP_ENV: production
+        secrets: *web_secrets
+        timeout_minutes: 30
       notify:
         script: ci/jobs/notify.sh
-        needs: [test, changelog, android-production]
+        needs: [test, changelog, android-production, ios-production, web-production]
         always_run: true
 
   nightly:
@@ -107,7 +203,30 @@ pipelines:
           BUILD_NUMBER_OFFSET: '0'
         secrets: *android_secrets
         timeout_minutes: 90
+      ios-staging:
+        script: ci/jobs/ios.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: ios
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+          IOS_SCHEME: Pera7Staging
+          # See ios-production.
+          BUILD_NUMBER_OFFSET: '0'
+        secrets: *ios_secrets
+        timeout_minutes: 120
+      web-staging:
+        script: ci/jobs/web.sh
+        needs: [test]
+        env:
+          VALIDATE_PROFILE: web
+          ENVIRONMENT: staging
+          APP_ENV: staging
+          DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+        secrets: *web_secrets
+        timeout_minutes: 30
       notify:
         script: ci/jobs/notify.sh
-        needs: [test, changelog, android-staging]
+        needs: [test, changelog, android-staging, ios-staging, web-staging]
         always_run: true

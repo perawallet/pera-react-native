@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
-NODE_VERSION=$(awk '$1 == "nodejs" { print $2 }' .tool-versions)
-if [ -z "$NODE_VERSION" ]; then
-  echo "pera-ci: no \"nodejs\" line found in .tool-versions" >&2
-  exit 1
-fi
-NODE_BIN=$(ls -d "$HOME"/.nvm/versions/node/v"${NODE_VERSION}".*/bin | sort -V | tail -1)
-export PATH="$NODE_BIN:$PATH"
+source ci/jobs/lib/toolchain.sh
+use_pinned_node
 
 # `export VAR=$(cmd)` takes export's own exit status, not cmd's: under set -e
 # a failing java_home would silently leave JAVA_HOME empty instead of aborting
@@ -15,21 +10,8 @@ export PATH="$NODE_BIN:$PATH"
 JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
 export JAVA_HOME
 
-# bundle exec fastlane needs a Ruby on PATH. Bitrise installs one via asdf
-# from .tool-versions (.bitrise/bitrise.yml's "Install Ruby via asdf"); this
-# pin is exact (unlike Node's major-only pin above), so no glob/sort is
-# needed to find the installed version.
-RUBY_VERSION=$(awk '$1 == "ruby" { print $2 }' .tool-versions)
-if [ -z "$RUBY_VERSION" ]; then
-  echo "pera-ci: no \"ruby\" line found in .tool-versions" >&2
-  exit 1
-fi
-RUBY_BIN="$HOME/.asdf/installs/ruby/${RUBY_VERSION}/bin"
-if [ ! -d "$RUBY_BIN" ]; then
-  echo "pera-ci: no asdf ruby ${RUBY_VERSION} installed at $RUBY_BIN" >&2
-  exit 1
-fi
-export PATH="$RUBY_BIN:$PATH"
+# bundle exec fastlane needs a Ruby on PATH.
+use_pinned_ruby
 
 # tools/resolve-distribution.sh reads this to choose Play vs Firebase. Without
 # it every build silently resolves to the fallback channel.
@@ -53,8 +35,7 @@ cleanup_secret_files() {
 }
 trap cleanup_secret_files EXIT
 
-PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
-npm install -g "pnpm@${PNPM_VERSION}"
+install_pinned_pnpm
 
 # Rollout step 1 is comparing these artifacts against Bitrise's for the same
 # tag, so both the gradle-only and the fastlane path must leave something
@@ -66,19 +47,6 @@ collect_artifacts() {
     while IFS= read -r file; do
       cp "$file" "$CI_ARTIFACT_DIR/$(printf '%s' "${file#apps/mobile/android/}" | tr '/' '_')"
     done
-}
-
-# Mirrors bitrise.yml's "Resolve marketing version" step: the tag is the
-# source of truth (strip leading v + any -prerelease suffix), falling back to
-# package.json for manual/non-tag builds. A function so it can be sourced and
-# exercised in isolation without running the rest of this job.
-resolve_app_version() {
-  if [ -n "${CI_TAG:-}" ]; then
-    local version="${CI_TAG#v}"
-    echo "${version%%-*}"
-  else
-    jq -r '.version | split("-")[0]' apps/mobile/package.json
-  fi
 }
 
 ./tools/validate-env.sh
