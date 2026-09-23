@@ -41,16 +41,30 @@ export type WalletConnectV1Connection = Connection & {
     metadata: WalletConnectV1Metadata
 }
 
+// Plaintext is allowed only on loopback (local dev bridges, the e2e fixture's
+// fake bridge), mirroring what browsers treat as a trustworthy origin. Exact
+// hosts, so `localhost.evil.example` never qualifies.
+const isLoopbackBridge = (decoded: string): boolean => {
+    const host = /^(?:http|ws):\/\/(\[[^\]]*\]|[^/:?#]+)/i.exec(decoded)?.[1]
+    if (host === undefined) return false
+    return (
+        /^(?:localhost|127\.0\.0\.1|\[::1\])$/i.test(host) ||
+        /\.localhost$/i.test(host)
+    )
+}
+
 // The bridge host is dApp-chosen by protocol design, but the scheme must be
-// one the client can only turn into a secure WebSocket: it maps http(s) to
-// ws(s) and passes anything else through to `new WebSocket(...)` unchanged,
-// and the URI can arrive from any web page (extension) or deeplink (mobile).
-// No `new URL` here — Hermes' implementation is not trusted with hostile input.
+// one the client can only turn into a WebSocket, and remote hosts must be
+// secure: the client maps http(s) to ws(s) and passes anything else through to
+// `new WebSocket(...)` unchanged, and the URI can arrive from any web page
+// (extension) or deeplink (mobile). No `new URL` here — Hermes'
+// implementation is not trusted with hostile input.
 const hasSecureBridge = (uri: string): boolean => {
     const bridge = /[?&]bridge=([^&#]+)/.exec(uri)?.[1]
     if (!bridge) return false
     try {
-        return /^(?:https|wss):\/\//i.test(decodeURIComponent(bridge))
+        const decoded = decodeURIComponent(bridge)
+        return /^(?:https|wss):\/\//i.test(decoded) || isLoopbackBridge(decoded)
     } catch {
         // Malformed percent-encoding.
         return false
