@@ -14,6 +14,7 @@
 // packages/app-integrity/src/api.ts for why.
 import {
     attestDevice,
+    readIntegrityErrorCode,
     requestChallenge,
 } from '@perawallet/wallet-core-app-integrity/api'
 import { config } from '@perawallet/wallet-core-config'
@@ -23,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     INTEGRITY_BACKOFF_SESSION_KEY,
+    clearEnrolmentMarker,
     clearInstallKey,
     clearSessionIntegrityToken,
     ensureDeviceInstallationID,
@@ -32,9 +34,10 @@ import {
     signChallenge,
     type SessionIntegrityToken,
 } from '@perawallet/wallet-extension-platform-chrome'
+import { markEnrolmentNeeded } from './enrol-attempt'
 import { createSessionBackoff } from './session-backoff'
 import { withNamedLock } from './named-lock'
-import { readActiveNetwork } from './network'
+import { readActiveNetwork, type ActiveNetwork } from './network'
 
 export const INTEGRITY_RENEW_ALARM = 'pera-integrity-renew'
 
@@ -76,9 +79,8 @@ export const isIntegrityTokenStale = (
     return now >= mintedAt + (expiresAt - mintedAt) * REFRESH_AT_FRACTION
 }
 
-const mint = async (): Promise<void> => {
+const mint = async (network: ActiveNetwork): Promise<void> => {
     const deviceInstallationId = await ensureDeviceInstallationID()
-    const network = await readActiveNetwork()
 
     const challenge = await requestChallenge({
         deviceInstallationId,
@@ -111,7 +113,7 @@ const mint = async (): Promise<void> => {
     await mintBackoff.clear()
 }
 
-const isRevoked = (error: unknown): boolean =>
+const isForbidden = (error: unknown): boolean =>
     (error as { status?: number } | null)?.status === 403
 
 /**
@@ -139,18 +141,27 @@ export const ensureIntegrityToken = async (): Promise<void> => {
 
             if (await mintBackoff.isBlocked()) return
 
+            const network = await readActiveNetwork()
             try {
-                await mint()
+                await mint(network)
             } catch (error) {
-                if (isRevoked(error)) {
-                    // Enrolment is a later step, so there is nothing to re-run
-                    // yet — drop the identity so the next attempt starts clean.
-                    await clearInstallKey()
-                    await clearSessionIntegrityToken()
-                    // The existing/fresh read above may have already warmed
-                    // this from the now-revoked stored token — expiry alone
-                    // won't catch a revocation, so drop it explicitly too.
-                    cachedToken = null
+                if (isForbidden(error)) {
+                    const code = readIntegrityErrorCode(error)
+                    if (code === 'APP_INTEGRITY_ENROLMENT_REQUIRED') {
+                        // The key is sound; this network's backend just has no enrolment
+                        // for it, whatever the local marker says.
+                        await clearEnrolmentMarker(network)
+                        await markEnrolmentNeeded()
+                    } else {
+                        await clearInstallKey()
+                        await clearSessionIntegrityToken()
+                        // The read above may have warmed this from the rejected token.
+                        cachedToken = null
+                        // A new key has no enrolment anywhere, so the old marker is dead by
+                        // its kid and needs no clearing.
+                        if (code === 'APP_INTEGRITY_REVOKED')
+                            await markEnrolmentNeeded()
+                    }
                 }
                 await mintBackoff.recordFailure()
                 logger.warn('Web integrity mint failed', { error })

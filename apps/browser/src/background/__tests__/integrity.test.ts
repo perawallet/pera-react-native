@@ -28,14 +28,22 @@ const mockExportPublicKey = vi.fn()
 const mockClearInstallKey = vi.fn()
 const mockClearSessionIntegrityToken = vi.fn()
 const mockSetIntegrityTokenProvider = vi.fn()
+const mockClearEnrolmentMarker = vi.fn()
 
 // integrity.ts imports the /api subpath, not the package root — the root
 // barrel also re-exports the Zustand store, which this suite must not import
-// (see packages/app-integrity/src/api.ts for why).
-vi.mock('@perawallet/wallet-core-app-integrity/api', () => ({
-    requestChallenge: mockRequestChallenge,
-    attestDevice: mockAttestDevice,
-}))
+// (see packages/app-integrity/src/api.ts for why). Spread the actual module
+// so the real readIntegrityErrorCode runs against the 403 fixtures below.
+vi.mock('@perawallet/wallet-core-app-integrity/api', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-app-integrity/api')
+    >('@perawallet/wallet-core-app-integrity/api')
+    return {
+        ...actual,
+        requestChallenge: mockRequestChallenge,
+        attestDevice: mockAttestDevice,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -68,6 +76,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', async () => {
         // on call counts directly instead of inspecting storage side effects.
         clearInstallKey: mockClearInstallKey,
         clearSessionIntegrityToken: mockClearSessionIntegrityToken,
+        clearEnrolmentMarker: mockClearEnrolmentMarker,
     }
 })
 
@@ -82,6 +91,12 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 })
 
 const NOW = Date.parse('2026-08-04T12:00:00.000Z')
+
+const forbidden = (code?: string) =>
+    Object.assign(new Error('forbidden'), {
+        status: 403,
+        originalError: code ? { data: { error: 'x', code } } : undefined,
+    })
 
 // vi.doMock isn't scoped to one test — it persists for every subsequent
 // dynamic import in the file until something re-registers the factory.
@@ -277,6 +292,56 @@ describe('ensureIntegrityToken', () => {
 
         expect(mockClearInstallKey).not.toHaveBeenCalled()
         expect(mockClearSessionIntegrityToken).not.toHaveBeenCalled()
+    })
+
+    it('keeps the key and asks for enrolment on APP_INTEGRITY_ENROLMENT_REQUIRED', async () => {
+        mockAttestDevice.mockRejectedValueOnce(
+            forbidden('APP_INTEGRITY_ENROLMENT_REQUIRED'),
+        )
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(mockClearInstallKey).not.toHaveBeenCalled()
+        expect(mockClearEnrolmentMarker).toHaveBeenCalledWith('mainnet')
+        expect(fake.session.has('integrity:enrol-needed')).toBe(true)
+        expect(fake.session.has('integrity:backoff')).toBe(true)
+    })
+
+    it('drops the key and asks for enrolment on APP_INTEGRITY_REVOKED', async () => {
+        mockAttestDevice.mockRejectedValueOnce(
+            forbidden('APP_INTEGRITY_REVOKED'),
+        )
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(mockClearInstallKey).toHaveBeenCalledTimes(1)
+        expect(mockClearSessionIntegrityToken).toHaveBeenCalledTimes(1)
+        expect(fake.session.has('integrity:enrol-needed')).toBe(true)
+    })
+
+    it('drops the key without asking for enrolment on any other 403', async () => {
+        mockAttestDevice.mockRejectedValueOnce(forbidden())
+        const { ensureIntegrityToken } = await import('../integrity')
+
+        await ensureIntegrityToken()
+
+        expect(mockClearInstallKey).toHaveBeenCalledTimes(1)
+        expect(fake.session.has('integrity:enrol-needed')).toBe(false)
+    })
+
+    it('clears the backoff and mints again when enrolment resumes it', async () => {
+        fake.session.set('integrity:backoff', {
+            failures: 3,
+            nextAttemptAt: Date.now() + 3_600_000,
+        })
+        const { resumeIntegrityMint } = await import('../integrity')
+
+        await resumeIntegrityMint()
+
+        expect(mockAttestDevice).toHaveBeenCalledTimes(1)
+        expect(fake.session.has('integrity:backoff')).toBe(false)
     })
 
     it('clears backoff state once a mint succeeds after a prior failure', async () => {
