@@ -17,6 +17,7 @@ import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
 import { VaultSecuritySettingsScreen } from './vault-security'
+import { developerGalleryScreens } from './developer-gallery'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
@@ -43,9 +44,6 @@ import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDevelo
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
 import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
-import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
-import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
-import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
 import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
@@ -128,23 +126,29 @@ const DeveloperSettingsStackNavigator = () => {
                 }}
                 component={SettingsDeveloperAppIntegrityScreen}
             />
-            <DeveloperSettingsStack.Screen
-                name='Gallery'
-                options={{
-                    title: 'Screen Gallery',
-                }}
-                component={SettingsDeveloperGalleryScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='GalleryCategory'
-                options={{ title: 'UI Catalog' }}
-                component={GalleryCategoryScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='GalleryPreview'
-                options={{ title: 'Preview' }}
-                component={GalleryComponentPreviewScreen}
-            />
+            {developerGalleryScreens && (
+                <>
+                    <DeveloperSettingsStack.Screen
+                        name='Gallery'
+                        options={{
+                            title: 'Screen Gallery',
+                        }}
+                        component={developerGalleryScreens.GalleryScreen}
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='GalleryCategory'
+                        options={{ title: 'UI Catalog' }}
+                        component={
+                            developerGalleryScreens.GalleryCategoryScreen
+                        }
+                    />
+                    <DeveloperSettingsStack.Screen
+                        name='GalleryPreview'
+                        options={{ title: 'Preview' }}
+                        component={developerGalleryScreens.GalleryPreviewScreen}
+                    />
+                </>
+            )}
             <DeveloperSettingsStack.Screen
                 name='MigrationViewer'
                 options={{

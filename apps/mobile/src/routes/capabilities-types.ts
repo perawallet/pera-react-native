@@ -41,6 +41,9 @@ export type RouteCapabilities = {
      * always uses tap-to-confirm and the setting would be a no-op. */
     confirmationModeSetting: boolean
     developerSettings: boolean
+    /** Developer screen gallery. Off in production bundles, where Metro drops
+     * its code entirely (see metro-build-gates.js), not just its entry points. */
+    developerGallery: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
     /** Quantum (Falcon-1024) accounts. */

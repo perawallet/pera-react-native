@@ -10,75 +10,55 @@
  limitations under the License
  */
 
-import { Linking } from 'react-native'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { config } from '@perawallet/wallet-core-config'
-
 import { PWListItem, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview/hooks'
-import { routeCapabilities } from '@routes/capabilities'
+import { useSettingsDeveloperMenuScreen } from './useSettingsDeveloperMenuScreen'
 
 export const SettingsDeveloperMenuScreen = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-
-    const openTestingDapp = () => {
-        if (!routeCapabilities.inAppWebView) {
-            void Linking.openURL(config.peraDemoDappUrl)
-            return
-        }
-        pushWebView({
-            url: config.peraDemoDappUrl,
-            id: 'Testing Dapp',
-            enablePeraConnect: true,
-        })
-    }
-
-    const handleTapEvent = (page: string) => {
-        navigation.push(page)
-    }
+    const { isGalleryAvailable, handleNavigate, handleOpenTestingDapp } =
+        useSettingsDeveloperMenuScreen()
 
     return (
         <PWScreen>
             <PWListItem
-                onPress={() => handleTapEvent('FeatureFlags')}
+                onPress={() => handleNavigate('FeatureFlags')}
                 icon='sliders'
                 title={t('screens.feature_flags')}
             />
             <PWListItem
-                onPress={() => handleTapEvent('MigrationViewer')}
+                onPress={() => handleNavigate('MigrationViewer')}
                 icon='code'
                 title='Migration Viewer'
             />
             <PWListItem
-                onPress={() => handleTapEvent('KeystoreMigrations')}
+                onPress={() => handleNavigate('KeystoreMigrations')}
                 icon='reload'
                 title='Keystore Migrations'
             />
             <PWListItem
-                onPress={() => openTestingDapp()}
+                onPress={handleOpenTestingDapp}
                 icon='globe'
                 title={t('settings.developer.debug_dapp')}
             />
             <PWListItem
-                onPress={() => handleTapEvent('ManageCache')}
+                onPress={() => handleNavigate('ManageCache')}
                 icon='reload'
                 title={t('settings.developer.manage_cache')}
             />
             <PWListItem
-                onPress={() => handleTapEvent('AppIntegrity')}
+                onPress={() => handleNavigate('AppIntegrity')}
                 icon='shield-check'
                 title={t('settings.developer.app_integrity')}
             />
-            <PWListItem
-                onPress={() => handleTapEvent('Gallery')}
-                icon='dot-stack'
-                title={t('settings.developer.screen_gallery')}
-                testID='developer_menu_gallery_item'
-            />
+            {isGalleryAvailable && (
+                <PWListItem
+                    onPress={() => handleNavigate('Gallery')}
+                    icon='dot-stack'
+                    title={t('settings.developer.screen_gallery')}
+                    testID='developer_menu_gallery_item'
+                />
+            )}
         </PWScreen>
     )
 }
