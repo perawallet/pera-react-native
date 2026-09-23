@@ -115,7 +115,7 @@ describe('useAutoDrawSwitch', () => {
         expect(postDelegatorLsig).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
-                token: 'usdc',
+                currency: 'usdc',
                 delegatorAddress: 'FUNDINGADDR',
                 cardAddress: 'CARD',
                 lsigBytes: expect.any(String),
