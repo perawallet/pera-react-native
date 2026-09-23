@@ -43,8 +43,7 @@ export type RouteCapabilities = {
     developerSettings: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
-    /** Quantum (Falcon-1024) accounts. Off on web: the WASM signer's Emscripten
-     * build doesn't bundle for the extension (see useIsQuantumAccountsEnabled). */
+    /** Quantum (Falcon-1024) accounts. */
     quantum: boolean
     /** Rekey feature area (wallet-wide scan-for-rekeyed sweep, rekey-to-
      * standard/shared/ledger flows) — native-only; these stacks aren't

@@ -84,7 +84,7 @@ catalog:
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
   fake-indexeddb: 6.2.5
-  falcon-1024: ^0.2.0
+  falcon-1024: 0.2.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
@@ -218,6 +218,11 @@ patchedDependencies:
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
   # qualify to Swift.abs to disambiguate. Drop once Expo ships a toolchain-compatible release.
   "expo-modules-jsi@57.0.4": patches/expo-modules-jsi@57.0.4.patch
+  # The CJS build's Emscripten glue reads a bare `__filename`, which a Metro web
+  # bundle never defines, so evaluating it throws a ReferenceError. The value
+  # only seeds a script-directory lookup the inlined WASM never uses; guard it
+  # with `typeof`. Drop once upstream's build stops emitting the bare read.
+  "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
   # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
   # Fabric's tagToViewState keeps the Screen view alive for the surface's
   # lifetime, so every dismissed screen's fragment (plus its view subtree) is

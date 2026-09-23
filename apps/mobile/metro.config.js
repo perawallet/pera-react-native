@@ -136,13 +136,6 @@ const webStubs = {
     // so the shim only needs to survive eval; it throws clearly if ever
     // rendered.
     'react-native-webview': 'react-native-webview.js',
-    // Quantum (PQ) signing: falcon-1024's Emscripten-generated dist/index.js
-    // fails to parse under Metro's web bundler at all (not just at eval
-    // time). Only reachable via wasmFalconProvider.ts (off-device provider),
-    // and quantum accounts are capability-gated off on web (routeCapabilities
-    // .quantum) since there is no working signer path here yet — the shim
-    // only needs to survive bundling; it throws clearly if ever invoked.
-    'falcon-1024': 'falcon-1024.js',
 };
 
 // Locale tour (i18n screenshot QA) is swapped for no-op stubs in any build
@@ -484,11 +477,13 @@ const customResolveRequest = (context, moduleName, platform) => {
     // falcon-1024 ships a dual build whose ESM entry (dist/index.js)
     // instantiates its WASM with a module-level `await`. hermesc rejects
     // top-level await in release bundles, so the release build dies at
-    // createBundleReleaseJsAndAssets. Because this package lists the `import`
-    // condition before `require` and we enable both (see
+    // createBundleReleaseJsAndAssets; on web, Metro's module wrapper is not
+    // async, so the minifier fails to parse it at all. Because this package
+    // lists the `import` condition before `require` and we enable both (see
     // unstable_conditionNames above), Metro picks the ESM entry. Redirect to
-    // the sibling CJS build — identical API, no top-level await — by resolving
-    // normally and swapping the resolved entry file.
+    // the sibling CJS build (identical API, synchronous WASM instantiation) by
+    // resolving normally and swapping the resolved entry file. Its bare
+    // `__filename` read is guarded by patches/falcon-1024@0.2.0.patch.
     if (moduleName === 'falcon-1024') {
         const resolved = context.resolveRequest(context, moduleName, platform);
         if (

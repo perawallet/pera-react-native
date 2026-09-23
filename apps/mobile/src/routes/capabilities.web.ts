@@ -40,10 +40,7 @@ export const routeCapabilities: RouteCapabilities = {
     confirmationModeSetting: false,
     developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
-    // Off: the keystore's Falcon shim is backed by the WASM `falcon-1024` build,
-    // whose Emscripten bundle fails to parse under Metro's web bundler, so
-    // quantum accounts have no signer path in the extension.
-    quantum: false,
+    quantum: true, // WASM falcon-1024 via its synchronous CJS build (metro.config.js)
     rekeyFlows: true,
     // Also gates the SHARED_ACCOUNT_IMPORT deeplink: without the Multisig stack
     // registered it navigates nowhere and leaves the QR scanner locked awaiting a callback.

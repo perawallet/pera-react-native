@@ -93,8 +93,7 @@ The rule for adding an entry: the flag records a decision, the comment next to i
 Anything off on web is off for one of three reasons, and the comment says which.
 
 - A permanent platform limit (no push notifications, no store review).
-- A dependency that cannot build for the web bundle (quantum accounts: the Emscripten Falcon-1024
-  signer does not parse under Metro's web bundler).
+- A dependency that cannot build for the web bundle.
 - An external blocker (the Discover tab: Discover's own `DISCOVER_V3` minimum-version map has no
   `web` key, so the lookup is `undefined`, `compareVersions` throws mid-render and unmounts the tab.
   Our iframe and content-script bridge are verified working, and reporting a dishonest client type to

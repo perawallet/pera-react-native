@@ -49,6 +49,7 @@
         "@vitejs/plugin-react": "catalog:",
         "algosdk": "catalog:",
         "esbuild": "catalog:",
+        "falcon-1024": "catalog:",
         "jsdom": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
