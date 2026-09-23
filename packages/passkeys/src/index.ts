@@ -24,6 +24,8 @@ export * from './native/writeNativePasskeyEntry'
 // Deliberately root-only, never on the `./native` entry: unlike its siblings
 // this one depends on the keystore package.
 export * from './native/readFlaggedPasskeyCredentials'
+// Root-only for the same reason: it depends on the keystore package.
+export * from './native/readFlatKeystoreRecords'
 export * from './errors'
 export * from './authenticator/authenticator'
 export * from './authenticator/wire'

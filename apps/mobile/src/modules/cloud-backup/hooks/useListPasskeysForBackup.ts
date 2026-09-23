@@ -23,7 +23,12 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { passkeyBackupInputs } from '@perawallet/wallet-core-passkeys'
+import {
+    passkeyBackupInputs,
+    readFlatKeystoreRecords,
+} from '@perawallet/wallet-core-passkeys'
+import { logger } from '@perawallet/wallet-core-shared'
+import { subtle } from 'react-native-quick-crypto'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 
 /** Resolves a seed key id's entropy directly. `SeedEntropyResolver` keys by
@@ -82,6 +87,49 @@ const createSweepCaches = (): SweepCaches => {
     }
 }
 
+type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
+
+/**
+ * Every key a credential could be hiding in. The reactive keystore store holds
+ * the `k/`+`m/` split layout, which on a device deliberately holds **no**
+ * passkey credentials — `repairs/0002-rematerialize-passkey-credentials`
+ * rewrites each one as a flat bare-id record and deletes the pair, because
+ * Android resolves the split layout first and a surviving `k/` record shadows
+ * the flat copy. Sweeping only the store therefore finds nothing on iOS or
+ * Android; the flat records are where credentials actually are.
+ *
+ * Both sources are read because a legacy install whose repair declined still
+ * has its pair. Deduped by id, store first: it is already decrypted.
+ */
+const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
+    const storeKeys = getKeystoreStore().state.keys
+    const seen = new Set(storeKeys.map(key => key.id))
+
+    let flat
+    try {
+        flat = await readFlatKeystoreRecords({
+            subtle: subtle as unknown as SubtleCrypto,
+        })
+    } catch (error) {
+        // Never fail the sweep over the flat scan: the store's own keys are
+        // still worth proving, and a keychain that will not open is a device
+        // condition.
+        logger.warn('useListPasskeysForBackup: flat record scan failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return [...storeKeys]
+    }
+
+    if (!flat.isComplete) {
+        logger.warn('useListPasskeysForBackup: flat record scan was incomplete')
+    }
+
+    return [
+        ...storeKeys,
+        ...(flat.keys as KeystoreKey[]).filter(key => !seen.has(key.id)),
+    ]
+}
+
 export const useListPasskeysForBackup = (): (() => Promise<
     BackupPasskey[]
 >) => {
@@ -91,7 +139,7 @@ export const useListPasskeysForBackup = (): (() => Promise<
     )
 
     return useCallback(async () => {
-        const keys = getKeystoreStore().state.keys
+        const keys = await collectCandidateKeys()
 
         const caches = createSweepCaches()
         let inputs
