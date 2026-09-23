@@ -66,8 +66,12 @@ export class PasskeyRouter {
         // the content script then falls through to the page's real
         // navigator.credentials, which refuses outside a secure context on
         // its own) — see secure-origin.ts for why the scheme is load-bearing.
+        //
+        // Top frame only: intercepting inside an iframe skips the browser's
+        // publickey-credentials-* Permissions-Policy gate and reports the
+        // ceremony to the RP as top-level (crossOrigin: false, no topOrigin).
         const origin = sender?.origin
-        if (!isSecureDappOrigin(origin)) {
+        if (sender?.frameId !== 0 || !isSecureDappOrigin(origin)) {
             sendResponse(DECLINE)
             return true
         }
