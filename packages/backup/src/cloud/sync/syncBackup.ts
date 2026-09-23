@@ -13,7 +13,7 @@
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { Manifest, SyncState } from '../models'
+import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
@@ -64,7 +64,11 @@ export const syncBackup = async (
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
-            ...buildLocalContactItems(deps.listContacts(), now),
+            ...buildLocalContactItems(
+                deps.listContacts(),
+                now,
+                deps.hashAddress,
+            ),
         ],
         // Account-only: a contact cannot fail to serialize.
         skipped: accounts.skipped,
@@ -73,6 +77,25 @@ export const syncBackup = async (
 
     // 2. Manifest short-circuit.
     const manifest = await fetchManifestOrNull(deps)
+
+    /* An address-keyed backup predates key hashing. Its payloads still decrypt,
+     * so syncing would import every item and then push the same accounts back
+     * under their hashed keys, doubling the backup. There is no rename on the
+     * service, and a re-key would leave the old addresses in the changelog, so
+     * the user re-creates the backup through Remove instead. */
+    const legacyKeyCount = Object.keys(manifest?.items ?? {}).filter(
+        isLegacyItemKey,
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'syncBackup: backup uses legacy address keys, refusing to sync',
+            { legacyKeyCount },
+        )
+        // The reconciled state is dropped, not returned: committing it would
+        // track every local item as dirty work this backup can never accept.
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&

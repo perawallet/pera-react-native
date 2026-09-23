@@ -12,10 +12,13 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BackupItemType } from '../../models'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { BackupItemType, accountItemKey, secretsItemKey } from '../../models'
 import { buildLocalItems } from '../buildLocalItems'
 import { contentHash, canonicalJson } from '../canonicalize'
 import type { SerializedAccount } from '../types'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const fakeSerialize = async (account: {
     address?: string
@@ -23,7 +26,7 @@ const fakeSerialize = async (account: {
     if (!account.address) return null
     return {
         address: {
-            key: `accounts/${account.address}`,
+            key: accountItemKey(hashAddress(account.address)),
             type: BackupItemType.ACCOUNT,
             payload: {
                 type: 'watch',
@@ -43,7 +46,7 @@ describe('buildLocalItems', () => {
         )
         expect(items).toHaveLength(1)
         expect(skipped).toBe(0)
-        expect(items[0].key).toBe('accounts/A')
+        expect(items[0].key).toBe(accountItemKey(hashAddress('A')))
         const expected = contentHash(
             canonicalJson({ type: 'watch', address: 'A' }),
         )
@@ -63,13 +66,13 @@ describe('buildLocalItems', () => {
         const serialize = async (account: { address?: string }) => {
             if (!account.address) return null
             const seedSecret = {
-                key: 'secrets/A',
+                key: secretsItemKey(hashAddress('A')),
                 type: BackupItemType.ACCOUNT,
                 payload: { type: 'hdSeed', seed: 's', entropy: 'e' },
             }
             return {
                 address: {
-                    key: `accounts/${account.address}`,
+                    key: accountItemKey(hashAddress(account.address)),
                     type: BackupItemType.ACCOUNT,
                     payload: {
                         type: 'hdWallet',
@@ -92,6 +95,12 @@ describe('buildLocalItems', () => {
             serialize as never,
         )
         const keys = items.map(i => i.key).sort()
-        expect(keys).toEqual(['accounts/A', 'accounts/B', 'secrets/A'])
+        expect(keys).toEqual(
+            [
+                accountItemKey(hashAddress('A')),
+                accountItemKey(hashAddress('B')),
+                secretsItemKey(hashAddress('A')),
+            ].sort(),
+        )
     })
 })

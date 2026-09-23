@@ -13,6 +13,7 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 import {
+    BackupAccountType,
     BackupItemStatus,
     BackupItemType,
     createEmptySyncState,
@@ -23,13 +24,17 @@ import { pushDirty } from '../pushDirty'
 import type { LocalItem } from '../types'
 
 const encryptionKey = new Uint8Array(32).fill(7)
-const item = (key: string): LocalItem => ({
+/** `key` is an opaque hash here, same as in production; the test declares the
+ *  plaintext address explicitly rather than recovering it from the key. */
+const item = (key: string, address: string): LocalItem => ({
     key,
     type: BackupItemType.ACCOUNT,
     contentHash: 'h',
+    address,
+    accountType: BackupAccountType.watch,
     payload: {
         type: 'watch',
-        address: key.split('/')[1],
+        address,
         updatedAt: 0,
     } as never,
 })
@@ -68,7 +73,7 @@ describe('pushDirty', () => {
         }
         const next = await pushDirty({
             state,
-            localItems: [item('accounts/A')],
+            localItems: [item('accounts/A', 'A')],
             deps,
         })
         expect(deps.batchUpsertItems).toHaveBeenCalledTimes(1)
@@ -105,7 +110,7 @@ describe('pushDirty', () => {
         }
         const next = await pushDirty({
             state,
-            localItems: [item('accounts/A')],
+            localItems: [item('accounts/A', 'A')],
             deps,
         })
         // Stays dirty, records the server's current_ver, but DELIBERATELY keeps
@@ -170,6 +175,8 @@ describe('pushDirty', () => {
                     key: 'contacts/C1',
                     type: BackupItemType.CONTACT,
                     contentHash: 'h',
+                    address: 'C1',
+                    accountType: null,
                     payload: { address: 'C1', name: 'Alice' },
                 },
             ],

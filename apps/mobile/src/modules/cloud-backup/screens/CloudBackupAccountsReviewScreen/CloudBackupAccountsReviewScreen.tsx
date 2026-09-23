@@ -81,12 +81,15 @@ export const CloudBackupAccountsReviewScreen = () => {
                         </PWTouchableOpacity>
                         <ExpandablePanel isExpanded={isExpanded}>
                             <PWView style={styles.cardRows}>
-                                {availableFromBackup.map((address, index) => (
-                                    <Fragment key={address}>
+                                {availableFromBackup.map((entry, index) => (
+                                    <Fragment key={entry.address}>
                                         {index > 0 && <ListItemDivider />}
                                         <AvailableFromBackupRow
-                                            address={address}
-                                            isBusy={busyAddress === address}
+                                            address={entry.address}
+                                            type={entry.type}
+                                            isBusy={
+                                                busyAddress === entry.address
+                                            }
                                             onAdd={onAdd}
                                             onDelete={onDelete}
                                         />

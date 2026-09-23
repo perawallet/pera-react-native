@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const SALT = 'c2FsdA=='
 const ENCRYPTION_KEY = Uint8Array.from([5, 5, 5])
 const AUTH_SECRET_KEY = Uint8Array.from([4, 4, 4])
+const ITEM_KEY = Uint8Array.from([6, 6, 6])
 
 const {
     MNEMONIC,
@@ -89,6 +90,7 @@ beforeEach(() => {
         backupId: 'did:pera:abc',
         encryptionKey: ENCRYPTION_KEY,
         authSecretKey: AUTH_SECRET_KEY,
+        itemKey: ITEM_KEY,
     })
 })
 
@@ -113,6 +115,7 @@ describe('useRegisterCloudBackupMutation', () => {
                 deviceId: 'device-123',
                 encryptionKey: ENCRYPTION_KEY,
                 authSecretKey: AUTH_SECRET_KEY,
+                itemKey: ITEM_KEY,
             },
             SALT,
         )

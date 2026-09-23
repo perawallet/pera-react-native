@@ -21,6 +21,9 @@ import {
     reconcile,
     serializeAccountForBackup,
 } from '../../sync'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { accountItemKey, contactItemKey, secretsItemKey } from '../itemKeys'
+import { BackupAccountType } from '../payloads'
 import {
     createEmptySyncState,
     type SyncItemState,
@@ -35,7 +38,15 @@ import {
     isContactBackedUp,
 } from '../reviewBuckets'
 
-const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
+const contactKey = (address: string) => contactItemKey(hashAddress(address))
+
+const tracked = (
+    address: string,
+    overrides: Partial<SyncItemState> = {},
+): SyncItemState => ({
     type: BackupItemType.ACCOUNT,
     knownVer: 1,
     baseVer: 1,
@@ -44,6 +55,7 @@ const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
     lastRemoteHash: 'r',
     localContentHash: 'h',
     localUpdatedAt: null,
+    address,
     ...overrides,
 })
 
@@ -57,8 +69,8 @@ describe('deriveBackupAccountReview', () => {
 
     it('splits local accounts by whether the backup holds them', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked()
-        state.items['accounts/B'] = tracked({
+        state.items[accountKey('A')] = tracked('A')
+        state.items[accountKey('B')] = tracked('B', {
             status: BackupItemStatus.IGNORED,
         })
 
@@ -69,7 +81,7 @@ describe('deriveBackupAccountReview', () => {
 
     it('counts a pending delete as not backed up', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({ pendingDelete: true })
+        state.items[accountKey('A')] = tracked('A', { pendingDelete: true })
 
         expect(deriveBackupAccountReview(state, ['A']).notBackedUp).toEqual([
             'A',
@@ -78,7 +90,10 @@ describe('deriveBackupAccountReview', () => {
 
     it('counts an account the server has never seen as not backed up', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({ knownVer: 0, isDirty: true })
+        state.items[accountKey('A')] = tracked('A', {
+            knownVer: 0,
+            isDirty: true,
+        })
 
         const review = deriveBackupAccountReview(state, ['A'])
         expect(review.notBackedUp).toEqual(['A'])
@@ -87,16 +102,46 @@ describe('deriveBackupAccountReview', () => {
 
     it('surfaces a reviewed address the device does not hold', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/GONE'] = tracked({ pendingImport: true })
+        state.items[accountKey('GONE')] = tracked('GONE', {
+            pendingImport: true,
+        })
 
         const review = deriveBackupAccountReview(state, ['A'])
-        expect(review.availableFromBackup).toEqual(['GONE'])
+        expect(review.availableFromBackup).toEqual([
+            { address: 'GONE', type: null },
+        ])
+        expect(review.notBackedUp).toEqual(['A'])
+    })
+
+    it('reports the type of an account only the backup holds', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('GONE')] = tracked('GONE', {
+            pendingImport: true,
+            accountType: BackupAccountType.hardware,
+        })
+
+        expect(
+            deriveBackupAccountReview(state, []).availableFromBackup,
+        ).toEqual([{ address: 'GONE', type: 'hardware' }])
+    })
+
+    it('omits an item this device has never decrypted from every bucket', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', { address: null })
+        state.items[accountKey('GONE')] = tracked('GONE', {
+            address: null,
+            pendingImport: true,
+        })
+
+        const review = deriveBackupAccountReview(state, ['A'])
+        expect(review.backedUp.size).toBe(0)
+        expect(review.availableFromBackup).toEqual([])
         expect(review.notBackedUp).toEqual(['A'])
     })
 
     it('drops a reviewed address once the device holds it again', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({ pendingImport: true })
+        state.items[accountKey('A')] = tracked('A', { pendingImport: true })
 
         const review = deriveBackupAccountReview(state, ['A'])
         expect(review.availableFromBackup).toEqual([])
@@ -104,8 +149,8 @@ describe('deriveBackupAccountReview', () => {
 
     it('ignores secrets keys so a secret-bearing account is counted once', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked()
-        state.items['secrets/A'] = tracked()
+        state.items[accountKey('A')] = tracked('A')
+        state.items[secretsKey('A')] = tracked('A')
 
         expect([...deriveBackupAccountReview(state, ['A']).backedUp]).toEqual([
             'A',
@@ -116,7 +161,7 @@ describe('deriveBackupAccountReview', () => {
 describe('isAddressBackedUp', () => {
     it('agrees with the backedUp bucket for an account the backup holds', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked()
+        state.items[accountKey('A')] = tracked('A')
 
         expect(isAddressBackedUp(state, 'A')).toBe(true)
         expect(isAddressBackedUp(state, 'B')).toBe(false)
@@ -125,20 +170,33 @@ describe('isAddressBackedUp', () => {
 
     it('agrees with the backedUp bucket for an account awaiting review', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({ pendingImport: true })
+        state.items[accountKey('A')] = tracked('A', { pendingImport: true })
 
         expect(isAddressBackedUp(state, 'A')).toBe(false)
         expect(deriveBackupAccountReview(state, ['A']).backedUp.size).toBe(0)
     })
+
+    it('agrees with the backedUp bucket for an account the server never saw', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', {
+            knownVer: 0,
+            isDirty: true,
+        })
+
+        expect(isAddressBackedUp(state, 'A')).toBe(false)
+    })
 })
 
 describe('isContactBackedUp', () => {
-    const contact = (overrides: Partial<SyncItemState> = {}): SyncItemState =>
-        tracked({ type: BackupItemType.CONTACT, ...overrides })
+    const contact = (
+        address: string,
+        overrides: Partial<SyncItemState> = {},
+    ): SyncItemState =>
+        tracked(address, { type: BackupItemType.CONTACT, ...overrides })
 
     it('agrees with the backedUp bucket for a contact the backup holds', () => {
         const state = createEmptySyncState('b')
-        state.items['contacts/A'] = contact()
+        state.items[contactKey('A')] = contact('A')
 
         expect(isContactBackedUp(state, 'A')).toBe(true)
         expect(isContactBackedUp(state, 'B')).toBe(false)
@@ -147,7 +205,7 @@ describe('isContactBackedUp', () => {
 
     it('reads the contact key rather than the account one', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked()
+        state.items[accountKey('A')] = tracked('A')
 
         expect(isContactBackedUp(state, 'A')).toBe(false)
         expect(isAddressBackedUp(state, 'A')).toBe(true)
@@ -155,7 +213,7 @@ describe('isContactBackedUp', () => {
 
     it('agrees with the backedUp bucket for a contact awaiting review', () => {
         const state = createEmptySyncState('b')
-        state.items['contacts/A'] = contact({ pendingImport: true })
+        state.items[contactKey('A')] = contact('A', { pendingImport: true })
 
         expect(isContactBackedUp(state, 'A')).toBe(false)
         expect(deriveBackupContactReview(state, ['A']).backedUp.size).toBe(0)
@@ -165,61 +223,68 @@ describe('isContactBackedUp', () => {
 describe('areKeysDeletedFromBackup', () => {
     it('reports the keys gone once each is tombstoned', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({
+        state.items[accountKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['secrets/A'] = tracked({ status: BackupItemStatus.IGNORED })
+        state.items[secretsKey('A')] = tracked('A', {
+            status: BackupItemStatus.IGNORED,
+        })
 
         expect(
-            areKeysDeletedFromBackup(state, ['accounts/A', 'secrets/A']),
+            areKeysDeletedFromBackup(state, [accountKey('A'), secretsKey('A')]),
         ).toBe(true)
     })
 
     it('reports them still there while one waits on a retry', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({
+        state.items[accountKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['secrets/A'] = tracked({ pendingDelete: true })
+        state.items[secretsKey('A')] = tracked('A', { pendingDelete: true })
 
         expect(
-            areKeysDeletedFromBackup(state, ['accounts/A', 'secrets/A']),
+            areKeysDeletedFromBackup(state, [accountKey('A'), secretsKey('A')]),
         ).toBe(false)
     })
 
     // An HD seed is stored under the first derived sibling, so a check that
-    // re-derived `secrets/<address>` would read a key the delete never touched.
+    // re-derived `secrets/<hash of the account>` would read a key the delete
+    // never touched.
     it('reports a seed stored under a sibling address still there', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/CHILD'] = tracked({
+        state.items[accountKey('CHILD')] = tracked('CHILD', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['secrets/FIRST'] = tracked({ pendingDelete: true })
+        state.items[secretsKey('FIRST')] = tracked('FIRST', {
+            pendingDelete: true,
+        })
 
         expect(
             areKeysDeletedFromBackup(state, [
-                'accounts/CHILD',
-                'secrets/FIRST',
+                accountKey('CHILD'),
+                secretsKey('FIRST'),
             ]),
         ).toBe(false)
     })
 
     it('ignores a key the delete deliberately left alone', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/CHILD'] = tracked({
+        state.items[accountKey('CHILD')] = tracked('CHILD', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['secrets/FIRST'] = tracked()
+        state.items[secretsKey('FIRST')] = tracked('FIRST')
 
-        expect(areKeysDeletedFromBackup(state, ['accounts/CHILD'])).toBe(true)
+        expect(areKeysDeletedFromBackup(state, [accountKey('CHILD')])).toBe(
+            true,
+        )
     })
 
     it('reports a contact still there while its key waits on a retry', () => {
         const state = createEmptySyncState('b')
-        state.items['contacts/A'] = tracked({ pendingDelete: true })
+        state.items[contactKey('A')] = tracked('A', { pendingDelete: true })
 
-        expect(areKeysDeletedFromBackup(state, ['contacts/A'])).toBe(false)
-        expect(areKeysDeletedFromBackup(state, ['contacts/B'])).toBe(true)
+        expect(areKeysDeletedFromBackup(state, [contactKey('A')])).toBe(false)
+        expect(areKeysDeletedFromBackup(state, [contactKey('B')])).toBe(true)
     })
 })
 
@@ -260,6 +325,7 @@ const backedUpAfterSync = async (
     const local = await buildLocalItems(accounts, account =>
         serializeAccountForBackup(account, {
             updatedAt: 5,
+            hashAddress,
             resolveMnemonic: async () => 'w1 w2',
             resolveHd: async () => ({
                 seedFirstDerivedAddress: 'SEEDFIRST',
@@ -300,8 +366,11 @@ describe('deriveBackupAccountReview over a real reconciled snapshot', () => {
 })
 
 describe('deriveBackupContactReview', () => {
-    const contact = (overrides: Partial<SyncItemState> = {}): SyncItemState =>
-        tracked({ type: BackupItemType.CONTACT, ...overrides })
+    const contact = (
+        address: string,
+        overrides: Partial<SyncItemState> = {},
+    ): SyncItemState =>
+        tracked(address, { type: BackupItemType.CONTACT, ...overrides })
 
     const stateWith = (items: Record<string, SyncItemState>): SyncState => ({
         ...createEmptySyncState('did:pera:x'),
@@ -311,8 +380,8 @@ describe('deriveBackupContactReview', () => {
     it('splits local contacts into backed up and not backed up', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                'contacts/A': contact(),
-                'accounts/A': tracked(),
+                [contactKey('A')]: contact('A'),
+                [accountKey('A')]: tracked('A'),
             }),
             ['A', 'B'],
         )
@@ -324,7 +393,10 @@ describe('deriveBackupContactReview', () => {
     it('offers a held contact from the backup, named from the cached label', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                'contacts/A': contact({ pendingImport: true, label: 'Alice' }),
+                [contactKey('A')]: contact('A', {
+                    pendingImport: true,
+                    label: 'Alice',
+                }),
             }),
             [],
         )
@@ -336,7 +408,9 @@ describe('deriveBackupContactReview', () => {
 
     it('falls back to an empty name when nothing cached one', () => {
         const review = deriveBackupContactReview(
-            stateWith({ 'contacts/A': contact({ pendingImport: true }) }),
+            stateWith({
+                [contactKey('A')]: contact('A', { pendingImport: true }),
+            }),
             [],
         )
 
@@ -346,7 +420,10 @@ describe('deriveBackupContactReview', () => {
     it('drops a held contact the device holds again', () => {
         const review = deriveBackupContactReview(
             stateWith({
-                'contacts/A': contact({ pendingImport: true, label: 'Alice' }),
+                [contactKey('A')]: contact('A', {
+                    pendingImport: true,
+                    label: 'Alice',
+                }),
             }),
             ['A'],
         )

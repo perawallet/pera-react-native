@@ -12,28 +12,17 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import {
+    accountItemKey,
+    createItemKeyHasher,
+} from '@perawallet/wallet-core-backup/test-handlers'
 import { useIsAccountBackedUp } from '../useIsAccountBackedUp'
 
-const { syncStateMock } = vi.hoisted(() => {
-    const live = {
-        type: 'ACCOUNT',
-        knownVer: 1,
-        baseVer: 1,
-        isDirty: false,
-        status: 'ACTIVE',
-        lastRemoteHash: 'h',
-    }
-    return {
-        syncStateMock: {
-            current: {
-                items: {
-                    'accounts/A': live,
-                    'accounts/PENDING': { ...live, pendingImport: true },
-                },
-            },
-        },
-    }
-})
+const { syncStateMock } = vi.hoisted(() => ({
+    syncStateMock: {
+        current: { items: {} } as { items: Record<string, unknown> },
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-backup', async () => ({
     useBackupSyncStateStore: (selector: (state: unknown) => unknown) =>
@@ -42,6 +31,30 @@ vi.mock('@perawallet/wallet-core-backup', async () => ({
         typeof import('../../../../../../../packages/backup/src/cloud/models/reviewBuckets')
     >('../../../../../../../packages/backup/src/cloud/models/reviewBuckets')),
 }))
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
+const live = {
+    type: 'ACCOUNT',
+    knownVer: 1,
+    baseVer: 1,
+    isDirty: false,
+    status: 'ACTIVE',
+    lastRemoteHash: 'h',
+}
+
+// The key is a hash, so the cached `address` is all that ties an item back to
+// an account; an item without one reads as never decrypted.
+syncStateMock.current = {
+    items: {
+        [accountItemKey(hashAddress('A'))]: { ...live, address: 'A' },
+        [accountItemKey(hashAddress('PENDING'))]: {
+            ...live,
+            address: 'PENDING',
+            pendingImport: true,
+        },
+    },
+}
 
 describe('useIsAccountBackedUp', () => {
     it('reports an address the backup holds', () => {

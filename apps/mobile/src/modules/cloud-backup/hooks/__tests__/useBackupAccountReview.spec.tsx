@@ -30,7 +30,10 @@ const {
         current: {
             backedUp: new Set<string>(),
             notBackedUp: [] as string[],
-            availableFromBackup: [] as string[],
+            availableFromBackup: [] as {
+                address: string
+                type: string | null
+            }[],
         },
     },
     showToastMock: vi.fn(),
@@ -109,7 +112,7 @@ beforeEach(() => {
     reviewMock.current = {
         backedUp: new Set(['A']),
         notBackedUp: ['B'],
-        availableFromBackup: ['GONE'],
+        availableFromBackup: [{ address: 'GONE', type: 'algo25' }],
     }
 })
 
@@ -119,9 +122,22 @@ describe('useBackupAccountReview', () => {
 
         expect(result.current.backedUpAccounts).toEqual([{ address: 'A' }])
         expect(result.current.notBackedUpAccounts).toEqual([{ address: 'B' }])
-        expect(result.current.availableFromBackup).toEqual(['GONE'])
+        expect(result.current.availableFromBackup).toEqual([
+            { address: 'GONE', type: 'algo25' },
+        ])
         expect(result.current.isBackedUp('A')).toBe(true)
         expect(result.current.isBackedUp('B')).toBe(false)
+    })
+
+    test('carries a null cached type through when the device never decrypted the item', () => {
+        reviewMock.current.availableFromBackup = [
+            { address: 'GONE', type: null },
+        ]
+        const { result } = renderReview()
+
+        expect(result.current.availableFromBackup).toEqual([
+            { address: 'GONE', type: null },
+        ])
     })
 
     test('runs each row action against the account side of the mutation', async () => {

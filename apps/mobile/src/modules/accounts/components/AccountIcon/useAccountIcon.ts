@@ -83,6 +83,9 @@ const FALLBACK_GLYPH: AccountGlyph = {
     variant: 'accountNeutral',
 }
 
+export const accountGlyphForType = (type: AccountType): AccountGlyph =>
+    BASE_GLYPH[type] ?? FALLBACK_GLYPH
+
 export type UseAccountIconOptions = {
     /**
      * When true, render the icon for the account's base `type` and ignore
@@ -140,7 +143,7 @@ export const useAccountIcon = (
                 return REKEYED_UNSIGNABLE_GLYPH
             }
             case 'base': {
-                return BASE_GLYPH[account.type] ?? FALLBACK_GLYPH
+                return accountGlyphForType(account.type)
             }
         }
         // rekeyAccount keeps the memo invalidating when the auth account

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { BackupAccountType } from './payloads'
 import type {
     BackupGlobalHash,
     BackupId,
@@ -42,6 +43,14 @@ export type SyncItemState = {
      *  there. Null for every other type; safe to cache because a contact
      *  payload holds no secret material. */
     label?: string | null
+    /** The address this item is filed under, cached because the key is a hash
+     *  and nothing can recover it. Null means the device has never decrypted
+     *  this item: unknown, never "not ours". */
+    address?: string | null
+    /** Backup account type, so a row describing an account the device does not
+     *  hold can still say what it is. Null for contacts and for anything never
+     *  decrypted. */
+    accountType?: BackupAccountType | null
 }
 
 export type BackupSyncResult = 'SUCCESS' | 'FAILED'

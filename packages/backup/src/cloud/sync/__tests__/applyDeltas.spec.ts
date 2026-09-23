@@ -197,6 +197,7 @@ describe('applyDeltas', () => {
                 type: 'hdSeed',
                 seed: 'aa'.repeat(96),
                 entropy: 'bb'.repeat(32),
+                address: 'F',
             }),
             'accounts/G': JSON.stringify({
                 type: 'hdWallet',

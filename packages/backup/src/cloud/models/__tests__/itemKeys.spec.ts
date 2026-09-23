@@ -11,26 +11,68 @@
  */
 
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { describe, test, expect } from 'vitest'
+import { hashItemAddress } from '../../crypto/itemKeyHash'
 import {
-    contactAddressFromItemKey,
+    accountItemKey,
     contactItemKey,
+    isAccountItemKey,
     isContactItemKey,
+    isLegacyItemKey,
+    secretsItemKey,
 } from '../itemKeys'
 
-describe('contact item keys', () => {
-    it('builds a contacts/ key from an address', () => {
-        expect(contactItemKey('ADDR')).toBe('contacts/ADDR')
+const ADDRESS = 'ADDRESS'
+const HASH = hashItemAddress(ADDRESS, new Uint8Array(32).fill(1))
+/** 58-char base32, the shape keys had before they were hashed. */
+const LEGACY_ADDRESS =
+    'QWERTYUIOPASDFGHJKLZXCVBNM234567QWERTYUIOPASDFGHJKLZXCVBNM'
+
+describe('item keys', () => {
+    test('files an account under the accounts/ prefix', () => {
+        expect(accountItemKey(HASH)).toBe(`accounts/${HASH}`)
     })
 
-    it('recognises only contacts/ keys', () => {
-        expect(isContactItemKey('contacts/ADDR')).toBe(true)
-        expect(isContactItemKey('accounts/ADDR')).toBe(false)
-        expect(isContactItemKey('secrets/ADDR')).toBe(false)
+    test('files key material under the secrets/ prefix', () => {
+        expect(secretsItemKey(HASH)).toBe(`secrets/${HASH}`)
     })
 
-    it('reads the address back, and null for any other item', () => {
-        expect(contactAddressFromItemKey('contacts/ADDR')).toBe('ADDR')
-        expect(contactAddressFromItemKey('accounts/ADDR')).toBeNull()
+    test('files a contact under the contacts/ prefix', () => {
+        expect(contactItemKey(HASH)).toBe(`contacts/${HASH}`)
+    })
+
+    // The prefix is the only thing left a reader of a key can route on.
+    test('classifies a key by its prefix alone', () => {
+        expect(isAccountItemKey(accountItemKey(HASH))).toBe(true)
+        expect(isAccountItemKey(secretsItemKey(HASH))).toBe(false)
+        expect(isAccountItemKey(contactItemKey(HASH))).toBe(false)
+
+        expect(isContactItemKey(contactItemKey(HASH))).toBe(true)
+        expect(isContactItemKey(accountItemKey(HASH))).toBe(false)
+        expect(isContactItemKey(secretsItemKey(HASH))).toBe(false)
+    })
+
+    describe('isLegacyItemKey', () => {
+        test('accepts a hashed key as current', () => {
+            expect(isLegacyItemKey(accountItemKey(HASH))).toBe(false)
+        })
+
+        test('flags a key filed under a plaintext address', () => {
+            expect(isLegacyItemKey(`accounts/${LEGACY_ADDRESS}`)).toBe(true)
+        })
+
+        test('flags an uppercase-hex segment, which no hasher of ours emits', () => {
+            expect(isLegacyItemKey(`accounts/${HASH.toUpperCase()}`)).toBe(true)
+        })
+    })
+
+    test('never carries the address it was built from', () => {
+        for (const key of [
+            accountItemKey(HASH),
+            secretsItemKey(HASH),
+            contactItemKey(HASH),
+        ]) {
+            expect(key).not.toContain(ADDRESS)
+        }
     })
 })

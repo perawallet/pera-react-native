@@ -13,19 +13,28 @@
 import type { ReactNode } from 'react'
 import {
     getAccountDisplayName,
+    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { BackupAccountType } from '@perawallet/wallet-core-backup'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWRoundIcon, PWText, PWView } from '@components/core'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import {
+    AccountIcon,
+    accountGlyphForType,
+} from '@modules/accounts/components/AccountIcon'
 import { AccountSummaryLine } from './AccountSummaryLine'
 import { useStyles } from './styles'
 
 export type BackupAccountRowProps = {
     address: string
     /** Absent for an address held only in the backup: nothing on this device
-     *  names it or knows its type. */
+     *  has this account locally. */
     account?: WalletAccount
+    /** The cached type for an address held only in the backup, used to pick a
+     *  glyph. Ignored once `account` is present. `hdSeed` and `null` (never
+     *  decrypted) fall back to the unknown-account glyph. */
+    accountType?: BackupAccountType | null
     isBackedUp: boolean
     trailing?: ReactNode
     /** Renders under the text column, so a wide control can't squeeze the name. */
@@ -36,12 +45,20 @@ export type BackupAccountRowProps = {
 export const BackupAccountRow = ({
     address,
     account,
+    accountType,
     isBackedUp,
     trailing,
     action,
     testID,
 }: BackupAccountRowProps) => {
     const styles = useStyles()
+
+    const backupGlyph =
+        !account &&
+        accountType != null &&
+        accountType !== BackupAccountType.hdSeed
+            ? accountGlyphForType(accountType as AccountType)
+            : null
 
     return (
         <PWView
@@ -52,6 +69,12 @@ export const BackupAccountRow = ({
                 <AccountIcon
                     account={account}
                     size='xl'
+                />
+            ) : backupGlyph ? (
+                <PWRoundIcon
+                    icon={backupGlyph.name}
+                    variant={backupGlyph.variant}
+                    size='md'
                 />
             ) : (
                 <PWRoundIcon

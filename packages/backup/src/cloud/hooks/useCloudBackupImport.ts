@@ -321,7 +321,7 @@ const importSeeds = async (
     for (const { address, secretsPayload } of accounts) {
         if (secretsPayload?.type !== BackupAccountType.hdSeed) continue
         try {
-            // `address` is the seed secret's key suffix, which the serializer
+            // `address` comes off the seed payload itself, which the serializer
             // always sets to the first-derived address.
             const heldSeedKeyId =
                 heldSeedKeyIdByFirstDerivedAddress.get(address)

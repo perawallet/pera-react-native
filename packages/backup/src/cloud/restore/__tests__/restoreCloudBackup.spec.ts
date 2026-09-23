@@ -34,10 +34,23 @@ vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
 }))
 
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import {
+    accountItemKey,
+    contactItemKey,
+    secretsItemKey,
+    BackupAccountType,
+} from '../../models'
 import {
     CloudBackupRestoreError,
     restoreCloudBackup,
 } from '../restoreCloudBackup'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
+const SECRETS_KEY = secretsItemKey(hashAddress('A'))
+const CONTACT_KEY = contactItemKey(hashAddress('C'))
+const UNREADABLE_KEY = accountItemKey(hashAddress('GONE'))
 
 const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
@@ -61,6 +74,7 @@ const keys = (fill = 5) => ({
     encryptionKey: new Uint8Array(32).fill(fill),
     authPublicKey: new Uint8Array(32).fill(3),
     authSecretKey: new Uint8Array(64).fill(4),
+    itemKey: new Uint8Array(32).fill(6),
 })
 
 const manifestItem = (overrides = {}) => ({
@@ -76,10 +90,25 @@ const pull = {
     backupGlobalHash: 'hash',
     lastSeq: 10,
     manifestItems: {
-        'accounts/A': manifestItem(),
-        'secrets/A': manifestItem({ ver: 2, hash: 'sha256:secret' }),
+        [ACCOUNT_KEY]: manifestItem(),
+        [SECRETS_KEY]: manifestItem({ ver: 2, hash: 'sha256:secret' }),
+        [CONTACT_KEY]: manifestItem({ type: 'CONTACT', ver: 1 }),
     },
-    accounts: [{ address: 'A', addressPayload: {}, secretsPayload: null }],
+    addressByKey: {
+        [ACCOUNT_KEY]: 'A',
+        [SECRETS_KEY]: 'A',
+        [CONTACT_KEY]: 'C',
+    },
+    accounts: [
+        {
+            address: 'A',
+            addressPayload: {
+                type: BackupAccountType.hdWallet,
+                address: 'A',
+            },
+            secretsPayload: { type: BackupAccountType.hdSeed, address: 'A' },
+        },
+    ],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
     skipped: [],
 }
@@ -110,6 +139,7 @@ describe('restoreCloudBackup', () => {
         expect(persistBackupKeysMock).toHaveBeenCalledWith({
             encryptionKey: expect.any(Uint8Array),
             authSecretKey: expect.any(Uint8Array),
+            itemKey: expect.any(Uint8Array),
             mnemonic: MNEMONIC,
         })
         expect(importAccounts).toHaveBeenCalledWith(pull.accounts)
@@ -155,14 +185,14 @@ describe('restoreCloudBackup', () => {
         // Version 0 would mean "the server has nothing here"; the server has
         // these at 3 and 2, refuses the write, and no delta ever follows to
         // correct it.
-        expect(syncState.items['accounts/A']).toMatchObject({
+        expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
             knownVer: 3,
             baseVer: 3,
             isDirty: false,
             status: 'ACTIVE',
             lastRemoteHash: 'sha256:remote',
         })
-        expect(syncState.items['secrets/A']).toMatchObject({
+        expect(syncState.items[SECRETS_KEY]).toMatchObject({
             knownVer: 2,
             baseVer: 2,
         })
@@ -173,7 +203,7 @@ describe('restoreCloudBackup', () => {
             ...pull,
             manifestItems: {
                 ...pull.manifestItems,
-                'accounts/GONE': manifestItem({ ver: 7, status: 'IGNORED' }),
+                [UNREADABLE_KEY]: manifestItem({ ver: 7, status: 'IGNORED' }),
             },
             // Deleted and unreadable items are filtered out of the import.
             accounts: [],
@@ -181,11 +211,44 @@ describe('restoreCloudBackup', () => {
 
         const { syncState } = await restoreCloudBackup(params())
 
-        expect(syncState.items['accounts/GONE']).toMatchObject({
+        expect(syncState.items[UNREADABLE_KEY]).toMatchObject({
             knownVer: 7,
             baseVer: 7,
             status: 'IGNORED',
         })
+    })
+
+    // The key is an HMAC of the address, so an item seeded without one is
+    // invisible to every review list until some later delta decrypts it.
+    test('stamps each read item with the address the pull decrypted', async () => {
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items[ACCOUNT_KEY]).toMatchObject({
+            address: 'A',
+            accountType: BackupAccountType.hdWallet,
+        })
+        expect(syncState.items[SECRETS_KEY]).toMatchObject({
+            address: 'A',
+            accountType: BackupAccountType.hdSeed,
+        })
+        expect(syncState.items[CONTACT_KEY]).toMatchObject({
+            address: 'C',
+            accountType: null,
+        })
+    })
+
+    test('leaves an item the pull could not read without an address', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                [UNREADABLE_KEY]: manifestItem({ ver: 7 }),
+            },
+        })
+
+        const { syncState } = await restoreCloudBackup(params())
+
+        expect(syncState.items[UNREADABLE_KEY].address ?? null).toBeNull()
     })
 
     test('keeps a restore whose accounts landed when the contact import throws', async () => {
@@ -211,6 +274,25 @@ describe('restoreCloudBackup', () => {
         await restoreCloudBackup(params())
 
         expect(order).toEqual(['persist', 'pull'])
+    })
+
+    // Its secrets payloads no longer parse while its address records still do,
+    // so importing would leave watch-only copies of accounts whose keys the
+    // user believes they just restored.
+    test('refuses a backup still keyed by plaintext address, before importing', async () => {
+        pullBackupItemsMock.mockResolvedValue({
+            ...pull,
+            manifestItems: {
+                ...pull.manifestItems,
+                'accounts/A': manifestItem(),
+            },
+        })
+
+        await expectCategory(restoreCloudBackup(params()), 'UNKNOWN')
+
+        expect(importAccounts).not.toHaveBeenCalled()
+        expect(importContacts).not.toHaveBeenCalled()
+        expect(deleteBackupKeysMock).toHaveBeenCalledTimes(1)
     })
 
     test('categorizes a 404 as NOT_FOUND and rolls the keys back', async () => {
@@ -273,6 +355,7 @@ describe('restoreCloudBackup', () => {
         await restoreCloudBackup(params())
         expect(succeeded.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(succeeded.authSecretKey.every(byte => byte === 0)).toBe(true)
+        expect(succeeded.itemKey.every(byte => byte === 0)).toBe(true)
 
         const failed = keys()
         deriveBackupKeysMock.mockResolvedValue(failed)
@@ -282,5 +365,6 @@ describe('restoreCloudBackup', () => {
         )
         expect(failed.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(failed.authSecretKey.every(byte => byte === 0)).toBe(true)
+        expect(failed.itemKey.every(byte => byte === 0)).toBe(true)
     })
 })

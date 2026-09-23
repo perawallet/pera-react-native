@@ -12,13 +12,14 @@
 
 import { useCallback, useState } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { BackupAccountReview } from '@perawallet/wallet-core-backup'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '../../components/DeleteFromBackupSheet'
 import { useBackupAccountReview } from '../../hooks/useBackupAccountReview'
 
 type UseCloudBackupAccountsReviewResult = {
-    availableFromBackup: string[]
+    availableFromBackup: BackupAccountReview['availableFromBackup']
     notBackedUpAccounts: WalletAccount[]
     isExpanded: boolean
     busyAddress: string | null

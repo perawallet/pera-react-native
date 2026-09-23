@@ -122,6 +122,7 @@ export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
 export const algo25SecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.algo25),
     mnemonic: z.string(),
+    address: z.string(),
 })
 export const hdSeedSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
@@ -129,10 +130,15 @@ export const hdSeedSecretsPayloadSchema = z.object({
     seed: z.string(),
     // Hex-encoded BIP39 entropy.
     entropy: z.string(),
+    /** The seed's first derived address, which is what this item is filed
+     *  under. A restoring device has no other way to place the seed: the key
+     *  is a hash and nothing else in the payload names an account. */
+    address: z.string(),
 })
 export const quantumSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
     mnemonic: z.string(),
+    address: z.string(),
 })
 
 export const secretsBackupPayloadSchema = z.discriminatedUnion('type', [

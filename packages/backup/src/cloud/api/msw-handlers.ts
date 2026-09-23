@@ -99,7 +99,8 @@ const createAuthorizer = (
 type SignatureVerification = { verifySignatures?: boolean }
 
 export type RestoreFixtureItem = {
-    /** The backup item key (e.g. an account address). */
+    /** The backup item key, prefix plus hashed address — build it with
+     *  `accountItemKey`/`secretsItemKey`/`contactItemKey`. */
     key: BackupItemKey
     /** Raw UTF-8 plaintext — will be encrypted in the handler response. */
     plaintext: string
