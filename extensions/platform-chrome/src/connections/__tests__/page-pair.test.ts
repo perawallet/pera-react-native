@@ -7,8 +7,38 @@ describe('isWcPagePairMessage', () => {
             isWcPagePairMessage({
                 scope: WC_PAGE_PAIR_SCOPE,
                 uri: 'wc:topic@1?bridge=b&key=00',
+                hasUserActivation: true,
             }),
         ).toBe(true)
+    })
+
+    it('accepts hasUserActivation false — shape only, the route enforces the policy', () => {
+        expect(
+            isWcPagePairMessage({
+                scope: WC_PAGE_PAIR_SCOPE,
+                uri: 'wc:topic@1?bridge=b&key=00',
+                hasUserActivation: false,
+            }),
+        ).toBe(true)
+    })
+
+    it('rejects a missing hasUserActivation', () => {
+        expect(
+            isWcPagePairMessage({
+                scope: WC_PAGE_PAIR_SCOPE,
+                uri: 'wc:topic@1?bridge=b&key=00',
+            }),
+        ).toBe(false)
+    })
+
+    it('rejects a non-boolean hasUserActivation', () => {
+        expect(
+            isWcPagePairMessage({
+                scope: WC_PAGE_PAIR_SCOPE,
+                uri: 'wc:topic@1?bridge=b&key=00',
+                hasUserActivation: 'true',
+            }),
+        ).toBe(false)
     })
 
     it('rejects another scope', () => {
@@ -57,6 +87,7 @@ describe('isWcPagePairMessage', () => {
         const withOrigin = {
             scope: WC_PAGE_PAIR_SCOPE,
             uri: 'wc:topic@1?bridge=b&key=00',
+            hasUserActivation: true,
             requesterOrigin: 'https://trusted.example',
         }
         expect(isWcPagePairMessage(withOrigin)).toBe(true)

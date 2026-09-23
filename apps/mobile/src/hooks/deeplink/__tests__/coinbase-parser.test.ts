@@ -54,4 +54,12 @@ describe('Coinbase Parser', () => {
             receiverAddress: TEST_ADDRESS,
         })
     })
+
+    it('rejects a transfer whose receiver is not a valid address', () => {
+        expect(
+            parseCoinbaseFormat(
+                `algo:31566704/transfer?address=${TEST_ADDRESS.slice(0, 57)}`,
+            ),
+        ).toBeNull()
+    })
 })

@@ -19,6 +19,7 @@ import {
     deriveBackupAccountReview,
     useBackupReviewActionMutation,
     useBackupSyncStateStore,
+    type BackupAccountReview,
     type BackupReviewAction,
 } from '@perawallet/wallet-core-backup'
 import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
@@ -29,8 +30,8 @@ import { useErrorToast } from '@hooks/useErrorToast'
 export type UseBackupAccountReviewResult = {
     backedUpAccounts: WalletAccount[]
     notBackedUpAccounts: WalletAccount[]
-    /** Addresses the backup holds that this device deleted. */
-    availableFromBackup: string[]
+    /** Accounts the backup holds that this device deleted. */
+    availableFromBackup: BackupAccountReview['availableFromBackup']
     isBackedUp: (address: string) => boolean
     busyAddress: string | null
     backUpAccount: (address: string) => void

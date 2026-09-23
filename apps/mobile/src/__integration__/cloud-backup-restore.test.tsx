@@ -46,8 +46,13 @@ import {
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
+    accountItemKey,
     buildRestoreHandlers,
     buildSyncHandlers,
+    contactItemKey,
+    createItemKeyHasher,
+    secretsItemKey,
+    type ItemKeyHasher,
 } from '@perawallet/wallet-core-backup/test-handlers'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
@@ -130,6 +135,26 @@ const expectRestoreLandedOnOverview = async () => {
     })
 }
 
+/** The pair a pushed Algo25 account leaves behind. */
+const algo25BackupItems = (hashAddress: ItemKeyHasher) => [
+    {
+        key: accountItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
+        plaintext: JSON.stringify({
+            type: BackupAccountType.algo25,
+            address: ALGO25_TEST_ADDRESS,
+            customName: 'Restored',
+        }),
+    },
+    {
+        key: secretsItemKey(hashAddress(ALGO25_TEST_ADDRESS)),
+        plaintext: JSON.stringify({
+            type: BackupAccountType.algo25,
+            mnemonic: ALGO25_TEST_MNEMONIC,
+            address: ALGO25_TEST_ADDRESS,
+        }),
+    },
+]
+
 describe('Flow: Cloud backup → Restore', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
     afterEach(() => server.resetHandlers())
@@ -155,32 +180,18 @@ describe('Flow: Cloud backup → Restore', () => {
     it(
         'Given a valid backup passphrase and encryption key, when the user restores, then the encrypted Algo25 account is decrypted and imported into the wallet',
         async () => {
-            const { backupId, encryptionKey } = await deriveBackupKeys({
-                mnemonic: BACKUP_MNEMONIC,
-                salt: BACKUP_SALT,
-            })
+            const { backupId, encryptionKey, itemKey } = await deriveBackupKeys(
+                {
+                    mnemonic: BACKUP_MNEMONIC,
+                    salt: BACKUP_SALT,
+                },
+            )
 
             server.use(
                 ...buildRestoreHandlers({
                     backupId,
                     encryptionKey,
-                    items: [
-                        {
-                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                address: ALGO25_TEST_ADDRESS,
-                                customName: 'Restored',
-                            }),
-                        },
-                        {
-                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                mnemonic: ALGO25_TEST_MNEMONIC,
-                            }),
-                        },
-                    ],
+                    items: algo25BackupItems(createItemKeyHasher(itemKey)),
                 }),
             )
 
@@ -228,11 +239,12 @@ describe('Flow: Cloud backup → Restore', () => {
     it(
         'Given an HD backup (hdWallet items + an hdSeed secret), when the user restores, then the seed is reconstructed and all HD accounts are imported',
         async () => {
-            const { backupId, encryptionKey, authSecretKey } =
+            const { backupId, encryptionKey, authSecretKey, itemKey } =
                 await deriveBackupKeys({
                     mnemonic: BACKUP_MNEMONIC,
                     salt: BACKUP_SALT,
                 })
+            const hashAddress = createItemKeyHasher(itemKey)
 
             // Restore out of what a real push wrote: a hand-written fixture
             // would keep passing against a payload shape nothing produces.
@@ -240,6 +252,7 @@ describe('Flow: Cloud backup → Restore', () => {
             await persistBackupKeys({
                 encryptionKey,
                 authSecretKey,
+                itemKey,
                 mnemonic: BACKUP_MNEMONIC,
             })
             useCloudBackupStore.getState().setConfigured({
@@ -273,8 +286,12 @@ describe('Flow: Cloud backup → Restore', () => {
                 subscribePasskeyChanges: () => () => {},
             }).syncNow()
 
-            expect(getItem(`accounts/${first.address}`)).toBeDefined()
-            expect(getItem(`secrets/${first.address}`)).toBeDefined()
+            expect(
+                getItem(accountItemKey(hashAddress(first.address))),
+            ).toBeDefined()
+            expect(
+                getItem(secretsItemKey(hashAddress(first.address))),
+            ).toBeDefined()
 
             // Wipe the device; the fake backend keeps what was pushed.
             resetTestKeystore()
@@ -325,33 +342,23 @@ describe('Flow: Cloud backup → Restore', () => {
     it(
         'Given a backup holding contacts, when the user restores, then the contacts are on the device',
         async () => {
-            const { backupId, encryptionKey } = await deriveBackupKeys({
-                mnemonic: BACKUP_MNEMONIC,
-                salt: BACKUP_SALT,
-            })
+            const { backupId, encryptionKey, itemKey } = await deriveBackupKeys(
+                {
+                    mnemonic: BACKUP_MNEMONIC,
+                    salt: BACKUP_SALT,
+                },
+            )
+            const hashAddress = createItemKeyHasher(itemKey)
+            const contactKey = contactItemKey(hashAddress('CONTACT_A'))
 
             server.use(
                 ...buildRestoreHandlers({
                     backupId,
                     encryptionKey,
                     items: [
+                        ...algo25BackupItems(hashAddress),
                         {
-                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                address: ALGO25_TEST_ADDRESS,
-                                customName: 'Restored',
-                            }),
-                        },
-                        {
-                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                mnemonic: ALGO25_TEST_MNEMONIC,
-                            }),
-                        },
-                        {
-                            key: 'contacts/CONTACT_A',
+                            key: contactKey,
                             plaintext: JSON.stringify({
                                 address: 'CONTACT_A',
                                 name: 'Alice',
@@ -379,7 +386,7 @@ describe('Flow: Cloud backup → Restore', () => {
             await waitFor(() => {
                 const item =
                     useBackupSyncStateStore.getState().syncState?.items[
-                        'contacts/CONTACT_A'
+                        contactKey
                     ]
                 expect(item?.knownVer).toBeGreaterThan(0)
             })
@@ -391,31 +398,17 @@ describe('Flow: Cloud backup → Restore', () => {
     it(
         'Given an encryption key file saved on the device, when the user imports it and types the passphrase, then the key screen shows the imported key and the backup restores from it',
         async () => {
-            const { backupId, encryptionKey } = await deriveBackupKeys({
-                mnemonic: BACKUP_MNEMONIC,
-                salt: BACKUP_SALT,
-            })
+            const { backupId, encryptionKey, itemKey } = await deriveBackupKeys(
+                {
+                    mnemonic: BACKUP_MNEMONIC,
+                    salt: BACKUP_SALT,
+                },
+            )
             server.use(
                 ...buildRestoreHandlers({
                     backupId,
                     encryptionKey,
-                    items: [
-                        {
-                            key: `accounts/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                address: ALGO25_TEST_ADDRESS,
-                                customName: 'Restored',
-                            }),
-                        },
-                        {
-                            key: `secrets/${ALGO25_TEST_ADDRESS}`,
-                            plaintext: JSON.stringify({
-                                type: BackupAccountType.algo25,
-                                mnemonic: ALGO25_TEST_MNEMONIC,
-                            }),
-                        },
-                    ],
+                    items: algo25BackupItems(createItemKeyHasher(itemKey)),
                 }),
             )
             vi.mocked(File.pickFileAsync).mockResolvedValueOnce({

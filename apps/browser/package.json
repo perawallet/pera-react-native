@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@perawallet/wallet-core-accounts": "workspace:*",
+        "@perawallet/wallet-core-app-integrity": "workspace:*",
         "@perawallet/wallet-core-assets": "workspace:*",
         "@perawallet/wallet-core-background": "workspace:*",
         "@perawallet/wallet-core-blockchain": "workspace:*",
@@ -48,6 +49,7 @@
         "@vitejs/plugin-react": "catalog:",
         "algosdk": "catalog:",
         "esbuild": "catalog:",
+        "falcon-1024": "catalog:",
         "jsdom": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",

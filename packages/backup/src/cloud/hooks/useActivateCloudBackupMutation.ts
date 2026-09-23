@@ -45,11 +45,17 @@ export const useActivateCloudBackupMutation = (
                     'Cloud backup registration is missing',
                 )
             }
-            const { backupId, deviceId, encryptionKey, authSecretKey } =
-                registration
+            const {
+                backupId,
+                deviceId,
+                encryptionKey,
+                authSecretKey,
+                itemKey,
+            } = registration
             await persistBackupKeys({
                 encryptionKey,
                 authSecretKey,
+                itemKey,
                 mnemonic,
             })
             setConfigured({ backupId, salt, deviceId })

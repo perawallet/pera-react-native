@@ -11,6 +11,7 @@
  */
 
 import { BackupItemType, passkeyItemKey } from '../models'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import { withContentHash } from './buildLocalItems'
 import type { BackupPasskey, LocalItem } from './types'
 
@@ -22,10 +23,11 @@ import type { BackupPasskey, LocalItem } from './types'
 export const buildLocalPasskeyItems = (
     passkeys: readonly BackupPasskey[],
     updatedAt: number,
+    hashAddress: ItemKeyHasher,
 ): LocalItem[] =>
     passkeys.map(passkey =>
         withContentHash({
-            key: passkeyItemKey(passkey.credentialId),
+            key: passkeyItemKey(hashAddress(passkey.credentialId)),
             type: BackupItemType.PASSKEY,
             payload: { ...passkey, updatedAt },
         }),

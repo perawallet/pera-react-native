@@ -68,6 +68,10 @@ const describeError = (error: unknown): string =>
 const requestKey = (connectionId: string, correlationId: string): string =>
     `${connectionId}:${correlationId}`
 
+// Unsettled pairings each hold a live bridge socket; a handful covers any real
+// multi-tab use while keeping the worst case a rounding error.
+const MAX_UNSETTLED_PAIRINGS = 5
+
 // Owns the handlers and their sockets but has no UI or vault, so every decision
 // goes out as an approval request and comes back over the control channel.
 export const startConnectionsHost = (
@@ -77,6 +81,7 @@ export const startConnectionsHost = (
     const proposals = new Map<string, ConnectionProposal>()
     const requests = new Map<string, InboundRequest>()
     const requesterOrigins = new Map<string, string>()
+    const unsettledPairings = new Set<string>()
     // A page can trigger `pair` at will; one open notice at a time stops a hostile
     // page from spamming wrong-network dialogs. Cleared when the notice is dismissed.
     let errorNoticeOpen = false
@@ -238,15 +243,38 @@ export const startConnectionsHost = (
                       ...message.origin,
                       requesterOrigin: message.requesterOrigin,
                   }
+        const requesterOrigin = message.requesterOrigin
+        const pageInitiated = requesterOrigin !== undefined
         const pairingId = await registry.pair(message.uri, { origin })
-        if (message.requesterOrigin !== undefined) {
-            requesterOrigins.set(pairingId, message.requesterOrigin)
-            void waitForPairingOutcome(
-                registry,
-                pairingId,
-                CONNECTION_LATE_PAIRING_GRACE_MS,
-            ).then(() => requesterOrigins.delete(pairingId))
+
+        // Each unsettled pairing holds a live connector and socket in this
+        // document, and a page can mint them faster than any peer answers.
+        // Insertion order makes the first entry the oldest.
+        for (const staleId of unsettledPairings) {
+            if (unsettledPairings.size < MAX_UNSETTLED_PAIRINGS) break
+            unsettledPairings.delete(staleId)
+            registry.abandonPairing(staleId)
         }
+        unsettledPairings.add(pairingId)
+
+        if (requesterOrigin !== undefined) {
+            requesterOrigins.set(pairingId, requesterOrigin)
+        }
+        void waitForPairingOutcome(
+            registry,
+            pairingId,
+            CONNECTION_LATE_PAIRING_GRACE_MS,
+        ).then(outcome => {
+            unsettledPairings.delete(pairingId)
+            requesterOrigins.delete(pairingId)
+            // A pairing nothing ever answered would otherwise keep its socket
+            // open forever. Only page-initiated ones are torn down: they are
+            // attacker-mintable, while a QR/manual pairing the user is still
+            // waiting on keeps the pre-existing lenient behavior.
+            if (pageInitiated && outcome.type === 'timeout') {
+                registry.abandonPairing(pairingId)
+            }
+        })
         return ok({ pairingId })
     }
 

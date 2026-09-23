@@ -34,6 +34,7 @@ import {
     isPeraNetworkError,
 } from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
+import { readIntegrityToken } from './integrity-token-provider'
 
 type BackendInstances = {
     algod: KyInstance
@@ -309,6 +310,16 @@ const setStandardHeaders = ({ request }: BeforeRequestState) => {
     if (config.backendAPIKey?.length) {
         request.headers.set('X-API-Key', config.backendAPIKey)
     }
+
+    // Rides alongside X-API-Key, not instead of it: the capability scope split
+    // that would let us drop the key is a later backend step. Absent on the
+    // first mint, which is exactly how /integrity/* bootstraps without a token.
+    if (config.webIntegrityBearerEnabled) {
+        const integrityToken = readIntegrityToken()
+        if (integrityToken) {
+            request.headers.set('Authorization', `Bearer ${integrityToken}`)
+        }
+    }
 }
 
 // afterResponse intentionally empty: in ky 2.x every hook invocation calls
@@ -354,6 +365,17 @@ export const IDEMPOTENT_POST_RETRY: RequestRetryOverrides = {
     methods: ['post'],
     shouldRetry: ({ error }) =>
         isNetworkTransportError(error) ? true : undefined,
+}
+
+/**
+ * For a POST whose side effect must not repeat, such as spending a single-use
+ * token. Retried only when the request got no response at all: a timeout or a
+ * 5xx may mean the server already acted, so both are refused outright rather
+ * than falling through to the client's `statusCodes`.
+ */
+export const SINGLE_USE_POST_RETRY: RequestRetryOverrides = {
+    methods: ['post'],
+    shouldRetry: ({ error }) => isNetworkTransportError(error),
 }
 
 const createPeraClient = (network: Network): KyInstance =>
@@ -529,8 +551,12 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
 
     clients.forEach((client, network) => {
         clients.set(network, {
-            algod: applyHeaders(client.algod),
-            indexer: applyHeaders(client.indexer),
+            // algod/indexer deliberately excluded: they carry their own
+            // X-Algo-API-Token / X-Indexer-API-Token and never ran
+            // setStandardHeaders on the normal path. Re-applying it here would
+            // ship a Pera credential to chain hosts that may be third-party.
+            algod: client.algod,
+            indexer: client.indexer,
             pera: applyHeaders(client.pera),
             backup: applyHeaders(client.backup),
         })

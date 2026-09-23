@@ -21,8 +21,12 @@ import {
     parseAddressPayload,
     parseSecretsPayload,
 } from '../../api/payloadParsers'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { canonicalJson } from '../canonicalize'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
@@ -36,11 +40,16 @@ describe('serializeAccountItems', () => {
     it('serializes an algo25 account to address + secrets items that round-trip', () => {
         const result = serializeAccountItems(algo25, {
             updatedAt: 1719300000000,
-            secrets: { type: 'algo25', mnemonic: 'word1 word2' },
+            secrets: {
+                type: 'algo25',
+                mnemonic: 'word1 word2',
+                address: 'ADDR',
+            },
+            hashAddress,
         })
         expect(result).not.toBeNull()
-        expect(result?.address.key).toBe('accounts/ADDR')
-        expect(result?.secrets?.key).toBe('secrets/ADDR')
+        expect(result?.address.key).toBe(accountItemKey(hashAddress('ADDR')))
+        expect(result?.secrets?.key).toBe(secretsItemKey(hashAddress('ADDR')))
         expect(
             parseAddressPayload(canonicalJson(result!.address.payload)),
         ).toMatchObject({
@@ -54,6 +63,7 @@ describe('serializeAccountItems', () => {
         ).toMatchObject({
             type: 'algo25',
             mnemonic: 'word1 word2',
+            address: 'ADDR',
         })
     })
 
@@ -67,8 +77,9 @@ describe('serializeAccountItems', () => {
         const result = serializeAccountItems(watch, {
             updatedAt: 1,
             secrets: null,
+            hashAddress,
         })
-        expect(result?.address.key).toBe('accounts/WADDR')
+        expect(result?.address.key).toBe(accountItemKey(hashAddress('WADDR')))
         expect(result?.secrets).toBeNull()
         expect(
             parseAddressPayload(canonicalJson(result!.address.payload)),
@@ -93,7 +104,11 @@ describe('serializeAccountItems', () => {
             },
         }
         expect(
-            serializeAccountItems(hd, { updatedAt: 1, secrets: null }),
+            serializeAccountItems(hd, {
+                updatedAt: 1,
+                secrets: null,
+                hashAddress,
+            }),
         ).toBeNull()
     })
 
@@ -114,9 +129,10 @@ describe('serializeAccountItems', () => {
         const result = serializeAccountItems(hd, {
             updatedAt: 1719300000000,
             secrets: null,
+            hashAddress,
             hd: { seedFirstDerivedAddress: 'FIRST', publicKeyHex: 'aabb' },
         })
-        expect(result?.address.key).toBe('accounts/CHILD')
+        expect(result?.address.key).toBe(accountItemKey(hashAddress('CHILD')))
         expect(result?.secrets).toBeNull()
         expect(result?.address.payload).toMatchObject({
             type: 'hdWallet',

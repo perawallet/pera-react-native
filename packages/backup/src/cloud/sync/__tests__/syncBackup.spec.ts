@@ -33,14 +33,21 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError, UpsertResult } from '../../api'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
+    accountItemKey,
+    contactItemKey,
     createEmptySyncState,
 } from '../../models'
 import { serializeAccountItems } from '../serializeAccountItems'
 import { syncBackup } from '../syncBackup'
 import { canonicalJson, contentHash } from '../canonicalize'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const contactKey = (address: string) => contactItemKey(hashAddress(address))
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const watch: WalletAccount = {
@@ -55,10 +62,11 @@ const deps = () => ({
     backupId: 'b',
     deviceId: 'dev',
     encryptionKey,
+    hashAddress,
     listAccounts: () => [watch],
     listContacts: () => [],
     serializeAccount: async (a: WalletAccount) =>
-        serializeAccountItems(a, { updatedAt: 1, secrets: null }),
+        serializeAccountItems(a, { updatedAt: 1, secrets: null, hashAddress }),
     importAccounts: vi.fn(async () => ({
         imported: 0,
         skippedDuplicate: 0,
@@ -82,7 +90,7 @@ describe('syncBackup', () => {
         })
         const state = createEmptySyncState('b')
         state.lastKnownBackupHash = 'g'
-        state.items['accounts/W'] = {
+        state.items[accountKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
@@ -97,6 +105,7 @@ describe('syncBackup', () => {
                 }),
             ),
             localUpdatedAt: 1,
+            address: 'W',
         }
         const next = await syncBackup(deps(), state)
         expect(fetchDelta).not.toHaveBeenCalled()
@@ -111,7 +120,7 @@ describe('syncBackup', () => {
             backupGlobalHash: 'g',
             lastSeq: 100,
             items: {
-                'accounts/W': {
+                [accountKey('W')]: {
                     type: BackupItemType.ACCOUNT,
                     ver: 1,
                     status: BackupItemStatus.ACTIVE,
@@ -124,7 +133,7 @@ describe('syncBackup', () => {
         const state = createEmptySyncState('b')
         state.lastSyncedSeq = 3
         state.lastKnownBackupHash = 'stale'
-        state.items['accounts/W'] = {
+        state.items[accountKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
@@ -139,6 +148,7 @@ describe('syncBackup', () => {
                 }),
             ),
             localUpdatedAt: 1,
+            address: 'W',
         }
 
         const next = await syncBackup(deps(), state)
@@ -160,7 +170,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: 'accounts/W',
+                    key: accountKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
@@ -169,7 +179,7 @@ describe('syncBackup', () => {
         })
         const next = await syncBackup(deps(), createEmptySyncState('b'))
         expect(batchUpsertItems).toHaveBeenCalledTimes(1)
-        expect(next.items['accounts/W']).toMatchObject({
+        expect(next.items[accountKey('W')]).toMatchObject({
             isDirty: false,
             knownVer: 1,
         })
@@ -185,7 +195,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: 'accounts/W',
+                    key: accountKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
@@ -233,7 +243,7 @@ describe('syncBackup', () => {
         })
         fetchDelta.mockResolvedValue([])
         const state = createEmptySyncState('b')
-        state.items['accounts/W'] = {
+        state.items[accountKey('W')] = {
             type: BackupItemType.ACCOUNT,
             knownVer: 1,
             baseVer: 1,
@@ -242,6 +252,7 @@ describe('syncBackup', () => {
             lastRemoteHash: 'r',
             localContentHash: 'previously-synced',
             localUpdatedAt: null,
+            address: 'W',
         }
 
         const next = await syncBackup(
@@ -250,7 +261,72 @@ describe('syncBackup', () => {
         )
 
         expect(deleteItem).not.toHaveBeenCalled()
-        expect(next.items['accounts/W'].pendingDelete).toBeUndefined()
+        expect(next.items[accountKey('W')].pendingDelete).toBeUndefined()
+    })
+
+    it('refuses to sync a backup still keyed by plaintext address', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g4',
+            lastSeq: 4,
+            items: {
+                'accounts/W': {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'r',
+                    lastSeq: 4,
+                },
+            },
+        })
+        fetchDelta.mockResolvedValue([])
+
+        const warn = vi.spyOn(logger, 'warn')
+
+        const next = await syncBackup(deps(), createEmptySyncState('b'))
+
+        expect(next.lastSyncResult).toBe('FAILED')
+        expect(batchUpsertItems).not.toHaveBeenCalled()
+        expect(deleteItem).not.toHaveBeenCalled()
+        expect(readItems).not.toHaveBeenCalled()
+        // Keeping the reconciled state would leave the local accounts tracked
+        // as pending work forever, disabling the manifest short-circuit.
+        expect(next.items).toEqual({})
+        expect(warn).toHaveBeenCalledWith(
+            'syncBackup: backup uses legacy address keys, refusing to sync',
+            { legacyKeyCount: 1 },
+        )
+    })
+
+    it('still syncs a manifest whose keys are all hashed', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g5',
+            lastSeq: 1,
+            items: {
+                [accountKey('W')]: {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'r',
+                    lastSeq: 1,
+                },
+            },
+        })
+        fetchDelta.mockResolvedValue([])
+        batchUpsertItems.mockResolvedValue({
+            results: [
+                {
+                    key: accountKey('W'),
+                    result: UpsertResult.OK,
+                    new_ver: 2,
+                    seq: 2,
+                },
+            ],
+        })
+
+        const next = await syncBackup(deps(), createEmptySyncState('b'))
+
+        expect(next.lastSyncResult).toBe('SUCCESS')
+        expect(batchUpsertItems).toHaveBeenCalledTimes(1)
     })
 
     it('pushes local contacts alongside accounts', async () => {
@@ -263,7 +339,7 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: 'contacts/C1',
+                    key: contactKey('C1'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 2,
@@ -282,8 +358,8 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual(['accounts/W', 'contacts/C1'])
-        expect(next.items['contacts/C1']).toMatchObject({
+        ).toEqual([accountKey('W'), contactKey('C1')].sort())
+        expect(next.items[contactKey('C1')]).toMatchObject({
             type: BackupItemType.CONTACT,
             isDirty: false,
             knownVer: 1,
@@ -300,13 +376,13 @@ describe('syncBackup', () => {
         batchUpsertItems.mockResolvedValue({
             results: [
                 {
-                    key: 'accounts/W',
+                    key: accountKey('W'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 1,
                 },
                 {
-                    key: 'contacts/C1',
+                    key: contactKey('C1'),
                     result: UpsertResult.OK,
                     new_ver: 1,
                     seq: 2,
@@ -329,7 +405,7 @@ describe('syncBackup', () => {
         const [, , , request] = batchUpsertItems.mock.calls[0]
         expect(
             request.items.map((entry: { key: string }) => entry.key).sort(),
-        ).toEqual(['accounts/W', 'contacts/C1'])
+        ).toEqual([accountKey('W'), contactKey('C1')].sort())
         expect(next.lastSyncResult).toBe('SUCCESS')
         expect(warn).toHaveBeenCalledWith(
             'syncBackup: listPasskeys failed, skipping passkeys',

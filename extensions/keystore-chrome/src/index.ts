@@ -28,6 +28,7 @@ export { context } from './constants'
 export {
     createVault,
     changePassword,
+    destroyVault,
     isUnlocked,
     isVaultInitialized,
     lockVault,

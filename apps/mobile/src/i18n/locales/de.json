@@ -4101,5 +4101,8 @@
         "submit": "Link öffnen",
         "error_invalid": "Das scheint kein Link zu sein, den Pera öffnen kann.",
         "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
+    },
+    "integrityCheck": {
+        "frame_title": "Pera Wallet-Prüfung"
     }
 }

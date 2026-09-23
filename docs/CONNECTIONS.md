@@ -56,16 +56,16 @@ Defined in `extensions/platform-chrome/src/connections/protocol.ts`, and the `pe
 `extensions/platform-chrome/src/dapp/dapp-wire.ts`; every listener is gated to extension-origin
 senders because content scripts share `chrome.runtime.onMessage`.
 
-| Scope                      | Direction                | Carries                                                                                                                                       |
-| -------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting |
-| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                |
-| `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                     |
-| `pera-wc-page-pair`        | content script to SW     | a page's pair request; the SW stamps the browser-verified `requesterOrigin`                                                                   |
-| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                               |
-| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                               |
-| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                             |
-| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                     |
+| Scope                      | Direction                | Carries                                                                                                                                                             |
+| -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pera-connections-control` | UI or SW to offscreen    | pair, abandon-pairing, disconnect(-all), reconnect-all, approve/reject-proposal, respond; request/response, retried while the host is booting                       |
+| `pera-connections-request` | offscreen to SW          | connection-proposal, connection-request, connection-request-withdrawn, connection-error; acked                                                                      |
+| `pera-connections-event`   | offscreen to every realm | proposal summaries and errors with scope; fire-and-forget                                                                                                           |
+| `pera-wc-page-pair`        | content script to SW     | a page's pair request plus the relay's user-activation stamp; the SW requires the stamp, budgets pairs per origin and stamps the browser-verified `requesterOrigin` |
+| `pera-dapp-page-request`   | content script to SW     | a page's JSON-RPC request plus the relay's user-activation stamp; acked as accepted, or refused with a response                                                     |
+| `pera-dapp-host-request`   | SW to offscreen          | the same request with the browser-verified origin, favicon and return tab stamped; retried while the host boots                                                     |
+| `pera-dapp-host-response`  | offscreen to SW          | a response addressed to a tab, or a notification for every tab of an origin; acked once delivered                                                                   |
+| `pera-dapp-page-response`  | SW to content script     | delivered with `chrome.tabs.sendMessage`; the relay drops anything not for its own origin                                                                           |
 
 Two ack meanings on the request scope: a proposal or request acks acceptance (the decision comes
 back later on the control scope, so waiting for it would deadlock the host); an error notice acks

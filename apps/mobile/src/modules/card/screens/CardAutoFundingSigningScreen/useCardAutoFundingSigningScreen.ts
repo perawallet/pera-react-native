@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     AutoDrawProgramUnverifiedError,
+    AutoDrawTealUnverifiedError,
     FundingType,
     useCardStore,
 } from '@perawallet/wallet-core-card'
@@ -99,11 +100,14 @@ export const useCardAutoFundingSigningScreen =
                     await enableAutoDraw(connectedAccount, escrowCardAddress)
                     finish(FundingType.Auto, false)
                 } catch (err) {
-                    // An unverified AutoDraw program can never succeed on
-                    // retry, so "please try again" would strand the user on
-                    // this screen. Degrade to Manual with the same honest copy
-                    // the decline path uses.
-                    if (err instanceof AutoDrawProgramUnverifiedError) {
+                    // An unverified AutoDraw program or template can never
+                    // succeed on retry, so "please try again" would strand the
+                    // user on this screen. Degrade to Manual with the same
+                    // honest copy the decline path uses.
+                    if (
+                        err instanceof AutoDrawProgramUnverifiedError ||
+                        err instanceof AutoDrawTealUnverifiedError
+                    ) {
                         logger.error(
                             'AutoDraw program failed verification, degrading to Manual funding',
                             { error: err },

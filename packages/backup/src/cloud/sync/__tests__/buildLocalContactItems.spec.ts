@@ -12,21 +12,25 @@
 
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BackupItemType } from '../../models'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { BackupItemType, contactItemKey } from '../../models'
 import { buildLocalContactItems } from '../buildLocalContactItems'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const contact = (address: string, name: string) => ({ address, name })
 
 describe('buildLocalContactItems', () => {
-    it('emits one CONTACT item per contact, keyed by address', () => {
+    it('emits one CONTACT item per contact, keyed by the hashed address', () => {
         const items = buildLocalContactItems(
             [contact('A', 'Alice'), contact('B', 'Bob')],
             1000,
+            hashAddress,
         )
 
         expect(items.map(item => item.key)).toEqual([
-            'contacts/A',
-            'contacts/B',
+            contactItemKey(hashAddress('A')),
+            contactItemKey(hashAddress('B')),
         ])
         expect(items[0].type).toBe(BackupItemType.CONTACT)
         expect(items[0].payload).toEqual({
@@ -37,8 +41,16 @@ describe('buildLocalContactItems', () => {
     })
 
     it('hashes content without updatedAt, so a timestamp bump is not a change', () => {
-        const [early] = buildLocalContactItems([contact('A', 'Alice')], 1000)
-        const [late] = buildLocalContactItems([contact('A', 'Alice')], 2000)
+        const [early] = buildLocalContactItems(
+            [contact('A', 'Alice')],
+            1000,
+            hashAddress,
+        )
+        const [late] = buildLocalContactItems(
+            [contact('A', 'Alice')],
+            2000,
+            hashAddress,
+        )
 
         expect(early.contentHash).toBe(late.contentHash)
     })
@@ -54,6 +66,7 @@ describe('buildLocalContactItems', () => {
                 },
             ],
             1000,
+            hashAddress,
         )
 
         expect(item.payload).toEqual({
@@ -64,8 +77,16 @@ describe('buildLocalContactItems', () => {
     })
 
     it('renaming a contact changes its hash', () => {
-        const [before] = buildLocalContactItems([contact('A', 'Alice')], 1000)
-        const [after] = buildLocalContactItems([contact('A', 'Alicia')], 1000)
+        const [before] = buildLocalContactItems(
+            [contact('A', 'Alice')],
+            1000,
+            hashAddress,
+        )
+        const [after] = buildLocalContactItems(
+            [contact('A', 'Alicia')],
+            1000,
+            hashAddress,
+        )
 
         expect(before.contentHash).not.toBe(after.contentHash)
     })

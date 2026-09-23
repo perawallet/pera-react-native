@@ -52,7 +52,7 @@ import {
 } from './types'
 import { parseBackupResponse } from './responseParsers'
 import { signedBackupRequest } from './signedRequest'
-import { API_PREFIX, itemUrlPathSuffix } from './constants'
+import { API_PREFIX } from './constants'
 
 export const registerBackup = async (
     network: Network,
@@ -146,7 +146,6 @@ export const fetchItem = async (
         method: 'GET',
         backupId,
         pathSuffix: `/${key}`,
-        urlPathSuffix: itemUrlPathSuffix(key),
         deviceId,
         responseType: 'text',
     })
@@ -184,7 +183,6 @@ export const upsertItem = async (
         method: 'PUT',
         backupId,
         pathSuffix: `/${key}`,
-        urlPathSuffix: itemUrlPathSuffix(key),
         deviceId,
         data: request,
     })
@@ -219,7 +217,6 @@ export const deleteItem = async (
         method: 'DELETE',
         backupId,
         pathSuffix: `/${key}`,
-        urlPathSuffix: itemUrlPathSuffix(key),
         deviceId,
     })
     return parseBackupResponse(deleteItemResponseSchema, data, 'delete item')

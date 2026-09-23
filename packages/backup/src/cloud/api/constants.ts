@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BackupId, BackupItemKey } from '../models'
+import type { BackupId } from '../models'
 
 // TODO version needs to be updated before production
 export const API_PREFIX = '/api/v3'
@@ -18,19 +18,3 @@ export const API_PREFIX = '/api/v3'
 /** Backup root URL with the backupId segment percent-encoded for the request. */
 export const backupRoot = (backupId: BackupId): string =>
     `${API_PREFIX}/backup/${encodeURIComponent(backupId)}`
-
-/**
- * A per-item URL suffix. Only the id half is percent-encoded, so the
- * `<prefix>/<id>` route still sees two segments: a passkey id is standard
- * base64 and routinely carries `/` and `+`, which would otherwise add segments
- * the route cannot match. Accounts and contacts never hit this — their ids are
- * base32 Algorand addresses. The signed path keeps the raw key, which is what
- * the server compares after decoding its own path.
- */
-export const itemUrlPathSuffix = (key: BackupItemKey): string => {
-    const separator = key.indexOf('/')
-    if (separator < 0) return `/${encodeURIComponent(key)}`
-    return `/${key.slice(0, separator)}/${encodeURIComponent(
-        key.slice(separator + 1),
-    )}`
-}

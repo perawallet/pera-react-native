@@ -325,7 +325,7 @@ describe('Flow: Card onboarding — select funding type', () => {
             }),
         )
         // Baanx registers the delegated wallet, keyed by the funding address,
-        // and matches the single-use token against the nonce inside signData.
+        // and matches the single-use token against the nonce inside sigData.
         expect(approvalBody).toEqual(
             expect.objectContaining({
                 address: FUNDING_ADDRESS,
@@ -336,15 +336,17 @@ describe('Flow: Card onboarding — select funding type', () => {
                 token: 'test-delegation-token',
             }),
         )
-        // The same ARC-60 proof is reused for both calls.
+        // The same ARC-60 proof is reused for both calls, under Baanx's names.
         expect(approvalBody).toEqual(
             expect.objectContaining({
-                signData: (createBody as unknown as Record<string, unknown>)
+                sigData: (createBody as unknown as Record<string, unknown>)
                     .signData,
-                signature: (createBody as unknown as Record<string, unknown>)
+                sigHash: (createBody as unknown as Record<string, unknown>)
                     .signature,
             }),
         )
+        expect(approvalBody).not.toHaveProperty('signData')
+        expect(approvalBody).not.toHaveProperty('signature')
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,
@@ -409,7 +411,7 @@ describe('Flow: Card onboarding — select funding type', () => {
             expect.objectContaining({
                 delegatorAddress: FUNDING_ADDRESS,
                 cardAddress: 'ESCROWCARD1',
-                token: 'usdc',
+                currency: 'usdc',
                 blockchain: 'algorand',
             }),
         )

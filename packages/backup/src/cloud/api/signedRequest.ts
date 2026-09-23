@@ -21,9 +21,6 @@ type SignedRequestParams<TData> = {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE'
     backupId: BackupId
     pathSuffix: string
-    /** Percent-encoded form of `pathSuffix` for the request URL. The signature
-     *  is always over `pathSuffix`, which the server reproduces by decoding. */
-    urlPathSuffix?: string
     deviceId: DeviceId
     data?: TData
     params?: object
@@ -42,14 +39,13 @@ export const signedBackupRequest = async <TResponse, TData = unknown>({
     method,
     backupId,
     pathSuffix,
-    urlPathSuffix,
     deviceId,
     data,
     params,
     responseType = 'json',
 }: SignedRequestParams<TData>): Promise<TResponse> => {
     const decodedPath = `${API_PREFIX}/backup/${backupId}${pathSuffix}`
-    const url = `${backupRoot(backupId)}${urlPathSuffix ?? pathSuffix}`
+    const url = `${backupRoot(backupId)}${pathSuffix}`
     const body = data === undefined ? undefined : JSON.stringify(data)
 
     const proof = await withBackupAuthSecretKey(authSecretKey =>

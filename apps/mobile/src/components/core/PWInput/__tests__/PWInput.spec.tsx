@@ -13,7 +13,7 @@
 import { Platform } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { PWInput } from '../PWInput'
+import { PWInput, getSensitiveInputProps } from '../PWInput'
 
 const originalOS = Platform.OS
 
@@ -208,5 +208,44 @@ describe('PWInput', () => {
                 .getByPlaceholderText('spell-check')
                 .getAttribute('spellcheck'),
         ).toBe('false')
+    })
+
+    describe('isSensitive', () => {
+        afterEach(() => {
+            Platform.OS = originalOS
+        })
+
+        it.each([
+            ['ios', 'ascii-capable'],
+            ['android', 'visible-password'],
+        ] as const)(
+            'turns off keyboard learning, suggestions and autofill on %s',
+            (os, keyboardType) => {
+                Platform.OS = os
+
+                expect(getSensitiveInputProps()).toEqual({
+                    autoCapitalize: 'none',
+                    autoCorrect: false,
+                    spellCheck: false,
+                    autoComplete: 'off',
+                    keyboardType,
+                })
+            },
+        )
+
+        it('applies that set to the field, letting an explicit prop win', () => {
+            render(
+                <PWInput
+                    placeholder='secret'
+                    isSensitive
+                    autoComplete='one-time-code'
+                />,
+            )
+            const input = screen.getByPlaceholderText('secret')
+
+            expect(input.getAttribute('spellcheck')).toBe('false')
+            expect(input.getAttribute('keyboardtype')).toBe('ascii-capable')
+            expect(input.getAttribute('autocomplete')).toBe('one-time-code')
+        })
     })
 })

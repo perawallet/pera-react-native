@@ -60,6 +60,9 @@ describe('deriveBackupKeys', () => {
         expect(hex(result.authPublicKey)).toBe(
             '1805191d184652c05be2e69d13e82d2f7927bf922f83d07321e7dcc72df8dc2f',
         )
+        expect(hex(result.itemKey)).toBe(
+            '9b31d9b9a9a0b3067f326f34df91cb80b835d0d443bbd0778d1784af4656cbac',
+        )
     })
 
     test('feeds the decoded salt bytes into the master-key derivation', async () => {

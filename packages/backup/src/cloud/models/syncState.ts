@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { BackupAccountType } from './payloads'
 import type {
     BackupGlobalHash,
     BackupId,
@@ -42,6 +43,9 @@ export type SyncItemState = {
      *  downloading it there. Null for every other type; safe to cache because
      *  neither payload holds secret material. */
     label?: string | null
+    /** Null means never decrypted — unknown, never "not ours". */
+    address?: string | null
+    accountType?: BackupAccountType | null
 }
 
 export type BackupSyncResult = 'SUCCESS' | 'FAILED'

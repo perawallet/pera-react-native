@@ -453,6 +453,26 @@ describe('useDeepLink', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    it('reports a parser throw as a failed link instead of rejecting', async () => {
+        ;(parseDeeplink as Mock).mockImplementationOnce(() => {
+            throw new Error('parser defect')
+        })
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app',
+                false,
+                'deeplink',
+                onError,
+            )
+        })
+
+        expect(onError).toHaveBeenCalledTimes(1)
+        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+    })
+
     it('should handle ADD_CONTACT deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ADD_CONTACT,

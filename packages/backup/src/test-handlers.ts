@@ -29,3 +29,15 @@ export {
     decryptItemPayload,
     encryptItemPayload,
 } from './cloud/crypto/itemPayload'
+
+// `ItemKeyHash`'s brand is nominal per declaration site and a consumer resolves
+// this barrel to source but the root to `dist`, so the key builders have to be
+// re-exported here rather than taken from the root.
+export { createItemKeyHasher } from './cloud/crypto/itemKeyHash'
+export type { ItemKeyHash, ItemKeyHasher } from './cloud/crypto/itemKeyHash'
+export {
+    accountItemKey,
+    contactItemKey,
+    passkeyItemKey,
+    secretsItemKey,
+} from './cloud/models/itemKeys'

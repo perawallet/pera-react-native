@@ -60,7 +60,7 @@ export const useRegisterCloudBackupMutation = (
             if (!deviceId) {
                 throw new BackupDeviceIdUnavailableError()
             }
-            const { backupId, encryptionKey, authSecretKey } =
+            const { backupId, encryptionKey, authSecretKey, itemKey } =
                 await registerCloudBackup({
                     mnemonic,
                     salt,
@@ -68,7 +68,7 @@ export const useRegisterCloudBackupMutation = (
                     network,
                 })
             const isRetained = setRegistration(
-                { backupId, deviceId, encryptionKey, authSecretKey },
+                { backupId, deviceId, encryptionKey, authSecretKey, itemKey },
                 salt,
             )
             // The draft was cleared or replaced while the request was in

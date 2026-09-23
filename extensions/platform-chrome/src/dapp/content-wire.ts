@@ -52,3 +52,6 @@ export {
     type JsonRpcRequest,
     type JsonRpcResponse,
 } from '@perawallet/wallet-core-dapp/wire'
+// The integrity check page's wire is pure, so the check-page content script
+// imports it through this alias like the other relays.
+export * from '../integrity/check-wire'

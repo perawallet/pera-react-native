@@ -298,6 +298,7 @@ describe('env-loader', () => {
             reactQueryLongLivedStaleTime: 604800000,
             reactQueryPersistenceAge: 5184000000,
             discoverBaseUrl: 'https://discover.example.com',
+            integrityCheckOrigin: 'https://integrity.example.com',
             onrampSupportEmail: 'support@xoswap.example.com',
             cardSupportEmail: 'support@baanx.example.com',
             backupBaseUrl: 'https://backup.example.com',
@@ -319,6 +320,7 @@ describe('env-loader', () => {
             testnetCardKillswitchAppId: '2002',
             mainnetCardAutoDrawProgramHash: '',
             testnetCardAutoDrawProgramHash: '',
+            cardAutoDrawTemplateHash: '',
             mainnetCardUsdcAssetId: '31566704',
             testnetCardUsdcAssetId: '10458941',
             termsOfServiceUrl: 'https://terms.example.com',
@@ -348,6 +350,9 @@ describe('env-loader', () => {
             undoRekeySupportUrl: 'https://undo-rekey-support.example.com',
             peraCardLearnMoreUrl: 'https://pera-card-learn-more.example.com',
             debugEnabled: false,
+            webIntegrityMintEnabled: false,
+            webIntegrityBearerEnabled: false,
+            webIntegrityEnrolEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,
             disableScreenCapturePrevention: false,
@@ -484,6 +489,59 @@ describe('env-loader', () => {
                 algodApiKey: 'new-algod-key',
                 debugEnabled: true,
                 defaultNetwork: 'mainnet',
+            })
+        })
+
+        describe('web integrity flags', () => {
+            test('coerces the mint and bearer flags from string env vars', () => {
+                process.env.WEB_INTEGRITY_MINT_ENABLED = 'true'
+                process.env.WEB_INTEGRITY_BEARER_ENABLED = 'false'
+
+                const overrides = loadEnvOverrides()
+
+                expect(overrides.webIntegrityMintEnabled).toBe(true)
+                expect(overrides.webIntegrityBearerEnabled).toBe(false)
+            })
+
+            test('maps all three flags in overrideEnvironmentMap', () => {
+                expect(overrideEnvironmentMap.webIntegrityMintEnabled).toBe(
+                    'WEB_INTEGRITY_MINT_ENABLED',
+                )
+                expect(overrideEnvironmentMap.webIntegrityBearerEnabled).toBe(
+                    'WEB_INTEGRITY_BEARER_ENABLED',
+                )
+                expect(overrideEnvironmentMap.webIntegrityEnrolEnabled).toBe(
+                    'WEB_INTEGRITY_ENROL_ENABLED',
+                )
+            })
+
+            test('all three flags are off with no env override', () => {
+                const resolved = getConfigWithEnvOverrides({
+                    ...mockBaseConfig,
+                    webIntegrityMintEnabled: false,
+                    webIntegrityBearerEnabled: false,
+                    webIntegrityEnrolEnabled: false,
+                })
+
+                expect(resolved.webIntegrityMintEnabled).toBe(false)
+                expect(resolved.webIntegrityBearerEnabled).toBe(false)
+                expect(resolved.webIntegrityEnrolEnabled).toBe(false)
+            })
+
+            test('coerces the enrol flag as true when WEB_INTEGRITY_ENROL_ENABLED is "true"', () => {
+                process.env.WEB_INTEGRITY_ENROL_ENABLED = 'true'
+
+                const overrides = loadEnvOverrides()
+
+                expect(overrides.webIntegrityEnrolEnabled).toBe(true)
+            })
+
+            test('coerces the enrol flag as false for any value other than "true"', () => {
+                process.env.WEB_INTEGRITY_ENROL_ENABLED = 'false'
+
+                const overrides = loadEnvOverrides()
+
+                expect(overrides.webIntegrityEnrolEnabled).toBe(false)
             })
         })
     })

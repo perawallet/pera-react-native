@@ -13,7 +13,7 @@
 import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { Manifest, SyncState } from '../models'
+import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { buildLocalContactItems } from './buildLocalContactItems'
 import { buildLocalItems } from './buildLocalItems'
@@ -74,8 +74,12 @@ export const syncBackup = async (
     const local: LocalSnapshot = {
         items: [
             ...accounts.items,
-            ...buildLocalContactItems(deps.listContacts(), now),
-            ...buildLocalPasskeyItems(passkeys, now),
+            ...buildLocalContactItems(
+                deps.listContacts(),
+                now,
+                deps.hashAddress,
+            ),
+            ...buildLocalPasskeyItems(passkeys, now, deps.hashAddress),
         ],
         // Account-only: a contact cannot fail to serialize, and a credential
         // that could not be re-derived never reaches this list.
@@ -85,6 +89,22 @@ export const syncBackup = async (
 
     // 2. Manifest short-circuit.
     const manifest = await fetchManifestOrNull(deps)
+
+    /* A legacy backup's payloads still decrypt, so syncing would import every
+     * item and push the same accounts back under hashed keys, doubling it. */
+    const legacyKeyCount = Object.keys(manifest?.items ?? {}).filter(
+        isLegacyItemKey,
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'syncBackup: backup uses legacy address keys, refusing to sync',
+            { legacyKeyCount },
+        )
+        // The reconciled state is dropped, not returned: committing it would
+        // track every local item as dirty work this backup can never accept.
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
     if (
         manifest !== null &&
         manifest.backupGlobalHash === next.lastKnownBackupHash &&

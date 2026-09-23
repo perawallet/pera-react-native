@@ -88,16 +88,27 @@
       "js": ["content-webauthn-main.js"],
       "run_at": "document_start",
       "world": "MAIN",
-      "all_frames": true
+      "all_frames": false
     },
     {
       "matches": ["https://*/*", "http://localhost/*", "http://127.0.0.1/*"],
       "js": ["content-webauthn-relay.js"],
       "run_at": "document_start",
       "world": "ISOLATED",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://integrity.perawallet.app/*",
+        "https://integrity-staging.perawallet.app/*"
+      ],
+      "js": ["content-integrity-check.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
       "all_frames": true
     }
   ],
+  "_comment_webauthn_all_frames": "Top frame only, unlike the entries above. The wrapper intercepts before the browser evaluates the publickey-credentials-* Permissions-Policy, so in an iframe it would bypass that gate and report a framed ceremony to the RP as top-level (crossOrigin: false, no topOrigin). PasskeyRouter also declines any sender.frameId other than 0, which holds however these scripts are registered.",
   "_comment_externally_connectable": "Chrome's default when this key is absent already blocks web pages but ALLOWS other extensions. No onMessageExternal/onConnectExternal listener exists, so nothing is reachable today — declaring an empty allowlist makes the closed posture explicit and keeps a future listener from silently inheriting an open door.",
   "externally_connectable": { "ids": [] },
   "_comment_unlimitedStorage": "Lifts the 10MB chrome.storage.local cap and exempts our storage from quota-manager eviction. Both matter: the TanStack Query cache is persisted into chrome.storage.local (see AppShell.web.tsx), and the sqlite database lives in OPFS, which is evictable by default. Note that ChromeKeyValueStorageService.setItem is fire-and-forget, so a quota rejection would be silent — this permission is what keeps us away from that edge, not a guarantee. Growth is still unbounded; LRU/retention is a follow-up.",

@@ -82,8 +82,15 @@ const SCAN_ROOT_DIRS = ['packages', 'apps']
 // `__tests__` is excluded tree-wide (not just in the seam dirs): tests
 // legitimately import the PQ libs directly and are never shipped, so a leak
 // planted inside a non-seam `__tests__` folder is a deliberate, accepted
-// blind spot of this guard.
-const SKIPPED_DIR_NAMES = new Set(['node_modules', '.git', 'dist', '__tests__'])
+// blind spot of this guard. `e2e` (apps/browser's Playwright specs) is the
+// same class: it verifies Falcon signatures the bundle returns.
+const SKIPPED_DIR_NAMES = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '__tests__',
+    'e2e',
+])
 
 // Build-config files (e.g. `vite.config.ts`, `vitest.config.ts`) are a
 // deliberate, accepted blind spot — the same class as `__tests__` above. They

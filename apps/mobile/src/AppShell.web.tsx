@@ -60,12 +60,14 @@ import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
+import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.
@@ -155,12 +157,16 @@ const ShellRouter = (): React.JSX.Element => {
         }
         case 'create-password': {
             return (
-                <CreatePasswordScreen
-                    onDone={() => {
-                        // no-op: createVault flips the session state, which
-                        // useVaultLockState observes and re-routes to onboarding.
-                    }}
-                />
+                <>
+                    <CreatePasswordScreen
+                        onDone={() => {
+                            // no-op: createVault flips the session state, which
+                            // useVaultLockState observes and re-routes to onboarding.
+                        }}
+                    />
+                    {/* A wipe lands here with its success sheet queued. */}
+                    <BottomSheetManager />
+                </>
             )
         }
         case 'onboarding': {
@@ -286,6 +292,8 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                                     <ShellRouter />
                                 </VaultGate>
                                 <ActivityAutoLock />
+                                {/* Outside VaultGate: locking must not kill a check mid-solve, and enrolment needs no unlocked vault. */}
+                                <IntegrityCheckFrameHost />
                             </QueryProvider>
                         </NotifierWrapper>
                     </KeyboardProvider>
@@ -302,6 +310,7 @@ const AppShellContent = (): React.JSX.Element => {
     const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    useIntegrityTokenSync()
 
     React.useEffect(() => {
         logger.setErrorReporter(

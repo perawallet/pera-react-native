@@ -181,7 +181,7 @@ catalogs:
       specifier: 6.2.5
       version: 6.2.5
     falcon-1024:
-      specifier: ^0.2.0
+      specifier: 0.2.0
       version: 0.2.0
     fast-glob:
       specifier: ^3.3.2
@@ -302,6 +302,9 @@ patchedDependencies:
   expo-modules-jsi@57.0.4:
     hash: 9487cc4ef8eab2ab6ee171b069286c1805635c375abc7a725c52043b5bd3a1b1
     path: patches/expo-modules-jsi@57.0.4.patch
+  falcon-1024@0.2.0:
+    hash: 98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a
+    path: patches/falcon-1024@0.2.0.patch
   react-native-screens@4.27.0:
     hash: 7a586175efaad66c3050eaf16a08c0b0815bc494b777bd9271dad2ec59ab67c2
     path: patches/react-native-screens@4.27.0.patch
@@ -336,7 +339,7 @@ importers:
         version: 4.4.1(eslint@9.39.5)
       falcon-1024:
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       fallow:
         specifier: 3.25.0
         version: 3.25.0
@@ -379,6 +382,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../../packages/accounts
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../../packages/app-integrity
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../../packages/assets
@@ -479,6 +485,9 @@ importers:
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
+      falcon-1024:
+        specifier: 'catalog:'
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       jsdom:
         specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
@@ -508,7 +517,7 @@ importers:
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1076,7 +1085,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1112,7 +1121,7 @@ importers:
         version: 10.6.0
       falcon-1024:
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       tweetnacl:
         specifier: 'catalog:'
         version: 1.0.3
@@ -1426,10 +1435,10 @@ importers:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -1553,6 +1562,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -1692,7 +1704,7 @@ importers:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/keystore-web':
         specifier: 1.0.0-canary.3
         version: 1.0.0-canary.3(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
@@ -1701,7 +1713,7 @@ importers:
         version: 1.0.0-canary.1(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -2301,7 +2313,7 @@ importers:
     devDependencies:
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -2465,7 +2477,7 @@ importers:
         version: 19.2.17
       falcon-1024:
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@20.19.43)(typescript@7.0.2)
@@ -2529,9 +2541,6 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
-      tweetnacl:
-        specifier: 'catalog:'
-        version: 1.0.3
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -3041,10 +3050,10 @@ importers:
         version: 9.2.2(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -3096,7 +3105,7 @@ importers:
         version: 19.2.17
       falcon-1024:
         specifier: 'catalog:'
-        version: 0.2.0
+        version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       fast-glob:
         specifier: 'catalog:'
         version: 3.3.3
@@ -3242,7 +3251,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3528,10 +3537,10 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+        version: 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -11885,7 +11894,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip39': 1.6.0
 
-  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
+  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))':
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@noble/hashes': 2.0.1
@@ -11895,18 +11904,18 @@ snapshots:
     optionalDependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      falcon-1024: 0.2.0
+      falcon-1024: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
 
   '@algorandfoundation/keystore-web@1.0.0-canary.3(patch_hash=d504d098d5c05750d2d3f48da672c97f7f15d28d09e2af93e57c46caadb1f25f)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/bip39': 1.6.0
       '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
-      falcon-1024: 0.2.0
+      falcon-1024: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
 
   '@algorandfoundation/ledger-algorand-js@1.4.3':
     dependencies:
@@ -11918,10 +11927,10 @@ snapshots:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       before-after-hook: 4.0.0
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)':
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@algorandfoundation/wallet-provider': 1.0.0-canary.6
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/base': 2.0.0
@@ -11943,9 +11952,9 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(cfcb23025b355015b5c2db5e25529f2a)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26(patch_hash=f9fa58c9cc26c40b625138aae43f234847566e3fd265bef4489a1932e88b1b96)(685e4e97f63a794b035dd4d23667524b)':
     dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
+      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(685e4e97f63a794b035dd4d23667524b)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@7.0.2)
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
@@ -17237,7 +17246,7 @@ snapshots:
 
   fake-indexeddb@6.2.5: {}
 
-  falcon-1024@0.2.0: {}
+  falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a): {}
 
   fallow-type-aware@3.25.0:
     dependencies:

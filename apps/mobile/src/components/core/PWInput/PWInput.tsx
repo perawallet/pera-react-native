@@ -61,6 +61,12 @@ export type PWInputProps = {
     autoComplete?: RNEInputProps['autoComplete']
     autoCorrect?: boolean
     spellCheck?: boolean
+    /**
+     * Secret words and keys: the keyboard must not learn, suggest or autofill
+     * them. Sets the props {@link getSensitiveInputProps} returns; explicit
+     * props passed alongside still win.
+     */
+    isSensitive?: boolean
     autoFocus?: boolean
     selectTextOnFocus?: boolean
     onFocus?: RNEInputProps['onFocus']
@@ -95,6 +101,25 @@ export type PWInputProps = {
     isDisabled?: boolean
 }
 
+// autoCorrect off is what stops iOS caching the text for suggestions; Android
+// keyboards ignore these hints but honour `visible-password`. `ascii-capable`
+// keeps iOS IMEs (Japanese, Pinyin) from composing, which can't match ASCII.
+export const getSensitiveInputProps = (): Pick<
+    PWInputProps,
+    | 'autoCapitalize'
+    | 'autoCorrect'
+    | 'spellCheck'
+    | 'autoComplete'
+    | 'keyboardType'
+> => ({
+    autoCapitalize: 'none',
+    autoCorrect: false,
+    spellCheck: false,
+    autoComplete: 'off',
+    keyboardType:
+        Platform.OS === 'android' ? 'visible-password' : 'ascii-capable',
+})
+
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
         {
@@ -116,6 +141,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             showErrorOnBlur = false,
             editable,
             isDisabled = false,
+            isSensitive = false,
             ...props
         },
         ref,
@@ -207,6 +233,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...getTestProps(testID)}
+                {...(isSensitive ? getSensitiveInputProps() : undefined)}
                 {...props}
                 secureTextEntry={
                     showVisibilityToggle

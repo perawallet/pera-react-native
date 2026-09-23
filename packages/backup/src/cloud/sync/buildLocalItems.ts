@@ -21,11 +21,19 @@ import type {
 
 /** Content hash ignores `updatedAt` so a pure timestamp bump is not "dirty". */
 export const withContentHash = (item: SerializedItem): LocalItem => {
-    const { updatedAt: _ignored, ...content } = item.payload as Record<
+    const { payload } = item
+    const { updatedAt: _ignored, ...content } = payload as Record<
         string,
         unknown
     >
-    return { ...item, contentHash: contentHash(canonicalJson(content)) }
+    return {
+        ...item,
+        contentHash: contentHash(canonicalJson(content)),
+        // A passkey has no address; its credential id is the identifier the
+        // review buckets match on, since the key itself is a hash.
+        address: 'address' in payload ? payload.address : payload.credentialId,
+        accountType: 'type' in payload ? payload.type : null,
+    }
 }
 
 export const buildLocalItems = async (

@@ -23,14 +23,21 @@ vi.mock('../../api', async importOriginal => ({
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
+import { logger } from '@perawallet/wallet-core-shared'
 import { FromSeqTooOldError } from '../../api'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
     DeltaOperation,
+    accountItemKey,
     createEmptySyncState,
 } from '../../models'
 import { pullBackupDeltas } from '../pullBackupDeltas'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const ACCOUNT_KEY = accountItemKey(hashAddress('X'))
+const LEGACY_KEY = 'accounts/X'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const deps = () => ({
@@ -62,7 +69,7 @@ describe('pullBackupDeltas', () => {
         fetchDelta.mockResolvedValue([
             {
                 seq: 9,
-                key: 'accounts/X',
+                key: ACCOUNT_KEY,
                 type: BackupItemType.ACCOUNT,
                 ver: 1,
                 status: BackupItemStatus.ACTIVE,
@@ -93,7 +100,7 @@ describe('pullBackupDeltas', () => {
             backupGlobalHash: 'g',
             lastSeq: 100,
             items: {
-                'accounts/X': {
+                [ACCOUNT_KEY]: {
                     type: BackupItemType.ACCOUNT,
                     ver: 1,
                     status: BackupItemStatus.ACTIVE,
@@ -111,7 +118,59 @@ describe('pullBackupDeltas', () => {
 
         expect(next.lastSyncedSeq).toBe(100)
         expect(next.lastSyncResult).toBe('SUCCESS')
-        expect(next.items['accounts/X'].knownVer).toBe(1)
+        expect(next.items[ACCOUNT_KEY].knownVer).toBe(1)
+    })
+
+    it('refuses deltas from a backup still keyed by plaintext address', async () => {
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 9,
+                key: LEGACY_KEY,
+                type: BackupItemType.ACCOUNT,
+                ver: 1,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'h',
+            },
+        ])
+        const warn = vi.spyOn(logger, 'warn')
+
+        const next = await pullBackupDeltas(deps(), createEmptySyncState('b'))
+
+        expect(next.lastSyncResult).toBe('FAILED')
+        expect(next.lastSyncedSeq).toBe(0)
+        expect(next.items).toEqual({})
+        expect(readItems).not.toHaveBeenCalled()
+        expect(warn).toHaveBeenCalledWith(
+            'pullBackupDeltas: backup uses legacy address keys, refusing to apply',
+            { legacyKeyCount: 1 },
+        )
+    })
+
+    it('refuses a manifest rebuild that carries legacy keys', async () => {
+        fetchDelta.mockRejectedValueOnce(new FromSeqTooOldError(3))
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 100,
+            items: {
+                [LEGACY_KEY]: {
+                    type: BackupItemType.ACCOUNT,
+                    ver: 1,
+                    status: BackupItemStatus.ACTIVE,
+                    hash: 'h',
+                    lastSeq: 97,
+                },
+            },
+        })
+
+        const next = await pullBackupDeltas(deps(), {
+            ...createEmptySyncState('b'),
+            lastSyncedSeq: 3,
+        })
+
+        expect(next.lastSyncResult).toBe('FAILED')
+        expect(next.lastSyncedSeq).toBe(3)
+        expect(readItems).not.toHaveBeenCalled()
     })
 
     it('records the pull as a successful sync', async () => {

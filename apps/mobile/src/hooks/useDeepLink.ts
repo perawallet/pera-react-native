@@ -129,23 +129,25 @@ export const useDeepLink = (): UseDeepLinkResult => {
         onSuccess?: () => void,
         onConnectionError?: () => void,
     ) => {
-        const parsedData = parseDeeplink(url)
-
-        if (!parsedData) {
-            // A recognized-but-unsupported Pera deeplink stays silent, like the QR
-            // scanner re-arming on unknown codes; only input not aimed at Pera at
-            // all surfaces the invalid-URL toast.
-            if (!isPeraOwnedDeeplink(url)) {
-                errorToast(
-                    t('errors.deeplink.invalid_url_title'),
-                    t('errors.deeplink.invalid_url_body'),
-                )
-            }
-            onError?.()
-            return
-        }
+        let parsedData: ReturnType<typeof parseDeeplink> = null
 
         try {
+            parsedData = parseDeeplink(url)
+
+            if (!parsedData) {
+                // A recognized-but-unsupported Pera deeplink stays silent, like the QR
+                // scanner re-arming on unknown codes; only input not aimed at Pera at
+                // all surfaces the invalid-URL toast.
+                if (!isPeraOwnedDeeplink(url)) {
+                    errorToast(
+                        t('errors.deeplink.invalid_url_title'),
+                        t('errors.deeplink.invalid_url_body'),
+                    )
+                }
+                onError?.()
+                return
+            }
+
             if (isDevLocaleTourDeeplink(parsedData)) {
                 await runLocaleTourStep(parsedData)
                 onSuccess?.()
@@ -505,10 +507,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
             // Never log the raw `url`: a PERA_WEB_IMPORT payload carries the secretbox
             // `encryptionKey` and a RECOVER_ADDRESS payload a mnemonic. Log only the
             // parsed type; `showError` has no field that could carry the url either.
-            logger.error(error as Error, { type: parsedData.type })
+            logger.error(error as Error, { type: parsedData?.type })
             showError({
                 variant: 'generic',
-                parsedType: String(parsedData.type),
+                parsedType: parsedData?.type,
                 error,
             })
             onError?.()

@@ -16,7 +16,11 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { accountItemKey, secretsItemKey } from '../../models'
 import { serializeAccountForBackup } from '../serializeAccountForBackup'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const algo25: WalletAccount = {
     id: '1',
@@ -40,14 +44,16 @@ describe('serializeAccountForBackup', () => {
 
         const result = await serializeAccountForBackup(algo25, {
             updatedAt: 5,
+            hashAddress,
             resolveMnemonic,
         })
 
         expect(resolveMnemonic).toHaveBeenCalledWith(algo25)
-        expect(result?.address.key).toBe('accounts/ADDR')
+        expect(result?.address.key).toBe(accountItemKey(hashAddress('ADDR')))
         expect(result?.secrets?.payload).toMatchObject({
             type: 'algo25',
             mnemonic: 'word-a word-b',
+            address: 'ADDR',
         })
     })
 
@@ -56,6 +62,7 @@ describe('serializeAccountForBackup', () => {
 
         const result = await serializeAccountForBackup(quantum, {
             updatedAt: 5,
+            hashAddress,
             resolveMnemonic,
         })
 
@@ -72,6 +79,7 @@ describe('serializeAccountForBackup', () => {
 
         const result = await serializeAccountForBackup(algo25, {
             updatedAt: 5,
+            hashAddress,
             resolveMnemonic,
         })
 
@@ -79,7 +87,10 @@ describe('serializeAccountForBackup', () => {
     })
 
     it('skips a secret-bearing account when no resolver is injected', async () => {
-        const result = await serializeAccountForBackup(algo25, { updatedAt: 5 })
+        const result = await serializeAccountForBackup(algo25, {
+            updatedAt: 5,
+            hashAddress,
+        })
 
         expect(result).toBeNull()
     })
@@ -95,6 +106,7 @@ describe('serializeAccountForBackup', () => {
 
         const result = await serializeAccountForBackup(watch, {
             updatedAt: 1,
+            hashAddress,
             resolveMnemonic: resolveMnemonic as never,
         })
 
@@ -125,17 +137,21 @@ describe('serializeAccountForBackup', () => {
 
         const result = await serializeAccountForBackup(hd, {
             updatedAt: 7,
+            hashAddress,
             resolveHd: resolveHd as never,
         })
 
         expect(resolveHd).toHaveBeenCalledWith(hd)
-        expect(result?.address.key).toBe('accounts/CHILD')
+        expect(result?.address.key).toBe(accountItemKey(hashAddress('CHILD')))
         expect(result?.secrets).toBeNull()
-        expect(result?.extraItems?.[0].key).toBe('secrets/FIRST')
+        expect(result?.extraItems?.[0].key).toBe(
+            secretsItemKey(hashAddress('FIRST')),
+        )
         expect(result?.extraItems?.[0].payload).toMatchObject({
             type: 'hdSeed',
             seed: 'aa'.repeat(96),
             entropy: 'bb'.repeat(32),
+            address: 'FIRST',
         })
     })
 
@@ -153,7 +169,10 @@ describe('serializeAccountForBackup', () => {
             },
         }
 
-        const result = await serializeAccountForBackup(hd, { updatedAt: 1 })
+        const result = await serializeAccountForBackup(hd, {
+            updatedAt: 1,
+            hashAddress,
+        })
 
         expect(result).toBeNull()
     })

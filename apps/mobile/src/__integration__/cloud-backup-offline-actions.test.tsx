@@ -41,7 +41,12 @@ import {
     useCloudBackupStore,
     useResolveMnemonicForBackup,
 } from '@perawallet/wallet-core-backup'
-import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
+import {
+    accountItemKey,
+    buildSyncHandlers,
+    createItemKeyHasher,
+    type ItemKeyHasher,
+} from '@perawallet/wallet-core-backup/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -76,13 +81,16 @@ const setConnected = (isConnected: boolean) => {
 }
 
 const setupBackup = async () => {
-    const { backupId, encryptionKey, authSecretKey } = await deriveBackupKeys({
-        mnemonic: BACKUP_MNEMONIC,
-        salt: BACKUP_SALT,
-    })
+    const { backupId, encryptionKey, authSecretKey, itemKey } =
+        await deriveBackupKeys({
+            mnemonic: BACKUP_MNEMONIC,
+            salt: BACKUP_SALT,
+        })
+    const hashAddress = createItemKeyHasher(itemKey)
     await persistBackupKeys({
         encryptionKey,
         authSecretKey,
+        itemKey,
         mnemonic: BACKUP_MNEMONIC,
     })
     useCloudBackupStore.getState().setConfigured({
@@ -110,17 +118,21 @@ const setupBackup = async () => {
         subscribePasskeyChanges: () => () => {},
     })
 
-    return { getItem, seenDeviceIds }
+    return { getItem, seenDeviceIds, hashAddress }
 }
 
 /** An account the backup holds that this device deliberately removed, which is
- *  the only state that puts a row under "Add from backup" with both buttons. */
-const seedAvailableFromBackup = (address: string) => {
+ *  the only state that puts a row under "Add from backup" with both buttons.
+ *  The key is a hash, so `address` is what puts the row in the review bucket. */
+const seedAvailableFromBackup = (
+    address: string,
+    hashAddress: ItemKeyHasher,
+) => {
     const { backupId } = useCloudBackupStore.getState()
     useBackupSyncStateStore.getState().setSyncState({
         ...createEmptySyncState(backupId ?? 'did:pera:test'),
         items: {
-            [`accounts/${address}`]: {
+            [accountItemKey(hashAddress(address))]: {
                 type: BackupItemType.ACCOUNT,
                 knownVer: 1,
                 baseVer: 1,
@@ -128,6 +140,7 @@ const seedAvailableFromBackup = (address: string) => {
                 status: BackupItemStatus.ACTIVE,
                 lastRemoteHash: null,
                 pendingImport: true,
+                address,
             },
         },
     })
@@ -213,8 +226,8 @@ describe('Flow: Cloud backup → review actions while offline', () => {
     it(
         'Given an account only the backup holds, when Add is tapped offline, then it reports being offline and the row stays available to add',
         async () => {
-            const { seenDeviceIds } = await setupBackup()
-            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS)
+            const { seenDeviceIds, hashAddress } = await setupBackup()
+            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
 
             renderWithNavigation(
                 CloudBackupAccountsReviewScreen,
@@ -245,8 +258,8 @@ describe('Flow: Cloud backup → review actions while offline', () => {
     it(
         'Given an account only the backup holds, when Remove is confirmed offline, then it reports being offline and nothing is staged for deletion',
         async () => {
-            const { seenDeviceIds } = await setupBackup()
-            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS)
+            const { seenDeviceIds, hashAddress } = await setupBackup()
+            seedAvailableFromBackup(REMOTE_ONLY_ADDRESS, hashAddress)
 
             renderWithNavigation(
                 CloudBackupAccountsReviewScreen,
@@ -277,7 +290,7 @@ describe('Flow: Cloud backup → review actions while offline', () => {
             // backup's view on the strength of a request that never went out.
             expect(
                 useBackupSyncStateStore.getState().syncState?.items[
-                    `accounts/${REMOTE_ONLY_ADDRESS}`
+                    accountItemKey(hashAddress(REMOTE_ONLY_ADDRESS))
                 ]?.pendingDelete,
             ).not.toBe(true)
         },

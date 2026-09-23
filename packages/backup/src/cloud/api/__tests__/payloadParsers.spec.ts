@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import {
     parseAddressPayload,
     parseContactPayload,
@@ -195,10 +195,15 @@ describe('parseAddressPayload', () => {
 
 describe('parseSecretsPayload', () => {
     it('parses an algo25 secrets payload', () => {
-        const json = JSON.stringify({ type: 'algo25', mnemonic: 'a b c' })
+        const json = JSON.stringify({
+            type: 'algo25',
+            mnemonic: 'a b c',
+            address: 'ADDR',
+        })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'algo25',
             mnemonic: 'a b c',
+            address: 'ADDR',
         })
     })
 
@@ -207,29 +212,36 @@ describe('parseSecretsPayload', () => {
             type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
+            address: 'FIRST',
         })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
+            address: 'FIRST',
         })
     })
 
     it('parses a quantum secrets payload', () => {
-        const json = JSON.stringify({ type: 'quantum', mnemonic: 'a b c' })
+        const json = JSON.stringify({
+            type: 'quantum',
+            mnemonic: 'a b c',
+            address: 'ADDR',
+        })
         expect(parseSecretsPayload(json)).toEqual({
             type: 'quantum',
             mnemonic: 'a b c',
+            address: 'ADDR',
         })
     })
 
     it('keeps quantum and algo25 secrets distinct for an identical mnemonic', () => {
         const mnemonic = 'a b c'
         const asQuantum = parseSecretsPayload(
-            JSON.stringify({ type: 'quantum', mnemonic }),
+            JSON.stringify({ type: 'quantum', mnemonic, address: 'ADDR' }),
         )
         const asAlgo25 = parseSecretsPayload(
-            JSON.stringify({ type: 'algo25', mnemonic }),
+            JSON.stringify({ type: 'algo25', mnemonic, address: 'ADDR' }),
         )
 
         expect(asQuantum.type).toBe('quantum')
@@ -240,6 +252,14 @@ describe('parseSecretsPayload', () => {
     it('throws on an unknown secrets type', () => {
         expect(() =>
             parseSecretsPayload(JSON.stringify({ type: 'hardware' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    test('throws when a secrets payload has no address', () => {
+        expect(() =>
+            parseSecretsPayload(
+                JSON.stringify({ type: 'algo25', mnemonic: 'a b c' }),
+            ),
         ).toThrow(BackupPayloadParseError)
     })
 })

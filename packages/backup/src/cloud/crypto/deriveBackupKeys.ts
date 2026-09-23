@@ -27,6 +27,8 @@ export type BackupKeys = {
     authPublicKey: Uint8Array
     /** Ed25519 auth private key (64-byte tweetnacl secret key). */
     authSecretKey: Uint8Array
+    /** HMAC key for hashing an address into an item key (`K_item`). */
+    itemKey: Uint8Array
 }
 
 type DeriveBackupKeysParams = {
@@ -47,6 +49,7 @@ export const deriveBackupKeys = async ({
     let masterKey: Uint8Array | null = null
     let authSeed: Uint8Array | null = null
     let encryptionKey: Uint8Array | null = null
+    let itemKey: Uint8Array | null = null
     let secretKey: Uint8Array | null = null
 
     // base64-js maps characters outside the alphabet to zero bytes, so a
@@ -58,7 +61,8 @@ export const deriveBackupKeys = async ({
     try {
         password = backupMnemonicToPassword(mnemonic)
         masterKey = await deriveBackupMasterKey(password, saltBytes, argon2id)
-        ;({ encryptionKey, authSeed } = deriveBackupChildKeys(masterKey))
+        ;({ encryptionKey, authSeed, itemKey } =
+            deriveBackupChildKeys(masterKey))
 
         const { publicKey, secretKey: authSecretKey } =
             deriveBackupAuthKeypair(authSeed)
@@ -69,9 +73,10 @@ export const deriveBackupKeys = async ({
             encryptionKey,
             authPublicKey: publicKey,
             authSecretKey: secretKey,
+            itemKey,
         }
     } catch (error) {
-        zeroBytes(encryptionKey, secretKey)
+        zeroBytes(encryptionKey, secretKey, itemKey)
         throw error
     } finally {
         zeroBytes(password, masterKey, authSeed)

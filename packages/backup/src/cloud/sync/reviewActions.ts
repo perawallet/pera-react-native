@@ -20,13 +20,13 @@ import {
     parseSecretsPayload,
 } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
+import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import {
-    accountItemKey,
-    contactItemKey,
     isAccountItemKey,
-    passkeyItemKey,
     secretsItemKey,
     BACKUP_ACCOUNTS_KEY_PREFIX,
+    BACKUP_CONTACTS_KEY_PREFIX,
+    BACKUP_PASSKEYS_KEY_PREFIX,
     BACKUP_SECRETS_KEY_PREFIX,
     BackupAccountType,
     BackupItemStatus,
@@ -55,6 +55,7 @@ export type ReviewActionDeps = {
     backupId: BackupId
     deviceId: DeviceId
     encryptionKey: Uint8Array
+    hashAddress: ItemKeyHasher
     importAccounts: SyncImportFn
     importContacts: ContactImportFn
     importPasskeys: PasskeyImportFn
@@ -85,6 +86,7 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     backupId: deps.backupId,
     deviceId: deps.deviceId,
     encryptionKey: deps.encryptionKey,
+    hashAddress: deps.hashAddress,
     importAccounts: deps.importAccounts,
     importContacts: deps.importContacts,
     importPasskeys: deps.importPasskeys,
@@ -93,11 +95,37 @@ export const reviewActionDeps = (deps: SyncEngineDeps): ReviewActionDeps => ({
     decrypt: decryptItemPayload,
 })
 
-/** Keys the backup currently holds for one address, in read order. */
+/** Matched on the cached address, never by rebuilding the key from it. */
+const trackedKeysUnder = (
+    state: SyncState,
+    address: string,
+    prefix: string,
+): BackupItemKey[] =>
+    Object.entries(state.items)
+        .filter(
+            ([key, item]) => key.startsWith(prefix) && item.address === address,
+        )
+        .map(([key]) => key)
+
+const isLiveIn =
+    (state: SyncState) =>
+    (key: BackupItemKey): boolean =>
+        state.items[key]?.status === BackupItemStatus.ACTIVE
+
+const liveKeyUnder = (
+    state: SyncState,
+    address: string,
+    prefix: string,
+): BackupItemKey | null =>
+    trackedKeysUnder(state, address, prefix).find(isLiveIn(state)) ?? null
+
+const keysFor = (state: SyncState, address: string): BackupItemKey[] => [
+    ...trackedKeysUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX),
+    ...trackedKeysUnder(state, address, BACKUP_SECRETS_KEY_PREFIX),
+]
+
 const liveKeysFor = (state: SyncState, address: string): BackupItemKey[] =>
-    [accountItemKey(address), secretsItemKey(address)].filter(
-        key => state.items[key]?.status === BackupItemStatus.ACTIVE,
-    )
+    keysFor(state, address).filter(isLiveIn(state))
 
 /**
  * Forgets what the backup knew about an address so the next reconcile treats
@@ -110,7 +138,7 @@ export const markAccountForBackup = (
     address: string,
 ): SyncState => {
     const items = { ...state.items }
-    for (const key of [accountItemKey(address), secretsItemKey(address)]) {
+    for (const key of keysFor(state, address)) {
         delete items[key]
     }
     return { ...state, items }
@@ -161,27 +189,19 @@ const collect = (
     into: CollectedPayloads,
 ): void => {
     for (const item of items) {
-        const isAddress = item.key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
-        const address = item.key.slice(
-            (isAddress ? BACKUP_ACCOUNTS_KEY_PREFIX : BACKUP_SECRETS_KEY_PREFIX)
-                .length,
-        )
         try {
             const plaintext = deps.decrypt(item.payload, {
                 encryptionKey: deps.encryptionKey,
                 backupId: deps.backupId,
                 key: item.key,
             })
-            if (isAddress)
-                into.addressPayloads.set(
-                    address,
-                    parseAddressPayload(plaintext),
-                )
-            else
-                into.secretsPayloads.set(
-                    address,
-                    parseSecretsPayload(plaintext),
-                )
+            if (isAccountItemKey(item.key)) {
+                const payload = parseAddressPayload(plaintext)
+                into.addressPayloads.set(payload.address, payload)
+            } else {
+                const payload = parseSecretsPayload(plaintext)
+                into.secretsPayloads.set(payload.address, payload)
+            }
         } catch {
             logger.warn('reviewActions: unreadable item', { key: item.key })
         }
@@ -226,7 +246,11 @@ export const importFromBackup = async ({
 
     const addressPayload = collected.addressPayloads.get(address)
     if (addressPayload?.type === BackupAccountType.hdWallet) {
-        const seedKey = secretsItemKey(addressPayload.seedFirstDerivedAddress)
+        // Hashed, not matched: the seed is filed under an account this device
+        // may not hold, so nothing caches that address.
+        const seedKey = secretsItemKey(
+            deps.hashAddress(addressPayload.seedFirstDerivedAddress),
+        )
         if (state.items[seedKey]?.status === BackupItemStatus.ACTIVE) {
             collect(
                 await deps.readItems(
@@ -259,18 +283,16 @@ export const importFromBackup = async ({
 
 const otherLiveAddressKeys = (
     state: SyncState,
-    address: string,
-): BackupItemKey[] => {
-    const own = accountItemKey(address)
-    return Object.entries(state.items)
+    ownKey: BackupItemKey,
+): BackupItemKey[] =>
+    Object.entries(state.items)
         .filter(
             ([key, item]) =>
-                key !== own &&
+                key !== ownKey &&
                 isAccountItemKey(key) &&
                 item.status === BackupItemStatus.ACTIVE,
         )
         .map(([key]) => key)
-}
 
 /** Anything unreadable is simply absent from the result, so callers must treat
  *  a missing key as "unknown", never as "not there". */
@@ -317,15 +339,12 @@ const readAddressPayloads = async (
  */
 const secretKeyToDelete = async (
     state: SyncState,
+    addressKey: BackupItemKey,
     address: string,
     deps: ReviewActionDeps,
 ): Promise<BackupItemKey | null> => {
-    const ownSecret = secretsItemKey(address)
-    const isLive = (key: BackupItemKey): boolean =>
-        state.items[key]?.status === BackupItemStatus.ACTIVE
-
-    const addressKey = accountItemKey(address)
-    const others = otherLiveAddressKeys(state, address)
+    const isLive = isLiveIn(state)
+    const others = otherLiveAddressKeys(state, addressKey)
 
     let payloads: Map<BackupItemKey, AddressBackupPayload>
     try {
@@ -343,10 +362,14 @@ const secretKeyToDelete = async (
     if (!own) return null
 
     if (own.type !== BackupAccountType.hdWallet) {
-        return isLive(ownSecret) ? ownSecret : null
+        return liveKeyUnder(state, address, BACKUP_SECRETS_KEY_PREFIX)
     }
 
-    const seedKey = secretsItemKey(own.seedFirstDerivedAddress)
+    // Hashed, not matched: the seed is filed under an account this device may
+    // not hold, so nothing caches that address.
+    const seedKey = secretsItemKey(
+        deps.hashAddress(own.seedFirstDerivedAddress),
+    )
     if (!isLive(seedKey)) return null
 
     const stillDerives = others.some(key => {
@@ -420,12 +443,13 @@ export const deleteFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const keys: BackupItemKey[] = []
-    const addressKey = accountItemKey(address)
-    if (state.items[addressKey]?.status === BackupItemStatus.ACTIVE) {
-        keys.push(addressKey)
+    const addressKey = liveKeyUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX)
+    if (addressKey === null) {
+        return { state, keys: [] }
     }
-    const secretKey = await secretKeyToDelete(state, address, deps)
+
+    const keys: BackupItemKey[] = [addressKey]
+    const secretKey = await secretKeyToDelete(state, addressKey, address, deps)
     if (secretKey !== null) keys.push(secretKey)
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
@@ -440,9 +464,8 @@ export const deleteContactFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const key = contactItemKey(address)
-    const keys =
-        state.items[key]?.status === BackupItemStatus.ACTIVE ? [key] : []
+    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
+    const keys = key === null ? [] : [key]
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
@@ -455,7 +478,13 @@ export const markContactForBackup = (
     address: string,
 ): SyncState => {
     const items = { ...state.items }
-    delete items[contactItemKey(address)]
+    for (const key of trackedKeysUnder(
+        state,
+        address,
+        BACKUP_CONTACTS_KEY_PREFIX,
+    )) {
+        delete items[key]
+    }
     return { ...state, items }
 }
 
@@ -467,16 +496,15 @@ export const keepContactInBackup = (
     address: string,
     name: string,
 ): SyncState => {
-    const key = contactItemKey(address)
-    const tracked = state.items[key]
-    if (!tracked || tracked.status !== BackupItemStatus.ACTIVE) return state
+    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
+    if (key === null) return state
 
     return {
         ...state,
         items: {
             ...state.items,
             [key]: {
-                ...tracked,
+                ...(state.items[key] as SyncItemState),
                 pendingImport: true,
                 isDirty: false,
                 pendingDelete: false,
@@ -508,10 +536,8 @@ export const importContactFromBackup = async ({
     address: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: ContactImportSummary }> => {
-    const key = contactItemKey(address)
-    if (state.items[key]?.status !== BackupItemStatus.ACTIVE) {
-        return contactNotInBackup(state, address)
-    }
+    const key = liveKeyUnder(state, address, BACKUP_CONTACTS_KEY_PREFIX)
+    if (key === null) return contactNotInBackup(state, address)
 
     const [fetched] = await deps.readItems(
         deps.network,
@@ -576,7 +602,13 @@ export const markPasskeyForBackup = (
     credentialId: string,
 ): SyncState => {
     const items = { ...state.items }
-    delete items[passkeyItemKey(credentialId)]
+    for (const key of trackedKeysUnder(
+        state,
+        credentialId,
+        BACKUP_PASSKEYS_KEY_PREFIX,
+    )) {
+        delete items[key]
+    }
     return { ...state, items }
 }
 
@@ -589,16 +621,15 @@ export const keepPasskeyInBackup = (
     credentialId: string,
     label: string,
 ): SyncState => {
-    const key = passkeyItemKey(credentialId)
-    const tracked = state.items[key]
-    if (!tracked || tracked.status !== BackupItemStatus.ACTIVE) return state
+    const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
+    if (key === null) return state
 
     return {
         ...state,
         items: {
             ...state.items,
             [key]: {
-                ...tracked,
+                ...(state.items[key] as SyncItemState),
                 pendingImport: true,
                 isDirty: false,
                 pendingDelete: false,
@@ -617,9 +648,8 @@ export const deletePasskeyFromBackup = async ({
     credentialId: string
     deps: ReviewActionDeps
 }): Promise<BackupDeleteResult> => {
-    const key = passkeyItemKey(credentialId)
-    const keys =
-        state.items[key]?.status === BackupItemStatus.ACTIVE ? [key] : []
+    const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
+    const keys = key === null ? [] : [key]
 
     return { state: await deleteKeysFromBackup({ state, keys, deps }), keys }
 }
@@ -647,10 +677,8 @@ export const importPasskeyFromBackup = async ({
     credentialId: string
     deps: ReviewActionDeps
 }): Promise<{ state: SyncState; summary: PasskeyImportSummary }> => {
-    const key = passkeyItemKey(credentialId)
-    if (state.items[key]?.status !== BackupItemStatus.ACTIVE) {
-        return passkeyNotInBackup(state, credentialId)
-    }
+    const key = liveKeyUnder(state, credentialId, BACKUP_PASSKEYS_KEY_PREFIX)
+    if (key === null) return passkeyNotInBackup(state, credentialId)
 
     const [fetched] = await deps.readItems(
         deps.network,

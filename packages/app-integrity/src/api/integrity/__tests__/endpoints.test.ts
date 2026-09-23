@@ -19,15 +19,21 @@ const idempotentPostRetryMock = vi.hoisted(() => ({
     methods: ['post'],
     shouldRetry: () => true,
 }))
+const singleUsePostRetryMock = vi.hoisted(() => ({
+    methods: ['post'],
+    shouldRetry: () => false,
+}))
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: (...args: unknown[]) => queryClientMock(...args),
     IDEMPOTENT_POST_RETRY: idempotentPostRetryMock,
+    SINGLE_USE_POST_RETRY: singleUsePostRetryMock,
 }))
 
 import {
     requestChallenge,
     attestDevice,
     verifyIntegrityToken,
+    enrolDevice,
 } from '../endpoints'
 
 describe('integrity endpoints', () => {
@@ -160,5 +166,110 @@ describe('integrity endpoints', () => {
                 headers: { 'x-app-integrity-token': 'jwt' },
             }),
         )
+    })
+})
+
+describe('attestDevice web variant', () => {
+    beforeEach(() => queryClientMock.mockReset())
+
+    it('maps the web payload to snake_case', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                integrity_token: 'jwt-value',
+                expires_at: '2026-08-04T12:00:00.000Z',
+            },
+        })
+
+        const result = await attestDevice({
+            payload: {
+                deviceInstallationId: 'install-1',
+                platform: 'web',
+                publicKey: 'spki-base64',
+                signature: 'sig-base64',
+            },
+            network: 'mainnet',
+        })
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/api/v3/public/integrity/attest',
+                data: {
+                    device_id: 'install-1',
+                    platform: 'web',
+                    public_key: 'spki-base64',
+                    signature: 'sig-base64',
+                },
+            }),
+        )
+        expect(result).toEqual({
+            integrityToken: 'jwt-value',
+            expiresAt: '2026-08-04T12:00:00.000Z',
+        })
+    })
+
+    it('requests a challenge for the web platform', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { challenge: 'challenge-value' },
+        })
+
+        const challenge = await requestChallenge({
+            deviceInstallationId: 'install-1',
+            platform: 'web',
+            network: 'mainnet',
+        })
+
+        expect(challenge).toBe('challenge-value')
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { device_id: 'install-1', platform: 'web' },
+            }),
+        )
+    })
+})
+
+describe('enrolDevice', () => {
+    const params = {
+        deviceInstallationId: 'd1',
+        publicKey: 'spki-b64',
+        turnstileToken: 'tok',
+        network: 'mainnet' as const,
+    }
+
+    it('posts snake_case fields with the single-use retry', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { enrolled: true, kid: 'K' },
+        })
+
+        const result = await enrolDevice(params)
+
+        expect(result).toEqual({ enrolled: true, kid: 'K' })
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'POST',
+                url: '/api/v3/public/integrity/enrol',
+                data: {
+                    device_id: 'd1',
+                    public_key: 'spki-b64',
+                    turnstile_token: 'tok',
+                },
+                retry: singleUsePostRetryMock,
+            }),
+        )
+    })
+
+    it('rejects a response with no kid', async () => {
+        queryClientMock.mockResolvedValue({ data: { enrolled: true } })
+
+        await expect(enrolDevice(params)).rejects.toThrow()
+    })
+
+    it('rejects a 200 that says it did not enrol', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { enrolled: false, kid: 'K' },
+        })
+
+        await expect(enrolDevice(params)).rejects.toThrow()
     })
 })

@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import { fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
-import type { SyncState } from '../models'
+import { isLegacyItemKey, type SyncState } from '../models'
 import { applyDeltas } from './applyDeltas'
 import { fetchDeltaOrRebuild } from './rebuildFromManifest'
 import type { SyncEngineDeps } from './types'
@@ -40,6 +41,20 @@ export const pullBackupDeltas = async (
         state,
         () => fetchManifest(deps.network, deps.backupId, deps.deviceId),
     )
+
+    /* The socket has to refuse what `syncBackup` refuses, or an `itemsUpdated`
+     * event imports a legacy backup behind that refusal. */
+    const legacyKeyCount = deltas.filter(delta =>
+        isLegacyItemKey(delta.key),
+    ).length
+    if (legacyKeyCount > 0) {
+        logger.warn(
+            'pullBackupDeltas: backup uses legacy address keys, refusing to apply',
+            { legacyKeyCount },
+        )
+        return { ...state, lastSyncResult: 'FAILED' }
+    }
+
     const next = await applyDeltas({
         state,
         deltas,

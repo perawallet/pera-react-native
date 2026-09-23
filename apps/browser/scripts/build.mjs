@@ -181,6 +181,25 @@ for (const family of FONT_FAMILIES) {
 }
 writeFileSync(path.join(dist, 'fonts.css'), fontFaces.join('\n') + '\n')
 
+// 1c. dotlottie (PWLottie's web renderer) instantiates a wasm engine at
+// runtime, and its default loader fetches it from cdn.jsdelivr.net/unpkg —
+// remotely hosted code in extension pages: a CDN or npm-artifact compromise
+// would execute in the wallet's own origin, and Chrome Web Store rejects
+// remote code outright. Ship the wasm like sqlite3.wasm (step 2b) and point
+// the loader at it (configureLottieWasm.web.ts). Resolved through
+// dotlottie-react's own dependency graph so the copied binary can never skew
+// from the dotlottie-web version Metro bundles.
+const requireFromMobile = createRequire(path.join(mobileDir, 'package.json'))
+const requireFromDotLottieReact = createRequire(
+    requireFromMobile.resolve('@lottiefiles/dotlottie-react'),
+)
+cpSync(
+    requireFromDotLottieReact.resolve(
+        '@lottiefiles/dotlottie-web/dotlottie-player.wasm',
+    ),
+    path.join(dist, 'dotlottie-player.wasm'),
+)
+
 // 2. Bundle the extension service worker
 await build({
     entryPoints: [path.join(root, 'src/background/index.ts')],
@@ -226,6 +245,7 @@ for (const [entry, outfile] of [
     ['src/content/bidali-relay.ts', 'content-bidali-relay.js'],
     ['src/content/webauthn-main.ts', 'content-webauthn-main.js'],
     ['src/content/webauthn-relay.ts', 'content-webauthn-relay.js'],
+    ['src/content/integrity-check.ts', 'content-integrity-check.js'],
 ]) {
     await build({
         entryPoints: [path.join(root, entry)],
@@ -327,6 +347,22 @@ if (bakedBackend && !uiCode.includes(bakedBackend)) {
         `the exported UI bundle does not contain the configured backend (${bakedBackend}).`,
     )
 }
+// The UI bundle must point dotlottie at the wasm shipped in step 1c — the
+// exact call in configureLottieWasm.web.ts survives minification because
+// `chrome.runtime.getURL` is a global member expression and its string
+// argument is used once. Asserting the CDN literals' *absence* instead would
+// never pass: dotlottie-web bakes its jsdelivr/unpkg default URLs into the
+// bundle whether or not they are overridden at runtime.
+if (!/getURL\(["']dotlottie-player\.wasm["']\)/.test(uiCode)) {
+    throw new Error(
+        'the exported UI bundle does not wire dotlottie to the bundled ' +
+            'dotlottie-player.wasm — the loader would fall back to fetching ' +
+            'its wasm from a public CDN at runtime. Check that PWLottie.tsx ' +
+            'still imports ./configureLottieWasm and that the .web.ts file ' +
+            "keeps the inline getURL('dotlottie-player.wasm') call.",
+    )
+}
+
 // Deliberately NOT asserting "no staging host appears anywhere": the committed
 // staging defaults in packages/config/src/main.ts are schema defaults, so their
 // string literals are compiled into every bundle even when an override wins at
@@ -343,6 +379,7 @@ if (bakedBackend && !uiCode.includes(bakedBackend)) {
 const BUNDLE_LIMITS = [
     ['content-inject-main.js', 32 * 1024],
     ['content-relay-isolated.js', 16 * 1024],
+    ['content-integrity-check.js', 16 * 1024],
     ['background.js', 3 * 1024 * 1024],
 ]
 

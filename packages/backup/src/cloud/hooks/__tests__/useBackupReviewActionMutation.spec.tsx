@@ -22,29 +22,46 @@ import {
     mutationDefaults,
     NoConnectionError,
 } from '@perawallet/wallet-core-shared'
+import type {
+    BackupActionOutcome,
+    ContactImportSummary,
+    ImportSummary,
+} from '../../sync'
 
 const { managerMock } = vi.hoisted(() => ({
     managerMock: {
         backUpAccount: vi.fn(async () => true),
-        addAccountFromBackup: vi.fn(async () => ({
-            imported: 1,
-            skippedDuplicate: 0,
-            failed: [] as { address: string; reason: string }[],
-        })),
-        deleteAccountFromBackup: vi.fn(async () => 'settled' as const),
+        addAccountFromBackup: vi.fn(
+            async (): Promise<ImportSummary | null> => ({
+                imported: 1,
+                skippedDuplicate: 0,
+                failed: [],
+            }),
+        ),
+        deleteAccountFromBackup: vi.fn(
+            async (): Promise<BackupActionOutcome> => 'settled',
+        ),
         backUpContact: vi.fn(async () => true),
-        addContactFromBackup: vi.fn(async () => ({
-            imported: 1,
-            failed: [] as { address: string; reason: string }[],
-        })),
-        deleteContactFromBackup: vi.fn(async () => 'settled' as const),
-        backUpPasskey: vi.fn(async () => true),
-        addPasskeyFromBackup: vi.fn(async () => ({
-            imported: 1,
-            skipped: [] as { credentialId: string; reason: string }[],
-            failed: [] as { credentialId: string; reason: string }[],
-        })),
-        deletePasskeyFromBackup: vi.fn(async () => 'settled' as const),
+        addContactFromBackup: vi.fn(
+            async (): Promise<ContactImportSummary | null> => ({
+                imported: 1,
+                failed: [],
+            }),
+        ),
+        deleteContactFromBackup: vi.fn(
+            async (): Promise<BackupActionOutcome> => 'settled',
+        ),
+        backUpPasskey: vi.fn(async (): Promise<boolean> => true),
+        addPasskeyFromBackup: vi.fn(
+            async (): Promise<PasskeyImportSummary | null> => ({
+                imported: 1,
+                skipped: [],
+                failed: [],
+            }),
+        ),
+        deletePasskeyFromBackup: vi.fn(
+            async (): Promise<BackupActionOutcome> => 'settled',
+        ),
     },
 }))
 

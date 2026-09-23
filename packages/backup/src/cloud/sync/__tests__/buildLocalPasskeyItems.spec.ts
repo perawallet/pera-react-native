@@ -11,9 +11,12 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { BackupItemType } from '../../models'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import { BackupItemType, passkeyItemKey } from '../../models'
 import { buildLocalPasskeyItems } from '../buildLocalPasskeyItems'
 import type { BackupPasskey } from '../types'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 
 const passkey: BackupPasskey = {
     credentialId: 'Y3JlZC1pZA==',
@@ -29,11 +32,12 @@ const passkey: BackupPasskey = {
 
 describe('buildLocalPasskeyItems', () => {
     it('builds one PASSKEY item per credential under the passkeys prefix', () => {
-        const [item] = buildLocalPasskeyItems([passkey], 42)
+        const [item] = buildLocalPasskeyItems([passkey], 42, hashAddress)
 
-        // The id's bytes travel base64url: the server's key alphabet has no
-        // '+', '/' or '='.
-        expect(item.key).toBe('passkeys/WTNKbFpDMXBaQT09')
+        // The key is an HMAC of the credential id, so the server never sees
+        // which credentials a backup holds.
+        expect(item.key).toBe(passkeyItemKey(hashAddress(passkey.credentialId)))
+        expect(item.key).not.toContain(passkey.credentialId)
         expect(item.type).toBe(BackupItemType.PASSKEY)
         expect(item.payload).toMatchObject({
             credentialId: 'Y3JlZC1pZA==',
@@ -44,20 +48,24 @@ describe('buildLocalPasskeyItems', () => {
     })
 
     it('hashes content without updatedAt so a timestamp bump is not dirty', () => {
-        const [first] = buildLocalPasskeyItems([passkey], 1)
-        const [second] = buildLocalPasskeyItems([passkey], 999)
+        const [first] = buildLocalPasskeyItems([passkey], 1, hashAddress)
+        const [second] = buildLocalPasskeyItems([passkey], 999, hashAddress)
 
         expect(first.contentHash).toBe(second.contentHash)
     })
 
     it('hashes differently when a derivation input changes', () => {
-        const [first] = buildLocalPasskeyItems([passkey], 1)
-        const [second] = buildLocalPasskeyItems([{ ...passkey, counter: 1 }], 1)
+        const [first] = buildLocalPasskeyItems([passkey], 1, hashAddress)
+        const [second] = buildLocalPasskeyItems(
+            [{ ...passkey, counter: 1 }],
+            1,
+            hashAddress,
+        )
 
         expect(first.contentHash).not.toBe(second.contentHash)
     })
 
     it('returns an empty list for no credentials', () => {
-        expect(buildLocalPasskeyItems([], 1)).toEqual([])
+        expect(buildLocalPasskeyItems([], 1, hashAddress)).toEqual([])
     })
 })

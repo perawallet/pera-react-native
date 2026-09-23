@@ -43,7 +43,6 @@ vi.mock('@modules/security/hooks/useShakeToLockHandler', () => ({
 
 describe('useLockScreen', () => {
     const mockVerifyPin = vi.fn()
-    const mockHandleFailedAttempt = vi.fn()
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockoutEndTime = vi.fn()
     const mockCheckBiometricsEnabled = vi.fn()
@@ -56,7 +55,6 @@ describe('useLockScreen', () => {
         mockCheckBiometricsEnabled.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
             verifyPin: mockVerifyPin,
-            handleFailedAttempt: mockHandleFailedAttempt,
             resetFailedAttempts: mockResetFailedAttempts,
             isLockedOut: false,
             lockoutEndTime: null,
@@ -106,7 +104,6 @@ describe('useLockScreen', () => {
         const lockoutEndTime = Date.now() + 60_000
         ;(usePinCode as Mock).mockReturnValue({
             verifyPin: mockVerifyPin,
-            handleFailedAttempt: mockHandleFailedAttempt,
             resetFailedAttempts: mockResetFailedAttempts,
             isLockedOut: true,
             lockoutEndTime,
@@ -219,7 +216,6 @@ describe('useLockScreen', () => {
             })
 
             expect(mockVerifyPin).toHaveBeenCalledWith('1234')
-            expect(mockResetFailedAttempts).toHaveBeenCalled()
             expect(mockOnUnlock).toHaveBeenCalled()
         })
 
@@ -281,7 +277,7 @@ describe('useLockScreen', () => {
             expect(result.current.isDuressWipeInProgress).toBe(false)
         })
 
-        it('should handle failed attempt when PIN is invalid', async () => {
+        it('surfaces the error and stays locked when the PIN is invalid', async () => {
             mockVerifyPin.mockResolvedValue({ kind: 'fail' })
 
             const { result } = renderHook(() =>
@@ -292,7 +288,6 @@ describe('useLockScreen', () => {
                 await result.current.handlePinComplete('1234')
             })
 
-            expect(mockHandleFailedAttempt).toHaveBeenCalled()
             expect(result.current.hasError).toBe(true)
             expect(mockOnUnlock).not.toHaveBeenCalled()
         })
@@ -326,7 +321,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -346,7 +340,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -371,7 +364,6 @@ describe('useLockScreen', () => {
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: true,
                 lockoutEndTime,
@@ -393,7 +385,6 @@ describe('useLockScreen', () => {
         it('should reset remaining seconds when not locked out', () => {
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
-                handleFailedAttempt: mockHandleFailedAttempt,
                 resetFailedAttempts: mockResetFailedAttempts,
                 isLockedOut: false,
                 lockoutEndTime: null,
@@ -543,7 +534,6 @@ describe('useLockScreen', () => {
 
                 ;(usePinCode as Mock).mockReturnValue({
                     verifyPin: mockVerifyPin,
-                    handleFailedAttempt: mockHandleFailedAttempt,
                     resetFailedAttempts: mockResetFailedAttempts,
                     isLockedOut: true,
                     lockoutEndTime: Date.now() + 60_000,
@@ -577,6 +567,14 @@ describe('useLockScreen', () => {
                 (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1] as (
                     next: AppStateStatus,
                 ) => void
+
+            const emitAppState = (next: AppStateStatus) => {
+                setAppState(next)
+                for (const [, handler] of (AppState.addEventListener as Mock)
+                    .mock.calls) {
+                    handler(next)
+                }
+            }
 
             // Retry chains span several awaits per attempt; flush generously.
             const flushPrompt = async () => {
@@ -667,7 +665,6 @@ describe('useLockScreen', () => {
                 // prompt is still waiting for activation.
                 ;(usePinCode as Mock).mockReturnValue({
                     verifyPin: mockVerifyPin,
-                    handleFailedAttempt: mockHandleFailedAttempt,
                     resetFailedAttempts: mockResetFailedAttempts,
                     isLockedOut: true,
                     lockoutEndTime: Date.now() + 60_000,
@@ -781,10 +778,13 @@ describe('useLockScreen', () => {
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
                 )
                 await flushPrompt()
+                await act(async () => {
+                    emitAppState('inactive')
+                    emitAppState('active')
+                })
+                await flushPrompt()
 
                 expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
-                // No retry armed: nothing ever subscribed to AppState.
-                expect(AppState.addEventListener).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
@@ -799,9 +799,13 @@ describe('useLockScreen', () => {
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
                 )
                 await flushPrompt()
+                await act(async () => {
+                    emitAppState('inactive')
+                    emitAppState('active')
+                })
+                await flushPrompt()
 
                 expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
-                expect(AppState.addEventListener).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
@@ -813,9 +817,13 @@ describe('useLockScreen', () => {
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
                 )
                 await flushPrompt()
+                await act(async () => {
+                    emitAppState('inactive')
+                    emitAppState('active')
+                })
+                await flushPrompt()
 
                 expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
-                expect(AppState.addEventListener).not.toHaveBeenCalled()
                 expect(mockOnUnlock).not.toHaveBeenCalled()
             })
 
@@ -850,6 +858,93 @@ describe('useLockScreen', () => {
 
                 expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
                 expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it('asks again when the app returns from the background after a cancel', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockUnlockWithBiometrics
+                    .mockResolvedValueOnce({
+                        kind: 'failed',
+                        reason: 'user-cancel',
+                    })
+                    .mockResolvedValueOnce({ kind: 'ok' })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
+
+                await act(async () => {
+                    emitAppState('background')
+                    emitAppState('active')
+                })
+                await flushPrompt()
+
+                expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it.each(['user-cancel', 'system-cancel'] as const)(
+                'asks once on return when the app backgrounds mid-prompt and the OS reports %s',
+                async reason => {
+                    mockCheckBiometricsEnabled.mockResolvedValue(true)
+                    let resolveFirstAuth:
+                        | ((result: BiometricUnlockOutcome) => void)
+                        | undefined
+                    mockUnlockWithBiometrics
+                        .mockReturnValueOnce(
+                            new Promise<BiometricUnlockOutcome>(resolve => {
+                                resolveFirstAuth = resolve
+                            }),
+                        )
+                        .mockResolvedValue({ kind: 'ok' })
+
+                    renderHook(() =>
+                        useLockScreen({
+                            onUnlock: mockOnUnlock,
+                            isLocked: true,
+                        }),
+                    )
+                    await flushPrompt()
+
+                    await act(async () => {
+                        emitAppState('background')
+                        resolveFirstAuth?.({ kind: 'failed', reason })
+                    })
+                    await flushPrompt()
+                    expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(1)
+
+                    await act(async () => {
+                        emitAppState('active')
+                    })
+                    await flushPrompt()
+
+                    expect(mockUnlockWithBiometrics).toHaveBeenCalledTimes(2)
+                    expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+                },
+            )
+
+            it('stops watching the foreground once unlocked', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockUnlockWithBiometrics.mockResolvedValue({
+                    kind: 'failed',
+                    reason: 'user-cancel',
+                })
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: true } },
+                )
+                await flushPrompt()
+                const subscription = (
+                    AppState.addEventListener as Mock
+                ).mock.results.at(0)?.value as { remove: Mock }
+
+                rerender({ isLocked: false })
+
+                expect(subscription.remove).toHaveBeenCalled()
             })
         })
     })

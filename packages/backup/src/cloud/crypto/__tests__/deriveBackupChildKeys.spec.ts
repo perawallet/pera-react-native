@@ -11,12 +11,8 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { deriveBackupChildKeys } from '../deriveBackupChildKeys'
-
-const hex = (bytes: Uint8Array): string =>
-    Array.from(bytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
 
 const MASTER_KEY = new Uint8Array(Array.from({ length: 32 }, (_, i) => i + 1))
 
@@ -24,7 +20,7 @@ describe('deriveBackupChildKeys', () => {
     test('derives K_enc with the backup-encryption-key HKDF label', () => {
         const { encryptionKey } = deriveBackupChildKeys(MASTER_KEY)
 
-        expect(hex(encryptionKey)).toBe(
+        expect(bytesToHex(encryptionKey)).toBe(
             '31b53a4316ec4c91873d458a6f151a5696ea6342e92bcfa8ef478eeb38f228a3',
         )
     })
@@ -32,7 +28,7 @@ describe('deriveBackupChildKeys', () => {
     test('derives K_auth_seed with the backup-auth-seed HKDF label', () => {
         const { authSeed } = deriveBackupChildKeys(MASTER_KEY)
 
-        expect(hex(authSeed)).toBe(
+        expect(bytesToHex(authSeed)).toBe(
             'ce7819d8a0f71ee84da37299c3fbd602e149c6d62f2525be0205207284fc2aa0',
         )
     })
@@ -42,5 +38,21 @@ describe('deriveBackupChildKeys', () => {
 
         expect(encryptionKey).toHaveLength(32)
         expect(authSeed).toHaveLength(32)
+    })
+
+    test('derives a third child key distinct from the other two', () => {
+        const { encryptionKey, authSeed, itemKey } =
+            deriveBackupChildKeys(MASTER_KEY)
+
+        expect(itemKey).toHaveLength(32)
+        expect(bytesToHex(itemKey)).not.toBe(bytesToHex(encryptionKey))
+        expect(bytesToHex(itemKey)).not.toBe(bytesToHex(authSeed))
+    })
+
+    test('derives the same item key for the same master key', () => {
+        const first = deriveBackupChildKeys(MASTER_KEY).itemKey
+        const second = deriveBackupChildKeys(MASTER_KEY).itemKey
+
+        expect(bytesToHex(first)).toBe(bytesToHex(second))
     })
 })

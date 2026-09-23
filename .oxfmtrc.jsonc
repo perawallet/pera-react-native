@@ -16,6 +16,8 @@
     "trailingComma": "all",
     "ignorePatterns": [
         "packages/core/src/api/generated/*",
-        "apps/mobile/vendor/*"
+        "apps/mobile/vendor/*",
+        // Mirrors the config stored on Bitrise byte for byte, so a paste diffs cleanly.
+        ".bitrise/bitrise.yml"
     ]
 }

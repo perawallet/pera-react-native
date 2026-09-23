@@ -25,13 +25,31 @@ vi.mock('../../api', async importOriginal => ({
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
+import {
+    accountItemKey,
+    contactItemKey,
+    secretsItemKey,
+    BackupAccountType,
+} from '../../models'
 import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
-import { BackupAccountType } from '../../models'
+
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+const accountKey = (address: string) => accountItemKey(hashAddress(address))
+const secretsKey = (address: string) => secretsItemKey(hashAddress(address))
+const contactKey = (address: string) => contactItemKey(hashAddress(address))
 
 const encKey = new Uint8Array(32).fill(7)
 const backupId = 'did:pera:ADDR'
 const enc = (key: string, plaintext: string) =>
     encryptItemPayload(plaintext, { encryptionKey: encKey, backupId, key })
+
+const item = (key: string, payload: unknown) => ({
+    key,
+    ver: 1,
+    hash: `h-${key}`,
+    payload: enc(key, JSON.stringify(payload)),
+})
 
 const active = (ver: number, hash: string, lastSeq: number) => ({
     type: 'ACCOUNT',
@@ -61,33 +79,21 @@ describe('pullBackupItems', () => {
             backupGlobalHash: 'sha256:global',
             lastSeq: 10,
             items: {
-                'accounts/QADDR': active(1, 'h1', 9),
-                'secrets/QADDR': active(1, 'h2', 10),
+                [accountKey('QADDR')]: active(1, 'h1', 9),
+                [secretsKey('QADDR')]: active(1, 'h2', 10),
             },
         })
         readItems.mockResolvedValue([
-            {
-                key: 'accounts/QADDR',
-                ver: 1,
-                hash: 'h1',
-                payload: enc(
-                    'accounts/QADDR',
-                    JSON.stringify({
-                        type: 'quantum',
-                        address: 'QADDR',
-                        customName: 'Quantum',
-                    }),
-                ),
-            },
-            {
-                key: 'secrets/QADDR',
-                ver: 1,
-                hash: 'h2',
-                payload: enc(
-                    'secrets/QADDR',
-                    JSON.stringify({ type: 'quantum', mnemonic: 'a b c' }),
-                ),
-            },
+            item(accountKey('QADDR'), {
+                type: 'quantum',
+                address: 'QADDR',
+                customName: 'Quantum',
+            }),
+            item(secretsKey('QADDR'), {
+                type: 'quantum',
+                mnemonic: 'a b c',
+                address: 'QADDR',
+            }),
         ])
 
         const result = await pull()
@@ -96,54 +102,51 @@ describe('pullBackupItems', () => {
         expect(result.accounts[0]).toMatchObject({
             address: 'QADDR',
             addressPayload: { type: 'quantum', address: 'QADDR' },
-            secretsPayload: { type: 'quantum', mnemonic: 'a b c' },
+            secretsPayload: {
+                type: 'quantum',
+                mnemonic: 'a b c',
+                address: 'QADDR',
+            },
         })
         expect(result.skipped).toHaveLength(0)
     })
 
-    it('groups an algo25 account with its secret by address', async () => {
+    it('joins an account and its secret although both keys are opaque hashes', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 10,
             items: {
-                'accounts/ADDR': active(1, 'h1', 9),
-                'secrets/ADDR': active(1, 'h2', 10),
+                [accountKey('ADDR')]: active(1, 'h1', 9),
+                [secretsKey('ADDR')]: active(1, 'h2', 10),
             },
         })
         readItems.mockResolvedValue([
-            {
-                key: 'accounts/ADDR',
-                ver: 1,
-                hash: 'h1',
-                payload: enc(
-                    'accounts/ADDR',
-                    JSON.stringify({
-                        type: 'algo25',
-                        address: 'ADDR',
-                        customName: 'Main',
-                    }),
-                ),
-            },
-            {
-                key: 'secrets/ADDR',
-                ver: 1,
-                hash: 'h2',
-                payload: enc(
-                    'secrets/ADDR',
-                    JSON.stringify({ type: 'algo25', mnemonic: 'a b c' }),
-                ),
-            },
+            item(accountKey('ADDR'), {
+                type: 'algo25',
+                address: 'ADDR',
+                customName: 'Main',
+            }),
+            item(secretsKey('ADDR'), {
+                type: 'algo25',
+                mnemonic: 'a b c',
+                address: 'ADDR',
+            }),
         ])
 
         const result = await pull()
 
+        expect(accountKey('ADDR')).not.toContain('ADDR')
         expect(result.lastSeq).toBe(10)
         expect(result.backupGlobalHash).toBe('sha256:global')
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0]).toMatchObject({
             address: 'ADDR',
             addressPayload: { type: 'algo25', address: 'ADDR' },
-            secretsPayload: { type: 'algo25', mnemonic: 'a b c' },
+            secretsPayload: {
+                type: 'algo25',
+                mnemonic: 'a b c',
+                address: 'ADDR',
+            },
         })
         expect(result.skipped).toHaveLength(0)
     })
@@ -155,7 +158,7 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: { 'accounts/A': active(1, 'h', 1) },
+            items: { [accountKey('A')]: active(1, 'h', 1) },
         })
         readItems.mockResolvedValue([])
 
@@ -166,7 +169,7 @@ describe('pullBackupItems', () => {
             'mainnet',
             backupId,
             'device-1',
-            ['accounts/A'],
+            [accountKey('A')],
         )
     })
 
@@ -174,18 +177,24 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: { 'accounts/BAD': active(1, 'h', 1) },
+            items: { [accountKey('BAD')]: active(1, 'h', 1) },
         })
         readItems.mockResolvedValue([
-            { key: 'accounts/BAD', ver: 1, hash: 'h', payload: 'bm90LXZhbGlk' },
+            {
+                key: accountKey('BAD'),
+                ver: 1,
+                hash: 'h',
+                payload: 'bm90LXZhbGlk',
+            },
         ])
 
         const result = await pull()
 
         expect(result.accounts).toHaveLength(0)
         expect(result.skipped).toEqual([
-            { key: 'accounts/BAD', reason: 'decrypt' },
+            { key: accountKey('BAD'), reason: 'decrypt' },
         ])
+        expect(result.addressByKey).toEqual({})
     })
 
     it('ignores IGNORED items (no read calls)', async () => {
@@ -193,7 +202,7 @@ describe('pullBackupItems', () => {
             backupGlobalHash: 'g',
             lastSeq: 2,
             items: {
-                'accounts/B': {
+                [accountKey('B')]: {
                     type: 'ACCOUNT',
                     ver: 1,
                     status: 'IGNORED',
@@ -213,39 +222,117 @@ describe('pullBackupItems', () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: { 'accounts/P': active(1, 'h', 1) },
+            items: { [accountKey('P')]: active(1, 'h', 1) },
         })
         readItems.mockResolvedValue([
             {
-                key: 'accounts/P',
+                key: accountKey('P'),
                 ver: 1,
                 hash: 'h',
-                payload: enc('accounts/P', '{not json'),
+                payload: enc(accountKey('P'), '{not json'),
             },
         ])
 
         const result = await pull()
 
         expect(result.accounts).toHaveLength(0)
-        expect(result.skipped).toEqual([{ key: 'accounts/P', reason: 'parse' }])
+        expect(result.skipped).toEqual([
+            { key: accountKey('P'), reason: 'parse' },
+        ])
     })
 
-    it('skips an item with an unexpected key prefix returned by the server', async () => {
+    it('skips a payload that names no address', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'g',
             lastSeq: 1,
-            items: { 'accounts/A': active(1, 'h', 1) },
+            items: { [accountKey('NAMELESS')]: active(1, 'h', 1) },
         })
         readItems.mockResolvedValue([
-            { key: 'unknown/FOO', ver: 1, hash: 'h', payload: 'AAAA' },
+            item(accountKey('NAMELESS'), {
+                type: 'algo25',
+                address: '',
+                customName: null,
+            }),
         ])
 
         const result = await pull()
 
         expect(result.accounts).toHaveLength(0)
+        expect(result.addressByKey).toEqual({})
         expect(result.skipped).toEqual([
-            { key: 'unknown/FOO', reason: 'missing-address' },
+            { key: accountKey('NAMELESS'), reason: 'parse' },
         ])
+    })
+
+    // The import path matches this address against the seeds the wallet already
+    // holds; a hash matches nothing, and the restore then mints a second HD root
+    // for a seed the user already has.
+    it('restores an orphaned hdSeed under the address its payload names', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 3,
+            items: { [secretsKey('FIRSTDERIVED')]: active(1, 'h', 3) },
+        })
+        readItems.mockResolvedValue([
+            item(secretsKey('FIRSTDERIVED'), {
+                type: 'hdSeed',
+                seed: 'aa',
+                entropy: 'bb',
+                address: 'FIRSTDERIVED',
+            }),
+        ])
+
+        const result = await pull()
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.accounts[0].address).toBe('FIRSTDERIVED')
+        expect(result.accounts[0].addressPayload).toEqual({
+            type: BackupAccountType.hdSeed,
+            address: 'FIRSTDERIVED',
+        })
+    })
+
+    it('reports the address of every item it read', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g',
+            lastSeq: 5,
+            items: {
+                [accountKey('ADDR')]: active(1, 'h1', 3),
+                [secretsKey('ADDR')]: active(1, 'h2', 4),
+                [contactKey('CADDR')]: {
+                    type: 'CONTACT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h3',
+                    lastSeq: 5,
+                },
+            },
+        })
+        readItems.mockResolvedValue([
+            item(accountKey('ADDR'), {
+                type: 'algo25',
+                address: 'ADDR',
+                customName: null,
+            }),
+            item(secretsKey('ADDR'), {
+                type: 'algo25',
+                mnemonic: 'a b c',
+                address: 'ADDR',
+            }),
+            item(contactKey('CADDR'), {
+                address: 'CADDR',
+                name: 'Alice',
+                updatedAt: 7,
+            }),
+        ])
+
+        const result = await pull()
+
+        expect(result.addressByKey).toEqual({
+            [accountKey('ADDR')]: 'ADDR',
+            [secretsKey('ADDR')]: 'ADDR',
+            [contactKey('CADDR')]: 'CADDR',
+        })
     })
 
     // The restore is a contact's only way home: it seeds the sync state at the
@@ -256,14 +343,14 @@ describe('pullBackupItems', () => {
             backupGlobalHash: 'sha256:global',
             lastSeq: 4,
             items: {
-                'contacts/CADDR': {
+                [contactKey('CADDR')]: {
                     type: 'CONTACT',
                     ver: 1,
                     status: 'ACTIVE',
                     hash: 'h1',
                     lastSeq: 3,
                 },
-                'contacts/GONE': {
+                [contactKey('GONE')]: {
                     type: 'CONTACT',
                     ver: 2,
                     status: 'IGNORED',
@@ -273,19 +360,11 @@ describe('pullBackupItems', () => {
             },
         })
         readItems.mockResolvedValue([
-            {
-                key: 'contacts/CADDR',
-                ver: 1,
-                hash: 'h1',
-                payload: enc(
-                    'contacts/CADDR',
-                    JSON.stringify({
-                        address: 'CADDR',
-                        name: 'Alice',
-                        updatedAt: 7,
-                    }),
-                ),
-            },
+            item(contactKey('CADDR'), {
+                address: 'CADDR',
+                name: 'Alice',
+                updatedAt: 7,
+            }),
         ])
 
         const result = await pull()
@@ -294,7 +373,7 @@ describe('pullBackupItems', () => {
             'mainnet',
             backupId,
             'device-1',
-            ['contacts/CADDR'],
+            [contactKey('CADDR')],
         )
         expect(result.contacts).toEqual([
             { address: 'CADDR', name: 'Alice', updatedAt: 7 },
@@ -307,7 +386,7 @@ describe('pullBackupItems', () => {
             backupGlobalHash: 'sha256:global',
             lastSeq: 3,
             items: {
-                'contacts/CADDR': {
+                [contactKey('CADDR')]: {
                     type: 'CONTACT',
                     ver: 1,
                     status: 'ACTIVE',
@@ -317,14 +396,14 @@ describe('pullBackupItems', () => {
             },
         })
         readItems.mockResolvedValue([
-            { key: 'contacts/CADDR', ver: 1, hash: 'h1', payload: 'AAAA' },
+            { key: contactKey('CADDR'), ver: 1, hash: 'h1', payload: 'AAAA' },
         ])
 
         const result = await pull()
 
         expect(result.contacts).toEqual([])
         expect(result.skipped).toEqual([
-            { key: 'contacts/CADDR', reason: 'decrypt' },
+            { key: contactKey('CADDR'), reason: 'decrypt' },
         ])
     })
 
@@ -413,8 +492,8 @@ describe('pullBackupItems manifest pass-through', () => {
             backupGlobalHash: 'sha256:global',
             lastSeq: 4,
             items: {
-                'accounts/A': active(2, 'h1', 3),
-                'accounts/GONE': {
+                [accountKey('A')]: active(2, 'h1', 3),
+                [accountKey('GONE')]: {
                     type: 'ACCOUNT',
                     ver: 5,
                     status: 'IGNORED',
@@ -433,13 +512,13 @@ describe('pullBackupItems manifest pass-through', () => {
             'mainnet',
             backupId,
             'device-1',
-            ['accounts/A'],
+            [accountKey('A')],
         )
         expect(Object.keys(result.manifestItems)).toEqual([
-            'accounts/A',
-            'accounts/GONE',
+            accountKey('A'),
+            accountKey('GONE'),
         ])
-        expect(result.manifestItems['accounts/GONE'].ver).toBe(5)
+        expect(result.manifestItems[accountKey('GONE')].ver).toBe(5)
     })
 })
 
@@ -462,7 +541,15 @@ describe('buildPulledAccounts', () => {
             ],
         ])
         const sec = new Map<string, never>([
-            ['F', { type: 'hdSeed', seed: 's', entropy: 'e' } as never],
+            [
+                'F',
+                {
+                    type: 'hdSeed',
+                    seed: 's',
+                    entropy: 'e',
+                    address: 'F',
+                } as never,
+            ],
         ])
         const result = buildPulledAccounts(addr as never, sec as never)
         expect(result).toHaveLength(1)
@@ -473,7 +560,15 @@ describe('buildPulledAccounts', () => {
     it('synthesizes a standalone hdSeed entry for an orphan seed secret', () => {
         const addr = new Map<string, never>()
         const sec = new Map<string, never>([
-            ['F', { type: 'hdSeed', seed: 's', entropy: 'e' } as never],
+            [
+                'F',
+                {
+                    type: 'hdSeed',
+                    seed: 's',
+                    entropy: 'e',
+                    address: 'F',
+                } as never,
+            ],
         ])
         const result = buildPulledAccounts(addr as never, sec as never)
         expect(result).toHaveLength(1)

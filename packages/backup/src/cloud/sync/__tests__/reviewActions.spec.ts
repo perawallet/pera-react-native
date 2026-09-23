@@ -13,10 +13,15 @@
 // @vitest-environment node
 import { passkeyItemKey } from '../../models/itemKeys'
 import { describe, expect, it, vi } from 'vitest'
+import { createItemKeyHasher } from '../../crypto/itemKeyHash'
 import {
     BackupItemStatus,
     BackupItemType,
+    accountItemKey,
+    contactItemKey,
     createEmptySyncState,
+    secretsItemKey,
+    type BackupItemKey,
     type SyncItemState,
     type SyncState,
 } from '../../models'
@@ -34,8 +39,21 @@ import {
     markContactForBackup,
     markPasskeyForBackup,
 } from '../reviewActions'
+import type { PulledAccount } from '../types'
 
-const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
+const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
+
+const accountKey = (address: string): BackupItemKey =>
+    accountItemKey(hashAddress(address))
+const secretsKey = (address: string): BackupItemKey =>
+    secretsItemKey(hashAddress(address))
+const contactKey = (address: string): BackupItemKey =>
+    contactItemKey(hashAddress(address))
+
+const tracked = (
+    address: string,
+    overrides: Partial<SyncItemState> = {},
+): SyncItemState => ({
     type: BackupItemType.ACCOUNT,
     knownVer: 2,
     baseVer: 2,
@@ -44,6 +62,7 @@ const tracked = (overrides: Partial<SyncItemState> = {}): SyncItemState => ({
     lastRemoteHash: 'r',
     localContentHash: null,
     localUpdatedAt: null,
+    address,
     ...overrides,
 })
 
@@ -52,7 +71,8 @@ const baseDeps = () => ({
     backupId: 'did:pera:ADDR',
     deviceId: 'dev',
     encryptionKey: new Uint8Array(32).fill(7),
-    importAccounts: vi.fn(async () => ({
+    hashAddress,
+    importAccounts: vi.fn(async (_accounts: PulledAccount[]) => ({
         imported: 1,
         skippedDuplicate: 0,
         failed: [],
@@ -68,28 +88,84 @@ const baseDeps = () => ({
     decrypt: vi.fn(),
 })
 
+/** Every fixture declares its plaintext per key: the test has to say which
+ *  record each opaque key holds. */
+const servingPlaintext = (byKey: Record<BackupItemKey, unknown>) =>
+    vi.fn((_payload: string, ctx: { key: BackupItemKey }) =>
+        JSON.stringify(byKey[ctx.key] ?? {}),
+    )
+
+const readsFor = (keys: BackupItemKey[]) =>
+    vi.fn(
+        async (
+            _n: unknown,
+            _b: unknown,
+            _d: unknown,
+            requested: BackupItemKey[],
+        ) =>
+            requested
+                .filter(key => keys.includes(key))
+                .map(key => ({ key, ver: 4, hash: 'rh', payload: 'enc' })),
+    )
+
 const withReviewed = (address: string): SyncState => {
     const state = createEmptySyncState('b')
-    state.items[`accounts/${address}`] = tracked({ pendingImport: true })
-    state.items[`secrets/${address}`] = tracked({ pendingImport: true })
+    state.items[accountKey(address)] = tracked(address, {
+        pendingImport: true,
+    })
+    state.items[secretsKey(address)] = tracked(address, {
+        pendingImport: true,
+    })
     return state
 }
+
+const algo25Address = (address: string) => ({ type: 'algo25', address })
+const algo25Secrets = (address: string) => ({
+    type: 'algo25',
+    mnemonic: 'word '.repeat(25).trim(),
+    address,
+})
+const hdWalletAddress = (address: string, seedFirstDerivedAddress: string) => ({
+    type: 'hdWallet',
+    address,
+    seedFirstDerivedAddress,
+    publicKey: 'pk',
+    account: 0,
+    change: 0,
+    keyIndex: 0,
+    derivationType: 0,
+})
+const hdSeedSecrets = (address: string) => ({
+    type: 'hdSeed',
+    seed: 'aa',
+    entropy: 'bb',
+    address,
+})
 
 describe('markAccountForBackup', () => {
     it('forgets the tombstone so reconcile re-tracks the address at version 0', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/A'] = tracked({
+        state.items[accountKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['secrets/A'] = tracked({
+        state.items[secretsKey('A')] = tracked('A', {
             status: BackupItemStatus.IGNORED,
         })
-        state.items['accounts/B'] = tracked()
+        state.items[accountKey('B')] = tracked('B')
 
         const next = markAccountForBackup(state, 'A')
-        expect(next.items['accounts/A']).toBeUndefined()
-        expect(next.items['secrets/A']).toBeUndefined()
-        expect(next.items['accounts/B']).toBeDefined()
+        expect(next.items[accountKey('A')]).toBeUndefined()
+        expect(next.items[secretsKey('A')]).toBeUndefined()
+        expect(next.items[accountKey('B')]).toBeDefined()
+    })
+
+    it('leaves an item the device has never decrypted alone', () => {
+        const state = createEmptySyncState('b')
+        state.items[accountKey('A')] = tracked('A', { address: null })
+
+        expect(
+            markAccountForBackup(state, 'A').items[accountKey('A')],
+        ).toBeDefined()
     })
 })
 
@@ -97,16 +173,14 @@ describe('importFromBackup', () => {
     it('reads the address + secrets keys, imports them and clears the review flag', async () => {
         const deps = baseDeps()
         deps.readItems.mockResolvedValue([
-            { key: 'accounts/X', ver: 4, hash: 'rh', payload: 'enc' },
-            { key: 'secrets/X', ver: 4, hash: 'sh', payload: 'enc' },
+            { key: accountKey('X'), ver: 4, hash: 'rh', payload: 'enc' },
+            { key: secretsKey('X'), ver: 4, hash: 'sh', payload: 'enc' },
         ])
-        deps.decrypt.mockImplementation((_payload, ctx) =>
-            ctx.key.startsWith('accounts/')
-                ? JSON.stringify({ type: 'algo25', address: 'X' })
-                : JSON.stringify({
-                      type: 'algo25',
-                      mnemonic: 'word '.repeat(25).trim(),
-                  }),
+        deps.decrypt.mockImplementation(
+            servingPlaintext({
+                [accountKey('X')]: algo25Address('X'),
+                [secretsKey('X')]: algo25Secrets('X'),
+            }),
         )
 
         const { state, summary } = await importFromBackup({
@@ -119,10 +193,20 @@ describe('importFromBackup', () => {
             'mainnet',
             'did:pera:ADDR',
             'dev',
-            ['accounts/X', 'secrets/X'],
+            [accountKey('X'), secretsKey('X')],
         )
+        // `secretsPayload` would be null had the payload failed to parse, which
+        // `collect` swallows.
+        const [pulled] = deps.importAccounts.mock.calls[0]
+        expect(pulled).toEqual([
+            {
+                address: 'X',
+                addressPayload: expect.objectContaining({ address: 'X' }),
+                secretsPayload: expect.objectContaining({ type: 'algo25' }),
+            },
+        ])
         expect(summary.imported).toBe(1)
-        expect(state.items['accounts/X']).toMatchObject({
+        expect(state.items[accountKey('X')]).toMatchObject({
             pendingImport: false,
             knownVer: 4,
             baseVer: 4,
@@ -133,28 +217,25 @@ describe('importFromBackup', () => {
     it('also reads the parent seed secret for an HD child', async () => {
         const deps = baseDeps()
         const state = withReviewed('CHILD')
-        state.items['secrets/SEED'] = tracked()
+        state.items[secretsKey('SEED')] = tracked('SEED')
 
         deps.readItems
             .mockResolvedValueOnce([
-                { key: 'accounts/CHILD', ver: 4, hash: 'rh', payload: 'enc' },
+                {
+                    key: accountKey('CHILD'),
+                    ver: 4,
+                    hash: 'rh',
+                    payload: 'enc',
+                },
             ])
             .mockResolvedValueOnce([
-                { key: 'secrets/SEED', ver: 2, hash: 'sh', payload: 'enc' },
+                { key: secretsKey('SEED'), ver: 2, hash: 'sh', payload: 'enc' },
             ])
-        deps.decrypt.mockImplementation((_payload, ctx) =>
-            ctx.key === 'accounts/CHILD'
-                ? JSON.stringify({
-                      type: 'hdWallet',
-                      address: 'CHILD',
-                      account: 0,
-                      change: 0,
-                      keyIndex: 1,
-                      derivationType: 9,
-                      publicKey: 'cc',
-                      seedFirstDerivedAddress: 'SEED',
-                  })
-                : JSON.stringify({ type: 'hdSeed', seed: 'aa', entropy: 'bb' }),
+        deps.decrypt.mockImplementation(
+            servingPlaintext({
+                [accountKey('CHILD')]: hdWalletAddress('CHILD', 'SEED'),
+                [secretsKey('SEED')]: hdSeedSecrets('SEED'),
+            }),
         )
 
         await importFromBackup({ state, address: 'CHILD', deps })
@@ -164,14 +245,16 @@ describe('importFromBackup', () => {
             'mainnet',
             'did:pera:ADDR',
             'dev',
-            ['secrets/SEED'],
+            [secretsKey('SEED')],
         )
         // Two entries: the child, plus the standalone hdSeed the joiner
         // synthesizes so the parent seed is persisted before the child derives.
+        // The seed entry only exists if the secrets payload parsed.
         const [pulled] = deps.importAccounts.mock.calls[0]
-        expect(
-            pulled.map((a: { address: string }) => a.address).sort(),
-        ).toEqual(['CHILD', 'SEED'])
+        expect(pulled.map(account => account.address).sort()).toEqual([
+            'CHILD',
+            'SEED',
+        ])
     })
 
     it('fails without a read when the backup no longer holds the address', async () => {
@@ -193,47 +276,32 @@ const backupHolding = (
 ): SyncState => {
     const state = createEmptySyncState('b')
     for (const address of addresses)
-        state.items[`accounts/${address}`] = tracked()
+        state.items[accountKey(address)] = tracked(address)
     for (const address of secretAddresses)
-        state.items[`secrets/${address}`] = tracked()
+        state.items[secretsKey(address)] = tracked(address)
     return state
 }
 
-/** Decrypts `accounts/A` as an HD child of `seedOf[A]`, or as algo25 when absent. */
+/** Serves `accounts/<hash(A)>` as an HD child of `seedOf[A]`, or as algo25 when
+ *  absent. */
 const hdAwareDecrypt = (seedOf: Record<string, string>) =>
-    vi.fn((_payload: string, ctx: { key: string }) => {
-        const address = ctx.key.slice(ctx.key.indexOf('/') + 1)
-        if (!ctx.key.startsWith('accounts/')) {
-            return JSON.stringify({ type: 'hdSeed', seed: 'aa', entropy: 'bb' })
-        }
-        const seed = seedOf[address]
-        return seed === undefined
-            ? JSON.stringify({ type: 'algo25', address })
-            : JSON.stringify({
-                  type: 'hdWallet',
-                  address,
-                  seedFirstDerivedAddress: seed,
-                  publicKey: 'pk',
-                  account: 0,
-                  change: 0,
-                  keyIndex: 0,
-                  derivationType: 0,
-              })
-    })
-
-const readsFor = (keys: string[]) =>
-    vi.fn(async (_n: unknown, _b: unknown, _d: unknown, requested: string[]) =>
-        requested
-            .filter(key => keys.includes(key))
-            .map(key => ({ key, ver: 4, hash: 'rh', payload: 'enc' })),
+    servingPlaintext(
+        Object.fromEntries(
+            Object.entries(seedOf).map(([address, seed]) => [
+                accountKey(address),
+                hdWalletAddress(address, seed),
+            ]),
+        ),
     )
 
 describe('deleteFromBackup', () => {
     it('deletes both keys and leaves a tombstone behind', async () => {
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/X']),
-            decrypt: hdAwareDecrypt({}),
+            readItems: readsFor([accountKey('X')]),
+            decrypt: servingPlaintext({
+                [accountKey('X')]: algo25Address('X'),
+            }),
         }
         const { state: next } = await deleteFromBackup({
             state: withReviewed('X'),
@@ -242,11 +310,11 @@ describe('deleteFromBackup', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(2)
-        expect(next.items['accounts/X']).toMatchObject({
+        expect(next.items[accountKey('X')]).toMatchObject({
             status: BackupItemStatus.IGNORED,
             pendingImport: false,
         })
-        expect(next.items['secrets/X']).toMatchObject({
+        expect(next.items[secretsKey('X')]).toMatchObject({
             status: BackupItemStatus.IGNORED,
         })
     })
@@ -254,8 +322,10 @@ describe('deleteFromBackup', () => {
     it('queues a retry instead of throwing when the request fails', async () => {
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/X']),
-            decrypt: hdAwareDecrypt({}),
+            readItems: readsFor([accountKey('X')]),
+            decrypt: servingPlaintext({
+                [accountKey('X')]: algo25Address('X'),
+            }),
             deleteItem: vi.fn(async () => {
                 throw new Error('offline')
             }),
@@ -267,15 +337,15 @@ describe('deleteFromBackup', () => {
             deps,
         })
 
-        expect(next.items['accounts/X'].pendingDelete).toBe(true)
-        expect(next.items['accounts/X'].status).toBe(BackupItemStatus.ACTIVE)
+        expect(next.items[accountKey('X')].pendingDelete).toBe(true)
+        expect(next.items[accountKey('X')].status).toBe(BackupItemStatus.ACTIVE)
     })
 
     it('keeps the shared seed when a sibling still derives from it', async () => {
         const state = backupHolding(['FIRST', 'CHILD'], ['FIRST'])
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/FIRST', 'accounts/CHILD']),
+            readItems: readsFor([accountKey('FIRST'), accountKey('CHILD')]),
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST', CHILD: 'FIRST' }),
         }
 
@@ -290,16 +360,18 @@ describe('deleteFromBackup', () => {
             'mainnet',
             'did:pera:ADDR',
             'dev',
-            'accounts/FIRST',
+            accountKey('FIRST'),
         )
-        expect(next.items['secrets/FIRST'].status).toBe(BackupItemStatus.ACTIVE)
+        expect(next.items[secretsKey('FIRST')].status).toBe(
+            BackupItemStatus.ACTIVE,
+        )
     })
 
     it('deletes the seed once no account derives from it any more', async () => {
         const state = backupHolding(['FIRST'], ['FIRST'])
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/FIRST']),
+            readItems: readsFor([accountKey('FIRST')]),
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST' }),
         }
 
@@ -310,10 +382,10 @@ describe('deleteFromBackup', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(2)
-        expect(next.items['accounts/FIRST'].status).toBe(
+        expect(next.items[accountKey('FIRST')].status).toBe(
             BackupItemStatus.IGNORED,
         )
-        expect(next.items['secrets/FIRST'].status).toBe(
+        expect(next.items[secretsKey('FIRST')].status).toBe(
             BackupItemStatus.IGNORED,
         )
     })
@@ -322,7 +394,7 @@ describe('deleteFromBackup', () => {
         const state = backupHolding(['CHILD'], ['FIRST'])
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/CHILD']),
+            readItems: readsFor([accountKey('CHILD')]),
             decrypt: hdAwareDecrypt({ CHILD: 'FIRST' }),
         }
 
@@ -336,9 +408,9 @@ describe('deleteFromBackup', () => {
             'mainnet',
             'did:pera:ADDR',
             'dev',
-            'secrets/FIRST',
+            secretsKey('FIRST'),
         )
-        expect(next.items['secrets/FIRST'].status).toBe(
+        expect(next.items[secretsKey('FIRST')].status).toBe(
             BackupItemStatus.IGNORED,
         )
     })
@@ -347,7 +419,7 @@ describe('deleteFromBackup', () => {
         const state = backupHolding(['FIRST', 'CHILD'], ['FIRST'])
         const deps = {
             ...baseDeps(),
-            readItems: readsFor(['accounts/FIRST']),
+            readItems: readsFor([accountKey('FIRST')]),
             decrypt: hdAwareDecrypt({ FIRST: 'FIRST' }),
         }
 
@@ -358,7 +430,9 @@ describe('deleteFromBackup', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
-        expect(next.items['secrets/FIRST'].status).toBe(BackupItemStatus.ACTIVE)
+        expect(next.items[secretsKey('FIRST')].status).toBe(
+            BackupItemStatus.ACTIVE,
+        )
     })
 
     it('deletes the address alone when the read fails outright', async () => {
@@ -377,42 +451,42 @@ describe('deleteFromBackup', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
-        expect(next.items['secrets/X'].status).toBe(BackupItemStatus.ACTIVE)
+        expect(next.items[secretsKey('X')].status).toBe(BackupItemStatus.ACTIVE)
     })
 })
 
 describe('keepAccountInBackup', () => {
     it('marks the live keys for review so the copy survives on the server', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/X'] = tracked({ isDirty: true })
-        state.items['secrets/X'] = tracked()
+        state.items[accountKey('X')] = tracked('X', { isDirty: true })
+        state.items[secretsKey('X')] = tracked('X')
 
         const next = keepAccountInBackup(state, 'X')
 
-        expect(next.items['accounts/X']).toMatchObject({
+        expect(next.items[accountKey('X')]).toMatchObject({
             pendingImport: true,
             isDirty: false,
             status: BackupItemStatus.ACTIVE,
         })
-        expect(next.items['secrets/X'].pendingImport).toBe(true)
+        expect(next.items[secretsKey('X')].pendingImport).toBe(true)
     })
 
     it('leaves a tombstoned key alone', () => {
         const state = createEmptySyncState('b')
-        state.items['accounts/X'] = tracked({
+        state.items[accountKey('X')] = tracked('X', {
             status: BackupItemStatus.IGNORED,
         })
 
         const next = keepAccountInBackup(state, 'X')
 
-        expect(next.items['accounts/X'].pendingImport).toBeUndefined()
+        expect(next.items[accountKey('X')].pendingImport).toBeUndefined()
     })
 })
 
 describe('contact review actions', () => {
     const contact = (overrides: Partial<SyncItemState> = {}): SyncState => {
         const state = createEmptySyncState('b')
-        state.items['contacts/A'] = tracked({
+        state.items[contactKey('A')] = tracked('A', {
             type: BackupItemType.CONTACT,
             ...overrides,
         })
@@ -424,7 +498,14 @@ describe('contact review actions', () => {
         deps.readItems.mockResolvedValue(
             payload === null
                 ? []
-                : [{ key: 'contacts/A', ver: 4, hash: 'rh', payload: 'enc' }],
+                : [
+                      {
+                          key: contactKey('A'),
+                          ver: 4,
+                          hash: 'rh',
+                          payload: 'enc',
+                      },
+                  ],
         )
         deps.decrypt.mockReturnValue(JSON.stringify(payload ?? {}))
         return deps
@@ -433,7 +514,7 @@ describe('contact review actions', () => {
     it('markContactForBackup forgets the tracked item so it re-uploads as new', () => {
         const next = markContactForBackup(contact({ knownVer: 3 }), 'A')
 
-        expect(next.items['contacts/A']).toBeUndefined()
+        expect(next.items[contactKey('A')]).toBeUndefined()
     })
 
     it('keepContactInBackup holds it for review with its name', () => {
@@ -443,7 +524,7 @@ describe('contact review actions', () => {
             'Alice',
         )
 
-        expect(next.items['contacts/A']).toMatchObject({
+        expect(next.items[contactKey('A')]).toMatchObject({
             pendingImport: true,
             isDirty: false,
             pendingDelete: false,
@@ -470,7 +551,7 @@ describe('contact review actions', () => {
             { address: 'A', name: 'Alice' },
         ])
         expect(summary.imported).toBe(1)
-        expect(next.items['contacts/A']).toMatchObject({
+        expect(next.items[contactKey('A')]).toMatchObject({
             pendingImport: false,
             label: 'Alice',
             knownVer: 4,
@@ -501,8 +582,13 @@ describe('contact review actions', () => {
         })
 
         expect(deps.deleteItem).toHaveBeenCalledTimes(1)
-        expect(deps.deleteItem.mock.calls[0][3]).toBe('contacts/A')
-        expect(next.items['contacts/A']).toMatchObject({
+        expect(deps.deleteItem).toHaveBeenCalledWith(
+            'mainnet',
+            'did:pera:ADDR',
+            'dev',
+            contactKey('A'),
+        )
+        expect(next.items[contactKey('A')]).toMatchObject({
             status: BackupItemStatus.IGNORED,
             pendingDelete: false,
         })
@@ -521,12 +607,12 @@ describe('contact review actions', () => {
     })
 })
 
-const PASSKEY_ONE_KEY = passkeyItemKey('one')
+const PASSKEY_ONE_KEY = passkeyItemKey(hashAddress('one'))
 
 describe('passkey review actions', () => {
     const passkey = (overrides: Partial<SyncItemState> = {}): SyncState => {
         const state = createEmptySyncState('b')
-        state.items[PASSKEY_ONE_KEY] = tracked({
+        state.items[PASSKEY_ONE_KEY] = tracked('one', {
             type: BackupItemType.PASSKEY,
             ...overrides,
         })

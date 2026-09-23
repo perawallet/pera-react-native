@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-import { createCard } from '../endpoints'
+import { createCard, fetchFundingAddressLink } from '../endpoints'
 import {
     CardAccountLinkedElsewhereError,
     CardCreateInProgressError,
@@ -256,5 +256,83 @@ describe('createCard error mapping', () => {
         )
 
         await expect(createCard(params)).rejects.toThrow('unprocessable')
+    })
+})
+
+describe('fetchFundingAddressLink', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('GETs /api/v3/baanx/card-address on the proxy route with both query params', async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'unlinked',
+                cardAddress: null,
+            },
+        })
+
+        const result = await fetchFundingAddressLink({
+            network: 'testnet',
+            address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
+            integrityToken: 'TOKEN',
+        })
+
+        expect(result).toEqual({ state: 'unlinked', cardAddress: null })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                route: 'proxy',
+                method: 'GET',
+                path: '/api/v3/baanx/card-address',
+                params: {
+                    address: 'FUNDING_ADDR',
+                    baanx_user_id: 'baanx-user-1',
+                },
+            }),
+        )
+        expect(request.mock.calls[0][0].headers).toMatchObject({
+            'x-app-integrity-token': 'TOKEN',
+        })
+    })
+
+    // The resumable case: linked to this user, but cardCreate never finished.
+    it("returns the caller's link with no card when creation never finished", async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'linked_to_caller',
+                cardAddress: null,
+            },
+        })
+
+        await expect(
+            fetchFundingAddressLink({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                baanxUserId: 'baanx-user-1',
+                integrityToken: 'TOKEN',
+            }),
+        ).resolves.toEqual({ state: 'linked_to_caller', cardAddress: null })
+    })
+
+    it('rejects a response whose linkState is not one we model', async () => {
+        request.mockResolvedValue({
+            data: {
+                address: 'FUNDING_ADDR',
+                linkState: 'something_new',
+                cardAddress: null,
+            },
+        })
+
+        await expect(
+            fetchFundingAddressLink({
+                network: 'testnet',
+                address: 'FUNDING_ADDR',
+                baanxUserId: 'baanx-user-1',
+                integrityToken: 'TOKEN',
+            }),
+        ).rejects.toThrow()
     })
 })

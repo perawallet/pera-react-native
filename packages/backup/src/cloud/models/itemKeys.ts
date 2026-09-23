@@ -10,76 +10,47 @@
  limitations under the License
  */
 
-import {
-    decodeFromBase64,
-    encodeToBase64,
-    fromUrlSafeBase64,
-    toUrlSafeBase64,
-} from '@perawallet/wallet-core-shared'
+import type { ItemKeyHash } from '../crypto/itemKeyHash'
 import type { BackupItemKey } from './types'
 
 export const BACKUP_ACCOUNTS_KEY_PREFIX = 'accounts/'
 export const BACKUP_SECRETS_KEY_PREFIX = 'secrets/'
 export const BACKUP_CONTACTS_KEY_PREFIX = 'contacts/'
 
-export const accountItemKey = (address: string): BackupItemKey =>
-    `${BACKUP_ACCOUNTS_KEY_PREFIX}${address}`
+/** The hash, not the address: the server must never learn which wallets a
+ *  backup holds, so the prefix is all a key still reveals. */
+export const accountItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_ACCOUNTS_KEY_PREFIX}${hash}`
 
-export const secretsItemKey = (address: string): BackupItemKey =>
-    `${BACKUP_SECRETS_KEY_PREFIX}${address}`
+export const secretsItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_SECRETS_KEY_PREFIX}${hash}`
 
 /** An address record and its key material are both BackupItemType.ACCOUNT on
  *  the wire, so only the key prefix tells them apart. */
 export const isAccountItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX)
 
-/** Address an `accounts/` key names, or null for any other item. */
-export const accountAddressFromItemKey = (key: BackupItemKey): string | null =>
-    isAccountItemKey(key) ? key.slice(BACKUP_ACCOUNTS_KEY_PREFIX.length) : null
-
-export const contactItemKey = (address: string): BackupItemKey =>
-    `${BACKUP_CONTACTS_KEY_PREFIX}${address}`
+export const contactItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_CONTACTS_KEY_PREFIX}${hash}`
 
 export const isContactItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)
 
-/** Address a `contacts/` key names, or null for any other item. */
-export const contactAddressFromItemKey = (key: BackupItemKey): string | null =>
-    isContactItemKey(key) ? key.slice(BACKUP_CONTACTS_KEY_PREFIX.length) : null
-
 export const BACKUP_PASSKEYS_KEY_PREFIX = 'passkeys/'
 
-/** The server accepts only `[A-Za-z0-9_\-.]` in each `/`-separated segment of
- *  an item key, and a credential id is standard base64: its `/` would split
- *  the key into extra segments, and `+`/`=` fail the pattern outright, which
- *  the real backend answers with `422 INVALID_ITEM_KEY`.
- *
- *  The id's bytes are therefore base64url-encoded rather than its characters
- *  remapped: remapping only round-trips an id that is already canonical
- *  base64, and a credential id is whatever the writer chose to key its native
- *  record on. The payload keeps the raw id, because that is what the native
- *  record is stored under. */
-export const passkeyItemKey = (credentialId: string): BackupItemKey =>
-    `${BACKUP_PASSKEYS_KEY_PREFIX}${toUrlSafeBase64(
-        encodeToBase64(new TextEncoder().encode(credentialId)),
-    )}`
+/** Keyed by the hash of the credential id for the same reason an account is
+ *  keyed by the hash of its address: the server learns the item type from the
+ *  prefix and nothing else. */
+export const passkeyItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_PASSKEYS_KEY_PREFIX}${hash}`
 
 export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
 
-/** Credential id a `passkeys/` key names, or null for any other item. Decodes
- *  back to the raw id every other layer keys on. */
-export const passkeyIdFromItemKey = (key: BackupItemKey): string | null => {
-    if (!isPasskeyItemKey(key)) return null
-    const encoded = key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length)
-    try {
-        return new TextDecoder().decode(
-            decodeFromBase64(fromUrlSafeBase64(encoded)),
-        )
-    } catch {
-        // A key this device did not write. Treating it as "not a passkey key"
-        // keeps a foreign item out of the review buckets rather than throwing
-        // in the middle of a sync.
-        return null
-    }
-}
+const HASHED_SEGMENT = /^[0-9a-f]{64}$/
+
+/** An item written before keys were hashed. Such a backup is re-created rather
+ *  than migrated: a re-key would leave the old addresses in the server's
+ *  changelog anyway. */
+export const isLegacyItemKey = (key: BackupItemKey): boolean =>
+    !HASHED_SEGMENT.test(key.slice(key.indexOf('/') + 1))

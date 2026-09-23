@@ -49,6 +49,7 @@ export const ConnectionApprovalView = ({
         handleAccountPress,
         handleConnect,
         handleCancel,
+        handlePressUrl,
     } = useConnectionApprovalView(proposal)
 
     const renderAccountRow = useCallback(
@@ -75,6 +76,7 @@ export const ConnectionApprovalView = ({
                         peer={proposal.peer}
                         networks={proposal.requested.networks}
                         methods={proposal.requested.methods}
+                        onPressUrl={handlePressUrl}
                     />
                 }
                 showsVerticalScrollIndicator={false}

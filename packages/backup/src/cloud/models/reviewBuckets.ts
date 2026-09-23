@@ -11,13 +11,11 @@
  */
 
 import {
-    accountAddressFromItemKey,
-    accountItemKey,
-    contactAddressFromItemKey,
-    contactItemKey,
-    passkeyIdFromItemKey,
-    passkeyItemKey,
+    isAccountItemKey,
+    isContactItemKey,
+    isPasskeyItemKey,
 } from './itemKeys'
+import type { BackupAccountType } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
 
@@ -29,7 +27,10 @@ type ReviewBuckets<TAvailable> = {
     availableFromBackup: TAvailable[]
 }
 
-export type BackupAccountReview = ReviewBuckets<string>
+export type BackupAccountReview = ReviewBuckets<{
+    address: string
+    type: BackupAccountType | null
+}>
 
 export type BackupContactReview = ReviewBuckets<{
     address: string
@@ -53,15 +54,17 @@ export const isLiveInBackup = (item: SyncItemState): boolean =>
 const deriveReview = <TAvailable>(
     syncState: SyncState | null,
     localAddresses: readonly string[],
-    addressFromKey: (key: string) => string | null,
+    isOwnKey: (key: BackupItemKey) => boolean,
     toAvailable: (address: string, item: SyncItemState) => TAvailable,
 ): ReviewBuckets<TAvailable> => {
     const backedUp = new Set<string>()
     const held: [string, SyncItemState][] = []
 
     for (const [key, item] of Object.entries(syncState?.items ?? {})) {
-        const address = addressFromKey(key)
-        if (address === null || !isLiveInBackup(item)) continue
+        // Skipped rather than guessed: a wrong address puts a stranger's row
+        // in a list the user acts on.
+        const address = item.address
+        if (!isOwnKey(key) || address == null || !isLiveInBackup(item)) continue
 
         if (item.pendingImport === true) held.push([address, item])
         else backedUp.add(address)
@@ -89,8 +92,11 @@ export const deriveBackupAccountReview = (
     deriveReview(
         syncState,
         localAddresses,
-        accountAddressFromItemKey,
-        address => address,
+        isAccountItemKey,
+        (address, item) => ({
+            address,
+            type: item.accountType ?? null,
+        }),
     )
 
 /** `name` comes from the cached label rather than the payload: a contact only
@@ -103,13 +109,13 @@ export const deriveBackupContactReview = (
     deriveReview(
         syncState,
         localAddresses,
-        contactAddressFromItemKey,
+        isContactItemKey,
         (address, item) => ({ address, name: item.label ?? '' }),
     )
 
 /** `label` comes from the cached display name for the same reason a contact's
  *  does: a credential only the backup holds would otherwise render as a bare
- *  base64 credential id. */
+ *  credential id. */
 export const deriveBackupPasskeyReview = (
     syncState: SyncState | null,
     localCredentialIds: readonly string[],
@@ -117,17 +123,22 @@ export const deriveBackupPasskeyReview = (
     deriveReview(
         syncState,
         localCredentialIds,
-        passkeyIdFromItemKey,
+        isPasskeyItemKey,
         (credentialId, item) => ({ credentialId, label: item.label ?? '' }),
     )
 
-const isKeyBackedUp = (
+const isAddressLiveUnder = (
     syncState: SyncState | null,
-    key: BackupItemKey,
-): boolean => {
-    const item = syncState?.items[key]
-    return item != null && isLiveInBackup(item) && item.pendingImport !== true
-}
+    address: string,
+    isOwnKey: (key: BackupItemKey) => boolean,
+): boolean =>
+    Object.entries(syncState?.items ?? {}).some(
+        ([key, item]) =>
+            item.address === address &&
+            isOwnKey(key) &&
+            isLiveInBackup(item) &&
+            item.pendingImport !== true,
+    )
 
 /** For callers that already hold the account: `deriveBackupAccountReview`
  *  intersects with the wallet's addresses, which such a caller satisfies by
@@ -135,17 +146,19 @@ const isKeyBackedUp = (
 export const isAddressBackedUp = (
     syncState: SyncState | null,
     address: string,
-): boolean => isKeyBackedUp(syncState, accountItemKey(address))
+): boolean => isAddressLiveUnder(syncState, address, isAccountItemKey)
 
 export const isContactBackedUp = (
     syncState: SyncState | null,
     address: string,
-): boolean => isKeyBackedUp(syncState, contactItemKey(address))
+): boolean => isAddressLiveUnder(syncState, address, isContactItemKey)
 
+/** The credential id rides in `item.address`, the same local-only field an
+ *  account's address uses: the key itself is a hash and cannot be read back. */
 export const isPasskeyBackedUp = (
     syncState: SyncState | null,
     credentialId: string,
-): boolean => isKeyBackedUp(syncState, passkeyItemKey(credentialId))
+): boolean => isAddressLiveUnder(syncState, credentialId, isPasskeyItemKey)
 
 export const areKeysDeletedFromBackup = (
     syncState: SyncState | null,

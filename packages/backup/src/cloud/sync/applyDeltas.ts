@@ -44,9 +44,11 @@ export type ApplyDeltasDeps = CollectPayloadsDeps & {
     ) => Promise<FetchedItem[]>
 }
 
-const isAccountFamilyKey = (key: BackupItemKey): boolean =>
-    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) ||
+const isSecretsKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_SECRETS_KEY_PREFIX)
+
+const isAccountFamilyKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_ACCOUNTS_KEY_PREFIX) || isSecretsKey(key)
 
 export const applyDeltas = async ({
     state,
@@ -84,10 +86,10 @@ export const applyDeltas = async ({
             }
             continue
         }
-        const isContactKey = isContactItemKey(d.key)
-        const isPasskeyKey = isPasskeyItemKey(d.key)
         const isKnownKey =
-            isAccountFamilyKey(d.key) || isContactKey || isPasskeyKey
+            isAccountFamilyKey(d.key) ||
+            isContactItemKey(d.key) ||
+            isPasskeyItemKey(d.key)
         // The user deleted this here and another device has since backed it up
         // again. Re-importing would undo that deletion behind their back, so
         // hold it for review instead.
@@ -117,9 +119,10 @@ export const applyDeltas = async ({
         }
         if (d.status !== BackupItemStatus.ACTIVE) continue
         if (!isKnownKey) continue
-        // A held account is never downloaded; a held contact or passkey is,
-        // because the cached label is what the review row renders.
-        if (pendingImport && !isContactKey && !isPasskeyKey) continue
+        // A held item's own record is still downloaded, because its cached
+        // address is what puts the row on the review screen. Only the secret
+        // stays untouched until the user adds the account back.
+        if (pendingImport && isSecretsKey(d.key)) continue
         const hashChanged =
             !existing ||
             existing.lastRemoteHash !== d.hash ||

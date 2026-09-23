@@ -17,10 +17,13 @@ import {
     type NumpadKey,
 } from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'
 import { PIN_LENGTH } from '@perawallet/wallet-core-security'
 import { useCallback, useEffect } from 'react'
+
+const SCREEN_CAPTURE_TAG = 'pin-entry'
 
 export type PinEntryProps = {
     title: string
@@ -39,6 +42,7 @@ export const PinEntry = ({
     hasError = false,
     onErrorAnimationComplete,
 }: PinEntryProps) => {
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG)
     const styles = useStyles()
 
     const { pin, handleKeyPress, clearPin } = usePinEntry({

@@ -43,6 +43,18 @@ import {
     parseWalletConnectUri,
 } from '@perawallet/wallet-core-walletconnect'
 
+// A present-but-invalid account is corruption (a truncated QR) or injection, so
+// the whole link is rejected. Checked on the final result: that also covers the
+// legacy path-form address, and a per-parser null would fall through to HOME.
+const hasOnlyValidAddresses = (parsed: AnyParsedDeeplink): boolean => {
+    const { address, receiverAddress, senderAddress } = parsed as Partial<
+        Record<'address' | 'receiverAddress' | 'senderAddress', string>
+    >
+    return [address, receiverAddress, senderAddress].every(
+        value => !value || isValidAlgorandAddress(value),
+    )
+}
+
 const parseWalletConnectDeeplink = (
     url: string,
 ): Nullable<WalletConnectDeeplink> => {
@@ -159,7 +171,7 @@ const parseLegacyMnemonicJson = (
     }
 }
 
-export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
+const parseUncheckedDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (!url || typeof url !== 'string') return null
 
     if (isValidAlgorandAddress(url)) {
@@ -229,4 +241,9 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     }
 
     return null
+}
+
+export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
+    const parsed = parseUncheckedDeeplink(url)
+    return parsed && hasOnlyValidAddresses(parsed) ? parsed : null
 }

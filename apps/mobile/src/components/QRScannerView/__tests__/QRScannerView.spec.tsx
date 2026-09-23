@@ -14,6 +14,10 @@ import React from 'react'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useCameraDevice } from 'react-native-vision-camera'
+import {
+    preventScreenCaptureAsync,
+    allowScreenCaptureAsync,
+} from 'expo-screen-capture'
 import { QRScannerView } from '../QRScannerView'
 import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 
@@ -66,7 +70,7 @@ vi.mock('@hooks/useDeepLink', () => ({
 const CUSTOM_TITLE = 'Scan WalletConnect QR'
 
 describe('QRScannerView', () => {
-    it('shows the camera overlay with the title when a device is available', () => {
+    it('shows the camera overlay with the title when a device is available', async () => {
         vi.mocked(useCameraDevice).mockReturnValue({
             id: 'mock-device',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub
@@ -80,7 +84,7 @@ describe('QRScannerView', () => {
                 onSuccess={vi.fn()}
             />,
         )
-        expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+        expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
     })
 
     it('shows the empty state (not the camera overlay) when no device is available', () => {
@@ -120,10 +124,10 @@ describe('QRScannerView', () => {
             } as any)
         })
 
-        it('tears down the scanner while the lock overlay is up', () => {
+        it('tears down the scanner while the lock overlay is up', async () => {
             const onClose = vi.fn()
             const { rerender } = render(renderWithLockOverlay(false, onClose))
-            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+            expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
 
             rerender(renderWithLockOverlay(true, onClose))
 
@@ -133,14 +137,70 @@ describe('QRScannerView', () => {
             expect(onClose).not.toHaveBeenCalled()
         })
 
-        it('restores the scanner once the lock overlay clears', () => {
+        it('restores the scanner once the lock overlay clears', async () => {
             const onClose = vi.fn()
             const { rerender } = render(renderWithLockOverlay(false, onClose))
             rerender(renderWithLockOverlay(true, onClose))
 
             rerender(renderWithLockOverlay(false, onClose))
 
-            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+            expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
+        })
+    })
+
+    describe('screen capture', () => {
+        const renderScanner = (isVisible: boolean) => (
+            <QRScannerView
+                isVisible={isVisible}
+                animationType='none'
+                title={CUSTOM_TITLE}
+                onClose={vi.fn()}
+                onSuccess={vi.fn()}
+            />
+        )
+
+        beforeEach(() => {
+            vi.mocked(useCameraDevice).mockReturnValue({
+                id: 'mock-device',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub
+            } as any)
+            vi.mocked(preventScreenCaptureAsync).mockClear()
+            vi.mocked(allowScreenCaptureAsync).mockClear()
+        })
+
+        it('holds the scanner back until screen capture is blocked', async () => {
+            render(renderScanner(true))
+
+            expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1)
+            expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+
+            expect(await screen.findByText(CUSTOM_TITLE)).toBeTruthy()
+        })
+
+        it('re-allows capture when the scanner closes', async () => {
+            const { rerender } = render(renderScanner(true))
+            await screen.findByText(CUSTOM_TITLE)
+
+            rerender(renderScanner(false))
+
+            expect(allowScreenCaptureAsync).toHaveBeenCalledTimes(1)
+        })
+
+        it('re-allows capture while the lock overlay is up', async () => {
+            const { rerender } = render(
+                <LockOverlayProvider value={false}>
+                    {renderScanner(true)}
+                </LockOverlayProvider>,
+            )
+            await screen.findByText(CUSTOM_TITLE)
+
+            rerender(
+                <LockOverlayProvider value={true}>
+                    {renderScanner(true)}
+                </LockOverlayProvider>,
+            )
+
+            expect(allowScreenCaptureAsync).toHaveBeenCalledTimes(1)
         })
     })
 

@@ -37,7 +37,6 @@ import {
     deleteBackupKeys,
     getBackupSyncManager,
     initializeBackupSyncManager,
-    passkeyItemKey,
     useBackupSyncStateStore,
     useCloudBackupContactImport,
     useCloudBackupImport,
@@ -48,7 +47,11 @@ import {
     useResolveMnemonicForBackup,
     useResolveSeedEntropyForBackup,
 } from '@perawallet/wallet-core-backup'
-import { buildSyncHandlers } from '@perawallet/wallet-core-backup/test-handlers'
+import {
+    buildSyncHandlers,
+    createItemKeyHasher,
+    passkeyItemKey,
+} from '@perawallet/wallet-core-backup/test-handlers'
 import {
     nativePasskeyEntryExists,
     openNativeProviderRecord,
@@ -154,14 +157,18 @@ const startRealSyncManager = () => {
     })
 }
 
+/** Returns the item-key hasher, because every key a test asserts on is an
+ *  HMAC of the credential id under K_item and cannot be rebuilt without it. */
 const configureBackup = async (keys: {
     backupId: string
     encryptionKey: Uint8Array
     authSecretKey: Uint8Array
+    itemKey: Uint8Array
 }) => {
     await persistBackupKeys({
         encryptionKey: keys.encryptionKey,
         authSecretKey: keys.authSecretKey,
+        itemKey: keys.itemKey,
         mnemonic: BACKUP_MNEMONIC,
     })
     useCloudBackupStore.getState().setConfigured({
@@ -169,6 +176,7 @@ const configureBackup = async (keys: {
         salt: BACKUP_SALT,
         deviceId: DEVICE_ID,
     })
+    return createItemKeyHasher(keys.itemKey)
 }
 
 /** Everything the restore has to put back; the fake backend keeps what the
@@ -219,7 +227,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             })
             const { seedKeyId } = await seedHDWalletAccounts()
             const passkey = await seedPasskey({ seedKeyId })
-            await configureBackup(keys)
+            const hashAddress = await configureBackup(keys)
 
             const { handlers, getItem } = buildSyncHandlers({
                 backupId: keys.backupId,
@@ -227,7 +235,9 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            expect(getItem(passkeyItemKey(passkey.credentialId))).toBeDefined()
+            expect(
+                getItem(passkeyItemKey(hashAddress(passkey.credentialId))),
+            ).toBeDefined()
             // Precondition for the post-restore assertion below: the pushing
             // device holds the credential in the keystore, never as a native
             // provider record, so only the restore can put one there.
@@ -269,7 +279,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
                 seedKeyId: secondSeedKeyId,
                 origin: 'second.example',
             })
-            await configureBackup(keys)
+            const hashAddress = await configureBackup(keys)
 
             const { handlers, getItem } = buildSyncHandlers({
                 backupId: keys.backupId,
@@ -277,7 +287,9 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            expect(getItem(passkeyItemKey(passkey.credentialId))).toBeDefined()
+            expect(
+                getItem(passkeyItemKey(hashAddress(passkey.credentialId))),
+            ).toBeDefined()
 
             await wipeDevice()
             renderCloudBackupFlow()
@@ -310,7 +322,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             })
             const { seedKeyId } = await seedHDWalletAccounts()
             const passkey = await seedPasskey({ seedKeyId })
-            await configureBackup(keys)
+            const hashAddress = await configureBackup(keys)
 
             const { handlers, getItem } = buildSyncHandlers({
                 backupId: keys.backupId,
@@ -318,7 +330,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const itemKey = passkeyItemKey(passkey.credentialId)
+            const itemKey = passkeyItemKey(hashAddress(passkey.credentialId))
             expect(getItem(itemKey)?.status).toBe('ACTIVE')
 
             const outcome =
@@ -341,14 +353,14 @@ describe('Flow: Cloud backup → Passkeys', () => {
             })
             const { seedKeyId } = await seedHDWalletAccounts()
             const passkey = await seedPasskey({ seedKeyId })
-            await configureBackup(keys)
+            const hashAddress = await configureBackup(keys)
 
             const { handlers, getItem, pushFromOtherDevice } =
                 buildSyncHandlers({ backupId: keys.backupId })
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const itemKey = passkeyItemKey(passkey.credentialId)
+            const itemKey = passkeyItemKey(hashAddress(passkey.credentialId))
             const ctx = {
                 encryptionKey: keys.encryptionKey,
                 backupId: keys.backupId,
@@ -408,7 +420,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
                 isAdditionalWallet: true,
             })
             const backedUp = await seedPasskey({ seedKeyId })
-            await configureBackup(keys)
+            const hashAddress = await configureBackup(keys)
 
             const { handlers, getItem, pushFromOtherDevice } =
                 buildSyncHandlers({
@@ -417,7 +429,7 @@ describe('Flow: Cloud backup → Passkeys', () => {
             server.use(...handlers)
             await startRealSyncManager().syncNow()
 
-            const orphanKey = passkeyItemKey(orphan.credentialId)
+            const orphanKey = passkeyItemKey(hashAddress(orphan.credentialId))
             pushFromOtherDevice(
                 orphanKey,
                 encryptItemPayload(

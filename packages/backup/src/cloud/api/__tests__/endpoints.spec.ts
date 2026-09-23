@@ -129,7 +129,6 @@ describe('fetchItem', () => {
             method: 'GET',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
-            urlPathSuffix: '/accounts/ADDR',
             deviceId: 'device-1',
             responseType: 'text',
         })
@@ -163,7 +162,6 @@ describe('upsertItem', () => {
             method: 'PUT',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
-            urlPathSuffix: '/accounts/ADDR',
             deviceId: 'device-1',
             data: request,
         })
@@ -226,32 +224,9 @@ describe('deleteItem', () => {
             method: 'DELETE',
             backupId: 'did:pera:ADDR',
             pathSuffix: '/accounts/ADDR',
-            urlPathSuffix: '/accounts/ADDR',
             deviceId: 'device-1',
         })
         expect(result).toEqual({ seq: 9 })
-    })
-
-    // A passkey's credential id is standard base64, so it carries `/`, `+` and
-    // `=`. Unencoded they add path segments the `<prefix>/<id>` route cannot
-    // match; the signature still covers the raw key, which the server decodes
-    // its own path back to.
-    it('percent-encodes only the id half of a key that is not an address', async () => {
-        signedBackupRequestMock.mockResolvedValue({ seq: 9 })
-
-        await deleteItem(
-            'mainnet',
-            'did:pera:ADDR',
-            'device-1',
-            'passkeys/ab+c/d=',
-        )
-
-        expect(signedBackupRequestMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                pathSuffix: '/passkeys/ab+c/d=',
-                urlPathSuffix: '/passkeys/ab%2Bc%2Fd%3D',
-            }),
-        )
     })
 })
 

@@ -57,6 +57,32 @@ describe('config/main', () => {
         },
     )
 
+    // Production needs backend overrides: the committed staging defaults
+    // would otherwise (correctly) trip the production staging-URL guard.
+    test.each([
+        ['production', 'https://integrity.perawallet.app'],
+        ['staging', 'https://integrity-staging.perawallet.app'],
+        ['development', 'https://integrity-staging.perawallet.app'],
+    ] as const)(
+        'uses the expected integrity check origin for %s builds',
+        (appEnvironment, expectedOrigin) => {
+            const overrides =
+                appEnvironment === 'production'
+                    ? {
+                          appEnvironment,
+                          mainnetBackendUrl:
+                              'https://mainnet.api.perawallet.app',
+                          testnetBackendUrl:
+                              'https://testnet.api.perawallet.app',
+                          backupBaseUrl: 'https://backup.perawallet.app/',
+                      }
+                    : { appEnvironment }
+            expect(getConfig(overrides).integrityCheckOrigin).toBe(
+                expectedOrigin,
+            )
+        },
+    )
+
     test('does not expose obsolete staking or onramp URLs', () => {
         expect('stakingBaseUrl' in config).toBe(false)
         expect('onrampBaseUrl' in config).toBe(false)
@@ -64,6 +90,9 @@ describe('config/main', () => {
 
     test('does not map obsolete web-feature URL environment variables', () => {
         expect(overrideEnvironmentMap).not.toHaveProperty('discoverBaseUrl')
+        expect(overrideEnvironmentMap).not.toHaveProperty(
+            'integrityCheckOrigin',
+        )
         expect(overrideEnvironmentMap).not.toHaveProperty('stakingBaseUrl')
         expect(overrideEnvironmentMap).not.toHaveProperty('onrampBaseUrl')
     })
@@ -83,6 +112,19 @@ describe('config/main', () => {
 
     test('maps reownProjectId onto REOWN_PROJECT_ID', () => {
         expect(overrideEnvironmentMap.reownProjectId).toBe('REOWN_PROJECT_ID')
+    })
+
+    // Empty is the committed default so open-source builds parse; the card
+    // package fails closed on it, so only a Bitrise-injected value enables
+    // AutoDraw.
+    test('defaults cardAutoDrawTemplateHash to the empty string', () => {
+        expect(getConfig({}).cardAutoDrawTemplateHash).toBe('')
+    })
+
+    test('maps cardAutoDrawTemplateHash onto CARD_AUTODRAW_TEMPLATE_HASH', () => {
+        expect(overrideEnvironmentMap.cardAutoDrawTemplateHash).toBe(
+            'CARD_AUTODRAW_TEMPLATE_HASH',
+        )
     })
 
     test('exposes bounded-timeout defaults in milliseconds', () => {
