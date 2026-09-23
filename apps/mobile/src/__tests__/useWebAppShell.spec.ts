@@ -361,7 +361,7 @@ describe('useWebAppShell', () => {
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
-    it('re-arms auto-lock on every unlock but hydrates the keystore once', async () => {
+    it('hydrates the keystore once across lock/unlock cycles', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -369,29 +369,43 @@ describe('useWebAppShell', () => {
 
         const { result, rerender } = renderHook(() => useWebAppShell())
 
-        // Wait for initial unlock to settle
         await waitFor(() => expect(result.current.shellState).toBe('main'))
-
-        // First unlock: both hydrate and arm
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
-        expect(mocks.armAutoLock).toHaveBeenCalledOnce()
 
-        // Lock: transition isUnlocked to false
         mocks.isUnlocked = false
         act(() => {
             rerender()
         })
-
-        // Unlock again: re-arm but do NOT re-hydrate/re-bootstrap
         mocks.isUnlocked = true
         act(() => {
             rerender()
         })
 
-        await waitFor(() => expect(mocks.armAutoLock).toHaveBeenCalledTimes(2))
-
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
+
+    it.each<Surface>(['approval', 'popup', 'expanded'])(
+        'never re-arms auto-lock when the %s surface opens while unlocked',
+        async surface => {
+            // A page can open approval surfaces at will; arming on mount would
+            // let it hold the vault unlocked. Only user input may re-arm.
+            mocks.surface = surface
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+            mocks.getCurrentApproval.mockResolvedValue({
+                requestId: 'r1',
+                kind: 'sign',
+            })
+
+            const { result } = renderHook(() => useWebAppShell())
+
+            await waitFor(() =>
+                expect(result.current.shellState).not.toBe('resolving'),
+            )
+            expect(mocks.armAutoLock).not.toHaveBeenCalled()
+        },
+    )
 
     it('bootstraps in order: keystore ready before initializeDatabase; seedAlgoAsset receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
         mocks.surface = 'popup'

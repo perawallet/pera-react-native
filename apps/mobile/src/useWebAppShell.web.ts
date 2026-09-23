@@ -15,10 +15,7 @@ import {
     getCurrentApproval,
     getSurface,
 } from '@perawallet/wallet-extension-platform-chrome'
-import {
-    armAutoLock,
-    requireSessionMasterKey,
-} from '@perawallet/wallet-extension-keystore-chrome'
+import { requireSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import {
@@ -152,11 +149,6 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             logger.error('Web shell bootstrap failed', { error })
             setHasBootstrapError(true)
         })
-    }, [isUnlocked])
-
-    useEffect(() => {
-        if (!isUnlocked) return
-        void armAutoLock() // sliding window: surface open re-arms
     }, [isUnlocked])
 
     // Sync runs while a UI context is open AND the wallet is usable

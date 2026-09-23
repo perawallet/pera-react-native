@@ -39,9 +39,11 @@ export const setAutoLockMinutes = async (minutes: number): Promise<void> => {
 }
 
 /**
- * (Re)schedules the auto-lock alarm. Called on vault create/unlock and on
- * every surface open while unlocked — a sliding inactivity window. The alarm
- * outlives UI contexts; the background service worker handles it firing.
+ * (Re)schedules the auto-lock alarm. Called on vault create/unlock and on user
+ * activity in an extension page — never on surface open, because a web page
+ * can open the approval surfaces at will and would hold the vault unlocked.
+ * The alarm outlives UI contexts; the background service worker handles it
+ * firing.
  * With no argument, reads the persisted user preference.
  */
 export const armAutoLock = async (minutes?: number): Promise<void> => {
