@@ -215,6 +215,7 @@ const makeDeps = () => ({
         skipped: [],
         failed: [],
     })),
+    subscribeToKeystore: vi.fn(() => () => {}),
 })
 
 const setAccounts = (accounts: { address: string; name?: string }[]) => {

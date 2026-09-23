@@ -25,6 +25,7 @@ import {
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -61,6 +62,11 @@ const runManagerAction = (action: 'start' | 'stop') => {
 
 const startBackupSync = () => runManagerAction('start')
 const stopBackupSync = () => runManagerAction('stop')
+
+const subscribeToKeystore = (listener: () => void): (() => void) => {
+    const sub = getKeystoreStore().subscribe(listener)
+    return () => sub.unsubscribe()
+}
 
 /** Holds the newest callback identities behind a stable ref, so the manager can
  *  call them without being re-created when one of them changes. */
@@ -116,6 +122,7 @@ const useBackupSyncManagerSetup = () => {
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
             listPasskeys: unwiredPasskeyListFn,
             importPasskeys: unwiredPasskeyImportFn,
+            subscribeToKeystore,
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

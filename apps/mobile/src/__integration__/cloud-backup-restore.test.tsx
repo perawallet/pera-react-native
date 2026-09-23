@@ -270,6 +270,7 @@ describe('Flow: Cloud backup → Restore', () => {
                     skipped: [],
                     failed: [],
                 }),
+                subscribeToKeystore: () => () => {},
             }).syncNow()
 
             expect(getItem(`accounts/${first.address}`)).toBeDefined()

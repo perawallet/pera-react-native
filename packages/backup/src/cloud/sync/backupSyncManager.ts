@@ -36,6 +36,7 @@ import {
     createEmptySyncState,
     isAddressBackedUp,
     isContactBackedUp,
+    isPasskeyBackedUp,
     type BackupItemKey,
     type SyncState,
 } from '../models'
@@ -43,17 +44,22 @@ import { buildBackupWebSocketToken } from '../crypto/buildBackupWebSocketToken'
 import {
     deleteContactFromBackup,
     deleteFromBackup,
+    deletePasskeyFromBackup,
     importContactFromBackup,
     importFromBackup,
+    importPasskeyFromBackup,
     keepAccountInBackup,
     keepContactInBackup,
+    keepPasskeyInBackup,
     markAccountForBackup,
     markContactForBackup,
+    markPasskeyForBackup,
     reviewActionDeps,
     type BackupDeleteResult,
 } from './reviewActions'
 import { accountFingerprint } from './accountFingerprint'
 import { contactsFingerprint } from './contactsFingerprint'
+import { passkeysFingerprint } from './passkeysFingerprint'
 import { syncBackup } from './syncBackup'
 import { pullBackupDeltas } from './pullBackupDeltas'
 import { serializeAccountForBackup } from './serializeAccountForBackup'
@@ -67,6 +73,7 @@ import type {
     ContactImportFn,
     ContactImportSummary,
     ImportSummary,
+    PasskeyImportSummary,
     SyncEngineDeps,
     SerializeHdResolver,
     SerializeMnemonicResolver,
@@ -84,6 +91,7 @@ export type BackupSyncManagerDeps = {
     resolveHd: SerializeHdResolver
     listPasskeys: SyncEngineDeps['listPasskeys']
     importPasskeys: SyncEngineDeps['importPasskeys']
+    subscribeToKeystore: SyncEngineDeps['subscribeToKeystore']
     socketFactory?: BackupSocketFactory
     /** Called after the server deletes the backup and local state is wiped, so
      *  the app can inform the user. */
@@ -97,9 +105,11 @@ export class BackupSyncManager {
     private socket: Nullable<BackupWebSocketClient> = null
     private unwatchAccounts: Nullable<() => void> = null
     private unwatchContacts: Nullable<() => void> = null
+    private unwatchPasskeys: Nullable<() => void> = null
     private localChangeTimer: Nullable<ReturnType<typeof setTimeout>> = null
     private accountsFingerprint = ''
     private contactsFingerprint = ''
+    private passkeysFingerprintValue = ''
 
     constructor(private readonly deps: BackupSyncManagerDeps) {}
 
@@ -149,6 +159,7 @@ export class BackupSyncManager {
                 importContacts: this.deps.importContacts,
                 listPasskeys: this.deps.listPasskeys,
                 importPasskeys: this.deps.importPasskeys,
+                subscribeToKeystore: this.deps.subscribeToKeystore,
             }),
         )
     }
@@ -295,6 +306,57 @@ export class BackupSyncManager {
         )
     }
 
+    async backUpPasskey(credentialId: string): Promise<boolean> {
+        const staged = await this.withExclusiveState(async state =>
+            markPasskeyForBackup(state, credentialId),
+        )
+        if (!staged) return false
+        await this.syncNow()
+        return isPasskeyBackedUp(
+            useBackupSyncStateStore.getState().syncState,
+            credentialId,
+        )
+    }
+
+    async addPasskeyFromBackup(
+        credentialId: string,
+    ): Promise<PasskeyImportSummary | null> {
+        let summary: PasskeyImportSummary | null = null
+        const done = await this.withExclusiveState(async (state, deps) => {
+            const result = await importPasskeyFromBackup({
+                state,
+                credentialId,
+                deps: reviewActionDeps(deps),
+            })
+            summary = result.summary
+            return result.state
+        })
+        return done ? summary : null
+    }
+
+    async deletePasskeyFromBackup(
+        credentialId: string,
+    ): Promise<BackupActionOutcome> {
+        return this.runDelete((state, deps) =>
+            deletePasskeyFromBackup({
+                state,
+                credentialId,
+                deps: reviewActionDeps(deps),
+            }),
+        )
+    }
+
+    /** Leaves the backup's copy in place, so the credential returns to the
+     *  review screen under "available from backup". */
+    async keepPasskeyInBackup(
+        credentialId: string,
+        label: string,
+    ): Promise<boolean> {
+        return this.withExclusiveState(async state =>
+            keepPasskeyInBackup(state, credentialId, label),
+        )
+    }
+
     private watchLocalStores(): void {
         this.accountsFingerprint = accountFingerprint(
             useAccountsStore.getState().accounts,
@@ -314,6 +376,18 @@ export class BackupSyncManager {
             if (next === this.contactsFingerprint) return
             this.contactsFingerprint = next
             this.scheduleLocalSync()
+        })
+
+        // A credential minted by the OS provider extension is written outside
+        // the JS process and fires nothing here; the periodic and foreground
+        // syncs are what pick those up.
+        this.unwatchPasskeys = this.deps.subscribeToKeystore(() => {
+            void this.deps.listPasskeys().then(passkeys => {
+                const next = passkeysFingerprint(passkeys)
+                if (next === this.passkeysFingerprintValue) return
+                this.passkeysFingerprintValue = next
+                this.scheduleLocalSync()
+            })
         })
     }
 
@@ -351,6 +425,7 @@ export class BackupSyncManager {
         this.socket?.disconnect()
         this.unwatchAccounts?.()
         this.unwatchContacts?.()
+        this.unwatchPasskeys?.()
         this.watchLocalStores()
         await this.syncNow()
         this.connectSocket()
@@ -371,6 +446,8 @@ export class BackupSyncManager {
         this.unwatchAccounts = null
         this.unwatchContacts?.()
         this.unwatchContacts = null
+        this.unwatchPasskeys?.()
+        this.unwatchPasskeys = null
         this.socket?.disconnect()
         this.socket = null
     }

@@ -104,6 +104,7 @@ const setupSyncedBackup = async ({
         resolveHd: hdHook ? hdHook.current : async () => null,
         listPasskeys: async () => [],
         importPasskeys: async () => ({ imported: 0, skipped: [], failed: [] }),
+        subscribeToKeystore: () => () => {},
     })
 
     return {
