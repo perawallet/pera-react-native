@@ -22,6 +22,7 @@ export const INTEGRITY_CHECK_VERSION = 1
 export const INTEGRITY_CHECK_PATH = '/check'
 export const INTEGRITY_CHECK_TOKEN_PARAM = 'peraCheckToken'
 export const INTEGRITY_CHECK_PORT_PREFIX = 'pera-integrity-check:'
+export const INTEGRITY_HOST_PORT_PREFIX = 'pera-integrity-host:'
 export const INTEGRITY_ENROL_SCOPE = 'pera-integrity-enrol'
 export const MAX_TURNSTILE_TOKEN_LENGTH = 2048
 
