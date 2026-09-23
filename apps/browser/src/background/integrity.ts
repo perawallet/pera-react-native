@@ -45,8 +45,7 @@ const REFRESH_AT_FRACTION = 0.6
 const BACKOFF_FLOOR_MS = 5 * 60 * 1000
 const BACKOFF_CAP_MS = 60 * 60 * 1000
 
-// background/index.ts's resolveActiveNetwork reads this same literal (there's
-// no shared export for it — the store persists it directly, see network.ts).
+// The network store persists under this key; there is no shared export for it, see network.ts.
 const NETWORK_STORAGE_KEY = 'kv:network-store'
 
 type BackoffState = { failures: number; nextAttemptAt: number }
