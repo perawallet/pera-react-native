@@ -22,20 +22,22 @@ const identity = (val) => val
 const noopFn = (fn) => fn
 
 // Named exports matching the full react-native-worklets public surface.
-// Thread scheduling — run immediately on web (single-threaded environment).
-export const scheduleOnRN = (fn) => { fn() }
-export const scheduleOnUI = (fn) => { fn() }
-export const scheduleOnRuntime = (_, fn) => { fn() }
-export const scheduleOnRuntimeWithId = (_, __, fn) => { fn() }
+// Thread scheduling: run immediately on web (single-threaded environment).
+// Signatures follow the real package: forward every argument after the
+// worklet, or callers such as Gesture Handler's shared-value binding crash.
+export const scheduleOnRN = (fn, ...args) => { fn(...args) }
+export const scheduleOnUI = (fn, ...args) => { fn(...args) }
+export const scheduleOnRuntime = (_, fn, ...args) => { fn(...args) }
+export const scheduleOnRuntimeWithId = (_, fn, ...args) => { fn(...args) }
 export const runOnJS = noopFn
 export const runOnUI = noopFn
-export const runOnUISync = noopFn
-export const runOnUIAsync = (fn) => Promise.resolve(fn())
-export const runOnRuntimeAsync = (_, fn) => Promise.resolve(fn())
-export const runOnRuntimeAsyncWithId = (_, __, fn) => Promise.resolve(fn())
-export const runOnRuntimeSync = (_, fn) => fn()
-export const runOnRuntimeSyncWithId = (_, __, fn) => fn()
-export const executeOnUIRuntimeSync = (fn) => fn()
+export const runOnUISync = (fn, ...args) => fn(...args)
+export const runOnUIAsync = async (fn, ...args) => fn(...args)
+export const runOnRuntimeAsync = async (_, fn, ...args) => fn(...args)
+export const runOnRuntimeAsyncWithId = async (_, fn, ...args) => fn(...args)
+export const runOnRuntimeSync = (_, fn, ...args) => fn(...args)
+export const runOnRuntimeSyncWithId = (_, fn, ...args) => fn(...args)
+export const executeOnUIRuntimeSync = noopFn
 // Shareable memory — on web objects are passed by reference directly.
 export const makeShareable = identity
 export const makeShareableCloneOnUIRecursive = identity
