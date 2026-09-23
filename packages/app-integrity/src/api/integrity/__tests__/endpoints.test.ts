@@ -264,4 +264,12 @@ describe('enrolDevice', () => {
 
         await expect(enrolDevice(params)).rejects.toThrow()
     })
+
+    it('rejects a 200 that says it did not enrol', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { enrolled: false, kid: 'K' },
+        })
+
+        await expect(enrolDevice(params)).rejects.toThrow()
+    })
 })

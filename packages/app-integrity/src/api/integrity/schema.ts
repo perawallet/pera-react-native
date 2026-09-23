@@ -23,7 +23,7 @@ export const verifyResponseSchema = z.object({
     platform: z.enum(['ios', 'android', 'web']),
 })
 export const enrolResponseSchema = z.object({
-    enrolled: z.boolean(),
+    enrolled: z.literal(true),
     kid: z.string(),
 })
 
