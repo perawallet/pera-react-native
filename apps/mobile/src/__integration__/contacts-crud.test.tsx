@@ -90,6 +90,7 @@ import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen/Add
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen/EditContactScreen'
 import { useEditContactForm } from '@modules/contacts/hooks'
 
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -232,11 +233,7 @@ describe('Flow: Contacts CRUD', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'add_contact_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(screen.getByTestId('add_contact_button')),
                 ).toBe(false)
             })
             fireEvent.click(screen.getByTestId('add_contact_button'))
@@ -267,20 +264,16 @@ describe('Flow: Contacts CRUD', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'add_contact_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(screen.getByTestId('add_contact_button')),
                 ).toBe(false)
             })
             fireEvent.click(screen.getByTestId('add_contact_button'))
 
             await waitFor(() => {
                 expect(
-                    screen
-                        .getByTestId('contact_address_input')
-                        .getAttribute('errormessage'),
+                    getInputErrorMessage(
+                        screen.getByTestId('contact_address_input'),
+                    ),
                 ).toBe('contacts.add_contact.duplicate_address_error')
             })
             expect(readContacts()).toHaveLength(1)
@@ -322,11 +315,9 @@ describe('Flow: Contacts CRUD', () => {
 
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'edit_contact_save_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('edit_contact_save_button'),
+                    ),
                 ).toBe(false)
             })
             fireEvent.click(screen.getByTestId('edit_contact_save_button'))

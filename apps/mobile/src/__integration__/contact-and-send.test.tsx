@@ -25,6 +25,7 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import { ContactListScreen } from '@modules/contacts/screens/ContactListScreen/ContactListScreen'
 import { AddressSearchView } from '@components/AddressSearchView'
 
+import { closestPressable, getAllPressables } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // Add a contact via the public `useContacts` hook (no direct store
@@ -73,11 +74,9 @@ describe('Flow: Contacts → use in send destination picker', () => {
 
         // The empty-view button has no testid; assert by its label.
         // i18n returns the key under the integration setup.
-        const emptyButton = screen
-            .getAllByRole('button')
-            .find(b =>
-                (b.textContent ?? '').includes('contacts.list.add_contact'),
-            )
+        const emptyButton = getAllPressables().find(b =>
+            (b.textContent ?? '').includes('contacts.list.add_contact'),
+        )
         expect(emptyButton).toBeTruthy()
     })
 
@@ -137,7 +136,7 @@ describe('Flow: Contacts → use in send destination picker', () => {
             )
             const leaf =
                 matches.find(el => el.children.length === 0) ?? matches[0]
-            const row = leaf.closest('button')
+            const row = closestPressable(leaf)
             if (!row) {
                 throw new Error('Contact row button not found')
             }

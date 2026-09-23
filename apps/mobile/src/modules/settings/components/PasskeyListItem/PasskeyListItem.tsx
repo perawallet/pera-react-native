@@ -74,6 +74,7 @@ export const PasskeyListItem = ({
                         name='trash'
                         variant='secondary'
                         onPress={() => onRemovePress(passkey)}
+                        testID={testID ? `${testID}_remove` : undefined}
                     />
                 )}
             </PWView>

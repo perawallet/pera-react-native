@@ -70,7 +70,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+// The rest of the package must survive: the design-system imports reach
+// modules that extend its AppError.
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<Record<string, unknown>>()),
     deferToNextCycle: (fn: () => void) => fn(),
     logger: {
         error: vi.fn(),

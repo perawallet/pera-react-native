@@ -53,6 +53,7 @@ import { usePinCode } from '@perawallet/wallet-core-security'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -205,13 +206,12 @@ const advanceToDisplayedWords = async (): Promise<void> => {
             screen.getByTestId(`passphrase_acknowledge_bottom_sheet_row_${i}`),
         )
     }
-    const revealButton = screen.getByTestId(
-        'passphrase_acknowledge_bottom_sheet_reveal',
-    ) as HTMLButtonElement
+    const revealButton = () =>
+        screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal')
     await waitFor(() => {
-        expect(revealButton.disabled).toBe(false)
+        expect(isElementDisabled(revealButton())).toBe(false)
     })
-    fireEvent.click(revealButton)
+    fireEvent.click(revealButton())
     await waitFor(
         () => {
             expect(
@@ -285,10 +285,9 @@ describe('Flow: View account passphrase', () => {
                 ).toBeTruthy()
             })
 
-            const revealButton = screen.getByTestId(
-                'passphrase_acknowledge_bottom_sheet_reveal',
-            ) as HTMLButtonElement
-            expect(revealButton.disabled).toBe(true)
+            const revealButton = () =>
+                screen.getByTestId('passphrase_acknowledge_bottom_sheet_reveal')
+            expect(isElementDisabled(revealButton())).toBe(true)
 
             // Tap each row in turn. Each tap toggles one checkbox; once
             // all four are checked, the reveal CTA enables.
@@ -300,14 +299,14 @@ describe('Flow: View account passphrase', () => {
                 )
             }
             await waitFor(() => {
-                expect(revealButton.disabled).toBe(false)
+                expect(isElementDisabled(revealButton())).toBe(false)
             })
 
             // Reveal advances the flow to the display step. The
             // acknowledge sheet unmounts (PWBottomSheet only renders
             // when `isVisible`), and the display sheet mounts and
             // resolves the mnemonic via the KMS session.
-            fireEvent.click(revealButton)
+            fireEvent.click(revealButton())
 
             await waitFor(
                 () => {
@@ -445,7 +444,7 @@ describe('Flow: View account passphrase', () => {
             // in front of them.
             fireEvent.click(screen.getByTestId('open_view_passphrase'))
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
             expect(
                 screen.queryByTestId(
@@ -475,7 +474,7 @@ describe('Flow: View account passphrase', () => {
 
             fireEvent.click(screen.getByTestId('open_view_passphrase'))
             await waitFor(() => {
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             })
 
             // Enter five of the six digits — one short of `PIN_LENGTH`.
@@ -484,9 +483,7 @@ describe('Flow: View account passphrase', () => {
             // negative case: the gate must stay up.
             for (const digit of '12345') {
                 await act(async () => {
-                    fireEvent.click(
-                        within(screen.getByTestId('PWNumpad')).getByText(digit),
-                    )
+                    fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
                 })
             }
 
@@ -498,7 +495,7 @@ describe('Flow: View account passphrase', () => {
                 await new Promise(resolve => setTimeout(resolve, 250))
             })
 
-            expect(screen.getByTestId('PWNumpad')).toBeTruthy()
+            expect(screen.getByTestId('numpad_key_0')).toBeTruthy()
             expect(
                 screen.queryByTestId(
                     'passphrase_acknowledge_bottom_sheet_reveal',
@@ -536,7 +533,7 @@ describe('Flow: View account passphrase', () => {
                     ),
                 ).toBeTruthy()
             })
-            expect(screen.queryByTestId('PWNumpad')).toBeNull()
+            expect(screen.queryByTestId('numpad_key_0')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -54,6 +54,7 @@ import { RekeyToSharedSelectTargetScreen } from '@modules/rekey/screens/rekey-to
 import { RekeyToSharedConfirmScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedConfirmScreen'
 import { RekeyToSharedSuccessScreen } from '@modules/rekey/screens/rekey-to-shared/RekeyToSharedSuccessScreen'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -214,13 +215,11 @@ describe('Flow: Rekey to shared account end-to-end', () => {
                     screen.getByTestId('rekey-to-shared-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-shared-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('rekey-to-shared-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(
                 () => {
@@ -272,13 +271,11 @@ describe('Flow: Rekey to shared account end-to-end', () => {
                     screen.getByTestId('rekey-to-shared-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-shared-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('rekey-to-shared-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(
                 () => {

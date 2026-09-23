@@ -32,9 +32,15 @@ import {
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '@rneui/themed'
 
 import { server } from '@test-utils/msw-server'
-import { createTestQueryClient, render, screen } from '@test-utils/render'
+import {
+    createTestQueryClient,
+    render,
+    screen,
+    getTestTheme,
+} from '@test-utils/render'
 import { mockBanners } from '@perawallet/wallet-core-banners/test-handlers'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
@@ -123,9 +129,11 @@ const forcedBannerResponse = {
 const buildWrapper = () => {
     const queryClient = createTestQueryClient()
     return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
+        <ThemeProvider theme={getTestTheme()}>
+            <QueryClientProvider client={queryClient}>
+                {children}
+            </QueryClientProvider>
+        </ThemeProvider>
     )
 }
 

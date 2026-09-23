@@ -27,9 +27,7 @@ vi.mock('@modules/security', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@components/ConfirmActionContent', () => ({
     ConfirmActionContent: () => null,

@@ -244,6 +244,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 onBlur={handleBlur}
                 rightIcon={resolvedRightIcon}
                 errorMessage={resolvedErrorMessage}
+                errorProps={testID ? { testID: `${testID}-error` } : undefined}
                 numberOfLines={numberOfLines}
                 onLayout={adjustsFontSizeToFit ? handleLayout : undefined}
                 {...{

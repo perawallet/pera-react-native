@@ -68,9 +68,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: vi.fn() }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),

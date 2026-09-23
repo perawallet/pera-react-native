@@ -69,6 +69,7 @@ import {
 } from '@perawallet/wallet-core-swaps/test-handlers'
 import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -192,7 +193,7 @@ describe('Edge: Network failure paths', () => {
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
             fireEvent.click(confirmButton)
 
@@ -216,7 +217,7 @@ describe('Edge: Network failure paths', () => {
                 },
                 { timeout: 10_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeFalsy()
+            expect(screen.queryByTestId('pw-result-view')).toBeFalsy()
             // Sender state survives — the failure shouldn't drop the
             // selected account.
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(

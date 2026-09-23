@@ -169,8 +169,40 @@ const distResolvedRoots = new Set([
     '@perawallet/wallet-core-nfd',
 ])
 
+// @rneui/base loads its rating images with CommonJS `require('./x.png')` inside
+// ESM files. Once inlined, node would try to parse the PNG as JavaScript, so
+// the calls are rewritten to the asset source object React Native would hand back.
+const rneuiImageRequires = {
+    name: 'rneui-image-requires',
+    transform(code: string, id: string) {
+        if (!id.includes('/@rneui/') || !code.includes('.png')) return null
+        return code.replace(
+            /require\((['"][^'"]+\.png['"])\)/g,
+            (_match, source) => `({ uri: ${source} })`,
+        )
+    },
+}
+
 export default defineConfig({
-    plugins: [svgr(), react()],
+    plugins: [
+        // Metro compiles every .svg import to a component (react-native-svg
+        // transformer); svgr's default only does so for `?react`, which left
+        // the import a data-URL string that React then tried to use as a tag.
+        // The root stands in for react-native-svg's: it flattens the array
+        // `style` PWIcon passes (a DOM <svg> rejects one) and maps testID.
+        svgr({
+            include: '**/*.svg',
+            svgrOptions: {
+                expandProps: 'start',
+                svgProps: {
+                    'data-testid': '{props.testID}',
+                    style: '{[props.style].flat(Infinity).reduce((merged, entry) => Object.assign(merged, entry), {})}',
+                },
+            },
+        }),
+        react(),
+        rneuiImageRequires,
+    ],
     assetsInclude: ['**/*.svg'],
     resolve: {
         alias: [
@@ -247,7 +279,7 @@ export default defineConfig({
         },
         server: {
             deps: {
-                inline: [/@react-navigation/],
+                inline: [/@react-navigation/, /@rneui\//],
             },
         },
         // Two projects so unit and integration tests get different setup

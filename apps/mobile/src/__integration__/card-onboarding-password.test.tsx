@@ -30,6 +30,7 @@ import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardi
 import { CardOnboardingEmailScreen } from '@modules/card/screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingPhoneScreen } from '@modules/card/screens/CardOnboardingPhoneScreen'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
 const VALID_PASSWORD = 'Passw0rd!Longer1'
 
@@ -107,27 +108,24 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
 
-        // Mismatched confirmation surfaces an error (only after the confirm
+        // Mismatched confirmation surfaces an error (only after the confirm()
         // field is blurred) and blocks submission.
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: 'different' } })
-        fireEvent.blur(confirm)
+        fireEvent.change(confirm(), { target: { value: 'different' } })
+        fireEvent.blur(confirm())
         await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeTruthy(),
+            expect(getInputErrorMessage(confirm())).toBeTruthy(),
         )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
         expect(verifySpy).not.toHaveBeenCalled()
 
         // Once the confirmation matches, the form validates (error clears, the
         // button enables). Tick both consent opt-ins so email/verify carries them.
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-marketing-checkbox'),
         )
@@ -161,26 +159,24 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
 
         // A valid password alone does NOT enable Continue — SMS is required.
-        const submit = screen.getByTestId('card-onboarding-password-confirm')
-        expect(submit.getAttribute('disabled')).not.toBeNull()
-        fireEvent.click(submit)
+        const submit = () =>
+            screen.getByTestId('card-onboarding-password-confirm')
+        expect(isElementDisabled(submit())).toBe(true)
+        fireEvent.click(submit())
         expect(verifySpy).not.toHaveBeenCalled()
 
         // Ticking the SMS consent enables it.
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-sms-checkbox'),
         )
-        await waitFor(() => expect(submit.getAttribute('disabled')).toBeNull())
+        await waitFor(() => expect(isElementDisabled(submit())).toBe(false))
     })
 
     it('routes back to the email code screen, with an inline error, when email/verify rejects the code', async () => {
@@ -191,14 +187,11 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
         // SMS consent is required, so tick it to enable Continue.
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-sms-checkbox'),
@@ -249,14 +242,11 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
         // SMS consent is required, so tick it to enable Continue.
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-sms-checkbox'),
@@ -284,14 +274,11 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
         // SMS consent is required, so tick it to enable Continue.
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-sms-checkbox'),
@@ -326,14 +313,11 @@ describe('card onboarding — password', () => {
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
-        const confirm = screen.getByTestId(
-            'card-onboarding-confirm-password-input',
-        )
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-confirm-password-input')
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
-        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
-        await waitFor(() =>
-            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
-        )
+        fireEvent.change(confirm(), { target: { value: VALID_PASSWORD } })
+        await waitFor(() => expect(getInputErrorMessage(confirm())).toBeFalsy())
         // SMS consent is required, so tick it to enable Continue.
         fireEvent.click(
             screen.getByTestId('card-onboarding-password-sms-checkbox'),

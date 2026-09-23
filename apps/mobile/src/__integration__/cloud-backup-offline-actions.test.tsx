@@ -60,6 +60,7 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { useNetworkStatusStore } from '@modules/network'
 import { CloudBackupAccountsScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsScreen'
 import { CloudBackupAccountsReviewScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsReviewScreen'
+import { waitPastDoublePressGuard } from '@test-utils/rnw'
 import {
     BACKUP_MNEMONIC,
     BACKUP_SALT,
@@ -208,6 +209,7 @@ describe('Flow: Cloud backup → review actions while offline', () => {
             expect(seenDeviceIds()).toEqual([])
 
             setConnected(true)
+            await waitPastDoublePressGuard()
             fireEvent.click(screen.getByTestId('cloud_backup_account_back_up'))
 
             await waitFor(() =>

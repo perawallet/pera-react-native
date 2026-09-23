@@ -65,9 +65,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({

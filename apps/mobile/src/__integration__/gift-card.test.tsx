@@ -45,6 +45,7 @@ import { BidaliAccountSelectionScreen } from '@modules/gift-card/screens/BidaliA
 import { useBidali } from '@modules/gift-card/hooks/useBidali'
 import { useBidaliTransport } from '@modules/gift-card/hooks/useBidaliTransport'
 
+import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -81,7 +82,7 @@ const tapAccountRow = (accountName: string) => {
         (node?.textContent ?? '').includes(accountName),
     )
     const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-    const button = leaf.closest('button')
+    const button = closestPressable(leaf)
     if (!button) {
         throw new Error(`Row not found for account "${accountName}"`)
     }

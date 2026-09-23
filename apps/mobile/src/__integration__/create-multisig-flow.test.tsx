@@ -37,6 +37,7 @@ import {
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     HD_TEST_ADDRESS,
@@ -93,11 +94,10 @@ describe('Flow: Create a multisig account from scratch', () => {
 
             // Two participants seeded → continue is enabled; advance to the
             // threshold screen.
-            const continueButton = screen.getByTestId(
-                'create_multisig_continue_button',
-            ) as HTMLButtonElement
-            expect(continueButton.disabled).toBe(false)
-            fireEvent.click(continueButton)
+            const continueButton = () =>
+                screen.getByTestId('create_multisig_continue_button')
+            expect(isElementDisabled(continueButton())).toBe(false)
+            fireEvent.click(continueButton())
 
             await waitFor(() =>
                 screen.getByTestId('set_threshold_continue_button'),
@@ -250,31 +250,29 @@ describe('Flow: Create a multisig account from scratch', () => {
             // The store seeds threshold at 2 by default.
             expect(useMultisigCreationStore.getState().threshold).toBe(2)
 
-            const decrement = screen.getByTestId(
-                'threshold_decrement_button',
-            ) as HTMLButtonElement
-            const increment = screen.getByTestId(
-                'threshold_increment_button',
-            ) as HTMLButtonElement
+            const decrement = () =>
+                screen.getByTestId('threshold_decrement_button')
+            const increment = () =>
+                screen.getByTestId('threshold_increment_button')
 
             // Decrement floors at 1: stepping down past the minimum is a
             // no-op and the control disables itself.
-            fireEvent.click(decrement)
+            fireEvent.click(decrement())
             await waitFor(() =>
                 expect(useMultisigCreationStore.getState().threshold).toBe(1),
             )
-            expect(decrement.disabled).toBe(true)
-            fireEvent.click(decrement)
+            expect(isElementDisabled(decrement())).toBe(true)
+            fireEvent.click(decrement())
             expect(useMultisigCreationStore.getState().threshold).toBe(1)
 
             // Increment ceils at the participant count (3).
-            fireEvent.click(increment)
-            fireEvent.click(increment)
+            fireEvent.click(increment())
+            fireEvent.click(increment())
             await waitFor(() =>
                 expect(useMultisigCreationStore.getState().threshold).toBe(3),
             )
-            expect(increment.disabled).toBe(true)
-            fireEvent.click(increment)
+            expect(isElementDisabled(increment())).toBe(true)
+            fireEvent.click(increment())
             expect(useMultisigCreationStore.getState().threshold).toBe(3)
 
             expect(screen.getByTestId('threshold_value').textContent).toContain(
@@ -302,11 +300,10 @@ describe('Flow: Create a multisig account from scratch', () => {
 
             // One participant: continue is disabled and tapping it does not
             // advance the flow.
-            const continueButton = screen.getByTestId(
-                'create_multisig_continue_button',
-            ) as HTMLButtonElement
-            expect(continueButton.disabled).toBe(true)
-            fireEvent.click(continueButton)
+            const continueButton = () =>
+                screen.getByTestId('create_multisig_continue_button')
+            expect(isElementDisabled(continueButton())).toBe(true)
+            fireEvent.click(continueButton())
             expect(screen.queryByTestId('reached-set-threshold')).toBeNull()
 
             // Adding a second participant enables continue and navigates to
@@ -317,11 +314,9 @@ describe('Flow: Create a multisig account from scratch', () => {
 
             await waitFor(() =>
                 expect(
-                    (
-                        screen.getByTestId(
-                            'create_multisig_continue_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('create_multisig_continue_button'),
+                    ),
                 ).toBe(false),
             )
             fireEvent.click(

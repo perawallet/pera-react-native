@@ -20,9 +20,7 @@ vi.mock('@modules/vault', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const mockCheckPinEnabled = vi.fn()
 vi.mock('@perawallet/wallet-core-security', () => ({

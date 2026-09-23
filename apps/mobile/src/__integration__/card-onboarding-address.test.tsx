@@ -32,6 +32,7 @@ import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardin
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingMailingAddressScreen } from '@modules/card/screens/CardOnboardingMailingAddressScreen'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 
 // The final registration step returns the access token + onboarding id.
 const ADDRESS_RESPONSE = {
@@ -179,9 +180,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({
@@ -224,12 +226,13 @@ describe('Flow: Card onboarding — residential address', () => {
         renderFlow()
         fillAddressFields()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
         // Address is valid but the T&Cs gate the button.
-        expect(confirm.getAttribute('disabled')).not.toBeNull()
+        expect(isElementDisabled(confirm())).toBe(true)
 
         acceptBothTerms()
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
     })
 
     it('Given a US residence, when Continue is pressed, then the picked state is posted', async () => {
@@ -261,9 +264,10 @@ describe('Flow: Card onboarding — residential address', () => {
         )
 
         acceptBothTerms()
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({
@@ -314,9 +318,10 @@ describe('Flow: Card onboarding — residential address', () => {
             screen.getByTestId('card-onboarding-address-same-mailing-checkbox'),
         )
         acceptBothTerms()
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         // No token yet, so the flow moves on to the mailing address rather
         // than the checklist, and onboarding is not marked complete.
@@ -355,13 +360,12 @@ describe('Flow: Card onboarding — residential address', () => {
         await waitFor(() =>
             expect(screen.queryByTestId('card-us-state-NY')).toBeNull(),
         )
-        const mailingConfirm = screen.getByTestId(
-            'card-onboarding-mailing-address-confirm',
-        )
+        const mailingConfirm = () =>
+            screen.getByTestId('card-onboarding-mailing-address-confirm')
         await waitFor(() =>
-            expect(mailingConfirm.getAttribute('disabled')).toBeNull(),
+            expect(isElementDisabled(mailingConfirm())).toBe(false),
         )
-        fireEvent.click(mailingConfirm)
+        fireEvent.click(mailingConfirm())
 
         await waitFor(() =>
             expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
@@ -391,16 +395,16 @@ describe('Flow: Card onboarding — residential address', () => {
         // Continue button stays disabled even with everything else satisfied.
         await waitFor(() =>
             expect(
-                screen
-                    .getByTestId('card-onboarding-address-state-input')
-                    .getAttribute('errormessage'),
+                getInputErrorMessage(
+                    screen.getByTestId('card-onboarding-address-state-input'),
+                ),
             ).toBe('peraCard.address.us_state_required'),
         )
         expect(
-            screen
-                .getByTestId('card-onboarding-address-confirm')
-                .getAttribute('disabled'),
-        ).not.toBeNull()
+            isElementDisabled(
+                screen.getByTestId('card-onboarding-address-confirm'),
+            ),
+        ).toBe(true)
     })
 
     it('Given the submit fails, when Continue is pressed, then an error toast shows and the flow stays put', async () => {
@@ -414,9 +418,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalled(),
@@ -440,9 +445,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalled(),
@@ -482,9 +488,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         // The duplicate consent is swallowed, so the finalize still runs...
         await waitFor(() => expect(addressSpy).toHaveBeenCalled())
@@ -528,9 +535,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         // The link fires with the consentSetId in the path and the userId in body.
         await waitFor(() => expect(linkSpy).toHaveBeenCalled())
@@ -566,9 +574,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() => expect(linkSpy).toHaveBeenCalled())
         await waitFor(() =>
@@ -593,9 +602,10 @@ describe('Flow: Card onboarding — residential address', () => {
         fillAddressFields()
         acceptBothTerms()
 
-        const confirm = screen.getByTestId('card-onboarding-address-confirm')
-        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
-        fireEvent.click(confirm)
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
 
         await waitFor(() =>
             expect(

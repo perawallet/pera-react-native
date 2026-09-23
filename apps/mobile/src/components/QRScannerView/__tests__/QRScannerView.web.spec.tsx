@@ -18,12 +18,9 @@ import { act, fireEvent, render, screen } from '@test-utils/render'
 // does).
 import { QRScannerView, type QRScannerViewProps } from '../QRScannerView.web'
 
-// vitest.setup.ts globally stubs the whole '@components/core' barrel
-// (PWBottomSheet included) with a trivial testID='PWBottomSheet' div and no
-// backdrop — fine for other specs, but this one exists to prove real sheet
-// chrome (backdrop press, testID passthrough). Swap in the real web
-// PWBottomSheet; the rest stay as simple DOM stand-ins mirroring the setup
-// file's stubs.
+// This spec exists to prove the real web sheet chrome (backdrop press, testID
+// passthrough), so PWBottomSheet is the .web implementation — the barrel would
+// resolve the native one. The rest are simple DOM stand-ins.
 vi.mock('@components/core', async () => {
     const { default: React } = await import('react')
     const { PWBottomSheet } =

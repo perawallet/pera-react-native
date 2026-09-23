@@ -54,6 +54,7 @@ import { RekeyToLedgerSelectTargetScreen } from '@modules/rekey/screens/rekey-to
 import { RekeyToLedgerConfirmScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerConfirmScreen'
 import { RekeyToLedgerSuccessScreen } from '@modules/rekey/screens/rekey-to-ledger/RekeyToLedgerSuccessScreen'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -212,13 +213,11 @@ describe('Flow: Rekey to ledger account end-to-end', () => {
                     screen.getByTestId('rekey-to-ledger-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-ledger-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(
                 () => {
@@ -270,13 +269,11 @@ describe('Flow: Rekey to ledger account end-to-end', () => {
                     screen.getByTestId('rekey-to-ledger-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-ledger-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () => screen.getByTestId('rekey-to-ledger-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(
                 () => {

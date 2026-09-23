@@ -57,9 +57,7 @@ vi.mock('@modules/card/hooks', () => ({
     useCardErrorToast: () => mockShowError,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useCardForgotPasswordScreen } from '../useCardForgotPasswordScreen'
 

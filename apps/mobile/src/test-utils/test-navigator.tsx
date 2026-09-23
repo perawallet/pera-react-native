@@ -318,6 +318,10 @@ export const createNavigationContainerRef = () => ({
 // the bottom-sheet host throws.
 export const NavigationContainerRefContext = createContext<unknown>(null)
 
+// PWScreen reads this for its blur listener and skips it when unset, which
+// matches a screen the harness keeps focused.
+export const NavigationContext = createContext<unknown>(undefined)
+
 export const StackActions = {
     replace: (name: string, params?: Record<string, unknown>) => ({
         type: 'REPLACE' as const,

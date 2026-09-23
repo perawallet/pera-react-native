@@ -26,7 +26,6 @@ import {
     renderHook,
     screen,
     waitFor,
-    within,
 } from '@testing-library/react'
 import Share from 'react-native-share'
 import { Notifier } from 'react-native-notifier'
@@ -73,12 +72,10 @@ const seedPin = async (): Promise<void> => {
 }
 
 const enterPin = async (): Promise<void> => {
-    await waitFor(() => expect(screen.getByTestId('PWNumpad')).toBeTruthy())
+    await waitFor(() => expect(screen.getByTestId('numpad_key_0')).toBeTruthy())
     for (const digit of TEST_PIN) {
         await act(async () => {
-            fireEvent.click(
-                within(screen.getByTestId('PWNumpad')).getByText(digit),
-            )
+            fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
         })
     }
 }
@@ -192,7 +189,7 @@ describe('storing backup credentials', () => {
         await act(async () => {
             await new Promise(resolve => setTimeout(resolve, 500))
         })
-        expect(screen.queryByTestId('PWNumpad')).toBeNull()
+        expect(screen.queryByTestId('numpad_key_0')).toBeNull()
         expect(toastTitles()).toEqual([])
         expect(Share.open).not.toHaveBeenCalled()
     })
