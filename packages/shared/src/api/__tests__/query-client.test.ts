@@ -1446,3 +1446,35 @@ describe('IDEMPOTENT_POST_RETRY', () => {
         ).toBeUndefined()
     })
 })
+
+describe('SINGLE_USE_POST_RETRY', () => {
+    it('opts POST into retrying at all', async () => {
+        const { SINGLE_USE_POST_RETRY } = await import('../query-client')
+
+        expect(SINGLE_USE_POST_RETRY.methods).toEqual(['post'])
+    })
+
+    it('retries a request that never got a response', async () => {
+        const { SINGLE_USE_POST_RETRY } = await import('../query-client')
+
+        expect(
+            await SINGLE_USE_POST_RETRY.shouldRetry?.({
+                error: new Error('Network request failed'),
+                retryCount: 1,
+            }),
+        ).toBe(true)
+    })
+
+    // false, not undefined: undefined would fall through to the client's
+    // statusCodes and retry a 5xx, spending a token the server may have used.
+    it('refuses everything else outright', async () => {
+        const { SINGLE_USE_POST_RETRY } = await import('../query-client')
+
+        expect(
+            await SINGLE_USE_POST_RETRY.shouldRetry?.({
+                error: new Error('Turnstile token was rejected'),
+                retryCount: 1,
+            }),
+        ).toBe(false)
+    })
+})

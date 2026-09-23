@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import type { AttestApiResponse, VerifyApiResponse } from './schema'
-import type { IntegrityRegistration, IntegrityVerification } from '../../models'
+import type {
+    AttestApiResponse,
+    VerifyApiResponse,
+    EnrolApiResponse,
+} from './schema'
+import type {
+    IntegrityRegistration,
+    IntegrityVerification,
+    IntegrityEnrolment,
+} from '../../models'
 
 export const transformAttestResponse = (
     response: AttestApiResponse,
@@ -27,3 +35,7 @@ export const transformVerifyResponse = (
     deviceInstallationId: response.device_id,
     platform: response.platform,
 })
+
+export const transformEnrolResponse = (
+    response: EnrolApiResponse,
+): IntegrityEnrolment => ({ enrolled: response.enrolled, kid: response.kid })

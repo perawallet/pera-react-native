@@ -19,7 +19,10 @@ export {
     requestChallenge,
     attestDevice,
     verifyIntegrityToken,
+    enrolDevice,
+    readIntegrityErrorCode,
     type RequestChallengeParams,
     type AttestDeviceParams,
     type VerifyIntegrityTokenParams,
+    type EnrolDeviceParams,
 } from './api/integrity'

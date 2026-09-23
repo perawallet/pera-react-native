@@ -367,6 +367,17 @@ export const IDEMPOTENT_POST_RETRY: RequestRetryOverrides = {
         isNetworkTransportError(error) ? true : undefined,
 }
 
+/**
+ * For a POST whose side effect must not repeat, such as spending a single-use
+ * token. Retried only when the request got no response at all: a timeout or a
+ * 5xx may mean the server already acted, so both are refused outright rather
+ * than falling through to the client's `statusCodes`.
+ */
+export const SINGLE_USE_POST_RETRY: RequestRetryOverrides = {
+    methods: ['post'],
+    shouldRetry: ({ error }) => isNetworkTransportError(error),
+}
+
 const createPeraClient = (network: Network): KyInstance =>
     ky.create({
         hooks: {
