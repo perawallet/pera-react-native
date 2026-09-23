@@ -333,9 +333,9 @@ describe('walletconnect v1 handler specifics', () => {
         )
         // Loopback is a trustworthy origin (local dev bridges, the e2e
         // fixture), but a hostname merely CONTAINING a loopback name is not.
-        expect(
-            handler.canHandleUri(uriWithBridge('ws://127.0.0.1:8547')),
-        ).toBe(true)
+        expect(handler.canHandleUri(uriWithBridge('ws://127.0.0.1:8547'))).toBe(
+            true,
+        )
         expect(
             handler.canHandleUri(uriWithBridge('http://localhost:1234')),
         ).toBe(true)
