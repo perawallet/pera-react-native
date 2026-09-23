@@ -24,8 +24,12 @@ const ENTROPY = new Uint8Array(32).fill(7)
 
 const writeEntry = vi.fn()
 const entryExists = vi.fn().mockReturnValue(false)
+// A fresh copy per call, like the real resolver: the import zeroes what it is
+// handed, so a shared buffer would be blanked for every later test.
 const resolveEntropy = vi.fn(async (seedAddress: string) =>
-    seedAddress === 'SEEDADDRESS' ? ENTROPY : null,
+    seedAddress === 'SEEDADDRESS'
+        ? { seedKeyId: 'local-seed-id', entropy: new Uint8Array(ENTROPY) }
+        : null,
 )
 
 vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => ({
@@ -34,18 +38,28 @@ vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => ({
     nativePasskeyEntryExists: (...args: unknown[]) => entryExists(...args),
 }))
 
-const buildPayload = async (overrides = {}) => {
+const buildPayload = async (
+    overrides: { identity?: string; counter?: number } & Record<
+        string,
+        unknown
+    > = {},
+) => {
+    const identity = overrides.identity ?? 'alice'
+    const counter = overrides.counter ?? 0
     const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+    // Derived with the same counter the payload carries, or the public key
+    // would not match and every such payload would skip.
     const derived = await derivePasskeyCredential({
         mainKey,
         origin: 'webauthn.io',
-        identity: 'alice',
+        identity,
+        counter,
     })
     return {
         credentialId: derived.credentialId,
         origin: 'webauthn.io',
-        identity: 'alice',
-        counter: 0,
+        identity,
+        counter,
         publicKeySpkiDer: Buffer.from(derived.publicKeySpkiDer).toString(
             'base64',
         ),
@@ -74,6 +88,25 @@ describe('useCloudBackupPasskeyImport', () => {
 
         expect(summary.imported).toBe(1)
         expect(writeEntry).toHaveBeenCalledTimes(1)
+    })
+
+    // Without these the credential is unprovable on the device that just
+    // restored it, which reports it as one it cannot back up.
+    it('records the local parent key id and the derivation counter', async () => {
+        const payload = await buildPayload({ counter: 3 })
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(resolveEntropy),
+        )
+
+        await result.current.importPasskeys([payload])
+
+        expect(writeEntry).toHaveBeenCalledWith(
+            expect.objectContaining({
+                parentKeyId: 'local-seed-id-passkey-main',
+                counter: 3,
+                identity: 'alice',
+            }),
+        )
     })
 
     it('skips and never writes when the derived public key disagrees', async () => {

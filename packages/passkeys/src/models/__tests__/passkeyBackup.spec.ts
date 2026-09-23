@@ -115,6 +115,19 @@ describe('identityCandidates', () => {
         expect(candidates).toContain('userid')
     })
 
+    // The identity a restored record carries already proved the credential on
+    // the collecting device. `userHandle` means different things on iOS and
+    // Android, so it cannot be rebuilt from the other fields.
+    it('tries a stored identity first and verbatim', () => {
+        const candidates = identityCandidates({
+            identity: 'iosRestore',
+            userHandle: 'd2ViYXV0aG5pby1pb3NyZXN0b3Jl',
+            userId: 'd2ViYXV0aG5pby1pb3NyZXN0b3Jl',
+        })
+
+        expect(candidates[0]).toBe('iosRestore')
+    })
+
     it('deduplicates and drops empty values', () => {
         const candidates = identityCandidates({
             userHandle: 'alice',

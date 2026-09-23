@@ -98,16 +98,16 @@ describe('useResolveSeedEntropyForBackup', () => {
         getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([9]))
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
-        const entropy = await result.current('ADDR-9')
+        const resolved = await result.current('ADDR-9')
 
         expect(getDerivedPublicKeyMock).toHaveBeenCalledWith('seed-1', 0, 0, 9)
         // Survives the `withSecret` handler returning: not the same zeroed
         // buffer, and every byte is still 7.
-        expect(entropy).not.toBeNull()
-        expect(entropy).toEqual(new Uint8Array(32).fill(7))
-        expect(Array.from(entropy as Uint8Array).every(b => b === 0)).toBe(
-            false,
-        )
+        expect(resolved).not.toBeNull()
+        expect(resolved?.entropy).toEqual(new Uint8Array(32).fill(7))
+        expect(
+            Array.from(resolved?.entropy as Uint8Array).every(b => b === 0),
+        ).toBe(false)
     })
 
     it('returns null when no on-device seed reproduces the address', async () => {
@@ -117,9 +117,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([1]))
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
-        const entropy = await result.current('ADDR-NOT-FOUND')
+        const resolved = await result.current('ADDR-NOT-FOUND')
 
-        expect(entropy).toBeNull()
+        expect(resolved).toBeNull()
         expect(withSecretMock).not.toHaveBeenCalled()
     })
 
@@ -130,9 +130,9 @@ describe('useResolveSeedEntropyForBackup', () => {
         getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([9]))
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
-        const entropy = await result.current('ADDR-9')
+        const resolved = await result.current('ADDR-9')
 
-        expect(entropy).toBeNull()
+        expect(resolved).toBeNull()
     })
 
     it('skips non-bip39 seeds when searching for the address', async () => {
@@ -149,9 +149,30 @@ describe('useResolveSeedEntropyForBackup', () => {
         getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([9]))
 
         const { result } = renderHook(() => useResolveSeedEntropyForBackup())
-        const entropy = await result.current('ADDR-9')
+        const resolved = await result.current('ADDR-9')
 
-        expect(entropy).toEqual(new Uint8Array(32).fill(3))
+        expect(resolved?.entropy).toEqual(new Uint8Array(32).fill(3))
         expect(getDerivedPublicKeyMock).toHaveBeenCalledTimes(1)
+    })
+
+    // The written credential's `parentKeyId` is built from this, and it has to
+    // be the id this device minted, not the one the collecting device had.
+    it('reports the local key id of the seed it matched', async () => {
+        keystoreKeys.mockReturnValue([
+            { id: 'local-seed-id', type: 'hd-root-key', metadata: {} },
+            {
+                id: 'entropy-1',
+                type: 'secret-key',
+                metadata: { parentKeyId: 'local-seed-id', entropyKey: true },
+            },
+        ])
+        secretBytesById.set('entropy-1', new Uint8Array(32).fill(5))
+        getDerivedPublicKeyMock.mockResolvedValue(new Uint8Array([9]))
+
+        const { result } = renderHook(() => useResolveSeedEntropyForBackup())
+
+        expect((await result.current('ADDR-9'))?.seedKeyId).toBe(
+            'local-seed-id',
+        )
     })
 })

@@ -32,6 +32,9 @@ import { isMigrationFlagged, normalizeTimestamp } from './passkey'
  *  imported so this module stays out of the provider's dependency graph. */
 const PASSKEY_MAIN_KEY_SUFFIX = '-passkey-main'
 
+export const passkeyMainKeyIdFromSeedKeyId = (seedKeyId: string): string =>
+    `${seedKeyId}${PASSKEY_MAIN_KEY_SUFFIX}`
+
 export const seedKeyIdFromPasskeyMainKeyId = (
     mainKeyId: string,
 ): string | null => {
@@ -99,6 +102,11 @@ export const identityCandidates = (
     const userHandle = readString(metadata, 'userHandle')
     const userId = readString(metadata, 'userId')
 
+    // A record written by restore carries the string that already proved this
+    // credential. It is the answer, not a guess, so it goes first and is used
+    // verbatim — the guesses below are lowercased, which would corrupt it.
+    const proven = readString(metadata, 'identity')
+
     const raw = [
         userHandle,
         userHandle != null ? decodedBase64Candidate(userHandle) : undefined,
@@ -107,6 +115,7 @@ export const identityCandidates = (
         userId != null ? decodedBase64Candidate(userId) : undefined,
     ]
     const seen = new Set<string>()
+    if (proven != null && proven.length > 0) seen.add(proven)
     for (const value of raw) {
         if (value == null || value.length === 0) continue
         seen.add(value.toLowerCase())

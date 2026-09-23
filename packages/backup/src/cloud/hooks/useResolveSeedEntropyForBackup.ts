@@ -55,7 +55,11 @@ export const useResolveSeedEntropyForBackup = (): SeedEntropyResolver => {
                 // `withSecret` zeroes its buffer once the handler returns, so
                 // the handler copies the bytes out rather than handing back
                 // the reference itself.
-                return withSecret(entropyId, entropy => new Uint8Array(entropy))
+                const entropy = await withSecret(
+                    entropyId,
+                    secret => new Uint8Array(secret),
+                )
+                return entropy == null ? null : { seedKeyId: key.id, entropy }
             }
 
             return null
