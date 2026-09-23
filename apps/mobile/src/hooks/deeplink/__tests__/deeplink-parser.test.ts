@@ -33,6 +33,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { isValidAlgorandAddress as isChecksummedAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from '../parser'
 import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
 
@@ -41,6 +43,12 @@ import { DeeplinkType } from '../types'
 // Test addresses from CSV
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+
+beforeEach(() => {
+    vi.mocked(isValidAlgorandAddress).mockImplementation(
+        isChecksummedAlgorandAddress,
+    )
+})
 
 describe('Deeplink Parser - Main Parser', () => {
     it('returns null for invalid URL', () => {
@@ -61,6 +69,52 @@ describe('Deeplink Parser - Main Parser', () => {
             `perawallet://app/add-contact/?address=${TEST_ADDRESS}`,
         )
         expect(result?.type).toBe(DeeplinkType.ADD_CONTACT)
+    })
+
+    describe('malformed address params', () => {
+        const BAD_ADDRESS = TEST_ADDRESS.slice(0, -1)
+
+        it.each([
+            `perawallet://app/add-contact/?address=${BAD_ADDRESS}`,
+            'perawallet://app/account-detail/?address=NOT_AN_ADDRESS',
+            `perawallet://app/asset-transfer/?assetId=0&receiverAddress=${BAD_ADDRESS}`,
+            `perawallet://app/keyreg/?senderAddress=${BAD_ADDRESS}`,
+            `perawallet://app/swap/?address=${BAD_ADDRESS}`,
+            `perawallet://asset-inbox?account=${BAD_ADDRESS}`,
+            `perawallet://asset/opt-in?asset=31566704&account=${BAD_ADDRESS}`,
+            `perawallet://asset/transactions?account=${BAD_ADDRESS}`,
+            'perawallet://NOTANADDRESS?type=asset/opt-in&asset=31566704',
+            'perawallet://NOTANADDRESS?type=asset/transactions&asset=31566704',
+            'perawallet://NOTANADDRESS?type=asset-inbox',
+            'https://perawallet.app/qr/perawallet/NOTANADDRESS?type=asset/opt-in&asset=31566704',
+            `https://perawallet.app/qr/perawallet/app/add-contact/?address=${BAD_ADDRESS}`,
+        ])('rejects the whole link: %s', url => {
+            expect(parseDeeplink(url)).toBeNull()
+        })
+
+        it('rejects an address that fails only its checksum', () => {
+            const checksumFailingAddress = `${TEST_ADDRESS.slice(0, -1)}Y`
+
+            expect(
+                parseDeeplink(
+                    `perawallet://app/asset-transfer/?assetId=0&receiverAddress=${checksumFailingAddress}`,
+                ),
+            ).toBeNull()
+        })
+
+        it('still accepts a path whose address param is simply absent', () => {
+            expect(parseDeeplink('perawallet://app/swap/')?.type).toBe(
+                DeeplinkType.SWAP,
+            )
+        })
+
+        it('still decodes an escaped percent sign in a label', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://app/add-contact/?address=${TEST_ADDRESS}&label=100%25`,
+                ),
+            ).toMatchObject({ type: DeeplinkType.ADD_CONTACT, label: '100%' })
+        })
     })
 
     it('routes to old format parser for perawallet://', () => {
@@ -221,6 +275,15 @@ describe('Deeplink Parser - Edge Cases', () => {
         expect(parseDeeplink('perawallet://app/unknown-path/')?.type).toBe(
             DeeplinkType.HOME,
         )
+    })
+
+    it('returns null rather than throwing on an undecodable query param', () => {
+        expect(
+            parseDeeplink('perawallet://app/add-contact/?address=100%'),
+        ).toBeNull()
+        expect(
+            parseDeeplink('perawallet://asset-inbox?account=100%'),
+        ).toBeNull()
     })
 
     describe('Pera Web import (JSON QR)', () => {

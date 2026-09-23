@@ -206,7 +206,7 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
     )
 
     it(
-        'Given the Algo25 word slots are rendered on iOS, then every slot requests the ASCII-capable keyboard so an IME cannot enter its composing state',
+        'Given the Algo25 word slots are rendered, then every slot is a sensitive input so the keyboard neither learns the words nor composes them in an IME',
         async () => {
             renderAlgo25ImportFromOnboarding()
 
@@ -226,8 +226,8 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
                 expect(
                     screen
                         .getByTestId(`import_account_word_input_${idx}`)
-                        .getAttribute('keyboardType'),
-                ).toBe('ascii-capable')
+                        .getAttribute('data-sensitive'),
+                ).toBe('true')
             }
         },
         SLOW_TEST_TIMEOUT_MS,

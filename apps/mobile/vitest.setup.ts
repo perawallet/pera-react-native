@@ -654,9 +654,10 @@ vi.mock('@components/core', () => {
                         secondaryAction.label,
                     ),
             ),
-        PWInput: ({ onChangeText, testID, ...props }: any) =>
+        PWInput: ({ onChangeText, testID, isSensitive, ...props }: any) =>
             React.createElement('input', {
                 ...props,
+                'data-sensitive': isSensitive,
                 onChange: (e: any) => onChangeText?.(e.target.value),
                 'data-testid': testID || 'PWInput',
             }),

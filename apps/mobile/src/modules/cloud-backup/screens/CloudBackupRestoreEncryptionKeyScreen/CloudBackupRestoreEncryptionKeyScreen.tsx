@@ -65,8 +65,7 @@ export const CloudBackupRestoreEncryptionKeyScreen = ({
                     placeholder={t(
                         'cloud_backup.restore.encryption_key_placeholder',
                     )}
-                    autoCapitalize='none'
-                    autoCorrect={false}
+                    isSensitive
                 />
             </PWScreen>
 
