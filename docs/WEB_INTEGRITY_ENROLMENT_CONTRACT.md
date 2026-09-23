@@ -51,7 +51,8 @@ sequenceDiagram
     SW-->>Page: host (url with kid and token)
     Page->>SW: hold host port pera-integrity-host:token
     Page->>Frame: mount iframe, visually hidden
-    Frame->>SW: hello answered with ready, then PAGE_READY on pera-integrity-check:token
+    Frame->>Frame: content script answers the page's hello with ready
+    Frame->>SW: PAGE_READY on pera-integrity-check:token
     Frame->>CF: render widget (action, cData = kid, interaction-only)
     alt Cloudflare needs a click
         Frame->>Page: expand (content script, window.parent.postMessage)
@@ -221,7 +222,7 @@ an install in use. The `reason` names the moment:
    could enrol.
 3. **`enrolment-needed`**: the worker raised `integrity:enrol-needed` in `chrome.storage.session`,
    which open pages watch. An attest 403 only raises this flag (section 5.6), because the worker
-   cannot address a page; the open page asks, and with none open the next page to open does.
+   cannot address a page; an open page asks, and section 5.3 covers there being none.
 
 The worker answers `none` when this network's marker matches the current key (section 5.5), while
 an attempt is live, while backoff holds, and whenever either build flag is off (section 8).
@@ -253,10 +254,9 @@ still holds its host port (section 5.4) and either:
   frame-ancestors regression on the web side); or
 - the frame reports `TURNSTILE_BLOCKED`.
 
-If that page has closed by then, the attempt ends quietly instead (section 5.3), so a closed popup
-never opens a tab the user did not stay for. With no page open nothing is shown; the next page to
-open hosts. The tab gets a fresh token, so a frame that loads late cannot drive the attempt the tab
-now owns. The relay and the worker logic are otherwise identical for both surfaces.
+A page that has closed gets no tab (section 5.3). The tab gets a fresh token, so a frame that loads
+late cannot drive the attempt the tab now owns. The relay and the worker logic are otherwise
+identical for both surfaces.
 
 ### 5.3 Attempt state and lifecycle
 
@@ -274,9 +274,10 @@ the deadline.
 - On `solved`: move to `enrolling`, then `POST /integrity/enrol`. A 200 for the attempt's `kid`
   persists the marker, clears backoff and `integrity:enrol-needed`, and clears the mint backoff and
   mints at once, since under enforcement the mint that asked for enrolment backed off. Anything else
-  records a failure. The POST is retried only when no response arrived at all, and then once: the
-  token is single-use, so a retry after a timeout or a 5xx the server may have processed can only
-  fail, and that failure means "check again on the next trigger".
+  records a failure, and a `409 PUBLIC_KEY_IN_USE` also drops the install key and the minted token,
+  so the next attempt enrols a fresh key. The POST is retried only when no response arrived at all,
+  and then once: the token is single-use, so a retry after a timeout or a 5xx the server may have
+  processed can only fail, and that failure means "check again on the next trigger".
 - On any other `error` in the frame (section 5.2 covers `TURNSTILE_BLOCKED`), a non-retryable
   `error` in the tab, or the deadline: end the attempt and record a failure. A retryable `error`
   (section 4.4) in the fallback tab keeps the attempt open until the tab goes or the deadline: the
@@ -287,9 +288,11 @@ the deadline.
   which would wake the worker on every tab close in the browser. A reload shows the check page again
   and reconnects with the same token; a tab closed while the worker was evicted is left to the
   deadline. Ending an attempt closes its tab only while the tab still shows the check page.
-- The last host port closing while a frame attempt is still `checking` ends it quietly: no backoff
-  and no tab, because nothing failed and the next page to open hosts again. Once the solve is in,
-  closing the page changes nothing.
+- A frame attempt still `checking` ends quietly once its page has gone, whether its last host port
+  closes or none is held when the liveness check or `TURNSTILE_BLOCKED` arrives: no backoff and no
+  tab, because nothing failed, and a closed popup must never open a tab the user did not stay for.
+  With no page open nothing is shown; the next page to open hosts. Once the solve is in, closing the
+  page changes nothing.
 
 Enrolment can become visible, so it must never loop. At most one automatic attempt per trigger,
 with exponential backoff between failures (floor 5 minutes, cap 24 hours) persisted in
@@ -441,7 +444,7 @@ Table `bun_integrity_enrolment`: `kid` (primary key), `public_key`, `device_id` 
 - Enrol for a `device_id` that already has a different key: replace the row. Re-enrolment with a new
   key cost a fresh solve, which is the actual gate.
 - Enrol for a key already bound to a different `device_id`: `409`. A key cannot serve two handles;
-  the client regenerates its key on that path.
+  the client drops its key on that answer and enrols a fresh one on its next attempt (section 5.3).
 - Revocation sets `revoked_at`; the row stays so the same key can never re-enrol. Revocations are fed
   by ops action and by whatever abuse signal the fee-delegation service produces.
 
@@ -490,8 +493,8 @@ keep theirs.
 6. **Error codes are UPPER_SNAKE.** Matches the existing `APP_INTEGRITY_TOKEN_REQUIRED` /
    `APP_INTEGRITY_TOKEN_INVALID` / `APP_INTEGRITY_PLATFORM_NOT_ALLOWED` family so clients switch on
    one style.
-7. **Backoff is per trigger with a 24-hour cap.** Enrolment can show UI; a mint-style 60-minute cap
-   would surface the check hourly to a user whose enrolment keeps failing.
+7. **Enrolment backoff grows with each failure, capped at 24 hours.** Enrolment can show UI; a
+   mint-style 60-minute cap would surface the check hourly to a user whose enrolment keeps failing.
 8. **No `remoteip`.** The service cannot reliably see the solver's address behind the load
    balancer, and requiring the enrol request IP to match the page load would break users on
    dual-stack or rotating mobile networks for no gain the key binding does not already give.
