@@ -11,7 +11,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useIntegrityCheckFrameHost } from '../useIntegrityCheckFrameHost.web'
 import { useIntegrityCheckFrameStore } from '../useIntegrityCheckFrameStore.web'
 
@@ -99,6 +99,10 @@ describe('useIntegrityCheckFrameHost', () => {
         useIntegrityCheckFrameStore.getState().hide()
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('asks on open once onboarding is done, and frames what the worker answers', async () => {
         mocks.request.mockResolvedValue(host)
 
@@ -156,6 +160,16 @@ describe('useIntegrityCheckFrameHost', () => {
         )
     })
 
+    it('ignores an enrolment-needed flag raised during onboarding', async () => {
+        mocks.isOnboarding = true
+        renderHook(() => useIntegrityCheckFrameHost())
+
+        act(() => mocks.neededListener?.())
+        await act(flushMicrotasks)
+
+        expect(mocks.request).not.toHaveBeenCalled()
+    })
+
     it('follows expand, collapse and finished from its own frame only', async () => {
         mocks.request.mockResolvedValue(host)
         const { result } = renderHook(() => useIntegrityCheckFrameHost())
@@ -186,12 +200,44 @@ describe('useIntegrityCheckFrameHost', () => {
         expect(result.current.url).toBeNull()
     })
 
-    it('holds the host port while the frame is up and releases it when the frame goes', async () => {
+    it('keeps holding the host port after the frame finishes, until the worker ends the attempt', async () => {
+        mocks.request.mockResolvedValue(host)
+        const { result } = renderHook(() => useIntegrityCheckFrameHost())
+        await vi.waitFor(() => expect(result.current.url).toBe(CHECK_URL))
+        const frameWindow = {} as Window
+        result.current.iframeRef.current = {
+            contentWindow: frameWindow,
+        } as HTMLIFrameElement
+
+        act(() => {
+            window.dispatchEvent(
+                new MessageEvent('message', {
+                    data: {
+                        type: 'pera:integrity-frame',
+                        v: 1,
+                        event: 'finished',
+                    },
+                    origin: CHECK_ORIGIN,
+                    source: frameWindow,
+                }),
+            )
+        })
+
+        expect(result.current.url).toBeNull()
+        expect(mocks.release).not.toHaveBeenCalled()
+
+        act(() => mocks.endedListener?.())
+
+        expect(mocks.release).toHaveBeenCalledTimes(1)
+    })
+
+    it('holds the host port while the frame is up, and drops both once the worker ends the attempt', async () => {
         mocks.request.mockResolvedValue(host)
         const { result } = renderHook(() => useIntegrityCheckFrameHost())
         await vi.waitFor(() =>
             expect(mocks.hold).toHaveBeenCalledWith(CHECK_URL),
         )
+        expect(result.current.url).toBe(CHECK_URL)
 
         act(() => mocks.endedListener?.())
 
@@ -211,16 +257,6 @@ describe('useIntegrityCheckFrameHost', () => {
         expect(mocks.release).toHaveBeenCalledTimes(1)
     })
 
-    it('removes the frame once the worker is done with its attempt', async () => {
-        mocks.request.mockResolvedValue(host)
-        const { result } = renderHook(() => useIntegrityCheckFrameHost())
-        await vi.waitFor(() => expect(result.current.url).toBe(CHECK_URL))
-
-        act(() => mocks.endedListener?.())
-
-        expect(result.current.url).toBeNull()
-    })
-
     it('removes the frame at the deadline', async () => {
         vi.useFakeTimers()
         mocks.request.mockResolvedValue({
@@ -235,6 +271,5 @@ describe('useIntegrityCheckFrameHost', () => {
         })
 
         expect(result.current.url).toBeNull()
-        vi.useRealTimers()
     })
 })

@@ -17,8 +17,12 @@ type IntegrityCheckFrameState = {
     /** Epoch milliseconds. */
     deadlineAt: number | null
     isExpanded: boolean
+    // The frame is gone but the host port stays held until the worker ends
+    // the attempt, so the solve cannot lose a race with the port closing.
+    isFinished: boolean
     show: (url: string, deadlineAt: number) => void
     setExpanded: (isExpanded: boolean) => void
+    finish: () => void
     hide: () => void
 }
 
@@ -27,8 +31,17 @@ export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
         url: null,
         deadlineAt: null,
         isExpanded: false,
-        show: (url, deadlineAt) => set({ url, deadlineAt, isExpanded: false }),
+        isFinished: false,
+        show: (url, deadlineAt) =>
+            set({ url, deadlineAt, isExpanded: false, isFinished: false }),
         setExpanded: isExpanded => set({ isExpanded }),
-        hide: () => set({ url: null, deadlineAt: null, isExpanded: false }),
+        finish: () => set({ isExpanded: false, isFinished: true }),
+        hide: () =>
+            set({
+                url: null,
+                deadlineAt: null,
+                isExpanded: false,
+                isFinished: false,
+            }),
     }),
 )

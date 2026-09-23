@@ -4065,6 +4065,6 @@
         "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
     },
     "integrityCheck": {
-        "frameTitle": "Pera Wallet-Prüfung"
+        "frame_title": "Pera Wallet-Prüfung"
     }
 }

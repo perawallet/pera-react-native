@@ -19,13 +19,14 @@ import {
     onIntegrityEnrolmentNeeded,
     parseIntegrityFrameMessage,
     requestIntegrityEnrolment,
+    type ExtensionSurface,
     type IntegrityEnrolReason,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIntegrityCheckFrameStore } from './useIntegrityCheckFrameStore.web'
 
 // An approval window lives for one dApp request and closes itself.
-const HOSTING_SURFACES: readonly string[] = ['popup', 'expanded']
+const HOSTING_SURFACES: readonly ExtensionSurface[] = ['popup', 'expanded']
 
 // Only the configured check page is ever framed, whatever the worker answers.
 const isConfiguredCheckUrl = (url: string): boolean => {
@@ -37,6 +38,7 @@ const isConfiguredCheckUrl = (url: string): boolean => {
 }
 
 export type UseIntegrityCheckFrameHostResult = {
+    /** The URL to frame, null while there is no frame to show. */
     url: string | null
     isExpanded: boolean
     iframeRef: RefObject<HTMLIFrameElement | null>
@@ -45,8 +47,16 @@ export type UseIntegrityCheckFrameHostResult = {
 export const useIntegrityCheckFrameHost =
     (): UseIntegrityCheckFrameHostResult => {
         const isOnboarding = useShowOnboarding()
-        const { url, deadlineAt, isExpanded, show, setExpanded, hide } =
-            useIntegrityCheckFrameStore()
+        const {
+            url,
+            deadlineAt,
+            isExpanded,
+            isFinished,
+            show,
+            setExpanded,
+            finish,
+            hide,
+        } = useIntegrityCheckFrameStore()
         const iframeRef = useRef<HTMLIFrameElement | null>(null)
         const wasOnboarding = useRef(isOnboarding)
         const isOnboardingNow = useRef(isOnboarding)
@@ -90,12 +100,12 @@ export const useIntegrityCheckFrameHost =
                 if (event.origin !== frameOrigin) return
                 const message = parseIntegrityFrameMessage(event.data)
                 if (!message) return
-                if (message.event === 'finished') hide()
+                if (message.event === 'finished') finish()
                 else setExpanded(message.event === 'expand')
             }
             window.addEventListener('message', handleMessage)
             return () => window.removeEventListener('message', handleMessage)
-        }, [url, hide, setExpanded])
+        }, [url, finish, setExpanded])
 
         useEffect(() => {
             if (!url) return
@@ -113,5 +123,5 @@ export const useIntegrityCheckFrameHost =
             return () => clearTimeout(timer)
         }, [deadlineAt, hide])
 
-        return { url, isExpanded, iframeRef }
+        return { url: isFinished ? null : url, isExpanded, iframeRef }
     }

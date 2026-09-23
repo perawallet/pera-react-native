@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,6 +15,7 @@ import { createChromeFake } from '../../test-utils/chrome'
 import {
     holdIntegrityCheckHost,
     onHostedCheckEnded,
+    onIntegrityEnrolmentNeeded,
     requestIntegrityEnrolment,
 } from '../enrol-client'
 
@@ -59,6 +60,39 @@ describe('requestIntegrityEnrolment', () => {
     })
 })
 
+// A chrome-fake storage call settles within a few microtasks; draining one
+// macrotask makes "did not fire" assertions reliable.
+const settle = (): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, 0))
+
+describe('onIntegrityEnrolmentNeeded', () => {
+    let fake: ReturnType<typeof createChromeFake>
+
+    beforeEach(() => {
+        fake = createChromeFake()
+        globalThis.chrome = fake.chrome
+    })
+
+    it('fires when the worker raises the flag', async () => {
+        const listener = vi.fn()
+        onIntegrityEnrolmentNeeded(listener)
+
+        await fake.chrome.storage.session.set({ 'integrity:enrol-needed': 1 })
+
+        expect(listener).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays quiet when the worker clears the flag after enrolling', async () => {
+        await fake.chrome.storage.session.set({ 'integrity:enrol-needed': 1 })
+        const listener = vi.fn()
+        onIntegrityEnrolmentNeeded(listener)
+
+        await fake.chrome.storage.session.remove('integrity:enrol-needed')
+
+        expect(listener).not.toHaveBeenCalled()
+    })
+})
+
 describe('onHostedCheckEnded', () => {
     let fake: ReturnType<typeof createChromeFake>
     const TOKEN = 't'.repeat(22)
@@ -73,9 +107,10 @@ describe('onHostedCheckEnded', () => {
         },
     })
 
-    beforeEach(() => {
+    beforeEach(async () => {
         fake = createChromeFake()
         globalThis.chrome = fake.chrome
+        await fake.chrome.storage.session.set(attempt({}))
     })
 
     it('stays quiet while the hosted attempt is still running', async () => {
@@ -83,8 +118,7 @@ describe('onHostedCheckEnded', () => {
         onHostedCheckEnded(URL_FOR(TOKEN), listener)
 
         await fake.chrome.storage.session.set(attempt({ phase: 'enrolling' }))
-        // The listener reads the attempt back asynchronously; let that settle.
-        await new Promise(resolve => setTimeout(resolve, 0))
+        await settle()
 
         expect(listener).not.toHaveBeenCalled()
     })
@@ -102,6 +136,35 @@ describe('onHostedCheckEnded', () => {
         await fake.chrome.storage.session.set(items)
 
         await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1))
+    })
+
+    it('fires when the attempt record is removed', async () => {
+        const listener = vi.fn()
+        onHostedCheckEnded(URL_FOR(TOKEN), listener)
+
+        await fake.chrome.storage.session.remove('integrity:enrol-attempt')
+
+        await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(1))
+    })
+
+    it('fires once on subscribe when the attempt was already over', async () => {
+        await fake.chrome.storage.session.set(attempt({ phase: 'done' }))
+        const listener = vi.fn()
+
+        onHostedCheckEnded(URL_FOR(TOKEN), listener)
+        await settle()
+
+        expect(listener).toHaveBeenCalledTimes(1)
+    })
+
+    it('never fires after unsubscribing, even for a read already in flight', async () => {
+        await fake.chrome.storage.session.set(attempt({ phase: 'done' }))
+        const listener = vi.fn()
+
+        onHostedCheckEnded(URL_FOR(TOKEN), listener)()
+        await settle()
+
+        expect(listener).not.toHaveBeenCalled()
     })
 })
 
