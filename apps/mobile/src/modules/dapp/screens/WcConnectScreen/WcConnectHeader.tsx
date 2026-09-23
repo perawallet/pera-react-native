@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-// Not a reuse of ConnectionApprovalViewHeader: that one navigates the dApp url
-// through a webview nothing renders here. Fidelity comes from importing its
-// stylesheet (see __tests__/visualFidelity.spec.ts).
+// Not a reuse of ConnectionApprovalViewHeader: that one carries network badges
+// and no requester-origin row. Fidelity comes from importing its stylesheet
+// (see __tests__/visualFidelity.spec.ts).
 import React from 'react'
-import { Linking } from 'react-native'
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
@@ -33,6 +32,7 @@ export type WcConnectHeaderProps = {
     requesterOrigin?: string
     /** When true the badge alone cannot vouch for `peer.url`, so the origin is named. */
     isRequesterOriginDistinct?: boolean
+    onPressUrl: () => void
 }
 
 export const WcConnectHeader = ({
@@ -40,6 +40,7 @@ export const WcConnectHeader = ({
     permissions,
     requesterOrigin,
     isRequesterOriginDistinct = false,
+    onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
     const requesterStyles = useRequesterStyles()
@@ -59,12 +60,6 @@ export const WcConnectHeader = ({
                 icon.endsWith('.jpg') ||
                 icon.endsWith('.jpeg'),
         ) ?? peer.icons?.at(0)
-
-    const handlePressUrl = (): void => {
-        if (!peer.url) return
-        // A new browser tab: nothing renders mobile's webview here.
-        void Linking.openURL(peer.url)
-    }
 
     return (
         <PWView style={styles.headerContainer}>
@@ -105,7 +100,7 @@ export const WcConnectHeader = ({
                 {!!peer.url && (
                     <PWButton
                         variant='link'
-                        onPress={handlePressUrl}
+                        onPress={onPressUrl}
                         title={peer.url}
                     />
                 )}

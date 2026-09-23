@@ -20,13 +20,9 @@ import {
 } from '@components/core'
 import { useStyles } from '@modules/walletconnect/components/connection-approval/styles'
 import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
-import {
-    generateOrderedUniqueId,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
 import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
@@ -48,6 +44,7 @@ export type ConnectionApprovalViewHeaderProps = {
      * the raw string since another handler's methods need not match v1's.
      */
     methods: string[]
+    onPressUrl: () => void
 }
 
 const permissionTitleKey: Record<string, string> = {
@@ -60,11 +57,11 @@ export const ConnectionApprovalViewHeader = ({
     peer,
     networks,
     methods,
+    onPressUrl,
 }: ConnectionApprovalViewHeaderProps) => {
     const styles = useStyles()
     const permissionItemStyles = usePermissionItemStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
 
     // The registry is keyed by the peer-asserted URL, which is spoofable, so it
     // can never mint the `verified` checkmark; `resolveDisplayableVerificationTier`
@@ -81,14 +78,6 @@ export const ConnectionApprovalViewHeader = ({
     )
 
     const preferredIcon = getPreferredDappIcon(peer.icons)
-
-    const handlePressUrl = () => {
-        if (!peer.url) return
-        pushWebView({
-            id: generateOrderedUniqueId(),
-            url: peer.url,
-        })
-    }
 
     return (
         <PWView style={styles.headerContainer}>
@@ -143,7 +132,7 @@ export const ConnectionApprovalViewHeader = ({
                 {!!peer.url && (
                     <PWButton
                         variant='link'
-                        onPress={handlePressUrl}
+                        onPress={onPressUrl}
                         title={peer.url}
                     />
                 )}

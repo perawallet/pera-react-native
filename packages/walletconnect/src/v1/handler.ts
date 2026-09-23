@@ -69,6 +69,8 @@ import {
     type GateResult,
 } from '../validation/inboundRequestGate'
 import {
+    bridgeUrlFromV1Uri,
+    isSecureBridgeUrl,
     isV1PairingUri,
     isWalletConnectV1Connection,
     WALLET_CONNECT_V1_KIND,
@@ -751,6 +753,19 @@ export const createWalletConnectV1Handler = (
     ): Promise<WalletConnectV1Connection> => {
         if (rebindLive(connection.id)) return asStatus(connection, 'active')
 
+        // Imported records (native-app migration, legacy store) never went
+        // through `pair`. Inactive rather than dropped, like a constructor
+        // failure below, so the dApp stays in settings.
+        if (!isSecureBridgeUrl(connection.metadata.bridge)) {
+            reportError(
+                new WalletConnectBridgeConnectionError(
+                    'Stored WalletConnect session has an unusable bridge',
+                ),
+                connectionScope(connection.id),
+            )
+            return asStatus(connection, 'inactive')
+        }
+
         // A keystore fault or a failed decrypt is this one session's problem;
         // thrown, it would abort `restore` for every session after it.
         let key: string | null
@@ -902,6 +917,15 @@ export const createWalletConnectV1Handler = (
                 })
                 throw new WalletConnectError(
                     'Not a WalletConnect v1 pairing URI',
+                )
+            }
+            const bridge = bridgeUrlFromV1Uri(uri)
+            if (!bridge || !isSecureBridgeUrl(bridge)) {
+                logger.warn('[WC v1] refused an insecure bridge', {
+                    ...walletConnectLogContext(uri),
+                })
+                throw new WalletConnectError(
+                    'WalletConnect v1 bridge must be https or wss',
                 )
             }
             // The shared factory keeps the SDK from adopting its own localStorage session.

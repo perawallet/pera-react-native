@@ -49,6 +49,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         isConnecting,
         handleConnect,
         handleCancel,
+        handlePressUrl,
         deliveryError,
     } = useWcConnectScreen()
 
@@ -91,6 +92,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         permissions={permissions}
                         requesterOrigin={requesterOrigin}
                         isRequesterOriginDistinct={isRequesterOriginDistinct}
+                        onPressUrl={handlePressUrl}
                     />
                 }
                 showsVerticalScrollIndicator={false}

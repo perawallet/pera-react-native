@@ -564,6 +564,12 @@ describe('walletconnect v1 handler behaviour', () => {
         return connector
     }
 
+    const withBridge = (bridge: string) =>
+        V1_URI.replace(
+            'bridge=https%3A%2F%2Fb.example',
+            `bridge=${encodeURIComponent(bridge)}`,
+        )
+
     /** Pairs, delivers a handshake and approves it for `accounts`. */
     const connect = async (accounts: string[] = ['AAAA']) => {
         const harness = await setup()
@@ -609,6 +615,64 @@ describe('walletconnect v1 handler behaviour', () => {
             'session_request',
             'transport_error',
         ])
+    })
+
+    it.each([
+        'http://b.example',
+        'ws://b.example',
+        'ws://192.168.1.10',
+        'ws://localhost.evil.com',
+        'ws://127.0.0.1.evil.com',
+        'ws://127.0.0.1\\@evil.com',
+        'ws://127.0.0.1.:52100',
+    ])('refuses to pair over %s, before any socket is opened', async bridge => {
+        const { handler } = await setup()
+
+        await expect(handler.pair(withBridge(bridge))).rejects.toThrow(
+            'bridge must be https or wss',
+        )
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+    })
+
+    it.each([
+        'wss://b.example',
+        'ws://127.0.0.1:52100',
+        'ws://localhost:52100',
+        'http://[::1]:52100',
+    ])('pairs over %s', async bridge => {
+        const { handler } = await setup()
+        const uri = withBridge(bridge)
+
+        await handler.pair(uri)
+
+        expect(lastConnector().options.uri).toBe(uri)
+    })
+
+    it('refuses a URI carrying two bridges — the SDK would dial the last', async () => {
+        const { handler } = await setup()
+        const smuggled = V1_URI.replace(
+            'bridge=https%3A%2F%2Fb.example',
+            'bridge=https%3A%2F%2Fb.example&bridge=http%3A%2F%2Fevil.example',
+        )
+
+        await expect(handler.pair(smuggled)).rejects.toThrow(
+            'bridge must be https or wss',
+        )
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+    })
+
+    it('reports a stored session with a cleartext bridge inactive instead of reviving it', async () => {
+        const { handler, records } = await setup([
+            {
+                ...SEEDED,
+                metadata: { ...SEEDED.metadata, bridge: 'http://b.example' },
+            },
+        ])
+
+        await handler.restore()
+
+        expect(wc.FakeConnector.instances).toHaveLength(0)
+        expect((await records())[0].status).toBe('inactive')
     })
 
     it('expands the 4160 wildcard into every network on the proposal', async () => {
