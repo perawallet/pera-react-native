@@ -257,16 +257,18 @@ export const handleHostPortConnect = (
     })
 }
 
+type EnrolOutcome = 'enrolled' | 'failed' | 'abandoned'
+
 const finishAttempt = async (
     attempt: EnrolAttempt,
-    outcome: 'enrolled' | 'failed',
+    outcome: EnrolOutcome,
 ): Promise<void> => {
     await writeAttempt({ ...attempt, phase: 'done' })
     await chrome.alarms.clear(INTEGRITY_ENROL_DEADLINE_ALARM)
     if (outcome === 'enrolled') {
         await enrolBackoff.clear()
         await clearEnrolmentNeeded()
-    } else {
+    } else if (outcome === 'failed') {
         await enrolBackoff.recordFailure()
     }
     // Only while it still shows the check: the user may have taken the tab elsewhere.
@@ -293,8 +295,16 @@ const dropInstallKey = async (): Promise<void> => {
 const submitEnrolment = async (
     attempt: EnrolAttempt,
     turnstileToken: string,
-): Promise<boolean> => {
+): Promise<EnrolOutcome> => {
     try {
+        // The mint loop may have dropped the key mid-check. Enrolling now would answer for
+        // another kid and count as a failure; the new key enrols on the next trigger.
+        if ((await getInstallKeyId()) !== attempt.kid) {
+            logger.info('Web integrity install key changed during enrolment', {
+                network: attempt.network,
+            })
+            return 'abandoned'
+        }
         const [deviceInstallationId, publicKey] = await Promise.all([
             ensureDeviceInstallationID(),
             exportInstallPublicKey(),
@@ -309,19 +319,19 @@ const submitEnrolment = async (
             logger.warn('Web integrity enrolment answered for another key', {
                 network: attempt.network,
             })
-            return false
+            return 'failed'
         }
         await putEnrolmentMarker(attempt.network, {
             kid,
             enrolledAt: new Date().toISOString(),
         })
-        return true
+        return 'enrolled'
     } catch (error) {
         const code = readIntegrityErrorCode(error)
         logger.warn('Web integrity enrolment failed', { code, error })
         // The backend binds this key to another device_id, so only a new key can enrol.
         if (code === 'PUBLIC_KEY_IN_USE') await dropInstallKey()
-        return false
+        return 'failed'
     }
 }
 
@@ -400,15 +410,12 @@ const handleCheckPortMessage = async (
                         phase: 'enrolling',
                     }
                     await writeAttempt(enrolling)
-                    const isEnrolled = await submitEnrolment(
+                    const outcome = await submitEnrolment(
                         enrolling,
                         message.turnstileToken,
                     )
-                    await finishAttempt(
-                        enrolling,
-                        isEnrolled ? 'enrolled' : 'failed',
-                    )
-                    if (isEnrolled) void resumeIntegrityMint()
+                    await finishAttempt(enrolling, outcome)
+                    if (outcome === 'enrolled') void resumeIntegrityMint()
                     return
                 }
             }

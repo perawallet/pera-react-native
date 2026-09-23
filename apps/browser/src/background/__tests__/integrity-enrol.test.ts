@@ -455,6 +455,21 @@ describe('integrity enrolment', () => {
             },
         )
 
+        it('abandons the attempt without enrolling when the install key changed mid-check', async () => {
+            fake.session.set(NEEDED_KEY, 1)
+            const { token } = await start()
+            mockGetInstallKeyId.mockResolvedValueOnce('n'.repeat(43))
+
+            connect(token).deliver(solved)
+
+            await vi.waitFor(() => expect(attempt().phase).toBe('done'))
+            expect(mockEnrolDevice).not.toHaveBeenCalled()
+            expect(fake.session.has(BACKOFF_KEY)).toBe(false)
+            expect(fake.session.has(NEEDED_KEY)).toBe(true)
+            expect(markers.has('mainnet')).toBe(false)
+            expect(mockResumeIntegrityMint).not.toHaveBeenCalled()
+        })
+
         const rejectedWith = (code: string) =>
             Object.assign(new Error(code), {
                 originalError: { data: { error: 'x', code } },

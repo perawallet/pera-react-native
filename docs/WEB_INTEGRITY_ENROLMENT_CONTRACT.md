@@ -271,7 +271,9 @@ the deadline.
 - The enrol call goes to the backend of the network active when the attempt started.
 - The deadline is 4 minutes: inside Turnstile's 300-second token life, leaving time for the enrol
   call. The host page hides its frame at the same `deadlineAt`.
-- On `solved`: move to `enrolling`, then `POST /integrity/enrol`. A 200 for the attempt's `kid`
+- On `solved`: move to `enrolling`, then `POST /integrity/enrol`. If the install key no longer
+  matches the attempt's `kid` (the mint loop dropped it mid-check), the attempt ends quietly with no
+  POST and no failure, and the new key enrols on the next trigger. A 200 for the attempt's `kid`
   persists the marker, clears backoff and `integrity:enrol-needed`, and clears the mint backoff and
   mints at once, since under enforcement the mint that asked for enrolment backed off. Anything else
   records a failure, and a `409 PUBLIC_KEY_IN_USE` also drops the install key and the minted token,
