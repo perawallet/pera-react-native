@@ -56,7 +56,66 @@ const noUnvalidatedOpenUrl = {
     },
 }
 
+// Digits, whitespace and punctuation alone are not copy.
+const NOT_COPY = /^[0-9\s!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]*$/
+// A prop whose name ends in one of these carries user-facing copy.
+const COPY_PROP = /(title|body|placeholder|label)$/
+
+const noHardcodedUiStrings = {
+    meta: {
+        type: 'suggestion',
+        docs: {
+            description:
+                'Render user-facing copy through t() rather than hardcoding it',
+        },
+        messages: {
+            text: '"{{text}}" is hardcoded in <Text>: move it into en.json and render it with t().',
+            prop: '{{name}}="{{text}}" is hardcoded: move it into en.json and render it with t().',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            JSXElement(node) {
+                const { name } = node.openingElement
+                if (name.type !== 'JSXIdentifier' || name.name !== 'Text') return
+                if (
+                    node.children.length === 0 ||
+                    node.children.some(child => child.type !== 'JSXText')
+                ) {
+                    return
+                }
+                const text = node.children
+                    .map(child => child.value)
+                    .join('')
+                    .trim()
+                if (NOT_COPY.test(text)) return
+                context.report({ node, messageId: 'text', data: { text } })
+            },
+            JSXAttribute(node) {
+                if (node.name.type !== 'JSXIdentifier') return
+                const name = node.name.name
+                if (!COPY_PROP.test(name)) return
+                if (
+                    node.value?.type !== 'Literal' ||
+                    typeof node.value.value !== 'string'
+                ) {
+                    return
+                }
+                const text = node.value.value.trim()
+                if (text === '' || /['"{}]/.test(text) || NOT_COPY.test(text)) {
+                    return
+                }
+                context.report({ node, messageId: 'prop', data: { name, text } })
+            },
+        }
+    },
+}
+
 export default {
     meta: { name: 'pera' },
-    rules: { 'no-unvalidated-open-url': noUnvalidatedOpenUrl },
+    rules: {
+        'no-unvalidated-open-url': noUnvalidatedOpenUrl,
+        'no-hardcoded-ui-strings': noHardcodedUiStrings,
+    },
 }

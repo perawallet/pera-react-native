@@ -85,6 +85,17 @@
           }
         ]
       }
+    },
+    {
+      "files": ["src/**/*.tsx"],
+      "excludeFiles": [
+        "src/modules/settings/screens/developer/**",
+        "src/**/__tests__/**",
+        "src/**/*.{spec,test}.tsx"
+      ],
+      "rules": {
+        "pera/no-hardcoded-ui-strings": "warn"
+      }
     }
   ]
 }
