@@ -68,7 +68,11 @@ vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
 // M8: the helper (trusted-iframe-origins.web) reads both networks' Bidali
 // base via getNetworkConfig — mocked here alongside config so PWWebView.web's
 // isSecure/trustedOrigins derivation resolves the same way real config would.
-vi.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
+    // The real helper: the commerce -> giftcards redirect rule under test.
+    getIframeOrigins: (
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    ).getIframeOrigins,
     config: {
         discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     },

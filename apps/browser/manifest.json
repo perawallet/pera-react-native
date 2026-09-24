@@ -129,6 +129,11 @@
     "https://firebaseinstallations.googleapis.com/*",
     "https://fcmregistrations.googleapis.com/*",
     "https://www.google-analytics.com/*",
-    "https://*.ingest.sentry.io/*"
+    "https://*.ingest.sentry.io/*",
+    "https://*.ingest.us.sentry.io/*",
+    "https://*.ingest.de.sentry.io/*",
+    "https://api.nf.domains/*",
+    "https://api.testnet.nf.domains/*",
+    "https://clients3.google.com/*"
   ]
 }

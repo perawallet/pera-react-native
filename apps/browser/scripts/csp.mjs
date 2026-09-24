@@ -10,36 +10,12 @@
  limitations under the License
  */
 
-const COMMERCE_HOST_PREFIX = 'commerce.'
-const GIFTCARDS_HOST_PREFIX = 'giftcards.'
-
 const LOOPBACK_SOURCES = [
     'http://localhost:*',
     'http://127.0.0.1:*',
     'ws://localhost:*',
     'ws://127.0.0.1:*',
 ]
-
-const toOrigin = url => {
-    try {
-        return new URL(url).origin
-    } catch {
-        return null
-    }
-}
-
-// Bidali's commerce host 302s to a `giftcards.` twin, and frame-src is checked
-// again after the redirect. Mirrors trusted-iframe-origins.web.ts in the app.
-const withRedirectTwin = url => {
-    const origin = toOrigin(url)
-    if (!origin) return []
-    const parsed = new URL(origin)
-    if (!parsed.hostname.startsWith(COMMERCE_HOST_PREFIX)) return [origin]
-    parsed.hostname =
-        GIFTCARDS_HOST_PREFIX +
-        parsed.hostname.slice(COMMERCE_HOST_PREFIX.length)
-    return [origin, parsed.origin]
-}
 
 /**
  * The `extension_pages` policy. In MV3 a declared policy replaces Chrome's
@@ -49,23 +25,8 @@ const withRedirectTwin = url => {
  * v1 bridge (taken from the pairing URI) and NFT copy/save (fetch() on the
  * metadata's media host) all reach hosts no build can enumerate.
  */
-export const buildExtensionPagesCsp = ({
-    appEnvironment,
-    discoverBaseUrl,
-    integrityCheckOrigin,
-    bidaliBaseUrls,
-    termsOfServiceUrl,
-}) => {
-    const frameSources = [
-        ...new Set(
-            [
-                toOrigin(discoverBaseUrl),
-                toOrigin(integrityCheckOrigin),
-                toOrigin(termsOfServiceUrl),
-                ...bidaliBaseUrls.flatMap(withRedirectTwin),
-            ].filter(Boolean),
-        ),
-    ]
+export const buildExtensionPagesCsp = ({ appEnvironment, frameOrigins }) => {
+    const frameSources = [...new Set(frameOrigins)]
     // LocalNet custom nodes and the e2e fake WalletConnect bridge.
     const loopback = appEnvironment === 'production' ? [] : LOOPBACK_SOURCES
 
@@ -75,7 +36,17 @@ export const buildExtensionPagesCsp = ({
         ['object-src', "'none'"],
         ['worker-src', "'self'"],
         ['base-uri', "'self'"],
-        ['connect-src', "'self'", 'https:', 'wss:', ...loopback],
+        // data:/blob: reach no network; NFT copy/save fetch() media URLs that
+        // can be either.
+        [
+            'connect-src',
+            "'self'",
+            'https:',
+            'wss:',
+            'data:',
+            'blob:',
+            ...loopback,
+        ],
         ['img-src', "'self'", 'https:', 'data:', 'blob:'],
         ['media-src', "'self'", 'https:', 'blob:'],
         ['frame-src', ...(frameSources.length ? frameSources : ["'none'"])],
@@ -85,4 +56,60 @@ export const buildExtensionPagesCsp = ({
         ['font-src', "'self'"],
     ]
     return directives.map(parts => parts.join(' ')).join('; ')
+}
+
+const parseDirectives = csp =>
+    new Map(
+        csp.split(';').map(entry => {
+            const [name, ...sources] = entry.trim().split(/\s+/)
+            return [name, sources]
+        }),
+    )
+
+/**
+ * Throws when the generated policy has lost a guarantee. A too-loose policy
+ * fails open silently, and a missing frame origin only shows up as a blank
+ * Discover or Bidali screen, so both are caught at build time.
+ */
+export const assertExtensionPagesCsp = (
+    csp,
+    { appEnvironment, requiredFrameOrigins },
+) => {
+    const directives = parseDirectives(csp)
+    const failures = []
+    const expectExactly = (name, expected) => {
+        const actual = directives.get(name)?.join(' ')
+        if (actual !== expected) {
+            failures.push(
+                `${name} is "${actual ?? '<missing>'}", expected "${expected}"`,
+            )
+        }
+    }
+    expectExactly('default-src', "'self'")
+    expectExactly('script-src', "'self' 'wasm-unsafe-eval'")
+    expectExactly('object-src', "'none'")
+
+    const frameSources = directives.get('frame-src') ?? []
+    for (const origin of requiredFrameOrigins) {
+        if (!frameSources.includes(origin)) {
+            failures.push(`frame-src is missing ${origin}`)
+        }
+    }
+    for (const source of frameSources) {
+        if (!source.startsWith('https://')) {
+            failures.push(`frame-src allows a non-https source: ${source}`)
+        }
+    }
+    if (
+        appEnvironment === 'production' &&
+        LOOPBACK_SOURCES.some(source => csp.includes(source))
+    ) {
+        failures.push('a production policy allows loopback')
+    }
+    if (failures.length > 0) {
+        throw new Error(
+            'generated extension CSP is unsafe or incomplete:\n  - ' +
+                failures.join('\n  - '),
+        )
+    }
 }
