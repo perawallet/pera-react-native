@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "react"],
-  "jsPlugins": ["eslint-plugin-unused-imports"],
+  "jsPlugins": ["eslint-plugin-unused-imports", "./apps/mobile/scripts/oxlint-pera-plugin.mjs"],
   "categories": {
     "correctness": "off"
   },
@@ -139,6 +139,18 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error",
         "@typescript-eslint/no-non-null-assertion": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/signing/src/pipeline/**",
+        "packages/signing/src/machine/**",
+        "packages/signing/src/hooks/useSignAndSubmitGroup.ts",
+        "packages/signing/src/hooks/useSigningRequest.ts",
+        "packages/signing/src/hooks/useSigningPipeline.ts"
+      ],
+      "rules": {
+        "pera/no-program-signer-in-dapp-paths": "error"
       }
     }
   ]

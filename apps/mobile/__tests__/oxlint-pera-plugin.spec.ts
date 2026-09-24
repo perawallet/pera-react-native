@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import plugin, { GALLERY_ENTRY_PATHS } from '../scripts/oxlint-pera-plugin.mjs'
+import plugin, {
+    DAPP_SIGNING_PATHS,
+    GALLERY_ENTRY_PATHS,
+} from '../scripts/oxlint-pera-plugin.mjs'
 
 type Node = Record<string, unknown>
 
@@ -231,5 +234,59 @@ describe('pera/dev-gallery-entry-points', () => {
 
     it.each(GALLERY_ENTRY_PATHS)('carves out %s, which still exists', path => {
         expect(existsSync(join(__dirname, '..', path))).toBe(true)
+    })
+})
+
+describe('pera/no-program-signer-in-dapp-paths', () => {
+    const lintSource = (text: string): string[] => {
+        const report = vi.fn()
+        const rule = plugin.rules['no-program-signer-in-dapp-paths']
+        rule.create({ report, sourceCode: { getText: () => text } }).Program()
+        return report.mock.calls.map(
+            ([{ loc, data }]) =>
+                `${data.name}@${loc.start.line}:${loc.start.column}`,
+        )
+    }
+
+    it('reports program-signer names in code, comments and strings', () => {
+        expect(
+            lintSource(
+                [
+                    "import { signProgram } from '../program'",
+                    '// falls back to useProgramSigner',
+                    "const e = 'encodeDelegatedLsig'",
+                ].join('\n'),
+            ),
+        ).toEqual([
+            'signProgram@1:9',
+            'useProgramSigner@2:17',
+            'encodeDelegatedLsig@3:11',
+        ])
+    })
+
+    it('allows look-alikes', () => {
+        expect(
+            lintSource(
+                'const cosignProgrammatic = 1\nconst signProgramX = 2\n',
+            ),
+        ).toEqual([])
+    })
+
+    it('is enabled for exactly the dApp signing paths, which still exist', () => {
+        const root = join(__dirname, '../../..')
+        const config = JSON.parse(
+            readFileSync(join(root, '.oxlintrc.json'), 'utf8'),
+        ) as {
+            overrides: { files: string[]; rules: Record<string, unknown> }[]
+        }
+        const override = config.overrides.find(
+            o => o.rules['pera/no-program-signer-in-dapp-paths'] === 'error',
+        )
+        expect(override?.files).toEqual(
+            DAPP_SIGNING_PATHS.map(p => (p.endsWith('.ts') ? p : `${p}/**`)),
+        )
+        for (const path of DAPP_SIGNING_PATHS) {
+            expect(existsSync(join(root, path)), path).toBe(true)
+        }
     })
 })

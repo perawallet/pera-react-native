@@ -197,11 +197,66 @@ const devGalleryEntryPoints = {
     },
 }
 
+/** Everything a dApp sign request flows through, relative to the repo root. */
+export const DAPP_SIGNING_PATHS = [
+    'packages/signing/src/pipeline',
+    'packages/signing/src/machine',
+    'packages/signing/src/hooks/useSignAndSubmitGroup.ts',
+    'packages/signing/src/hooks/useSigningRequest.ts',
+    'packages/signing/src/hooks/useSigningPipeline.ts',
+]
+
+// Word-bounded so cosignProgrammatic and friends stay legal. Raw text, as the
+// spec this replaces scanned it: a comment naming the signer is flagged too.
+const PROGRAM_SIGNER =
+    /\b(?:useProgramSigner|signProgram|signDelegatedLsig|encodeDelegatedLsig|ProgramSigningUnsupportedError)\b/g
+
+const lineColumn = (text, index) => {
+    const before = text.slice(0, index)
+    return {
+        line: before.split('\n').length,
+        column: index - (before.lastIndexOf('\n') + 1),
+    }
+}
+
+const noProgramSignerInDappPaths = {
+    meta: {
+        type: 'problem',
+        docs: {
+            description:
+                'Keep the delegated LogicSig signer unreachable from dApp signing',
+        },
+        messages: {
+            reachable:
+                '{{name}} must not be reachable from dApp signing: dApp requests resolve signers only through getSigningStrategy.',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            Program() {
+                const text = context.sourceCode.getText()
+                for (const match of text.matchAll(PROGRAM_SIGNER)) {
+                    context.report({
+                        loc: {
+                            start: lineColumn(text, match.index),
+                            end: lineColumn(text, match.index + match[0].length),
+                        },
+                        messageId: 'reachable',
+                        data: { name: match[0] },
+                    })
+                }
+            },
+        }
+    },
+}
+
 export default {
     meta: { name: 'pera' },
     rules: {
         'no-unvalidated-open-url': noUnvalidatedOpenUrl,
         'no-hardcoded-ui-strings': noHardcodedUiStrings,
         'dev-gallery-entry-points': devGalleryEntryPoints,
+        'no-program-signer-in-dapp-paths': noProgramSignerInDappPaths,
     },
 }
