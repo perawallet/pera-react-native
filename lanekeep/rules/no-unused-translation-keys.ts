@@ -46,7 +46,7 @@ export default defineRule({
     card: {
         message: 'an en.json key is never used',
         remediation:
-            'Delete the key from en.json and every other locale, or use it. A key built at run time is claimed by a template head (`errors.${code}`) or a literal naming its parent path; only non-error keys assembled from enums belong in EXCLUDED_KEYS in this rule.',
+            "Delete the key from en.json and every other locale, or use it. A key built at run time is claimed by a template head (`errors.${code}`) or a literal naming its parent path; only non-error keys assembled from enums belong in EXCLUDED_KEYS in this rule. A top-level key with no dot can't be claimed, so keep keys namespaced.",
         examples: {
             bad: '"settings.old_banner" in en.json, referenced nowhere',
             good: "t('settings.old_banner') in the screen that shows it",
