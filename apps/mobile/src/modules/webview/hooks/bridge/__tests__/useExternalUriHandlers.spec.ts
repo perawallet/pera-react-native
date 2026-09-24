@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { Linking } from 'react-native'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { parseDeeplink } from '@modules/deeplink'
 import { useExternalUriHandlers } from '../useExternalUriHandlers'
 import {
     TRUSTED,
@@ -37,11 +37,8 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 const mockHandleDeepLink = vi.fn()
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink', () => ({
     useDeepLink: () => ({ handleDeepLink: mockHandleDeepLink }),
-}))
-
-vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
 
@@ -237,6 +234,27 @@ describe('useExternalUriHandlers', () => {
                 '"error":{"code":-32602,"message":"Unsupported URL: custom://uri"}',
             )
         })
+
+        it.each([
+            ['scheme-less', 'expanded.html?deeplink=algorand://X'],
+            ['protocol-relative', '//evil.example'],
+            ['extension', 'chrome-extension://abc/expanded.html'],
+            ['script', 'javascript:alert(1)'],
+        ])(
+            'refuses a %s target instead of resolving it against the page',
+            (_label, uri) => {
+                const { webview, handlers } = render()
+
+                handlers.openNativeURI(
+                    bridgeMessage('4-bad', 'openNativeURI', { uri }),
+                    TRUSTED,
+                )
+
+                expect(Linking.canOpenURL).not.toHaveBeenCalled()
+                expect(Linking.openURL).not.toHaveBeenCalled()
+                expect(injectedScript(webview)).toContain('"code":-32602')
+            },
+        )
 
         it('answers InvalidParams when the uri is missing', () => {
             const { webview, handlers } = render()

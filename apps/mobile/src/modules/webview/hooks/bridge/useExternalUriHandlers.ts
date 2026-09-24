@@ -14,14 +14,14 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import type WebView from 'react-native-webview'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { useDeepLink, parseDeeplink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     JsonRpcErrorCode,
     sendErrorToWebview,
     sendMessageToWebview,
     toValidatedBrowserUrl,
+    toValidatedNativeUri,
 } from '../handlers'
 import type { BridgeHandler } from './types'
 import { useRequiredParams } from './useRequiredParams'
@@ -66,6 +66,7 @@ export const useExternalUriHandlers = (
             }
             void Linking.canOpenURL(url).then(supported => {
                 if (supported) {
+                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- toValidatedBrowserUrl above
                     void Linking.openURL(url)
                 } else {
                     sendUnsupportedUrl(message.id, url)
@@ -94,16 +95,23 @@ export const useExternalUriHandlers = (
             if (!hasRequiredParams(['uri'], message)) {
                 return
             }
-            const uri = message.params!.uri as string
+            const rawUri = message.params!.uri
 
-            if (parseDeeplink(uri)) {
-                void handleDeepLink(uri, false, 'in-app')
+            if (typeof rawUri === 'string' && parseDeeplink(rawUri)) {
+                void handleDeepLink(rawUri, false, 'in-app')
+                return
+            }
+
+            const uri = toValidatedNativeUri(rawUri)
+            if (!uri) {
+                sendUnsupportedUrl(message.id, String(rawUri))
                 return
             }
 
             void Linking.canOpenURL(uri)
                 .then(supported => {
                     if (supported) {
+                        // oxlint-disable-next-line pera/no-unvalidated-open-url -- toValidatedNativeUri above
                         void Linking.openURL(uri)
                     } else {
                         sendUnsupportedUrl(message.id, uri)

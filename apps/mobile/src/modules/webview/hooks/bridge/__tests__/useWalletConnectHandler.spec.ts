@@ -43,6 +43,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
         error instanceof Error ? error : new Error(String(error)),
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     AppError: class AppError extends Error {},
+    // ledger-shared's error classes read it at module scope.
+    ErrorSeverity: (
+        await vi.importActual<
+            typeof import('../../../../../../../../packages/shared/src/errors/base')
+        >('../../../../../../../../packages/shared/src/errors/base')
+    ).ErrorSeverity,
     // The `@modules/network` barrel transitively pulls store modules that
     // self-register for reset-on-logout.
     registerStore: vi.fn(),
