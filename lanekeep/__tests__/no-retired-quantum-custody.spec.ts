@@ -2,13 +2,21 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { locations, runRule } from './helpers.js'
+import { REPO_ROOT, locations, runRule } from './helpers.js'
 
 const RULE = 'lanekeep/rules/no-retired-quantum-custody.ts'
 const FIXTURES = 'lanekeep/__tests__/fixtures/quantum-custody/**/*.{ts,tsx}'
 
 describe('pera/no-retired-quantum-custody', () => {
+    it('is pinned to extensions/provider/src, its only extension root', () => {
+        expect(existsSync(join(REPO_ROOT, 'extensions/provider/src'))).toBe(
+            true,
+        )
+    })
+
     it('reports the retired names in code, comments, strings, regexes and JSX', async () => {
         const found = await runRule(RULE, FIXTURES)
 

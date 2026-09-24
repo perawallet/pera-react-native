@@ -2,7 +2,7 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-import { readFile, writeFile } from 'node:fs/promises'
+import { readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
@@ -41,6 +41,25 @@ describe('pera/locale-key-parity', () => {
         expect(messages).toContain(
             '"common.ok_zero" is in pt.json but not in en.json',
         )
+    })
+
+    it('the rules see every locale bundle listed in locales.ts', async () => {
+        const localesDir = join(REPO_ROOT, I18N, 'locales')
+        const source = await readFile(
+            join(REPO_ROOT, I18N, 'locales.ts'),
+            'utf8',
+        )
+        const files = (await readdir(localesDir)).filter(name =>
+            name.endsWith('.json'),
+        )
+
+        expect(files.length).toBeGreaterThan(0)
+        for (const file of files) {
+            const escaped = file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            expect(source).toMatch(
+                new RegExp(`^import \\w+ from '\\./locales/${escaped}'$`, 'm'),
+            )
+        }
     })
 
     it('sees a locale file edited with no TS file touched, on a warm cache', async () => {
