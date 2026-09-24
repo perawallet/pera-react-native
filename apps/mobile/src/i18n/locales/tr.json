@@ -1040,13 +1040,6 @@
                 "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
             }
         },
-        "validation": {
-            "generic": "Veriler geçersiz görünüyor.",
-            "invalid_address": "Adres geçersiz görünüyor: {{address}}",
-            "invalid_amount": "Miktar geçersiz görünüyor: {{amount}}",
-            "invalid_mnemonic": "Kurtarma passphrase’i geçersiz görünüyor.",
-            "required_field": "Zorunlu bir alan eksik: {{field}}"
-        },
         "transaction": {
             "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
             "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."

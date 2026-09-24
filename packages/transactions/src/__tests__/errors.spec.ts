@@ -189,4 +189,23 @@ describe('RekeyError', () => {
         expect(error.originalError).toBeInstanceOf(Error)
         expect(error.originalError?.message).toBe('something broke')
     })
+
+    it('is an AppError with no user-facing key, so callers keep owning the copy', () => {
+        const error = new RekeyError('submission_failed')
+
+        expect(error).toBeInstanceOf(AppError)
+        expect(error.message).toBe('Rekey failed: submission_failed')
+        expect(error.metadata).toMatchObject({
+            category: ErrorCategory.TRANSACTIONS,
+            severity: ErrorSeverity.MEDIUM,
+            retryable: false,
+        })
+        expect(error.metadata.messageKey).toBeUndefined()
+    })
+
+    it('treats a user rejection as low severity', () => {
+        expect(new RekeyError('user_rejected').metadata.severity).toBe(
+            ErrorSeverity.LOW,
+        )
+    })
 })

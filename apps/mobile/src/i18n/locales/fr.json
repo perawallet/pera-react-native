@@ -1040,13 +1040,6 @@
                 "body": "Le serveur a rencontré un problème lors du traitement de votre demande. Veuillez réessayer."
             }
         },
-        "validation": {
-            "generic": "Les données ne semblent pas valides.",
-            "invalid_address": "L’adresse ne semble pas valide : {{address}}",
-            "invalid_amount": "Le montant ne semble pas valide : {{amount}}",
-            "invalid_mnemonic": "La passphrase de récupération ne semble pas valide.",
-            "required_field": "Un champ obligatoire est manquant : {{field}}"
-        },
         "transaction": {
             "title": "Une erreur est survenue lors du traitement de cette transaction",
             "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste."

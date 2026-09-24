@@ -1040,13 +1040,6 @@
                 "body": "The server ran into a problem processing your request. Please try again."
             }
         },
-        "validation": {
-            "generic": "The data appears to be invalid.",
-            "invalid_address": "The address appears to be invalid: {{address}}",
-            "invalid_amount": "The amount appears to be invalid: {{amount}}",
-            "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
-            "required_field": "A required field is missing: {{field}}"
-        },
         "transaction": {
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."

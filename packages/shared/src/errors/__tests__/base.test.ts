@@ -257,14 +257,12 @@ describe('AppError messageKey', () => {
     test('preserves messageKey and params on the instance', () => {
         const error = new AppError('log-only text', {
             category: ErrorCategory.VALIDATION,
-            messageKey: 'errors.validation.invalid_address',
-            params: { address: 'ABC' },
+            messageKey: 'errors.webview.unsupported_url',
+            params: { url: 'ABC' },
         })
 
-        expect(error.metadata.messageKey).toBe(
-            'errors.validation.invalid_address',
-        )
-        expect(error.metadata.params).toEqual({ address: 'ABC' })
+        expect(error.metadata.messageKey).toBe('errors.webview.unsupported_url')
+        expect(error.metadata.params).toEqual({ url: 'ABC' })
     })
 
     test('leaves messageKey undefined when not declared', () => {
@@ -275,11 +273,11 @@ describe('AppError messageKey', () => {
 
     test('includes messageKey in the serialized form', () => {
         const error = new AppError('log-only text', {
-            messageKey: 'errors.validation.generic',
+            messageKey: 'errors.webview.invalid_method',
         })
 
         expect(error.toJSON().metadata.messageKey).toBe(
-            'errors.validation.generic',
+            'errors.webview.invalid_method',
         )
     })
 })

@@ -12,7 +12,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
-import { NoConnectionError } from '../../errors/network-validation'
+import { NoConnectionError } from '../../errors/network'
 import { assertOnline, mutationDefaults } from '../mutation-policy'
 
 afterEach(() => {

@@ -10,15 +10,22 @@
  limitations under the License
  */
 
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
+
 /**
  * Thrown when a passkey hook is invoked but the provider was constructed
  * without the passkey autofill extension. This typically indicates a
  * misconfigured `PeraProvider` composition.
  */
-export class PasskeyAutofillUnavailableError extends Error {
+export class PasskeyAutofillUnavailableError extends AppError {
     constructor() {
         super(
             'PasskeyAutofillService is not registered on the provider. Compose WithPasskeyAutofill into PeraProvider.',
+            { category: ErrorCategory.UNKNOWN, recoverable: false },
         )
         this.name = 'PasskeyAutofillUnavailableError'
     }
@@ -29,9 +36,12 @@ export class PasskeyAutofillUnavailableError extends Error {
  * as missing. Surfaced from the remove-mutation so the UI can show a
  * "passkey was already deleted" state rather than an opaque error.
  */
-export class PasskeyKeyNotFoundError extends Error {
+export class PasskeyKeyNotFoundError extends AppError {
     constructor(public readonly keyId: string) {
-        super(`No keystore key found for credential id ${keyId}`)
+        super(`No keystore key found for credential id ${keyId}`, {
+            severity: ErrorSeverity.LOW,
+            category: ErrorCategory.KMS,
+        })
         this.name = 'PasskeyKeyNotFoundError'
     }
 }
