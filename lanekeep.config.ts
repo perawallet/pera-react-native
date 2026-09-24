@@ -14,6 +14,7 @@ import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
+import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
@@ -80,5 +81,6 @@ export default defineConfig({
         noUnusedTranslationKeys,
         noI18nIntegritySuppressions,
         pqLibrarySeam,
+        noKeystoreMetaPackage,
     ],
 })
