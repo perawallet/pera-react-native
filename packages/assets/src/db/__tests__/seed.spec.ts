@@ -26,7 +26,7 @@ import {
     upsertAssets,
     updateAssetPeraMetadata,
     getAssetPeraMetadata,
-} from '../repository'
+} from '../metadataRepository'
 import { seedAlgoAsset } from '../seed'
 import { ALGO_ASSET } from '../../models'
 
