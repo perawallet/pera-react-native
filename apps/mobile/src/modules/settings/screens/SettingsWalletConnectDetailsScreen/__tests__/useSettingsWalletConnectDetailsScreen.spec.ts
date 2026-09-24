@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 
 // The screen revokes through the settings list hook's awaited `revoke`, not
 // a connector of its own — no UI surface may own a WC connector
-// (webConnectorOwnership.test.ts).
+// (the oxlint rule pera/wc-connector-ownership).
 vi.mock('@modules/settings/hooks/useConnectionSettingsList', () => ({
     useConnectionSettingsList: () => ({ revoke: mocks.revoke }),
 }))

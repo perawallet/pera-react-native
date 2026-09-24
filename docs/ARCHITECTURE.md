@@ -113,8 +113,8 @@ menu) is left out of production builds and kept in development and staging; the 
 `appEnvironment` baked into `packages/config/src/generated-env.ts` (or `APP_ENV`), not `NODE_ENV`,
 because a staging release bundles with `NODE_ENV=production` too. Its UI entry points read
 `routeCapabilities.developerGallery`, and its screens must be imported only through
-`modules/settings/routes/developer-gallery.ts`, which a test in
-`apps/mobile/__tests__/metro-build-gates.spec.ts` enforces. Metro logs both decisions at startup
+`modules/settings/routes/developer-gallery.ts`, which the oxlint rule
+`pera/dev-gallery-entry-points` enforces. Metro logs both decisions at startup
 (`[metro] developer gallery: included|stubbed`).
 
 ## Networks without a Pera backend

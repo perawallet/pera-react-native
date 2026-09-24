@@ -111,12 +111,12 @@ const falconShapedSignature = (
 }
 
 // Reached through kms's PQ seam rather than the Falcon library directly: the
-// seam is the only sanctioned home for that import (see
-// `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts`), and going
-// through it is also what guarantees a child minted here lands on the address
-// the shared quantum fixture derives. Imported lazily because kms reaches the
-// provider singleton, which imports this module — a top-level import would
-// close the cycle at module-evaluation time.
+// seam is the only sanctioned home for that import (see the lanekeep rule
+// `pera/pq-library-seam`), and going through it is also what guarantees a
+// child minted here lands on the address the shared quantum fixture derives.
+// Imported lazily because kms reaches the provider singleton, which imports
+// this module — a top-level import would close the cycle at
+// module-evaluation time.
 const loadPQProvider = async () =>
     (await import('@perawallet/wallet-core-kms')).getPQProvider()
 

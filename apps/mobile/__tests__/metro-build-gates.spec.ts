@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    existsSync,
-    mkdtempSync,
-    readdirSync,
-    readFileSync,
-    writeFileSync,
-} from 'fs'
+import { existsSync, mkdtempSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
@@ -96,43 +90,5 @@ describe('developer gallery stubs', () => {
             expect(stub).toBe(real.replace(/\.ts$/, '.stub.ts'))
             expect(existsSync(stub)).toBe(true)
         }
-    })
-
-    // The stubs only keep the gallery out of the bundle while nothing else
-    // imports its screens or catalog at runtime. Type-only imports are erased
-    // and don't count. The locale tour is exempt because metro.config.js
-    // stubs it out of every non-dev bundle on its own gate.
-    it('are the only runtime way into the gallery code', () => {
-        const galleryImport =
-            /^import\s+(?!type\b)[^']*?from\s+'[^']*screens\/developer\/(SettingsDeveloperGalleryScreen|GalleryCategoryScreen|GalleryComponentPreviewScreen|gallery-catalog)[^']*'/m
-        const allowed = [
-            'src/modules/settings/routes/developer-gallery.ts',
-            'src/modules/settings/screens/developer/SettingsDeveloperGalleryScreen/',
-            'src/modules/settings/screens/developer/GalleryCategoryScreen/',
-            'src/modules/settings/screens/developer/GalleryComponentPreviewScreen/',
-            'src/modules/settings/screens/developer/gallery-catalog/',
-            'src/modules/locale-tour/',
-        ]
-        const sourceFiles = (
-            readdirSync(path.join(PROJECT_ROOT, 'src'), {
-                recursive: true,
-            }) as string[]
-        )
-            .map(file => path.join('src', file))
-            .filter(
-                file =>
-                    /\.tsx?$/.test(file) &&
-                    !file.includes(`${path.sep}__tests__${path.sep}`),
-            )
-
-        const offenders = sourceFiles.filter(
-            file =>
-                !allowed.some(prefix => file.startsWith(prefix)) &&
-                readFileSync(path.join(PROJECT_ROOT, file), 'utf8').search(
-                    galleryImport,
-                ) !== -1,
-        )
-
-        expect(offenders).toEqual([])
     })
 })
