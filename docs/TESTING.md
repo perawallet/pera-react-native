@@ -212,9 +212,11 @@ export const mockListCurrencies = ({ response, status = 200 }: …): HttpHandler
     http.get('*/v1/currencies/', () => HttpResponse.json(response, { status }))
 ```
 
-Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test-handlers`, wired
-through `apps/mobile/vitest.config.ts` aliases and `apps/mobile/tsconfig.json` paths. That sub-export
-deliberately does not exist in `package.json#exports`, so production code can't reach it.
+Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test-handlers`. Mobile's
+vitest aliases it to source whenever `src/test-handlers.ts` exists (`apps/mobile/vitest.aliases.ts`
+generates every workspace package alias from `package.json#exports`), and `apps/mobile/tsconfig.json`
+`paths` types it. That sub-export deliberately does not exist in `package.json#exports`, so
+production code can't reach it.
 
 To add a factory:
 
@@ -224,9 +226,8 @@ To add a factory:
 3. If the package has no other handlers yet, add `"msw": "catalog:"` to its `devDependencies` and
    confirm its `vite.config.ts` dts plugin excludes `**/{handlers,*-handlers}.ts`, which every
    package in the repo carries.
-4. For mobile imports, add a deep alias `@perawallet/wallet-core-<domain>/test-handlers` in
-   `apps/mobile/vitest.config.ts` _before_ the package's main alias, plus a matching entry in
-   `apps/mobile/tsconfig.json` `paths`.
+4. For mobile imports, add a matching entry in `apps/mobile/tsconfig.json` `paths`. The vitest
+   alias is generated; check the package isn't in `vitest.config.ts`'s dist-resolved lists.
 5. Run `pnpm build && pnpm lint:bundle`. The leak guard greps every `dist/` for msw imports and fails
    CI if a handler enters the prod bundle.
 
