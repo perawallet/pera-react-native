@@ -66,6 +66,31 @@ describe('handleBackgroundMessage', () => {
             expect.objectContaining({ data: { peraUrl: undefined } }),
         )
     })
+    it.each([
+        'https://evil.example/phish',
+        'javascript:alert(1)',
+        'chrome-extension://abc/expanded.html?deeplink=x',
+        'https://perawallet.app/other',
+    ])('drops a non-Pera deeplink: %s', async url => {
+        await handleBackgroundMessage({ data: { url } } as never)
+
+        expect(showNotification).toHaveBeenCalledWith(
+            'Pera Wallet',
+            expect.objectContaining({ data: { peraUrl: undefined } }),
+        )
+    })
+
+    it.each([
+        'algorand://ADDR?amount=1',
+        'https://perawallet.app/qr/perawallet/home',
+    ])('keeps an allowed deeplink: %s', async url => {
+        await handleBackgroundMessage({ data: { url } } as never)
+
+        expect(showNotification).toHaveBeenCalledWith(
+            'Pera Wallet',
+            expect.objectContaining({ data: { peraUrl: url } }),
+        )
+    })
 })
 
 describe('handleNotificationClick', () => {
@@ -85,6 +110,21 @@ describe('handleNotificationClick', () => {
         expect(create).toHaveBeenCalledWith({
             url: 'chrome-extension://abc/expanded.html?deeplink=perawallet%3A%2F%2Fasset%2F0',
         })
+    })
+
+    // Notifications shown by an earlier worker version stored the url unchecked.
+    it('refuses a stored non-Pera deeplink', () => {
+        const close = vi.fn()
+
+        handleNotificationClick({
+            notification: {
+                data: { peraUrl: 'https://evil.example/phish' },
+                close,
+            },
+            waitUntil: vi.fn(),
+        } as never)
+
+        expect(create).not.toHaveBeenCalled()
     })
 
     it('ignores notifications it did not create', () => {
