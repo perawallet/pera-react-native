@@ -12,7 +12,7 @@ catalog:
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.26
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.27
   "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.16
@@ -202,16 +202,18 @@ patchedDependencies:
   # happens under a Web Lock with a re-read once held, so the first caller
   # creates and the rest read what it wrote. Drop once upstream takes it.
   "@algorandfoundation/keystore-web@1.0.0-canary.3": patches/@algorandfoundation__keystore-web@1.0.0-canary.3.patch
-  # Three unrelated reasons. The Android credential provider keeps the legacy
-  # native app's service class name so Credential Manager carries the user's
-  # enablement across the upgrade, relying-party scoping so the credential
-  # provider doesn't hand every stored passkey to any caller (PERA-4714), and
-  # every user-facing string the package ships names "Rocca Wallet" — its own
-  # product, shown verbatim in the iOS Face ID / passcode prompts. None of the
-  # three is configurable through plugin options.
-  # canary.26 shipped the derivedParentSecret fix upstream (parent.bytes), so
-  # that hunk is dropped rather than carried forward.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.26.patch
+  # Three unrelated reasons, none configurable through plugin options:
+  # - The Android credential provider keeps the legacy native app's service
+  #   class name, so Credential Manager carries the user's enablement across
+  #   the upgrade.
+  # - Android WebAuthn through a browser: clientData names the page's origin,
+  #   read through Google's privileged-browser allowlist, not the browser's app
+  #   identity. Registration honours the caller's clientDataHash, as upstream's
+  #   assertion path already does, and returns the authenticatorData /
+  #   publicKeyAlgorithm / publicKey fields without which Chrome rejects it.
+  # - The package's iOS strings name its own product ("Rocca"), including the
+  #   Face ID usage text and the biometric / passcode prompt reasons.
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.27": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.27.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
