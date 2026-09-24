@@ -76,7 +76,8 @@
  * what the fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
  *
  * - Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed
- *   base64url payload the provider falls back to when it has no master key.
+ *   base64url payload, which the provider's read path still accepts although
+ *   it only writes sealed records.
  * - Both credential type strings: `hd-derived-p256` and the legacy
  *   `xhd-derived-p256`, which the provider's read path still accepts.
  * - Byte fields as JSON **number arrays**, not `{$u8}`.
