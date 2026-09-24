@@ -24,6 +24,7 @@ export default defineRule({
         pathMatches: [
             '**/apps/*/src/**',
             '**/packages/*/src/**',
+            '**/extensions/*/src/**',
             '**/conformance/src/**',
         ],
     },
