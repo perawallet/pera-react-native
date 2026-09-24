@@ -11,12 +11,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { getWebTabTransition } from '../tab-transitions'
+import { getTabTransition } from '../tab-transitions.web'
 import { SCREEN_ANIMATION_DURATION_MS } from '@constants/ui'
 
-describe('getWebTabTransition', () => {
+describe('getTabTransition', () => {
     it('enables tab animation with a timing spec at the screen duration', () => {
-        const transition = getWebTabTransition(360)
+        const transition = getTabTransition(360)
 
         expect(transition.animation).toBe('shift')
         expect(transition.transitionSpec).toEqual({
@@ -29,7 +29,7 @@ describe('getWebTabTransition', () => {
         const interpolate = vi.fn().mockReturnValue('interpolated')
         const progress = { interpolate } as never
 
-        const transition = getWebTabTransition(360)
+        const transition = getTabTransition(360)
         const { sceneStyle } = transition.sceneStyleInterpolator!({
             current: { progress },
         })

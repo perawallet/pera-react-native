@@ -155,6 +155,13 @@ Anything off on web is off for one of three reasons, and the comment says which.
 Keeping the reason at the flag rather than in a separate document is deliberate: the next person to
 consider flipping it is already reading that line.
 
+A web difference that is not a product decision (a focus-ring reset, a browser API that needs a user
+gesture) goes in a small `.web.ts` twin of a constant or function instead of a flag.
+`pera/no-platform-os-web` (`apps/mobile/scripts/oxlint-pera-plugin.mjs`) fails any
+`Platform.OS === 'web'` comparison in `apps/mobile/src`, so one of the two is the only way to branch.
+Native-only iOS/Android splits read `isIOS()`/`isAndroid()` from `@utils/platform`; a capability that
+differs between them computes its native value there (`ledgerUsb` is `isAndroid()`).
+
 ### Keeping code out of a build
 
 A capability hides a feature but still ships its code. Code that must not be in a bundle at all is

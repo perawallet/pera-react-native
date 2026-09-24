@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { isAndroid } from '@utils/platform'
 import { PasskeysHero } from '../PasskeysHero'
 import { useStyles } from './styles'
 
@@ -26,14 +26,12 @@ export const PasskeysDisabledState = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const bodyKey =
-        Platform.OS === 'android'
-            ? 'settings.passkeys.disabled_body_android'
-            : 'settings.passkeys.disabled_body_ios'
-    const infoBodyKey =
-        Platform.OS === 'android'
-            ? 'settings.passkeys.disabled_info_body_android'
-            : 'settings.passkeys.disabled_info_body_ios'
+    const bodyKey = isAndroid()
+        ? 'settings.passkeys.disabled_body_android'
+        : 'settings.passkeys.disabled_body_ios'
+    const infoBodyKey = isAndroid()
+        ? 'settings.passkeys.disabled_info_body_android'
+        : 'settings.passkeys.disabled_info_body_ios'
 
     return (
         <PWView

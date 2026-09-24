@@ -19,7 +19,6 @@ import {
 } from 'react'
 import {
     Keyboard,
-    Platform,
     type LayoutChangeEvent,
     type StyleProp,
     type ViewStyle,
@@ -34,6 +33,7 @@ import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
 import { NavigationContext } from '@react-navigation/native'
+import { isIOS } from '@utils/platform'
 import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { PWScreenNestedContext } from './nestedContext'
@@ -214,10 +214,8 @@ export const PWScreen = ({
                 ) : (
                     <KeyboardAvoidingView
                         style={styles.keyboardView}
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        keyboardVerticalOffset={
-                            Platform.OS === 'ios' ? bottomInset : 0
-                        }
+                        behavior={isIOS() ? 'padding' : 'height'}
+                        keyboardVerticalOffset={isIOS() ? bottomInset : 0}
                     >
                         {renderedHeader}
                         {renderedBody}

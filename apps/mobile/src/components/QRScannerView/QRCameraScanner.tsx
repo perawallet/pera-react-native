@@ -12,7 +12,6 @@
 
 import { useCallback, useRef } from 'react'
 import {
-    Platform,
     type LayoutChangeEvent,
     type StyleProp,
     type ViewStyle,
@@ -27,6 +26,7 @@ import {
     type TargetBarcodeFormat,
 } from 'react-native-vision-camera-barcode-scanner'
 import { logger } from '@perawallet/wallet-core-shared'
+import { isAndroid } from '@utils/platform'
 
 // IMPORTANT: this is the ONLY module that imports
 // `react-native-vision-camera-barcode-scanner`. That package creates its MLKit
@@ -99,7 +99,7 @@ export const QRCameraScanner = ({
     // No-ops before layout is measured and rejects without focus metering —
     // both fall back to native AF plus tap-to-focus. See.
     const focusCenter = useCallback(() => {
-        if (Platform.OS !== 'android') {
+        if (!isAndroid()) {
             return
         }
 

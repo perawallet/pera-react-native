@@ -10,17 +10,12 @@
  limitations under the License
  */
 
-import { isIOS } from '@utils/platform'
+// RNW doesn't reset the browser's default :focus-visible ring; longhand is
+// required since RNW rejects the `outline` shorthand.
+export const inputFocusRingReset: object | null = {
+    outlineStyle: 'none',
+} as unknown as object
 
-export const fontFamilies = {
-    DMSANS: {
-        400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
-        500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
-        700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
-    },
-    DMMONO: {
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
-    },
-}
+// mousedown on the icon blurs the input first, which would unmount a
+// focus-conditional toggle before its press lands.
+export const isVisibilityToggleAlwaysMounted = true

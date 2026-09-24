@@ -53,8 +53,8 @@ vi.mock('@hooks/useIsCardPushProvisioningEnabled', () => ({
     useIsCardPushProvisioningEnabled: () => mocks.isEnabled,
 }))
 
-vi.mock('../../../../platform/utils', async () => {
-    const actual = await vi.importActual<object>('../../../../platform/utils')
+vi.mock('@utils/platform', async () => {
+    const actual = await vi.importActual<object>('@utils/platform')
     return {
         ...actual,
         isIOS: () => mocks.isIOS,

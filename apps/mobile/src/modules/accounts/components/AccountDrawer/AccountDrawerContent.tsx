@@ -11,13 +11,13 @@
  */
 
 import type { ReactNode } from 'react'
-import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWView } from '@components/core'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useLanguage } from '@hooks/useLanguage'
+import { isAndroid } from '@utils/platform'
 
 import { useStyles } from './styles'
 
@@ -59,8 +59,7 @@ export const AccountDrawerContent = ({
     const ownsInsets = !isWithinSafeArea
     const styles = useStyles({
         topInset: ownsInsets ? insets.top : 0,
-        bottomInset:
-            ownsInsets && Platform.OS === 'android' ? insets.bottom : 0,
+        bottomInset: ownsInsets && isAndroid() ? insets.bottom : 0,
     })
     const { t } = useLanguage()
 

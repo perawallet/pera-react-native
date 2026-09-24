@@ -10,17 +10,6 @@
  limitations under the License
  */
 
-import { isIOS } from '@utils/platform'
-
-export const fontFamilies = {
-    DMSANS: {
-        400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
-        500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
-        700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
-    },
-    DMMONO: {
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
-    },
-}
+// react-native-web's ScrollView never emits onScrollBeginDrag, so onScroll is
+// the only signal left to exit search mode on.
+export const shouldUnpinSearchOnScroll = true

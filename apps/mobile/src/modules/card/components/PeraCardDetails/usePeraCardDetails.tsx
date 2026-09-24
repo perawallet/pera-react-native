@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Linking, Platform } from 'react-native'
+import { Linking } from 'react-native'
 import {
     CardStatus,
     useCardDetailsMutation,
@@ -31,6 +31,7 @@ import { useWebView } from '@modules/webview'
 import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
+import { isIOS } from '@utils/platform'
 import {
     useAddCardToWallet,
     useCardErrorToast,
@@ -175,7 +176,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const isOffline = !hasInternet || isStatusPaused
 
     // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
-    const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
+    const walletPlatform = isIOS() ? 'apple' : 'google'
 
     const cardDetails = useCardDetailsMutation()
     // Shared with the Card Frozen banner so the in-flight unfreeze state (driven

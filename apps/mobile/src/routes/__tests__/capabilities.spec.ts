@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { routeCapabilities } from '../capabilities'
 import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
@@ -22,16 +22,33 @@ describe('route capabilities', () => {
         // both are deliberately off for native, not a current-behavior
         // regression. deepLinkPaste is web-only (native keeps the qrScanner
         // camera instead — the two flags are mutually exclusive per platform).
+        // ledgerUsb follows the native OS (Android only); the specs run as iOS.
         const {
             vaultSecuritySettings,
             connectionsSettings,
             deepLinkPaste,
+            ledgerUsb,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(connectionsSettings).toBe(false)
         expect(deepLinkPaste).toBe(false)
+        expect(ledgerUsb).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
+    })
+
+    it('native map offers Ledger USB on Android only', async () => {
+        const { Platform } = await import('react-native')
+        const originalOS = Platform.OS
+        try {
+            Platform.OS = 'android'
+            vi.resetModules()
+            const android = await import('../capabilities')
+            expect(android.routeCapabilities.ledgerUsb).toBe(true)
+        } finally {
+            Platform.OS = originalOS
+            vi.resetModules()
+        }
     })
 
     it('web map: M6 discover off (feature-gate crash), webview-dependent leftovers/card features still off (spec)', () => {
@@ -74,6 +91,9 @@ describe('route capabilities', () => {
             // The unified Connections settings screen supersedes the
             // separate WalletConnect menu entry on web.
             connectionsSettings: true,
+            // A sheet can't fill the popup; collectible media opens in a tab.
+            fullScreenMediaViewer: false,
+            ledgerUsb: true,
         })
     })
 
