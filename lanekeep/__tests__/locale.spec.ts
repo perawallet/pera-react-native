@@ -34,7 +34,7 @@ describe('lanekeep/shared/locale', () => {
         })
     })
 
-    it('lists every leaf whatever its value type, as the old lint did', () => {
+    it('lists every leaf whatever its value type, not just strings', () => {
         expect([...leafKeys(RAW)].sort()).toEqual([
             'a.b',
             'a.c.0',

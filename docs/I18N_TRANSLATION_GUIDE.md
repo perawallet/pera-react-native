@@ -6,12 +6,12 @@ translating anything. Most of it exists because getting it wrong is invisible
 in review and only shows up on a real device.
 
 Source of truth for the locale registry is `apps/mobile/src/i18n/locales.ts`.
-Parity is enforced by `tools/i18n-lint.cjs` (`pnpm run lint:i18n`), a blocking
-CI check.
+Parity is enforced by the lanekeep rule `pera/locale-key-parity`, part of
+`pnpm lint` and blocking in CI.
 
 ## Hard mechanical rules
 
-`lint:i18n` enforces strict bidirectional key parity against `en.json`:
+`pera/locale-key-parity` enforces strict bidirectional key parity against `en.json`:
 a missing key fails, and so does an extra one.
 
 1. Mirror `en.json`'s key structure exactly: same nesting, same names. Never
@@ -129,7 +129,7 @@ They are not. i18next treats `_zero` as an explicit special case at
 rather than "0 conta". It is an i18next feature, not a CLDR one, and it will not
 appear in any plural-category table you look up.
 
-`tools/i18n-lint.cjs` was relaxed to allow a bundle to carry plural variants
+`pera/locale-key-parity` allows a bundle to carry plural variants
 `en.json` has no category for, which is what lets those keys exist. The
 missing-key check stays strict, so this does not weaken parity in the direction
 that matters.
@@ -248,8 +248,8 @@ What worked:
    file. That guarantees no stale key survives and the committed file diffs
    cleanly against its siblings.
 6. Re-check parity immediately before opening the PR. `en.json` moves; a
-   bundle validated an hour ago can already be short. `lint:i18n` will catch it,
-   but only after CI has run.
+   bundle validated an hour ago can already be short. `pnpm lint:lanekeep`
+   catches it before CI does.
 
 ## Validating on device
 

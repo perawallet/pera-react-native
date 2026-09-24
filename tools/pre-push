@@ -144,17 +144,6 @@ else
 fi
 rm "$DTS_LOG"
 
-# Run i18n check
-echo "\n${YELLOW}Checking i18n...${NC}"
-I18N_LOG=$(mktemp)
-if pnpm run lint:i18n > "$I18N_LOG" 2>&1; then
-    echo "${GREEN}✓ i18n valid${NC}"
-else
-    echo "${RED}i18n check failed.${NC}"
-    record_failure "i18n Check" "$I18N_LOG" "${YELLOW}Please ensure all files have the proper i18n.${NC}"
-fi
-rm "$I18N_LOG"
-
 # Doc hygiene. Blocks on wrongness (a path that no longer exists, a dead link,
 # a reference to a work item nobody will be able to look up); reports on length
 # without blocking, because that needs a human's judgement.

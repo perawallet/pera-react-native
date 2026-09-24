@@ -151,9 +151,6 @@ jobs:
       - name: Prettier
         run: pnpm run format --check
 
-      - name: i18n Check
-        run: pnpm run lint:i18n
-
       # Lockfile-only, so it belongs on the cheap job. Two resolved algosdk
       # copies break `instanceof Transaction`/`instanceof Address` and msgpack
       # identity across the algokit-utils boundary, and a

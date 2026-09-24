@@ -33,7 +33,9 @@ const EXCLUDED_KEYS = new Set([
 // A literal that could name a key: dotted, word characters and hyphens.
 const KEY_SHAPED = /^[A-Za-z][\w-]*(?:\.[\w-]+)+$/
 // A literal naming a key path claims the keys under it, e.g. an i18nBaseKey
-// completed at run time. Word characters only, as the old lint had it.
+// completed at run time. Word characters only: hosts and package names are
+// dotted and hyphenated, and keeping hyphens out of ancestor claims stops
+// them claiming a key subtree.
 const PATH_SHAPED = /^[A-Za-z]\w*(?:\.\w+)+$/
 // `errors.algod.${code}` and `networks_${chain}` build keys from a head.
 const TEMPLATE_HEAD = /^`([A-Za-z][\w.]*[._])\$\{/

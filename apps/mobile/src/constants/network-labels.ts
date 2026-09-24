@@ -13,8 +13,9 @@
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 /**
- * i18n keys for each network's display name. Static strings: pnpm lint:i18n
- * cannot verify an interpolated key, so no `common.network_label.${network}`.
+ * i18n keys for each network's display name. Static strings: the i18n lint
+ * rules cannot verify an interpolated key, so no
+ * `common.network_label.${network}`.
  */
 export const NETWORK_LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'common.network_label.mainnet',
