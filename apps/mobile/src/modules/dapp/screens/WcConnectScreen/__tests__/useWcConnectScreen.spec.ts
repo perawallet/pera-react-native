@@ -319,6 +319,7 @@ describe('useWcConnectScreen', () => {
             act(() => result.current.handlePressUrl())
 
             expect(Linking.openURL).not.toHaveBeenCalled()
+            expect(result.current.canOpenPeerUrl).toBe(false)
         })
 
         it('opens an https peer url in a new tab', () => {
@@ -327,6 +328,13 @@ describe('useWcConnectScreen', () => {
             act(() => result.current.handlePressUrl())
 
             expect(Linking.openURL).toHaveBeenCalledWith('https://dapp.example')
+        })
+
+        it('labels the peer url without its scheme and marks it openable', () => {
+            const { result } = render()
+
+            expect(result.current.peerUrlLabel).toBe('dapp.example')
+            expect(result.current.canOpenPeerUrl).toBe(true)
         })
     })
 })

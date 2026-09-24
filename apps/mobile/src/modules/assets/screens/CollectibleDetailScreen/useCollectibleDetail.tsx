@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { Linking, Platform } from 'react-native'
+import { Platform } from 'react-native'
 import { shareText } from '@utils/shareText'
 import { getImageBase64 } from '@utils/getImageBase64'
 import { saveImageToDevice } from '@utils/saveImageToDevice'
@@ -43,6 +43,7 @@ import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { openValidatedBrowserUrl } from '@modules/webview'
 import { OptOutConfirmationContent } from '@modules/accounts'
 import {
     SendFundsContent,
@@ -375,7 +376,7 @@ export const useCollectibleDetail = (
             // Opening the raw .glb in a new tab is a strictly-better
             // fallback than a silent no-op: the browser will offer to
             // download/preview it rather than doing nothing at all.
-            void Linking.openURL(modelUrl)
+            openValidatedBrowserUrl(modelUrl)
             return
         }
         setModelViewerUrl(modelUrl)
@@ -396,7 +397,7 @@ export const useCollectibleDetail = (
             // instead, which is what actually fills the screen there.
             if (Platform.OS === 'web') {
                 const targetUri = fullScreenMedia[targetIndex]?.uri
-                if (targetUri) void Linking.openURL(targetUri)
+                if (targetUri) openValidatedBrowserUrl(targetUri)
                 return
             }
 

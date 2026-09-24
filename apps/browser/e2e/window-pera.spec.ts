@@ -222,9 +222,11 @@ test('a clicked connect opens the proposal naming the verified origin; approving
     await expect(
         approvalPage.getByTestId('wc-connect-requester-verified-badge'),
     ).toBeVisible()
+    // Shown without its scheme, and as plain text rather than a link: the e2e
+    // dApp is served over http, which fails the header's https-only gate.
     await expect(
-        approvalPage.getByText(dappOrigin, { exact: false }).first(),
-    ).toBeVisible()
+        approvalPage.getByTestId('wc-connect-peer-url-text'),
+    ).toHaveText(dappOrigin.replace(/^https?:\/\//, ''))
 
     const connectButton = approvalPage.getByTestId('wc-connect-connect')
     await selectAccountAndArmConnect(approvalPage, connectButton)

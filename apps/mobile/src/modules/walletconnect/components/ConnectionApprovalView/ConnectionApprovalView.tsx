@@ -49,6 +49,8 @@ export const ConnectionApprovalView = ({
         handleAccountPress,
         handleConnect,
         handleCancel,
+        peerUrlLabel,
+        canOpenPeerUrl,
         handlePressUrl,
     } = useConnectionApprovalView(proposal)
 
@@ -76,6 +78,8 @@ export const ConnectionApprovalView = ({
                         peer={proposal.peer}
                         networks={proposal.requested.networks}
                         methods={proposal.requested.methods}
+                        peerUrlLabel={peerUrlLabel}
+                        canOpenPeerUrl={canOpenPeerUrl}
                         onPressUrl={handlePressUrl}
                     />
                 }

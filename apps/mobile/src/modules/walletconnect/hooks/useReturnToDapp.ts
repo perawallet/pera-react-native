@@ -68,6 +68,7 @@ export const useReturnToDapp = (): UseReturnToDappResult => {
             const focusUrl = buildIosBrowserFocusUrl(browserName)
             if (!focusUrl) return
             try {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- fixed browser scheme map
                 await Linking.openURL(focusUrl)
             } catch (error) {
                 // The hinted browser was uninstalled since pairing. NO navigation

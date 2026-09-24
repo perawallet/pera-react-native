@@ -53,6 +53,7 @@ export const useBrowserDeeplink = (): BrowserDeeplinkHandler => {
                 // Capability contract (capabilities-types.ts): off ⇒
                 // Linking.openURL. On web nothing mounts the webview stack,
                 // so pushWebView would silently no-op.
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- isSafeBrowserUrl above
                 void Linking.openURL(url)
                 return true
             }

@@ -460,6 +460,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         // Hand the fido:// URL back to the OS: iOS routes it to the
                         // AutoFill Credential Provider extension, Android to the Credential Manager.
                         try {
+                            // oxlint-disable-next-line pera/no-unvalidated-open-url -- parsed fido: deeplink, native only
                             await Linking.openURL(parsedData.url)
                         } catch (err) {
                             logger.error('Failed to open FIDO URL', {

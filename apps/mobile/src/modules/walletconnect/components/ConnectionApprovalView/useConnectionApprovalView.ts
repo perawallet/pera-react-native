@@ -16,6 +16,7 @@ import {
     AppError,
     generateOrderedUniqueId,
     logger,
+    stripUrlScheme,
     toError,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -35,6 +36,10 @@ export type UseConnectionApprovalViewResult = {
     handleAccountPress: (address: string) => void
     handleConnect: () => Promise<void>
     handleCancel: () => Promise<void>
+    /** The dApp-asserted url without its scheme; rendered as text, never trusted. */
+    peerUrlLabel?: string
+    /** False when the peer url fails the https gate, so it renders unlinked. */
+    canOpenPeerUrl: boolean
     handlePressUrl: () => void
 }
 
@@ -168,6 +173,8 @@ export const useConnectionApprovalView = (
         handleAccountPress,
         handleConnect,
         handleCancel,
+        peerUrlLabel: stripUrlScheme(proposal.peer.url),
+        canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
         handlePressUrl,
     }
 }

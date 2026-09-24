@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
 export const createRampOrderRequestSchema = z.object({
     quote: z.string(),
@@ -39,10 +40,11 @@ const rampOrderXoSchema = z.object({
 
 // Meld (fiat -> crypto) order payload. Only the hosted `widgetUrl` is consumed
 // by the app; the remaining provider fields are tolerated via `passthrough`.
+// https-only: it goes straight to the system browser.
 const rampOrderMeldSchema = z.object({
     provider_response: z
         .object({
-            widgetUrl: z.string(),
+            widgetUrl: httpsUrlSchema,
         })
         .passthrough(),
 })

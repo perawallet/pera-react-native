@@ -58,6 +58,11 @@ export const useStyles = makeStyles(
                 textAlign: 'center',
                 flexShrink: 1,
             },
+            // Unlinked: the peer url failed the https gate, so it is only named.
+            peerUrlText: {
+                color: theme.colors.textGray,
+                textAlign: 'center',
+            },
             networksContainer: {
                 alignItems: 'center',
                 flexDirection: 'row',

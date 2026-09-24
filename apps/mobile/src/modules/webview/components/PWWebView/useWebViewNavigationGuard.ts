@@ -151,6 +151,7 @@ export const useWebViewNavigationGuard = ({
                 socialDeeplink &&
                 installedSocialApps.current[socialDeeplink.service]
             ) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- app-built social-app scheme
                 void Linking.openURL(socialDeeplink.url).catch(() => {
                     // The pre-warmed check said installed but the OS refused.
                     // This navigation was already blocked, so drive the web
@@ -224,6 +225,7 @@ export const useWebViewNavigationGuard = ({
             // OS schemes over explicitly, then refuse either way. WC wake links
             // are deliberately absent — we ARE the wallet.
             if (isOsHandledScheme(url)) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- isOsHandledScheme allowlist above
                 void Linking.openURL(url).catch(() => {
                     logger.warn('No OS handler for webview navigation', { url })
                 })

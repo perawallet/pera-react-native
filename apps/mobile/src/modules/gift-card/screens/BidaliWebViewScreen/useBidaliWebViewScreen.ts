@@ -83,6 +83,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         (request: ShouldStartLoadRequest): boolean => {
             if (isTrustedWebviewOrigin(request.url, [url])) return true
             if (/^https?:/i.test(request.url)) {
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- http(s) check above, native webview only
                 void Linking.openURL(request.url)
             }
             return false
