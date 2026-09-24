@@ -14,6 +14,7 @@ import type { PlatformServices } from '@perawallet/wallet-extension-platform'
 import {
     RNAgeGateService,
     RNAppIntegrityService,
+    RNAppLifecycleService,
     RNCloudFileStorageService,
     RNDatabaseService,
     RNKeyValueStorageService,
@@ -45,6 +46,7 @@ export const platformServices: PlatformServices = {
     database: new RNDatabaseService(),
     deviceInfo: new RNDeviceInfoStorageService(),
     appIntegrity: new RNAppIntegrityService(),
+    appLifecycle: new RNAppLifecycleService(),
     migration: new RNMigrationService(keyValueStorage),
     walletProvisioning: new RNWalletProvisioningService(),
     cloudFileStorage: new RNCloudFileStorageService(),

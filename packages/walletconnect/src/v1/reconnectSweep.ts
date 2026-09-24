@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { AppState } from 'react-native'
 import { onlineManager } from '@tanstack/react-query'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { reconnectAllConnectors } from '../connection'
 import { getAppStatePlatform, isForegroundTransition } from '../utils/app-state'
 
@@ -28,7 +28,8 @@ const NETWORK_RECONNECT_DEBOUNCE_MS = 1000
  */
 export const startReconnectSweep = (): (() => void) => {
     const platform = getAppStatePlatform()
-    let previousAppState: Maybe<string> = AppState.currentState
+    const { appLifecycle } = getProvider()
+    let previousAppState: Maybe<string> = appLifecycle.getCurrentState()
     let wasOnline = onlineManager.isOnline()
     let debounceTimer: Nullable<ReturnType<typeof setTimeout>> = null
 
@@ -39,17 +40,14 @@ export const startReconnectSweep = (): (() => void) => {
         }
     }
 
-    const appStateSubscription = AppState.addEventListener(
-        'change',
-        nextAppState => {
-            const priorState = previousAppState
-            previousAppState = nextAppState
+    const unsubscribeAppState = appLifecycle.addChangeListener(nextAppState => {
+        const priorState = previousAppState
+        previousAppState = nextAppState
 
-            if (isForegroundTransition(priorState, nextAppState, platform)) {
-                reconnectAllConnectors()
-            }
-        },
-    )
+        if (isForegroundTransition(priorState, nextAppState, platform)) {
+            reconnectAllConnectors()
+        }
+    })
 
     const unsubscribeOnline = onlineManager.subscribe(isOnline => {
         const cameOnline = !wasOnline && isOnline
@@ -70,7 +68,7 @@ export const startReconnectSweep = (): (() => void) => {
     })
 
     return () => {
-        appStateSubscription.remove()
+        unsubscribeAppState()
         unsubscribeOnline()
         clearPendingSweep()
     }

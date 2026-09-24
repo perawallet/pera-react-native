@@ -10,16 +10,8 @@
  limitations under the License
  */
 
-import {
-    describe,
-    it,
-    expect,
-    beforeEach,
-    afterEach,
-    vi,
-    type Mock,
-} from 'vitest'
-import { AppState, type AppStateStatus } from 'react-native'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import type { AppLifecycleState } from '@perawallet/wallet-extension-platform'
 import { onlineManager } from '@tanstack/react-query'
 import WalletConnect from '@perawallet/walletconnect'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -30,6 +22,11 @@ import {
     registerConnector,
 } from '../../connection/connectorRegistry'
 
+const appLifecycle = vi.hoisted(() => ({
+    getCurrentState: vi.fn(() => 'active'),
+    addChangeListener: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
@@ -37,6 +34,8 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: () => {},
             removeItem: () => {},
         },
+        appLifecycle,
+        deviceInfo: { getDevicePlatform: () => 'android' },
     }),
 }))
 
@@ -62,14 +61,6 @@ vi.mock('@perawallet/walletconnect', () => ({
     }),
 }))
 
-vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-    },
-    Platform: { OS: 'android' },
-}))
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockConnector = any
 
@@ -90,7 +81,8 @@ const makeConnector = (
 })
 
 describe('startReconnectSweep', () => {
-    let appStateChangeHandler: Nullable<(next: AppStateStatus) => void> = null
+    let appStateChangeHandler: Nullable<(next: AppLifecycleState) => void> =
+        null
     const removeListener = vi.fn()
 
     beforeEach(() => {
@@ -98,10 +90,10 @@ describe('startReconnectSweep', () => {
         vi.useFakeTimers()
         __resetRegistryForTests()
         appStateChangeHandler = null
-        ;(AppState.addEventListener as Mock).mockImplementation(
-            (_event, handler: (next: AppStateStatus) => void) => {
+        appLifecycle.addChangeListener.mockImplementation(
+            (handler: (next: AppLifecycleState) => void) => {
                 appStateChangeHandler = handler
-                return { remove: removeListener }
+                return removeListener
             },
         )
         onlineManager.setOnline(true)
@@ -166,6 +158,17 @@ describe('startReconnectSweep', () => {
         onlineManager.setOnline(false)
         onlineManager.setOnline(true)
         await vi.advanceTimersByTimeAsync(1100)
+
+        expect(WalletConnect).toHaveBeenCalledTimes(1)
+        teardown()
+    })
+
+    it('treats the lifecycle state at start as the prior state', () => {
+        appLifecycle.getCurrentState.mockReturnValueOnce('background')
+        registerConnector('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startReconnectSweep()
+
+        appStateChangeHandler?.('active')
 
         expect(WalletConnect).toHaveBeenCalledTimes(1)
         teardown()

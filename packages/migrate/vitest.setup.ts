@@ -35,8 +35,8 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
+vi.mock('@perawallet/wallet-extension-provider', () => {
+    const provider = {
         keyValueStorage: {
             getItem: (key: string) => kvStore.get(key) ?? null,
             setItem: (key: string, value: string) => kvStore.set(key, value),
@@ -44,19 +44,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 kvStore.delete(key)
             },
         },
-    }),
-}))
-
-vi.mock('react-native', () => ({
-    Platform: {
-        OS: 'ios',
-        select: <T>(obj: {
-            ios?: T
-            android?: T
-            default?: T
-        }): T | undefined => obj.ios ?? obj.default,
-    },
-}))
+        deviceInfo: { getDevicePlatform: () => 'ios' },
+    }
+    return {
+        getProvider: () => provider,
+        keystoreSubtle: globalThis.crypto.subtle,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<

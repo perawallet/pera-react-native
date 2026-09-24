@@ -11,10 +11,20 @@
  */
 
 /**
- * Web build, picked by Metro's `.web.ts` resolution. `createKeystore.web.ts`
- * already leaves `subtle` to the IndexedDB driver's own `globalThis` default
- * rather than the injected value, so this is never actually consulted by the
- * web keystore — it exists so `singleton.ts` and the `keystoreSubtle` export
- * stay platform-neutral and hand over something of the right shape.
+ * React Native's `AppStateStatus` vocabulary. Web only ever reports `active`
+ * and `background`, derived from `document.visibilityState`.
  */
-export const subtle = globalThis.crypto.subtle
+export type AppLifecycleState =
+    | 'active'
+    | 'background'
+    | 'inactive'
+    | 'unknown'
+    | 'extension'
+
+export type AppLifecycleListener = (state: AppLifecycleState) => void
+
+export interface AppLifecycleService {
+    getCurrentState(): AppLifecycleState
+    /** Returns the unsubscribe function. */
+    addChangeListener(listener: AppLifecycleListener): () => void
+}

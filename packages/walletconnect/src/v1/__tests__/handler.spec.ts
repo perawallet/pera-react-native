@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { AppState } from 'react-native'
 import {
     memoryStore,
     runHandlerContractTests,
@@ -102,6 +101,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // The connector registry's zustand stores persist through the provider, whose
 // keystore migration ledger imports react-native-mmkv at module scope — same
 // stand-in as connection/__tests__/connectorRegistry.test.ts.
+// `initialize` starts the foreground reconnect sweep, which subscribes to the
+// provider's app lifecycle.
+const appLifecycle = vi.hoisted(() => ({
+    getCurrentState: () => 'active',
+    addChangeListener: vi.fn(() => vi.fn()),
+}))
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {
@@ -109,19 +115,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             setItem: () => {},
             removeItem: () => {},
         },
+        appLifecycle,
+        deviceInfo: { getDevicePlatform: () => 'android' },
     }),
-}))
-
-// react-native ships untranspiled Flow, so every spec in this package that
-// reaches it has to stand one in (see utils/__tests__/app-state.spec.ts).
-// `initialize` starts the foreground reconnect sweep, which subscribes to
-// AppState.
-vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-    },
-    Platform: { OS: 'android' },
 }))
 
 /**
@@ -1503,10 +1499,10 @@ describe('walletconnect v1 handler behaviour', () => {
         await handler.initialize(context)
         await handler.teardown()
 
-        const subscriptions = vi.mocked(AppState.addEventListener).mock.results
-        expect(subscriptions).toHaveLength(2)
-        for (const subscription of subscriptions) {
-            expect(subscription.value.remove).toHaveBeenCalledTimes(1)
+        const unsubscribes = appLifecycle.addChangeListener.mock.results
+        expect(unsubscribes).toHaveLength(2)
+        for (const unsubscribe of unsubscribes) {
+            expect(unsubscribe.value).toHaveBeenCalledTimes(1)
         }
     })
 

@@ -19,8 +19,12 @@ const { platformMock, masterKeyMock, storageMock } = vi.hoisted(() => ({
     storageMock: { set: vi.fn(), getString: vi.fn() },
 }))
 
-vi.mock('react-native', () => ({ Platform: platformMock }))
-vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: { getDevicePlatform: () => platformMock.OS },
+    }),
+    keystoreSubtle: {},
+}))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: masterKeyMock,

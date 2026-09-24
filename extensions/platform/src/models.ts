@@ -11,6 +11,7 @@
  */
 
 import type { AppIntegrityService } from './app-integrity'
+import type { AppLifecycleService } from './app-lifecycle'
 import type { AgeGateService } from './age-gate'
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
@@ -37,6 +38,7 @@ export interface PlatformServices {
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
     appIntegrity: AppIntegrityService
+    appLifecycle: AppLifecycleService
     database: DatabaseService
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
