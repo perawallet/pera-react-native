@@ -4003,7 +4003,17 @@
             "error_invalid_password": "Falsches Passwort. Bitte versuche es erneut.",
             "corrupted_error": "Deine Vault-Daten sind beschädigt und können nicht entsperrt werden. Möglicherweise musst du die Erweiterung zurücksetzen und aus deinem Backup wiederherstellen.",
             "passkey_error": "Passkey-Entsperrung fehlgeschlagen. Verwende stattdessen dein Passwort.",
-            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}"
+            "lockout_countdown": "Zu viele Versuche. Erneut versuchen in {{time}}",
+            "forgot_password": "Passwort vergessen?"
+        },
+        "reset": {
+            "title": "Wallet zurücksetzen?",
+            "body": "Dein Passwort lässt sich nicht wiederherstellen. Beim Zurücksetzen wird alles gelöscht, was Pera Wallet in diesem Browser speichert. Danach legst du ein neues Passwort fest.",
+            "restore_note": "Stelle deine Konten danach mit ihrer Wiederherstellungsphrase wieder her. Konten ohne gesicherte Wiederherstellungsphrase gehen verloren.",
+            "hardware_note": "Ledger-Konten und Beobachtungskonten lassen sich nicht aus einer Passphrase wiederherstellen. Füge sie nach dem Zurücksetzen erneut hinzu.",
+            "acknowledge": "Mir ist klar, dass meine Daten gelöscht werden und das nicht rückgängig gemacht werden kann",
+            "confirm_button": "Wallet zurücksetzen",
+            "error": "Die Wallet konnte nicht zurückgesetzt werden. Bitte versuche es erneut."
         },
         "security": {
             "autolock_title": "Automatisch sperren nach",

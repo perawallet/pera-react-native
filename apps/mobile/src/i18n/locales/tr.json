@@ -4011,7 +4011,17 @@
             "error_invalid_password": "Hatalı şifre. Lütfen tekrar dene.",
             "corrupted_error": "Vault verilerin bozulmuş ve kilidi açılamıyor. Uzantıyı sıfırlayıp yedeklemenden geri yüklemen gerekebilir.",
             "passkey_error": "Passkey ile kilit açma başarısız oldu. Bunun yerine şifreni kullan.",
-            "lockout_countdown": "Çok fazla deneme yapıldı. {{time}} sonra tekrar dene"
+            "lockout_countdown": "Çok fazla deneme yapıldı. {{time}} sonra tekrar dene",
+            "forgot_password": "Şifreni mi unuttun?"
+        },
+        "reset": {
+            "title": "Cüzdanını sıfırlamak istiyor musun?",
+            "body": "Şifren kurtarılamaz. Sıfırlama, Pera Wallet’ın bu tarayıcıda sakladığı her şeyi siler; ardından yeni bir şifre belirleyebilirsin.",
+            "restore_note": "Ardından hesaplarını kurtarma passphrase’leriyle geri yükle. Kurtarma passphrase’i yedeklenmemiş her hesap kaybolur.",
+            "hardware_note": "Ledger hesapları ve izleme hesapları bir passphrase ile geri yüklenemez. Sıfırlamadan sonra onları yeniden ekle.",
+            "acknowledge": "Bunun verilerimi sileceğini ve geri alınamayacağını anlıyorum",
+            "confirm_button": "Cüzdanı sıfırla",
+            "error": "Cüzdan sıfırlanamadı. Lütfen tekrar dene."
         },
         "security": {
             "autolock_title": "Otomatik kilitleme süresi",

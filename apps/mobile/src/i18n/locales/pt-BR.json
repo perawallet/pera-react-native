@@ -4039,7 +4039,17 @@
             "error_invalid_password": "Senha incorreta. Tente novamente.",
             "corrupted_error": "Os dados do seu Vault estão corrompidos e não podem ser desbloqueados. Talvez seja necessário redefinir a extensão e restaurar a partir do seu backup.",
             "passkey_error": "Falha ao desbloquear com passkey. Use sua senha.",
-            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}"
+            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}",
+            "forgot_password": "Esqueceu a senha?"
+        },
+        "reset": {
+            "title": "Redefinir sua wallet?",
+            "body": "Sua senha não pode ser recuperada. A redefinição apaga tudo o que a Pera Wallet guarda neste navegador e depois você poderá criar uma nova senha.",
+            "restore_note": "Depois, restaure suas contas com a passphrase de recuperação de cada uma. Qualquer conta cuja passphrase de recuperação não tenha backup será perdida.",
+            "hardware_note": "Contas Ledger e contas de observação não são restauradas a partir de uma passphrase. Adicione-as novamente após a redefinição.",
+            "acknowledge": "Entendo que isso apaga meus dados e não pode ser desfeito",
+            "confirm_button": "Redefinir wallet",
+            "error": "Não foi possível redefinir a wallet. Tente novamente."
         },
         "security": {
             "autolock_title": "Bloqueio automático após",

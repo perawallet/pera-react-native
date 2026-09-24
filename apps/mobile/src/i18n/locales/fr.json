@@ -4011,7 +4011,17 @@
             "error_invalid_password": "Mot de passe incorrect. Veuillez réessayer.",
             "corrupted_error": "Les données de votre Vault sont corrompues et ne peuvent pas être déverrouillées. Vous devrez peut-être réinitialiser l’extension et restaurer depuis votre sauvegarde.",
             "passkey_error": "Le déverrouillage par passkey a échoué. Utilisez votre mot de passe à la place.",
-            "lockout_countdown": "Trop de tentatives. Réessayez dans {{time}}"
+            "lockout_countdown": "Trop de tentatives. Réessayez dans {{time}}",
+            "forgot_password": "Mot de passe oublié ?"
+        },
+        "reset": {
+            "title": "Réinitialiser votre wallet ?",
+            "body": "Votre mot de passe ne peut pas être récupéré. La réinitialisation supprime tout ce que Pera Wallet enregistre dans ce navigateur, puis vous pourrez définir un nouveau mot de passe.",
+            "restore_note": "Restaurez ensuite vos comptes avec leur passphrase de récupération. Tout compte dont la passphrase de récupération n’est pas sauvegardée sera perdu.",
+            "hardware_note": "Les comptes Ledger et les comptes de suivi ne peuvent pas être restaurés à partir d’une passphrase. Ajoutez-les à nouveau après la réinitialisation.",
+            "acknowledge": "Je comprends que cela supprime mes données et ne peut pas être annulé",
+            "confirm_button": "Réinitialiser le wallet",
+            "error": "Impossible de réinitialiser le wallet. Veuillez réessayer."
         },
         "security": {
             "autolock_title": "Verrouillage automatique après",
