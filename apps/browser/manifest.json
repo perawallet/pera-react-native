@@ -130,8 +130,5 @@
     "https://fcmregistrations.googleapis.com/*",
     "https://www.google-analytics.com/*",
     "https://*.ingest.sentry.io/*"
-  ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; font-src 'self'"
-  }
+  ]
 }
