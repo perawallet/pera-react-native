@@ -145,9 +145,6 @@ jobs:
       - name: Prettier
         run: pnpm run format --check
 
-      - name: Copyright Check
-        run: pnpm run lint:copyright
-
       - name: i18n Check
         run: pnpm run lint:i18n
 

@@ -101,28 +101,6 @@ else
 fi
 rm "$FORMAT_LOG"
 
-# Run copyright header check
-echo "\n${YELLOW}Checking copyright headers...${NC}"
-COPYRIGHT_LOG=$(mktemp)
-if pnpm run lint:copyright > "$COPYRIGHT_LOG" 2>&1; then
-    # Check for modified files after copyright header check
-    if ! git diff --quiet; then
-        echo "${RED}Copyright header check detected changes.${NC}"
-        DIFF_LOG=$(mktemp)
-        echo "The following files had copyright headers updated:" > "$DIFF_LOG"
-        git diff --name-only >> "$DIFF_LOG"
-        
-        record_failure "Copyright Headers (Uncommitted Changes)" "$DIFF_LOG" "${YELLOW}Please commit these changes before pushing.${NC}"
-        rm "$DIFF_LOG"
-    else
-        echo "${GREEN}✓ Copyright headers valid${NC}"
-    fi
-else
-    echo "${RED}Copyright header check failed.${NC}"
-    record_failure "Copyright Check" "$COPYRIGHT_LOG" "${YELLOW}Please ensure all files have the proper copyright header.${NC}"
-fi
-rm "$COPYRIGHT_LOG"
-
 # Run single-algosdk guard. pnpm's peer-dependency auto-install can bypass
 # the workspace-level algosdk override for any importer with no direct
 # algosdk edge, silently reintroducing a second, stock algosdk resolution

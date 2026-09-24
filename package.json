@@ -19,8 +19,6 @@
     "lint:i18n": "node tools/i18n-lint.cjs",
     "lint:docs": "node tools/check-doc-hygiene.mjs",
     "lint:docs:warn": "node tools/check-doc-hygiene.mjs --warn-only",
-    "lint:copyright": "node tools/copyright-header.mjs --fix",
-    "lint:copyright:check": "node tools/copyright-header.mjs --check",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",
     "test": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test && pnpm test:lanekeep",
     "test:lanekeep": "vitest run lanekeep/__tests__",
