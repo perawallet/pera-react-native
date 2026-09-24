@@ -9,7 +9,7 @@ const RULE = 'lanekeep/rules/no-work-item-refs.ts'
 const FIXTURES = 'lanekeep/__tests__/fixtures/work-items/*.{ts,tsx,mjs}'
 
 describe('pera/no-work-item-refs', () => {
-    it('reports line, trailing, block and JSX comments in TS, TSX and JS', async () => {
+    it('reports line, trailing, block and JSX comments, and ignores strings and look-alikes', async () => {
         const found = await runRule(RULE, FIXTURES)
 
         expect(locations(found)).toEqual([
@@ -17,7 +17,10 @@ describe('pera/no-work-item-refs', () => {
             'refs.bad.ts:1',
             'refs.bad.ts:2',
             'refs.bad.ts:4',
+            'refs.bad.ts:8',
+            'refs.bad.ts:9',
             'refs.bad.tsx:3',
+            // This fixture's parse root is ERROR, not program; comments must still match.
             'refs.error-root.ts:6',
         ])
     })
@@ -29,11 +32,5 @@ describe('pera/no-work-item-refs', () => {
             found.find(v => v.file.endsWith('refs.bad.ts') && v.line === 1)
                 ?.message,
         ).toContain('PERA-1234')
-    })
-
-    it('ignores strings and look-alikes', async () => {
-        const found = await runRule(RULE, FIXTURES)
-
-        expect(found.filter(v => v.file.endsWith('refs.good.ts'))).toEqual([])
     })
 })

@@ -5,9 +5,9 @@
 import { defineRule } from 'lanekeep'
 import { WORK_ITEM } from '../../tools/lib/work-item-pattern.mjs'
 
-// Tree-sitter filters comments with the same pattern in Rust, so `check`
-// only runs on hits; Rust's regex dialect reads this pattern unchanged. A
-// query string literal unescapes `\\` and `\"`.
+// Tree-sitter prefilters with Rust's regex: Unicode `\b`/`\d`, and flags don't
+// carry over. `check` re-tests in JS, so the gap can drop a report but never
+// add one. Query string literals unescape `\\` and `\"`.
 const PREDICATE = WORK_ITEM.source.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 
 export default defineRule({
