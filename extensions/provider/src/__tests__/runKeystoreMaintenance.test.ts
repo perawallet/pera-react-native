@@ -38,14 +38,6 @@ vi.mock('../keystore/maintenance', () => ({
     readPersistedKeys: mocks.readPersistedKeys,
 }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 vi.mock('@tanstack/store', () => ({
     Store: class {
         state: { keys: unknown[]; status: string }

@@ -13,8 +13,8 @@
 import { ChromeKeyValueStorageService } from './services/key-value-storage'
 
 // Separate from resources.ts so the pre-hydration ./bootstrap subpath can import
-// hydratePlatform without dragging in ChromeDatabaseService and the hardware-wallet
-// registry; resources.ts imports this same singleton.
+// hydratePlatform without dragging in ChromeDatabaseService; resources.ts
+// imports this same singleton.
 export const keyValueStorage = new ChromeKeyValueStorageService()
 
 /**

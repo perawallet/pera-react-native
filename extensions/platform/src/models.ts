@@ -16,7 +16,6 @@ import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { CloudFileStorageService } from './cloud-file-storage'
 import type { DeviceInfoService } from './device'
-import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { MigrationService } from './migration'
 import type {
     PushNotificationInitResult,
@@ -39,7 +38,6 @@ export interface PlatformServices {
     deviceInfo: DeviceInfoService
     appIntegrity: AppIntegrityService
     database: DatabaseService
-    hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
     walletProvisioning: WalletProvisioningService
     cloudFileStorage: CloudFileStorageService

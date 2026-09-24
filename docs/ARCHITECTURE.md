@@ -7,35 +7,75 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 ```
 ┌──────────────────────────┐   ┌──────────────────────────┐
 │       apps/mobile        │   │       apps/browser       │
-│  (React Native UI)       │   │  (MV3 extension shell)   │
-│                          │   │                          │
-│  Components → Screens →  │   │  manifest, service       │
-│  Navigation → User       │   │  worker, content         │
-│  Facing                  │   │  scripts, offscreen      │
+│  (React Native UI, and   │   │  (MV3 extension shell)   │
+│   the web UI via Metro)  │   │  manifest, service       │
+│  composition root        │   │  worker, content         │
+│                          │   │  scripts, offscreen      │
 └───────────┬──────────────┘   └───────────┬──────────────┘
             │                              │
-            │  both import                 │
             ▼                              ▼
 ┌─────────────────────────────────────────────────────┐
 │                    packages/*                        │
 │           (Headless Business Logic)                  │
-│                                                      │
 │   Stores → Hooks → API Clients → Models              │
 └────────────────────────┬────────────────────────────┘
                          │ getProvider()
                          ▼
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
-│      (Platform drivers behind one interface)         │
-│                                                      │
-│   platform (the contract) → platform-chrome /        │
-│   platform-react-native (the implementations)        │
+│   provider · drivers (platform-chrome,               │
+│   platform-react-native, keystore-chrome) ·          │
+│   Ledger transports → hardware-wallet                │
+│                         ▼                            │
+│   platform  (the PlatformServices contract)          │
+└────────────────────────┬────────────────────────────┘
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│    bottom tier: packages/config, packages/shared     │
+│             (usable from every tier)                 │
 └─────────────────────────────────────────────────────┘
 ```
 
 `apps/mobile` owns rendering, navigation, styling and gestures. `packages/*` owns everything else:
 data fetching, stores, business rules, API clients, crypto. The split is what lets the logic be
 tested without React Native, and what let the browser extension reuse it.
+
+### Layer tiers
+
+Dependencies point down the diagram and never up. `tools/check-layer-tiers.mjs` enforces this on
+every workspace `package.json` (all dependency fields) in pre-push and CI:
+
+| Tier                                                             | May depend on                                                   |
+| ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| `apps/*`                                                         | anything                                                        |
+| `packages/*` (business)                                          | other packages, and extensions other than the Ledger transports |
+| `extensions/*`                                                   | other extensions and the bottom tier                            |
+| `extensions/platform` (the contract)                             | the bottom tier only                                            |
+| Ledger transports (`extensions/ledger-*` except `ledger-shared`) | depended on only by apps and each other                         |
+| bottom tier (`packages/config`, `packages/shared`)               | the bottom tier only                                            |
+
+The bottom tier lives under `packages/` but is not business logic, so the directory alone does not
+tell you the tier. `packages/devtools` is build and test tooling, allowed anywhere as a
+devDependency.
+
+The app is the composition root. It picks the platform driver (a bundler alias, below) and registers
+the concrete Ledger transports into `getProvider().hardwareWalletRegistry`
+(`apps/mobile/src/bootstrap/hardware-wallet-transports.ts` and its `.web.ts` twin, called from
+`App.tsx` and `App.web.tsx`). Keeping transports out of `extensions/provider` is what stops every
+package that depends on the provider from inheriting the BLE/USB driver graph.
+
+Hardware wallets are a provider extension (`extensions/hardware-wallet`, composed as
+`WithHardwareWalletExtension`), not a platform service. Nothing about the registry differs per
+platform; what differs is the transports, and the app already chooses those. Its types are wallet
+domain (ARC-60 sign requests, Ledger device models), which the platform contract has no reason to
+know. The extension supplies an empty registry, and `@perawallet/wallet-core-hardware-wallet`
+re-exports its types beside the discovery logic.
+
+The few edges that break a tier are listed in the check's `ALLOWLIST`, each with its reason; an
+entry whose edge disappears fails the check, so it has to be deleted rather than left to permit the
+edge's return. The check reads manifests, so it cannot see a bundler alias: `platform-driver`
+declares only the contract, yet resolves to `platform-chrome` on web, which is why
+`platform-chrome`'s own edges into business packages close a cycle no manifest shows.
 
 ### Two meanings of "extension"
 
@@ -67,10 +107,10 @@ doubles for the contract ship from `@perawallet/wallet-extension-platform/test-u
 entry, so the contract carries no React or React Query.
 
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
-to miss when tracing: the keystore engine and the Ledger transports (`.web.ts` twins in
-`extensions/provider`). On web `@algorandfoundation/react-native-keystore` resolves to
-`extensions/keystore-chrome`, but only so static imports of it resolve; the engine comes from
-`@algorandfoundation/keystore-web`.
+to miss when tracing: the keystore engine and the Ledger transports (the `.web.ts` twin of the
+app's `bootstrap/hardware-wallet-transports.ts`). On web
+`@algorandfoundation/react-native-keystore` resolves to `extensions/keystore-chrome`, but only so
+static imports of it resolve; the engine comes from `@algorandfoundation/keystore-web`.
 
 ### Where browser-specific code lives
 

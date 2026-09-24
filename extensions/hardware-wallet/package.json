@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-extension-platform",
+  "name": "@perawallet/wallet-extension-hardware-wallet",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,33 +8,24 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./test-utils": {
-      "types": "./dist/test-utils/index.d.ts",
-      "default": "./dist/test-utils/index.js"
     }
   },
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json",
-    "dev": "vite build --watch & tsc -p tsconfig.build.json --watch --preserveWatchOutput",
+    "dev": "vite build --watch",
     "test": "vitest run",
     "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@algorandfoundation/wallet-provider": "catalog:",
     "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-shared": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@perawallet/wallet-core-shared": "workspace:*"
   },
   "devDependencies": {
-    "@tanstack/react-query": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
-    "@types/react": "catalog:",
-    "@testing-library/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*"
   }
 }

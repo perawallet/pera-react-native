@@ -11,21 +11,12 @@
  */
 
 import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { RNLedgerService } from './RNLedgerService'
+import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
+import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 
-/**
- * wallet-provider Extension that registers the Ledger hardware wallet
- * transport provider into the hardware wallet registry.
- *
- * Run it after `WithHardwareWalletExtension`, which provides the
- * `hardwareWalletRegistry` on the provider instance.
- */
-export const WithLedgerExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => {
-    const ledgerService = new RNLedgerService()
-    provider.hardwareWalletRegistry.register(
-        ledgerService.createTransportProvider(),
-    )
-    return {}
+export const registerHardwareWalletTransports = (
+    hardwareWalletRegistry: HardwareWalletRegistry,
+): void => {
+    WithLedgerWebBleExtension({ hardwareWalletRegistry })
+    WithLedgerWebUsbExtension({ hardwareWalletRegistry })
 }

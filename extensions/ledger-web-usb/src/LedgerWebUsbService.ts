@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
 import type {
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import TransportWebHID from '@ledgerhq/hw-transport-webhid'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {

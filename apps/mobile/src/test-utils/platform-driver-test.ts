@@ -36,7 +36,6 @@ import {
     type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
 import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
-import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { testDatabaseService } from './sqlite-database'
 
 const buildServices = (): PlatformServices => {
@@ -193,7 +192,6 @@ const buildServices = (): PlatformServices => {
         database,
         deviceInfo,
         appIntegrity,
-        hardwareWalletRegistry: createHardwareWalletRegistry(),
         migration,
         walletProvisioning,
         cloudFileStorage,

@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import TransportHID from '@ledgerhq/react-native-hid'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {

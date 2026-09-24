@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
+import type {
+    HardwareWalletManufacturer,
+    HardwareWalletTransportProvider,
+} from './types'
 
-export * from './app-integrity'
-export * from './analytics'
-export * from './age-gate'
-export * from './biometrics'
-export * from './cloud-file-storage'
-export * from './database'
-export * from './device'
-export * from './migration'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './wallet-provisioning'
-export * from './models'
+/**
+ * A hardware wallet service that provides a transport provider for a specific manufacturer.
+ * Each manufacturer (Ledger, Trezor, etc.) implements this interface.
+ */
+export interface HardwareWalletService {
+    manufacturer: HardwareWalletManufacturer
+    createTransportProvider: () => HardwareWalletTransportProvider
+}

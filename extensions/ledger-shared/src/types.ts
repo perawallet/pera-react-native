@@ -16,7 +16,7 @@ import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 
 /**
  * Supported Ledger device models with Bluetooth capability.

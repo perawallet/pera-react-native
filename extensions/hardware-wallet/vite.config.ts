@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
+import { defineLibraryConfig } from '@perawallet/wallet-core-devtools/vite/library'
 
-export * from './app-integrity'
-export * from './analytics'
-export * from './age-gate'
-export * from './biometrics'
-export * from './cloud-file-storage'
-export * from './database'
-export * from './device'
-export * from './migration'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './wallet-provisioning'
-export * from './models'
+export default defineConfig(
+    defineLibraryConfig({
+        root: __dirname,
+        entry: resolve(__dirname, 'src/index.ts'),
+        fileName: 'index',
+    }),
+)

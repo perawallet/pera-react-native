@@ -13,7 +13,7 @@
 import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
-} from './types'
+} from '@perawallet/wallet-extension-hardware-wallet'
 
 /**
  * Verify a hardware wallet account address on the device.

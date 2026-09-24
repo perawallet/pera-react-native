@@ -14,8 +14,7 @@ import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/keystore-web'
 import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
-import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
-import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
+import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
 import { WithConnections } from '@perawallet/wallet-extension-connections'
 import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
@@ -28,9 +27,9 @@ import type {
 
 export type PeraProvider = PeraProviderShape
 
-// Metro picks this over `pera-provider.ts` for web bundles: Web Bluetooth/WebHID
-// Ledger transports and keystore-web's extension (the singleton injects the engine
-// via `options.api.keystore`; this only picks the wrapper). Keep the order in step.
+// Metro picks this over `pera-provider.ts` for web bundles: keystore-web's
+// extension (the singleton injects the engine via `options.api.keystore`; this
+// only picks the wrapper). Keep the order in step.
 export const PeraProvider: {
     new (
         config: ProviderOptions,
@@ -43,8 +42,9 @@ export const PeraProvider: {
     // through `provider.migrations`, which does not exist until this has run.
     WithMigrations,
     WithPlatformExtension,
-    WithLedgerWebBleExtension,
-    WithLedgerWebUsbExtension,
+    // Before the app's composition root runs, which registers the concrete
+    // transports into the `hardwareWalletRegistry` this supplies.
+    WithHardwareWalletExtension,
     // `.web.ts` no-op sibling; same slot as the native file.
     WithPeraKeystorePreflight,
     WithKeyStore,
