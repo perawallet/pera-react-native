@@ -22,6 +22,10 @@ const mocks = vi.hoisted(() => {
         calls,
         registerAppBottomSheets: record('registerAppBottomSheets'),
         registerLocaleTour: record('registerLocaleTour'),
+        hardwareWalletRegistry: {},
+        registerHardwareWalletTransports: record(
+            'registerHardwareWalletTransports',
+        ),
         initNetworkStatus: vi.fn(() => {
             calls.push('initNetworkStatus')
             return Promise.resolve()
@@ -39,6 +43,14 @@ vi.mock('../bottom-sheet-registrations', () => ({
 }))
 vi.mock('@modules/locale-tour/register', () => ({
     registerLocaleTour: mocks.registerLocaleTour,
+}))
+vi.mock('../hardware-wallet-transports', () => ({
+    registerHardwareWalletTransports: mocks.registerHardwareWalletTransports,
+}))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        hardwareWalletRegistry: mocks.hardwareWalletRegistry,
+    }),
 }))
 vi.mock('@modules/network', () => ({
     initNetworkStatus: mocks.initNetworkStatus,
@@ -62,15 +74,19 @@ describe('initRuntime (native)', () => {
         expect(mocks.calls).toEqual([])
     })
 
-    it('registers sheets and the tour, seeds network status, configures Decimal and holds the splash', () => {
+    it('registers sheets, the tour and hardware-wallet transports, seeds network status, configures Decimal and holds the splash', () => {
         initRuntime()
 
         expect(mocks.calls).toEqual([
             'registerAppBottomSheets',
             'registerLocaleTour',
+            'registerHardwareWalletTransports',
             'initNetworkStatus',
             'initDecimalConfig',
             'preventAutoHideAsync',
         ])
+        expect(mocks.registerHardwareWalletTransports).toHaveBeenCalledWith(
+            mocks.hardwareWalletRegistry,
+        )
     })
 })

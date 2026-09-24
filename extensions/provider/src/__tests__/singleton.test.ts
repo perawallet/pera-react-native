@@ -35,14 +35,6 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 // Minimal fake of @tanstack/store's Store for the singleton's keystoreStore
 // instance. The singleton uses `state.keys` (read) and is mutated via
 // `setState` — neither path needs real subscriptions.

@@ -14,7 +14,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
-} from './types'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import {
     DEFAULT_MAX_ACCOUNT_SCAN_GAP,
     DEFAULT_MAX_ACCOUNT_SCAN_INDEX,

@@ -16,7 +16,7 @@ import {
     getInfosForServiceUuid,
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
-import type { HardwareWalletAppVersion } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
 import type { LedgerDeviceModel } from './types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 

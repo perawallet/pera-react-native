@@ -33,7 +33,6 @@ describe('WithChromePlatformExtension', () => {
             'deviceInfo',
             'appIntegrity',
             'database',
-            'hardwareWalletRegistry',
             'migration',
         ] as const) {
             expect(extension[key]).toBeDefined()

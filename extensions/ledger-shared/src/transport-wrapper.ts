@@ -15,7 +15,7 @@ import type { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
     HardwareWalletArbitrarySignRequest,
     HardwareWalletTransport,
-} from '@perawallet/wallet-core-hardware-wallet'
+} from '@perawallet/wallet-extension-hardware-wallet'
 import { buildLedgerAccountPath } from './constants'
 import { classifyLedgerError, LedgerSigningError } from './errors'
 

@@ -27,19 +27,12 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: {},
 }))
 
-vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
-    WithLedgerExtension: () => ({}),
-}))
-
-vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
-    WithLedgerUsbExtension: () => ({}),
-}))
-
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import { memoryLedger } from '@algorandfoundation/provider-migrations'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import { createPeraKeystore } from '../keystore/createKeystore'
+import { WithHardwareWalletExtension } from '@perawallet/wallet-extension-hardware-wallet'
 import { PeraProvider } from '../pera-provider'
 
 describe('provider migrations wiring', () => {
@@ -73,6 +66,18 @@ describe('provider migrations wiring', () => {
 
         expect(names.indexOf('WithPeraKeystoreRepairs')).toBe(
             names.indexOf('WithKeyStore') + 1,
+        )
+    })
+
+    // The app registers its transports into this registry once the provider
+    // exists, so the provider must always build one.
+    it('composes WithHardwareWalletExtension right after the platform extension', () => {
+        // By identity: the built extension's function name is not preserved.
+        const extensions: readonly unknown[] = PeraProvider.EXTENSIONS
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(extensions.indexOf(WithHardwareWalletExtension)).toBe(
+            names.indexOf('WithPlatformExtension') + 1,
         )
     })
 

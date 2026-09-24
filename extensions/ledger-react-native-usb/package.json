@@ -20,10 +20,9 @@
     "dependencies": {
         "@algorandfoundation/ledger-algorand-js": "catalog:",
         "@ledgerhq/react-native-hid": "catalog:",
-        "@perawallet/wallet-core-hardware-wallet": "workspace:*",
         "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-extension-ledger-shared": "workspace:*",
-        "@perawallet/wallet-extension-platform": "workspace:*"
+        "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
+        "@perawallet/wallet-extension-ledger-shared": "workspace:*"
     },
     "devDependencies": {
         "@perawallet/wallet-core-devtools": "workspace:*",

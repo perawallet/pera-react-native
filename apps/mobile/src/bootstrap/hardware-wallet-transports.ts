@@ -11,21 +11,15 @@
  */
 
 import type { HardwareWalletRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import { RNLedgerService } from './RNLedgerService'
+import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
+import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
 
-/**
- * wallet-provider Extension that registers the Ledger hardware wallet
- * transport provider into the hardware wallet registry.
- *
- * Run it after `WithHardwareWalletExtension`, which provides the
- * `hardwareWalletRegistry` on the provider instance.
- */
-export const WithLedgerExtension = (provider: {
-    hardwareWalletRegistry: HardwareWalletRegistry
-}) => {
-    const ledgerService = new RNLedgerService()
-    provider.hardwareWalletRegistry.register(
-        ledgerService.createTransportProvider(),
-    )
-    return {}
+// The app, not the provider, picks the concrete transports so that packages
+// depending on the provider never pull in the BLE/USB driver graph. Metro
+// resolves the `.web.ts` sibling for web bundles.
+export const registerHardwareWalletTransports = (
+    hardwareWalletRegistry: HardwareWalletRegistry,
+): void => {
+    WithLedgerExtension({ hardwareWalletRegistry })
+    WithLedgerUsbExtension({ hardwareWalletRegistry })
 }

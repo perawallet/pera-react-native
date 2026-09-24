@@ -656,3 +656,8 @@ jobs:
       # for a build config that publishes types it never emits.
       - name: Check declaration emit wiring
         run: pnpm run check:dts-emit
+
+      # Same reasoning: the harness uses fixtures, this checks the real
+      # workspace dependency graph against the layer tiers.
+      - name: Check layer tiers
+        run: pnpm run check:layer-tiers
