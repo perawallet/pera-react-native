@@ -251,6 +251,66 @@ const noProgramSignerInDappPaths = {
     },
 }
 
+/** The files allowed to construct, register or bind a WalletConnect v1 connector. */
+export const WC_CONNECTOR_OWNERS = [
+    'packages/walletconnect/src/connection/createConnector.ts',
+    'packages/walletconnect/src/connection/connectorRegistry.ts',
+    'packages/walletconnect/src/v1/handler.ts',
+]
+
+const CONNECTOR_CALLS = new Set([
+    'registerConnector',
+    'setConnectorHandlerBinder',
+    'useWalletConnect',
+])
+
+const calleeName = callee => {
+    if (callee.type === 'Identifier') return callee.name
+    if (
+        callee.type === 'MemberExpression' &&
+        !callee.computed &&
+        callee.property.type === 'Identifier'
+    ) {
+        return callee.property.name
+    }
+    return undefined
+}
+
+const wcConnectorOwnership = {
+    meta: {
+        type: 'problem',
+        docs: {
+            description:
+                'Only the WalletConnect connection layer owns a v1 connector',
+        },
+        messages: {
+            owner: '{{name}} owns a WalletConnect v1 connector outside the connection layer: go through the connections registry. On web only the offscreen document may own one.',
+        },
+        schema: [],
+    },
+    create(context) {
+        return {
+            NewExpression(node) {
+                if (
+                    node.callee.type === 'Identifier' &&
+                    node.callee.name === 'WalletConnect'
+                ) {
+                    context.report({
+                        node,
+                        messageId: 'owner',
+                        data: { name: 'new WalletConnect' },
+                    })
+                }
+            },
+            CallExpression(node) {
+                const name = calleeName(node.callee)
+                if (name === undefined || !CONNECTOR_CALLS.has(name)) return
+                context.report({ node, messageId: 'owner', data: { name } })
+            },
+        }
+    },
+}
+
 export default {
     meta: { name: 'pera' },
     rules: {
@@ -258,5 +318,6 @@ export default {
         'no-hardcoded-ui-strings': noHardcodedUiStrings,
         'dev-gallery-entry-points': devGalleryEntryPoints,
         'no-program-signer-in-dapp-paths': noProgramSignerInDappPaths,
+        'wc-connector-ownership': wcConnectorOwnership,
     },
 }

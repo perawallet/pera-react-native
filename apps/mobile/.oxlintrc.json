@@ -103,6 +103,20 @@
       "rules": {
         "pera/dev-gallery-entry-points": "error"
       }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": [
+        "src/**/__tests__/**",
+        "src/**/__mocks__/**",
+        "src/**/test-utils/**",
+        "src/**/__integration__/**",
+        "src/**/*.spec.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}"
+      ],
+      "rules": {
+        "pera/wc-connector-ownership": "error"
+      }
     }
   ]
 }

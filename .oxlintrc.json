@@ -152,6 +152,28 @@
       "rules": {
         "pera/no-program-signer-in-dapp-paths": "error"
       }
+    },
+    {
+      "files": [
+        "apps/mobile/src/**",
+        "apps/browser/src/**",
+        "packages/*/src/**",
+        "extensions/*/src/**"
+      ],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/__integration__/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/walletconnect/src/connection/createConnector.ts",
+        "packages/walletconnect/src/connection/connectorRegistry.ts",
+        "packages/walletconnect/src/v1/handler.ts"
+      ],
+      "rules": {
+        "pera/wc-connector-ownership": "error"
+      }
     }
   ]
 }

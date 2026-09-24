@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from 'vitest'
 import plugin, {
     DAPP_SIGNING_PATHS,
     GALLERY_ENTRY_PATHS,
+    WC_CONNECTOR_OWNERS,
 } from '../scripts/oxlint-pera-plugin.mjs'
 
 type Node = Record<string, unknown>
@@ -287,6 +288,78 @@ describe('pera/no-program-signer-in-dapp-paths', () => {
         )
         for (const path of DAPP_SIGNING_PATHS) {
             expect(existsSync(join(root, path)), path).toBe(true)
+        }
+    })
+})
+
+describe('pera/wc-connector-ownership', () => {
+    const lintNode = (
+        visitor: 'NewExpression' | 'CallExpression',
+        node: Node,
+    ) => {
+        const report = vi.fn()
+        plugin.rules['wc-connector-ownership'].create({ report })[visitor](node)
+        return report
+    }
+
+    it.each([
+        [
+            'new WalletConnect(...)',
+            'NewExpression',
+            { type: 'NewExpression', callee: id('WalletConnect') },
+        ],
+        [
+            'registerConnector(...)',
+            'CallExpression',
+            call(id('registerConnector'), []),
+        ],
+        [
+            'a member registerConnector(...)',
+            'CallExpression',
+            call(
+                member(
+                    call(member(id('registry'), 'getState'), []),
+                    'registerConnector',
+                ),
+                [],
+            ),
+        ],
+        [
+            'setConnectorHandlerBinder(...)',
+            'CallExpression',
+            call(id('setConnectorHandlerBinder'), []),
+        ],
+        [
+            'useWalletConnect()',
+            'CallExpression',
+            call(id('useWalletConnect'), []),
+        ],
+    ] as const)('reports %s', (_label, visitor, node) => {
+        expect(lintNode(visitor, node)).toHaveBeenCalledOnce()
+    })
+
+    it.each([
+        [
+            'a look-alike hook',
+            'CallExpression',
+            call(id('useWalletConnectDeeplink'), []),
+        ],
+        [
+            'another constructor',
+            'NewExpression',
+            { type: 'NewExpression', callee: id('WalletKit') },
+        ],
+    ] as const)('allows %s', (_label, visitor, node) => {
+        expect(lintNode(visitor, node)).not.toHaveBeenCalled()
+    })
+
+    it('carves out only files that still own a connector', () => {
+        const root = join(__dirname, '../../..')
+        const ownership =
+            /\bnew WalletConnect\(|\bregisterConnector\(|\bsetConnectorHandlerBinder\(|\buseWalletConnect\(/
+        for (const owner of WC_CONNECTOR_OWNERS) {
+            const text = readFileSync(join(root, owner), 'utf8')
+            expect(ownership.test(text), owner).toBe(true)
         }
     })
 })
