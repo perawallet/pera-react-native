@@ -57,9 +57,9 @@ export default defineConfig({
         testTimeout: 15_000,
         include: [
             'web-shims/**/*.spec.{js,jsx,ts,tsx}',
-            'src/content/**/*.test.{ts,tsx}',
-            'src/background/**/*.test.{ts,tsx}',
-            'scripts/**/*.test.ts',
+            'src/content/**/*.spec.{ts,tsx}',
+            'src/background/**/*.spec.{ts,tsx}',
+            'scripts/**/*.spec.ts',
         ],
     },
 })

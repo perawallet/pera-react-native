@@ -66,7 +66,6 @@
   "overrides": [
     {
       "files": [
-        "**/*.test.{ts,tsx,js,jsx}",
         "**/*.spec.{ts,tsx,js,jsx}",
         "**/__tests__/**/*.{ts,tsx,js,jsx}"
       ],

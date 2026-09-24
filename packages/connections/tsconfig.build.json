@@ -14,8 +14,8 @@
     "node_modules",
     "dist",
     "**/__tests__/**",
-    "**/*.test.ts",
-    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
     "**/handlers.ts",
     "**/*-handlers.ts",
     "**/testing/**"

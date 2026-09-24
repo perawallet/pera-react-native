@@ -28,8 +28,8 @@ export default defineConfig({
             '**/node_modules/**',
             '**/dist/**',
             // These tests reference hooks from a different package
-            '**/usePreferences.test.ts',
-            '**/useSettings.test.ts',
+            '**/usePreferences.spec.ts',
+            '**/useSettings.spec.ts',
         ],
     },
     resolve: {

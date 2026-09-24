@@ -15,7 +15,7 @@ import { seedFromMnemonic } from 'algosdk'
 import { quantumAddressCandidates } from '../quantumAddressCandidates'
 import { getPQProvider } from '../pq'
 
-// THROWAWAY TEST VECTOR — same as algo25-integration.test.ts; NEVER fund it.
+// THROWAWAY TEST VECTOR — same as algo25-integration.spec.ts; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 

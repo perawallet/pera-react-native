@@ -14,7 +14,7 @@
     "node_modules",
     "dist",
     "**/__tests__/**",
-    "**/*.test.ts",
+    "**/*.spec.ts",
     "**/test-utils/**"
   ]
 }

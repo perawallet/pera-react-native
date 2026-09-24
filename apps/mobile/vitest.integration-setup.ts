@@ -185,7 +185,7 @@ vi.mock('expo-file-system', () => {
     // The ASB import screen uses the static `File.pickFileAsync` to surface
     // the native picker and then reads `.text()` on the picked file.
     // Tests override the `pickFileAsync` vi.fn() per-case to supply backup
-    // contents — see `__integration__/onboarding-import-asb.test.tsx`.
+    // contents — see `__integration__/onboarding-import-asb.spec.tsx`.
     // `shareFile` instead constructs `new File(Paths.cache, fileName)` and
     // calls `create`/`write`/`uri`/`exists`/`delete`.
     class File {

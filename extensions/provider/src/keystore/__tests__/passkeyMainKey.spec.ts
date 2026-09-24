@@ -17,7 +17,7 @@ import { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId } from '../passkeyMainKey'
  * Wire-format pin, not a behaviour test. `keystore-chrome`'s
  * `webauthn/keystore-signer.ts` restates both constants (it cannot import this
  * module without pulling `react-native-mmkv` into the extension bundle) and
- * asserts the same literals in `keystore-signer.test.ts`. Every other assertion
+ * asserts the same literals in `keystore-signer.spec.ts`. Every other assertion
  * in this repo calls `passkeyMainKeyId` itself, so without these two the
  * canonical formula could drift while all four suites stayed green.
  */

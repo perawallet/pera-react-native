@@ -49,7 +49,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     return {
         ...actual,
         // The poll mechanics (give-up limits) are unit-tested in the card
-        // package's useOnboardingKycPoll.test — here we drive its output to
+        // package's useOnboardingKycPoll.spec — here we drive its output to
         // exercise the screen's handoff/give-up wiring.
         useOnboardingKycPoll: (options: { enabled?: boolean }) => {
             mockPollOptions = options

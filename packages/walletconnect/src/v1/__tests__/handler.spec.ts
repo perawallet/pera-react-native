@@ -74,8 +74,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     zeroBytes: vi.fn((bytes: Uint8Array) => bytes.fill(0)),
 }))
 
-// Same stand-in as validation/__tests__/inboundRequestGate.test.ts and
-// connection/__tests__/connectorRegistry.test.ts: the signing barrel drags in
+// Same stand-in as validation/__tests__/inboundRequestGate.spec.ts and
+// connection/__tests__/connectorRegistry.spec.ts: the signing barrel drags in
 // RN-only deps (react-native-mmkv) that don't resolve under jsdom, and the
 // handler reaches it through `../shared/schema`. Real limits and a faithful
 // ARC-60 wire shape, so the gate assertions still mean something.
@@ -100,7 +100,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 // The connector registry's zustand stores persist through the provider, whose
 // keystore migration ledger imports react-native-mmkv at module scope — same
-// stand-in as connection/__tests__/connectorRegistry.test.ts.
+// stand-in as connection/__tests__/connectorRegistry.spec.ts.
 // `initialize` starts the foreground reconnect sweep, which subscribes to the
 // provider's app lifecycle.
 const appLifecycle = vi.hoisted(() => ({

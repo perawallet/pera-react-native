@@ -101,7 +101,7 @@ None of this runs in CI; each item needs a real device and, in places, two build
 
 The flagged half of step 3 is not reachable on device without a legacy-import dataset, because the
 `metadata.migration: "needs-migration"` marker is only written by the legacy import path.
-`settings-passkeys-delete.test.tsx` covers that half instead.
+`settings-passkeys-delete.spec.tsx` covers that half instead.
 
 ## What passkeys actually depend on
 

@@ -12,7 +12,7 @@ Source of truth in code:
 
 - Method set: `apps/mobile/src/modules/webview/hooks/bridge-methods.ts`
   (`PERA_WEBVIEW_BRIDGE_METHODS`), pinned by
-  `apps/mobile/src/modules/webview/hooks/__tests__/bridge-methods.test.ts`.
+  `apps/mobile/src/modules/webview/hooks/__tests__/bridge-methods.spec.ts`.
   **Changing the method set requires updating this doc and that test.**
 - Handlers: `apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts`
 - Page-side injected API:

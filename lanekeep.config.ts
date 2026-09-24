@@ -32,7 +32,6 @@ export default defineConfig({
     exclude: [
         '**/__tests__/**',
         '**/*.spec.{ts,tsx}',
-        '**/*.test.{ts,tsx}',
         '**/node_modules/**',
         '**/dist/**',
         '**/build/**',

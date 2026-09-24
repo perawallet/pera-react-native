@@ -16,7 +16,7 @@ vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 // Real `@algorandfoundation/react-native-keystore` executes native
 // Keychain/Nitro bindings at import time, which jsdom can't run (see
-// singleton.test.ts / createKeystore.spec.ts for the same mock).
+// singleton.spec.ts / createKeystore.spec.ts for the same mock).
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
     createReactNativeKeyStore: (opts: { before?: Promise<unknown> }) => ({

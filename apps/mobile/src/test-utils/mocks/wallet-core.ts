@@ -568,7 +568,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             },
         ),
         // Error-translation exports. Tests that need the real parser should use
-        // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
+        // `vi.importActual` in their own file (see useAlgodErrorMessage.spec.ts).
         AlgodError: MockAlgodError,
         AlgodErrorCode: {
             OVERSPEND: 'overspend',
