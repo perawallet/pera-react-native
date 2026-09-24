@@ -37,11 +37,8 @@ describe('pera/pq-library-seam', () => {
             'utf8',
         )
 
-        // wasmFalconProvider.ts loads falcon-1024 via a lazy `require` (see
-        // its own comment), not a top-level `import … from`, so the match
-        // must accept either import form.
-        expect(provider).toMatch(
-            /\b(?:from|require|import)\(?\s*['"]falcon-1024['"]/,
-        )
+        // wasmFalconProvider.ts loads falcon-1024 via a lazy `require(...)`
+        // call (see its own comment), never a top-level `import … from`.
+        expect(provider).toMatch(/\b(?:require|import)\(\s*['"]falcon-1024['"]/)
     })
 })

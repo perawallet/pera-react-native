@@ -30,8 +30,6 @@ export const IMPORT_SOURCES_QUERY = `
 interface ImportSource {
     specifier: string
     site: Node
-    /** `import type …`: the statement is erased at build time. */
-    typeOnly: boolean
 }
 export type { ImportSource }
 
@@ -54,10 +52,7 @@ export const importSourceOf = (
         }
         specifier = text.slice(1, -1)
     }
-    const typeOnly =
-        ctx.kind(site) === 'import_statement' &&
-        ctx.children(site).some(c => ctx.kind(c) === 'type')
-    return { specifier, site, typeOnly }
+    return { specifier, site }
 }
 
 /** `pkg` itself or any subpath of it. */
