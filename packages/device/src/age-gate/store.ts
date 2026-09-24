@@ -12,48 +12,45 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    registerStore,
-    type Network,
-    type WithPersist,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import type { LastRefreshedRounds, PollingState } from '../models'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { AgeGateSource, AgeGateStatus } from './models'
 
-const STORE_NAME = 'polling-store'
+const STORE_NAME = 'age-gate-store'
 
-const initialState = {
-    lastRefreshedRound: {
-        mainnet: null,
-        testnet: null,
-    } as LastRefreshedRounds,
+type AgeGateState = {
+    status: AgeGateStatus | null
+    source: AgeGateSource | null
 }
 
-export const usePollingStore: UseBoundStore<
-    WithPersist<StoreApi<PollingState>, unknown>
-> = create<PollingState>()(
+type AgeGateActions = {
+    setDecision: (status: AgeGateStatus, source: AgeGateSource) => void
+    resetState: () => void
+}
+
+type AgeGateStore = AgeGateState & AgeGateActions
+
+const initialState: AgeGateState = {
+    status: null,
+    source: null,
+}
+
+export const useAgeGateStore: UseBoundStore<
+    WithPersist<StoreApi<AgeGateStore>, unknown>
+> = create<AgeGateStore>()(
     persist(
         set => ({
             ...initialState,
-            setLastRefreshedRound: (
-                network: Network,
-                round: Nullable<number>,
-            ) => {
-                set(state => ({
-                    lastRefreshedRound: {
-                        ...state.lastRefreshedRound,
-                        [network]: round,
-                    },
-                }))
-            },
+            setDecision: (status, source) => set({ status, source }),
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
             partialize: state => ({
-                lastRefreshedRound: state.lastRefreshedRound,
+                status: state.status,
+                source: state.source,
             }),
         },
     ),
@@ -63,9 +60,9 @@ registerStore({
     name: STORE_NAME,
     clearStorage: () =>
         (
-            usePollingStore as unknown as {
+            useAgeGateStore as unknown as {
                 persist: { clearStorage: () => void }
             }
         ).persist.clearStorage(),
-    resetState: () => usePollingStore.getState().resetState(),
+    resetState: () => useAgeGateStore.getState().resetState(),
 })

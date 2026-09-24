@@ -11,6 +11,13 @@
  */
 
 import { SyncService } from './service'
+export {
+    sendShouldRefreshRequest,
+    usePollingStore,
+    type LastRefreshedRounds,
+    type PollingState,
+    type ShouldRefreshResponse,
+} from './polling'
 import type { SyncServiceDeps } from './models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 

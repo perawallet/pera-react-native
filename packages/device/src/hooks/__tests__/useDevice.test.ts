@@ -41,7 +41,7 @@ vi.mock('../endpoints', () => ({
 // device-keyed server state, and the only signal is this event.
 const mockLogEvent = vi.fn()
 
-vi.mock('@perawallet/wallet-core-analytics', () => ({
+vi.mock('../../analytics', () => ({
     logEvent: (...args: unknown[]) => mockLogEvent(...args),
 }))
 

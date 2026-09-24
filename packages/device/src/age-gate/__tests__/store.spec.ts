@@ -40,6 +40,12 @@ describe('useAgeGateStore', () => {
         expect(useAgeGateStore.getState().source).toBe('platform')
     })
 
+    it('persists under the age-gate-store key at version 1 so existing installs rehydrate', () => {
+        const options = useAgeGateStore.persist.getOptions()
+        expect(options.name).toBe('age-gate-store')
+        expect(options.version).toBe(1)
+    })
+
     it('resetState clears the decision', () => {
         useAgeGateStore.getState().setDecision('minor', 'self-declared')
         useAgeGateStore.getState().resetState()

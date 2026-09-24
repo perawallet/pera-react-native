@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { useAgeGateStore } from './store'
+// App-agnostic base logging primitive. Each client app owns its own type-safe
+// event catalog and tracking wrappers and forwards to these, so this package
+// stays free of any single app's events.
+export { logEvent, createBaseLogger, type LogEventFn } from './log'

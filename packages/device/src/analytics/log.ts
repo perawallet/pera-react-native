@@ -46,9 +46,7 @@ const safeLog = (
         analytics.logEvent(resolveEventName(name), payload)
     } catch (error) {
         // Analytics is best-effort and must NEVER break app flow — swallow
-        // any failure (network store, logEvent) and only log it. console.warn
-        // is used over the shared logger so this package stays free of the
-        // wallet-core-shared barrel (and its native side effects). The event
+        // any failure (network store, logEvent) and only log it. The event
         // name is intentionally omitted: some names reference the passphrase
         // backup flow and static analysis flags them as sensitive.
         console.warn('[analytics] Failed to track event', error)

@@ -90,8 +90,8 @@
       "@perawallet/wallet-core-transactions/test-handlers": [
         "../../packages/transactions/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-core-polling/test-handlers": [
-        "../../packages/polling/src/test-handlers.ts"
+      "@perawallet/wallet-core-background/test-handlers": [
+        "../../packages/background/src/test-handlers.ts"
       ],
       "@perawallet/wallet-core-device/test-handlers": [
         "../../packages/device/src/test-handlers.ts"

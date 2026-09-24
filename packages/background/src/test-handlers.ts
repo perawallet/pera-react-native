@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-age-gate'
-
-export * from './models'
-export { useAgeGateStore } from './store'
 export {
-    resolveAgeGate,
-    applyDeclaration,
-} from './orchestration/resolveAgeGate'
-export type { ResolveAgeGateResult } from './orchestration/resolveAgeGate'
+    mockShouldRefresh,
+    type MockShouldRefreshParams,
+} from './polling/msw-handlers'

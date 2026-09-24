@@ -10,19 +10,7 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
-import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
-
-export default defineConfig({
-    test: {
-        coverage: coverageConfig,
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
-    },
-    resolve: {
-        conditions: ['default'],
-    },
-    ...poolConfig,
-})
+export * from './models'
+export { useAgeGateStore } from './store'
+export { resolveAgeGate, applyDeclaration } from './resolveAgeGate'
+export type { ResolveAgeGateResult } from './resolveAgeGate'

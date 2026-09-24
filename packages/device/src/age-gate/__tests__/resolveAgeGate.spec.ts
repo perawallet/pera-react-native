@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { resolveAgeGate, applyDeclaration } from '../resolveAgeGate'
-import { useAgeGateStore } from '../../store'
+import { useAgeGateStore } from '../store'
 
 describe('resolveAgeGate', () => {
     beforeEach(() => {
