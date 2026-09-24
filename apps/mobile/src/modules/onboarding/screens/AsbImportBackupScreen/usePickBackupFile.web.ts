@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 import { pickTextFile } from '@utils/pickTextFile.web'
 import type {
     PickedBackupFile,

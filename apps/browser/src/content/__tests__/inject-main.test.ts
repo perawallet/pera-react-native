@@ -12,7 +12,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { JsonRpcErrorCode } from '@perawallet/wallet-extension-platform-chrome'
+import { JsonRpcErrorCode } from '@perawallet/wallet-core-browser-runtime'
 import { CHANNEL_HANDSHAKE_EVENT, CHANNEL_RELAY_READY_EVENT } from '../channel'
 import { installMainProvider } from '../inject-main'
 

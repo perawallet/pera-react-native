@@ -17,25 +17,27 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
+    ensureDeviceInstallationID,
+    isTrustedExtensionPageSender,
+} from '@perawallet/wallet-extension-platform-chrome'
+import {
     INTEGRITY_CHECK_PATH,
     INTEGRITY_CHECK_PORT_PREFIX,
     INTEGRITY_HOST_PORT_PREFIX,
     buildCheckUrl,
     clearInstallKey,
     clearSessionIntegrityToken,
-    ensureDeviceInstallationID,
     exportInstallPublicKey,
     getEnrolmentMarker,
     getInstallKeyId,
     isCheckToken,
     isIntegrityEnrolRequest,
     isRetryableCheckError,
-    isTrustedExtensionPageSender,
     parseCheckPortMessage,
     putEnrolmentMarker,
     type IntegrityEnrolDecision,
     type IntegrityEnrolReason,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     clearEnrolmentNeeded,
     enrolBackoff,

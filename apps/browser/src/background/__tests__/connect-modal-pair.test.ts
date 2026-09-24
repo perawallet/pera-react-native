@@ -22,7 +22,7 @@ import {
 import {
     CONNECTIONS_CONTROL_SCOPE,
     WC_PAGE_PAIR_SCOPE,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { installConnectModalPairRoute } from '../connect-modal-pair'
 
 const URI = 'wc:topic@1?bridge=https%3A%2F%2Fb.example&key=00'

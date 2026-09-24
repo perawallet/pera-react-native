@@ -38,7 +38,7 @@ import {
     rejectPasskey,
     resolvePasskey,
     type PendingApproval,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequireVaultPassword } from '@modules/vault'
 import {

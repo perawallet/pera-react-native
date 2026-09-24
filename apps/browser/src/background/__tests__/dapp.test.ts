@@ -16,7 +16,7 @@ import {
     DAPP_HOST_RESPONSE_SCOPE,
     DAPP_PAGE_REQUEST_SCOPE,
     DAPP_PAGE_RESPONSE_SCOPE,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { JsonRpcErrorCode } from '@perawallet/wallet-core-dapp/wire'
 import {
     installDappHostResponseRoute,

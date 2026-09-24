@@ -14,7 +14,7 @@ import {
     INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
     INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_ENROL_NEEDED_SESSION_KEY,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import type { ActiveNetwork } from './network'
 import { createSessionBackoff } from './session-backoff'
 

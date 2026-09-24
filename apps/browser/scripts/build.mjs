@@ -217,9 +217,19 @@ await build({
                 root,
                 '../../extensions/keystore-chrome/src/vault/autolock.ts',
             ),
+        // esbuild also rewrites subpaths of an aliased package, so the
+        // /messaging entry needs its own, longer key.
+        '@perawallet/wallet-extension-platform-chrome/messaging': path.join(
+            root,
+            '../../extensions/platform-chrome/src/messaging.ts',
+        ),
         '@perawallet/wallet-extension-platform-chrome': path.join(
             root,
             '../../extensions/platform-chrome/src/index.ts',
+        ),
+        '@perawallet/wallet-core-browser-runtime': path.join(
+            root,
+            '../../packages/browser-runtime/src/index.ts',
         ),
     },
 })
@@ -260,11 +270,12 @@ for (const [entry, outfile] of [
         alias: {
             // Narrow alias: content scripts run on every http/https page, so
             // they get only the pure dapp wire (content-wire.ts), not the
-            // full barrel (chrome DB host, storage proxy, hydratePlatform,
-            // etc.) that the service-worker build below still aliases to.
-            '@perawallet/wallet-extension-platform-chrome': path.join(
+            // full runtime barrel (approval bridge, connection clients,
+            // integrity key store) that the service-worker build above
+            // aliases to.
+            '@perawallet/wallet-core-browser-runtime': path.join(
                 root,
-                '../../extensions/platform-chrome/src/dapp/content-wire.ts',
+                '../../packages/browser-runtime/src/dapp/content-wire.ts',
             ),
         },
     })
@@ -414,7 +425,7 @@ if (!/getURL\(["']dotlottie-player\.wasm["']\)/.test(uiCode)) {
 // The content scripts and the service worker exist to stay small and
 // dependency-free: they run on every https page (content) or wake on every
 // message (worker). One dropped `type` keyword on an `import type` in
-// extensions/platform-chrome/src/dapp/transport.ts pulls the whole dapp
+// packages/browser-runtime/src/dapp/transport.ts pulls the whole dapp
 // handler graph — and with it the signing package and react-native — into a
 // bundle that is supposed to hold the wire only. Ceilings are roughly double
 // today's size: they catch a graph leak, not ordinary growth.
@@ -438,7 +449,7 @@ for (const [name, maxBytes] of BUNDLE_LIMITS) {
         throw new Error(
             `${name} is ${Buffer.byteLength(code)} bytes, over its ${maxBytes}-byte ceiling — ` +
                 'something pulled a new dependency graph into it. Check the ' +
-                '`import type` declarations on the dapp/platform-chrome seam.',
+                '`import type` declarations on the dapp/browser-runtime seam.',
         )
     }
     const leaked = FORBIDDEN_SYMBOLS.filter(symbol => code.includes(symbol))

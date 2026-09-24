@@ -13,15 +13,14 @@
 // The offscreen document is the DB host: it owns the sqlite worker, runs
 // migrations before serving any proxy exec, and keeps slow warm polling alive
 // between popup opens.
+import { startDatabaseHost } from '@perawallet/wallet-extension-platform-chrome'
 import {
     broadcastConnectionsEvent,
     createChromeDappTransport,
-    createWorkerExecutor,
     onConnectionsControlMessage,
     onLocalStorageKeyChanged,
     sendConnectionApprovalRequest,
-    startDatabaseHost,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { getPlatformServices } from '@perawallet/wallet-extension-platform-driver'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -57,6 +56,7 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
+import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
@@ -101,7 +101,7 @@ export const runOffscreenApp = async (): Promise<void> => {
 
     // chrome.storage here is the SW-proxied shim (offscreen docs have none), and
     // apps/mobile compiles without chrome ambient types, so the raw onChanged
-    // listener lives in platform-chrome.
+    // listener lives in browser-runtime.
     onLocalStorageKeyChanged(
         Object.keys(REHYDRATE_BY_KEY),
         key => void REHYDRATE_BY_KEY[key]?.persist.rehydrate(),

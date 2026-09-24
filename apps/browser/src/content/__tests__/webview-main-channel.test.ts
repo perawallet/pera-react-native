@@ -16,7 +16,7 @@ import {
     WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
     WEBVIEW_BRIDGE_RELAY_READY_EVENT,
     type DiscoverChannelHandshake,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import { connectWebviewMainChannel } from '../webview-main-channel'
 
 const TOKEN = 'main-channel-token-1'

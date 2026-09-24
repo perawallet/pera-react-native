@@ -112,7 +112,7 @@ describe('manifest.json integrity check content script', () => {
 // plaintext host we inject into. Anything else over http:// would let an
 // on-path attacker reach the dapp/WebAuthn relays for a domain whose real
 // credentials and grants live on https — see
-// extensions/platform-chrome/src/dapp/secure-origin.ts for the full rationale.
+// packages/browser-runtime/src/dapp/secure-origin.ts for the full rationale.
 const ALLOWED_PLAINTEXT_MATCHES = ['http://localhost/*', 'http://127.0.0.1/*']
 
 describe('manifest.json secure-origin posture', () => {

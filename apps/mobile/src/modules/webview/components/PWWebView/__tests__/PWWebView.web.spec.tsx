@@ -42,7 +42,7 @@ const {
     },
 }))
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     createDiscoverBridgeHost: createDiscoverBridgeHost.mockImplementation(
         params => {
             hostParams.current = params

@@ -15,7 +15,7 @@ import {
     WC_PAGE_PAIR_SCOPE,
     isDappPageRequestAck,
     isDappPageResponseMessage,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,

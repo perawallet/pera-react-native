@@ -20,13 +20,13 @@
 // The Port name is namespaced per-token, so pairs sharing this body can't
 // collide; their handshake events can't cross either, since the pairs are
 // declared on disjoint origins in manifest.json.
-import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
+import type { DiscoverChannelHandshake } from '@perawallet/wallet-core-browser-runtime'
 import {
     WEBVIEW_BRIDGE_PORT_PREFIX,
     WEBVIEW_BRIDGE_TOKEN_PARAM,
     WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
     WEBVIEW_BRIDGE_RELAY_READY_EVENT,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 export const runWebviewRelay = (): void => {
     const token = new URLSearchParams(window.location.search).get(

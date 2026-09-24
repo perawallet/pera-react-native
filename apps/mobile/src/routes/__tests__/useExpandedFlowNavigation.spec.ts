@@ -20,7 +20,7 @@ import {
 const consumeInitialExpandedFlowMock = vi.fn()
 const setIsOnboardingMock = vi.fn()
 
-vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     consumeInitialExpandedFlow: () => consumeInitialExpandedFlowMock(),
 }))
 

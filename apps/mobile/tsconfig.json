@@ -124,8 +124,14 @@
       "@perawallet/wallet-extension-platform-chrome/bootstrap": [
         "../../extensions/platform-chrome/src/bootstrap.ts"
       ],
-      "@perawallet/wallet-extension-platform-chrome/remote-registry": [
-        "../../extensions/platform-chrome/src/remote-registry.ts"
+      "@perawallet/wallet-extension-platform-chrome/messaging": [
+        "../../extensions/platform-chrome/src/messaging.ts"
+      ],
+      "@perawallet/wallet-core-browser-runtime": [
+        "../../packages/browser-runtime/src/index.ts"
+      ],
+      "@perawallet/wallet-core-browser-runtime/remote-registry": [
+        "../../packages/browser-runtime/src/remote-registry.ts"
       ],
       "@perawallet/wallet-extension-platform-driver": [
         "../../extensions/platform-driver/src/index.ts"

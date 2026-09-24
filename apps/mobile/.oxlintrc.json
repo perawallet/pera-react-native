@@ -81,7 +81,7 @@
           "error",
           {
             "name": "chrome",
-            "message": "apps/mobile must not reference the ambient chrome global directly — go through an extension package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
+            "message": "apps/mobile must not reference the ambient chrome global directly — go through a chrome-owning package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-core-browser-runtime, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
           }
         ]
       }

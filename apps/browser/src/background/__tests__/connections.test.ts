@@ -16,7 +16,7 @@ import {
     CONNECTIONS_CONTROL_SCOPE,
     CONNECTIONS_REQUEST_SCOPE,
     type ConnectionApprovalRequest,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 import {
     installConnectionsApprovalRouter,
     installConnectionsHeartbeat,

@@ -12,7 +12,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
+import type { DiscoverChannelHandshake } from '@perawallet/wallet-core-browser-runtime'
 
 declare global {
     interface Window {

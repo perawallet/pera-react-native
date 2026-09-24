@@ -12,7 +12,7 @@
 
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { WEBVIEW_BRIDGE_PORT_PREFIX } from '@perawallet/wallet-extension-platform-chrome'
+import { WEBVIEW_BRIDGE_PORT_PREFIX } from '@perawallet/wallet-core-browser-runtime'
 
 const TOKEN = 'relay-token-1'
 

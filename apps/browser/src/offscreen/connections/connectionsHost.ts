@@ -29,7 +29,7 @@ import {
     type ConnectionsControlMessage,
     type ConnectionsControlResponse,
     type ConnectionsEvent,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-browser-runtime'
 
 export type ConnectionsHostDeps = {
     registry: ConnectionRegistry

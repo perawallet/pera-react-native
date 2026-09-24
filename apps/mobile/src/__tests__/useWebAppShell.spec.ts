@@ -53,6 +53,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: (): Surface => mocks.surface,
+}))
+vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     getCurrentApproval: () => mocks.getCurrentApproval(),
 }))
 
