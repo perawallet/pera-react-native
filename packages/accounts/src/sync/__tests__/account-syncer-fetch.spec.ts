@@ -63,9 +63,16 @@ const mockGetAlgorandClient = vi.fn(() => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    getAlgorandClient: (...args: unknown[]) => mockGetAlgorandClient(...args),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const { microAlgosToAlgos } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    return {
+        getAlgorandClient: (...args: unknown[]) =>
+            mockGetAlgorandClient(...args),
+        microAlgosToAlgos,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
