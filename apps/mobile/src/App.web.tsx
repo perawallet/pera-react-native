@@ -101,7 +101,11 @@ export const App = (): React.JSX.Element => {
             // BOOT-ORDER CONTRACT: Zustand persist stores read getProvider().keyValueStorage
             // at module evaluation, which throws before hydrate() resolves. Everything
             // that transitively imports a store MUST stay behind this dynamic import.
-            const mod = await import('./AppShell.web')
+            const [mod, { initRuntime }] = await Promise.all([
+                import('./AppShell.web'),
+                import('./bootstrap/preReact.web'),
+            ])
+            initRuntime()
             setShell(() => mod.AppShell)
         }
         bootstrap().catch((err: unknown) => {

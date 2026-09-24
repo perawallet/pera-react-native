@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-/**
- * Registers nothing, so `getLocaleTourRunner()` stays `undefined` and the
- * deeplink handler no-ops. Nothing else imports the tour driver, so this empty
- * module is what actually keeps runTour/runTourStep/steps — and the gallery
- * catalog traversal they perform — out of non-dev bundles.
- */
-export const registerLocaleTour = (): void => {}
+import { useMemo } from 'react'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { getTheme } from '@theme/theme'
+
+export type UseAppThemeResult = ReturnType<typeof getTheme>
+
+// createTheme allocates a whole new theme object, so rebuilding it on every
+// shell render would hand ThemeProvider a fresh value and re-render the tree.
+export const useAppTheme = (): UseAppThemeResult => {
+    const isDarkMode = useIsDarkMode()
+    return useMemo(() => getTheme(isDarkMode ? 'dark' : 'light'), [isDarkMode])
+}
