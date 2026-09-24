@@ -15,8 +15,8 @@
       "default": "./dist/test-utils/index.js"
     },
     "./queue": {
-        "types": "./dist/queue/index.d.ts",
-        "default": "./dist/queue.js"
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue.js"
     }
   },
   "scripts": {
@@ -31,19 +31,13 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
-    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "@tanstack/react-query-persist-client": "catalog:",
-    "base32-encode": "^2.0.0",
     "base64-js": "^1.5.1",
     "decimal.js": "catalog:",
     "ky": "catalog:",
     "react": "catalog:",
-    "react-native-quick-base64": "catalog:",
-    "util": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"

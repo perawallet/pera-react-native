@@ -29,7 +29,6 @@
     "decimal.js": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "react": "catalog:",
-    "react-dom": "catalog:",
     "zustand": "catalog:",
     "zod": "catalog:",
     "@tanstack/react-query": "catalog:"
@@ -41,6 +40,7 @@
     "msw": "catalog:",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:"
+    "@testing-library/react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

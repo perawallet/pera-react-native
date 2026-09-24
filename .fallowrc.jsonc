@@ -46,31 +46,38 @@
     "apps/mobile/entry.native.js"
   ],
 
-  // Native modules (React Native autolinking) and build/polyfill packages consumed
-  // outside the JS import graph. fallow cannot observe their usage, so they are not
-  // dead — unlike a genuinely unused dependency, which we DO want reported.
+  // Dependencies used outside the JS import graph. fallow cannot observe these, so
+  // they are not dead; anything else it reports under unused-dependencies is.
+  // Matching is by exact name across every workspace, so keep each entry to a
+  // package whose only unimported declarations are the ones described here.
   "ignoreDependencies": [
-    // Root devDependencies imported only by dev-only tsx scripts wired to
-    // package.json scripts (tools/localnet-fund.ts). fallow counts script
-    // entries as production, so it flags them as dev-dependencies-in-production.
-    "@algorandfoundation/algokit-utils",
-    "algosdk",
-    "react-native-ble-plx", // Ledger BLE transport — autolinked native module
-    "@ledgerhq/react-native-hid", // Ledger HID transport — autolinked native module
-    "@craftzdog/react-native-buffer", // Buffer polyfill wired via shim.js / metro
-    "readable-stream", // stream polyfill wired via shim.js / metro
-    "sharp", // build-time image processing, not app runtime
-    "expo-build-properties", // Expo config plugin (app.config.js), no JS import
-    "expo-dev-client", // dev launcher, no app-code import
-    // Native modules that must stay DIRECT deps for autolinking even though no JS
-    // imports them in their declaring package — removing them breaks the native
-    // build (uncaught by typecheck or tests, only by `expo prebuild`).
+    // apps/mobile: native modules imported by extensions/platform-react-native
+    // (or loaded by config plugins), declared on the app because React Native
+    // and Expo autolinking only link the app's own direct dependencies. Removing
+    // one passes typecheck and tests and breaks only the native build.
+    "@algorandfoundation/react-native-passkey-autofill",
+    "@expensify/react-native-wallet",
+    "@expo/app-integrity",
+    "@joe-p/react-native-falcon",
+    "@ledgerhq/react-native-hid",
+    "@react-native-google-signin/google-signin",
     "expo-font",
     "expo-local-authentication",
     "expo-sqlite",
-    "expo-status-bar",
-    "@algorandfoundation/react-native-keystore",
-    "react-native-quick-base64"
+    "react-native-ble-plx",
+    "react-native-cloud-storage",
+    "react-native-ssl-public-key-pinning",
+    "expo-build-properties", // Expo config plugin (app.config.builder.js)
+    "expo-dev-client", // dev launcher, no app-code import
+    // apps/mobile: polyfills metro.config.js maps node core modules onto by path.
+    "@craftzdog/react-native-buffer",
+    "readable-stream",
+    // packages/kms: its vite build inlines wallet-core-blockchain rather than
+    // externalising it, so kms/dist imports algokit-utils though kms/src never does.
+    "@algorandfoundation/algokit-utils",
+    // conformance: the harness signs quantum transactions through kms's WASM
+    // Falcon provider, which loads falcon-1024 with a lazy `require`.
+    "falcon-1024"
   ],
 
   "duplicates": {
@@ -94,18 +101,19 @@
     ]
   },
 
-  // Severities left at defaults during the report-only rollout. The CI job is
-  // advisory (non-blocking); individual rules will be flipped to "error" with a
-  // baseline once the legacy findings are triaged. Architecture boundaries are
+  // The CI "Dead Code" job fails on any "error" finding; rules not listed keep
+  // fallow's default severity. Architecture boundaries are
   // intentionally not configured here — they are covered by lanekeep (see
   // lanekeep.config.ts and lanekeep/README.md), which runs in `pnpm lint`.
   "rules": {
-    // Disabled: fallow's workspace-dependency resolution produces false positives
-    // in this monorepo — it flagged deps that ARE imported (e.g.
-    // @perawallet/wallet-core-shared in wallet-core-device), and removing them
-    // broke `pnpm build`. Dependency hygiene must be verified manually + by build,
-    // not from these findings. Re-enable only once the resolver gap is understood.
-    "unused-dependencies": "off",
+    // Test files are entries (above), so a dependency only tests import counts as
+    // used here: this catches declared-and-never-imported deps, not ones that
+    // belong in devDependencies. Before removing a finding, also check the
+    // package's dist/ (vite can inline a sibling whose imports then land there)
+    // and whether it is a peer another dependency needs.
+    "unused-dependencies": "error",
+    // Off: most findings are babel presets/plugins and react-native-web, which
+    // babel.config.js and Expo load by name where fallow cannot see them.
     "unused-dev-dependencies": "off",
     // Disabled: false positives in this codebase. duplicate-exports fires on the
     // `useStyles` styles.ts convention and RN platform variants (.ios/.android
