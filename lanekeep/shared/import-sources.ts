@@ -21,17 +21,10 @@ export const IMPORT_SOURCES_QUERY = `
      (#eq? @require "require"))
 `
 
-// lanekeep 0.11.0's loader corrupts parsing when an `export interface`/`export
-// type X = …` declaration sits immediately next to another top-level export
-// (before, after, or at end-of-file) — confirmed by bisection against the
-// pinned version. Declaring the shape unexported and re-exporting it through a
-// type-only export clause (itself immune) sidesteps the bug without changing
-// the public surface.
 interface ImportSource {
     specifier: string
     site: Node
 }
-export type { ImportSource }
 
 /** The match's specifier, or undefined for a template with substitutions. */
 export const importSourceOf = (

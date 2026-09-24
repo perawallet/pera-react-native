@@ -7,7 +7,7 @@ import {
     MAKE_STYLES_QUERY,
     isRneuiMakeStyles,
     relativeBase,
-    resolveRelative,
+    resolveModuleFile,
     styleEntries,
     webVariant,
 } from '../shared/make-styles.js'
@@ -119,7 +119,7 @@ export default defineRule({
             const local = second === undefined ? imported : ctx.text(second)
             if (imported === undefined || local === undefined) continue
 
-            const resolved = resolveRelative(ctx, ctx.filePath, specifier)
+            const resolved = resolveModuleFile(ctx, ctx.filePath, specifier)
             if (resolved === undefined) {
                 // A consumer this resolver cannot follow leaves the hook it
                 // names unknowable rather than unused, so record enough to
