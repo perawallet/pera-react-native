@@ -52,6 +52,14 @@ vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
 }))
 
+const { mockRouteCapabilities } = vi.hoisted(() => ({
+    mockRouteCapabilities: { pin: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockRouteCapabilities,
+}))
+
 const { mockUseTermsAcceptance } = vi.hoisted(() => ({
     mockUseTermsAcceptance: vi.fn(),
 }))
@@ -127,6 +135,7 @@ describe('usePromptContainer', () => {
             shouldUseDependentAwareCopy: false,
         })
         mockIsLockOverlayVisible.mockReturnValue(false)
+        mockRouteCapabilities.pin = true
     })
 
     afterEach(() => {
@@ -695,5 +704,19 @@ describe('usePromptContainer', () => {
             UserPreferences._securityPinSetupPrompt,
             true,
         )
+    })
+
+    it('never queues the PIN nudge where the platform has no PIN', async () => {
+        mockRouteCapabilities.pin = false
+        mockGetPreference.mockReturnValue(false)
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
+        expect(mockCheckPinEnabled).not.toHaveBeenCalled()
     })
 })

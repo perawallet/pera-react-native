@@ -33,6 +33,7 @@ export const routeCapabilities: RouteCapabilities = {
     confirmationModeSetting: true,
     developerSettings: true,
     vaultSecuritySettings: false,
+    pin: true,
     quantum: true,
     rekeyFlows: true,
     sharedAccounts: true,

@@ -23,8 +23,10 @@ import {
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { routeCapabilities } from '@routes/capabilities'
 
 type UseSettingsSecurityScreenResult = {
+    isPinFeatureEnabled: boolean
     isPinEnabled: boolean
     isBiometricEnabled: boolean
     isBiometricsAvailable: boolean
@@ -64,14 +66,19 @@ export const useSettingsSecurityScreen =
         } = useBiometrics()
         const { request: requestBottomSheet } = useBottomSheet()
         const remoteConfig = useRemoteConfig()
-        const isShakeToLockFeatureEnabled = remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_motion_lock,
-            false,
-        )
-        const isDuressPinFeatureEnabled = remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_duress_pin,
-            false,
-        )
+        const isPinFeatureEnabled = routeCapabilities.pin
+        const isShakeToLockFeatureEnabled =
+            isPinFeatureEnabled &&
+            remoteConfig.getBooleanValue(
+                RemoteConfigKeys.enable_motion_lock,
+                false,
+            )
+        const isDuressPinFeatureEnabled =
+            isPinFeatureEnabled &&
+            remoteConfig.getBooleanValue(
+                RemoteConfigKeys.enable_duress_pin,
+                false,
+            )
 
         const [isPinEnabled, setIsPinEnabled] = useState(false)
         const [isDuressPinEnabled, setIsDuressPinEnabled] = useState(false)
@@ -294,6 +301,7 @@ export const useSettingsSecurityScreen =
             isDuressPinFeatureEnabled
 
         return {
+            isPinFeatureEnabled,
             isPinEnabled,
             isBiometricEnabled,
             isBiometricsAvailable,
