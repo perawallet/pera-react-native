@@ -129,7 +129,7 @@ describe('useOnChainAccountInformationQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isFetching).toBe(false)
         expect(result.current.isPending).toBe(true)
     })
 })

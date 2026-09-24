@@ -12,7 +12,7 @@
 
 import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     onlineManager,
     QueryClient,
@@ -154,6 +154,9 @@ describe('useAssetOptInMutation', () => {
         })
 
         expect(mockSubmit).not.toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(AlreadyOptedInError)
+        expect(result.current.isLoading).toBe(false)
     })
 
     it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {

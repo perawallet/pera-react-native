@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
     Address,
@@ -27,10 +27,20 @@ const getAccountInformationQueryKey = (address: string, network: string) => [
     { address, network },
 ]
 
-export const useAccountInformationQuery = (address: string) => {
+export type UseAccountInformationQueryResult = {
+    /** `undefined` until loaded; callers gate on it, so no default. */
+    data: Optional<AccountInformation>
+    isPending: boolean
+    isLoading: boolean
+    isSuccess: boolean
+}
+
+export const useAccountInformationQuery = (
+    address: string,
+): UseAccountInformationQueryResult => {
     const { network } = useNetwork()
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getAccountInformationQueryKey(address, network),
         queryFn: async (): Promise<AccountInformation> => {
             const balance = await getAccountBalance({
@@ -66,4 +76,11 @@ export const useAccountInformationQuery = (address: string) => {
         },
         staleTime: Infinity,
     })
+
+    return {
+        data: query.data,
+        isPending: query.isPending,
+        isLoading: query.isLoading,
+        isSuccess: query.isSuccess,
+    }
 }

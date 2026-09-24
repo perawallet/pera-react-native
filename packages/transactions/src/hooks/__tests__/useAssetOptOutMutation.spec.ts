@@ -12,7 +12,7 @@
 
 import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
     useAssetOptOutMutation,
@@ -341,5 +341,24 @@ describe('useAssetOptOutMutation', () => {
 
         expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
         expect(mockInvalidate).not.toHaveBeenCalled()
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('user cancelled')
+    })
+
+    it('resolves an empty selection without touching the chain or the local DB', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            const res = await result.current.optOut([])
+            expect(res.txIds).toEqual([])
+        })
+
+        expect(mockAccountInformation).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
+        expect(mockInvalidate).not.toHaveBeenCalled()
+        expect(result.current.isLoading).toBe(false)
     })
 })

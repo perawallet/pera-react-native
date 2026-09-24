@@ -125,7 +125,7 @@ describe('useSuggestedParametersQuery', () => {
             // rejection — the default 'online' mode would sit paused with
             // isPending forever.
             await waitFor(() => expect(result.current.isError).toBe(true))
-            expect(result.current.fetchStatus).not.toBe('paused')
+            expect(result.current.isPaused).toBe(false)
             expect(result.current.error).toBe(mockError)
         })
     })
