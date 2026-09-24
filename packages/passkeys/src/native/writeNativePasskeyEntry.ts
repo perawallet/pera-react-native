@@ -20,6 +20,7 @@ import {
     sealNativeProviderRecord,
     toNativeByteArray,
 } from './nativeProviderRecord'
+import { notifyPasskeyChanged } from './passkeyChanges'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
@@ -162,6 +163,7 @@ export const createNativePasskeyWriter = (
                 buildKeystoreKeyData(params),
             ),
         )
+        notifyPasskeyChanged()
     }
 
     write.dispose = (): Promise<void> => {

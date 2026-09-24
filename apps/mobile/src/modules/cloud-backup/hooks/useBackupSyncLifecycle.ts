@@ -27,7 +27,10 @@ import {
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
-import { isPasskeyKey } from '@perawallet/wallet-core-passkeys'
+import {
+    isPasskeyKey,
+    subscribeToPasskeyChanges,
+} from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -109,7 +112,9 @@ const passkeyKeysFingerprint = (): string =>
 /** The keystore store fires on every write — account import, HD derivation,
  *  ledger add, all of it — so this filters to passkey keys and fingerprints
  *  them before deciding whether `onChange` (the manager's expensive
- *  `listPasskeys` sweep) needs to run at all. */
+ *  `listPasskeys` sweep) needs to run at all. Flat-record credentials, the
+ *  norm on a device, arrive through `subscribeToPasskeyChanges` instead,
+ *  which is already passkey-specific. */
 const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
     let last = passkeyKeysFingerprint()
     const sub = getKeystoreStore().subscribe(() => {
@@ -118,7 +123,11 @@ const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
         last = next
         onChange()
     })
-    return () => sub.unsubscribe()
+    const unsubscribeFlatRecords = subscribeToPasskeyChanges(onChange)
+    return () => {
+        sub.unsubscribe()
+        unsubscribeFlatRecords()
+    }
 }
 
 /** Holds the newest callback identities behind a stable ref, so the manager can

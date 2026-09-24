@@ -38,6 +38,7 @@ import {
     writeNativePasskeyEntry,
     type WriteNativePasskeyEntryParams,
 } from '../writeNativePasskeyEntry'
+import { subscribeToPasskeyChanges } from '../passkeyChanges'
 
 const OPAQUE_USER_ID = 'dXNlci1pZA' // WebAuthn user.id (base64, opaque)
 const HUMAN_USER_NAME = 'alice@example.com' // WebAuthn user.name (display)
@@ -215,5 +216,19 @@ describe('createNativePasskeyWriter master-key reuse', () => {
 
         expect(metadata.counter).toBe(4)
         expect(metadata.count).toBe(0)
+    })
+})
+
+describe('writeNativePasskeyEntry change notification', () => {
+    it('announces a credential once its record is stored', async () => {
+        const recordsStoredAtAnnouncement: number[] = []
+        const unsubscribe = subscribeToPasskeyChanges(() => {
+            recordsStoredAtAnnouncement.push(storageMock.set.mock.calls.length)
+        })
+
+        await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
+        unsubscribe()
+
+        expect(recordsStoredAtAnnouncement).toEqual([1])
     })
 })

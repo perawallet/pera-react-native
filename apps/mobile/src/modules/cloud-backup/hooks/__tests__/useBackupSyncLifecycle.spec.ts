@@ -35,6 +35,7 @@ const {
     backupIdRef,
     keysRef,
     keystoreListeners,
+    passkeyChangeListeners,
 } = vi.hoisted(() => ({
     initializeMock: vi.fn(),
     managerMock: { start: vi.fn(), stop: vi.fn() },
@@ -54,6 +55,7 @@ const {
     backupIdRef: { current: null as string | null },
     keysRef: { current: [] as FakeKeystoreKey[] },
     keystoreListeners: new Set<() => void>(),
+    passkeyChangeListeners: new Set<() => void>(),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -98,6 +100,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
     isPasskeyKey: (key: FakeKeystoreKey) => key.type === 'hd-derived-p256',
+    subscribeToPasskeyChanges: (listener: () => void) => {
+        passkeyChangeListeners.add(listener)
+        return () => passkeyChangeListeners.delete(listener)
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -130,6 +136,12 @@ const emitAppState = (state: string) => {
  *  `setState` — matching how `@tanstack/store` notifies on every write. */
 const emitKeystoreChange = () => {
     for (const listener of [...keystoreListeners]) listener()
+}
+
+/** Stands in for the passkeys package announcing a flat-record write or a
+ *  native delete, neither of which touches the keystore store. */
+const emitPasskeyChange = () => {
+    for (const listener of [...passkeyChangeListeners]) listener()
 }
 
 describe('useBackupSyncLifecycle', () => {
@@ -211,6 +223,7 @@ describe('useBackupSyncLifecycle', () => {
         beforeEach(() => {
             keysRef.current = []
             keystoreListeners.clear()
+            passkeyChangeListeners.clear()
         })
 
         it('does not report an unrelated keystore write', () => {
@@ -297,6 +310,29 @@ describe('useBackupSyncLifecycle', () => {
                 },
             ]
             emitKeystoreChange()
+
+            expect(onChange).not.toHaveBeenCalled()
+        })
+
+        it('reports a passkey change announced outside the keystore store', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            deps.subscribePasskeyChanges(onChange)
+
+            emitPasskeyChange()
+
+            expect(onChange).toHaveBeenCalledTimes(1)
+        })
+
+        it('stops reporting announced changes once unsubscribed', () => {
+            renderHook(() => useBackupSyncLifecycle())
+            const deps = (initializeMock as Mock).mock.calls[0][0]
+            const onChange = vi.fn()
+            const unsubscribe = deps.subscribePasskeyChanges(onChange)
+            unsubscribe()
+
+            emitPasskeyChange()
 
             expect(onChange).not.toHaveBeenCalled()
         })
