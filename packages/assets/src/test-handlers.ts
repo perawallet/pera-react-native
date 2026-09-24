@@ -19,12 +19,10 @@ export {
 
 export {
     mockAssets,
-    mockAccountAssets,
     mockAssetDetails,
     mockPublicAssetDetails,
     mockIndexerAssetDetails,
     type MockAssetsParams,
-    type MockAccountAssetsParams,
     type MockAssetDetailsParams,
     type MockPublicAssetDetailsParams,
     type MockIndexerAssetDetailsParams,

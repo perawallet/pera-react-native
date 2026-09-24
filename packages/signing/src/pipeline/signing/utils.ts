@@ -144,18 +144,3 @@ export const canMeetThresholdLocally = (
     const localParticipants = getLocalParticipants(target, allAccounts)
     return localParticipants.length >= target.multisigDetails.threshold
 }
-
-/** 0 once threshold is met. */
-export const getSignaturesNeeded = (
-    account: WalletAccount,
-    existingSignatures: number,
-): number => {
-    if (!isMultisigAccount(account)) {
-        return 0
-    }
-
-    const multisigAccount = account as MultiSigAccount
-    const threshold = multisigAccount.multisigDetails.threshold
-
-    return Math.max(0, threshold - existingSignatures)
-}

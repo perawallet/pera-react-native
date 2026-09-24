@@ -379,15 +379,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 : { kind: 'watch', account },
         ),
         useCanSignWith: vi.fn((account: any) => !!account?.keyPairId),
-        useCanSignArbitraryData: vi.fn(
-            (account: any) =>
-                !!account?.keyPairId && account?.type !== 'hardware',
-        ),
-        useIsRekeyedUnsignable: vi.fn(() => false),
-        useCanInitiateRekey: vi.fn((account: any) => !!account?.keyPairId),
         useRekeyAccount: vi.fn(() => null),
         useSignerFor: vi.fn(() => null),
-        useSignerResolution: vi.fn(() => ({ kind: 'accountNotFound' })),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
