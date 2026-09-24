@@ -37,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-card/test-handlers'
 import { CardWalletBalanceScreen } from '@modules/card/screens/CardWalletBalanceScreen'
 import { CardWalletBalanceWithdrawScreen } from '@modules/card/screens/CardWalletBalanceWithdrawScreen'
+import { isElementDisabled } from '@test-utils/rnw'
 
 const walletHandler = (
     kind: CardWalletKind,
@@ -166,7 +167,7 @@ describe('Flow: card wallet balance claim', () => {
                 renderWallet(kind)
 
                 await waitFor(() => expect(balanceText()).toContain('42.50'))
-                expect(claimCta().getAttribute('disabled')).not.toBeNull()
+                expect(isElementDisabled(claimCta())).toBe(true)
             })
 
             it('shows an introduction for an empty wallet', async () => {
@@ -180,7 +181,7 @@ describe('Flow: card wallet balance claim', () => {
                         : 'peraCard.refunds.empty_title'
                 expect(await screen.findByText(emptyTitle)).toBeTruthy()
                 expect(balanceText()).toContain('0.00')
-                expect(claimCta().getAttribute('disabled')).not.toBeNull()
+                expect(isElementDisabled(claimCta())).toBe(true)
             })
 
             // Baanx creates the wallet on the first credit, so 404 is the
@@ -194,7 +195,7 @@ describe('Flow: card wallet balance claim', () => {
                 expect(
                     screen.queryByTestId('card-wallet-balance-retry'),
                 ).toBeNull()
-                expect(claimCta().getAttribute('disabled')).not.toBeNull()
+                expect(isElementDisabled(claimCta())).toBe(true)
             })
 
             it('retries a failed balance request without showing a false zero', async () => {
@@ -211,14 +212,14 @@ describe('Flow: card wallet balance claim', () => {
                 expect(
                     screen.queryByTestId('card-wallet-balance-amount'),
                 ).toBeNull()
-                expect(claimCta().getAttribute('disabled')).not.toBeNull()
+                expect(isElementDisabled(claimCta())).toBe(true)
                 server.use(walletHandler(kind))
                 fireEvent.click(retry)
                 await waitFor(() => expect(balanceText()).toContain('42.50'))
                 expect(
                     screen.queryByTestId('card-wallet-balance-retry'),
                 ).toBeNull()
-                expect(claimCta().getAttribute('disabled')).toBeNull()
+                expect(isElementDisabled(claimCta())).toBe(false)
             })
         },
     )

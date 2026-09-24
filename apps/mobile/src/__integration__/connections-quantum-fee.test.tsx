@@ -112,6 +112,11 @@ import { SigningOverlays } from '@modules/signing/shell'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
 import { UserPreferences } from '@constants/user-preferences'
 
+import {
+    closestPressable,
+    getAllPressables,
+    isElementDisabled,
+} from '@test-utils/rnw'
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     QUANTUM_TEST_ADDRESS,
@@ -150,18 +155,16 @@ const RegistryProbe = () => {
 }
 
 const findButton = (label: string): Optional<HTMLButtonElement> =>
-    screen
-        .getAllByRole('button')
-        .find(button =>
-            (button.textContent ?? '').includes(label),
-        ) as Optional<HTMLButtonElement>
+    getAllPressables().find(button =>
+        (button.textContent ?? '').includes(label),
+    ) as Optional<HTMLButtonElement>
 
 const rowFor = (name: string): HTMLButtonElement => {
     const matches = screen.getAllByText((_, node) =>
         (node?.textContent ?? '').includes(name),
     )
     const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-    const button = leaf.closest('button')
+    const button = closestPressable(leaf)
     if (!button) throw new Error(`Row not found for "${name}"`)
     return button as HTMLButtonElement
 }
@@ -284,7 +287,9 @@ const approveViaUi = async (accountNames: string[]) => {
     })
     for (const name of accountNames) fireEvent.click(rowFor(name))
     await waitFor(() => {
-        expect(findButton('common.connect.label')!.disabled).toBe(false)
+        expect(isElementDisabled(findButton('common.connect.label')!)).toBe(
+            false,
+        )
     })
     fireEvent.click(findButton('common.connect.label')!)
 }

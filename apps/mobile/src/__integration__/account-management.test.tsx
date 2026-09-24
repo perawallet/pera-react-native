@@ -94,6 +94,12 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
 }
 
 import {
+    closestPressable,
+    longPress,
+    queryPressableByText,
+    waitPastDoublePressGuard,
+} from '@test-utils/rnw'
+import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
     HD_TEST_ADDRESS,
@@ -123,20 +129,17 @@ const tapAccountRow = (accountName: string) => {
         (node?.textContent ?? '').includes(accountName),
     )
     const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-    const button = leaf.closest('button')
+    const button = closestPressable(leaf)
     if (!button) {
         throw new Error(`Row not found for account "${accountName}"`)
     }
     fireEvent.click(button)
 }
 
-// Helper: find a button whose visible label text matches an i18n key.
-// PWButton's mock places the title text inside the button; i18n falls
-// back to the key string under the integration setup, so we match keys
-// directly. (Several remove-flow buttons don't carry explicit testids.)
+// i18n falls back to the key string under the integration setup, so buttons
+// are matched by key. (Several remove-flow buttons don't carry testids.)
 const tapButtonByLabel = (i18nKey: string) => {
-    const buttons = screen.getAllByRole('button')
-    const button = buttons.find(b => (b.textContent ?? '').includes(i18nKey))
+    const button = queryPressableByText(i18nKey)
     if (!button) {
         throw new Error(`Button not found for label "${i18nKey}"`)
     }
@@ -237,9 +240,7 @@ describe('Flow: Account management', () => {
             'AccountMenuHost',
         )
 
-        // `contextMenu` is the DOM stand-in for onLongPress — see the
-        // PWTouchableOpacity mock in vitest.setup.ts.
-        fireEvent.contextMenu(
+        await longPress(
             screen.getByTestId(`account_switcher_row_${ACCOUNT_B.address}`),
         )
 
@@ -259,7 +260,7 @@ describe('Flow: Account management', () => {
 
         renderWithNavigation(() => <AccountSelection />, 'AccountSelectionHost')
 
-        fireEvent.contextMenu(screen.getByTestId('account_selection_button'))
+        await longPress(screen.getByTestId('account_selection_button'))
 
         await waitFor(() => {
             expect(Clipboard.setStringAsync).toHaveBeenCalledWith(
@@ -416,6 +417,8 @@ describe('Flow: Account management', () => {
                 tapButtonByLabel('account_options.backup_warning_continue'),
             )
 
+            // The confirm view reuses the gate's button.
+            await waitPastDoublePressGuard()
             await waitFor(() =>
                 tapButtonByLabel('account_options.remove_confirm'),
             )
@@ -623,17 +626,11 @@ describe('Flow: Account management', () => {
 
             tapButtonByLabel('account_options.rename_account')
 
-            // RenameAccountBottomSheet renders a PWInput + a save button.
-            // The input has no explicit testID — find the only input on
-            // the screen and change it.
-            const inputs = document.querySelectorAll('input')
-            const renameInput = inputs[inputs.length - 1] // the rename
-            fireEvent.change(renameInput, {
+            await waitFor(() => screen.getByTestId('rename_account_input'))
+            fireEvent.change(screen.getByTestId('rename_account_input'), {
                 target: { value: 'Long-term hold' },
             })
-
-            // The save button is labeled with `account_options.rename_save`.
-            tapButtonByLabel('account_options.rename_save')
+            fireEvent.click(screen.getByTestId('rename_account_save_button'))
 
             await waitFor(() => {
                 const updated = useAccountsStore

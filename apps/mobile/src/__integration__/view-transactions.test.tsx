@@ -30,11 +30,12 @@ import {
     waitFor,
 } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { ThemeProvider } from '@rneui/themed'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
-import { createTestQueryClient } from '@test-utils/render'
+import { createTestQueryClient, getTestTheme } from '@test-utils/render'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -57,6 +58,7 @@ import { AccountHistory } from '@modules/accounts/components/AccountHistory/Acco
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 
+import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -326,7 +328,7 @@ describe('Flow: View transactions → tap into details', () => {
             )
             const leaf =
                 matches.find(el => el.children.length === 0) ?? matches[0]
-            const row = leaf.closest('button')
+            const row = closestPressable(leaf)
             if (!row) {
                 throw new Error('Payment row button not found')
             }
@@ -436,7 +438,7 @@ describe('Flow: View transactions → tap into details', () => {
             )
             const leaf =
                 matches.find(el => el.children.length === 0) ?? matches[0]
-            const row = leaf.closest('button')
+            const row = closestPressable(leaf)
             if (!row) {
                 throw new Error('Close-out row button not found')
             }
@@ -553,9 +555,11 @@ describe('Flow: View transactions → tap into details', () => {
             // work without a wrapper.
             const queryClient = createTestQueryClient()
             const wrapper = ({ children }: { children: React.ReactNode }) => (
-                <QueryClientProvider client={queryClient}>
-                    {children}
-                </QueryClientProvider>
+                <ThemeProvider theme={getTestTheme()}>
+                    <QueryClientProvider client={queryClient}>
+                        {children}
+                    </QueryClientProvider>
+                </ThemeProvider>
             )
             const { result } = renderHook(() => useAccountHistory(), {
                 wrapper,
@@ -662,7 +666,7 @@ describe('Flow: View transactions → tap into details', () => {
             )
             const leaf =
                 matches.find(el => el.children.length === 0) ?? matches[0]
-            const row = leaf.closest('button')
+            const row = closestPressable(leaf)
             if (!row) {
                 throw new Error('State proof row button not found')
             }

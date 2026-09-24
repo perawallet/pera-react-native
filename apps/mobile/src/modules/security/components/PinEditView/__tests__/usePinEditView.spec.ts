@@ -37,9 +37,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mocks.showError }),

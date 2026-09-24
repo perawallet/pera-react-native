@@ -72,6 +72,7 @@ import { RekeyToQuantumSelectTargetScreen } from '@modules/rekey/screens/rekey-t
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -456,13 +457,12 @@ describe('rekey quantum account', () => {
                     screen.getByTestId('rekey-to-standard-confirm-screen'),
                 ).toBeTruthy()
             })
-            const cta = screen.getByTestId(
-                'rekey-to-standard-confirm-cta',
-            ) as HTMLButtonElement
+            const cta = () =>
+                screen.getByTestId('rekey-to-standard-confirm-cta')
             await waitFor(() => {
-                expect(cta.disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(() => {
                 expect(
@@ -510,13 +510,13 @@ describe('rekey quantum account', () => {
                 },
             )
 
-            const cta = await screen.findByTestId(
-                'rekey-to-standard-confirm-cta',
-            )
+            await screen.findByTestId('rekey-to-standard-confirm-cta')
+            const cta = () =>
+                screen.getByTestId('rekey-to-standard-confirm-cta')
             await waitFor(() => {
-                expect((cta as HTMLButtonElement).disabled).toBe(false)
+                expect(isElementDisabled(cta())).toBe(false)
             })
-            fireEvent.click(cta)
+            fireEvent.click(cta())
 
             await waitFor(() => {
                 expect(
@@ -537,10 +537,10 @@ describe('rekey quantum account', () => {
             await waitFor(() => {
                 expect(screen.queryByTestId('activity-indicator')).toBeNull()
             })
-            expect((cta as HTMLButtonElement).disabled).toBe(false)
+            expect(isElementDisabled(cta())).toBe(false)
 
             vi.mocked(Notifier.showNotification).mockClear()
-            fireEvent.click(cta)
+            fireEvent.click(cta())
             await waitFor(() => {
                 expect(
                     screen.getByTestId('quantum-downgrade-warning-sheet'),

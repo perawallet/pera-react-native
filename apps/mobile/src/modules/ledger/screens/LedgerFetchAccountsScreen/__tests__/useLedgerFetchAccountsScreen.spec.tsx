@@ -43,9 +43,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({

@@ -114,9 +114,10 @@ describe('Flow: Ledger imported account row checkbox', () => {
 
             await waitFor(
                 () =>
+                    // PWChip upper-cases its title.
                     expect(
                         screen.queryByText(
-                            'ledger.select_accounts.already_imported',
+                            'LEDGER.SELECT_ACCOUNTS.ALREADY_IMPORTED',
                         ),
                     ).not.toBeNull(),
                 { timeout: 10_000 },

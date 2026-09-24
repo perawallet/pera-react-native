@@ -27,9 +27,7 @@ vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
         sel({ setMnemonic }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 const errorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ errorToast }) }))

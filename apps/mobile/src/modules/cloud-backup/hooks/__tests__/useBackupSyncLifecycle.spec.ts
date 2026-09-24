@@ -54,9 +54,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { error: vi.fn() },
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: showToastMock }),

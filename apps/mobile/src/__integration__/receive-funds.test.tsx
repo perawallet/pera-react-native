@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/useReceiveFunds'
 
+import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 const PRIMARY_ACCOUNT: WalletAccount = {
@@ -108,7 +109,7 @@ describe('Flow: Receive funds', () => {
             ),
         )
         const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-        const secondaryRow = leaf.closest('button')
+        const secondaryRow = closestPressable(leaf)
         if (!secondaryRow) {
             throw new Error('Secondary account row not found')
         }

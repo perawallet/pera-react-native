@@ -36,6 +36,7 @@ import {
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 
 // A quantum-derived address is a standard 58-char Algorand address (Falcon
@@ -74,11 +75,13 @@ describe('watch quantum address', () => {
                 ],
             })
 
-            // Info screen renders one PWButton (the "Continue" CTA), keyed
-            // under the default 'PWButton' testid because the production
-            // source doesn't pass an explicit one.
-            await waitFor(() => screen.getByTestId('PWButton'))
-            fireEvent.click(screen.getByTestId('PWButton'))
+            // The info screen's CTA carries no testID, so it is found by its label.
+            await waitFor(() =>
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
+            fireEvent.click(
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
 
             // WatchAccountScreen renders the address input.
             await waitFor(() =>
@@ -93,11 +96,9 @@ describe('watch quantum address', () => {
             // button enables.
             await waitFor(() => {
                 expect(
-                    (
-                        screen.getByTestId(
-                            'watch_account_submit_button',
-                        ) as HTMLButtonElement
-                    ).disabled,
+                    isElementDisabled(
+                        screen.getByTestId('watch_account_submit_button'),
+                    ),
                 ).toBe(false)
             })
             fireEvent.click(screen.getByTestId('watch_account_submit_button'))
@@ -165,8 +166,12 @@ describe('watch quantum address', () => {
                 ],
             })
 
-            await waitFor(() => screen.getByTestId('PWButton'))
-            fireEvent.click(screen.getByTestId('PWButton'))
+            await waitFor(() =>
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
+            fireEvent.click(
+                screen.getByText('onboarding.watch_account.info_button'),
+            )
 
             await waitFor(() =>
                 screen.getByTestId('watch_account_address_input'),
@@ -179,11 +184,9 @@ describe('watch quantum address', () => {
             // The button never enables: the duplicate guard short-circuits
             // both the validity check and the submit handler.
             expect(
-                (
-                    screen.getByTestId(
-                        'watch_account_submit_button',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('watch_account_submit_button'),
+                ),
             ).toBe(true)
 
             // Even if we somehow click it, the handler returns early —

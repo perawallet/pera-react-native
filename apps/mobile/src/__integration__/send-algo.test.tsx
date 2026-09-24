@@ -61,6 +61,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -191,7 +192,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             await waitFor(() => {
                 // Recipient-info pending disables the button until algod
                 // returns the recipient's balance/min-balance.
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -256,13 +257,13 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             const confirmButton = screen.getByTestId(
                 'send_confirm_button',
             ) as HTMLButtonElement
-            expect(confirmButton.disabled).toBe(true)
+            expect(isElementDisabled(confirmButton)).toBe(true)
             expect(confirmButton.getAttribute('data-loading')).toBe('false')
 
             releaseRecipientInfo()
 
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
             expect(confirmButton.getAttribute('data-loading')).toBe('false')
         },
@@ -408,7 +409,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -480,7 +481,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -504,7 +505,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 },
                 { timeout: 10_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
             await waitFor(() => {
                 expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
             })
@@ -543,7 +544,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -571,7 +572,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 },
                 { timeout: 15_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -613,7 +614,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -672,7 +673,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -727,7 +728,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
             fireEvent.click(confirmButton)
 
@@ -797,7 +798,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
             fireEvent.click(confirmButton)
 
@@ -895,7 +896,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)

@@ -582,9 +582,9 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             )
 
             // The collectible's primaryImage renders as an actual image
-            // (PWImage mock), not the initials fallback.
+            // (expo-image's stub), not the initials fallback.
             const preview = screen.getByTestId('arc59_claim_asset_preview')
-            expect(within(preview).getByTestId('PWImage')).toBeTruthy()
+            expect(within(preview).getByTestId('expo-image')).toBeTruthy()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

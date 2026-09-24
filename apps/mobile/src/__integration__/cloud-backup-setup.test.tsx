@@ -53,6 +53,7 @@ import { CloudBackupSetupScreen } from '@modules/cloud-backup/screens/CloudBacku
 import { CloudBackupVerifyScreen } from '@modules/cloud-backup/screens/CloudBackupVerifyScreen'
 import { CloudBackupOverviewScreen } from '@modules/cloud-backup/screens/CloudBackupOverviewScreen'
 import { CloudBackupStoreEncryptionKeyScreen } from '@modules/cloud-backup/screens/CloudBackupStoreEncryptionKeyScreen'
+import { isElementDisabled } from '@test-utils/rnw'
 
 // Enabling derives the backup keys for real. Where the runtime has
 // `crypto.argon2` (Node 24+) that is genuine Argon2 and dominates the test;
@@ -181,9 +182,7 @@ const seedPin = async (): Promise<void> => {
 const enterPin = async (pin: string): Promise<void> => {
     for (const digit of pin) {
         await act(async () => {
-            fireEvent.click(
-                within(screen.getByTestId('PWNumpad')).getByText(digit),
-            )
+            fireEvent.click(screen.getByTestId(`numpad_key_${digit}`))
         })
     }
 }
@@ -231,14 +230,13 @@ describe('cloud backup setup screen', () => {
         }
         expect(screen.queryByText('13')).toBeNull()
 
-        const proceed = screen.getByTestId(
-            'cloud_backup_setup_proceed_button',
-        ) as HTMLButtonElement
-        expect(proceed.disabled).toBe(true)
+        const proceed = () =>
+            screen.getByTestId('cloud_backup_setup_proceed_button')
+        expect(isElementDisabled(proceed())).toBe(true)
 
         fireEvent.click(screen.getByTestId('cloud_backup_setup_checkbox'))
-        await waitFor(() => expect(proceed.disabled).toBe(false))
-        fireEvent.click(proceed)
+        await waitFor(() => expect(isElementDisabled(proceed())).toBe(false))
+        fireEvent.click(proceed())
 
         await waitFor(() =>
             expect(
@@ -439,11 +437,11 @@ describe('cloud backup enable with a PIN set', () => {
             await enableFromStoreKeyScreen()
 
             await waitFor(() =>
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy(),
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
             )
             fireEvent.click(screen.getByTestId('close-button'))
             await waitFor(() =>
-                expect(screen.queryByTestId('PWNumpad')).toBeNull(),
+                expect(screen.queryByTestId('numpad_key_0')).toBeNull(),
             )
 
             expect(
@@ -473,7 +471,7 @@ describe('cloud backup enable with a PIN set', () => {
             )
             await enableFromStoreKeyScreen()
             await waitFor(() =>
-                expect(screen.getByTestId('PWNumpad')).toBeTruthy(),
+                expect(screen.getByTestId('numpad_key_0')).toBeTruthy(),
             )
 
             await enterPin(TEST_PIN)

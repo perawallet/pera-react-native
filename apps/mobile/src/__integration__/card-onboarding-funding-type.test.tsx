@@ -132,6 +132,7 @@ import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboarding
 import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
 import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
 import { SigningOverlays } from '@modules/signing/shell'
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -516,11 +517,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         // the user explicitly cancels.
         await waitFor(() =>
             expect(
-                (
-                    screen.getByTestId(
-                        'card-auto-funding-signing-cancel',
-                    ) as HTMLButtonElement
-                ).disabled,
+                isElementDisabled(
+                    screen.getByTestId('card-auto-funding-signing-cancel'),
+                ),
             ).toBe(false),
         )
         expect(useCardStore.getState().selectedFundingType).toBeNull()

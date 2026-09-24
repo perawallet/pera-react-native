@@ -62,9 +62,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     encodeWalletOperationResult: mocks.encodeWalletOperationResult,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 

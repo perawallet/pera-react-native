@@ -44,6 +44,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_WORDS,
@@ -78,11 +79,9 @@ const typeWordsIndividually = (words: string[]) => {
 const waitForImportButtonEnabled = async () => {
     await waitFor(() => {
         expect(
-            (
-                screen.getByTestId(
-                    'import_account_import_button',
-                ) as HTMLButtonElement
-            ).disabled,
+            isElementDisabled(
+                screen.getByTestId('import_account_import_button'),
+            ),
         ).toBe(false)
     })
 }

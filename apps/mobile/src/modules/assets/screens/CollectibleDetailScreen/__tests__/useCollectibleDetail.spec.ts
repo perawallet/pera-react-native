@@ -95,9 +95,7 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 // Mutable platform stub: mutate `mockPlatform` per test to simulate the
 // native (ios) and web builds without re-mocking.

@@ -36,6 +36,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     HD_TEST_ADDRESS,
@@ -217,6 +218,6 @@ describe('Flow: Create a multisig account from scratch', () => {
         const continueButton = await screen.findByTestId(
             'create_multisig_continue_button',
         )
-        expect((continueButton as HTMLButtonElement).disabled).toBe(true)
+        expect(isElementDisabled(continueButton)).toBe(true)
     })
 })

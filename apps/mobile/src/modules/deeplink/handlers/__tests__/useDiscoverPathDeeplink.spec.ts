@@ -27,9 +27,7 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast: mocks.errorToast }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@routes/capabilities', () => ({
     get routeCapabilities() {

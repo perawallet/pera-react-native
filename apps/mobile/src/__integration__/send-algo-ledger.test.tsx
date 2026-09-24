@@ -58,6 +58,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
+import { isElementDisabled } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The Ledger sender reuses the same valid fixture address that the other
@@ -259,7 +260,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -332,7 +333,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -374,7 +375,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 screen.queryByTestId('ledger-signing-overlay-lottie'),
             ).toBeNull()
             expect(sendSpy).not.toHaveBeenCalled()
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
 
             // Dismiss the error to drain the signing actor. The hardware child
             // parks in its non-terminal `error` state until the user
@@ -424,7 +425,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 'send_confirm_button',
             ) as HTMLButtonElement
             await waitFor(() => {
-                expect(confirmButton.disabled).toBe(false)
+                expect(isElementDisabled(confirmButton)).toBe(false)
             })
 
             fireEvent.click(confirmButton)
@@ -461,7 +462,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 screen.queryByTestId('ledger-signing-overlay-lottie'),
             ).toBeNull()
             expect(sendSpy).not.toHaveBeenCalled()
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            expect(screen.queryByTestId('pw-result-view')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

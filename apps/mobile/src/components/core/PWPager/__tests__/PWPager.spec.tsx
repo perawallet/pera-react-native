@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Text } from 'react-native'
 import { ThemeProvider } from '@rneui/themed'
-import { render, renderHook, screen, testTheme } from '@test-utils/render'
+import { render, renderHook, screen, getTestTheme } from '@test-utils/render'
 
 import { PWPager } from '../PWPager'
 import { usePWPager } from '../usePWPager'
@@ -76,7 +76,9 @@ describe('PWPager', () => {
                 }),
             {
                 wrapper: ({ children }) => (
-                    <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+                    <ThemeProvider theme={getTestTheme()}>
+                        {children}
+                    </ThemeProvider>
                 ),
             },
         )

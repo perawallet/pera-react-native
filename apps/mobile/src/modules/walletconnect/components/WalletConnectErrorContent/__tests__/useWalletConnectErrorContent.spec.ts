@@ -21,9 +21,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: mockConfig,
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@hooks/useAlgodErrorMessage', () => ({
     useAlgodErrorMessage: () => ({
