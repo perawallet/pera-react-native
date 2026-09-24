@@ -12,11 +12,13 @@ const ENTRIES = new Set(['', 'index', 'routes', 'shell', 'web'])
 
 // Narrower entries a module documents in the file itself, each for a reason
 // the generic ones can't express: the banner carousels would drag a pager into
-// every HomeBannersStrip consumer, PWWebView mounts the whole dApp bridge, and
+// every HomeBannersStrip consumer, deeplink's handlers import the modules that
+// need its parser and constants, PWWebView mounts the whole dApp bridge, and
 // the locale tour's register/registry are the files metro.config.js stubs out
 // of release builds.
 const EXTRA_ENTRIES: Record<string, readonly string[]> = {
     banners: ['carousel'],
+    deeplink: ['core'],
     'locale-tour': ['register', 'registry'],
     webview: ['browser'],
 }

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import type { PeraNotification } from '@perawallet/wallet-core-messages'
-import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink'
 import {
     getMultisigIntentKind,
     isTerminalMultisigNotification,

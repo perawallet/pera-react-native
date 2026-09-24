@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PERAWALLET_WC_SCHEME, WC_SCHEME } from '@modules/deeplink/constants'
+import { PERAWALLET_WC_SCHEME, WC_SCHEME } from '@modules/deeplink/core'
 
 export const baseJS = `var css = '*{-webkit-touch-callout:none;-webkit-user-select:none}textarea,input{user-select:text;-webkit-user-select:text;}';
 var head = document.head || document.getElementsByTagName('head')[0];

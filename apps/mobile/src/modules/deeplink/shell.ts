@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// The hooks reach every handler, and the handlers import connections, webview,
-// multisig and more. A caller those modules depend on imports ./core instead.
-export * from './core'
-export { useDeepLink } from './hooks/useDeepLink'
-export { useDeeplinkListener } from './hooks/useDeeplinkListener'
+// Mounted once by the app roots. It imports the messages barrel, which itself
+// uses useDeepLink, so it stays out of index.ts.
+export { useNotificationDeeplinkListener } from './hooks/useNotificationDeeplinkListener'
