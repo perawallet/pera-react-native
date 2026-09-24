@@ -17,10 +17,11 @@ import {
     type SQLiteBindValue,
 } from 'expo-sqlite'
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
-import type {
-    Database,
-    DatabaseService,
-    DatabaseDriver,
+import {
+    createDrizzleProxyCallback,
+    type Database,
+    type DatabaseService,
+    type DatabaseDriver,
 } from '@perawallet/wallet-extension-platform'
 
 class ExpoSQLiteDatabaseDriver implements DatabaseDriver {
@@ -60,26 +61,26 @@ function createExpoSQLiteProxy(
     writeClient: SQLiteDatabase,
     readClient: SQLiteDatabase,
 ): Database {
-    return drizzle(async (sql, params, method) => {
-        const [safeSql, safeParams] = bindParams(sql, params)
+    return drizzle(
+        createDrizzleProxyCallback(async (sql, params, method) => {
+            const [safeSql, safeParams] = bindParams(sql, params)
 
-        // Writes and reads travel on separate WAL connections so a burst
-        // of large reads can't queue every small insert behind it (and
-        // vice versa). Drizzle maps every write in this codebase to
-        // `run`; reads (`all`/`get`/`values`) go to the read connection.
-        if (method === 'run') {
-            await writeClient.runAsync(safeSql, safeParams)
-            return { rows: [] }
-        }
+            // Writes and reads travel on separate WAL connections so a burst
+            // of large reads can't queue every small insert behind it (and
+            // vice versa). Drizzle maps every write in this codebase to
+            // `run`; reads (`all`/`get`/`values`) go to the read connection.
+            if (method === 'run') {
+                await writeClient.runAsync(safeSql, safeParams)
+                return []
+            }
 
-        const rows = await readClient.getAllAsync(safeSql, safeParams)
+            const rows = await readClient.getAllAsync(safeSql, safeParams)
 
-        return {
-            rows: rows.map(row =>
+            return rows.map(row =>
                 Object.values(row as Record<string, unknown>),
-            ),
-        }
-    })
+            )
+        }),
+    )
 }
 
 export class RNDatabaseService implements DatabaseService {

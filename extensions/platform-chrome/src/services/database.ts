@@ -11,10 +11,11 @@
  */
 
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
-import type {
-    Database,
-    DatabaseDriver,
-    DatabaseService,
+import {
+    createDrizzleProxyCallback,
+    type Database,
+    type DatabaseDriver,
+    type DatabaseService,
 } from '@perawallet/wallet-extension-platform'
 import {
     DB_CONTROL_SCOPE,
@@ -67,20 +68,6 @@ const withTimeout = async <T>(
 
 const sleep = (ms: number): Promise<void> =>
     new Promise(resolve => setTimeout(resolve, ms))
-
-// The wire contract keeps `rows` uniform, but drizzle's sqlite-proxy session
-// does not: for method 'get' it expects `rows` to already BE the single row.
-// Passing the array through would make db.get() return `[[...]]`, and worse,
-// never return undefined for no match — its falsy check can't see through a
-// truthy `[]`. `rows[0]` is exactly `undefined` when the host found nothing.
-//
-// The cast bridges drizzle's own `rows: any[]`, which doesn't reflect this
-// get-vs-all split; it isn't widening our types.
-const toDrizzleRows = (
-    rows: unknown[][],
-    method: string,
-    // oxlint-disable-next-line @typescript-eslint/no-explicit-any
-): any[] => (method === 'get' ? rows[0] : rows) as any[]
 
 class ChromeDatabaseDriver implements DatabaseDriver {
     constructor(readonly driver: unknown) {}
@@ -135,20 +122,18 @@ export class ChromeDatabaseService implements DatabaseService {
         if (host) {
             // We ARE the offscreen document: execute against the worker
             // directly (the host is also who runs migrations, before ready).
-            return drizzle(async (sql, params, method) => ({
-                rows: toDrizzleRows(
-                    await host.execLocal(name, sql, params, method),
-                    method,
+            return drizzle(
+                createDrizzleProxyCallback((sql, params, method) =>
+                    host.execLocal(name, sql, params, method),
                 ),
-            }))
+            )
         }
         await this.ensureHostAvailable()
-        return drizzle(async (sql, params, method) => ({
-            rows: toDrizzleRows(
-                await this.exec(name, sql, params, method as DbMethod),
-                method,
+        return drizzle(
+            createDrizzleProxyCallback((sql, params, method) =>
+                this.exec(name, sql, params, method),
             ),
-        }))
+        )
     }
 
     async close(_name: string): Promise<void> {

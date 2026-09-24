@@ -15,6 +15,7 @@
     "dist",
     "**/__tests__/**",
     "**/test-utils/key-value-storage-contract.ts",
+    "**/test-utils/database-contract.ts",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/handlers.ts",
