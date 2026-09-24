@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { canInitiateRekey } from '../utils'
+import { canInitiateRekey } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
 

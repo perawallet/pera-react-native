@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { resolveSignerFor, type SignerResolution } from '../utils'
+import { resolveSignerFor, type SignerResolution } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 
 export const useSignerResolution = (
