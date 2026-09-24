@@ -14,7 +14,7 @@ import type { ViewProps } from 'react-native'
 import { useStyles } from './styles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
-import { useDeeplinkListener } from '@hooks/useDeeplinkListener'
+import { useDeeplinkListener } from '@modules/deeplink/hooks/useDeeplinkListener'
 
 export type HeaderedLayoutProps = ViewProps
 

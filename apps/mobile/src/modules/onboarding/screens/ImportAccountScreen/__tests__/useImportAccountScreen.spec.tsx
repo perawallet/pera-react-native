@@ -137,7 +137,7 @@ vi.mock('@hooks/useLanguage', () => ({
     })),
 }))
 
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         parseDeeplink: vi.fn(),
     })),

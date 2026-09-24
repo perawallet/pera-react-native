@@ -12,7 +12,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 
 type ErrorKind = 'none' | 'invalid' | 'failed'
 

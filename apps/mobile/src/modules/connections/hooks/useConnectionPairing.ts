@@ -21,7 +21,7 @@ import {
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { DeeplinkTimeoutError } from '@hooks/deeplink/handlers/timeout'
+import { DeeplinkTimeoutError } from '@modules/deeplink/handlers/timeout'
 
 export type UseConnectionPairingResult = {
     /** Runs `pairConnection` with the app's timeout error and late-outcome grace. */

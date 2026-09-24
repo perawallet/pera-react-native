@@ -43,7 +43,7 @@ import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore
 import { usePeraWebImportFlowStore } from '@modules/onboarding'
 import { parsePeraWebQrPayload } from '@perawallet/wallet-core-backup'
 import { config } from '@perawallet/wallet-core-config'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 import React from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createTestQueryClient } from '@test-utils/render'

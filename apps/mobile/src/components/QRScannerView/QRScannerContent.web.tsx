@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
 import { logger } from '@perawallet/wallet-core-shared'
 import {

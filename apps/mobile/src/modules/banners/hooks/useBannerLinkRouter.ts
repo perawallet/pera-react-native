@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useDeepLink } from '@hooks/useDeepLink'
+import { useDeepLink } from '@modules/deeplink/hooks/useDeepLink'
 
 type RouteInput = {
     url: string | null

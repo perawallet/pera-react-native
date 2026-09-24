@@ -20,7 +20,7 @@ import {
     useInboxQuery,
     type InboxItem,
 } from '@perawallet/wallet-core-messages'
-import { navigateToScreen } from '@hooks/deeplink/navigateToScreen'
+import { navigateToScreen } from '@modules/deeplink/navigateToScreen'
 import { useHandleInboxItemPress } from './useHandleInboxItemPress'
 
 export type MultisigIntentKind = 'sign' | 'import'

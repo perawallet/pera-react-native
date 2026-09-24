@@ -15,10 +15,7 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type {
-    SerializedGroupPlan,
-    TransactionGroup,
-} from '@perawallet/wallet-core-swaps'
+import type { SerializedGroupPlan, TransactionGroup } from '../models'
 
 /**
  * A slot in a group's submission order. Either a backend pre-signed

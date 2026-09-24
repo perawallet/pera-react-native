@@ -10,8 +10,11 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { SignAndSubmitGroupParams } from '@perawallet/wallet-core-signing'
 
 const mocks = vi.hoisted(() => ({
     submit: vi.fn(),
@@ -19,24 +22,31 @@ const mocks = vi.hoisted(() => ({
     algod: { tag: 'algod' },
 }))
 
-vi.mock('@perawallet/wallet-core-signing', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
+vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mocks.submit }),
 }))
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-blockchain')),
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ client: { algod: mocks.algod } }),
     waitForTransactionConfirmation: mocks.waitForTransactionConfirmation,
 }))
 
-import { useSubmitAndConfirm } from '../useSubmitAndConfirm'
+import { useSubmitAndConfirmMutation } from '../useSubmitAndConfirmMutation'
 
 const PARAMS = {
     unsignedTxs: [],
     source: { name: 'test', description: 'test' },
-} as unknown as Parameters<ReturnType<typeof useSubmitAndConfirm>>[0]
+} as unknown as SignAndSubmitGroupParams
 
-describe('useSubmitAndConfirm', () => {
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={new QueryClient()}>
+        {children}
+    </QueryClientProvider>
+)
+
+const renderMutation = () =>
+    renderHook(() => useSubmitAndConfirmMutation(), { wrapper })
+
+describe('useSubmitAndConfirmMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.waitForTransactionConfirmation.mockResolvedValue(undefined)
@@ -51,9 +61,12 @@ describe('useSubmitAndConfirm', () => {
         mocks.waitForTransactionConfirmation.mockImplementation(async () => {
             order.push('confirm')
         })
-        const { result } = renderHook(() => useSubmitAndConfirm())
+        const { result } = renderMutation()
 
-        const submitted = await result.current(PARAMS)
+        let submitted: unknown
+        await act(async () => {
+            submitted = await result.current.mutateAsync(PARAMS)
+        })
 
         expect(mocks.submit).toHaveBeenCalledWith(PARAMS)
         expect(mocks.waitForTransactionConfirmation).toHaveBeenCalledWith(
@@ -66,18 +79,25 @@ describe('useSubmitAndConfirm', () => {
 
     it('skips the wait when nothing was submitted', async () => {
         mocks.submit.mockResolvedValue({ txIds: [] })
-        const { result } = renderHook(() => useSubmitAndConfirm())
+        const { result } = renderMutation()
 
-        await result.current(PARAMS)
+        await act(async () => {
+            await result.current.mutateAsync(PARAMS)
+        })
 
         expect(mocks.waitForTransactionConfirmation).not.toHaveBeenCalled()
     })
 
-    it('propagates a submit failure without waiting', async () => {
+    it('propagates a submit failure without waiting or retrying', async () => {
         mocks.submit.mockRejectedValue(new Error('rejected'))
-        const { result } = renderHook(() => useSubmitAndConfirm())
+        const { result } = renderMutation()
 
-        await expect(result.current(PARAMS)).rejects.toThrow('rejected')
+        await act(async () => {
+            await expect(result.current.mutateAsync(PARAMS)).rejects.toThrow(
+                'rejected',
+            )
+        })
+        expect(mocks.submit).toHaveBeenCalledTimes(1)
         expect(mocks.waitForTransactionConfirmation).not.toHaveBeenCalled()
     })
 })

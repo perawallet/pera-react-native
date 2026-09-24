@@ -119,7 +119,7 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 })
 
 const mockParseDeeplink = vi.fn()
-vi.mock('@hooks/useDeepLink', () => ({
+vi.mock('@modules/deeplink/hooks/useDeepLink', () => ({
     useDeepLink: () => ({
         parseDeeplink: mockParseDeeplink,
         handleDeepLink: vi.fn(),
