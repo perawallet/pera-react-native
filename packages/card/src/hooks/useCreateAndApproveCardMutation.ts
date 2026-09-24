@@ -12,7 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { isDev, isStaging } from '@perawallet/wallet-core-config'
+import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import {
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
@@ -22,7 +22,6 @@ import { postAlgorandDelegationApproval } from '../api/delegation'
 import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
-import { getValidIntegrityToken } from './integrityToken'
 import { toCardMutationResult, type CardMutationResult } from './types'
 import type { CardOwnershipProof } from './useSignCardOwnershipMutation'
 
@@ -85,8 +84,7 @@ export const useCreateAndApproveCardMutation =
                     : false
 
                 if (!cardAddress || !txId) {
-                    const integrityToken = getValidIntegrityToken()
-                    if (!integrityToken && !(isDev || isStaging)) {
+                    if (!canCallIntegrityGuardedRoute()) {
                         throw new CardIntegrityAttestationRequiredError()
                     }
 
@@ -105,7 +103,6 @@ export const useCreateAndApproveCardMutation =
                         currency,
                         signData: proof.signData,
                         signature: proof.signature,
-                        integrityToken: integrityToken ?? '',
                     })
                     cardAddress = created.cardAddress
                     txId = created.txId

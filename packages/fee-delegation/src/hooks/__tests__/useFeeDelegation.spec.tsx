@@ -21,29 +21,14 @@ import {
 const {
     addSignRequestMock,
     submitAndAutoRefreshMock,
-    getValidIntegrityTokenMock,
+    canCallIntegrityGuardedRouteMock,
     requestFeeDelegationMock,
-    configFlags,
 } = vi.hoisted(() => ({
     addSignRequestMock: vi.fn(),
     submitAndAutoRefreshMock: vi.fn(),
-    getValidIntegrityTokenMock: vi.fn(),
+    canCallIntegrityGuardedRouteMock: vi.fn(),
     requestFeeDelegationMock: vi.fn(),
-    configFlags: { isDev: false, isStaging: false },
 }))
-
-vi.mock('@perawallet/wallet-core-config', async importOriginal => {
-    const actual = await importOriginal<object>()
-    return {
-        ...actual,
-        get isDev() {
-            return configFlags.isDev
-        },
-        get isStaging() {
-            return configFlags.isStaging
-        },
-    }
-})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
@@ -84,11 +69,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     submitAndAutoRefresh: submitAndAutoRefreshMock,
 }))
 
-// The hook only branches on token-present vs null; expiry semantics belong to
-// getValidIntegrityToken itself (unit-tested in the app-integrity package),
-// so the mock stubs its return value directly.
+// Token expiry and the dev/staging exemption belong to the integrity policy
+// (unit-tested in the app-integrity package); the hook only branches on it.
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    getValidIntegrityToken: getValidIntegrityTokenMock,
+    canCallIntegrityGuardedRoute: canCallIntegrityGuardedRouteMock,
 }))
 
 vi.mock('../../api', () => ({
@@ -103,8 +87,6 @@ const ASSET_ID = 31566704n
 
 // Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
 const toBase64 = (text: string) => btoa(text)
-
-const VALID_TOKEN = 'valid-token'
 
 const baseParams = {
     account: ACCOUNT,
@@ -124,16 +106,12 @@ function renderDelegation() {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    getValidIntegrityTokenMock.mockReturnValue(VALID_TOKEN)
-    configFlags.isDev = false
-    configFlags.isStaging = false
+    canCallIntegrityGuardedRouteMock.mockReturnValue(true)
 })
 
 describe('fee-delegation/useFeeDelegation', () => {
-    // Expiry semantics live in getValidIntegrityToken's own unit tests
-    // (app-integrity package); the hook only branches on token vs null.
-    test('rejects with FeeDelegationAttestationRequiredError when no usable token exists', async () => {
-        getValidIntegrityTokenMock.mockReturnValue(null)
+    test('rejects with FeeDelegationAttestationRequiredError when the guarded route would refuse', async () => {
+        canCallIntegrityGuardedRouteMock.mockReturnValue(false)
 
         const result = renderDelegation()
 
@@ -143,61 +121,7 @@ describe('fee-delegation/useFeeDelegation', () => {
         expect(requestFeeDelegationMock).not.toHaveBeenCalled()
     })
 
-    test('proceeds without a token on a development build, since attestation is skipped there', async () => {
-        configFlags.isDev = true
-        getValidIntegrityTokenMock.mockReturnValue(null)
-        requestFeeDelegationMock.mockResolvedValue({
-            txnGroup: [
-                {
-                    txn: toBase64('sponsor'),
-                    signers: [],
-                    stxn: toBase64('sponsor'),
-                },
-                { txn: toBase64('optin'), signers: [ACCOUNT] },
-            ],
-        })
-        addSignRequestMock.mockImplementation(request => {
-            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
-        })
-
-        const result = renderDelegation()
-        await result.current.submitWithFeeDelegation(baseParams)
-
-        expect(requestFeeDelegationMock).toHaveBeenCalledWith(
-            expect.any(Object),
-            '',
-            'mainnet',
-        )
-    })
-
-    test('proceeds without a token on a staging build, since attestation may not be ready yet', async () => {
-        configFlags.isStaging = true
-        getValidIntegrityTokenMock.mockReturnValue(null)
-        requestFeeDelegationMock.mockResolvedValue({
-            txnGroup: [
-                {
-                    txn: toBase64('sponsor'),
-                    signers: [],
-                    stxn: toBase64('sponsor'),
-                },
-                { txn: toBase64('optin'), signers: [ACCOUNT] },
-            ],
-        })
-        addSignRequestMock.mockImplementation(request => {
-            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
-        })
-
-        const result = renderDelegation()
-        await result.current.submitWithFeeDelegation(baseParams)
-
-        expect(requestFeeDelegationMock).toHaveBeenCalledWith(
-            expect.any(Object),
-            '',
-            'mainnet',
-        )
-    })
-
-    test('sends the encoded group with the token, signs the wallet slot, and submits in order', async () => {
+    test('sends the encoded group, signs the wallet slot, and submits in order', async () => {
         const callOrder: string[] = []
 
         // Sponsor slot (signed, first) + the wallet's opt-in slot (unsigned).
@@ -230,7 +154,7 @@ describe('fee-delegation/useFeeDelegation', () => {
         await result.current.submitWithFeeDelegation(baseParams)
 
         // Request: base64 of the unsigned opt-in + MBR + asset id as string,
-        // authenticated with the attestation token, on the active network.
+        // on the active network.
         expect(requestFeeDelegationMock).toHaveBeenCalledWith(
             {
                 // 'optin', not 'TXoptin': ARC-0001 carries the prefix-free wire
@@ -240,7 +164,6 @@ describe('fee-delegation/useFeeDelegation', () => {
                 includeAssetOptInMbr: true,
                 optInAssetIds: [ASSET_ID.toString()],
             },
-            'valid-token',
             'mainnet',
         )
 

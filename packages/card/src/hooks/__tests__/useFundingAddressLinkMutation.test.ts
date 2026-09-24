@@ -31,11 +31,6 @@ vi.mock('../../api/card-creation', async importOriginal => ({
 const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
-const { getValidIntegrityToken } = vi.hoisted(() => ({
-    getValidIntegrityToken: vi.fn(),
-}))
-vi.mock('../integrityToken', () => ({ getValidIntegrityToken }))
-
 import { CardUserUnavailableError } from '../../api/card-creation'
 import { useFundingAddressLinkMutation } from '../useFundingAddressLinkMutation'
 
@@ -52,7 +47,6 @@ describe('useFundingAddressLinkMutation', () => {
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
         fetchUser.mockResolvedValue({ id: 'baanx-user-1' })
-        getValidIntegrityToken.mockReturnValue('TOKEN')
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -78,7 +72,6 @@ describe('useFundingAddressLinkMutation', () => {
             network: 'testnet',
             address: 'FUNDING_ADDR',
             baanxUserId: 'baanx-user-1',
-            integrityToken: 'TOKEN',
         })
     })
 
@@ -92,24 +85,5 @@ describe('useFundingAddressLinkMutation', () => {
             result.current.checkFundingAddress('FUNDING_ADDR'),
         ).rejects.toBeInstanceOf(CardUserUnavailableError)
         expect(fetchFundingAddressLink).not.toHaveBeenCalled()
-    })
-
-    // A missing attestation is the backend's call to make, not a reason to skip
-    // the preflight: dev and staging accept an empty token.
-    it('sends an empty token rather than skipping the check', async () => {
-        getValidIntegrityToken.mockReturnValue(null)
-        fetchFundingAddressLink.mockResolvedValue({
-            state: 'unlinked',
-            cardAddress: null,
-        })
-        const { result } = renderHook(() => useFundingAddressLinkMutation(), {
-            wrapper,
-        })
-
-        await result.current.checkFundingAddress('FUNDING_ADDR')
-
-        expect(fetchFundingAddressLink).toHaveBeenCalledWith(
-            expect.objectContaining({ integrityToken: '' }),
-        )
     })
 })

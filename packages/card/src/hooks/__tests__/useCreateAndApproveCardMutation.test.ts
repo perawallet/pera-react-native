@@ -43,18 +43,18 @@ vi.mock('../../api/user', async () => ({
     fetchUser,
 }))
 
-const { configFlags } = vi.hoisted(() => ({
-    configFlags: { isDev: false, isStaging: false },
+const { buildEnv } = vi.hoisted(() => ({
+    buildEnv: { appEnvironment: 'production' },
 }))
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
-    const actual = await importOriginal<object>()
+    const actual = await importOriginal<{ config: object }>()
     return {
         ...actual,
-        get isDev() {
-            return configFlags.isDev
-        },
-        get isStaging() {
-            return configFlags.isStaging
+        config: {
+            ...actual.config,
+            get appEnvironment() {
+                return buildEnv.appEnvironment
+            },
         },
     }
 })
@@ -98,8 +98,7 @@ describe('useCreateAndApproveCardMutation', () => {
         useCardStore.getState().resetState()
         useAppIntegrityStore.getState().resetState()
         setValidIntegrityToken()
-        configFlags.isDev = false
-        configFlags.isStaging = false
+        buildEnv.appEnvironment = 'production'
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
         postAlgorandDelegationApproval.mockResolvedValue(undefined)
         fetchUser.mockResolvedValue({
@@ -126,7 +125,6 @@ describe('useCreateAndApproveCardMutation', () => {
                 currency: 'usdc',
                 signData: PROOF.signData,
                 signature: PROOF.signature,
-                integrityToken: 'TEST_INTEGRITY_TOKEN',
             }),
         )
         expect(postAlgorandDelegationApproval).toHaveBeenCalledWith(
@@ -185,7 +183,7 @@ describe('useCreateAndApproveCardMutation', () => {
 
     it('no valid integrity token on a development build: proceeds without one', async () => {
         useAppIntegrityStore.getState().resetState()
-        configFlags.isDev = true
+        buildEnv.appEnvironment = 'development'
         const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
             wrapper,
         })
@@ -195,15 +193,13 @@ describe('useCreateAndApproveCardMutation', () => {
             proof: PROOF,
         })
 
-        expect(createCard).toHaveBeenCalledWith(
-            expect.objectContaining({ integrityToken: '' }),
-        )
+        expect(createCard).toHaveBeenCalledOnce()
         expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
     })
 
     it('no valid integrity token on a staging build: proceeds without one', async () => {
         useAppIntegrityStore.getState().resetState()
-        configFlags.isStaging = true
+        buildEnv.appEnvironment = 'staging'
         const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
             wrapper,
         })
@@ -213,9 +209,7 @@ describe('useCreateAndApproveCardMutation', () => {
             proof: PROOF,
         })
 
-        expect(createCard).toHaveBeenCalledWith(
-            expect.objectContaining({ integrityToken: '' }),
-        )
+        expect(createCard).toHaveBeenCalledOnce()
         expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
     })
 

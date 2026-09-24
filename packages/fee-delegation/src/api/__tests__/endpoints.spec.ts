@@ -23,8 +23,8 @@ import {
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 
-const { configFlags, mockLoggerError } = vi.hoisted(() => ({
-    configFlags: { isDev: false, isStaging: false },
+const { buildEnv, mockLoggerError } = vi.hoisted(() => ({
+    buildEnv: { appEnvironment: 'production' },
     mockLoggerError: vi.fn(),
 }))
 
@@ -42,25 +42,35 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
-    const actual = await importOriginal<object>()
+    const actual = await importOriginal<{ config: object }>()
     return {
         ...actual,
-        get isDev() {
-            return configFlags.isDev
-        },
-        get isStaging() {
-            return configFlags.isStaging
+        config: {
+            ...actual.config,
+            get appEnvironment() {
+                return buildEnv.appEnvironment
+            },
         },
     }
 })
 
+import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 import { requestFeeDelegation } from '../endpoints'
+
+const storeToken = (integrityToken: string) =>
+    useAppIntegrityStore.getState().setRegistration({
+        integrityToken,
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        keyId: 'k1',
+        deviceInstallationId: 'd1',
+    })
 
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
-    configFlags.isDev = false
-    configFlags.isStaging = false
+    buildEnv.appEnvironment = 'production'
+    useAppIntegrityStore.getState().resetState()
+    storeToken('token-123')
     mockLoggerError.mockClear()
 })
 afterEach(() => server.resetHandlers())
@@ -90,11 +100,7 @@ describe('fee-delegation/requestFeeDelegation', () => {
             }),
         )
 
-        const result = await requestFeeDelegation(
-            REQUEST,
-            'token-123',
-            'mainnet',
-        )
+        const result = await requestFeeDelegation(REQUEST, 'mainnet')
 
         expect(token).toBe('token-123')
         expect(body).toEqual(REQUEST)
@@ -110,9 +116,7 @@ describe('fee-delegation/requestFeeDelegation', () => {
             ),
         )
 
-        await expect(
-            requestFeeDelegation(REQUEST, 'token-123', 'mainnet'),
-        ).rejects.toThrow()
+        await expect(requestFeeDelegation(REQUEST, 'mainnet')).rejects.toThrow()
     })
 
     test('never sends the integrity-bypass header outside dev/staging', async () => {
@@ -124,13 +128,32 @@ describe('fee-delegation/requestFeeDelegation', () => {
             }),
         )
 
-        await requestFeeDelegation(REQUEST, 'token-123', 'mainnet')
+        await requestFeeDelegation(REQUEST, 'mainnet')
 
         expect(bypass).toBeNull()
     })
 
+    test('sends neither integrity header on a production build without a token', async () => {
+        useAppIntegrityStore.getState().resetState()
+        let token: string | null = 'unset'
+        let bypass: string | null = 'unset'
+        server.use(
+            http.post('*/api/v3/fee-delegation', async ({ request }) => {
+                token = request.headers.get('x-app-integrity-token')
+                bypass = request.headers.get('x-bypass-integrity')
+                return HttpResponse.json({ txnGroup: [] })
+            }),
+        )
+
+        await requestFeeDelegation(REQUEST, 'mainnet')
+
+        expect(token).toBeNull()
+        expect(bypass).toBeNull()
+    })
+
     test('adds the integrity-bypass header on a development build', async () => {
-        configFlags.isDev = true
+        buildEnv.appEnvironment = 'development'
+        useAppIntegrityStore.getState().resetState()
         let bypass: string | null = null
         server.use(
             http.post('*/api/v3/fee-delegation', async ({ request }) => {
@@ -139,13 +162,13 @@ describe('fee-delegation/requestFeeDelegation', () => {
             }),
         )
 
-        await requestFeeDelegation(REQUEST, '', 'mainnet')
+        await requestFeeDelegation(REQUEST, 'mainnet')
 
         expect(bypass).toBe('DEVELOPMENT_AND_STAGING_ONLY')
     })
 
     test('adds the integrity-bypass header on a staging build', async () => {
-        configFlags.isStaging = true
+        buildEnv.appEnvironment = 'staging'
         let bypass: string | null = null
         server.use(
             http.post('*/api/v3/fee-delegation', async ({ request }) => {
@@ -154,7 +177,7 @@ describe('fee-delegation/requestFeeDelegation', () => {
             }),
         )
 
-        await requestFeeDelegation(REQUEST, 'token-123', 'mainnet')
+        await requestFeeDelegation(REQUEST, 'mainnet')
 
         expect(bypass).toBe('DEVELOPMENT_AND_STAGING_ONLY')
     })
@@ -175,9 +198,7 @@ describe('fee-delegation/requestFeeDelegation', () => {
             ),
         )
 
-        await expect(
-            requestFeeDelegation(REQUEST, 'token-123', 'mainnet'),
-        ).rejects.toThrow()
+        await expect(requestFeeDelegation(REQUEST, 'mainnet')).rejects.toThrow()
 
         expect(mockLoggerError).toHaveBeenCalledWith(
             'Fee delegation refused by the backend',
