@@ -221,6 +221,20 @@ describe('pera/dev-gallery-entry-points', () => {
         expect(lintIn(LEAKY, visitor, node as Node)).toHaveBeenCalledOnce()
     })
 
+    it('reports a relative sibling import that resolves into gallery code', () => {
+        expect(
+            lintIn(
+                'src/modules/settings/screens/developer/SettingsDeveloperScreen/index.ts',
+                'ImportDeclaration',
+                {
+                    type: 'ImportDeclaration',
+                    importKind: 'value',
+                    source: literal('../GalleryCategoryScreen'),
+                },
+            ),
+        ).toHaveBeenCalledOnce()
+    })
+
     it('allows a type-only import', () => {
         expect(
             lintIn(LEAKY, 'ImportDeclaration', galleryImport('type')),

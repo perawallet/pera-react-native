@@ -139,6 +139,18 @@ const isEntryPath = file =>
         path.endsWith('.ts') ? file === path : file.startsWith(`${path}/`),
     )
 
+// `specifier` resolved against the directory of `file`, both relative to
+// apps/mobile: `..` pops a segment, `.` is skipped.
+const resolveSibling = (file, specifier) => {
+    const segments = file.split('/').slice(0, -1)
+    for (const part of specifier.split('/')) {
+        if (part === '.' || part === '') continue
+        if (part === '..') segments.pop()
+        else segments.push(part)
+    }
+    return segments.join('/')
+}
+
 // A string literal, or a template without interpolation.
 const staticSpecifier = node => {
     if (node?.type === 'Literal' && typeof node.value === 'string') {
@@ -164,10 +176,15 @@ const devGalleryEntryPoints = {
         schema: [],
     },
     create(context) {
-        if (isEntryPath(fromAppRoot(context.filename))) return {}
+        const file = fromAppRoot(context.filename)
+        if (isEntryPath(file)) return {}
         const check = (node, source) => {
             const specifier = staticSpecifier(source)
-            if (specifier === undefined || !GALLERY_CODE.test(specifier)) return
+            if (specifier === undefined) return
+            const target = specifier.startsWith('.')
+                ? resolveSibling(file, specifier)
+                : specifier
+            if (!GALLERY_CODE.test(target)) return
             context.report({ node, messageId: 'gallery', data: { specifier } })
         }
         return {
