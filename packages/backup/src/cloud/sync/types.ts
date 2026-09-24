@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Algo25Account,
     HDWalletAccount,
@@ -26,6 +26,7 @@ import type {
     ContactBackupPayload,
     DeviceId,
     SecretsBackupPayload,
+    SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
@@ -134,6 +135,29 @@ export type SyncEngineDeps = {
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */
     importContacts: ContactImportFn
+}
+
+/** The wallet state the sync manager reads and watches but does not own. */
+export type BackupSyncSources = {
+    getNetwork: () => Network
+    listAccounts: () => WalletAccount[]
+    /** Fires on every accounts change; the manager diffs by fingerprint. */
+    subscribeAccounts: (
+        listener: (accounts: WalletAccount[]) => void,
+    ) => () => void
+    listContacts: () => Contact[]
+    subscribeContacts: (listener: (contacts: Contact[]) => void) => () => void
+}
+
+/** The backup's own persisted state, which the sync manager reads and writes. */
+export type BackupSyncStatePort = {
+    getBackupId: () => Nullable<BackupId>
+    getDeviceId: (network: Network) => Nullable<DeviceId>
+    getSyncState: () => Nullable<SyncState>
+    setSyncState: (state: SyncState) => void
+    setIsSyncing: (isSyncing: boolean) => void
+    /** Wipes config, sync state and activity so the backup reads "not set up". */
+    reset: () => void
 }
 
 export type { PulledAccount }

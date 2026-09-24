@@ -34,6 +34,7 @@ import {
     deriveBackupKeys,
     persistBackupKeys,
     deleteBackupKeys,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
     useBackupSyncStateStore,
     useCloudBackupContactImport,
@@ -109,6 +110,7 @@ const setupBackup = async () => {
     const mnemonicHook = renderQueryHook(() => useResolveMnemonicForBackup())
 
     initializeBackupSyncManager({
+        sources: createBackupSyncStoreSources(),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

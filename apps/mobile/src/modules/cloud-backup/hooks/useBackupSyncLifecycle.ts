@@ -13,6 +13,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { AppState } from 'react-native'
 import {
+    createBackupSyncStoreSources,
     getBackupSyncManager,
     initializeBackupSyncManager,
     useCloudBackupContactImport,
@@ -108,6 +109,7 @@ const useBackupSyncManagerSetup = () => {
 
     useEffect(() => {
         initializeBackupSyncManager({
+            sources: createBackupSyncStoreSources(),
             importAccounts: accounts => latest.current.importAccounts(accounts),
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),

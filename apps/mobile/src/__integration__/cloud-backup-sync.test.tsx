@@ -36,6 +36,7 @@ import {
     useBackupSyncStateStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -105,6 +106,7 @@ const setupSyncedBackup = async ({
         : null
 
     const manager = initializeBackupSyncManager({
+        sources: createBackupSyncStoreSources(),
         importAccounts: importHook.current.importAccounts,
         importContacts: contactImportHook.current.importContacts,
         resolveMnemonic: mnemonicHook.current,

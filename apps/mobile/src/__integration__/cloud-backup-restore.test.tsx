@@ -43,6 +43,7 @@ import {
     useCloudBackupRestoreDraftStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    createBackupSyncStoreSources,
     initializeBackupSyncManager,
 } from '@perawallet/wallet-core-backup'
 import {
@@ -273,6 +274,7 @@ describe('Flow: Cloud backup → Restore', () => {
                 useResolveMnemonicForBackup(),
             )
             await initializeBackupSyncManager({
+                sources: createBackupSyncStoreSources(),
                 importAccounts: importHook.current.importAccounts,
                 importContacts: contactImportHook.current.importContacts,
                 resolveMnemonic: mnemonicHook.current,

@@ -3023,6 +3023,7 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
+    createSyncStorePorts: vi.fn(() => ({})),
     initializeSyncService: vi.fn(() => ({
         start: vi.fn(),
         stop: vi.fn(),
