@@ -19,8 +19,7 @@ import {
 } from '@perawallet/wallet-core-connections/handlerKit'
 import {
     createWalletConnectConnector,
-    getConnector,
-    registerConnector,
+    type WalletConnectConnectorRegistry,
 } from '../connection'
 import { PERA_CLIENT_META } from '../shared/constants'
 import { WalletConnectBridgeConnectionError } from '../shared/errors'
@@ -36,10 +35,11 @@ import { toClientMeta } from './wire'
 
 export const createV1SessionRestorer = (deps: {
     kit: HandlerKit
+    connectors: Pick<WalletConnectConnectorRegistry, 'get' | 'register'>
     sessionKeys: WalletConnectV1SessionKeyStore
     bindHandlers: V1ConnectorBinding['bindHandlers']
 }): { restore: () => Promise<WalletConnectV1Connection[]> } => {
-    const { kit, sessionKeys, bindHandlers } = deps
+    const { kit, connectors, sessionKeys, bindHandlers } = deps
     const { reportError, store } = kit
 
     const asStatus = async (
@@ -52,11 +52,12 @@ export const createV1SessionRestorer = (deps: {
         return updated
     }
 
-    // After a provider remount a surviving connector holds the previous handler's
-    // closures, so it is rebound, not rebuilt. Synchronous on purpose: `revive`
-    // relies on no yield between this check and `registerConnector`.
+    // Teardown leaves sockets alive, so a re-initialised handler (StrictMode, a
+    // data wipe re-booting the registry) rebinds rather than rebuilds them.
+    // Synchronous on purpose: `revive` relies on no yield between this check
+    // and `connectors.register`.
     const rebindLive = (id: ConnectionId): boolean => {
-        const live = getConnector(id)
+        const live = connectors.get(id)
         if (!live) return false
         bindHandlers(live)
         return true
@@ -123,7 +124,7 @@ export const createV1SessionRestorer = (deps: {
         try {
             const connector = createWalletConnectConnector({ session })
             bindHandlers(connector)
-            registerConnector(connection.id, connector)
+            connectors.register(connection.id, connector)
         } catch (error) {
             // The v1 constructor throws synchronously on a malformed bridge.
             reportError(

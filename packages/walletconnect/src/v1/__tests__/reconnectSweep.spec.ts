@@ -17,11 +17,12 @@ import WalletConnect from '@perawallet/walletconnect'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { startReconnectSweep } from '../reconnectSweep'
 import {
-    __resetRegistryForTests,
-    getConnector,
-    registerConnector,
+    createConnectorRegistry,
+    type WalletConnectConnectorRegistry,
 } from '../../connection/connectorRegistry'
 
+// This spec's import graph reaches the platform provider, whose native
+// adapters don't resolve under jsdom.
 const appLifecycle = vi.hoisted(() => ({
     getCurrentState: vi.fn(() => 'active'),
     addChangeListener: vi.fn(),
@@ -84,11 +85,13 @@ describe('startReconnectSweep', () => {
     let appStateChangeHandler: Nullable<(next: AppLifecycleState) => void> =
         null
     const removeListener = vi.fn()
+    let registry: WalletConnectConnectorRegistry
+    const startSweep = () => startReconnectSweep(() => registry.reconnectAll())
 
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
-        __resetRegistryForTests()
+        registry = createConnectorRegistry({ bindHandlers: vi.fn() })
         appStateChangeHandler = null
         appLifecycle.addChangeListener.mockImplementation(
             (handler: (next: AppLifecycleState) => void) => {
@@ -105,8 +108,8 @@ describe('startReconnectSweep', () => {
     })
 
     it('revives a disconnected connector on a background→foreground transition', async () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         appStateChangeHandler?.('background')
         appStateChangeHandler?.('active')
@@ -117,29 +120,29 @@ describe('startReconnectSweep', () => {
         fresh._transport.connected = true
         await vi.advanceTimersByTimeAsync(100)
 
-        expect(getConnector('c1')).toBe(fresh)
+        expect(registry.get('c1')).toBe(fresh)
         teardown()
     })
 
     it('leaves an already-connected socket alone', () => {
         const healthy = makeConnector('c1', 'peer-1')
         healthy._transport.connected = true
-        registerConnector('c1', healthy)
-        const teardown = startReconnectSweep()
+        registry.register('c1', healthy)
+        const teardown = startSweep()
 
         appStateChangeHandler?.('background')
         appStateChangeHandler?.('active')
 
         expect(WalletConnect).not.toHaveBeenCalled()
-        expect(getConnector('c1')).toBe(healthy)
+        expect(registry.get('c1')).toBe(healthy)
         teardown()
     })
 
     it('does not throw when a revival fails', async () => {
-        // No peerId: recreateConnector has nothing to deliver to and
+        // No peerId: the registry has nothing to deliver to and
         // rejects immediately — the sweep must swallow that, not surface it.
-        registerConnector('c1', makeConnector('c1', null))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', null))
+        const teardown = startSweep()
 
         expect(() => {
             appStateChangeHandler?.('background')
@@ -152,8 +155,8 @@ describe('startReconnectSweep', () => {
     })
 
     it('also revives on a debounced offline→online edge', async () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         onlineManager.setOnline(false)
         onlineManager.setOnline(true)
@@ -165,8 +168,8 @@ describe('startReconnectSweep', () => {
 
     it('treats the lifecycle state at start as the prior state', () => {
         appLifecycle.getCurrentState.mockReturnValueOnce('background')
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         appStateChangeHandler?.('active')
 
@@ -175,8 +178,8 @@ describe('startReconnectSweep', () => {
     })
 
     it('tears down both subscriptions and cancels a pending debounce on teardown', () => {
-        registerConnector('c1', makeConnector('c1', 'peer-1'))
-        const teardown = startReconnectSweep()
+        registry.register('c1', makeConnector('c1', 'peer-1'))
+        const teardown = startSweep()
 
         onlineManager.setOnline(false)
         onlineManager.setOnline(true)
