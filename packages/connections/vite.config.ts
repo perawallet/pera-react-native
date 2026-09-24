@@ -22,6 +22,9 @@ export default defineConfig(
             // Its own entry so a consumer can read the pairing budgets
             // without the barrel dragging in the signing adapter.
             pairingOutcome: resolve(__dirname, 'src/pairingOutcome.ts'),
+            // Protocol handlers import the kit at runtime; the barrel
+            // would pull signing and blockchain into their module graphs.
+            handlerKit: resolve(__dirname, 'src/handlerKit.ts'),
         },
     }),
 )

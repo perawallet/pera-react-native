@@ -98,6 +98,10 @@ export default defineConfig({
                 __dirname,
                 '../connections/src/testing/handler-contract.ts',
             ),
+            '@perawallet/wallet-core-connections/handlerKit': path.resolve(
+                __dirname,
+                '../connections/src/handlerKit.ts',
+            ),
             '@perawallet/wallet-core-connections': path.resolve(
                 __dirname,
                 '../connections/src/index.ts',
