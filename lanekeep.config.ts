@@ -13,6 +13,7 @@ import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
 import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
+import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
@@ -50,6 +51,7 @@ export default defineConfig({
     rules: [
         noPrimitiveRnComponents,
         noChromeImportsOutsideWeb,
+        noReactNativeImportsInPackages,
         noCrossProtocolImports,
         noWcImportsInConnectionsModule,
         noDeepModuleImports,

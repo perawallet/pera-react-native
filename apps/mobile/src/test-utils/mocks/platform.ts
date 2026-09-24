@@ -53,6 +53,10 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
         },
+        appLifecycle: {
+            getCurrentState: () => 'active',
+            addChangeListener: vi.fn(() => vi.fn()),
+        },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
             getDeviceModel: () => 'iPhone',
@@ -161,6 +165,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
                 .mockReturnValue(['icloud', 'googleDrive']),
             save: vi.fn().mockResolvedValue('saved'),
             read: vi.fn().mockResolvedValue({ status: 'cancelled' }),
+        },
+        appLifecycle: {
+            getCurrentState: () => 'active',
+            addChangeListener: vi.fn(() => vi.fn()),
         },
         deviceInfo: {
             getDevicePlatform: () => 'ios',

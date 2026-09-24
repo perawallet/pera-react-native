@@ -35,7 +35,10 @@ import {
     type WalletProvisioningService,
     type CloudFileStorageService,
 } from '@perawallet/wallet-extension-platform'
-import { MemoryKeyValueStorage } from '@perawallet/wallet-extension-platform/test-utils'
+import {
+    MemoryAppLifecycleService,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-extension-platform/test-utils'
 import { testDatabaseService } from './sqlite-database'
 
 const buildServices = (): PlatformServices => {
@@ -192,6 +195,7 @@ const buildServices = (): PlatformServices => {
         database,
         deviceInfo,
         appIntegrity,
+        appLifecycle: new MemoryAppLifecycleService(),
         migration,
         walletProvisioning,
         cloudFileStorage,

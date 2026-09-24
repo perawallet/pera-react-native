@@ -14,6 +14,7 @@
     "node_modules",
     "dist",
     "**/__tests__/**",
+    "**/test-utils/app-lifecycle-contract.ts",
     "**/test-utils/key-value-storage-contract.ts",
     "**/test-utils/database-contract.ts",
     "**/*.test.ts",

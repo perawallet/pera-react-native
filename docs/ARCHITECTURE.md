@@ -129,6 +129,12 @@ boundary in the direction that actually matters: a file that is not `.web.*` may
 `platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
 
+`pera/no-react-native-imports-in-packages` holds the other direction: `packages/*/src` may not
+import `react-native`, `react-native-*` or `expo-*`. App lifecycle comes from
+`getProvider().appLifecycle`, the OS from `getProvider().deviceInfo.getDevicePlatform()`. The few
+native modules with no service equivalent (Falcon, the native keystore envelope) are listed with a
+reason in the rule itself.
+
 ### Turning features off per platform
 
 Neither platform hides a feature with scattered `Platform.OS` checks. `routeCapabilities`

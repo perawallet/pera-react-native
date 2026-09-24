@@ -14,19 +14,20 @@ the comment there for what was verified and when the exemption expires.
 
 ## Rules
 
-| Rule                                 | What it enforces                                                                                                                    |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `pera/no-primitive-rn-components`    | No direct `react-native` primitive imports in app code; use the PW-prefixed wrapper from `@components/core`.                        |
-| `pera/no-chrome-imports-outside-web` | A chrome-only package must not reach a native bundle.                                                                               |
-| `pera/no-cross-protocol-imports`     | A `v1/` sibling directory must not import from `v2/`, or vice versa — including type-only imports.                                  |
-| `pera/no-deep-module-imports`        | Code outside an app module imports it only through a public entry (`index`, `routes`, `shell`, `web`); see `apps/mobile/CLAUDE.md`. |
-| `pera/no-typography-in-styles`       | No `fontSize`/`fontFamily`/etc. set directly inside `makeStyles`; use `getTypography` or a `PWText` variant.                        |
-| `pera/no-empty-style-objects`        | No style key that resolves to `{}`.                                                                                                 |
-| `pera/no-numeric-sizes`              | No literal numeric spacing/sizing inside `makeStyles`; use a `theme.spacing`/`theme.borderRadius`/`theme.borders` token.            |
-| `pera/no-error-toast-in-catch`       | No `showToast({ type: 'error', ... })` from a `catch` clause or `.catch(...)` callback; use `showError` from `useErrorToast`.       |
-| `pera/error-message-key-exists`      | A `messageKey` must resolve to a string in `en.json`.                                                                               |
-| `pera/error-params-match-copy`       | Every `{{placeholder}}` in the resolved copy has a matching `params` entry.                                                         |
-| `pera/no-unused-style-keys`          | A `makeStyles` key must be referenced (statically or via a suppressed dynamic access).                                              |
+| Rule                                       | What it enforces                                                                                                                                                                                            |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pera/no-primitive-rn-components`          | No direct `react-native` primitive imports in app code; use the PW-prefixed wrapper from `@components/core`.                                                                                                |
+| `pera/no-chrome-imports-outside-web`       | A chrome-only package must not reach a native bundle.                                                                                                                                                       |
+| `pera/no-react-native-imports-in-packages` | `packages/*/src` reaches the platform through `getProvider()`, never `react-native`, `react-native-*` or `expo-*`; the few native modules with no service equivalent are listed, with reasons, in the rule. |
+| `pera/no-cross-protocol-imports`           | A `v1/` sibling directory must not import from `v2/`, or vice versa — including type-only imports.                                                                                                          |
+| `pera/no-deep-module-imports`              | Code outside an app module imports it only through a public entry (`index`, `routes`, `shell`, `web`); see `apps/mobile/CLAUDE.md`.                                                                         |
+| `pera/no-typography-in-styles`             | No `fontSize`/`fontFamily`/etc. set directly inside `makeStyles`; use `getTypography` or a `PWText` variant.                                                                                                |
+| `pera/no-empty-style-objects`              | No style key that resolves to `{}`.                                                                                                                                                                         |
+| `pera/no-numeric-sizes`                    | No literal numeric spacing/sizing inside `makeStyles`; use a `theme.spacing`/`theme.borderRadius`/`theme.borders` token.                                                                                    |
+| `pera/no-error-toast-in-catch`             | No `showToast({ type: 'error', ... })` from a `catch` clause or `.catch(...)` callback; use `showError` from `useErrorToast`.                                                                               |
+| `pera/error-message-key-exists`            | A `messageKey` must resolve to a string in `en.json`.                                                                                                                                                       |
+| `pera/error-params-match-copy`             | Every `{{placeholder}}` in the resolved copy has a matching `params` entry.                                                                                                                                 |
+| `pera/no-unused-style-keys`                | A `makeStyles` key must be referenced (statically or via a suppressed dynamic access).                                                                                                                      |
 
 This is the complete set of `pera/*` rules; none were deliberately excluded.
 
