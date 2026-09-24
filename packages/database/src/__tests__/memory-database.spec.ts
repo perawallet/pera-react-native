@@ -10,5 +10,9 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './proxy'
+import { runDatabaseContract } from '../../../../extensions/platform/src/test-utils/database-contract'
+import { createTestDatabase } from '../test-utils'
+
+// The in-memory test database stands in for the production drivers in
+// integration tests, so it must honour the same contract they do.
+runDatabaseContract('createTestDatabase', async () => createTestDatabase())

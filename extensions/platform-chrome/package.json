@@ -45,6 +45,8 @@
     "fake-indexeddb": "^6.2.5",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "^13.0.3"
   }
 }
