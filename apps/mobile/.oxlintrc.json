@@ -96,6 +96,13 @@
       "rules": {
         "pera/no-hardcoded-ui-strings": "warn"
       }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/**/__tests__/**"],
+      "rules": {
+        "pera/dev-gallery-entry-points": "error"
+      }
     }
   ]
 }

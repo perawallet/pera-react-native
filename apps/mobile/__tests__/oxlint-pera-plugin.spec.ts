@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
-import plugin from '../scripts/oxlint-pera-plugin.mjs'
+import plugin, { GALLERY_ENTRY_PATHS } from '../scripts/oxlint-pera-plugin.mjs'
 
 type Node = Record<string, unknown>
 
@@ -137,5 +139,88 @@ describe('pera/no-hardcoded-ui-strings', () => {
         ['an empty prop', 'JSXAttribute', attribute('body', literal(''))],
     ] as const)('allows %s', (_label, visitor, node) => {
         expect(lintJsx(visitor, node)).not.toHaveBeenCalled()
+    })
+})
+
+describe('pera/dev-gallery-entry-points', () => {
+    const lintIn = (file: string, visitor: string, node: Node) => {
+        const report = vi.fn()
+        const rule = plugin.rules['dev-gallery-entry-points']
+        const visitors = rule.create({
+            report,
+            filename: `/repo/apps/mobile/${file}`,
+        })
+        visitors[visitor]?.(node)
+        return report
+    }
+    const literal = (value: string): Node => ({ type: 'Literal', value })
+    const galleryImport = (importKind = 'value'): Node => ({
+        type: 'ImportDeclaration',
+        importKind,
+        source: literal('./screens/developer/gallery-catalog'),
+    })
+    const LEAKY = 'src/modules/home/Leaky.ts'
+
+    it.each([
+        ['a runtime import', 'ImportDeclaration', galleryImport()],
+        [
+            'a re-export',
+            'ExportNamedDeclaration',
+            {
+                type: 'ExportNamedDeclaration',
+                exportKind: 'value',
+                source: literal('../screens/developer/GalleryCategoryScreen'),
+            },
+        ],
+        [
+            'a deferred import with a template specifier',
+            'ImportExpression',
+            {
+                type: 'ImportExpression',
+                source: {
+                    type: 'TemplateLiteral',
+                    expressions: [],
+                    quasis: [
+                        {
+                            value: {
+                                cooked: './screens/developer/SettingsDeveloperGalleryScreen',
+                            },
+                        },
+                    ],
+                },
+            },
+        ],
+        [
+            'a require',
+            'CallExpression',
+            {
+                type: 'CallExpression',
+                callee: { type: 'Identifier', name: 'require' },
+                arguments: [
+                    literal(
+                        './screens/developer/GalleryComponentPreviewScreen',
+                    ),
+                ],
+            },
+        ],
+    ])('reports %s outside the entry points', (_label, visitor, node) => {
+        expect(lintIn(LEAKY, visitor, node as Node)).toHaveBeenCalledOnce()
+    })
+
+    it('allows a type-only import', () => {
+        expect(
+            lintIn(LEAKY, 'ImportDeclaration', galleryImport('type')),
+        ).not.toHaveBeenCalled()
+    })
+
+    it.each(GALLERY_ENTRY_PATHS)('allows imports from %s', path => {
+        const file = path.endsWith('.ts') ? path : `${path}/index.ts`
+        expect(
+            lintIn(file, 'ImportDeclaration', galleryImport()),
+        ).not.toHaveBeenCalled()
+    })
+
+    it.each(GALLERY_ENTRY_PATHS)('carves out %s, which still exists', path => {
+        expect(existsSync(join(__dirname, '..', path))).toBe(true)
     })
 })

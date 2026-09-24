@@ -78,7 +78,8 @@ const noHardcodedUiStrings = {
         return {
             JSXElement(node) {
                 const { name } = node.openingElement
-                if (name.type !== 'JSXIdentifier' || name.name !== 'Text') return
+                if (name.type !== 'JSXIdentifier' || name.name !== 'Text')
+                    return
                 if (
                     node.children.length === 0 ||
                     node.children.some(child => child.type !== 'JSXText')
@@ -106,7 +107,95 @@ const noHardcodedUiStrings = {
                 if (text === '' || /['"{}]/.test(text) || NOT_COPY.test(text)) {
                     return
                 }
-                context.report({ node, messageId: 'prop', data: { name, text } })
+                context.report({
+                    node,
+                    messageId: 'prop',
+                    data: { name, text },
+                })
+            },
+        }
+    },
+}
+
+// Gallery screens reach the app only through their route entry, which
+// metro.config.js stubs out of production builds; the locale tour is stubbed
+// out of non-dev bundles on its own gate. Paths are relative to apps/mobile.
+export const GALLERY_ENTRY_PATHS = [
+    'src/modules/settings/routes/developer-gallery.ts',
+    'src/modules/settings/screens/developer/SettingsDeveloperGalleryScreen',
+    'src/modules/settings/screens/developer/GalleryCategoryScreen',
+    'src/modules/settings/screens/developer/GalleryComponentPreviewScreen',
+    'src/modules/settings/screens/developer/gallery-catalog',
+    'src/modules/locale-tour',
+]
+
+const GALLERY_CODE =
+    /screens\/developer\/(?:SettingsDeveloperGalleryScreen|GalleryCategoryScreen|GalleryComponentPreviewScreen|gallery-catalog)/
+
+// context.filename is absolute.
+const fromAppRoot = filename => {
+    const at = filename.lastIndexOf('/apps/mobile/')
+    return at === -1 ? filename : filename.slice(at + '/apps/mobile/'.length)
+}
+
+const isEntryPath = file =>
+    GALLERY_ENTRY_PATHS.some(path =>
+        path.endsWith('.ts') ? file === path : file.startsWith(`${path}/`),
+    )
+
+// A string literal, or a template without interpolation.
+const staticSpecifier = node => {
+    if (node?.type === 'Literal' && typeof node.value === 'string') {
+        return node.value
+    }
+    if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
+        return node.quasis[0]?.value.cooked
+    }
+    return undefined
+}
+
+const devGalleryEntryPoints = {
+    meta: {
+        type: 'problem',
+        docs: {
+            description:
+                'Import developer-gallery code only through its route entry',
+        },
+        messages: {
+            gallery:
+                '{{specifier}} is gallery code: import it only through modules/settings/routes/developer-gallery.ts, which production builds stub out. A type-only import is fine.',
+        },
+        schema: [],
+    },
+    create(context) {
+        if (isEntryPath(fromAppRoot(context.filename))) return {}
+        const check = (node, source) => {
+            const specifier = staticSpecifier(source)
+            if (specifier === undefined || !GALLERY_CODE.test(specifier)) return
+            context.report({ node, messageId: 'gallery', data: { specifier } })
+        }
+        return {
+            ImportDeclaration(node) {
+                if (node.importKind !== 'type') check(node, node.source)
+            },
+            ExportNamedDeclaration(node) {
+                if (node.source && node.exportKind !== 'type') {
+                    check(node, node.source)
+                }
+            },
+            ExportAllDeclaration(node) {
+                if (node.exportKind !== 'type') check(node, node.source)
+            },
+            ImportExpression(node) {
+                check(node, node.source)
+            },
+            CallExpression(node) {
+                if (
+                    node.callee.type === 'Identifier' &&
+                    node.callee.name === 'require'
+                ) {
+                    check(node, node.arguments[0])
+                }
             },
         }
     },
@@ -117,5 +206,6 @@ export default {
     rules: {
         'no-unvalidated-open-url': noUnvalidatedOpenUrl,
         'no-hardcoded-ui-strings': noHardcodedUiStrings,
+        'dev-gallery-entry-points': devGalleryEntryPoints,
     },
 }
