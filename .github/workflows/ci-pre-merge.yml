@@ -282,6 +282,12 @@ jobs:
       - name: Check no test-only modules leaked into prod bundles
         run: pnpm run lint:bundle
 
+      # Needs the build: the bundle assertions skip when packages/kms/dist is
+      # missing, and a regression here makes mobile sign with WASM Falcon while
+      # every test stays green.
+      - name: Check kms ships the on-device PQ provider
+        run: pnpm run check:kms-pq-dist
+
       - name: Expo Prebuild
         run: pnpm --filter mobile expo:prebuild
 
