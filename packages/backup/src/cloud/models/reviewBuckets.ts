@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { isAccountItemKey, isContactItemKey } from './itemKeys'
+import {
+    isAccountItemKey,
+    isContactItemKey,
+    isPasskeyItemKey,
+} from './itemKeys'
 import type { BackupAccountType } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
 import { BackupItemStatus, type BackupItemKey } from './types'
@@ -31,6 +35,11 @@ export type BackupAccountReview = ReviewBuckets<{
 export type BackupContactReview = ReviewBuckets<{
     address: string
     name: string
+}>
+
+export type BackupPasskeyReview = ReviewBuckets<{
+    credentialId: string
+    label: string
 }>
 
 /** Whether the backup holds this item, from the device's point of view. The
@@ -104,6 +113,20 @@ export const deriveBackupContactReview = (
         (address, item) => ({ address, name: item.label ?? '' }),
     )
 
+/** `label` comes from the cached display name for the same reason a contact's
+ *  does: a credential only the backup holds would otherwise render as a bare
+ *  credential id. */
+export const deriveBackupPasskeyReview = (
+    syncState: SyncState | null,
+    localCredentialIds: readonly string[],
+): BackupPasskeyReview =>
+    deriveReview(
+        syncState,
+        localCredentialIds,
+        isPasskeyItemKey,
+        (credentialId, item) => ({ credentialId, label: item.label ?? '' }),
+    )
+
 const isAddressLiveUnder = (
     syncState: SyncState | null,
     address: string,
@@ -129,6 +152,13 @@ export const isContactBackedUp = (
     syncState: SyncState | null,
     address: string,
 ): boolean => isAddressLiveUnder(syncState, address, isContactItemKey)
+
+/** The credential id rides in `item.address`, the same local-only field an
+ *  account's address uses: the key itself is a hash and cannot be read back. */
+export const isPasskeyBackedUp = (
+    syncState: SyncState | null,
+    credentialId: string,
+): boolean => isAddressLiveUnder(syncState, credentialId, isPasskeyItemKey)
 
 export const areKeysDeletedFromBackup = (
     syncState: SyncState | null,

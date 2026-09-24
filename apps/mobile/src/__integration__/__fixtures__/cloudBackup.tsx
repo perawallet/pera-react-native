@@ -23,12 +23,24 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS, hdDerivedKeyId } from '@perawallet/wallet-core-kms'
+import {
+    useKMS,
+    hdDerivedKeyId,
+    entropyChildIdOf,
+    withSecret,
+} from '@perawallet/wallet-core-kms'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    derivePasskeyCredential,
+    derivePasskeyMainKey,
+} from '@perawallet/wallet-core-passkeys'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
+    HD_TEST_MNEMONIC_24_ALT_INDICES,
     HD_TEST_MNEMONIC_24_INDICES,
 } from './onboarding'
 
@@ -78,13 +90,23 @@ export const seedAlgo25Account = async (): Promise<WalletAccount> => {
 
 /** Each account's `keyPairId` has to be the derived child id, so `seedIdOf`
  *  can walk from the account back to its seed. */
-export const seedHDWalletAccounts = async (): Promise<{
+export const seedHDWalletAccounts = async (params?: {
+    /** A second, unrelated wallet: seeded from the alternate pinned mnemonic
+     *  and appended to the accounts already on the device. Reusing the first
+     *  mnemonic would give both wallets the same entropy and the same
+     *  first-derived address, which is exactly what a multi-seed test has to
+     *  tell apart. */
+    isAdditionalWallet?: boolean
+}): Promise<{
     first: WalletAccount
     second: WalletAccount
+    seedKeyId: string
 }> => {
     const { result: kms } = renderHook(() => useKMS())
     const seed = await kms.current.createHDWalletKey({
-        mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
+        mnemonicIndices: params?.isAdditionalWallet
+            ? HD_TEST_MNEMONIC_24_ALT_INDICES
+            : HD_TEST_MNEMONIC_24_INDICES,
     })
     expect(seed).not.toBeNull()
     const seedKeyId = seed!.seedKey.id ?? ''
@@ -102,7 +124,9 @@ export const seedHDWalletAccounts = async (): Promise<{
             BIP32DerivationType.Peikert,
         )
         return {
-            id: `hd-${account}-${keyIndex}`,
+            // Scoped to the seed so a second wallet's accounts don't collide
+            // with the first's on `id`.
+            id: `hd-${seedKeyId}-${account}-${keyIndex}`,
             type: AccountTypes.hdWallet,
             address: encodeAlgorandAddress(pub),
             keyPairId: hdDerivedKeyId(
@@ -123,8 +147,87 @@ export const seedHDWalletAccounts = async (): Promise<{
 
     const first = await make(0, 0, 'HD First')
     const second = await make(0, 1, 'HD Second')
-    useAccountsStore.getState().setAccounts([first, second])
-    return { first, second }
+    const existing = params?.isAdditionalWallet
+        ? useAccountsStore.getState().accounts
+        : []
+    useAccountsStore.getState().setAccounts([...existing, first, second])
+    return { first, second, seedKeyId }
+}
+
+type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
+
+const PASSKEY_KEY_TYPE = 'hd-derived-p256'
+
+/** A credential derived from a seed's own entropy, hydrated into the keystore
+ *  store the way the wallet's own engine writes one: the derivation identity
+ *  stored verbatim under `userHandle`, and the public key as SPKI DER. iOS
+ *  instead stores the handle bytes standard-base64 and the extension stores a
+ *  raw 64-byte point, so those two writers' shapes are covered by
+ *  `passkeyBackup.spec.ts` rather than end to end here. */
+export const seedPasskey = async (params: {
+    seedKeyId: string
+    origin?: string
+    /** Fed to the domain-key derivation verbatim, so it must already be the
+     *  lowercased form `identityCandidates` produces. */
+    identity?: string
+}): Promise<{
+    credentialId: string
+    seedAddress: string
+    publicKeySpkiDer: string
+}> => {
+    const {
+        seedKeyId,
+        origin = 'example.com',
+        identity = 'user@example.com',
+    } = params
+    const { result: kms } = renderHook(() => useKMS())
+
+    const entropyId = entropyChildIdOf(seedKeyId, getKeystoreStore().state.keys)
+    expect(entropyId).toBeTruthy()
+    const entropy = await withSecret(entropyId!, bytes => new Uint8Array(bytes))
+    expect(entropy).not.toBeNull()
+
+    const mainKey = await derivePasskeyMainKey(entropy!)
+    const derived = await derivePasskeyCredential({
+        mainKey,
+        origin,
+        identity,
+        counter: 0,
+    })
+
+    getKeystoreStore().setState(state => ({
+        ...state,
+        keys: [
+            ...state.keys,
+            {
+                id: derived.credentialId,
+                type: PASSKEY_KEY_TYPE,
+                algorithm: 'P256',
+                publicKey: derived.publicKeySpkiDer,
+                metadata: {
+                    origin,
+                    userName: identity,
+                    userHandle: identity,
+                    parentKeyId: `${seedKeyId}-passkey-main`,
+                    counter: 0,
+                    createdAt: Date.now(),
+                },
+            } as unknown as KeystoreKey,
+        ],
+    }))
+
+    const firstDerived = await kms.current.getDerivedPublicKey(
+        seedKeyId,
+        0,
+        0,
+        BIP32DerivationType.Peikert,
+    )
+
+    return {
+        credentialId: derived.credentialId,
+        seedAddress: encodeAlgorandAddress(firstDerived),
+        publicKeySpkiDer: encodeToBase64(derived.publicKeySpkiDer),
+    }
 }
 
 export const renderQueryHook = <T,>(hook: () => T) => {

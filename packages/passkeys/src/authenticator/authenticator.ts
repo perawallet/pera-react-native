@@ -266,9 +266,11 @@ export const deriveCredentialId = (publicKeyXY: Uint8Array): Uint8Array =>
 
 /**
  * Mirrors iOS `ASPasskeyCredentialIdentity.userHandleString.lowercased()`
- * (`String(data:encoding:.utf8) ?? base64URLEncodedString()`).
+ * (`String(data:encoding:.utf8) ?? base64URLEncodedString()`). Exported so
+ * `models/passkeyBackup.ts` can replay the exact same fallback when proving a
+ * credential is reproducible, instead of restating the two-branch logic.
  */
-const toDerivationUserHandle = (userId: Uint8Array): string => {
+export const toDerivationUserHandle = (userId: Uint8Array): string => {
     let decoded: string
     try {
         decoded = new TextDecoder('utf-8', { fatal: true }).decode(userId)

@@ -17,6 +17,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { UserPreferences } from '@constants/user-preferences'
+import { useRemoveFromBackupChoice } from './useRemoveFromBackupChoice'
 import {
     usePasskeysQuery,
     useRemovePasskeyMutation,
@@ -89,6 +90,7 @@ export const useSettingsPasskeysScreen =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
         const scanner = useModalState()
+        const resolveBackupChoice = useRemoveFromBackupChoice()
         const { getPreference, setPreference } = usePreferences()
 
         // Native refreshes on an AppState 'active' transition; the browser's
@@ -137,6 +139,7 @@ export const useSettingsPasskeysScreen =
                     options: { size: 'auto', enablePanDownToClose: true },
                 })
                 if (!confirmed) return
+                if (!(await resolveBackupChoice(passkey))) return
                 try {
                     await removePasskey(passkey)
                     trackEvent(PasskeysEvent.Deleted)
@@ -146,7 +149,7 @@ export const useSettingsPasskeysScreen =
                     showError(error, t('settings.passkeys.error_title'))
                 }
             },
-            [request, removePasskey, showError, t],
+            [request, resolveBackupChoice, removePasskey, showError, t],
         )
 
         const onDismissError = useCallback(() => {

@@ -25,6 +25,7 @@ import type {
     BackupItemType,
     ContactBackupPayload,
     DeviceId,
+    PasskeyBackupPayload,
     SecretsBackupPayload,
     SyncState,
 } from '../models'
@@ -52,7 +53,27 @@ export type BackupActionOutcome = 'settled' | 'queued' | 'refused'
 export type SerializedItem = {
     key: BackupItemKey
     type: BackupItemType
-    payload: AddressBackupPayload | SecretsBackupPayload | ContactBackupPayload
+    payload:
+        | AddressBackupPayload
+        | SecretsBackupPayload
+        | ContactBackupPayload
+        | PasskeyBackupPayload
+}
+
+/** A credential this device has already proven it can re-derive. `seedAddress`
+ *  is the first-derived address of the owning seed, which is how the seed's
+ *  `secrets/` item is keyed. */
+export type BackupPasskey = {
+    credentialId: string
+    origin: string
+    identity: string
+    counter: number
+    publicKeySpkiDer: string
+    seedAddress: string
+    userId?: string
+    userName?: string
+    displayName?: string
+    createdAt: number
 }
 
 export type SerializedAccount = {
@@ -113,6 +134,22 @@ export type ContactImportFn = (
     contacts: ContactBackupPayload[],
 ) => Promise<ContactImportSummary>
 
+/** Why a credential in the backup was not written to this device. */
+export type PasskeySkipReason =
+    | 'seed-missing'
+    | 'pubkey-mismatch'
+    | 'already-present'
+
+export type PasskeyImportSummary = {
+    imported: number
+    skipped: { credentialId: string; reason: PasskeySkipReason }[]
+    failed: { credentialId: string; reason: string }[]
+}
+
+export type PasskeyImportFn = (
+    passkeys: PasskeyBackupPayload[],
+) => Promise<PasskeyImportSummary>
+
 export type SyncEngineDeps = {
     network: Network
     backupId: BackupId
@@ -135,6 +172,11 @@ export type SyncEngineDeps = {
     listContacts: () => Contact[]
     /** Decrypted remote contacts → contacts store (insert or update). */
     importContacts: ContactImportFn
+    /** Credentials this device has proven it can re-derive. Async because
+     *  proving one runs a PBKDF2 per owning seed inside a KMS session. */
+    listPasskeys: () => Promise<BackupPasskey[]>
+    /** Decrypted remote credentials → native provider records. */
+    importPasskeys: PasskeyImportFn
 }
 
 /** The wallet state the sync manager reads and watches but does not own. */

@@ -38,6 +38,13 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform-driver/src/index.ts',
             ),
+            // Resolve to source, not dist: this package has no build output on
+            // a fresh checkout (`dist` is gitignored and `test:unit` bypasses
+            // turbo's `^build` graph).
+            '@perawallet/wallet-core-passkeys': path.resolve(
+                __dirname,
+                '../passkeys/src/index.ts',
+            ),
         },
     },
     ...poolConfig,

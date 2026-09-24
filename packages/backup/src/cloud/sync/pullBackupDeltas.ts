@@ -31,6 +31,7 @@ export const pullBackupDeltas = async (
         | 'encryptionKey'
         | 'importAccounts'
         | 'importContacts'
+        | 'importPasskeys'
     >,
     state: SyncState,
     now: number = Date.now(),
@@ -64,6 +65,7 @@ export const pullBackupDeltas = async (
             encryptionKey: deps.encryptionKey,
             importAccounts: deps.importAccounts,
             importContacts: deps.importContacts,
+            importPasskeys: deps.importPasskeys,
             readItems,
             decrypt: decryptItemPayload,
         },

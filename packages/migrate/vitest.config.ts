@@ -75,6 +75,19 @@ export default defineConfig({
                 __dirname,
                 '../passkeys/src/native.ts',
             ),
+            '@perawallet/wallet-core-passkeys/crypto': path.resolve(
+                __dirname,
+                '../passkeys/src/crypto.ts',
+            ),
+            // Must come after the two subpath entries above: plugin-alias
+            // matches string keys in order, and a bare-name entry earlier in
+            // the list would shadow both `/native` and `/crypto` (same
+            // ordering this file already relies on for
+            // `wallet-core-kms/constants` before `wallet-core-kms`).
+            '@perawallet/wallet-core-passkeys': path.resolve(
+                __dirname,
+                '../passkeys/src/index.ts',
+            ),
             '@perawallet/wallet-core-database/test-utils': path.resolve(
                 __dirname,
                 '../database/src/test-utils/index.ts',

@@ -14,14 +14,16 @@ import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { assertOnline } from '@perawallet/wallet-core-shared'
 import { getBackupSyncManager } from '../sync/backupSyncManager'
 
-/** The three row actions an accounts or contacts review screen offers. */
+/** The three row actions an accounts, contacts or passkeys review screen
+ *  offers. */
 export type BackupReviewAction = 'backUp' | 'add' | 'delete'
 
-export type BackupReviewItemKind = 'account' | 'contact'
+export type BackupReviewItemKind = 'account' | 'contact' | 'passkey'
 
 export type BackupReviewActionVariables = {
     action: BackupReviewAction
-    address: string
+    /** Address for an account or contact, credential id for a passkey. */
+    id: string
 }
 
 const BUSY_MESSAGE = 'Backup is busy syncing'
@@ -30,7 +32,7 @@ const NOT_DELETED_MESSAGE = 'Delete did not complete'
 
 const runReviewAction = async (
     kind: BackupReviewItemKind,
-    { action, address }: BackupReviewActionVariables,
+    { action, id }: BackupReviewActionVariables,
 ): Promise<void> => {
     // Mutations run networkMode 'always', so offline every action still runs,
     // and both write paths then report a success they cannot have: a failed
@@ -38,22 +40,27 @@ const runReviewAction = async (
     assertOnline()
 
     const manager = getBackupSyncManager()
-    const isAccount = kind === 'account'
 
     switch (action) {
         case 'backUp': {
-            const settled = isAccount
-                ? await manager.backUpAccount(address)
-                : await manager.backUpContact(address)
+            const settled =
+                kind === 'account'
+                    ? await manager.backUpAccount(id)
+                    : kind === 'contact'
+                      ? await manager.backUpContact(id)
+                      : await manager.backUpPasskey(id)
             if (!settled) {
                 throw new Error(NOT_BACKED_UP_MESSAGE)
             }
             break
         }
         case 'add': {
-            const summary = isAccount
-                ? await manager.addAccountFromBackup(address)
-                : await manager.addContactFromBackup(address)
+            const summary =
+                kind === 'account'
+                    ? await manager.addAccountFromBackup(id)
+                    : kind === 'contact'
+                      ? await manager.addContactFromBackup(id)
+                      : await manager.addPasskeyFromBackup(id)
             if (summary == null) {
                 throw new Error(BUSY_MESSAGE)
             }
@@ -65,9 +72,12 @@ const runReviewAction = async (
         case 'delete': {
             // Unlike the removal flows, the row reports a verdict on the
             // backup, so a queued retry is a failure here.
-            const outcome = isAccount
-                ? await manager.deleteAccountFromBackup(address)
-                : await manager.deleteContactFromBackup(address)
+            const outcome =
+                kind === 'account'
+                    ? await manager.deleteAccountFromBackup(id)
+                    : kind === 'contact'
+                      ? await manager.deleteContactFromBackup(id)
+                      : await manager.deletePasskeyFromBackup(id)
             if (outcome !== 'settled') {
                 throw new Error(NOT_DELETED_MESSAGE)
             }

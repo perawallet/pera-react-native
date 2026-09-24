@@ -11,6 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { webcrypto } from 'node:crypto'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const {
@@ -18,12 +20,39 @@ const {
     persistBackupKeysMock,
     deleteBackupKeysMock,
     pullBackupItemsMock,
-} = vi.hoisted(() => ({
-    deriveBackupKeysMock: vi.fn(),
-    persistBackupKeysMock: vi.fn(),
-    deleteBackupKeysMock: vi.fn(),
-    pullBackupItemsMock: vi.fn(),
-}))
+    getDerivedPublicKeyMock,
+    keystoreKeysMock,
+    secretBytesById,
+    withSecretMock,
+    writeNativePasskeyEntryMock,
+    nativePasskeyEntryExistsMock,
+} = vi.hoisted(() => {
+    const secretBytesById = new Map<string, Uint8Array>()
+    return {
+        deriveBackupKeysMock: vi.fn(),
+        persistBackupKeysMock: vi.fn(),
+        deleteBackupKeysMock: vi.fn(),
+        pullBackupItemsMock: vi.fn(),
+        getDerivedPublicKeyMock: vi.fn(),
+        keystoreKeysMock: vi.fn().mockReturnValue([]),
+        secretBytesById,
+        // Mirrors `withSecret`'s real contract: hands the handler a live
+        // buffer, then zeroes that same buffer once the handler returns.
+        withSecretMock: vi.fn(
+            async (id: string, handler: (bytes: Uint8Array) => unknown) => {
+                const bytes = secretBytesById.get(id)
+                if (!bytes) return null
+                try {
+                    return await handler(bytes)
+                } finally {
+                    bytes.fill(0)
+                }
+            },
+        ),
+        writeNativePasskeyEntryMock: vi.fn(),
+        nativePasskeyEntryExistsMock: vi.fn().mockReturnValue(false),
+    }
+})
 
 vi.mock('../../crypto', () => ({ deriveBackupKeys: deriveBackupKeysMock }))
 vi.mock('../../credentials/keyStorage', () => ({
@@ -32,6 +61,29 @@ vi.mock('../../credentials/keyStorage', () => ({
 }))
 vi.mock('../pullBackupItems', () => ({
     pullBackupItems: pullBackupItemsMock,
+}))
+// Real `entropyChildIdOf`/`seedSchemeOf`/`SeedScheme`/`zeroBytes`, so the
+// acceptance test below exercises the actual seed-lookup logic; only the
+// KMS session (`useKMS`) and the secret read (`withSecret`, which needs a
+// real keystore backend) are faked.
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    useKMS: () => ({ getDerivedPublicKey: getDerivedPublicKeyMock }),
+    withSecret: withSecretMock,
+}))
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({ keyValueStorage: { getItem: () => null } }),
+    getKeystoreStore: () => ({ state: { keys: keystoreKeysMock() } }),
+}))
+// Real `derivePasskeyMainKey`/`derivePasskeyCredential`/`passkeyBackupInputs`
+// (proving reproduction is the entire point of this test); only the native
+// write boundary is faked.
+vi.mock('@perawallet/wallet-core-passkeys', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    writeNativePasskeyEntry: (...args: unknown[]) =>
+        writeNativePasskeyEntryMock(...args),
+    nativePasskeyEntryExists: (...args: unknown[]) =>
+        nativePasskeyEntryExistsMock(...args),
 }))
 
 import { createItemKeyHasher } from '../../crypto/itemKeyHash'
@@ -45,6 +97,13 @@ import {
     CloudBackupRestoreError,
     restoreCloudBackup,
 } from '../restoreCloudBackup'
+import {
+    derivePasskeyCredential,
+    derivePasskeyMainKey,
+} from '@perawallet/wallet-core-passkeys'
+import { useCloudBackupPasskeyImport } from '../../hooks/useCloudBackupPasskeyImport'
+import { useResolveSeedEntropyForBackup } from '../../hooks/useResolveSeedEntropyForBackup'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const hashAddress = createItemKeyHasher(new Uint8Array(32).fill(1))
 const ACCOUNT_KEY = accountItemKey(hashAddress('A'))
@@ -56,9 +115,11 @@ const MNEMONIC = ['abandon', 'ability', 'able']
 const SUMMARY = { imported: 1, skippedDuplicate: 0, failed: [] }
 
 const CONTACT_SUMMARY = { imported: 1, failed: [] }
+const PASSKEY_SUMMARY = { imported: 1, skipped: [], failed: [] }
 
 const importAccounts = vi.fn()
 const importContacts = vi.fn()
+const importPasskeys = vi.fn()
 
 const params = () => ({
     mnemonic: MNEMONIC,
@@ -67,6 +128,7 @@ const params = () => ({
     network: 'mainnet' as const,
     importAccounts,
     importContacts,
+    importPasskeys,
 })
 
 const keys = (fill = 5) => ({
@@ -110,6 +172,7 @@ const pull = {
         },
     ],
     contacts: [{ address: 'C', name: 'Alice', updatedAt: 5 }],
+    passkeys: [{ credentialId: 'cred-1', seedAddress: 'A' }],
     skipped: [],
 }
 
@@ -131,6 +194,7 @@ describe('restoreCloudBackup', () => {
         pullBackupItemsMock.mockReset().mockResolvedValue(pull)
         importAccounts.mockReset().mockResolvedValue(SUMMARY)
         importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+        importPasskeys.mockReset().mockResolvedValue(PASSKEY_SUMMARY)
     })
 
     test('persists the keys, imports the pulled accounts and seeds the sync state', async () => {
@@ -261,6 +325,44 @@ describe('restoreCloudBackup', () => {
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
     })
 
+    test('imports passkeys after accounts and contacts, so their owning seed is already in the keystore', async () => {
+        const order: string[] = []
+        importAccounts.mockImplementation(async () => {
+            order.push('accounts')
+            return SUMMARY
+        })
+        importContacts.mockImplementation(async () => {
+            order.push('contacts')
+            return CONTACT_SUMMARY
+        })
+        importPasskeys.mockImplementation(async passkeys => {
+            order.push('passkeys')
+            expect(passkeys).toEqual(pull.passkeys)
+            return PASSKEY_SUMMARY
+        })
+
+        await restoreCloudBackup(params())
+
+        expect(order).toEqual(['accounts', 'contacts', 'passkeys'])
+    })
+
+    test('keeps a restore whose accounts landed when the passkey import throws', async () => {
+        importPasskeys.mockRejectedValue(new Error('keystore busy'))
+
+        const result = await restoreCloudBackup(params())
+
+        expect(result.summary).toBe(SUMMARY)
+        expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('does not call the passkey importer when the backup holds none', async () => {
+        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [] })
+
+        await restoreCloudBackup(params())
+
+        expect(importPasskeys).not.toHaveBeenCalled()
+    })
+
     test('persists the keys before pulling, so the signed request can read them', async () => {
         const order: string[] = []
         persistBackupKeysMock.mockImplementation(async () => {
@@ -363,5 +465,85 @@ describe('restoreCloudBackup', () => {
         expect(failed.encryptionKey.every(byte => byte === 0)).toBe(true)
         expect(failed.authSecretKey.every(byte => byte === 0)).toBe(true)
         expect(failed.itemKey.every(byte => byte === 0)).toBe(true)
+    })
+})
+
+describe('restoreCloudBackup: passkey acceptance', () => {
+    // The whole point: this is the real derivation chain, not a stub, so a
+    // credential that reproduces here is proof "created on device A,
+    // authenticates on device B after restore" actually holds.
+    const subtle = webcrypto.subtle as unknown as SubtleCrypto
+    const ENTROPY = new Uint8Array(32).fill(9)
+    const SEED_PUBKEY = new Uint8Array(32).fill(5)
+    const SEED_ADDRESS = encodeAlgorandAddress(SEED_PUBKEY)
+
+    const buildRestoredPasskeyPayload = async () => {
+        const mainKey = await derivePasskeyMainKey(ENTROPY, subtle)
+        const derived = await derivePasskeyCredential({
+            mainKey,
+            origin: 'webauthn.io',
+            identity: 'alice',
+        })
+        return {
+            credentialId: derived.credentialId,
+            origin: 'webauthn.io',
+            identity: 'alice',
+            counter: 0,
+            publicKeySpkiDer: Buffer.from(derived.publicKeySpkiDer).toString(
+                'base64',
+            ),
+            seedAddress: SEED_ADDRESS,
+            createdAt: 1,
+        }
+    }
+
+    beforeEach(() => {
+        deriveBackupKeysMock.mockReset().mockResolvedValue(keys())
+        persistBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        deleteBackupKeysMock.mockReset().mockResolvedValue(undefined)
+        importAccounts.mockReset().mockResolvedValue(SUMMARY)
+        importContacts.mockReset().mockResolvedValue(CONTACT_SUMMARY)
+
+        // A single on-device bip39 seed ("device B") whose first-derived
+        // address matches the payload's `seedAddress`.
+        getDerivedPublicKeyMock.mockReset().mockResolvedValue(SEED_PUBKEY)
+        keystoreKeysMock.mockReturnValue([
+            {
+                id: 'seed-b',
+                type: 'hd-root-key',
+                metadata: { scheme: 'bip39' },
+            },
+            {
+                id: 'entropy-b',
+                type: 'secret-key',
+                metadata: { parentKeyId: 'seed-b', entropyKey: true },
+            },
+        ])
+        secretBytesById.clear()
+        secretBytesById.set('entropy-b', new Uint8Array(ENTROPY))
+
+        writeNativePasskeyEntryMock.mockReset()
+        nativePasskeyEntryExistsMock.mockReset().mockReturnValue(false)
+    })
+
+    test('a passkey created on device A authenticates on device B after restore', async () => {
+        const payload = await buildRestoredPasskeyPayload()
+        pullBackupItemsMock.mockResolvedValue({ ...pull, passkeys: [payload] })
+
+        const { result } = renderHook(() =>
+            useCloudBackupPasskeyImport(useResolveSeedEntropyForBackup()),
+        )
+
+        await restoreCloudBackup({
+            ...params(),
+            importPasskeys: result.current.importPasskeys,
+        })
+
+        // Not skipped (seed-missing / pubkey-mismatch / already-present) and
+        // not silently dropped: the native record was actually written.
+        expect(writeNativePasskeyEntryMock).toHaveBeenCalledTimes(1)
+        expect(writeNativePasskeyEntryMock).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialId: payload.credentialId }),
+        )
     })
 })

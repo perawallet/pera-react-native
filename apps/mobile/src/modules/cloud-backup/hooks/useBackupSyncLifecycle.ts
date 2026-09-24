@@ -13,17 +13,25 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { AppState } from 'react-native'
 import {
+    canonicalJson,
     createBackupSyncStoreSources,
     getBackupSyncManager,
     initializeBackupSyncManager,
     useCloudBackupContactImport,
     useCloudBackupImport,
+    useCloudBackupPasskeyImport,
     useCloudBackupStore,
     useResolveHdSeedForBackup,
     useResolveMnemonicForBackup,
+    useResolveSeedEntropyForBackup,
     type SerializeHdResolver,
     type SerializeMnemonicResolver,
 } from '@perawallet/wallet-core-backup'
+import {
+    isPasskeyKey,
+    subscribeToPasskeyChanges,
+} from '@perawallet/wallet-core-passkeys'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -33,6 +41,7 @@ import {
     getPollingTransitionAction,
     isActiveAppState,
 } from '@utils/app-state'
+import { useListPasskeysForBackup } from './useListPasskeysForBackup'
 
 type BackupSyncCallbacks = {
     importAccounts: ReturnType<typeof useCloudBackupImport>['importAccounts']
@@ -41,6 +50,10 @@ type BackupSyncCallbacks = {
     >['importContacts']
     resolveHd: SerializeHdResolver
     resolveMnemonic: SerializeMnemonicResolver
+    listPasskeys: ReturnType<typeof useListPasskeysForBackup>
+    importPasskeys: ReturnType<
+        typeof useCloudBackupPasskeyImport
+    >['importPasskeys']
     showToast: ReturnType<typeof useToast>['showToast']
     t: ReturnType<typeof useLanguage>['t']
 }
@@ -61,6 +74,62 @@ const runManagerAction = (action: 'start' | 'stop') => {
 const startBackupSync = () => runManagerAction('start')
 const stopBackupSync = () => runManagerAction('stop')
 
+type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
+
+const metadataOf = (key: KeystoreKey): Record<string, unknown> =>
+    (key.metadata as Record<string, unknown> | undefined) ?? {}
+
+const counterOf = (key: KeystoreKey): number => {
+    const counter = metadataOf(key).counter
+    return typeof counter === 'number' ? counter : 0
+}
+
+/** Cheap enough to run on every keystore write: no derivation, just fields
+ *  already sitting in memory on the keystore snapshot. Covers both what
+ *  `listPasskeys` derivation depends on (`id`, `counter` — `origin`/`identity`
+ *  never change for an existing credential, and add/remove shows up in the id
+ *  set) and what the review row renders (`origin`, `displayName`, `userName`;
+ *  the row's label is `displayName ?? origin`), so a credential whose display
+ *  metadata changed doesn't wait for an unrelated sync to refresh it.
+ *  `canonicalJson` per entry rather than delimiter-joining, since these are
+ *  unconstrained strings that could otherwise collide across the separator. */
+const passkeyKeysFingerprint = (): string =>
+    getKeystoreStore()
+        .state.keys.filter(isPasskeyKey)
+        .map(key => {
+            const metadata = metadataOf(key)
+            return canonicalJson({
+                id: key.id,
+                counter: counterOf(key),
+                origin: metadata.origin ?? null,
+                displayName: metadata.displayName ?? null,
+                userName: metadata.userName ?? null,
+            })
+        })
+        .sort()
+        .join('|')
+
+/** The keystore store fires on every write — account import, HD derivation,
+ *  ledger add, all of it — so this filters to passkey keys and fingerprints
+ *  them before deciding whether `onChange` (the manager's expensive
+ *  `listPasskeys` sweep) needs to run at all. Flat-record credentials, the
+ *  norm on a device, arrive through `subscribeToPasskeyChanges` instead,
+ *  which is already passkey-specific. */
+const subscribePasskeyChanges = (onChange: () => void): (() => void) => {
+    let last = passkeyKeysFingerprint()
+    const sub = getKeystoreStore().subscribe(() => {
+        const next = passkeyKeysFingerprint()
+        if (next === last) return
+        last = next
+        onChange()
+    })
+    const unsubscribeFlatRecords = subscribeToPasskeyChanges(onChange)
+    return () => {
+        sub.unsubscribe()
+        unsubscribeFlatRecords()
+    }
+}
+
 /** Holds the newest callback identities behind a stable ref, so the manager can
  *  call them without being re-created when one of them changes. */
 const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
@@ -70,12 +139,18 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
     const { importContacts } = useCloudBackupContactImport()
     const resolveHd = useResolveHdSeedForBackup()
     const resolveMnemonic = useResolveMnemonicForBackup()
+    const listPasskeys = useListPasskeysForBackup()
+    const { importPasskeys } = useCloudBackupPasskeyImport(
+        useResolveSeedEntropyForBackup(),
+    )
 
     const latest = useRef<BackupSyncCallbacks>({
         importAccounts,
         importContacts,
         resolveHd,
         resolveMnemonic,
+        listPasskeys,
+        importPasskeys,
         showToast,
         t,
     })
@@ -86,6 +161,8 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
             importContacts,
             resolveHd,
             resolveMnemonic,
+            listPasskeys,
+            importPasskeys,
             showToast,
             t,
         }
@@ -94,6 +171,8 @@ const useLatestBackupSyncCallbacks = (): RefObject<BackupSyncCallbacks> => {
         importContacts,
         resolveHd,
         resolveMnemonic,
+        listPasskeys,
+        importPasskeys,
         showToast,
         t,
     ])
@@ -114,6 +193,9 @@ const useBackupSyncManagerSetup = () => {
             importContacts: contacts => latest.current.importContacts(contacts),
             resolveHd: account => latest.current.resolveHd(account),
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
+            listPasskeys: () => latest.current.listPasskeys(),
+            importPasskeys: passkeys => latest.current.importPasskeys(passkeys),
+            subscribePasskeyChanges,
             onBackupDeleted: () =>
                 latest.current.showToast({
                     title: latest.current.t('cloud_backup.deleted_remotely'),

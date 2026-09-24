@@ -38,6 +38,7 @@ import {
     writeNativePasskeyEntry,
     type WriteNativePasskeyEntryParams,
 } from '../writeNativePasskeyEntry'
+import { subscribeToPasskeyChanges } from '../passkeyChanges'
 
 const OPAQUE_USER_ID = 'dXNlci1pZA' // WebAuthn user.id (base64, opaque)
 const HUMAN_USER_NAME = 'alice@example.com' // WebAuthn user.name (display)
@@ -63,6 +64,24 @@ const lastWrittenRecord = async () => {
         MASTER_KEY,
         payload,
     )) as Record<string, unknown>
+}
+
+// `passkeyBackupInputs` reads the seed key id back out of `parentKeyId` and the
+// derivation counter out of `counter`; a record missing either can never be
+// proven reproducible again.
+const writeWithBackupLinkage = async () => {
+    platformMock.OS = 'ios'
+    await writeNativePasskeyEntry(
+        {
+            ...entryParams('cred-linked'),
+            identity: 'iosrestore',
+            parentKeyId: 'seed-1-passkey-main',
+            counter: 4,
+        },
+        subtle,
+    )
+    const record = await lastWrittenRecord()
+    return record.metadata as Record<string, unknown>
 }
 
 const writeFor = async (os: 'android' | 'ios') => {
@@ -170,5 +189,46 @@ describe('createNativePasskeyWriter master-key reuse', () => {
 
         await expect(write.dispose()).resolves.toBeUndefined()
         expect(masterKeyMock).not.toHaveBeenCalled()
+    })
+
+    it('stores the parent key id and derivation counter it was given', async () => {
+        masterKeyMock.mockResolvedValue(Uint8Array.from(MASTER_KEY))
+
+        const metadata = await writeWithBackupLinkage()
+
+        expect(metadata.parentKeyId).toBe('seed-1-passkey-main')
+        expect(metadata.counter).toBe(4)
+        expect(metadata.identity).toBe('iosrestore')
+    })
+
+    // The WebAuthn signature counter and the derivation counter diverge as soon
+    // as the credential is used, so they cannot share one field.
+    it('keeps the derivation counter separate from the signature counter', async () => {
+        masterKeyMock.mockResolvedValue(Uint8Array.from(MASTER_KEY))
+        platformMock.OS = 'ios'
+
+        await writeNativePasskeyEntry(
+            { ...entryParams('cred-2'), counter: 4, count: 0 },
+            subtle,
+        )
+        const record = await lastWrittenRecord()
+        const metadata = record.metadata as Record<string, unknown>
+
+        expect(metadata.counter).toBe(4)
+        expect(metadata.count).toBe(0)
+    })
+})
+
+describe('writeNativePasskeyEntry change notification', () => {
+    it('announces a credential once its record is stored', async () => {
+        const recordsStoredAtAnnouncement: number[] = []
+        const unsubscribe = subscribeToPasskeyChanges(() => {
+            recordsStoredAtAnnouncement.push(storageMock.set.mock.calls.length)
+        })
+
+        await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
+        unsubscribe()
+
+        expect(recordsStoredAtAnnouncement).toEqual([1])
     })
 })

@@ -36,6 +36,17 @@ export const contactItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const isContactItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_CONTACTS_KEY_PREFIX)
 
+export const BACKUP_PASSKEYS_KEY_PREFIX = 'passkeys/'
+
+/** Keyed by the hash of the credential id for the same reason an account is
+ *  keyed by the hash of its address: the server learns the item type from the
+ *  prefix and nothing else. */
+export const passkeyItemKey = (hash: ItemKeyHash): BackupItemKey =>
+    `${BACKUP_PASSKEYS_KEY_PREFIX}${hash}`
+
+export const isPasskeyItemKey = (key: BackupItemKey): boolean =>
+    key.startsWith(BACKUP_PASSKEYS_KEY_PREFIX)
+
 const HASHED_SEGMENT = /^[0-9a-f]{64}$/
 
 /** An item written before keys were hashed. Such a backup is re-created rather

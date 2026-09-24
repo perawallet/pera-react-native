@@ -406,6 +406,78 @@ describe('pullBackupItems', () => {
             { key: contactKey('CADDR'), reason: 'decrypt' },
         ])
     })
+
+    it('pulls active passkey items and returns their payloads', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 1,
+            items: {
+                'passkeys/Y3JlZC1pZA==': {
+                    type: 'PASSKEY',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 1,
+                },
+            },
+        })
+        readItems.mockResolvedValue([
+            {
+                key: 'passkeys/Y3JlZC1pZA==',
+                ver: 1,
+                hash: 'h1',
+                payload: enc(
+                    'passkeys/Y3JlZC1pZA==',
+                    JSON.stringify({
+                        credentialId: 'Y3JlZC1pZA==',
+                        origin: 'webauthn.io',
+                        identity: 'alice',
+                        counter: 0,
+                        publicKeySpkiDer: 'cHVi',
+                        seedAddress: 'SEEDADDRESS',
+                        createdAt: 1,
+                    }),
+                ),
+            },
+        ])
+
+        const result = await pull()
+
+        expect(result.passkeys).toHaveLength(1)
+        expect(result.passkeys[0].identity).toBe('alice')
+    })
+
+    it('records an unparseable passkey as skipped rather than throwing', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 1,
+            items: {
+                'passkeys/Y3JlZC1pZA==': {
+                    type: 'PASSKEY',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    hash: 'h1',
+                    lastSeq: 1,
+                },
+            },
+        })
+        readItems.mockResolvedValue([
+            {
+                key: 'passkeys/Y3JlZC1pZA==',
+                ver: 1,
+                hash: 'h1',
+                payload: enc(
+                    'passkeys/Y3JlZC1pZA==',
+                    JSON.stringify({ nope: true }),
+                ),
+            },
+        ])
+
+        const result = await pull()
+
+        expect(result.passkeys).toEqual([])
+        expect(result.skipped.length).toBeGreaterThan(0)
+    })
 })
 
 describe('pullBackupItems manifest pass-through', () => {

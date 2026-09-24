@@ -19,6 +19,8 @@ import {
     isAccountItemKey,
     isContactItemKey,
     isLegacyItemKey,
+    isPasskeyItemKey,
+    passkeyItemKey,
     secretsItemKey,
 } from '../itemKeys'
 
@@ -73,6 +75,34 @@ describe('item keys', () => {
             contactItemKey(HASH),
         ]) {
             expect(key).not.toContain(ADDRESS)
+        }
+    })
+})
+
+describe('passkey item keys', () => {
+    test('files a passkey under the passkeys/ prefix', () => {
+        expect(passkeyItemKey(HASH)).toBe(`passkeys/${HASH}`)
+    })
+
+    test('does not claim account or contact keys', () => {
+        expect(isPasskeyItemKey(passkeyItemKey(HASH))).toBe(true)
+        expect(isPasskeyItemKey(accountItemKey(HASH))).toBe(false)
+        expect(isPasskeyItemKey(contactItemKey(HASH))).toBe(false)
+    })
+
+    // The server rejects any key whose `/`-separated segments are not
+    // `[A-Za-z0-9_\-.]+`. A credential id is standard base64, so keying on it
+    // directly used to fail with `422 INVALID_ITEM_KEY` against the real
+    // backend; hashing removed the whole class, and this holds it there.
+    test('keeps every segment inside the alphabet the server accepts', () => {
+        const credentialId = 'wBUdsS95inHH5hfnV24Dy/ySvSteNiqijEXnJ6RMHwc='
+        const key = passkeyItemKey(
+            hashItemAddress(credentialId, new Uint8Array(32).fill(1)),
+        )
+
+        expect(key).not.toContain(credentialId)
+        for (const segment of key.split('/')) {
+            expect(segment).toMatch(/^[A-Za-z0-9_\-.]+$/)
         }
     })
 })

@@ -51,6 +51,17 @@ const { managerMock } = vi.hoisted(() => ({
         deleteContactFromBackup: vi.fn(
             async (): Promise<BackupActionOutcome> => 'settled',
         ),
+        backUpPasskey: vi.fn(async (): Promise<boolean> => true),
+        addPasskeyFromBackup: vi.fn(
+            async (): Promise<PasskeyImportSummary | null> => ({
+                imported: 1,
+                skipped: [],
+                failed: [],
+            }),
+        ),
+        deletePasskeyFromBackup: vi.fn(
+            async (): Promise<BackupActionOutcome> => 'settled',
+        ),
     },
 }))
 
@@ -93,9 +104,9 @@ describe('useBackupReviewActionMutation', () => {
     test('routes each account action to its manager method', async () => {
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
-        act(() => result.current.mutate({ action: 'add', address: 'B' }))
-        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() =>
             expect(managerMock.deleteAccountFromBackup).toHaveBeenCalledWith(
@@ -110,9 +121,9 @@ describe('useBackupReviewActionMutation', () => {
     test('routes each contact action to its manager method', async () => {
         const { result } = renderMutation('contact')
 
-        act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
-        act(() => result.current.mutate({ action: 'add', address: 'B' }))
-        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() =>
             expect(managerMock.deleteContactFromBackup).toHaveBeenCalledWith(
@@ -128,7 +139,7 @@ describe('useBackupReviewActionMutation', () => {
         managerMock.backUpAccount.mockResolvedValueOnce(false)
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('Backup did not complete')
@@ -138,7 +149,7 @@ describe('useBackupReviewActionMutation', () => {
         managerMock.deleteAccountFromBackup.mockResolvedValueOnce('queued')
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('Delete did not complete')
@@ -148,7 +159,7 @@ describe('useBackupReviewActionMutation', () => {
         managerMock.deleteAccountFromBackup.mockResolvedValueOnce('refused')
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('Delete did not complete')
@@ -158,7 +169,7 @@ describe('useBackupReviewActionMutation', () => {
         onlineManager.setOnline(false)
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'backUp', address: 'A' }))
+        act(() => result.current.mutate({ action: 'backUp', id: 'A' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBeInstanceOf(NoConnectionError)
@@ -171,7 +182,7 @@ describe('useBackupReviewActionMutation', () => {
         onlineManager.setOnline(false)
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'delete', address: 'C' }))
+        act(() => result.current.mutate({ action: 'delete', id: 'C' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBeInstanceOf(NoConnectionError)
@@ -185,7 +196,7 @@ describe('useBackupReviewActionMutation', () => {
         onlineManager.setOnline(false)
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'add', address: 'B' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toBeInstanceOf(NoConnectionError)
@@ -199,7 +210,7 @@ describe('useBackupReviewActionMutation', () => {
         })
         const { result } = renderMutation('contact')
 
-        act(() => result.current.mutate({ action: 'add', address: 'B' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('unreadable')
@@ -209,9 +220,29 @@ describe('useBackupReviewActionMutation', () => {
         managerMock.addAccountFromBackup.mockResolvedValueOnce(null)
         const { result } = renderMutation('account')
 
-        act(() => result.current.mutate({ action: 'add', address: 'B' }))
+        act(() => result.current.mutate({ action: 'add', id: 'B' }))
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('Backup is busy syncing')
+    })
+
+    test('routes a passkey back-up action to the passkey manager method', async () => {
+        const { result } = renderMutation('passkey')
+
+        act(() => result.current.mutate({ action: 'backUp', id: 'cred-1' }))
+
+        await waitFor(() =>
+            expect(managerMock.backUpPasskey).toHaveBeenCalledWith('cred-1'),
+        )
+    })
+
+    test('throws when a passkey delete is only queued', async () => {
+        managerMock.deletePasskeyFromBackup.mockResolvedValueOnce('queued')
+        const { result } = renderMutation('passkey')
+
+        act(() => result.current.mutate({ action: 'delete', id: 'cred-1' }))
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('Delete did not complete')
     })
 })

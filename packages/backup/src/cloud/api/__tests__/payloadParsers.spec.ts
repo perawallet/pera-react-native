@@ -14,6 +14,7 @@ import { describe, expect, it, test } from 'vitest'
 import {
     parseAddressPayload,
     parseContactPayload,
+    parsePasskeyPayload,
     parseSecretsPayload,
     BackupPayloadParseError,
 } from '../payloadParsers'
@@ -287,6 +288,39 @@ describe('parseContactPayload', () => {
     it('rejects a payload with no name', () => {
         expect(() =>
             parseContactPayload(JSON.stringify({ address: 'ADDR' })),
+        ).toThrow(BackupPayloadParseError)
+    })
+})
+
+describe('parsePasskeyPayload', () => {
+    const valid = {
+        credentialId: 'Y3JlZC1pZA==',
+        origin: 'webauthn.io',
+        identity: 'alice',
+        counter: 0,
+        publicKeySpkiDer: 'cHVi',
+        seedAddress: 'SEEDADDRESS',
+        createdAt: 1_700_000_000_000,
+    }
+
+    it('parses a complete payload', () => {
+        const parsed = parsePasskeyPayload(JSON.stringify(valid))
+
+        expect(parsed.identity).toBe('alice')
+        expect(parsed.counter).toBe(0)
+    })
+
+    it('rejects a payload missing the identity', () => {
+        const { identity: _dropped, ...withoutIdentity } = valid
+
+        expect(() =>
+            parsePasskeyPayload(JSON.stringify(withoutIdentity)),
+        ).toThrow(BackupPayloadParseError)
+    })
+
+    it('rejects a negative counter', () => {
+        expect(() =>
+            parsePasskeyPayload(JSON.stringify({ ...valid, counter: -1 })),
         ).toThrow(BackupPayloadParseError)
     })
 })
