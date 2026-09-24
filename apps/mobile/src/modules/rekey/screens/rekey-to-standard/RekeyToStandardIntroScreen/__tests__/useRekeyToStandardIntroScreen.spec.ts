@@ -18,7 +18,7 @@ import en from '@i18n/locales/en.json'
 
 describe('useRekeyToStandardIntroScreen', () => {
     // Neither half of this pairing is visible to the i18n lint rules — the
-    // keys are built dynamically and its namespace claim covers anything
+    // keys are built dynamically and their namespace claim covers anything
     // under them — so a mismatch renders the raw key string on screen with
     // every check green.
     it('keeps expectationCount in sync with the expect_N keys in en.json', () => {
