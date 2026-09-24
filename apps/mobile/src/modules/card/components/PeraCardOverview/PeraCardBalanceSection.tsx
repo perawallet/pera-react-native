@@ -11,11 +11,8 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { PWImage, PWSkeleton, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import { InfoButton } from '@components/InfoButton'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -29,18 +26,12 @@ type PeraCardBalanceSectionProps = {
     /** True while the balances are still being fetched. */
     isLoading: boolean
     currency: string
-    /** Max a single purchase can draw. */
-    spendablePerTx: Decimal
-    /** Shows the per-transaction line; false when it would just repeat the balance. */
-    isCapped: boolean
 }
 
 export const PeraCardBalanceSection = ({
     balance,
     isLoading,
     currency,
-    spendablePerTx,
-    isCapped,
 }: PeraCardBalanceSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -75,49 +66,6 @@ export const PeraCardBalanceSection = ({
                     symbolPosition='end'
                     variant='h1'
                 />
-            )}
-
-            {!isLoading && isCapped && (
-                <PWView style={styles.spendableRow}>
-                    <InfoButton
-                        title={t('peraCard.account.spendable_info_title')}
-                        trigger={
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.fundingLabel}
-                                testID='pera_card_spendable_per_tx'
-                            >
-                                {t('peraCard.account.spendable_per_tx', {
-                                    // formatNumber returns {sign,integer,fraction};
-                                    // formatCurrency joins them into a string.
-                                    // showSymbol=false — the template appends {{currency}}.
-                                    amount: formatCurrency(
-                                        spendablePerTx,
-                                        spendablePerTx.isInteger() ? 0 : 2,
-                                        currency,
-                                        undefined,
-                                        false,
-                                    ),
-                                    currency,
-                                })}
-                            </PWText>
-                        }
-                    >
-                        <PWText
-                            variant='body'
-                            weight={400}
-                        >
-                            {t('peraCard.account.spendable_info_body', {
-                                limit: formatCurrency(
-                                    AUTO_FUNDING_PER_TX_LIMIT_USD,
-                                    0,
-                                    'USD',
-                                ),
-                            })}
-                        </PWText>
-                    </InfoButton>
-                </PWView>
             )}
         </PWView>
     )

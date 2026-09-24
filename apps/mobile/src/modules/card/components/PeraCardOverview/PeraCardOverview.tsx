@@ -25,8 +25,6 @@ export const PeraCardOverview = () => {
         isAutoFunding,
         currency,
         balance,
-        spendablePerTx,
-        isSpendableCapped,
         isBalanceLoading,
         credits,
         transactionSections,
@@ -48,8 +46,6 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
-                spendablePerTx={spendablePerTx}
-                isCapped={isSpendableCapped}
             />
 
             <PeraCardActionButtons
